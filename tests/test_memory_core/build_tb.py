@@ -1981,19 +1981,19 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         output_format = "CSF"
         output_name = "X"
     
-    elif "concat_matmul.gv" in app_name:
+    elif "concat_spmm.gv" in app_name:
         b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                             dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
                             sparsity=0.8)  
         c_mat = get_tensor(input_name='C', shapes=[8, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                             dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
-                            sparsity=0.8)
+                            sparsity=0.0, format='UNC')
         d_mat = get_tensor(input_name='D', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                             dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['D'],
                             sparsity=0.8)
         e_mat = get_tensor(input_name='E', shapes=[8, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                             dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['E'],
-                            sparsity=0.8)
+                            sparsity=0.0, format='UNC')
         input_dims['B'] = tuple(b_mat.shape)
         input_dims['C'] = tuple(c_mat.shape)
         input_dims['D'] = tuple(d_mat.shape)
