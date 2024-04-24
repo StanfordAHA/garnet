@@ -2002,7 +2002,9 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         # First transpose c_mat
         c_mat_trans = numpy.transpose(c_mat)
         e_mat_trans = numpy.transpose(e_mat)
-        output_matrix = numpy.add(numpy.matmul(b_mat, c_mat_trans, dtype=numpy.uint16, casting='unsafe'), numpy.matmul(d_mat, e_mat_trans, dtype=numpy.uint16, casting='unsafe'), dtype=numpy.uint16, casting='unsafe') 
+        bd_concat = numpy.concatenate((b_mat, d_mat), axis=1)
+        ce_concat = numpy.concatenate((c_mat_trans, e_mat_trans), axis=0)
+        output_matrix = numpy.matmul(bd_concat, ce_concat, dtype=numpy.uint16, casting='unsafe')
         output_format = "CSF"
         output_name = "X"
 
