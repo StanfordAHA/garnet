@@ -1,344 +1,344 @@
 #! /usr/bin/env python
-#=========================================================================
+# =========================================================================
 # construct.py
-#=========================================================================
+# =========================================================================
 
 import os
-import sys
 
 from mflowgen.components import Graph, Step
 from shutil import which
 from common.get_sys_adk import get_sys_adk
 
+
 def construct():
-  g = Graph()
+    g = Graph()
 
-  #-----------------------------------------------------------------------
-  # Parameters
-  #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
+    # Parameters
+    # -----------------------------------------------------------------------
 
-  adk_name = get_sys_adk()   # E.g. 'gf12-adk' or 'tsmc16'
-  adk_view = 'view-standard'
+    adk_name = get_sys_adk()   # E.g. 'gf12-adk' or 'tsmc16'
+    adk_view = 'view-standard'
 
-  # TSMC override(s)
-  if adk_name == 'tsmc16': which_soc = 'amber'
-  else:                    which_soc = 'onyx'
+    # TSMC override(s)
+    which_soc = 'amber' if adk_name == 'tsmc16' else 'onyx'
 
-  parameters = {
-    'construct_path'    : __file__,
-    'design_name'       : 'GarnetSOC_pad_frame',
-    'clock_period'      : 20.0,
-    'adk'               : adk_name,
-    'adk_view'          : adk_view,
-    # soc-rtl
-    'include_core'      : 0,
-    # Synthesis
-    'flatten_effort'    : 3,
-    'topographical'     : False,
-    'express_flow'      : False,
-    'skip_verify_connectivity' : True,
-    'lvs_hcells_file' : 'inputs/adk/hcells.inc',
-    'lvs_connect_names' : '"VDD VSS VDDPST"'
-  }
+    parameters = {
+        'construct_path': __file__,
+        'design_name': 'GarnetSOC_pad_frame',
+        'clock_period': 20.0,
+        'adk': adk_name,
+        'adk_view': adk_view,
 
-  #-----------------------------------------------------------------------
-  # Create nodes
-  #-----------------------------------------------------------------------
+        # soc-rtl
+        'include_core': 0,
 
-  this_dir = os.path.dirname( os.path.abspath( __file__ ) )
+        # Synthesis
+        'flatten_effort': 3,
+        'topographical': False,
+        'express_flow': False,
+        'skip_verify_connectivity': True,
+        'lvs_hcells_file': 'inputs/adk/hcells.inc',
+        'lvs_connect_names': '"VDD VSS VDDPST"'
+    }
 
-  # ADK step
-  g.set_adk( adk_name )
-  adk = g.get_adk_step()
+    # -----------------------------------------------------------------------
+    # Create nodes
+    # -----------------------------------------------------------------------
 
-  # Custom steps
-  soc_rtl              = Step( this_dir + '/../common/soc-rtl-v2'                )
-  rtl                  = Step( this_dir + '/rtl'                         )   
-  constraints          = Step( this_dir + '/constraints'                 )
-  if adk_name == 'tsmc16':
-    init_fullchip        = Step( this_dir + '/../common/init-fullchip-amber')
-  else:
-    init_fullchip        = Step( this_dir + '/../common/init-fullchip'      )
-  netlist_fixing       = Step( this_dir + '/../common/fc-netlist-fixing' )
+    this_dir = os.path.dirname(os.path.abspath(__file__))
 
-  if which_soc == 'amber':
-    # Custom step 'pre-flowsetup'
-    # To get new lef cells e.g. 'icovl-cells.lef' into iflow, we gotta:
-    # - create new step 'pre_flowsetup' whose outputs are icovl cells
-    # -- link via "commands" group in pre-iflow/configure.yml
-    # - connect pre-flowsetup step to flowsetup (iflow) step
-    # - extend iflow inputs to include icovl cells
-    # - iflow "setup.tcl" automatically includes "inputs/*.lef"
-    pre_flowsetup         = Step( this_dir + '/pre-flowsetup'        )
+    # ADK step
+    g.set_adk(adk_name)
+    adk = g.get_adk_step()
 
-  # More custom steps
-  if adk_name == 'tsmc16':
-    custom_power         = Step( this_dir + '/../common/custom-power-chip-amber' )
-  else:
-    custom_power         = Step( this_dir + '/../common/custom-power-chip' )
+    # Custom steps
+    soc_rtl = Step(this_dir + '/../common/soc-rtl-v2')
+    rtl = Step(this_dir + '/rtl')
+    constraints = Step(this_dir + '/constraints')
+    if adk_name == 'tsmc16':
+        init_fullchip = Step(this_dir + '/../common/init-fullchip-amber')
+    else:
+        init_fullchip = Step(this_dir + '/../common/init-fullchip')
+    netlist_fixing = Step(this_dir + '/../common/fc-netlist-fixing')
 
-  # It's not plugged in yet!
-  # custom_power         = Step( this_dir + '/custom-power'                )
+    if which_soc == 'amber':
+        # Custom step 'pre-flowsetup'
+        # To get new lef cells e.g. 'icovl-cells.lef' into iflow, we gotta:
+        # - create new step 'pre_flowsetup' whose outputs are icovl cells
+        # -- link via "commands" group in pre-iflow/configure.yml
+        # - connect pre-flowsetup step to flowsetup (iflow) step
+        # - extend iflow inputs to include icovl cells
+        # - iflow "setup.tcl" automatically includes "inputs/*.lef"
+        pre_flowsetup = Step(this_dir + '/pre-flowsetup')
 
-  # Some kinda primetime thingy maybe
-  # genlibdb_constraints = Step( this_dir + '/../common/custom-genlibdb-constraints' )
+    # More custom steps
+    if adk_name == 'tsmc16':
+        custom_power = Step(this_dir + '/../common/custom-power-chip-amber')
+    else:
+        custom_power = Step(this_dir + '/../common/custom-power-chip')
 
-  # Default steps
-  info         = Step( 'info',                          default=True )
-  # constraints= Step( 'constraints',                   default=True )
-  dc           = Step( 'synopsys-dc-synthesis',         default=True )
-  iflow        = Step( 'cadence-innovus-flowsetup',     default=True )
-  init         = Step( 'cadence-innovus-init',          default=True )
-  power        = Step( 'cadence-innovus-power',         default=True )
-  place        = Step( 'cadence-innovus-place',         default=True )
-  route        = Step( 'cadence-innovus-route',         default=True )
-  signoff      = Step( 'cadence-innovus-signoff',       default=True )
-  pt_signoff   = Step( 'synopsys-pt-timing-signoff',    default=True )
-  genlibdb     = Step( 'synopsys-ptpx-genlibdb',        default=True )
-  init_fill    = Step( 'mentor-calibre-fill',           default=True )
-  if which("calibre") is not None:
-      drc          = Step( 'mentor-calibre-drc',            default=True )
-      lvs          = Step( 'mentor-calibre-lvs',            default=True )
-  else:
-      drc          = Step( 'cadence-pegasus-drc',           default=True )
-      lvs          = Step( 'cadence-pegasus-lvs',           default=True )
-  debugcalibre = Step( 'cadence-innovus-debug-calibre', default=True )
+    # It's not plugged in yet!
+    # custom_power = Step(this_dir + '/custom-power')
 
-  # Die if unconnected bumps (why was this deleted?)
-  init.extend_postconditions([
-    "assert 'STILL UNCONNECTED: bump' not in File( 'mflowgen-run.log' )"
-  ])
+    # Some kinda primetime thingy maybe
+    # genlibdb_constraints = Step(this_dir + '/../common/custom-genlibdb-constraints')
 
-  # Send in the clones
-  # 'init' step now gets its own design-rule check
-  init_drc = drc.clone()
-  init_drc.set_name( 'init-drc' )
+    # Default steps
+    # autopep8: off
+    info         = Step('info',                          default=True)  # noqa
+    # constraints= Step('constraints',                   default=True)  # noqa
+    dc           = Step('synopsys-dc-synthesis',         default=True)  # noqa
+    iflow        = Step('cadence-innovus-flowsetup',     default=True)  # noqa
+    init         = Step('cadence-innovus-init',          default=True)  # noqa
+    power        = Step('cadence-innovus-power',         default=True)  # noqa
+    place        = Step('cadence-innovus-place',         default=True)  # noqa
+    route        = Step('cadence-innovus-route',         default=True)  # noqa
+    signoff      = Step('cadence-innovus-signoff',       default=True)  # noqa
+    pt_signoff   = Step('synopsys-pt-timing-signoff',    default=True)  # noqa
+    genlibdb     = Step('synopsys-ptpx-genlibdb',        default=True)  # noqa
+    init_fill    = Step('mentor-calibre-fill',           default=True)  # noqa
+    # autopep8: on
 
-  #-----------------------------------------------------------------------
-  # Add extra input edges to innovus steps that need custom tweaks
-  #-----------------------------------------------------------------------
+    if which("calibre") is not None:
+        drc = Step('mentor-calibre-drc', default=True)
+        lvs = Step('mentor-calibre-lvs', default=True)
+    else:
+        drc = Step('cadence-pegasus-drc', default=True)
+        lvs = Step('cadence-pegasus-lvs', default=True)
+    debugcalibre = Step('cadence-innovus-debug-calibre', default=True)
 
-  # "init" (cadence-innovus-init) inputs are "init_fullchip" outputs
-  init.extend_inputs( init_fullchip.all_outputs() )
+    # Die if unconnected bumps (why was this deleted?)
+    init.extend_postconditions([
+        "assert 'STILL UNCONNECTED: bump' not in File( 'mflowgen-run.log' )"
+    ])
 
-  # Also: 'init' now produces a gds file
-  # for intermediate drc check 'init-drc'
-  init.extend_outputs( ["design-merged.gds"] )
-  
-  # "power" inputs are "custom_power" outputs
-  power.extend_inputs( custom_power.all_outputs() )
+    # Send in the clones
+    # 'init' step now gets its own design-rule check
+    init_drc = drc.clone()
+    init_drc.set_name('init-drc')
 
-  signoff.extend_inputs( netlist_fixing.all_outputs() )
+    # -----------------------------------------------------------------------
+    # Add extra input edges to innovus steps that need custom tweaks
+    # -----------------------------------------------------------------------
 
-  # Your comment here.
-  # FIXME what about gds???
-  # iflow (flowsetup) setup.tcl includes all files inputs/*.lef maybe
-  # iflow.extend_inputs( [ "icovl-cells.lef" , "dtcd-cells.lef" ] )
+    # "init" (cadence-innovus-init) inputs are "init_fullchip" outputs
+    init.extend_inputs(init_fullchip.all_outputs())
 
-  # genlibdb.extend_inputs( genlibdb_constraints.all_outputs() )
+    # Also: 'init' now produces a gds file
+    # for intermediate drc check 'init-drc'
+    init.extend_outputs(["design-merged.gds"])
 
-  # Ouch. iflow and everyone that connects to iflow must also include
-  # the icovl/dtcd lefs I guess?
-  if which_soc == 'amber':
-    pre_flowsetup_followers = [
-      # iflow, init, power, place, cts, postcts_hold, route, postroute, signoff
-      iflow, init # can we get away with this?
-    ]
-    for step in pre_flowsetup_followers:
-      step.extend_inputs( [ 
-        "icovl-cells.lef", "dtcd-cells.lef", 
-        "bumpcells.lef" 
-      ] )
+    # "power" inputs are "custom_power" outputs
+    power.extend_inputs(custom_power.all_outputs())
 
-  # TSMC needs streamout *without* the (new) default -uniquify flag
-  # This python method finds 'stream-out.tcl' and strips out that flag.
-  if adk_name == "tsmc16":
-    from common.streamout_no_uniquify import streamout_no_uniquify
-    streamout_no_uniquify(iflow)
+    signoff.extend_inputs(netlist_fixing.all_outputs())
 
-  if adk_name == "tsmc16":
-     # Replace default onyx scripts with amber versions instead
-     cmd1 = "cp rtl-scripts-amber/nic400_design_files.tcl  rtl-scripts"
-     cmd2 = "cp rtl-scripts-amber/nic400_include_paths.tcl rtl-scripts"
-     cmd3 = "cp rtl-scripts-amber/soc_design_files.tcl     rtl-scripts"
-     soc_rtl.pre_extend_commands( [ cmd1 ] )
-     soc_rtl.pre_extend_commands( [ cmd2 ] )
-     soc_rtl.pre_extend_commands( [ cmd3 ] )
+    # Your comment here.
+    # FIXME what about gds???
+    # iflow (flowsetup) setup.tcl includes all files inputs/*.lef maybe
+    # iflow.extend_inputs( [ "icovl-cells.lef" , "dtcd-cells.lef" ] )
 
+    # genlibdb.extend_inputs( genlibdb_constraints.all_outputs() )
 
-  #-----------------------------------------------------------------------
-  # Graph -- Add nodes
-  #-----------------------------------------------------------------------
+    # Ouch. iflow and everyone that connects to iflow must also include
+    # the icovl/dtcd lefs I guess?
+    if which_soc == 'amber':
+        pre_flowsetup_followers = [
+            # iflow, init, power, place, cts, postcts_hold, route, postroute, signoff
+            iflow, init  # can we get away with this?
+        ]
+        for step in pre_flowsetup_followers:
+            step.extend_inputs([
+                "icovl-cells.lef", "dtcd-cells.lef", "bumpcells.lef"
+            ])
 
-  g.add_step( info                     )
-  g.add_step( soc_rtl                  )
-  g.add_step( rtl                      )
-  g.add_step( constraints              )
-  g.add_step( dc                       )
+    # TSMC needs streamout *without* the (new) default -uniquify flag
+    # This python method finds 'stream-out.tcl' and strips out that flag.
+    if adk_name == "tsmc16":
+        from common.streamout_no_uniquify import streamout_no_uniquify
+        streamout_no_uniquify(iflow)
 
-  if which_soc == 'amber':
-    g.add_step( pre_flowsetup            )
-  g.add_step( iflow                    )
-  g.add_step( init_fullchip            )
-  g.add_step( init                     )
+        # Replace default onyx scripts with amber versions instead
+        cmd1 = "cp rtl-scripts-amber/nic400_design_files.tcl  rtl-scripts"
+        cmd2 = "cp rtl-scripts-amber/nic400_include_paths.tcl rtl-scripts"
+        cmd3 = "cp rtl-scripts-amber/soc_design_files.tcl     rtl-scripts"
+        soc_rtl.pre_extend_commands([cmd1])
+        soc_rtl.pre_extend_commands([cmd2])
+        soc_rtl.pre_extend_commands([cmd3])
 
-  g.add_step( init_fill                )
-  g.add_step( init_drc                 )
+    # -----------------------------------------------------------------------
+    # Graph -- Add nodes
+    # -----------------------------------------------------------------------
 
-  g.add_step( power                    )
-  g.add_step( custom_power             )
-  g.add_step( place                    )
-  g.add_step( route                    )
-  g.add_step( netlist_fixing           )
-  g.add_step( signoff                  )
-  g.add_step( pt_signoff   )
-  # g.add_step( genlibdb_constraints     )
-  g.add_step( genlibdb                 )
-  g.add_step( drc                      )
-  g.add_step( lvs                      )
-  g.add_step( debugcalibre             )
+    g.add_step(info)
+    g.add_step(soc_rtl)
+    g.add_step(rtl)
+    g.add_step(constraints)
+    g.add_step(dc)
 
-  #-----------------------------------------------------------------------
-  # Graph -- Add edges
-  #-----------------------------------------------------------------------
+    g.add_step(pre_flowsetup) if (which_soc == 'amber') else None
+    g.add_step(iflow)
+    g.add_step(init_fullchip)
+    g.add_step(init)
 
-  # Connect by name
+    g.add_step(init_fill)
+    g.add_step(init_drc)
 
-  g.connect_by_name( adk,      dc            )
-  if which_soc == 'amber':
-    g.connect_by_name( adk,      pre_flowsetup )
-  g.connect_by_name( adk,      iflow         )
-  g.connect_by_name( adk,      init          )
-  g.connect_by_name( adk,      init_fill     )
-  g.connect_by_name( adk,      init_drc      )
-  g.connect_by_name( adk,      power         )
-  g.connect_by_name( adk,      place         )
-  g.connect_by_name( adk,      route         )
-  g.connect_by_name( adk,      signoff       )
-  g.connect_by_name( adk,      drc           )
-  g.connect_by_name( adk,      lvs           )
+    g.add_step(power)
+    g.add_step(custom_power)
+    g.add_step(place)
+    g.add_step(route)
+    g.add_step(netlist_fixing)
+    g.add_step(signoff)
+    g.add_step(pt_signoff)
+    # g.add_step( genlibdb_constraints)
+    g.add_step(genlibdb)
+    g.add_step(drc)
+    g.add_step(lvs)
+    g.add_step(debugcalibre)
 
-  g.connect_by_name( soc_rtl, rtl )
+    # -----------------------------------------------------------------------
+    # Graph -- Add edges
+    # -----------------------------------------------------------------------
 
-  g.connect_by_name( rtl,         dc        )
-  g.connect_by_name( constraints, dc        )
+    # Connect by name
 
-  # sr02.2020 b/c now init_fullchip needs io_file from soc-rtl
-  g.connect_by_name( soc_rtl,  init_fullchip )
+    g.connect_by_name(adk, dc)
+    g.connect_by_name(adk, pre_flowsetup) if (which_soc == 'amber') else None
+    g.connect_by_name(adk, iflow)
+    g.connect_by_name(adk, init)
+    g.connect_by_name(adk, init_fill)
+    g.connect_by_name(adk, init_drc)
+    g.connect_by_name(adk, power)
+    g.connect_by_name(adk, place)
+    g.connect_by_name(adk, route)
+    g.connect_by_name(adk, signoff)
+    g.connect_by_name(adk, drc)
+    g.connect_by_name(adk, lvs)
 
-  g.connect_by_name( dc,       iflow        )
-  g.connect_by_name( dc,       init         )
-  g.connect_by_name( dc,       power        )
-  g.connect_by_name( dc,       place        )
+    g.connect_by_name(soc_rtl, rtl)
 
-  if which_soc == 'amber':
-    # g.connect_by_name( pre_flowsetup,  iflow   )
-    # iflow, init, power, place, cts, postcts_hold, route, postroute, signoff
-    for step in pre_flowsetup_followers:
-      g.connect_by_name( pre_flowsetup, step)
+    g.connect_by_name(rtl, dc)
+    g.connect_by_name(constraints, dc)
 
-  g.connect_by_name( iflow,    init         )
-  g.connect_by_name( iflow,    power        )
-  g.connect_by_name( iflow,    place        )
-  g.connect_by_name( iflow,    route        )
-  g.connect_by_name( iflow,    signoff      )
-  # for step in iflow_followers:
-  #   g.connect_by_name( iflow, step)
+    # sr02.2020 b/c now init_fullchip needs io_file from soc-rtl
+    g.connect_by_name(soc_rtl, init_fullchip)
 
-  g.connect_by_name( init_fullchip, init   )
-  g.connect_by_name( custom_power,  power  )
+    g.connect_by_name(dc, iflow)
+    g.connect_by_name(dc, init)
+    g.connect_by_name(dc, power)
+    g.connect_by_name(dc, place)
 
-  # init => init_drc
-  g.connect( init.o('design-merged.gds'), init_drc.i('design_merged.gds') )
-  g.connect( init.o('design-merged.gds'), init_fill.i('design.gds') )
+    if which_soc == 'amber':
+        # g.connect_by_name(pre_flowsetup, iflow)
+        # iflow, init, power, place, cts, postcts_hold, route, postroute, signoff
+        for step in pre_flowsetup_followers:
+            g.connect_by_name(pre_flowsetup, step)
 
-  g.connect_by_name( init,         power        )
-  g.connect_by_name( power,        place        )
-  g.connect_by_name( place,        route        )
-  g.connect_by_name( route,        signoff      )
-  g.connect_by_name( signoff,      drc          )
-  g.connect_by_name( signoff,      lvs          )
-  g.connect( signoff.o('design-merged.gds'), drc.i('design_merged.gds') )
-  g.connect( signoff.o('design-merged.gds'), lvs.i('design_merged.gds') )
+    g.connect_by_name(iflow, init)
+    g.connect_by_name(iflow, power)
+    g.connect_by_name(iflow, place)
+    g.connect_by_name(iflow, route)
+    g.connect_by_name(iflow, signoff)
+    # for step in iflow_followers:
+    #   g.connect_by_name( iflow, step)
 
-  g.connect_by_name( signoff,              genlibdb )
-  g.connect_by_name( adk,                  genlibdb )
-#   g.connect_by_name( genlibdb_constraints, genlibdb )
+    g.connect_by_name(init_fullchip, init)
+    g.connect_by_name(custom_power, power)
 
-  g.connect_by_name( adk,          pt_signoff   )
-  g.connect_by_name( signoff,      pt_signoff   )
+    # init => init_drc
+    g.connect(init.o('design-merged.gds'), init_drc.i('design_merged.gds'))
+    g.connect(init.o('design-merged.gds'), init_fill.i('design.gds'))
 
-  g.connect_by_name( adk,      debugcalibre )
-  g.connect_by_name( dc,       debugcalibre )
-  g.connect_by_name( iflow,    debugcalibre )
-  g.connect_by_name( signoff,  debugcalibre )
-  g.connect_by_name( drc,      debugcalibre )
-  g.connect_by_name( lvs,      debugcalibre )
+    g.connect_by_name(init, power)
+    g.connect_by_name(power, place)
+    g.connect_by_name(place, route)
+    g.connect_by_name(route, signoff)
+    g.connect_by_name(signoff, drc)
+    g.connect_by_name(signoff, lvs)
+    g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
+    g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
 
-  # Netlist fixing should be run during signoff
-  g.connect_by_name( netlist_fixing, signoff )
+    g.connect_by_name(signoff, genlibdb)
+    g.connect_by_name(adk, genlibdb)
+    # g.connect_by_name(genlibdb_constraints, genlibdb)
 
-  # yes? no?
-  # g.connect_by_name( init_drc,      debugcalibre )
+    g.connect_by_name(adk, pt_signoff)
+    g.connect_by_name(signoff, pt_signoff)
 
-  #-----------------------------------------------------------------------
-  # Parameterize
-  #-----------------------------------------------------------------------
-  g.update_params( parameters )
+    # autopep8: off
+    g.connect_by_name(adk,     debugcalibre)  # noqa
+    g.connect_by_name(dc,      debugcalibre)  # noqa
+    g.connect_by_name(iflow,   debugcalibre)  # noqa
+    g.connect_by_name(signoff, debugcalibre)  # noqa
+    g.connect_by_name(drc,     debugcalibre)  # noqa
+    g.connect_by_name(lvs,     debugcalibre)  # noqa
+    # autopep8: on
 
-  # Default order can be found in e.g.
-  # mflowgen/steps/cadence-innovus-init/configure.yml
-  #     - main.tcl
-  #     - quality-of-life.tcl
-  #     - floorplan.tcl
-  #     - pin-assignments.tcl
-  #     - make-path-groups.tcl
-  #     - reporting.tcl
+    # Netlist fixing should be run during signoff
+    g.connect_by_name(netlist_fixing, signoff)
 
-  # I copied this from someone else, maybe glb_top or something
-  # Looks like this order deletes pin assignments and adds endcaps/welltaps
-  # then maybe get clean(er) post-floorplan drc
-  #
-  # ?? moved stream-out to *before* alignment-cells so to get pre-icovl gds
-  # FIXME does this mean we're not checking bump-route DRC?
+    # yes? no?
+    # g.connect_by_name(init_drc,      debugcalibre)
 
-  # Note "route-phy-bumps" explicitly sources a file "analog-bumps/build-phy-nets.tcl"
-  # 5/2020 moved stream-out to *after* bump routing
-  init.update_params(
-    {'order': [
-      'main.tcl','quality-of-life.tcl',
-      'stylus-compatibility-procs.tcl','floorplan.tcl','io-fillers.tcl',
-      'attach-results-to-outputs.tcl',
-      'alignment-cells.tcl',
-      'gen-bumps.tcl', 'check-bumps.tcl', 'route-bumps.tcl',
-      'innovus-foundation-flow/custom-scripts/stream-out.tcl',
-    ]}
-  )
+    # -----------------------------------------------------------------------
+    # Parameterize
+    # -----------------------------------------------------------------------
+    g.update_params(parameters)
 
-  if which_soc == 'amber':
-    index = init.index(   'alignment-cells.tcl')
-    init.insert( index+1, 'analog-bumps/route-phy-bumps.tcl' )
-    init.insert( index+2, 'analog-bumps/bump-connect.tcl'    )
-  
-  order = power.get_param('order')
-  order.append( 'add-endcaps-welltaps.tcl' )
-  power.update_params( { 'order': order } )
- 
-  # Signoff Order 
-  order = signoff.get_param('order')
-  index = order.index( 'generate-results.tcl' ) # Fix netlist before streaming out netlist
-  order.insert( index, 'netlist-fixing.tcl' )
-  signoff.update_params( { 'order': order } )
+    # Default order can be found in e.g.
+    # mflowgen/steps/cadence-innovus-init/configure.yml
+    #     - main.tcl
+    #     - quality-of-life.tcl
+    #     - floorplan.tcl
+    #     - pin-assignments.tcl
+    #     - make-path-groups.tcl
+    #     - reporting.tcl
 
-  # Not sure what this is or why it was commented out...
-  #   # Adding new input for genlibdb node to run 
-  #   genlibdb.update_params(
-  #     {'order': "\"read_design.tcl genlibdb-constraints.tcl extract_model.tcl\""}
-  #   )
+    # I copied this from someone else, maybe glb_top or something
+    # Looks like this order deletes pin assignments and adds endcaps/welltaps
+    # then maybe get clean(er) post-floorplan drc
+    #
+    # ?? moved stream-out to *before* alignment-cells so to get pre-icovl gds
+    # FIXME does this mean we're not checking bump-route DRC?
 
-  return g
+    # Note "route-phy-bumps" explicitly sources a file "analog-bumps/build-phy-nets.tcl"
+    # 5/2020 moved stream-out to *after* bump routing
+    init.update_params(
+        {'order': [
+            'main.tcl', 'quality-of-life.tcl',
+            'stylus-compatibility-procs.tcl', 'floorplan.tcl', 'io-fillers.tcl',
+            'attach-results-to-outputs.tcl',
+            'alignment-cells.tcl',
+            'gen-bumps.tcl', 'check-bumps.tcl', 'route-bumps.tcl',
+            'innovus-foundation-flow/custom-scripts/stream-out.tcl',
+        ]}
+    )
+
+    if which_soc == 'amber':
+        index = init.index('alignment-cells.tcl')
+        init.insert(index + 1, 'analog-bumps/route-phy-bumps.tcl')
+        init.insert(index + 2, 'analog-bumps/bump-connect.tcl')
+
+    order = power.get_param('order')
+    order.append('add-endcaps-welltaps.tcl')
+    power.update_params({'order': order})
+
+    # Signoff Order
+    order = signoff.get_param('order')
+    index = order.index('generate-results.tcl')  # Fix netlist before streaming out netlist
+    order.insert(index, 'netlist-fixing.tcl')
+    signoff.update_params({'order': order})
+
+    # Not sure what this is or why it was commented out...
+    #   # Adding new input for genlibdb node to run
+    #   genlibdb.update_params(
+    #     {'order': "\"read_design.tcl genlibdb-constraints.tcl extract_model.tcl\""}
+    #   )
+
+    return g
 
 
 if __name__ == '__main__':
-  g = construct()
-  # g.plot()
+    g = construct()

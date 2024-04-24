@@ -1,5 +1,5 @@
 import os
-from kratos import PackedStruct, clog2, enum
+from kratos import PackedStruct, clog2
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 
 
@@ -72,7 +72,6 @@ class GlbHeader():
                                                  (f"stride_{i}", self._params.glb_addr_width + 1),
                                                  (f"cycle_stride_{i}", self._params.cycle_count_width)]
             self.cfg_store_dma_header_t = PackedStruct("store_dma_header_t", store_dma_header_struct_list)
-
 
         # pcfg dma header
         self.cfg_pcfg_dma_ctrl_t = PackedStruct("pcfg_dma_ctrl_t",

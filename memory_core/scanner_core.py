@@ -1,12 +1,6 @@
 from gemstone.generator.from_magma import FromMagma
-from typing import List
-from lake.top.extract_tile_info import *
-import kratos as kts
-from gemstone.generator.from_magma import FromMagma
-from typing import List
-from lake.top.extract_tile_info import *
 from gemstone.common.core import PnRTag
-from lake.modules.scanner import *
+from lake.modules.scanner import Scanner
 from lake.modules.scanner_pipe import ScannerPipe
 import kratos as kts
 
@@ -27,7 +21,7 @@ class ScannerCore(LakeCoreBase):
                  defer_fifos=False,
                  pipelined=False):
 
-        scan_name = "Scanner"
+        scan_name = "Scanner"    # noqa "assigned but never used"
         super().__init__(config_data_width=config_data_width,
                          config_addr_width=config_addr_width,
                          data_width=data_width,

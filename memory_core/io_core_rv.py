@@ -1,13 +1,6 @@
-import magma
 from gemstone.generator.from_magma import FromMagma
-from lake.top.extract_tile_info import *
-import kratos as kts
-from gemstone.generator.from_magma import FromMagma
-from typing import List
-from lake.top.extract_tile_info import *
 from gemstone.common.core import PnRTag
-from lake.modules.io_core import *
-
+from lake.modules.io_core import IOCore
 import kratos as kts
 
 if __name__ == "__main__":
@@ -27,7 +20,7 @@ class IOCoreReadyValid(LakeCoreBase):
                  allow_bypass=False,
                  use_almost_full=False):
 
-        buffet_name = "IOCoreReadyValid"
+        buffet_name = "IOCoreReadyValid"  # noqa "assigned but never used"
         super().__init__(config_data_width=config_data_width,
                          config_addr_width=config_addr_width,
                          data_width=data_width,

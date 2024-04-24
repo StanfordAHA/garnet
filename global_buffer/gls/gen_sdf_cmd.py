@@ -24,14 +24,15 @@ def gen_glb_sdf_inline(filename, num_glb_tiles, mtm, sdf_top, sdf_tile):
     elif mtm == "MINUMUM":
         mtm = "min"
     else:
-        mtm = "typ" 
-        
+        mtm = "typ"
+
     sdf = f" -sdf {mtm}:top.dut:{sdf_top}"
     for i in range(num_glb_tiles):
         sdf += f" -sdf {mtm}:top.dut.glb_tile_gen_{i}:{sdf_tile}"
 
     with open(filename, "w") as f:
         f.write(sdf)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="SDF command file generator")
@@ -48,5 +49,3 @@ if __name__ == "__main__":
         gen_glb_sdf_cmd(args.filename, args.num_glb_tiles, args.mtm, args.top, args.tile, args.log)
     else:
         gen_glb_sdf_inline(args.filename, args.num_glb_tiles, args.mtm, args.top, args.tile)
-
-

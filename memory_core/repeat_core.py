@@ -1,14 +1,6 @@
-import magma
 from gemstone.generator.from_magma import FromMagma
-from typing import List
-from canal.interconnect import Interconnect
-from lake.top.extract_tile_info import *
-import kratos as kts
-from gemstone.generator.from_magma import FromMagma
-from typing import List
-from lake.top.extract_tile_info import *
 from gemstone.common.core import PnRTag
-from lake.modules.repeat import *
+from lake.modules.repeat import Repeat
 
 import kratos as kts
 
@@ -26,7 +18,7 @@ class RepeatCore(LakeCoreBase):
                  config_addr_width=8,
                  fifo_depth=8):
 
-        lookup_name = "Repeat"
+        lookup_name = "Repeat"  # noqa "assigned but never used"
         super().__init__(config_data_width=config_data_width,
                          config_addr_width=config_addr_width,
                          data_width=data_width,

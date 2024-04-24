@@ -2,9 +2,6 @@ from gemstone.common.testers import BasicTester
 from peak_core.peak_core import PeakCore
 from lassen.sim import PE_fc
 from lassen.asm import add, Mode_t
-import shutil
-import tempfile
-import os
 import pytest
 
 

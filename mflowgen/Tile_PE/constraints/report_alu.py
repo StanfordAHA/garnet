@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 def main():
     # because hwtypes has deprecated/does not have useful functions for extracting
     # ALU op values, I have copied the ALU ops here as a proper Python Enum
@@ -41,12 +42,12 @@ set_false_path -from [all_inputs] -through [get_pins [list $fp_add_path/*]]
 set_false_path -to [all_outputs] -through [get_pins [list $fp_add_path/*]]
 '''
 
-    scenarios  = []
+    scenarios = []
     for op in ALU_t:
         scenarios.append(op.name)
         report.write(f'create_mode -name {op.name}\nset_constraint_mode {op.name}\nsource inputs/common.tcl\n')
         binary_str = f'{op.value:08b}'[::-1]
-        for i in range(len(binary_str)-1, -1, -1):
+        for i in range(len(binary_str) - 1, -1, -1):
             report.write(f'set_case_analysis {binary_str[i]} [get_pins $alu_path/alu[{i}]]\n')
         report.write(false_paths)
         report.write('\n')
@@ -54,6 +55,7 @@ set_false_path -to [all_outputs] -through [get_pins [list $fp_add_path/*]]
     report.write(f'set alu_op_scenarios {{ {" ".join(scenarios)} }}\n')
 
     report.close()
+
 
 if __name__ == '__main__':
     main()

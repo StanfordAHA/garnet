@@ -1,15 +1,6 @@
-import magma
 from gemstone.generator.from_magma import FromMagma
-from typing import List
-from canal.interconnect import Interconnect
-from lake.top.extract_tile_info import *
-import kratos as kts
-from gemstone.generator.from_magma import FromMagma
-from typing import List
-from lake.top.extract_tile_info import *
 from gemstone.common.core import PnRTag
-from lake.modules.lookup import *
-
+from lake.modules.lookup import Lookup
 import kratos as kts
 
 if __name__ == "__main__":
@@ -25,7 +16,7 @@ class LookupCore(LakeCoreBase):
                  config_data_width=32,
                  config_addr_width=8):
 
-        lookup_name = "Lookup"
+        lookup_name = "Lookup"  # noqa "assigned but never used"
         super().__init__(config_data_width=config_data_width,
                          config_addr_width=config_addr_width,
                          data_width=data_width,
@@ -74,7 +65,6 @@ class LookupCore(LakeCoreBase):
                 cfg_dump.write(write_line)
 
     def get_config_bitstream(self, config_tuple):
-        op = config_tuple
         configs = []
         config_lu = [("tile_en", 1)]
         config_lu += self.dut.get_bitstream()

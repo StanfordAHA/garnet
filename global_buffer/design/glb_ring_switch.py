@@ -1,4 +1,4 @@
-from kratos import Generator, always_ff, always_comb, posedge, clog2
+from kratos import Generator, always_ff, always_comb, posedge
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from global_buffer.design.glb_header import GlbHeader
 from global_buffer.design.glb_clk_en_gen import GlbClkEnGen

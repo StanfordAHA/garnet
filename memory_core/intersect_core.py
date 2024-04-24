@@ -1,16 +1,6 @@
-import magma
 from gemstone.generator.from_magma import FromMagma
-from typing import List
-from canal.interconnect import Interconnect
-from lake.top.extract_tile_info import *
-import kratos as kts
-from gemstone.generator.from_magma import FromMagma
-from typing import List
-from lake.top.pond import Pond
-from lake.top.extract_tile_info import *
 from gemstone.common.core import PnRTag
-from lake.modules.intersect import *
-
+from lake.modules.intersect import Intersect
 import kratos as kts
 
 if __name__ == "__main__":
@@ -28,7 +18,7 @@ class IntersectCore(LakeCoreBase):
                  use_merger=False,
                  fifo_depth=8):
 
-        scan_name = "Intersector"
+        scan_name = "Intersector"  # noqa "assigned but never used"
         super().__init__(config_data_width=config_data_width,
                          config_addr_width=config_addr_width,
                          data_width=data_width,

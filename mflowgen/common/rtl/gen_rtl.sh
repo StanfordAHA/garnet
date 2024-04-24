@@ -62,8 +62,17 @@ flags="--width $array_width --height $array_height"
 flags+=" --pipeline_config_interval $pipeline_config_interval"
 flags+=" -v --glb_tile_mem_size $glb_tile_mem_size"
 
+# [ "$WHICH_SOC" == "amber" ] && flags+=" --dense-only"
+# ------------------------------------------------------------ 
+# garnet.py does this:
+#    if os.getenv('WHICH_SOC') == "amber": garnet_amber.main()
+# ...so even though garnet.py switches changed, garnet_amber.py did not,
+# so we still use the old --include-sparse switch here
+# TODO someone needs to unify garnet.py and garnet_amber.py but not me, not today haha
+
 # sparsity flags for onyx
-[ "$WHICH_SOC" != "amber" ] && flags+=" --rv --sparse-cgra --sparse-cgra-combined"
+[ "$WHICH_SOC" != "amber" ] && flags+=" --include-sparse"
+
 
 # Default is power-aware, but can be turned off
 [ "$PWR_AWARE" == False ] && flags+=" --no-pd"
@@ -86,14 +95,6 @@ if [ "$use_container" == True ]; then
       # Again: why?
       mkdir -p aha; cd aha
       ########################################################################
-
-      # Prune docker images...
-      echo '--- gen_rtl docker prune BEGIN' `date +%H:%M`
-      docker image prune -f -a --filter "until=6h" --filter=label='description=garnet' || true
-
-      echo ""; echo "After pruning:"; echo ""
-      docker images; echo ""
-      docker ps    ; echo ""
 
       # Choose a docker image; can set via "rtl_docker_image" parameter
       default_image="stanfordaha/garnet:latest"
@@ -135,6 +136,16 @@ if [ "$use_container" == True ]; then
 
       # MAKE SURE the docker container gets killed when this script dies.
       trap "docker kill $container_name" EXIT
+
+      # Delete all dangling images created more than 6 hours ago.
+      # Notice that we prune images *after* starting container (pruner
+      # will refuse to kill image w/ active container)
+
+      echo '--- gen_rtl docker prune BEGIN' `date +%H:%M`
+      printf "\nBefore pruning:\n\n";  docker images; echo "";  docker ps; echo ""
+      docker image prune -f -a --filter "until=6h" --filter=label='description=garnet' || true
+      printf "\nAfter pruning:\n\n";   docker images; echo "";  docker ps; echo ""
+      echo '--- Continuing...'
 
       if [ "$use_local_garnet" == True ]; then
         docker exec $container_name /bin/bash -c "rm -rf /aha/garnet"

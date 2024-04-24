@@ -6,6 +6,7 @@ from global_buffer.design.pipeline import Pipeline
 from global_buffer.design.glb_clk_en_gen import GlbClkEnGen
 import os
 
+
 class GlbSwitch(Generator):
     def __init__(self, _params: GlobalBufferParams, ifc: GlbTileInterface):
         super().__init__("glb_switch")
@@ -157,7 +158,8 @@ class GlbSwitch(Generator):
 
     def add_sw2bank_clk_en(self):
         self.wr_clk_en_gen = GlbClkEnGen(cnt=self._params.tile2sram_wr_delay + self._params.wr_clk_en_margin)
-        if os.getenv('WHICH_SOC') == "amber": pass
+        if os.getenv('WHICH_SOC') == "amber":
+            pass
         else:
             self.wr_clk_en_gen.p_cnt.value = self._params.tile2sram_wr_delay + self._params.wr_clk_en_margin
         self.sw2bank_wr_clk_en = self.var("sw2bank_wr_clk_en", 1)
@@ -169,7 +171,8 @@ class GlbSwitch(Generator):
                        clk_en=self.sw2bank_wr_clk_en
                        )
         self.rd_clk_en_gen = GlbClkEnGen(cnt=self._params.tile2sram_rd_delay + self._params.rd_clk_en_margin)
-        if os.getenv('WHICH_SOC') == "amber": pass
+        if os.getenv('WHICH_SOC') == "amber":
+            pass
         else:
             self.rd_clk_en_gen.p_cnt.value = self._params.tile2sram_rd_delay + self._params.rd_clk_en_margin
         self.sw2bank_rd_clk_en = self.var("sw2bank_rd_clk_en", 1)

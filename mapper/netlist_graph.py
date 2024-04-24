@@ -1,4 +1,3 @@
-import math
 import os
 import re
 import json
@@ -110,12 +109,14 @@ class NetlistGraph:
             with open(app_dir + "/ub_latency.json", "w") as f:
                 f.write(json.dumps(ub_latency, indent=4))    
 
+    # count the number of register sources until the first non-reg node
+    # assume node isn't connected by multiple regs
     def count_reg_sources(self, node):
         num_reg_sources = 0
         for source_node in node.sources:
             if "r" in source_node.node_name:
                 num_reg_sources += 1
-            num_reg_sources += self.count_reg_sources(source_node)
+                num_reg_sources += self.count_reg_sources(source_node)
         return num_reg_sources
 
         
@@ -173,13 +174,14 @@ class NetlistGraph:
             path2 = []
             visited3 = set()
             path3 = []
-            if "add_pipelined" in pe_node.node_id:
+            if "add_" in pe_node.node_id and "muladd_" not in pe_node.node_id:
                 latency_pe_to_out_mem = dfs_pe_to_out_mem(pe_node)
                 return latency_out_mem_to_pe + latency_pe_to_out_mem
             else:
                 latency_pe_to_in_mem = dfs_pe_to_in_mem(pe_node)
                 return latency_out_mem_to_pe + latency_pe_to_in_mem
 
+    # this is for IO2MEM and MEM2PE pipelining in resnet w/ manual placement
     def get_compute_kernel_latency(self, app_dir):
         kernel_latencies_file = glob.glob(f"{app_dir}/*_compute_kernel_latencies.json")[0]
         assert os.path.exists(kernel_latencies_file)
@@ -212,6 +214,40 @@ class NetlistGraph:
                                     d1["latency"] = self.count_input_latencies(mem_node, pe_node)
         fout = open(f"{app_dir}/updated_kernel_latencies.json", "w")
         fout.write(json.dumps(kernel_latencies, indent=4))
+
+    # this deals with port latency of PE at glb level, e.g. residual addition
+    def get_glb_kernel_latency(self, app_dir, has_glb_PE=False):
+        kernel_latencies_file = glob.glob(f"{app_dir}/*_compute_kernel_latencies.json")[0]
+        assert os.path.exists(kernel_latencies_file)
+        f = open(kernel_latencies_file, "r")
+        existing_kernel_latencies = json.load(f)
+
+        kernel_latencies = existing_kernel_latencies
+        for kernel, latency_dict in kernel_latencies.items():
+            if "_glb_" in kernel:
+                # Reset glb_PE_base_lat for each kernel
+                glb_PE_base_lat = None
+                # find the base latency for the current kernel
+                for kernel_port, d1 in latency_dict.items():
+                    if d1["pe_port"] != [] and "_output_" in kernel_port:
+                        has_glb_PE = True
+                        glb_PE_base_lat = d1["latency"]
+                        break
+                if glb_PE_base_lat is not None:
+                    # update latencies for the current kernel based on the base latency
+                    for kernel_port, d1 in latency_dict.items():
+                        # skip if there's no PE port or if it's the output port we already processed
+                        if d1["pe_port"] == [] or "_output_" in kernel_port:
+                            continue
+                        pe_id = d1["pe_port"][0][0]
+                        for node in self.pe_nodes:
+                            if pe_id in node.node_id:
+                                pe_node = node
+                                # update latency based on the base latency
+                                d1["latency"] = glb_PE_base_lat + self.count_reg_sources(pe_node)
+        if has_glb_PE:
+            fout = open(f"{app_dir}/updated_kernel_latencies.json", "w")
+            fout.write(json.dumps(kernel_latencies, indent=4))
 
 
     def remove_mem_reg_tree(self):

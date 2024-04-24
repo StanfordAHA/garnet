@@ -46,7 +46,7 @@ class GlbBankMemory(Generator):
 
         sram_signals_pipeline = Pipeline(width=sram_signals_in.width,
                                          depth=self._params.glb_bank_memory_pipeline_depth)
-        self.add_child(f"sram_signals_pipeline",
+        self.add_child("sram_signals_pipeline",
                        sram_signals_pipeline,
                        clk=self.clk,
                        clk_en=const(1, 1),
