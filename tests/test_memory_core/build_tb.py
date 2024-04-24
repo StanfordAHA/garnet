@@ -1004,7 +1004,8 @@ class SparseTBBuilder(m.Generator2):
                     mode = node.get_attributes()['mode'].strip('"')
                     # May not need to use/have dim size info for a certain tensor
                     if tensor in self.input_sizes:
-                        dim_size = self.input_sizes[tensor][int(mode)]
+                        dim = self.mode_map[tensor][int(mode)][0]
+                        dim_size = self.input_sizes[tensor][dim]
                     else:
                         dim_size = None
                     if 'vector_reduce_mode' in node.get_attributes():
