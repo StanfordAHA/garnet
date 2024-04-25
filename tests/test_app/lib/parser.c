@@ -361,6 +361,15 @@ void *parse_metadata(char *filename) {
         puts("Error, the placement property is not found.");
         exit(1);
     }
+
+    // parse the sparse app indicator field
+    json_t const *is_sparse_json = json_getProperty(testing_json, "is_sparse");
+    if (!is_sparse_json || JSON_INTEGER != json_getType(is_sparse_json)) {
+        info->is_sparse = 0;
+    } else {
+        info->is_sparse = json_getInteger(is_sparse_json);
+    }
+
     strncpy(info->placement_filename, dir, strnlen(dir, BUFFER_SIZE));
     strncat(info->placement_filename, json_getValue(place_json), BUFFER_SIZE);
 
@@ -545,6 +554,11 @@ int get_num_inputs(void *info) {
 int get_num_outputs(void *info) {
     GET_KERNEL_INFO(info);
     return kernel_info->num_outputs;
+}
+
+int get_is_sparse(void *info) {
+    GET_KERNEL_INFO(info);
+    return kernel_info->is_sparse;
 }
 
 void *get_io_tile_info(void *info, int index) {
