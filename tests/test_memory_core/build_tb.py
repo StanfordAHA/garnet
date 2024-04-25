@@ -1450,7 +1450,8 @@ def prepare_glb_collateral(glb_dir=None, bitstream=None, matrices_in=None, desig
         ],
         "bitstream": "bitstream.bs",
         "coreir": "design_top.json",
-        "placement": "design.place"
+        "placement": "design.place",
+        "is_sparse": 1
     }
     design_meta_json["IOs"] = {
         "inputs": [],

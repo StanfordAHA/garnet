@@ -70,6 +70,7 @@ struct KernelInfo {
     int num_groups;
     // index to the inputs, need to multiply by 2
     int reset_port;
+    int is_sparse;
 
     char bin_dir[BUFFER_SIZE];
     char coreir_filename[BUFFER_SIZE];

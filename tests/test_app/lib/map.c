@@ -122,6 +122,7 @@ int glb_map(void *kernel_) {
     int num_inputs = kernel->num_inputs;
     int num_outputs = kernel->num_outputs;
     int first_input_tile;
+    int last_input_tile;
 
     struct IOInfo *io_info;
     struct IOTileInfo *io_tile_info;
@@ -140,6 +141,8 @@ int glb_map(void *kernel_) {
             }
         }
     }
+    // book keeping last input tile so we can tie the flush to a unused glb tile
+    last_input_tile = tile;
 
     for (int i = 0; i < num_outputs; i++) {
         io_info = get_output_info(kernel, i);
@@ -157,10 +160,17 @@ int glb_map(void *kernel_) {
 
     // configure flush crossbar
     int kernel_crossbar_config = 0;
-    for (int i = group_start; i < group_start + num_groups; i++) {
-        crossbar_config[i] = first_input_tile;
+    if (!kernel->is_sparse) {
+        for (int i = group_start; i < group_start + num_groups; i++) {
+            crossbar_config[i] = first_input_tile;
+        }
+    } else {
+        for (int i = group_start; i < group_start + num_groups; i++) {
+            crossbar_config[i] = last_input_tile + 1;
+        }
     }
-    for (int i = 0; i < GROUP_SIZE; i++) {
+
+    for (int i = 0; i < MAX_NUM_GROUPS; i++) {
         kernel_crossbar_config += (crossbar_config[i] << (((int)ceil(log(NUM_GLB_TILES) / log(2))) * i));
     }
     add_config(&kernel->config, GLC_GLB_FLUSH_CROSSBAR_R, kernel_crossbar_config << GLC_GLB_FLUSH_CROSSBAR_SEL_F_LSB);
