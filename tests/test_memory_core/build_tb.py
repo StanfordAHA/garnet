@@ -1269,8 +1269,12 @@ class SparseTBBuilder(m.Generator2):
             if self.use_fa:
                 # If the nodes have the same fa_color, don't connect them explicitly
                 kwargs = {}
+                print(src_name)
                 src_node = self.find_node_by_name(src_name)
+                print(src_node)
+                print(dst_name)
                 dst_node = self.find_node_by_name(dst_name)
+                print(dst_node)
                 src_attr = src_node.get_attributes()
                 dst_attr = dst_node.get_attributes()
                 if 'fa_color' in src_attr and 'fa_color' in dst_attr:
@@ -1571,9 +1575,9 @@ def coalesce_files(in_dir, out_dir, hack_files=None, unroll=1, give_tensor=None)
     tensors = {}
     all_in_files = os.listdir(in_dir)
     for fname in all_in_files:
-        if "shape" in fname:
+        if not "vals" in fname:
             continue
-        tname = fname.split("_")[1]
+        tname = fname.replace("tensor_", "").replace("_mode_vals", "")
         if tname not in tensors:
             tensors[tname] = 1
     for tname, _ in tensors.items():
@@ -1649,7 +1653,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         c_mat = get_tensor(input_name='C', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
                            sparsity=0.9, use_fp=True)
-        exp_mat = get_lut_tensor(dump=matrix_tmp_dir, suffix=suffix, clean=False, func='exp')
+        exp_mat = get_lut_tensor(dump=matrix_tmp_dir, suffix=suffix, clean=False, func='fp_exp')
 
         output_matrix = numpy.add(b_mat, c_mat, dtype=numpy.float32, casting='unsafe')
         output_matrix = numpy.maximum(output_matrix, 
@@ -1692,6 +1696,29 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
                            sparsity=0.9)
 
         output_matrix = numpy.multiply(b_mat, c_mat, dtype=numpy.uint16, casting='unsafe')
+        output_format = "CSF"
+        output_name = "X"
+    elif 'mat_elemdiv.gv' in app_name:
+        b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+                           sparsity=0.8, use_fp=True)
+        c_mat = get_tensor(input_name='C', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+                           sparsity=0.9, use_fp=True)
+        div_mat = get_lut_tensor(dump=matrix_tmp_dir, suffix=suffix, clean=False, func='fp_div')
+
+        output_matrix = numpy.zeros_like(b_mat, dtype=numpy.float32)
+        FDiv = fpops.FDiv_fc(PyFamily())
+        div = FDiv()
+        for idx, _ in numpy.ndenumerate(output_matrix):            
+            if b_mat[idx] == 0 or c_mat[idx] == 0:
+                continue
+            b_val_bfbin = float2bfbin(b_mat[idx])
+            op_b = Data(int(b_val_bfbin, 2))
+            c_val_bfbin = float2bfbin(c_mat[idx])
+            op_c = Data(int(c_val_bfbin, 2))
+            result = div(op_b, op_c)
+            output_matrix[idx] = bfbin2float("{:016b}".format(int(result)))
         output_format = "CSF"
         output_name = "X"
     elif 'mat_identity.gv' in app_name:
