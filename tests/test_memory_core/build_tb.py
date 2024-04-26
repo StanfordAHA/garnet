@@ -1269,12 +1269,8 @@ class SparseTBBuilder(m.Generator2):
             if self.use_fa:
                 # If the nodes have the same fa_color, don't connect them explicitly
                 kwargs = {}
-                print(src_name)
                 src_node = self.find_node_by_name(src_name)
-                print(src_node)
-                print(dst_name)
                 dst_node = self.find_node_by_name(dst_name)
-                print(dst_node)
                 src_attr = src_node.get_attributes()
                 dst_attr = dst_node.get_attributes()
                 if 'fa_color' in src_attr and 'fa_color' in dst_attr:
