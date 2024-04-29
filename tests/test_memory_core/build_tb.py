@@ -1451,7 +1451,8 @@ def prepare_glb_collateral(glb_dir=None, bitstream=None, matrices_in=None, desig
         "bitstream": "bitstream.bs",
         "coreir": "design_top.json",
         "placement": "design.place",
-        "is_sparse": 1
+        # TODO: remove this workaround once the dense scanner is fixed
+        "opal_dense_scanner_workaround": 1
     }
     design_meta_json["IOs"] = {
         "inputs": [],
