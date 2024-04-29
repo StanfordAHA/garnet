@@ -301,6 +301,7 @@ def main():
         "Reduce": ["reduce_pe_cluster", pe_tile, ["reduce_data_in"], ["reduce_data_out"]],
     }
 
+    # colors = plt.get_cmap('rainbow')(range(0, 256, 256 // 16))
     colors = plt.get_cmap('rainbow')(range(0, 256, 256 // 16))
     ready_color = [[0, 0, 0, 0.2] for c in colors]
     valid_color = [[1, 1, 1, 0.6] for c in colors]
@@ -375,12 +376,12 @@ def main():
     ax.set_yticks(y_ticks, labels=y_labels)
     for i, dur in enumerate(all_dur):
         for j, d in enumerate(dur[1]):
-            if j < 32:
+            if j < 6:
                 # print(d)
-                ax.broken_barh([(d[0], d[1])], (y_ticks[len(all_dur) - 1 - i] - 5, 8), facecolors=colors[j % len(colors)])
-                ax.broken_barh([(d[0], d[2])], (y_ticks[len(all_dur) - 1 - i] - 5, 4), facecolors=ready_color[j % len(colors)])
-                ax.broken_barh([(d[0] + d[2], d[3])], (y_ticks[len(all_dur) - 1 - i] - 5, 4), facecolors=valid_color[j % len(colors)])
-                ax.broken_barh([(d[0] + d[2] + d[3], d[4])], (y_ticks[len(all_dur) - 1 - i] - 5, 4), facecolors=active_color[j % len(colors)])
+                ax.broken_barh([(d[0], d[1])], (y_ticks[len(all_dur) - 1 - i] - 5, 8), facecolors=colors[(j*3) % len(colors)])
+                ax.broken_barh([(d[0], d[2])], (y_ticks[len(all_dur) - 1 - i] - 5, 4), facecolors=ready_color[(j*3) % len(colors)])
+                ax.broken_barh([(d[0] + d[2], d[3])], (y_ticks[len(all_dur) - 1 - i] - 5, 4), facecolors=valid_color[(j*3) % len(colors)])
+                ax.broken_barh([(d[0] + d[2] + d[3], d[4])], (y_ticks[len(all_dur) - 1 - i] - 5, 4), facecolors=active_color[(j*3) % len(colors)])
             else:
                 break
     plt.savefig("gantt.png")
