@@ -363,11 +363,11 @@ void *parse_metadata(char *filename) {
     }
 
     // parse the sparse app indicator field
-    json_t const *is_sparse_json = json_getProperty(testing_json, "is_sparse");
-    if (!is_sparse_json || JSON_INTEGER != json_getType(is_sparse_json)) {
-        info->is_sparse = 0;
+    json_t const *opal_dense_scanner_workaround_json = json_getProperty(testing_json, "opal_dense_scanner_workaround");
+    if (!opal_dense_scanner_workaround_json || JSON_INTEGER != json_getType(opal_dense_scanner_workaround_json)) {
+        info->opal_dense_scanner_workaround = 0;
     } else {
-        info->is_sparse = json_getInteger(is_sparse_json);
+        info->opal_dense_scanner_workaround = json_getInteger(opal_dense_scanner_workaround_json);
     }
 
     strncpy(info->placement_filename, dir, strnlen(dir, BUFFER_SIZE));
@@ -556,9 +556,9 @@ int get_num_outputs(void *info) {
     return kernel_info->num_outputs;
 }
 
-int get_is_sparse(void *info) {
+int get_opal_dense_scanner_workaround(void *info) {
     GET_KERNEL_INFO(info);
-    return kernel_info->is_sparse;
+    return kernel_info->opal_dense_scanner_workaround;
 }
 
 void *get_io_tile_info(void *info, int index) {

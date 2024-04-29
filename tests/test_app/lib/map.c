@@ -160,7 +160,7 @@ int glb_map(void *kernel_) {
 
     // configure flush crossbar
     int kernel_crossbar_config = 0;
-    if (!kernel->is_sparse) {
+    if (!kernel->opal_dense_scanner_workaround) {
         for (int i = group_start; i < group_start + num_groups; i++) {
             crossbar_config[i] = first_input_tile;
         }
