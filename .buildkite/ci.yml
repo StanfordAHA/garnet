@@ -59,7 +59,7 @@ steps:
   - docker exec $CONTAINER /bin/bash -c "rm -rf /aha/garnet"
   - docker cp . $CONTAINER:/aha/garnet
   - docker exec $CONTAINER /bin/bash -c "
-      git fetch origin; git checkout standalone_conv2;
+      git fetch origin; git checkout standalone-conv2;
       source /aha/bin/activate;
       source /cad/modules/tcl/init/sh;
       module load base incisive xcelium/19.03.003 vcs/Q-2020.03-SP2;
