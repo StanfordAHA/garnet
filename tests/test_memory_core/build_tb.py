@@ -1450,7 +1450,9 @@ def prepare_glb_collateral(glb_dir=None, bitstream=None, matrices_in=None, desig
         ],
         "bitstream": "bitstream.bs",
         "coreir": "design_top.json",
-        "placement": "design.place"
+        "placement": "design.place",
+        # TODO: remove this workaround once the dense scanner is fixed
+        "opal_dense_scanner_workaround": 1
     }
     design_meta_json["IOs"] = {
         "inputs": [],
@@ -1723,6 +1725,27 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
                            sparsity=0.8)
 
         output_matrix = b_mat
+        output_format = "CSF"
+        output_name = "X"
+    elif 'mat_dn2sp.gv' in app_name:
+        b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+                           sparsity=0.8, format="UNC")
+        
+        input_dims['B'] = tuple(b_mat.shape)
+        output_matrix = b_mat
+        output_format = "CSF"
+        output_name = "X"
+    elif 'mat_sp2dn.gv' in app_name:
+        b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+                           sparsity=1.0, format="UNC")
+        c_mat = get_tensor(input_name='C', shapes=[10, 12], give_tensor=False, tmp_dir=matrix_tmp_dir,
+                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+                           sparsity=0.8)
+
+        input_dims['B'] = tuple(b_mat.shape)
+        output_matrix = c_mat
         output_format = "CSF"
         output_name = "X"
     elif 'mat_identity_dense.gv' in app_name:
