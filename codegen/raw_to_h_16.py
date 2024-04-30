@@ -66,7 +66,9 @@ def convert_image(input_data, output_data, data_file_str, num_tiles, dense):
     for idx, input in enumerate(input_data):
         input_str = input.replace("hw_", "")
         input_str = input_str.replace(".raw", "")
-        f.write(f"uint16_t app_{input_str}_data[] __attribute__((section(\".app_{input_str}_data\"))) = {{ \n")
+        # If using sections.ld
+        # f.write(f"uint16_t app_{input_str}_data[] __attribute__((section(\".app_{input_str}_data\"))) = {{ \n")
+        f.write(f"uint16_t app_{input_str}_data[] = {{ \n")
         f.write(raw_input_data_list[idx])
         f.write("\n};\n")
         f.write(f"const unsigned int app_{input_str}_data_size =  " + str(raw_input_data_size_list[idx]) +  ";\n")

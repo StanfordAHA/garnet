@@ -33,8 +33,10 @@ def get_lut_tensor(dump=None, suffix="", clean=False, func=None):
     lut_mat = []
     # generate matrix base on the specified function
     TLUT = tlut()
-    if func == 'exp':
+    if func == 'fp_exp':
         lut_mat += [TLUT.exp_lut(i) for i in range(0, 128)] + [TLUT.exp_lut(i) for i in range(-128, 0)]
+    elif func == 'fp_div':
+        lut_mat += [TLUT.div_lut(i) for i in range(0, 128)]
     else:
         raise NotImplementedError("unkown complex op function for preloading memory")
     lut_mat_np = np.array(lut_mat)
