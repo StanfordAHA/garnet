@@ -59,11 +59,11 @@ steps:
   - docker exec $CONTAINER /bin/bash -c "rm -rf /aha/garnet"
   - docker cp . $CONTAINER:/aha/garnet
   - docker exec $CONTAINER /bin/bash -c "
-      git fetch origin; git checkout 10hour-regressions;
+      git fetch origin; git checkout standalone_conv2;
       source /aha/bin/activate;
       source /cad/modules/tcl/init/sh;
       module load base incisive xcelium/19.03.003 vcs/Q-2020.03-SP2;
-      pwd; aha regress pr_submod;
+      pwd; aha regress pr;
     "
 
 # ALWAYS clean up regardless of test success or failure
