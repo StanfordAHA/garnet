@@ -485,10 +485,7 @@ def verify_pnr(interconnect, coreir_file, instance_to_instr):
         instance_to_instr,
     )
 
-<<<<<<< HEAD
-=======
 
->>>>>>> 8e1211d7e02d259a0460e33d90feabfd232b8235
     solver, input_symbols_pnr, output_symbols_pnr = nx_to_smt(
         nx_pnr, interconnect, solver, app_dir
     )
