@@ -100,29 +100,27 @@ def get_output_array_idx(solver, bvsort16, mapped_output_var_name, valid_name):
 
     # This is a list that stores the number of valid pixels at each cycle
     # Can use this to index into halide output pixel array
-    cycle_to_idx = mem_tile_get_num_valids(
+    cycle_to_idx, _ = mem_tile_get_num_valids(
         solver.stencil_valid_to_schedule[memtile],
         solver.max_cycles,
         iterator_support=6,
     )
 
-    # Create SMT LUT to map cycle count to halide pixel index
-    cycle_to_idx_var = solver.create_fts_state_var(
-        f"{memtile}_cycle_to_idx_var",
-        solver.solver.make_sort(ss.sortkinds.ARRAY, bvsort16, bvsort16),
-    )
+    cycle_to_idx_var_lut = []
 
     for i, idx in enumerate(cycle_to_idx):
-        cycle_to_idx_var = solver.create_term(
-            solver.ops.Store,
-            cycle_to_idx_var,
-            solver.create_const(i, bvsort16),
-            solver.create_const(idx, bvsort16),
+        cycle_to_idx_var_lut.append(
+            (solver.create_term(i, bvsort16), solver.create_term(idx, bvsort16))
         )
 
-    pixel_index = solver.create_term(
-        solver.ops.Select, cycle_to_idx_var, solver.cycle_count
+    cycle_to_idx_var = solver.create_lut(
+        f"{memtile}_cycle_to_idx_var",
+        cycle_to_idx_var_lut,
+        bvsort16,
+        solver.create_bvsort(1),
     )
+
+    pixel_index = cycle_to_idx_var(solver.cycle_count)
 
     solver.fts.add_invar(
         solver.create_term(solver.ops.Equal, pixel_index, pixel_index_var)
@@ -481,8 +479,6 @@ def verify_pnr(interconnect, coreir_file, instance_to_instr):
         read_coreir(coreir_file.replace("design_top_map.json", "design_top.json")),
         instance_to_instr,
     )
-
-    nx_to_pdf(nx_pnr, "/aha/pnr")
 
     solver, input_symbols_pnr, output_symbols_pnr = nx_to_smt(
         nx_pnr, interconnect, solver, app_dir, io_delay=True

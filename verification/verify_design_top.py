@@ -126,60 +126,28 @@ def flatten(lst):
 
 def set_inputs(solver, input_symbols, halide_image_symbols, bvsort16):
 
-    input_pixel_array = solver.create_fts_state_var(
-        "input_pixel_array",
-        solver.solver.make_sort(solver.sortkinds.ARRAY, bvsort16, bvsort16),
-    )
+    # print("set pix to pix_idx")
+    # for pix_idx, pix in enumerate(flatten(halide_image_symbols)):
+    # solver.fts.add_invar(
+    #     solver.create_term(
+    #         solver.ops.Equal, pix, solver.create_term(pix_idx, bvsort16)
+    #     )
+    # )
 
-    print("set pix to pix_idx")
+    lut_vals = []
     for pix_idx, pix in enumerate(flatten(halide_image_symbols)):
-        solver.fts.add_invar(
-            solver.create_term(
-                solver.ops.Equal, pix, solver.create_term(pix_idx, bvsort16)
-            )
-        )
+        lut_vals.append((solver.create_const(pix_idx, bvsort16), pix))
 
-        input_pixel_array = solver.create_term(
-            solver.ops.Store,
-            input_pixel_array,
-            solver.create_term(pix_idx, solver.create_bvsort(16)),
-            pix,
-        )
+    input_pixel = solver.create_lut("input_pixel_array", lut_vals, bvsort16, bvsort16)
 
     for input_var in input_symbols.values():
         solver.fts.add_invar(
             solver.create_term(
                 solver.ops.Equal,
                 input_var,
-                solver.create_term(
-                    solver.ops.Select, input_pixel_array, solver.cycle_count
-                ),
+                input_pixel(solver.cycle_count),
             )
         )
-
-        # solver.fts.constrain_init(
-        #     solver.create_term(
-        #         solver.ops.Equal, input_var, flatten(halide_image_symbols)[0]
-        #     )
-        # )
-
-        # ite = flatten(halide_image_symbols)[0]
-        # time_unrolling = 0
-
-        # for elem in flatten(halide_image_symbols):
-        #     is_time = solver.fts.make_term(
-        #         solver.ops.Equal,
-        #         solver.cycle_count,
-        #         solver.create_term(time_unrolling, bvsort16),
-        #     )
-        #     time_unrolling += 1
-        #     ite = solver.fts.make_term(solver.ops.Ite, is_time, elem, ite)
-
-        # solver.fts.add_invar(
-        #     solver.create_term(
-        #         solver.ops.Equal, input_var, ite
-        #     )
-        # )
 
 
 def create_property_term(
@@ -200,18 +168,13 @@ def create_property_term(
 
     solver.fts.assign_next(starting_cycle_count, starting_cycle_count)
 
-    output_pixel_array = solver.create_fts_state_var(
-        "output_pixel_array",
-        solver.solver.make_sort(solver.sortkinds.ARRAY, bvsort16, bvsort16),
-    )
-
+    lut_vals = []
     for pix_idx, pix in enumerate(flatten(halide_out_symbols)):
-        output_pixel_array = solver.create_term(
-            solver.ops.Store,
-            output_pixel_array,
-            solver.create_term(pix_idx, solver.create_bvsort(16)),
-            pix,
-        )
+        lut_vals.append((solver.create_const(pix_idx, bvsort16), pix))
+
+    output_pixel_array = solver.create_lut(
+        "output_pixel_array", lut_vals, bvsort16, bvsort16
+    )
 
     property_term = solver.create_term(True)
 
@@ -242,23 +205,20 @@ def create_property_term(
             iterator_support=6,
         )
 
-        # Create SMT LUT to map cycle count to halide pixel index
-        cycle_to_halide_idx_var = solver.create_fts_state_var(
-            f"{memtile}_cycle_to_halide_idx_var",
-            solver.solver.make_sort(ss.sortkinds.ARRAY, bvsort16, bvsort16),
-        )
-
+        cycle_to_halide_lut = []
         for i, idx in enumerate(cycle_to_halide_idx):
-            cycle_to_halide_idx_var = solver.create_term(
-                solver.ops.Store,
-                cycle_to_halide_idx_var,
-                solver.create_const(i, bvsort16),
-                solver.create_const(idx, bvsort16),
+            cycle_to_halide_lut.append(
+                (solver.create_const(i, bvsort16), solver.create_const(idx, bvsort16))
             )
 
-        halide_pixel_index = solver.create_term(
-            solver.ops.Select, cycle_to_halide_idx_var, solver.cycle_count
+        cycle_to_halide_idx_var = solver.create_lut(
+            f"{memtile}_cycle_to_halide_idx_lut",
+            cycle_to_halide_lut,
+            bvsort16,
+            bvsort16,
         )
+
+        halide_pixel_index = cycle_to_halide_idx_var(solver.cycle_count)
 
         solver.fts.add_invar(
             solver.create_term(
@@ -275,9 +235,7 @@ def create_property_term(
                 solver.ops.Equal,
                 halide_out,
                 # solver.create_term(0, bvsort16),
-                solver.create_term(
-                    solver.ops.Select, output_pixel_array, halide_pixel_index
-                ),
+                output_pixel_array(halide_pixel_index),
             )
         )
 
@@ -353,23 +311,20 @@ def create_valids_property_term(
             iterator_support=6,
         )
 
-        # Create SMT LUT to map cycle count to valid
-        cycle_to_halide_idx_var = solver.create_fts_state_var(
-            f"{memtile}_cycle_to_halide_idx_valids_var",
-            solver.solver.make_sort(ss.sortkinds.ARRAY, bvsort16, bvsort1),
-        )
-
+        cycle_to_halide_idx_lut = []
         for i, idx in enumerate(valids):
-            cycle_to_halide_idx_var = solver.create_term(
-                solver.ops.Store,
-                cycle_to_halide_idx_var,
-                solver.create_const(i, bvsort16),
-                solver.create_const(idx, bvsort1),
+            cycle_to_halide_idx_lut.append(
+                (solver.create_const(i, bvsort16), solver.create_const(idx, bvsort1))
             )
 
-        halide_valid = solver.create_term(
-            solver.ops.Select, cycle_to_halide_idx_var, solver.cycle_count
+        cycle_to_halide_idx_var = solver.create_lut(
+            f"{memtile}_cycle_to_halide_idx_valids_var",
+            cycle_to_halide_idx_lut,
+            bvsort16,
+            bvsort1,
         )
+
+        halide_valid = cycle_to_halide_idx_var(solver.cycle_count)
 
         solver.fts.add_invar(
             solver.create_term(solver.ops.Equal, halide_valid_sym, halide_valid)
@@ -547,7 +502,7 @@ def import_from(module, name):
 def verify_design_top(interconnect, coreir_file):
     file_info = {}
     file_info["port_remapping"] = coreir_file.replace(
-        "design_top.json", "design.port_remap"
+        "design_top_map.json", "design.port_remap"
     )
     app_dir = os.path.dirname(coreir_file)
 
@@ -556,6 +511,7 @@ def verify_design_top(interconnect, coreir_file):
     # Instantiate solver object
     solver = Solver()
     solver.solver.set_opt("produce-models", "true")
+
     solver.file_info = file_info
     solver.app_dir = f"{app_dir}/verification"
 
