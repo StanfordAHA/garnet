@@ -17,6 +17,7 @@ import archipelago.power
 import archipelago.io
 from verification.verify_design_top import verify_design_top
 from verification.verify_pnr import verify_pnr
+from verification.verify_bitstream import verify_bitstream
 
 from lassen.sim import PE_fc as lassen_fc
 
@@ -824,7 +825,7 @@ def pnr(garnet, args, app):
         shutil.copy(args.app, design_top_map)
 
     
-    verify_design_top(garnet.interconnect, design_top_map)
+    # verify_design_top(garnet.interconnect, design_top_map)
 
     placement, routing, id_to_name, instance_to_instr, netlist, bus = \
         garnet.place_and_route(args, load_only=args.generate_bitstream_only)
@@ -833,7 +834,7 @@ def pnr(garnet, args, app):
     # instead, we load a previously-built pnr result and use that. So
     # reschedule_pipelined_app() only happens if 'generate_bitstream_only' is False.
     if args.pipeline_pnr and not args.generate_bitstream_only:
-        # reschedule_pipelined_app(app)
+        reschedule_pipelined_app(app)
 
         placement, routing, id_to_name, instance_to_instr, netlist, bus = \
             garnet.place_and_route(args, load_only=True)
@@ -877,6 +878,8 @@ def pnr(garnet, args, app):
         json.dump(config, f)
     write_out_bitstream(args.output, bitstream)
 
+
+    verify_bitstream(garnet.interconnect, str(args.app), instance_to_instr)
 
 def reschedule_pipelined_app(app):
     # Calling clockwork for rescheduling pipelined app
