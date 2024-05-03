@@ -517,7 +517,6 @@ def verify_pnr(interconnect, coreir_file, instance_to_instr):
 
     bmc = pono.Bmc(prop, solver.fts, solver.solver)
 
-    breakpoint()
 
     check_pixels = 1
     check_cycles = solver.first_valid_output + 1 + check_pixels
