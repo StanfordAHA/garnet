@@ -1451,8 +1451,8 @@ def prepare_glb_collateral(glb_dir=None, bitstream=None, matrices_in=None, desig
         "bitstream": "bitstream.bs",
         "coreir": "design_top.json",
         "placement": "design.place",
-        # TODO: remove this workaround once the dense scanner is fixed
-        "opal_dense_scanner_workaround": 1
+        # TODO: use a arguement to control whether the workaround is activated
+        # "opal_dense_scanner_workaround": 1
     }
     design_meta_json["IOs"] = {
         "inputs": [],
@@ -1586,10 +1586,15 @@ def coalesce_files(in_dir, out_dir, hack_files=None, unroll=1, give_tensor=None)
             mode_num = 0
             done = False
             while done is False:
-                if f'tensor_{tname}_mode_{mode_num}_seg' in all_in_files:
+                if f'tensor_{tname}_mode_{mode_num}_seg' in all_in_files and \
+                    f'tensor_{tname}_mode_{mode_num}_crd' in all_in_files:
                     # Now coalesce the seg/crd into a single file
                     write_glb_file([f'{in_dir}/tensor_{tname}_mode_{mode_num}_seg',
                                    f'{in_dir}/tensor_{tname}_mode_{mode_num}_crd'],
+                                   out_dir=out_dir, out_name=f'tensor_{tname}_mode_{mode_num}', give_tensor=give_tensor)
+                    mode_num = mode_num + 1
+                elif f'tensor_{tname}_mode_{mode_num}_seg' in all_in_files:
+                    write_glb_file([f'{in_dir}/tensor_{tname}_mode_{mode_num}_seg'],
                                    out_dir=out_dir, out_name=f'tensor_{tname}_mode_{mode_num}', give_tensor=give_tensor)
                     mode_num = mode_num + 1
                 else:
@@ -2966,9 +2971,6 @@ if __name__ == "__main__":
                                 mode_ = mode_
                             else:
                                 mode_ = mode_map[tensor_][int(mode_)][0]
-                            # We don't need to emit anything for a dense block
-                            if mode_map[tensor_][int(mode_)][1] == 'd':
-                                continue
                         core_placement = stb.get_core_placement(core)
                         tensor_desc_str = f"tensor_{tensor_}_mode_{mode_}"
                         glb_info_.append((core, core_placement, tensor_desc_str, direction_, num_blocks_, file_no_))
