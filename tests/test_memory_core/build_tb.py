@@ -1411,7 +1411,7 @@ class SparseTBBuilder(m.Generator2):
                     fp_handle.write(parg)
 
 
-def prepare_glb_collateral(glb_dir=None, bitstream=None, matrices_in=None, design_place=None, glb_info=None, test_dump_dir=None):
+def prepare_glb_collateral(glb_dir=None, bitstream=None, matrices_in=None, design_place=None, glb_info=None, test_dump_dir=None, opal_workaround=False):
 
     assert glb_dir is not None
     assert bitstream is not None
@@ -1451,9 +1451,9 @@ def prepare_glb_collateral(glb_dir=None, bitstream=None, matrices_in=None, desig
         "bitstream": "bitstream.bs",
         "coreir": "design_top.json",
         "placement": "design.place",
-        # TODO: use a arguement to control whether the workaround is activated
-        # "opal_dense_scanner_workaround": 1
     }
+    if opal_workaround:
+        design_meta_json["testing"]["opal_dense_scanner_workaround"] = 1
     design_meta_json["IOs"] = {
         "inputs": [],
         "outputs": []
@@ -2546,6 +2546,7 @@ if __name__ == "__main__":
     parser.add_argument('--perf_debug', action="store_true")
     parser.add_argument('--unroll', type=int, default=1)
     parser.add_argument('--suitesparse_data_tile_pairs', type=str, default=None, nargs='+')
+    parser.add_argument('--opal-workaround', action="store_true")
 
     args = parser.parse_args()
     bespoke = args.bespoke
@@ -2585,6 +2586,7 @@ if __name__ == "__main__":
     perf_debug = args.perf_debug
     unroll = args.unroll
     suitesparse_data_tile_pairs = args.suitesparse_data_tile_pairs
+    opal_workaround = args.opal_workaround
 
     if do_comparison:
         # This is where we do the fallback comparison...
@@ -2817,7 +2819,8 @@ if __name__ == "__main__":
 
                 if sam_graph not in sdgs:
                     sdg = SAMDotGraph(filename=sam_graph, local_mems=True, use_fork=use_fork,
-                                      use_fa=use_fiber_access, unroll=unroll, collat_dir=collat_dir)
+                                      use_fa=use_fiber_access, unroll=unroll, collat_dir=collat_dir,
+                                      opal_workaround=opal_workaround)
                     sdgs[sam_graph] = sdg
                 else:
                     print("REUSE SDG")
@@ -2981,7 +2984,8 @@ if __name__ == "__main__":
                                            matrices_in=input_dir,
                                            design_place=f"{test_dump_dir}/design.place",
                                            glb_info=glb_info_,
-                                           test_dump_dir=test_dump_dir)
+                                           test_dump_dir=test_dump_dir,
+                                           opal_workaround=opal_workaround)
 
                 stb.display_names()
                 stb.dump_display_names(f"{test_dump_dir}/design.mapped")
