@@ -128,11 +128,11 @@ def set_inputs(solver, input_symbols, halide_image_symbols, bvsort16):
 
     # print("set pix to pix_idx")
     # for pix_idx, pix in enumerate(flatten(halide_image_symbols)):
-    # solver.fts.add_invar(
-    #     solver.create_term(
-    #         solver.ops.Equal, pix, solver.create_term(pix_idx, bvsort16)
+    #     solver.fts.constrain_inputs(
+    #         solver.create_term(
+    #             solver.ops.Equal, pix, solver.create_term(pix_idx, bvsort16)
+    #         )
     #     )
-    # )
 
     lut_vals = []
     for pix_idx, pix in enumerate(flatten(halide_image_symbols)):
@@ -148,6 +148,8 @@ def set_inputs(solver, input_symbols, halide_image_symbols, bvsort16):
                 input_pixel(solver.cycle_count),
             )
         )
+
+    # print(len(solver.fts.named_terms), len(solver.fts.statevars), len(str(solver.fts.trans)))
 
 
 def create_property_term(
@@ -238,6 +240,8 @@ def create_property_term(
                 output_pixel_array(halide_pixel_index),
             )
         )
+
+        # solver.fts.assign_next(halide_out, output_pixel_array(halide_pixel_index))
 
         data_eq = solver.create_term(solver.ops.Equal, mapped_output_var, halide_out)
 
@@ -544,7 +548,7 @@ def verify_design_top(interconnect, coreir_file):
     print("Setting input constraints")
     set_inputs(solver, input_symbols, hw_input_stencil, bvsort16)
 
-    input_to_output_cycle_dep = solver.first_valid_output
+    input_to_output_cycle_dep = solver.first_valid_output + 1
 
     print("Creating property term")
     cycle_count_property_term = create_cycle_count_property_term(
@@ -588,10 +592,14 @@ def verify_design_top(interconnect, coreir_file):
 
     prop = pono.Property(solver.solver, property_term)
 
+    print("Named terms", len(solver.fts.named_terms))
+    print("State vars", len(solver.fts.statevars))
+    print("Trans size", len(str(solver.fts.trans)))
+
     btor_solver = Solver(solver_name="btor")
     bmc = pono.Bmc(prop, solver.fts, btor_solver.solver)
 
-    check_pixels = 1
+    check_pixels = 2
     check_cycles = solver.first_valid_output + 1 + check_pixels
 
     print("First valid output at cycle", solver.first_valid_output)

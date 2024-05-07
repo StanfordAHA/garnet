@@ -80,7 +80,9 @@ def set_pnr_inputs(
                 solver.fts.assign_next(input_coreir_d1, input_coreir_d0)
 
                 solver.fts.add_invar(
-                    solver.create_term(solver.ops.Equal, input_coreir_d1, input_pnr_short)
+                    solver.create_term(
+                        solver.ops.Equal, input_coreir_d1, input_pnr_short
+                    )
                 )
 
     for k, v in input_symbols_coreir.items():
@@ -182,7 +184,6 @@ def compare_output_arrays(
             solver.create_const(cycle, solver.create_bvsort(16)),
         )
 
-
         # prop = solver.create_term(
         #     solver.ops.Implies,
         #     solver.create_term(solver.ops.Equal, coreir_valid, solver.create_term(1, solver.create_bvsort(1))),
@@ -193,8 +194,16 @@ def compare_output_arrays(
 
         both_valid = solver.create_term(
             solver.ops.And,
-            solver.create_term(solver.ops.Equal, coreir_valid, solver.create_term(1, solver.create_bvsort(1))),
-            solver.create_term(solver.ops.Equal, pnr_valid, solver.create_term(1, solver.create_bvsort(1))),
+            solver.create_term(
+                solver.ops.Equal,
+                coreir_valid,
+                solver.create_term(1, solver.create_bvsort(1)),
+            ),
+            solver.create_term(
+                solver.ops.Equal,
+                pnr_valid,
+                solver.create_term(1, solver.create_bvsort(1)),
+            ),
         )
 
         prop = solver.create_term(
@@ -216,7 +225,6 @@ def create_pnr_property_term(
     bvsort1,
     id_to_name,
     input_to_output_cycle_dep,
-    num_output_pixels,
 ):
 
     coreir_to_pnr = {}
@@ -441,14 +449,6 @@ def verify_pnr(interconnect, coreir_file, instance_to_instr):
     )
     app_dir = os.path.dirname(coreir_file)  # coreir_file has mapped dataflow graph
 
-    sys.path.append(os.path.abspath(app_dir))
-
-    create_app = import_from(
-        f"{app_dir.split(os.sep)[-2]}_pono_testbench", "create_app"
-    )
-
-    hw_input_stencil, hw_output_stencil = create_app(Solver())
-
     cmod = read_coreir(coreir_file)
     nx = coreir_to_nx(cmod)
 
@@ -485,7 +485,6 @@ def verify_pnr(interconnect, coreir_file, instance_to_instr):
         instance_to_instr,
     )
 
-
     solver, input_symbols_pnr, output_symbols_pnr = nx_to_smt(
         nx_pnr, interconnect, solver, app_dir
     )
@@ -510,13 +509,15 @@ def verify_pnr(interconnect, coreir_file, instance_to_instr):
         bvsort1,
         id_to_name,
         input_to_output_cycle_dep,
-        len(flatten(hw_output_stencil)),
     )
+
+    print("Named terms", len(solver.fts.named_terms))
+    print("State vars", len(solver.fts.statevars))
+    print("Trans size", len(str(solver.fts.trans)))
 
     prop = pono.Property(solver.solver, property_term)
 
     bmc = pono.Bmc(prop, solver.fts, solver.solver)
-
 
     check_pixels = 1
     check_cycles = solver.first_valid_output + 1 + check_pixels
