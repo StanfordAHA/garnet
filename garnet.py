@@ -15,7 +15,9 @@ import archipelago
 import archipelago.power
 import archipelago.io
 from lassen.sim import PE_fc as lassen_fc
-
+from verification.verify_design_top import verify_design_top
+from verification.verify_pnr import verify_pnr
+from verification.verify_bitstream import verify_bitstream
 from daemon.daemon import GarnetDaemon
 
 # set the debug mode to false to speed up construction
@@ -814,6 +816,16 @@ def build_verilog(args, garnet):
 
 def pnr(garnet, args, app):
 
+
+    design_top_map = str(args.app).split(".json")[0] + "_map.json"
+
+    if not os.path.exists(design_top_map):
+        # copy args.app to design_top_map
+        shutil.copy(args.app, design_top_map)
+
+    
+    verify_design_top(garnet.interconnect, design_top_map)
+
     placement, routing, id_to_name, instance_to_instr, netlist, bus = \
         garnet.place_and_route(args, load_only=args.generate_bitstream_only)
 
@@ -825,6 +837,8 @@ def pnr(garnet, args, app):
 
         placement, routing, id_to_name, instance_to_instr, netlist, bus = \
             garnet.place_and_route(args, load_only=True)
+
+    # verify_pnr(garnet.interconnect, design_top_map, instance_to_instr)
 
     bitstream, iorved_tuple = garnet.generate_bitstream(
         args.app,
@@ -862,6 +876,8 @@ def pnr(garnet, args, app):
     with open(f"{args.output}.json", "w+") as f:
         json.dump(config, f)
     write_out_bitstream(args.output, bitstream)
+
+    verify_bitstream(garnet.interconnect, str(args.app), instance_to_instr)
 
 
 def reschedule_pipelined_app(app):
