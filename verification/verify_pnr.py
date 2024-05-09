@@ -556,6 +556,10 @@ def verify_pnr(interconnect, coreir_file, instance_to_instr):
             )
 
     else:
+
+        # vcd_printer = pono.VCDWitnessPrinter(solver.fts, bmc.witness())
+        # vcd_printer.dump_trace_to_file("/aha/dense_only_sparse.vcd")
+
         symbols = (
             list(output_symbols_coreir.keys())
             + list(output_symbols_pnr.keys())

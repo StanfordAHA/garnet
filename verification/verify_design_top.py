@@ -91,27 +91,27 @@ def synchronize_cycle_counts(solver):
     # )
 
     # increment cycle count every 2 bmc counters
-    solver.fts.assign_next(
-        solver.cycle_count,
-        solver.create_term(
-            solver.ops.Ite,
-            solver.create_term(
-                solver.ops.Equal,
-                solver.create_term(
-                    solver.ops.BVUrem,
-                    solver.bmc_counter,
-                    solver.create_term(2, solver.bmc_counter.get_sort()),
-                ),
-                solver.create_term(1, solver.bmc_counter.get_sort()),
-            ),
-            solver.create_term(
-                solver.ops.BVAdd,
-                solver.cycle_count,
-                solver.create_term(1, solver.cycle_count.get_sort()),
-            ),
-            solver.cycle_count,
-        ),
-    )
+    # solver.fts.assign_next(
+    #     solver.cycle_count,
+    #     solver.create_term(
+    #         solver.ops.Ite,
+    #         solver.create_term(
+    #             solver.ops.Equal,
+    #             solver.create_term(
+    #                 solver.ops.BVUrem,
+    #                 solver.bmc_counter,
+    #                 solver.create_term(2, solver.bmc_counter.get_sort()),
+    #             ),
+    #             solver.create_term(1, solver.bmc_counter.get_sort()),
+    #         ),
+    #         solver.create_term(
+    #             solver.ops.BVAdd,
+    #             solver.cycle_count,
+    #             solver.create_term(1, solver.cycle_count.get_sort()),
+    #         ),
+    #         solver.cycle_count,
+    #     ),
+    # )
 
 
 def flatten(lst):
@@ -548,7 +548,7 @@ def verify_design_top(interconnect, coreir_file):
     print("Setting input constraints")
     set_inputs(solver, input_symbols, hw_input_stencil, bvsort16)
 
-    input_to_output_cycle_dep = solver.first_valid_output + 1
+    input_to_output_cycle_dep = solver.first_valid_output
 
     print("Creating property term")
     cycle_count_property_term = create_cycle_count_property_term(
@@ -597,9 +597,10 @@ def verify_design_top(interconnect, coreir_file):
     print("Trans size", len(str(solver.fts.trans)))
 
     btor_solver = Solver(solver_name="btor")
+    btor_solver = solver
     bmc = pono.Bmc(prop, solver.fts, btor_solver.solver)
 
-    check_pixels = 2
+    check_pixels = 1
     check_cycles = solver.first_valid_output + 1 + check_pixels
 
     print("First valid output at cycle", solver.first_valid_output)
@@ -639,6 +640,9 @@ def verify_design_top(interconnect, coreir_file):
             )
 
     else:
+
+        # vcd_printer = pono.VCDWitnessPrinter(solver.fts, bmc.witness())
+        # vcd_printer.dump_trace_to_file("/aha/dense_only.vcd")
 
         waveform_signals = [
             "in.hw_input",

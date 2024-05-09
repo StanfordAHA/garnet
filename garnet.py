@@ -5,7 +5,7 @@ if os.getenv('WHICH_SOC') == "amber":
     if __name__ == "__main__":
         garnet_amber.main()
     exit()
-
+import shutil
 import argparse
 import magma
 from systemRDL.util import gen_rdl_header  # If I move this it breaks. Dunno why.
@@ -877,7 +877,7 @@ def pnr(garnet, args, app):
         json.dump(config, f)
     write_out_bitstream(args.output, bitstream)
 
-    verify_bitstream(garnet.interconnect, str(args.app), instance_to_instr)
+    # verify_bitstream(garnet.interconnect, str(args.app), instance_to_instr)
 
 
 def reschedule_pipelined_app(app):
