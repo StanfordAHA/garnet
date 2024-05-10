@@ -207,6 +207,51 @@ int glb_map(void *kernel_) {
     return 1;
 }
 
+// Hacky functions to update IO tile configurations for output padding
+bool output_padding_config(struct IOTileInfo *io_tile_info, int *start_addr, int *cycle_start_addr) {
+    // get layer shape from env var parsed in design_meta.json; see parser.c
+    // HALIDE_GEN_ARGS added to design_meta.json; see parse_design_meta.py in H2H
+    if (getenv("pad_o") == NULL) {
+        return false;
+    }
+    int in_img = atoi(getenv("in_img"));
+    int pad_o = atoi(getenv("pad_o"));
+    int ksize = atoi(getenv("ksize"));
+    int stride = atoi(getenv("stride"));
+    int n_oc = atoi(getenv("n_oc"));
+    int glb_o = atoi(getenv("glb_o"));
+    int out_img = floor((in_img - ksize) / stride) + 1;
+
+    int padded_X_ext = out_img + 2 * pad_o;
+    int match_cnt = 0;
+    if (io_tile_info->io == Output) {
+        // calculate extents and strides for X and Y dims
+        for (int i = 0; i < io_tile_info->loop_dim; i++) {
+            if (io_tile_info->extent[i] == padded_X_ext) {
+                match_cnt++;
+                if (match_cnt == 1) {
+                    // outer column dim
+                    io_tile_info->extent[i] -= 2 * pad_o;
+                }
+                else if (match_cnt == 2) {
+                    // inner row dim
+                    io_tile_info->data_stride[i] += 2 * pad_o * n_oc / glb_o;
+                    io_tile_info->extent[i] -= 2 * pad_o;
+                    break;
+                }
+            }
+        }
+
+        // Adjust local start_addr for first row padding
+        *start_addr += ((n_oc / glb_o) * (out_img + 2 * pad_o + 1)) << CGRA_BYTE_OFFSET;
+
+        // Adjust local cycle_start_addr for static mode
+        // TODO: The magic number 10 needs a formal calculation method.
+        *cycle_start_addr += 10;
+    }
+    return true;
+}
+
 int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigInfo *config_info) {
     int tile = io_tile_info->tile;
     int start_addr = io_tile_info->start_addr;
@@ -217,6 +262,9 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
     int cycle_stride[LOOP_LEVEL];
     int mux_sel;
     int mode;
+
+    // If pad_o in env var call hacky padding function
+    bool use_padding = output_padding_config(io_tile_info, &start_addr, &cycle_start_addr);
 
     // Convert extent/stride hardware-friendly
     for (int i = 0; i < loop_dim; i++) {
@@ -289,6 +337,10 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
             mode = ST_DMA_VALID_MODE_READY_VALID;
         else
             mode = ST_DMA_VALID_MODE_VALID;
+
+        // If use hacky padding then switch to valid mode
+        if (use_padding) mode = ST_DMA_VALID_MODE_STATIC;
+
         add_config(config_info,
                    (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_ST_DMA_CTRL_R,
                    ((0b01 << GLB_ST_DMA_CTRL_MODE_F_LSB) | (mode << GLB_ST_DMA_CTRL_VALID_MODE_F_LSB) |
