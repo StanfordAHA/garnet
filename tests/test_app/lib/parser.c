@@ -330,6 +330,24 @@ void *parse_metadata(char *filename) {
         exit(1);
     }
 
+    // Hacky way for conv layer output padding
+    // Set os env var to get layer shape
+    json_t const *halide_gen_args = json_getProperty(json, "HALIDE_GEN_ARGS");
+    if (halide_gen_args && JSON_OBJ == json_getType(halide_gen_args)) {
+        json_t const *property;
+        const char *key;
+        const char *value;
+
+        for (property = json_getChild(halide_gen_args); property != 0; property = json_getSibling(property)) {
+            key = json_getName(property);
+            if (key && JSON_INTEGER == json_getType(property)) {
+                value = json_getValue(property);
+                // Set the environment variable
+                setenv(key, value, 1);
+            }
+        }
+    }
+
     // Parse testing field
     json_t const *testing_json = json_getProperty(json, "testing");
     if (!testing_json || JSON_OBJ != json_getType(testing_json)) {
