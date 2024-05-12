@@ -243,7 +243,7 @@ bool output_padding_config(struct IOTileInfo *io_tile_info, int *start_addr, int
         }
 
         // Adjust local start_addr for first row padding
-        *start_addr += ((n_oc / glb_o) * (out_img + 2 * pad_o + 1)) << CGRA_BYTE_OFFSET;
+        *start_addr += ((n_oc * pad_o / glb_o) * (out_img + 2 * pad_o + 1)) << CGRA_BYTE_OFFSET;
 
         // Adjust local cycle_start_addr for static mode
         // TODO: The magic number 10 needs a formal calculation method.
