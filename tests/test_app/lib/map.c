@@ -211,18 +211,19 @@ int glb_map(void *kernel_) {
 bool output_padding_config(struct IOTileInfo *io_tile_info, int *start_addr, int *cycle_start_addr) {
     // get layer shape from env var parsed in design_meta.json; see parser.c
     // HALIDE_GEN_ARGS added to design_meta.json; see parse_design_meta.py in H2H
-    if (getenv("pad_o") == NULL) {
+    if (getenv("pad_o_left") == NULL && getenv("pad_o_right") == NULL) {
         return false;
     }
     int in_img = atoi(getenv("in_img"));
-    int pad_o = atoi(getenv("pad_o"));
+    int pad_o_left = atoi(getenv("pad_o_left"));
+    int pad_o_right = atoi(getenv("pad_o_right"));
     int ksize = atoi(getenv("ksize"));
     int stride = atoi(getenv("stride"));
     int n_oc = atoi(getenv("n_oc"));
     int glb_o = atoi(getenv("glb_o"));
     int out_img = floor((in_img - ksize) / stride) + 1;
 
-    int padded_X_ext = out_img + 2 * pad_o;
+    int padded_X_ext = out_img + (pad_o_left + pad_o_right);
     int match_cnt = 0;
     if (io_tile_info->io == Output) {
         // calculate extents and strides for X and Y dims
@@ -231,19 +232,19 @@ bool output_padding_config(struct IOTileInfo *io_tile_info, int *start_addr, int
                 match_cnt++;
                 if (match_cnt == 1) {
                     // outer column dim
-                    io_tile_info->extent[i] -= 2 * pad_o;
+                    io_tile_info->extent[i] -= (pad_o_left + pad_o_right);
                 }
                 else if (match_cnt == 2) {
                     // inner row dim
-                    io_tile_info->data_stride[i] += 2 * pad_o * n_oc / glb_o;
-                    io_tile_info->extent[i] -= 2 * pad_o;
+                    io_tile_info->data_stride[i] += (pad_o_left + pad_o_right) * n_oc / glb_o;
+                    io_tile_info->extent[i] -= (pad_o_left + pad_o_right);
                     break;
                 }
             }
         }
 
         // Adjust local start_addr for first row padding
-        *start_addr += ((n_oc * pad_o / glb_o) * (out_img + 2 * pad_o + 1)) << CGRA_BYTE_OFFSET;
+        *start_addr += ((n_oc * pad_o_left / glb_o) * (out_img + (pad_o_left + pad_o_right) + 1)) << CGRA_BYTE_OFFSET;
 
         // Adjust local cycle_start_addr for static mode
         // TODO: The magic number 10 needs a formal calculation method.
