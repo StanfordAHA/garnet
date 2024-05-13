@@ -102,8 +102,14 @@ def set_pnr_inputs(
 
         solver.fts.add_invar(solver.create_term(solver.ops.Equal, state_var, v))
 
+        solver.fts.add_invar(
+            solver.create_term(solver.ops.Equal, state_var, solver.cycle_count)
+        )
 
-def get_output_array_idx(solver, bvsort16, mapped_output_var_name, valid_name):
+
+def get_output_array_idx(
+    solver, bvsort16, mapped_output_var_name, valid_name, pnr=False
+):
     pixel_index_var = solver.create_fts_state_var(
         f"pixel_index_{str(mapped_output_var_name)}", bvsort16
     )
@@ -119,6 +125,10 @@ def get_output_array_idx(solver, bvsort16, mapped_output_var_name, valid_name):
         solver.max_cycles,
         iterator_support=6,
     )
+
+    # PnR has an output IO tile register
+    if pnr:
+        cycle_to_idx = [0] + cycle_to_idx
 
     cycle_to_idx_var_lut = []
 
@@ -353,6 +363,7 @@ def create_pnr_property_term(
             bvsort16,
             pnr_symbol_to_name[pnr_symbol],
             pnr_symbol_to_name[pnr_valid],
+            pnr=True,
         )
 
         # Store pnr_symbol in pnr_output_array at pnr_array_idx
@@ -436,13 +447,15 @@ def dump_comparison_array_contents(solver, bmc, coreir_symbols, pnr_symbols):
             ):
                 print(var, val)
                 t = re.findall("(bv\d*\s)\d*", str(val))
+                if len(t) == 0:
+                    t = re.findall("(#b\d*)", str(val))
                 values = t[2::2]
                 indices = t[1::2]
                 print(tabulate(zip(indices, values), headers=["Index", "Value"]))
                 print("\n")
 
 
-def verify_pnr(interconnect, coreir_file, instance_to_instr):
+def verify_pnr(interconnect, coreir_file, instance_to_instr, pipeline_config_interval):
     file_info = {}
     file_info["port_remapping"] = coreir_file.replace(
         "design_top_map.json", "design.port_remap"
@@ -452,10 +465,14 @@ def verify_pnr(interconnect, coreir_file, instance_to_instr):
     cmod = read_coreir(coreir_file)
     nx = coreir_to_nx(cmod)
 
+    interconnect.pipeline_config_interval = pipeline_config_interval
+
     solver = Solver()
     # solver.solver.set_opt("produce-models", "true")
     solver.file_info = file_info
     solver.app_dir = f"{app_dir}/verification"
+
+    solver.max_cycles = 100
 
     solver, input_symbols_coreir, output_symbols_coreir = nx_to_smt(
         nx, interconnect, solver, app_dir
@@ -484,6 +501,8 @@ def verify_pnr(interconnect, coreir_file, instance_to_instr):
         read_coreir(coreir_file.replace("design_top_map.json", "design_top.json")),
         instance_to_instr,
     )
+
+    # nx_to_pdf(nx_pnr, f"{app_dir}/verification/pnr_graph.pdf")
 
     solver, input_symbols_pnr, output_symbols_pnr = nx_to_smt(
         nx_pnr, interconnect, solver, app_dir
@@ -519,9 +538,9 @@ def verify_pnr(interconnect, coreir_file, instance_to_instr):
 
     bmc = pono.Bmc(prop, solver.fts, solver.solver)
 
-    check_pixels = 1
-    check_cycles = solver.first_valid_output + 1 + check_pixels
-
+    # check_pixels = 1
+    # check_cycles = solver.first_valid_output + 1 + check_pixels
+    check_cycles = solver.max_cycles
     print("First valid output at cycle", solver.first_valid_output)
     print("Running BMC for", check_cycles, "cycles")
     start = time.time()
@@ -582,4 +601,4 @@ def verify_pnr(interconnect, coreir_file, instance_to_instr):
             list(output_symbols_pnr.keys()),
         )
 
-    breakpoint()
+    # breakpoint()

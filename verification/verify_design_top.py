@@ -61,21 +61,21 @@ def set_clk_rst_flush(solver):
 
 def synchronize_cycle_counts(solver):
 
-    cycle_count_in_range = solver.create_term(
-        solver.ops.And,
-        solver.create_term(
-            solver.ops.BVSge,
-            solver.cycle_count,
-            solver.create_term(0, solver.cycle_count.get_sort()),
-        ),
-        solver.create_term(
-            solver.ops.BVSlt,
-            solver.cycle_count,
-            solver.create_term(solver.max_cycles, solver.cycle_count.get_sort()),
-        ),
-    )
+    # cycle_count_in_range = solver.create_term(
+    #     solver.ops.And,
+    #     solver.create_term(
+    #         solver.ops.BVSge,
+    #         solver.cycle_count,
+    #         solver.create_term(0, solver.cycle_count.get_sort()),
+    #     ),
+    #     solver.create_term(
+    #         solver.ops.BVSlt,
+    #         solver.cycle_count,
+    #         solver.create_term(solver.max_cycles, solver.cycle_count.get_sort()),
+    #     ),
+    # )
 
-    solver.fts.add_invar(cycle_count_in_range)
+    # solver.fts.add_invar(cycle_count_in_range)
 
     for name, term in solver.fts.named_terms.items():
         if "cycle_count" in name and not solver.fts.is_next_var(term):
@@ -83,35 +83,14 @@ def synchronize_cycle_counts(solver):
                 solver.create_term(solver.ops.Equal, term, solver.cycle_count)
             )
 
-    # print("Constraining cycle count to start at 0")
-    # solver.fts.constrain_init(
-    #     solver.create_term(
-    #         solver.ops.Equal, solver.cycle_count, solver.create_term(0, solver.cycle_count.get_sort())
-    #     )
-    # )
-
-    # increment cycle count every 2 bmc counters
-    # solver.fts.assign_next(
-    #     solver.cycle_count,
-    #     solver.create_term(
-    #         solver.ops.Ite,
-    #         solver.create_term(
-    #             solver.ops.Equal,
-    #             solver.create_term(
-    #                 solver.ops.BVUrem,
-    #                 solver.bmc_counter,
-    #                 solver.create_term(2, solver.bmc_counter.get_sort()),
-    #             ),
-    #             solver.create_term(1, solver.bmc_counter.get_sort()),
-    #         ),
-    #         solver.create_term(
-    #             solver.ops.BVAdd,
-    #             solver.cycle_count,
-    #             solver.create_term(1, solver.cycle_count.get_sort()),
-    #         ),
-    #         solver.cycle_count,
-    #     ),
-    # )
+    print("Constraining cycle count to start at starting_cycle")
+    solver.fts.constrain_init(
+        solver.create_term(
+            solver.ops.Equal,
+            solver.cycle_count,
+            solver.create_term(solver.starting_cycle, solver.cycle_count.get_sort()),
+        )
+    )
 
 
 def flatten(lst):
@@ -434,10 +413,13 @@ def print_trace(solver, bmc, symbols, waveform_signals=[]):
                     trace.append(red("0"))
                 elif "true" in str(val):
                     trace.append(green("1"))
+                elif "#b" in str(val):
+                    val = str(val).replace("#b", "")
+                    val = int(val, 2)
+                    trace.append(green(str(val)))
                 elif int(str(val)) == 0:
                     trace.append(red(str(val)))
                 else:
-
                     trace.append(green(str(val)))
 
             trace_table.append(trace)
@@ -514,6 +496,14 @@ def verify_design_top(interconnect, coreir_file):
 
     # Instantiate solver object
     solver = Solver()
+
+    solver.starting_cycle = 0
+    solver.max_cycles = 500
+
+    # So since we start at a known cycle, we don't need big arrays for confiuring the mem tiles
+    # We can just constrain the starting cycle + check pixels
+    # Or better yet, just constrain the start state
+
     solver.solver.set_opt("produce-models", "true")
 
     solver.file_info = file_info
@@ -543,7 +533,9 @@ def verify_design_top(interconnect, coreir_file):
         f"{app_dir.split(os.sep)[-2]}_pono_testbench", "create_app"
     )
 
-    hw_input_stencil, hw_output_stencil = create_app(solver)
+    hw_input_stencil, hw_output_stencil = create_app(
+        solver, starting_pixel_state_var=0, ending_pixel_state_var=400
+    )
 
     print("Setting input constraints")
     set_inputs(solver, input_symbols, hw_input_stencil, bvsort16)
@@ -596,12 +588,12 @@ def verify_design_top(interconnect, coreir_file):
     print("State vars", len(solver.fts.statevars))
     print("Trans size", len(str(solver.fts.trans)))
 
-    btor_solver = Solver(solver_name="btor")
+    # btor_solver = Solver(solver_name="btor")
     btor_solver = solver
     bmc = pono.Bmc(prop, solver.fts, btor_solver.solver)
 
-    check_pixels = 1
-    check_cycles = solver.first_valid_output + 1 + check_pixels
+    # check_cycles = solver.first_valid_output + 1 + check_pixels
+    check_cycles = solver.max_cycles
 
     print("First valid output at cycle", solver.first_valid_output)
     print("Running BMC for", check_cycles, "cycles")
@@ -641,8 +633,8 @@ def verify_design_top(interconnect, coreir_file):
 
     else:
 
-        # vcd_printer = pono.VCDWitnessPrinter(solver.fts, bmc.witness())
-        # vcd_printer.dump_trace_to_file("/aha/dense_only.vcd")
+        vcd_printer = pono.VCDWitnessPrinter(solver.fts, bmc.witness())
+        vcd_printer.dump_trace_to_file("/aha/dense_only.vcd")
 
         waveform_signals = [
             "in.hw_input",
@@ -661,4 +653,4 @@ def verify_design_top(interconnect, coreir_file):
 
         print_trace(solver, bmc, symbols, waveform_signals)
 
-    breakpoint()
+    # breakpoint()

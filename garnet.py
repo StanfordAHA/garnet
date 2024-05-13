@@ -824,7 +824,7 @@ def pnr(garnet, args, app):
         shutil.copy(args.app, design_top_map)
 
     
-    verify_design_top(garnet.interconnect, design_top_map)
+    #verify_design_top(garnet.interconnect, design_top_map)
 
     placement, routing, id_to_name, instance_to_instr, netlist, bus = \
         garnet.place_and_route(args, load_only=args.generate_bitstream_only)
@@ -838,7 +838,7 @@ def pnr(garnet, args, app):
         placement, routing, id_to_name, instance_to_instr, netlist, bus = \
             garnet.place_and_route(args, load_only=True)
 
-    # verify_pnr(garnet.interconnect, design_top_map, instance_to_instr)
+    verify_pnr(garnet.interconnect, design_top_map, instance_to_instr, garnet.pipeline_config_interval)
 
     bitstream, iorved_tuple = garnet.generate_bitstream(
         args.app,
