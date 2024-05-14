@@ -38,8 +38,8 @@ class Environment;
     extern function bit [NUM_GLB_TILES-1:0] calculate_glb_stall_mask(int start, int num);
     extern task cgra_stall(bit [NUM_CGRA_COLS-1:0] stall_mask);
     extern task cgra_unstall(bit [NUM_CGRA_COLS-1:0] stall_mask);
-    extern task run();
-    extern task compare();
+    extern task run(int is_first);
+    extern task compare(int is_first);
 endclass
 
 function Environment::new(Kernel kernels[], vAxilIfcDriver vifc_axil, vProcIfcDriver vifc_proc);
@@ -333,7 +333,7 @@ task Environment::set_interrupt_on();
     axil_drv.write(`GLC_STRM_G2F_IER_R, {NUM_GLB_TILES{1'b1}});
 endtask
 
-task Environment::run();
+task Environment::run(int is_first);
     // wait for reset
     repeat (20) @(vifc_proc.cbd);
 
@@ -341,24 +341,29 @@ task Environment::run();
     set_interrupt_on();
 
     foreach (kernels[i]) begin
-        automatic int j = i;
-        fork
-            begin
-                write_bs(kernels[j]);
-                glb_configure(kernels[j]);
-                cgra_configure(kernels[j]);
-                write_data(kernels[j]);
-                kernel_test(kernels[j]);
-                read_data(kernels[j]);
-            end
-        join_none
+        if (is_first == 1) begin
+            write_bs(kernels[i]);
+            glb_configure(kernels[i]);
+            cgra_configure(kernels[i]);
+            write_data(kernels[i]);
+            kernel_test(kernels[i]);
+            read_data(kernels[i]);
+        end else begin
+            write_bs(kernels[i]);
+            glb_configure(kernels[i]);
+            cgra_configure(kernels[i]);
+            // write_data(kernels[i]);
+            kernel_test(kernels[i]);
+            read_data(kernels[i]);
+        end
     end
-    wait fork;
+
+
 endtask
 
-task Environment::compare();
+task Environment::compare(int is_first);
     repeat (20) @(vifc_axil.cbd);
     foreach (kernels[i]) begin
-        kernels[i].compare();
+        kernels[i].compare(is_first);
     end
 endtask

@@ -19,7 +19,7 @@ import "DPI-C" function chandle get_output_info(
     chandle info,
     int index
 );
-import "DPI-C" function int glb_map(chandle kernel);
+import "DPI-C" function int glb_map(chandle kernel, int is_first);
 import "DPI-C" function int get_num_groups(chandle info);
 import "DPI-C" function int get_group_start(chandle info);
 import "DPI-C" function int get_num_inputs(chandle info);
@@ -180,10 +180,10 @@ class Kernel;
     extern function void print_output_block(int idx, int block_idx);
     extern function void print_gold(int idx);
     extern function void print_bitstream();
-    extern function void compare();
+    extern function void compare(int is_first);
     extern function int compare_(int idx);
     extern function void assert_(bit cond, string msg);
-    extern function int kernel_map();
+    extern function int kernel_map(int is_first);
     extern function Config get_pcfg_start_config();
     extern function Config get_strm_start_config();
 endclass
@@ -423,12 +423,12 @@ function data_array_t Kernel::parse_gold_data(int idx);
     return result;
 endfunction
 
-function int Kernel::kernel_map();
+function int Kernel::kernel_map(int is_first);
     chandle cfg;
     chandle io_info;
     int size;
 
-    int result = glb_map(kernel_info);
+    int result = glb_map(kernel_info, is_first);
     if (result == 0) begin
         $display("[%s] glb mapping failed", name);
         return result;
@@ -457,6 +457,10 @@ function int Kernel::kernel_map();
         for (int j = 0; j < outputs[i].num_io_tiles; j++) begin
             outputs[i].io_tiles[j].tile = get_io_tile_map_tile(io_info, j);
             outputs[i].io_tiles[j].start_addr = get_io_tile_start_addr(io_info, j);
+            if (is_first == 0) begin
+                outputs[i].io_tiles[j].start_addr = outputs[i].io_tiles[j].start_addr - 'h10000;
+            end
+            $display("DEBUG1 output start address: %0x", outputs[i].io_tiles[0].start_addr);
         end
     end
 
@@ -522,7 +526,7 @@ function void Kernel::display();
     $display("Kernel name: %s", name);
 endfunction
 
-function void Kernel::compare();
+function void Kernel::compare(int is_first);
     int result;
     int num_pixels;
     int num_io_tiles;
@@ -536,6 +540,7 @@ function void Kernel::compare();
         num_io_tiles = outputs[i].num_io_tiles;
         if (num_io_tiles == 1) begin
             output_data[i] = outputs[i].io_tiles[0].io_block_data;
+            $display("DEBUG2 output start address: %0x", outputs[i].io_tiles[0].start_addr);
         end else begin
             for (int j = 0; j < num_io_tiles; j++) begin
                 num_pixels = outputs[i].io_tiles[j].io_block_data.size;
@@ -561,7 +566,7 @@ function void Kernel::compare();
             end
         end
     end
-    // turn off pixels check since we already have offsite close check for dense fp and bit accurate check for dense int 
+    // // turn off pixels check since we already have offsite close check for dense fp and bit accurate check for dense int 
     // result = 0;
     // for (int i = 0; i < num_outputs; i++) begin
     //     result += compare_(i);

@@ -54,7 +54,7 @@ void update_bs_configuration(struct BitstreamInfo *bs_info) {
                size);
 }
 
-int glb_map(void *kernel_) {
+int glb_map(void *kernel_, int is_first) {
     struct KernelInfo *kernel = kernel_;
     int num_groups = kernel->num_groups;
     printf("number of groups: %d\n", num_groups);
@@ -135,7 +135,7 @@ int glb_map(void *kernel_) {
             io_tile_info->tile = tile;
             io_tile_info->start_addr = (io_tile_info->start_addr << CGRA_BYTE_OFFSET) + ((tile * 2) << BANK_ADDR_WIDTH);
             printf("Mapping input_%0d_block_%0d to global buffer\n", i, j);
-            update_io_tile_configuration(io_tile_info, &kernel->config);
+            update_io_tile_configuration(io_tile_info, &kernel->config, is_first);
             if (i == 0 && j == 0) {
                 first_input_tile = tile;
             }
@@ -154,7 +154,7 @@ int glb_map(void *kernel_) {
             io_tile_info->start_addr =
                 (io_tile_info->start_addr << CGRA_BYTE_OFFSET) + ((tile * 2 + 1) << BANK_ADDR_WIDTH);
             printf("Mapping output_%0d_block_%0d to global buffer\n", i, j);
-            update_io_tile_configuration(io_tile_info, &kernel->config);
+            update_io_tile_configuration(io_tile_info, &kernel->config, is_first);
         }
     }
 
@@ -253,7 +253,7 @@ bool output_padding_config(struct IOTileInfo *io_tile_info, int *start_addr, int
     return true;
 }
 
-int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigInfo *config_info) {
+int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigInfo *config_info, int is_first) {
     int tile = io_tile_info->tile;
     int start_addr = io_tile_info->start_addr;
     int cycle_start_addr = io_tile_info->cycle_start_addr;
@@ -285,6 +285,9 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         mux_sel = 0b10;
 
     if (io_tile_info->io == Input) {
+        if (is_first == 0) {
+            start_addr = start_addr + (1 << BANK_ADDR_WIDTH);
+        }
         if (strcmp(io_tile_info->mode, "RV") == 0)
             mode = LD_DMA_VALID_MODE_READY_VALID;
         else
@@ -334,6 +337,9 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
                    cycle_stride[i], data_stride[i]);
         }
     } else {
+        if (is_first == 0) {
+            start_addr = start_addr - (1 << BANK_ADDR_WIDTH);
+        }
         if (strcmp(io_tile_info->mode, "RV") == 0)
             mode = ST_DMA_VALID_MODE_READY_VALID;
         else

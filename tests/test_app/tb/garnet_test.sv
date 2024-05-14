@@ -16,25 +16,31 @@ program garnet_test #(
     axil_ifc axil_ifc
 );
     int test_toggle = 0;
+    int is_first = 1;
 
     //============================================================================//
     // local variables
     //============================================================================//
     Kernel kernels[];
+    Kernel running_kernels[];
     Environment env;
 
     initial begin
         #100 initialize();
-        map(kernels);
+        foreach (kernels[i]) begin
+            running_kernels[0] = kernels[i];
+            map(running_kernels, is_first);
 
-        env = new(kernels, axil_ifc, p_ifc);
-        env.build();
+            env = new(running_kernels, axil_ifc, p_ifc);
+            env.build();
 
-        test_toggle = 1;
-        env.run();
-        test_toggle = 0;
+            test_toggle = 1;
+            env.run(is_first);
+            test_toggle = 0;
 
-        env.compare();
+            env.compare(is_first);
+            is_first = 0;
+        end
     end
 
     //============================================================================//
@@ -71,12 +77,15 @@ program garnet_test #(
         foreach (app_dirs[i]) begin
             kernels[i] = new(app_dirs[i]);
         end
+
+        running_kernels = new[1];
+        
     endfunction
 
-    function void map(Kernel kernels[]);
+    function void map(Kernel kernels[], int is_first);
         foreach (kernels[i]) begin
             $display("Start mapping kernel %0d", i);
-            if (kernels[i].kernel_map() == 0) begin
+            if (kernels[i].kernel_map(is_first) == 0) begin
                 $display("Mapping kernel %0d Failed", i);
                 $finish(2);
             end
