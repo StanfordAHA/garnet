@@ -87,9 +87,9 @@ int glb_map(void *kernel_, int is_first) {
         return 0;
     }
 
-    for (int i = group_start; i < group_start + num_groups; i++) {
-        monitor.groups[i] = 1;
-    }
+    // for (int i = group_start; i < group_start + num_groups; i++) {
+    //     monitor.groups[i] = 1;
+    // }
     kernel->group_start = group_start;
 
     // bitstream map
