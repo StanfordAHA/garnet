@@ -38,8 +38,8 @@ class Environment;
     extern function bit [NUM_GLB_TILES-1:0] calculate_glb_stall_mask(int start, int num);
     extern task cgra_stall(bit [NUM_CGRA_COLS-1:0] stall_mask);
     extern task cgra_unstall(bit [NUM_CGRA_COLS-1:0] stall_mask);
-    extern task run(int is_first);
-    extern task compare(int is_first);
+    extern task run();
+    extern task compare();
 endclass
 
 function Environment::new(Kernel kernels[], vAxilIfcDriver vifc_axil, vProcIfcDriver vifc_proc);
@@ -74,6 +74,9 @@ task Environment::write_data(Kernel kernel);
     repeat (10) @(vifc_proc.cbd);
     foreach (kernel.inputs[i]) begin
         foreach (kernel.inputs[i].io_tiles[j]) begin
+            if (kernel.inputs[i].io_tiles[j].is_glb_input == 1) begin
+                continue;
+            end
             start_time = $realtime;
             $display("[%s] write input_%0d_block_%0d to glb start at %0t", kernel.name, i, j,
                      start_time);
@@ -333,7 +336,7 @@ task Environment::set_interrupt_on();
     axil_drv.write(`GLC_STRM_G2F_IER_R, {NUM_GLB_TILES{1'b1}});
 endtask
 
-task Environment::run(int is_first);
+task Environment::run();
     // wait for reset
     repeat (20) @(vifc_proc.cbd);
 
@@ -341,29 +344,20 @@ task Environment::run(int is_first);
     set_interrupt_on();
 
     foreach (kernels[i]) begin
-        if (is_first == 1) begin
-            write_bs(kernels[i]);
-            glb_configure(kernels[i]);
-            cgra_configure(kernels[i]);
-            write_data(kernels[i]);
-            kernel_test(kernels[i]);
-            read_data(kernels[i]);
-        end else begin
-            write_bs(kernels[i]);
-            glb_configure(kernels[i]);
-            cgra_configure(kernels[i]);
-            // write_data(kernels[i]);
-            kernel_test(kernels[i]);
-            read_data(kernels[i]);
-        end
+        write_bs(kernels[i]);
+        glb_configure(kernels[i]);
+        cgra_configure(kernels[i]);
+        write_data(kernels[i]);
+        kernel_test(kernels[i]);
+        read_data(kernels[i]);
     end
 
 
 endtask
 
-task Environment::compare(int is_first);
+task Environment::compare();
     repeat (20) @(vifc_axil.cbd);
     foreach (kernels[i]) begin
-        kernels[i].compare(is_first);
+        kernels[i].compare();
     end
 endtask

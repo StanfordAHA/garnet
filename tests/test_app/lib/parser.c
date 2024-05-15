@@ -202,6 +202,14 @@ int parse_io_tile_info(struct IOTileInfo *io_tile_info, json_t const *io_tile_js
         cnt++;
     }
 
+    // Parse is_glb_input for back-t-back kernels
+    json_t const *is_glb_input_json = json_getProperty(io_tile_json, "is_glb_input");
+    if (!is_glb_input_json || JSON_INTEGER != json_getType(is_glb_input_json)) {
+        io_tile_info->is_glb_input = 0;  // Default to 0 if not found or not an integer
+    } else {
+        io_tile_info->is_glb_input = json_getInteger(is_glb_input_json);
+    }
+
     return SUCCESS;
 }
 
@@ -328,6 +336,19 @@ void *parse_metadata(char *filename) {
     if (!json) {
         fputs("Error json create", stderr);
         exit(1);
+    }
+
+    // Parse GLB_BANK_CONFIG for is_first_layer
+    json_t const *glb_bank_config = json_getProperty(json, "GLB_BANK_CONFIG");
+    if (glb_bank_config && JSON_OBJ == json_getType(glb_bank_config)) {
+        json_t const *is_first_layer_json = json_getProperty(glb_bank_config, "is_first_layer");
+        if (is_first_layer_json && JSON_INTEGER == json_getType(is_first_layer_json)) {
+            info->is_first_layer = (int)json_getInteger(is_first_layer_json);
+        } else {
+            info->is_first_layer = 0; // Default value if not found or not an integer
+        }
+    } else {
+        info->is_first_layer = 0;
     }
 
     // Hacky way for conv layer output padding
@@ -612,6 +633,11 @@ int get_reset_index(void *info) {
     return kernel_info->reset_port;
 }
 
+int get_is_first_layer(void *info) {
+    GET_KERNEL_INFO(info);
+    return kernel_info->is_first_layer;
+}
+
 char *get_placement_filename(void *info) {
     GET_KERNEL_INFO(info);
     return kernel_info->placement_filename;
@@ -670,6 +696,11 @@ int get_io_tile_cycle_stride(void *info, int index, int stride_idx) {
 int get_io_tile_extent(void *info, int index, int extent_idx) {
     GET_IO_INFO(info);
     return io_info->io_tiles[index].extent[extent_idx];
+}
+
+int get_io_tile_is_glb_input(void *info, int index) {
+    GET_IO_INFO(info);
+    return io_info->io_tiles[index].is_glb_input;
 }
 
 int get_output_size(void *info, int index) {

@@ -19,7 +19,7 @@ import "DPI-C" function chandle get_output_info(
     chandle info,
     int index
 );
-import "DPI-C" function int glb_map(chandle kernel, int is_first);
+import "DPI-C" function int glb_map(chandle kernel);
 import "DPI-C" function int get_num_groups(chandle info);
 import "DPI-C" function int get_group_start(chandle info);
 import "DPI-C" function int get_num_inputs(chandle info);
@@ -76,6 +76,11 @@ import "DPI-C" function int get_io_tile_cycle_stride(
     int index,
     int stride_idx
 );
+import "DPI-C" function int get_io_tile_is_glb_input( // for back-to-back kernels
+    chandle info,
+    int index
+);
+import "DPI-C" function int get_is_first_layer(chandle info); // for back-to-back kernels
 import "DPI-C" function chandle get_kernel_configuration(chandle info);
 import "DPI-C" function chandle get_pcfg_configuration(chandle info);
 import "DPI-C" function int get_configuration_size(chandle info);
@@ -117,6 +122,7 @@ typedef struct {
     int tile;
     int start_addr;
     int num_data;
+    int is_glb_input; // for back-to-back kernels to judge if input is already in glb
     data_array_t io_block_data;
 } IOTile;
 
@@ -180,10 +186,10 @@ class Kernel;
     extern function void print_output_block(int idx, int block_idx);
     extern function void print_gold(int idx);
     extern function void print_bitstream();
-    extern function void compare(int is_first);
+    extern function void compare();
     extern function int compare_(int idx);
     extern function void assert_(bit cond, string msg);
-    extern function int kernel_map(int is_first);
+    extern function int kernel_map();
     extern function Config get_pcfg_start_config();
     extern function Config get_strm_start_config();
 endclass
@@ -423,12 +429,12 @@ function data_array_t Kernel::parse_gold_data(int idx);
     return result;
 endfunction
 
-function int Kernel::kernel_map(int is_first);
+function int Kernel::kernel_map();
     chandle cfg;
     chandle io_info;
     int size;
 
-    int result = glb_map(kernel_info, is_first);
+    int result = glb_map(kernel_info);
     if (result == 0) begin
         $display("[%s] glb mapping failed", name);
         return result;
@@ -449,6 +455,7 @@ function int Kernel::kernel_map(int is_first);
         for (int j = 0; j < inputs[i].num_io_tiles; j++) begin
             inputs[i].io_tiles[j].tile = get_io_tile_map_tile(io_info, j);
             inputs[i].io_tiles[j].start_addr = get_io_tile_start_addr(io_info, j);
+            inputs[i].io_tiles[j].is_glb_input = get_io_tile_is_glb_input(io_info, j); // for back-to-back kernels
         end
     end
 
@@ -457,10 +464,6 @@ function int Kernel::kernel_map(int is_first);
         for (int j = 0; j < outputs[i].num_io_tiles; j++) begin
             outputs[i].io_tiles[j].tile = get_io_tile_map_tile(io_info, j);
             outputs[i].io_tiles[j].start_addr = get_io_tile_start_addr(io_info, j);
-            if (is_first == 0) begin
-                outputs[i].io_tiles[j].start_addr = outputs[i].io_tiles[j].start_addr - 'h10000;
-            end
-            $display("DEBUG1 output start address: %0x", outputs[i].io_tiles[0].start_addr);
         end
     end
 
@@ -526,7 +529,7 @@ function void Kernel::display();
     $display("Kernel name: %s", name);
 endfunction
 
-function void Kernel::compare(int is_first);
+function void Kernel::compare();
     int result;
     int num_pixels;
     int num_io_tiles;
@@ -534,6 +537,8 @@ function void Kernel::compare(int is_first);
     string tmp_output_name;
     string tmp_filename_nopath = "";
     int tmp_output_name_len;
+    int is_first_layer;
+    string system_cmd;
     // Hacky way to interleave output data in io_block to final output
     // TODO: Make interleave and uninterleave as a function
     for (int i = 0; i < num_outputs; i++) begin
@@ -557,7 +562,13 @@ function void Kernel::compare(int is_first);
             if (tmp_output_name[j]=="/") tmp_filename_nopath = "";
             else                         tmp_filename_nopath = {tmp_filename_nopath, tmp_output_name[j]};
         end
-        file_out = $fopen(tmp_filename_nopath, "w");
+        is_first_layer = get_is_first_layer(kernel_info);
+        if (is_first_layer == 1) begin
+            system_cmd = $sformatf("rm -f %s", tmp_filename_nopath);
+            $display("Deleting output file: %s", tmp_filename_nopath);
+            $system(system_cmd);
+        end
+        file_out = $fopen(tmp_filename_nopath, "a");
         for (int i = 0; i < output_data[idx].size(); i++) begin
             if (i % 8 == 7) begin
                 $fwrite(file_out, "%4h\n", output_data[idx][i]);
@@ -565,6 +576,8 @@ function void Kernel::compare(int is_first);
                 $fwrite(file_out, "%4h ", output_data[idx][i]);
             end
         end
+        $fwrite(file_out, "\n");
+        $fclose(file_out);
     end
     // // turn off pixels check since we already have offsite close check for dense fp and bit accurate check for dense int 
     // result = 0;
