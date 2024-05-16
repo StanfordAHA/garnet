@@ -237,24 +237,16 @@ def create_property_term(
 
     print("input_to_output_cycle_dep", input_to_output_cycle_dep)
 
-    for i in range(input_to_output_cycle_dep):
-        output_dep_on_input = solver.create_term(
-            solver.ops.Or,
-            solver.create_term(
-                solver.ops.Equal,
-                solver.bmc_counter,
-                solver.create_term(2 * i, bvsort16),
-            ),
-            solver.create_term(
-                solver.ops.Equal,
-                solver.bmc_counter,
-                solver.create_term((2 * i) + 1, bvsort16),
-            ),
-        )
+    # If solver.bmc_counter is less than to solver.first_valid_output
+    output_dep_on_input = solver.create_term(
+        solver.ops.BVUle,
+        solver.bmc_counter,
+        solver.create_term(2 * input_to_output_cycle_dep, bvsort16),
+    )
 
-        property_term = solver.create_term(
-            solver.ops.Or, output_dep_on_input, property_term
-        )
+    property_term = solver.create_term(
+        solver.ops.Or, output_dep_on_input, property_term
+    )
 
     return property_term
 
@@ -500,6 +492,15 @@ def verify_design_top(interconnect, coreir_file):
     solver.starting_cycle = 0
     solver.max_cycles = 500
 
+    sys.path.append(os.path.abspath(app_dir))
+
+    create_app = import_from(
+        f"{app_dir.split(os.sep)[-2]}_pono_testbench", "create_app"
+    )
+
+    hw_input_stencil, hw_output_stencil = create_app(
+        solver, starting_pixel_state_var=0, ending_pixel_state_var=solver.max_cycles
+    )
     # So since we start at a known cycle, we don't need big arrays for confiuring the mem tiles
     # We can just constrain the starting cycle + check pixels
     # Or better yet, just constrain the start state
@@ -526,16 +527,6 @@ def verify_design_top(interconnect, coreir_file):
             mapped_output_valids.append(output_var)
         else:
             mapped_output_datas.append(output_var)
-
-    sys.path.append(os.path.abspath(app_dir))
-
-    create_app = import_from(
-        f"{app_dir.split(os.sep)[-2]}_pono_testbench", "create_app"
-    )
-
-    hw_input_stencil, hw_output_stencil = create_app(
-        solver, starting_pixel_state_var=0, ending_pixel_state_var=400
-    )
 
     print("Setting input constraints")
     set_inputs(solver, input_symbols, hw_input_stencil, bvsort16)

@@ -48,7 +48,7 @@ def set_pnr_inputs(
     # Map pnr symbols to names
     input_pnr_names_to_symbols = {}
     for pnr_symbol_name, pnr_symbol in input_symbols_pnr.items():
-        input_pnr_id = pnr_symbol_name.split(".")[-1]
+        input_pnr_id = pnr_symbol_name.split(".")[0]
         input_pnr_name = id_to_name[input_pnr_id]
         input_pnr_names_to_symbols[input_pnr_name] = pnr_symbol
 
@@ -533,6 +533,10 @@ def verify_pnr(interconnect, coreir_file, instance_to_instr, pipeline_config_int
     print("Named terms", len(solver.fts.named_terms))
     print("State vars", len(solver.fts.statevars))
     print("Trans size", len(str(solver.fts.trans)))
+
+    # property_term = solver.create_term(
+    #    solver.ops.BVUlt, solver.bmc_counter, solver.create_term((solver.max_cycles * 2)-1, bvsort16)
+    # )
 
     prop = pono.Property(solver.solver, property_term)
 
