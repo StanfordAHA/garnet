@@ -54,7 +54,7 @@ void update_bs_configuration(struct BitstreamInfo *bs_info) {
                size);
 }
 
-int glb_map(void *kernel_) {
+int glb_map(void *kernel_, int dpr_enabled) {
     struct KernelInfo *kernel = kernel_;
     int num_groups = kernel->num_groups;
     printf("number of groups: %d\n", num_groups);
@@ -89,6 +89,10 @@ int glb_map(void *kernel_) {
 
     for (int i = group_start; i < group_start + num_groups; i++) {
         monitor.groups[i] = 1;
+    }
+    // DPR is not enabled so just clear the group start
+    if(dpr_enabled == 0){
+        group_start = 0;
     }
     kernel->group_start = group_start;
 
