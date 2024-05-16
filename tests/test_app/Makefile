@@ -144,6 +144,7 @@ compile:
 
 .PHONY: run
 run:
+	@rm -rf *.txt
 	$(RUN) $(DUMP_ARGS) $(RUN_ARGS) $(APP_ARGS)
 
 .PHONY: sim
