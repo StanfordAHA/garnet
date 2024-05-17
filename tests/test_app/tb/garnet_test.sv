@@ -8,7 +8,7 @@
 import "DPI-C" function int initialize_monitor(int num_cols);
 
 program garnet_test #(
-    parameter int MAX_NUM_APPS = 3
+    parameter int MAX_NUM_APPS = 1000
 ) (
     input logic clk,
     reset,
