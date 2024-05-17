@@ -7,9 +7,9 @@
 #define MAX_NUM_IO 16
 #define MAX_NUM_IO_TILES 16
 #define BUFFER_SIZE 1024
-#define MAX_NUM_KERNEL 16
+#define MAX_NUM_KERNEL 128
 #define MAX_JSON_FIELDS 2048
-#define MAX_CONFIG 40
+#define MAX_CONFIG 8192
 
 #define GET_BS_INFO(info) struct BitstreamInfo *bs_info = (struct BitstreamInfo *)info
 #define GET_KERNEL_INFO(info) struct KernelInfo *kernel_info = (struct KernelInfo *)info
