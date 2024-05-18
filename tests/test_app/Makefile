@@ -144,7 +144,7 @@ compile:
 
 .PHONY: run
 run:
-	@rm -rf *.txt; rm -rf ../../SPARSE_TESTS/tensor*
+	@rm -rf *.txt; rm -rf ../../SPARSE_TESTS/batch_*
 	$(RUN) $(DUMP_ARGS) $(RUN_ARGS) $(APP_ARGS)
 
 .PHONY: sim
