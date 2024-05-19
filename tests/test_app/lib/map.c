@@ -54,41 +54,57 @@ void update_bs_configuration(struct BitstreamInfo *bs_info) {
                size);
 }
 
-int glb_map(void *kernel_) {
+int glb_map(void *kernel_, int dpr_enabled) {
     struct KernelInfo *kernel = kernel_;
     int num_groups = kernel->num_groups;
-    printf("number of groups: %d\n", num_groups);
+    printf("number of groups: %d\n",  kernel->num_groups);
+    printf("number of inputs: %d\n",  kernel->num_inputs);
+    printf("number of outputs: %d\n",  kernel->num_outputs);
 
-    // This is just greedy algorithm to schedule applications
-    // TODO: Need a better way to schedule kernels
-    int group_start = -1;
-    for (int i = 0; i < monitor.num_groups; i++) {
-        int success = 0;
-        for (int j = 0; j < num_groups; j++) {
-            // if the number of groups required exceeds the hardware resources, then
-            // fail
-            if ((i + j) >= monitor.num_groups) {
-                success = -1;
-                break;
-            }
-            if (monitor.groups[i + j] != 0) {
-                break;
-            }
-            if (j == (num_groups - 1)) {
-                group_start = i;
-                success = 1;
-            }
-        }
-        if (success != 0) break;
-    }
-    // no available group
-    if (group_start == -1) {
+    printf("monitor.num_groups: %d\n", monitor.num_groups);
+
+    if (num_groups > monitor.num_groups) {
         printf("Application does not fit on array. Possible error CGRA too small, applications overlapping\n");
         return 0;
     }
 
-    for (int i = group_start; i < group_start + num_groups; i++) {
-        monitor.groups[i] = 1;
+    int group_start;
+    // DPR needs to check if enough array space
+    if (dpr_enabled == 1) {
+        // This is just greedy algorithm to schedule applications
+        // TODO: Need a better way to schedule kernels
+        group_start = -1;
+        for (int i = 0; i < monitor.num_groups; i++) {
+            int success = 0;
+            for (int j = 0; j < num_groups; j++) {
+                // if the number of groups required exceeds the hardware resources, then
+                // fail
+                if ((i + j) >= monitor.num_groups) {
+                    success = -1;
+                    break;
+                }
+                if (monitor.groups[i + j] != 0) {
+                    break;
+                }
+                if (j == (num_groups - 1)) {
+                    group_start = i;
+                    success = 1;
+                }
+            }
+            if (success != 0) break;
+        }
+        // no available group
+        if (group_start == -1) {
+            printf("Combination of Applications does not fit on array. Possible error CGRA too small, applications overlapping\n");
+            return 0;
+        }
+
+        for (int i = group_start; i < group_start + num_groups; i++) {
+            monitor.groups[i] = 1;
+        }
+    // DPR is not enabled so just clear the group start
+    } else {
+        group_start = 0;
     }
     kernel->group_start = group_start;
 

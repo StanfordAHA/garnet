@@ -8,7 +8,7 @@
 import "DPI-C" function int initialize_monitor(int num_cols);
 
 program garnet_test #(
-    parameter int MAX_NUM_APPS = 3
+    parameter int MAX_NUM_APPS = 1000
 ) (
     input logic clk,
     reset,
@@ -16,6 +16,8 @@ program garnet_test #(
     axil_ifc axil_ifc
 );
     int test_toggle = 0;
+    int value;
+    int dpr = 0;
 
     //============================================================================//
     // local variables
@@ -24,23 +26,29 @@ program garnet_test #(
     Environment env;
 
     initial begin
-        #100 initialize();
+        if ($value$plusargs("DPR=%d", value)) begin
+            dpr = 1;
+        end
+
+        #100 initialize(dpr);
+
         map(kernels);
 
-        env = new(kernels, axil_ifc, p_ifc);
+        env = new(kernels, axil_ifc, p_ifc, dpr);
         env.build();
 
         test_toggle = 1;
         env.run();
         test_toggle = 0;
 
-        env.compare();
+        // Dump out data between each test
+        //env.compare();
     end
 
     //============================================================================//
     // initialize
     //============================================================================//
-    function void initialize();
+    function void initialize(int dpr);
         int num_cols;
         int num_app;
         int result;
@@ -69,13 +77,13 @@ program garnet_test #(
 
         kernels = new[num_app];
         foreach (app_dirs[i]) begin
-            kernels[i] = new(app_dirs[i]);
+            kernels[i] = new(app_dirs[i], dpr);
         end
     endfunction
 
     function void map(Kernel kernels[]);
         foreach (kernels[i]) begin
-            $display("Start mapping kernel %0d", i);
+            $display("\nStart mapping kernel %0d", i);
             if (kernels[i].kernel_map() == 0) begin
                 $display("Mapping kernel %0d Failed", i);
                 $finish(2);
