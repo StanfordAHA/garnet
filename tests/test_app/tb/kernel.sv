@@ -536,6 +536,7 @@ function void Kernel::compare();
     string tmp_output_name;
     string tmp_filename_nopath = "";
     int tmp_output_name_len;
+    int last_line;
     // Hacky way to interleave output data in io_block to final output
     // TODO: Make interleave and uninterleave as a function
     for (int i = 0; i < num_outputs; i++) begin
@@ -562,11 +563,16 @@ function void Kernel::compare();
         for (int i = 0; i < output_data[idx].size(); i++) begin
             if (i % 8 == 7) begin
                 $fwrite(file_out, "%4h\n", output_data[idx][i]);
+                last_line = 1;
             end else begin
                 $fwrite(file_out, "%4h ", output_data[idx][i]);
+                last_line = 0;
             end
         end
         $fwrite(file_out, "\n");
+        if (last_line == 0) begin
+            $fwrite(file_out, "\n");
+        end
         $fclose(file_out);
     end
     // turn off pixels check since we already have offsite close check for dense fp and bit accurate check for dense int 
