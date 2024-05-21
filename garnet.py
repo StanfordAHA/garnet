@@ -682,7 +682,7 @@ def parse_args():
 
     parser = argparse.ArgumentParser(description='Garnet CGRA')
     parser.add_argument('--width', type=int, default=4)
-    parser.add_argument('--height', type=int, default=2)
+    parser.add_argument('--height', type=int, default=4)
     parser.add_argument('--pipeline_config_interval', type=int, default=8)
     parser.add_argument('--glb_tile_mem_size', type=int, default=256)
 
@@ -824,7 +824,7 @@ def pnr(garnet, args, app):
         shutil.copy(args.app, design_top_map)
 
     
-    #verify_design_top(garnet.interconnect, design_top_map)
+    # verify_design_top(garnet.interconnect, design_top_map)
 
     placement, routing, id_to_name, instance_to_instr, netlist, bus = \
         garnet.place_and_route(args, load_only=args.generate_bitstream_only)
@@ -838,7 +838,7 @@ def pnr(garnet, args, app):
         placement, routing, id_to_name, instance_to_instr, netlist, bus = \
             garnet.place_and_route(args, load_only=True)
 
-    verify_pnr(garnet.interconnect, design_top_map, instance_to_instr, garnet.pipeline_config_interval)
+    #verify_pnr(garnet.interconnect, design_top_map, instance_to_instr, garnet.pipeline_config_interval)
 
     bitstream, iorved_tuple = garnet.generate_bitstream(
         args.app,
@@ -877,7 +877,7 @@ def pnr(garnet, args, app):
         json.dump(config, f)
     write_out_bitstream(args.output, bitstream)
 
-    # verify_bitstream(garnet.interconnect, str(args.app), instance_to_instr)
+    verify_bitstream(garnet.interconnect, str(args.app), instance_to_instr, garnet.pipeline_config_interval, bitstream)
 
 
 def reschedule_pipelined_app(app):
