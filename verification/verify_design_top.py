@@ -401,14 +401,14 @@ def print_trace(solver, bmc, symbols, waveform_signals=[]):
                     val = int(re.split("bv(\d*)", str(val))[1].strip())
                     val = (val + 2**15) % 2**16 - 2**15
 
+                if "#b" in str(val):
+                    val = str(val).replace("#b", "")
+                    val = int(val, 2)
+
                 if "false" in str(val):
                     trace.append(red("0"))
                 elif "true" in str(val):
                     trace.append(green("1"))
-                elif "#b" in str(val):
-                    val = str(val).replace("#b", "")
-                    val = int(val, 2)
-                    trace.append(green(str(val)))
                 elif int(str(val)) == 0:
                     trace.append(red(str(val)))
                 else:
