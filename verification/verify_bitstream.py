@@ -22,6 +22,7 @@ from .verify_design_top import (
     import_from,
     print_trace,
     flatten,
+    set_clk_rst_flush
 )
 
 import copy
@@ -42,24 +43,44 @@ from archipelago.pnr_graph import (
 )
 
 
-def set_clk_rst_flush(solver):
-    for clk in solver.clks:
-        if clk in solver.fts.inputvars:
-            solver.fts.promote_inputvar(clk)
-        solver.fts.constrain_init(
-            solver.create_term(
-                solver.ops.Equal, clk, solver.create_term(1, clk.get_sort())
+def set_bitstream_cycle_count(solver):
+    bvsort16 = solver.create_bvsort(16)
+
+
+    bmc_equals_4 = solver.create_term(
+        solver.ops.Equal, solver.bmc_counter, solver.create_term(4, bvsort16)
+    )
+
+    solver.fts.add_invar(
+        solver.create_term(solver.ops.Implies, bmc_equals_4, 
+            solver.create_term(solver.ops.Equal, solver.cycle_count, solver.create_term(0, bvsort16))
+        )
+    )
+
+    for name, term in solver.fts.named_terms.items():
+        if "cycle_count" in name and not solver.fts.is_next_var(term):
+            solver.fts.add_invar(
+                solver.create_term(solver.ops.Equal, term, solver.cycle_count)
             )
-        )
-        ite = solver.create_term(
-            solver.ops.Ite,
-            solver.create_term(
-                solver.ops.Equal, clk, solver.create_term(0, clk.get_sort())
-            ),
-            solver.create_term(1, clk.get_sort()),
-            solver.create_term(0, clk.get_sort()),
-        )
-        solver.fts.assign_next(clk, ite)
+
+def set_garnet_clk_rst_flush(solver):
+    # for clk in solver.clks:
+    #     if clk in solver.fts.inputvars:
+    #         solver.fts.promote_inputvar(clk)
+    #     solver.fts.constrain_init(
+    #         solver.create_term(
+    #             solver.ops.Equal, clk, solver.create_term(1, clk.get_sort())
+    #         )
+    #     )
+    #     ite = solver.create_term(
+    #         solver.ops.Ite,
+    #         solver.create_term(
+    #             solver.ops.Equal, clk, solver.create_term(0, clk.get_sort())
+    #         ),
+    #         solver.create_term(1, clk.get_sort()),
+    #         solver.create_term(0, clk.get_sort()),
+    #     )
+    #     solver.fts.assign_next(clk, ite)
 
     rst_times = [0, 1]
     for rst in solver.rsts:
@@ -106,8 +127,8 @@ def create_bitstream_property_term(
     bvsort16 = solver.create_bvsort(16)
 
     for input_pnr_name, input_symbol_pnr in input_symbols_pnr.items():
-        name = input_pnr_name.replace("in.", "")
-        assert name in placement
+        name = input_pnr_name.replace(".out", "")
+        assert name in placement, f"{name} not in placement"
 
         loc = placement[name]
 
@@ -170,7 +191,7 @@ def create_bitstream_property_term(
             property_term,
             solver.create_term(
                 solver.ops.Equal,
-                output_symbol_pnr,
+                solver.create_term(1, garnet_output.get_sort()),
                 garnet_output,
             ),
         )
@@ -217,6 +238,11 @@ def verify_bitstream(
         solver, f"{solver.app_dir}/garnet_configed.btor2"
     )
 
+    solver.clks.append(solver.fts.lookup("clk"))
+    solver.rsts.append(solver.fts.lookup("reset"))
+
+    set_garnet_clk_rst_flush(solver)
+
     # load PnR results
     packed_file = coreir_file.replace("design_top.json", "design.packed")
     placement_file = coreir_file.replace("design_top.json", "design.place")
@@ -245,10 +271,10 @@ def verify_bitstream(
         nx_pnr, interconnect, solver, app_dir
     )
 
-    solver.clks.append(solver.fts.lookup("clk"))
-    solver.rsts.append(solver.fts.lookup("reset"))
+    # set_bitstream_cycle_count(solver)
 
     set_clk_rst_flush(solver)
+
 
     property_term = create_bitstream_property_term(
         solver,
@@ -284,10 +310,16 @@ def verify_bitstream(
         vcd_printer = pono.VCDWitnessPrinter(solver.fts, bmc.witness())
         vcd_printer.dump_trace_to_file("/aha/bitstream_verification.vcd")
 
-        waveform_signals = []
+        waveform_signals = list(garnet_outputs.keys())
 
         symbols = ["bmc_counter"]
+        symbols += list(input_symbols_pnr.keys())
+        symbols += list(output_symbols_pnr.keys())
+        symbols += list(garnet_inputs.keys())
+        symbols += list(garnet_outputs.keys())
+
 
         print_trace(solver, bmc, symbols, waveform_signals)
+
 
     # breakpoint()
