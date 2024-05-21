@@ -140,7 +140,7 @@ def create_bitstream_property_term(
 
     bvsort16 = solver.create_bvsort(16)
 
-    for input_pnr_name, input_symbol_pnr in input_symbols_pnr.items():
+    for pnr_idx, (input_pnr_name, input_symbol_pnr) in enumerate(input_symbols_pnr.items()):
         name = input_pnr_name.replace(".out", "")
         assert name in placement, f"{name} not in placement"
 
@@ -165,16 +165,25 @@ def create_bitstream_property_term(
 
         garnet_input = garnet_inputs[garnet_name]
 
+        input_garnet_d0 = solver.create_fts_state_var(
+            garnet_name + "_d0_" + str(pnr_idx), garnet_input.get_sort()
+        )
+        input_garnet_d1 = solver.create_fts_state_var(
+            garnet_name + "_d1_" + str(pnr_idx), garnet_input.get_sort()
+        )
+
+        solver.fts.assign_next(input_garnet_d0, garnet_input)
+        solver.fts.assign_next(input_garnet_d1, input_garnet_d0)
+
         solver.fts.add_invar(
             solver.create_term(
-                solver.ops.Equal,
-                input_symbol_pnr,
-                garnet_input,
+                solver.ops.Equal, input_garnet_d1, input_symbol_pnr
+                # solver.ops.Equal, input_garnet_d1, solver.create_term(0, input_garnet_d1.get_sort())
             )
         )
 
-        state_var = solver.create_fts_state_var(input_pnr_name + "_state", input_symbol_pnr.get_sort())
-        input_var = solver.create_fts_input_var(input_pnr_name + "_input", input_symbol_pnr.get_sort())
+        state_var = solver.create_fts_state_var(input_pnr_name + "_state", garnet_input.get_sort())
+        input_var = solver.create_fts_input_var(input_pnr_name + "_input", garnet_input.get_sort())
 
         clk_low = solver.create_term(
             solver.ops.Equal,
@@ -218,12 +227,23 @@ def create_bitstream_property_term(
 
         print(output_pnr_name, "matched with", garnet_name)
 
+        # Delay pnr output by 1 cycle
+        output_pnr_d0 = solver.create_fts_state_var(
+            output_pnr_name + "_d0_" + str(pnr_idx), output_symbol_pnr.get_sort()
+        )
+        output_pnr_d1 = solver.create_fts_state_var(
+            output_pnr_name + "_d1_" + str(pnr_idx), output_symbol_pnr.get_sort()
+        )
+
+        solver.fts.assign_next(output_pnr_d0, output_symbol_pnr)
+        solver.fts.assign_next(output_pnr_d1, output_pnr_d0)
+
         property_term = solver.create_term(
             solver.ops.And,
             property_term,
             solver.create_term(
                 solver.ops.Equal,
-                output_symbol_pnr,
+                output_pnr_d1,
                 garnet_output,
             ),
         )
@@ -315,7 +335,7 @@ def verify_bitstream(
 
     set_garnet_inputs(solver, garnet_inputs)
 
-    input_to_output_cycle_dep = solver.first_valid_output + 10
+    input_to_output_cycle_dep = solver.first_valid_output + 3
 
 
     property_term = create_bitstream_property_term(
