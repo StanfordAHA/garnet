@@ -110,9 +110,12 @@ def set_garnet_inputs(solver, garnet_inputs):
             solver.ops.Equal, flush, solver.create_term(0, flush.get_sort())
         )
     )
+
+    flush_val = (2**flush.get_sort().get_width()) - 1
+
     solver.fts_assert_at_times(
         flush,
-        solver.create_term(1, flush.get_sort()),
+        solver.create_term(flush_val, flush.get_sort()),
         solver.create_term(0, flush.get_sort()),
         flush_times,
     )
@@ -275,7 +278,7 @@ def verify_bitstream(
     solver.app_dir = f"{app_dir}/verification"
 
     solver.starting_cycle = 0
-    solver.max_cycles = 150
+    solver.max_cycles = 1000
 
     interconnect.pipeline_config_interval = pipeline_config_interval
 
@@ -304,9 +307,10 @@ def verify_bitstream(
         placement, routing, id_to_name, netlist, 1, 0, 1, False
     )
 
+
     nx_pnr = pnr_to_nx(
         routing_result_graph,
-        read_coreir(coreir_file.replace("design_top.json", "design_top.json")),
+        read_coreir(coreir_file),
         instance_to_instr,
     )
 
@@ -318,13 +322,13 @@ def verify_bitstream(
 
     set_clk_rst_flush(solver)
 
-    # interconnect_def = remove_config_regs(f"{solver.app_dir}/garnet.v", f"{solver.app_dir}/garnet_no_regs.v")
+    remove_config_regs(f"/aha/garnet/garnet.v", f"{solver.app_dir}/garnet_no_regs.sv")
 
-    # flatten_garnet(app_dir=solver.app_dir, garnet_filename=f"{solver.app_dir}/garnet_no_regs.v", garnet_flattened=f"{solver.app_dir}/garnet_flattened.v")
+    interconnect_def = flatten_garnet(app_dir=solver.app_dir, garnet_filename=f"{solver.app_dir}/garnet_no_regs.sv", garnet_flattened=f"{solver.app_dir}/garnet_flattened.v")
 
-    # config_garnet(interconnect, bitstream, f"{solver.app_dir}/garnet_flattened.v", f"{solver.app_dir}/garnet_configed.v", interconnect_def)
+    config_garnet(interconnect, bitstream, f"{solver.app_dir}/garnet_flattened.v", f"{solver.app_dir}/garnet_configed.v", interconnect_def)
 
-    # garnet_to_btor(app_dir=solver.app_dir, garnet_filename=f"{solver.app_dir}/garnet_configed.v", btor_filename=f"{solver.app_dir}/garnet_configed.btor2")
+    garnet_to_btor(app_dir=solver.app_dir, garnet_filename=f"{solver.app_dir}/garnet_configed.v", btor_filename=f"{solver.app_dir}/garnet_configed.btor2")
 
     solver.read_btor2(f"{solver.app_dir}/garnet_configed.btor2")
 
@@ -374,6 +378,7 @@ def verify_bitstream(
         vcd_printer.dump_trace_to_file("/aha/bitstream_verification.vcd")
 
         waveform_signals = list(garnet_outputs.keys()) + list(output_symbols_pnr.keys())
+        waveform_signals.append("flushed")
 
         symbols = ["bmc_counter", "flush", "reset"]
         symbols += list(input_symbols_pnr.keys())
