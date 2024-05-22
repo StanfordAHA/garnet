@@ -76,6 +76,10 @@ import "DPI-C" function int get_io_tile_cycle_stride(
     int index,
     int stride_idx
 );
+import "DPI-C" function int get_io_tile_is_glb_input( // for back-to-back kernels
+    chandle info,
+    int index
+);
 import "DPI-C" function chandle get_kernel_configuration(chandle info);
 import "DPI-C" function chandle get_pcfg_configuration(chandle info);
 import "DPI-C" function int get_configuration_size(chandle info);
@@ -117,6 +121,7 @@ typedef struct {
     int tile;
     int start_addr;
     int num_data;
+    int is_glb_input; // for back-to-back kernels to judge if input is already in glb
     data_array_t io_block_data;
 } IOTile;
 
@@ -455,6 +460,7 @@ function int Kernel::kernel_map();
         for (int j = 0; j < inputs[i].num_io_tiles; j++) begin
             inputs[i].io_tiles[j].tile = get_io_tile_map_tile(io_info, j);
             inputs[i].io_tiles[j].start_addr = get_io_tile_start_addr(io_info, j);
+            inputs[i].io_tiles[j].is_glb_input = get_io_tile_is_glb_input(io_info, j); // for back-to-back kernels
         end
     end
 
