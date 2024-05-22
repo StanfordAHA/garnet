@@ -202,6 +202,13 @@ int parse_io_tile_info(struct IOTileInfo *io_tile_info, json_t const *io_tile_js
         cnt++;
     }
 
+    // Parse is_glb_input for back-to-back kernels
+    json_t const *is_glb_input_json = json_getProperty(io_tile_json, "is_glb_input");
+    if (!is_glb_input_json || JSON_INTEGER != json_getType(is_glb_input_json)) {
+        io_tile_info->is_glb_input = 0;  // Default to 0 if not found or not an integer
+    } else {
+        io_tile_info->is_glb_input = json_getInteger(is_glb_input_json);
+    }
     return SUCCESS;
 }
 
@@ -670,6 +677,11 @@ int get_io_tile_cycle_stride(void *info, int index, int stride_idx) {
 int get_io_tile_extent(void *info, int index, int extent_idx) {
     GET_IO_INFO(info);
     return io_info->io_tiles[index].extent[extent_idx];
+}
+
+int get_io_tile_is_glb_input(void *info, int index) {
+    GET_IO_INFO(info);
+    return io_info->io_tiles[index].is_glb_input;
 }
 
 int get_output_size(void *info, int index) {
