@@ -102,9 +102,6 @@ def set_pnr_inputs(
 
         solver.fts.add_invar(solver.create_term(solver.ops.Equal, state_var, v))
 
-        solver.fts.add_invar(
-            solver.create_term(solver.ops.Equal, state_var, solver.cycle_count)
-        )
 
 
 def get_output_array_idx(
