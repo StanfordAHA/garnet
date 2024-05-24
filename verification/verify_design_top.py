@@ -17,6 +17,7 @@ from tabulate import tabulate
 from verified_agile_hardware.solver import Solver
 import smt_switch as ss
 import multiprocessing
+import math
 
 
 def set_clk_rst_flush(solver):
@@ -104,7 +105,7 @@ def flatten(lst):
     return result
 
 
-def set_inputs(solver, input_symbols, halide_image_symbols, bvsort16):
+def set_inputs(solver, pnr_symbols, halide_ins_and_outs, matched_inputs, bvsort16):
 
     # print("set pix to pix_idx")
     # for pix_idx, pix in enumerate(flatten(halide_image_symbols)):
@@ -114,35 +115,56 @@ def set_inputs(solver, input_symbols, halide_image_symbols, bvsort16):
     #         )
     #     )
 
-    lut_vals = []
-    for pix_idx, pix in enumerate(flatten(halide_image_symbols)):
-        lut_vals.append((solver.create_const(pix_idx, bvsort16), pix))
+    for halide_name, pnr_names in matched_inputs.items():
 
-    starting_index = len(input_symbols) * solver.starting_cycle
-    ending_index = (len(input_symbols) * solver.max_cycles) + len(input_symbols)
+        halide_symbols = halide_ins_and_outs[halide_name]
 
-    input_pixel = solver.create_lut(
-        "input_pixel_array", lut_vals, bvsort16, bvsort16, starting_index, ending_index
-    )
+        input_pnr_unrolling = len(pnr_names)
 
-    # Don't know if this is general enough
-    for input_idx, input_var in enumerate(input_symbols.values()):
-        index = solver.create_term(
-            solver.ops.BVAdd,
-            solver.create_term(
-                solver.ops.BVMul,
-                solver.cycle_count,
-                solver.create_term(len(input_symbols), solver.cycle_count.get_sort()),
-            ),
-            solver.create_term(input_idx, solver.cycle_count.get_sort()),
+        starting_index = input_pnr_unrolling * solver.starting_cycle
+        ending_index = (input_pnr_unrolling * solver.max_cycles) + input_pnr_unrolling
+
+        lut_vals = []
+        for pix_idx, pix in enumerate(flatten(halide_symbols)):
+            lut_vals.append((solver.create_const(pix_idx, bvsort16), pix))
+
+        input_pixel = solver.create_lut(
+            "input_pixel_array_" + halide_name,
+            lut_vals,
+            bvsort16,
+            bvsort16,
+            starting_index,
+            ending_index,
         )
-        solver.fts.add_invar(
-            solver.create_term(
-                solver.ops.Equal,
-                input_var,
-                input_pixel(index),
+
+        for index in range(solver.starting_cycle, solver.max_cycles):
+            if not input_pixel(
+                solver.create_const(index, bvsort16)
+            ).is_symbolic_const():
+                print(
+                    "Input pixel",
+                    index,
+                    input_pixel(solver.create_const(index, bvsort16)),
+                )
+
+        for pnr_idx, pnr_name in enumerate(pnr_names):
+            pnr_symbol = pnr_symbols[pnr_name]
+            index = solver.create_term(
+                solver.ops.BVAdd,
+                solver.create_term(
+                    solver.ops.BVMul,
+                    solver.cycle_count,
+                    solver.create_term(len(pnr_names), solver.cycle_count.get_sort()),
+                ),
+                solver.create_term(pnr_idx, solver.cycle_count.get_sort()),
             )
-        )
+            solver.fts.add_invar(
+                solver.create_term(
+                    solver.ops.Equal,
+                    pnr_symbol,
+                    input_pixel(index),
+                )
+            )
 
     # print(len(solver.fts.named_terms), len(solver.fts.statevars), len(str(solver.fts.trans)))
 
@@ -151,115 +173,127 @@ def create_property_term(
     solver,
     output_symbols,
     mapped_output_datas,
-    halide_out_symbols,
+    halide_ins_and_outs,
+    halide_to_mapped_outputs,
     input_to_output_cycle_dep,
     bvsort16,
     bvsort1,
 ):
 
-    lut_vals = []
-    for pix_idx, pix in enumerate(flatten(halide_out_symbols)):
-        lut_vals.append((solver.create_const(pix_idx, bvsort16), pix))
+    for halide_out, pnr_outputs in halide_to_mapped_outputs.items():
+        halide_out_symbols = halide_ins_and_outs[halide_out]
 
-    starting_index = len(mapped_output_datas) * solver.starting_cycle
-    ending_index = (len(mapped_output_datas) * solver.max_cycles) + len(
-        mapped_output_datas
-    )
+        lut_vals = []
+        for pix_idx, pix in enumerate(flatten(halide_out_symbols)):
+            lut_vals.append((solver.create_const(pix_idx, bvsort16), pix))
 
-    output_pixel_array = solver.create_lut(
-        "output_pixel_array", lut_vals, bvsort16, bvsort16
-    )
+        starting_index = 0
+        ending_index = (len(pnr_outputs) * solver.max_cycles) + len(pnr_outputs)
 
-    property_term = solver.create_term(True)
-
-    for output_var_idx, mapped_output_var_name in enumerate(mapped_output_datas):
-        mapped_output_var = output_symbols[mapped_output_var_name]
-
-        valid_name = f'{mapped_output_var_name.split("_write")[0]}_write_valid'
-        assert valid_name in output_symbols
-        mapped_valid = output_symbols[valid_name]
-
-        valid_eq = solver.create_term(
-            solver.ops.Equal, mapped_valid, solver.create_term(1, bvsort1)
+        output_pixel_array = solver.create_lut(
+            "output_pixel_array_" + halide_out,
+            lut_vals,
+            bvsort16,
+            bvsort16,
+            starting_index,
+            ending_index,
         )
 
-        halide_pixel_index_var = solver.create_fts_state_var(
-            f"halide_pixel_index_{str(mapped_output_var_name)}", bvsort16
-        )
+        property_term = solver.create_term(True)
 
-        # Precalculate the halide pixel index based on the memory tile schedule
-        assert valid_name in solver.stencil_valid_to_port_controller
-        memtile = solver.stencil_valid_to_port_controller[valid_name]
+        for output_var_idx, mapped_output_var_name in enumerate(pnr_outputs):
+            mapped_output_var = output_symbols[mapped_output_var_name]
 
-        # This is a list that stores the number of valid pixels at each cycle
-        # Can use this to index into halide output pixel array
-        cycle_to_halide_idx, valids = mem_tile_get_num_valids(
-            solver.stencil_valid_to_schedule[memtile],
-            solver.max_cycles,
-            iterator_support=6,
-        )
+            valid_name = f'{mapped_output_var_name.split("_write")[0]}_write_valid'
+            assert valid_name in output_symbols
+            mapped_valid = output_symbols[valid_name]
 
-        cycle_to_halide_lut = []
-        for i, idx in enumerate(cycle_to_halide_idx):
-            cycle_to_halide_lut.append(
-                (solver.create_const(i, bvsort16), solver.create_const(idx, bvsort16))
+            valid_eq = solver.create_term(
+                solver.ops.Equal, mapped_valid, solver.create_term(1, bvsort1)
             )
 
-        cycle_to_halide_idx_var = solver.create_lut(
-            f"{memtile}_cycle_to_halide_idx_lut",
-            cycle_to_halide_lut,
-            bvsort16,
-            bvsort16,
-            solver.starting_cycle,
-            solver.max_cycles,
-        )
+            halide_pixel_index_var = solver.create_fts_state_var(
+                f"halide_pixel_index_{str(mapped_output_var_name)}", bvsort16
+            )
 
-        halide_pixel_index = cycle_to_halide_idx_var(solver.cycle_count)
+            # Precalculate the halide pixel index based on the memory tile schedule
+            assert valid_name in solver.stencil_valid_to_port_controller
+            memtile = solver.stencil_valid_to_port_controller[valid_name]
 
-        halide_pixel_index = solver.create_term(
-            solver.ops.BVAdd,
-            solver.create_term(
-                solver.ops.BVMul,
-                halide_pixel_index,
+            # This is a list that stores the number of valid pixels at each cycle
+            # Can use this to index into halide output pixel array
+            cycle_to_halide_idx, valids = mem_tile_get_num_valids(
+                solver.stencil_valid_to_schedule[memtile],
+                solver.max_cycles,
+                iterator_support=6,
+            )
+
+            cycle_to_halide_lut = []
+            for i, idx in enumerate(cycle_to_halide_idx):
+                cycle_to_halide_lut.append(
+                    (
+                        solver.create_const(i, bvsort16),
+                        solver.create_const(idx, bvsort16),
+                    )
+                )
+
+            cycle_to_halide_idx_var = solver.create_lut(
+                f"{memtile}_cycle_to_halide_idx_lut",
+                cycle_to_halide_lut,
+                bvsort16,
+                bvsort16,
+                solver.starting_cycle,
+                solver.max_cycles,
+            )
+
+            halide_pixel_index = cycle_to_halide_idx_var(solver.cycle_count)
+
+            halide_pixel_index = solver.create_term(
+                solver.ops.BVAdd,
                 solver.create_term(
-                    len(mapped_output_datas), halide_pixel_index.get_sort()
+                    solver.ops.BVMul,
+                    halide_pixel_index,
+                    solver.create_term(
+                        len(mapped_output_datas), halide_pixel_index.get_sort()
+                    ),
                 ),
-            ),
-            solver.create_term(output_var_idx, halide_pixel_index.get_sort()),
-        )
-
-        solver.fts.add_invar(
-            solver.create_term(
-                solver.ops.Equal, halide_pixel_index, halide_pixel_index_var
+                solver.create_term(output_var_idx, halide_pixel_index.get_sort()),
             )
-        )
 
-        halide_out = solver.create_fts_state_var(
-            f"halide_out_{str(mapped_output_var_name)}", bvsort16
-        )
-
-        solver.fts.add_invar(
-            solver.create_term(
-                solver.ops.Equal,
-                halide_out,
-                output_pixel_array(halide_pixel_index),
+            solver.fts.add_invar(
+                solver.create_term(
+                    solver.ops.Equal, halide_pixel_index, halide_pixel_index_var
+                )
             )
-        )
 
-        # solver.fts.assign_next(halide_out, output_pixel_array(halide_pixel_index))
+            halide_out = solver.create_fts_state_var(
+                f"halide_out_{str(mapped_output_var_name)}", bvsort16
+            )
 
-        data_eq = solver.create_term(solver.ops.Equal, mapped_output_var, halide_out)
+            solver.fts.add_invar(
+                solver.create_term(
+                    solver.ops.Equal,
+                    halide_out,
+                    output_pixel_array(halide_pixel_index),
+                )
+            )
 
-        out_symbol_data_eq = solver.create_fts_state_var(
-            f"out_symbol_data_eq_{str(mapped_output_var_name)}", data_eq.get_sort()
-        )
-        solver.fts.add_invar(
-            solver.create_term(solver.ops.Equal, out_symbol_data_eq, data_eq)
-        )
+            # solver.fts.assign_next(halide_out, output_pixel_array(halide_pixel_index))
 
-        imp = solver.create_term(solver.ops.Implies, valid_eq, data_eq)
+            data_eq = solver.create_term(
+                solver.ops.Equal, mapped_output_var, halide_out
+            )
 
-        property_term = solver.create_term(solver.ops.And, property_term, imp)
+            out_symbol_data_eq = solver.create_fts_state_var(
+                f"out_symbol_data_eq_{str(mapped_output_var_name)}", data_eq.get_sort()
+            )
+            solver.fts.add_invar(
+                solver.create_term(solver.ops.Equal, out_symbol_data_eq, data_eq)
+            )
+
+            imp = solver.create_term(solver.ops.Implies, valid_eq, data_eq)
+
+            property_term = solver.create_term(solver.ops.And, property_term, imp)
 
     print("input_to_output_cycle_dep", input_to_output_cycle_dep)
 
@@ -281,8 +315,6 @@ def create_valids_property_term(
     solver,
     output_symbols,
     mapped_output_datas,
-    halide_out_symbols,
-    input_to_output_cycle_dep,
     bvsort16,
     bvsort1,
 ):
@@ -344,12 +376,7 @@ def create_valids_property_term(
 
 def create_cycle_count_property_term(
     solver,
-    output_symbols,
-    mapped_output_datas,
-    halide_out_symbols,
-    input_to_output_cycle_dep,
     bvsort16,
-    bvsort1,
 ):
     # Create property term that says cycle count incremements every 2 bmc counters
     check_cycle_count = solver.create_fts_state_var("check_cycle_count", bvsort16)
@@ -530,14 +557,7 @@ def verify_design_top_parallel(
         f"{app_dir.split(os.sep)[-2]}_pono_testbench", "create_app"
     )
 
-    hw_input_stencil, hw_output_stencil = create_app(
-        solver,
-        starting_pixel_state_var=solver.starting_cycle,
-        ending_pixel_state_var=solver.max_cycles,
-    )
-    # So since we start at a known cycle, we don't need big arrays for confiuring the mem tiles
-    # We can just constrain the starting cycle + check pixels
-    # Or better yet, just constrain the start state
+    halide_ins_and_outs = create_app(Solver())
 
     solver.solver.set_opt("produce-models", "true")
 
@@ -562,28 +582,52 @@ def verify_design_top_parallel(
         else:
             mapped_output_datas.append(output_var)
 
+    halide_to_mapped_inputs = {}
+    halide_to_mapped_outputs = {}
+
+    for k in halide_ins_and_outs.keys():
+        for m in sorted(list(input_symbols.keys())):
+            if k in m:
+                if k not in halide_to_mapped_inputs:
+                    halide_to_mapped_inputs[k] = []
+                halide_to_mapped_inputs[k].append(m)
+
+    for k in halide_ins_and_outs.keys():
+        for m in sorted(list(mapped_output_datas)):
+            if k in m:
+                if k not in halide_to_mapped_outputs:
+                    halide_to_mapped_outputs[k] = []
+                halide_to_mapped_outputs[k].append(m)
+
+    print(halide_to_mapped_inputs)
+    print(halide_to_mapped_outputs)
+
+    input_pnr_unrolling = 1
+    for halide_name, pnr_names in halide_to_mapped_inputs.items():
+        input_pnr_unrolling = max(input_pnr_unrolling, len(pnr_names))
+
+    starting_index = input_pnr_unrolling * solver.starting_cycle
+    ending_index = (input_pnr_unrolling * solver.max_cycles) + input_pnr_unrolling
+
+    halide_ins_and_outs = create_app(solver, starting_index, ending_index)
+
     print("Setting input constraints")
-    set_inputs(solver, input_symbols, hw_input_stencil, bvsort16)
+    set_inputs(
+        solver, input_symbols, halide_ins_and_outs, halide_to_mapped_inputs, bvsort16
+    )
 
     input_to_output_cycle_dep = solver.first_valid_output
 
     print("Creating property term")
     cycle_count_property_term = create_cycle_count_property_term(
         solver,
-        output_symbols,
-        mapped_output_datas,
-        hw_output_stencil,
-        input_to_output_cycle_dep,
         bvsort16,
-        bvsort1,
     )
 
     valids_property_term = create_valids_property_term(
         solver,
         output_symbols,
         mapped_output_datas,
-        hw_output_stencil,
-        input_to_output_cycle_dep,
         bvsort16,
         bvsort1,
     )
@@ -592,7 +636,8 @@ def verify_design_top_parallel(
         solver,
         output_symbols,
         mapped_output_datas,
-        hw_output_stencil,
+        halide_ins_and_outs,
+        halide_to_mapped_outputs,
         input_to_output_cycle_dep,
         bvsort16,
         bvsort1,
@@ -650,15 +695,17 @@ def verify_design_top_parallel(
 
         if res2 is None or res2:
             print("\n\033[91m" + "Valid can never be 1" + "\033[0m")
+            return False
         else:
             print(
                 "\n\033[92m" + "Formal check of mapped application passed" + "\033[0m"
             )
+            return True
 
     else:
 
-        vcd_printer = pono.VCDWitnessPrinter(solver.fts, bmc.witness())
-        vcd_printer.dump_trace_to_file("/aha/dense_only.vcd")
+        # vcd_printer = pono.VCDWitnessPrinter(solver.fts, bmc.witness())
+        # vcd_printer.dump_trace_to_file("/aha/dense_only.vcd")
 
         waveform_signals = [
             "halide_pixel_index_",
@@ -676,6 +723,8 @@ def verify_design_top_parallel(
 
         print_trace(solver, bmc, symbols, waveform_signals)
 
+        return False
+
 
 import concurrent.futures
 
@@ -688,7 +737,7 @@ def verify_design_top(interconnect, coreir_file):
 
     total_cycles = total_output_pixels + first_output_pixel_at_cycle
 
-    pixels_per_core = total_output_pixels // num_cores
+    pixels_per_core = math.ceil(total_output_pixels / num_cores)
 
     # for i in range(num_cores):
     #     starting_cycle = i * cycles_per_core
@@ -714,19 +763,29 @@ def verify_design_top(interconnect, coreir_file):
             interconnect, coreir_file, starting_cycle, ending_cycle
         )
 
-    # processes = []
-    # for check_pixel in check_pixels:
-    #     process = multiprocessing.Process(target=verify_design_top_parallel_wrapper, args=(check_pixel,))
-    #     processes.append(process)
-    #     process.start()
+    results = []
+    processes = []
+    for check_pixel in check_pixels:
+        process = multiprocessing.Process(
+            target=verify_design_top_parallel_wrapper, args=(check_pixel,)
+        )
+        processes.append(process)
+        process.start()
 
-    # for process in processes:
-    #     process.join()
+    for process in processes:
+        process.join()
+        results.append(process.exitcode)
+
+    if 1 in results:
+        print("\n\033[91m" + "Failed" + "\033[0m")
+    else:
+        print("\n\033[92m" + "Passed" + "\033[0m")
 
     # for check_pixel in check_pixels:
     #     verify_design_top_parallel_wrapper(check_pixel)
 
-    verify_design_top_parallel_wrapper(check_pixels[-1])
+    # verify_design_top_parallel_wrapper(check_pixels[-2])
+
+    # verify_design_top_parallel(interconnect, coreir_file, starting_cycle, ending_cycle)
 
     breakpoint()
-    # verify_design_top_parallel(interconnect, coreir_file, starting_cycle, ending_cycle)
