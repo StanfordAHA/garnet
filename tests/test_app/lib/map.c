@@ -174,6 +174,10 @@ int glb_map(void *kernel_, int dpr_enabled) {
         }
     }
 
+    // unset padding var after a kernel is mapped
+    if(getenv("pad_o_left") != NULL) unsetenv("pad_o_left");
+    if(getenv("pad_o_right") != NULL) unsetenv("pad_o_right");
+
     // configure flush crossbar
     int kernel_crossbar_config = 0;
     if (!kernel->opal_dense_scanner_workaround) {
@@ -301,6 +305,10 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         mux_sel = 0b10;
 
     if (io_tile_info->io == Input) {
+
+        // Point to the other bank if the input is stored in GLB
+        if (io_tile_info->is_glb_input == 1) start_addr = start_addr + (1 << BANK_ADDR_WIDTH);
+
         if (strcmp(io_tile_info->mode, "RV") == 0)
             mode = LD_DMA_VALID_MODE_READY_VALID;
         else
