@@ -824,7 +824,7 @@ def pnr(garnet, args, app):
         shutil.copy(args.app, design_top_map)
 
     
-    # verify_design_top(garnet.interconnect, design_top_map)
+    verify_design_top(garnet.interconnect, design_top_map)
 
     placement, routing, id_to_name, instance_to_instr, netlist, bus = \
         garnet.place_and_route(args, load_only=args.generate_bitstream_only)
@@ -877,7 +877,7 @@ def pnr(garnet, args, app):
         json.dump(config, f)
     write_out_bitstream(args.output, bitstream)
 
-    verify_bitstream(garnet.interconnect, str(args.app), instance_to_instr, garnet.pipeline_config_interval, bitstream)
+    # verify_bitstream(garnet.interconnect, str(args.app), instance_to_instr, garnet.pipeline_config_interval, bitstream)
 
 
 def reschedule_pipelined_app(app):

@@ -103,7 +103,7 @@ def flatten(lst):
     return result
 
 
-def set_inputs(solver, input_symbols, halide_image_symbols, bvsort16):
+def set_inputs(solver, pnr_symbols, halide_ins_and_outs, matched_inputs, bvsort16):
 
     # print("set pix to pix_idx")
     # for pix_idx, pix in enumerate(flatten(halide_image_symbols)):
@@ -113,30 +113,36 @@ def set_inputs(solver, input_symbols, halide_image_symbols, bvsort16):
     #         )
     #     )
 
-    lut_vals = []
-    for pix_idx, pix in enumerate(flatten(halide_image_symbols)):
-        lut_vals.append((solver.create_const(pix_idx, bvsort16), pix))
+    for halide_name, pnr_names in matched_inputs.items():
 
-    input_pixel = solver.create_lut("input_pixel_array", lut_vals, bvsort16, bvsort16)
+        halide_symbols = halide_ins_and_outs[halide_name]
 
-    # Don't know if this is general enough
-    for input_idx, input_var in enumerate(input_symbols.values()):
-        index = solver.create_term(
-            solver.ops.BVAdd,
-            solver.create_term(
-                solver.ops.BVMul,
-                solver.cycle_count,
-                solver.create_term(len(input_symbols), solver.cycle_count.get_sort()),
-            ),
-            solver.create_term(input_idx, solver.cycle_count.get_sort()),
+        lut_vals = []
+        for pix_idx, pix in enumerate(flatten(halide_symbols)):
+            lut_vals.append((solver.create_const(pix_idx, bvsort16), pix))
+
+        input_pixel = solver.create_lut(
+            "input_pixel_array_" + halide_name, lut_vals, bvsort16, bvsort16
         )
-        solver.fts.add_invar(
-            solver.create_term(
-                solver.ops.Equal,
-                input_var,
-                input_pixel(index),
+
+        for pnr_idx, pnr_name in enumerate(pnr_names):
+            pnr_symbol = pnr_symbols[pnr_name]
+            index = solver.create_term(
+                solver.ops.BVAdd,
+                solver.create_term(
+                    solver.ops.BVMul,
+                    solver.cycle_count,
+                    solver.create_term(len(pnr_names), solver.cycle_count.get_sort()),
+                ),
+                solver.create_term(pnr_idx, solver.cycle_count.get_sort()),
             )
-        )
+            solver.fts.add_invar(
+                solver.create_term(
+                    solver.ops.Equal,
+                    pnr_symbol,
+                    input_pixel(index),
+                )
+            )
 
     # print(len(solver.fts.named_terms), len(solver.fts.statevars), len(str(solver.fts.trans)))
 
@@ -145,114 +151,117 @@ def create_property_term(
     solver,
     output_symbols,
     mapped_output_datas,
-    halide_out_symbols,
+    halide_ins_and_outs,
+    halide_to_mapped_outputs,
     input_to_output_cycle_dep,
     bvsort16,
     bvsort1,
 ):
 
-    starting_cycle_count = solver.create_fts_state_var("starting_cycle_count", bvsort16)
+    for halide_out, pnr_outputs in halide_to_mapped_outputs.items():
+        halide_out_symbols = halide_ins_and_outs[halide_out]
 
-    solver.fts.constrain_init(
-        solver.create_term(solver.ops.Equal, starting_cycle_count, solver.cycle_count)
-    )
+        lut_vals = []
+        for pix_idx, pix in enumerate(flatten(halide_out_symbols)):
+            lut_vals.append((solver.create_const(pix_idx, bvsort16), pix))
 
-    solver.fts.assign_next(starting_cycle_count, starting_cycle_count)
-
-    lut_vals = []
-    for pix_idx, pix in enumerate(flatten(halide_out_symbols)):
-        lut_vals.append((solver.create_const(pix_idx, bvsort16), pix))
-
-    output_pixel_array = solver.create_lut(
-        "output_pixel_array", lut_vals, bvsort16, bvsort16
-    )
-
-    property_term = solver.create_term(True)
-
-    for output_var_idx, mapped_output_var_name in enumerate(mapped_output_datas):
-        mapped_output_var = output_symbols[mapped_output_var_name]
-
-        valid_name = f'{mapped_output_var_name.split("_write")[0]}_write_valid'
-        assert valid_name in output_symbols
-        mapped_valid = output_symbols[valid_name]
-
-        valid_eq = solver.create_term(
-            solver.ops.Equal, mapped_valid, solver.create_term(1, bvsort1)
+        output_pixel_array = solver.create_lut(
+            "output_pixel_array_" + halide_out, lut_vals, bvsort16, bvsort16
         )
 
-        halide_pixel_index_var = solver.create_fts_state_var(
-            f"halide_pixel_index_{str(mapped_output_var_name)}", bvsort16
-        )
+        property_term = solver.create_term(True)
 
-        # Precalculate the halide pixel index based on the memory tile schedule
-        assert valid_name in solver.stencil_valid_to_port_controller
-        memtile = solver.stencil_valid_to_port_controller[valid_name]
+        for output_var_idx, mapped_output_var_name in enumerate(pnr_outputs):
+            mapped_output_var = output_symbols[mapped_output_var_name]
 
-        # This is a list that stores the number of valid pixels at each cycle
-        # Can use this to index into halide output pixel array
-        cycle_to_halide_idx, valids = mem_tile_get_num_valids(
-            solver.stencil_valid_to_schedule[memtile],
-            solver.max_cycles,
-            iterator_support=6,
-        )
+            valid_name = f'{mapped_output_var_name.split("_write")[0]}_write_valid'
+            assert valid_name in output_symbols
+            mapped_valid = output_symbols[valid_name]
 
-        cycle_to_halide_lut = []
-        for i, idx in enumerate(cycle_to_halide_idx):
-            cycle_to_halide_lut.append(
-                (solver.create_const(i, bvsort16), solver.create_const(idx, bvsort16))
+            valid_eq = solver.create_term(
+                solver.ops.Equal, mapped_valid, solver.create_term(1, bvsort1)
             )
 
-        cycle_to_halide_idx_var = solver.create_lut(
-            f"{memtile}_cycle_to_halide_idx_lut",
-            cycle_to_halide_lut,
-            bvsort16,
-            bvsort16,
-        )
-
-        halide_pixel_index = cycle_to_halide_idx_var(solver.cycle_count)
-
-        halide_pixel_index = solver.create_term(
-            solver.ops.BVAdd,
-            solver.create_term(
-                solver.ops.BVMul,
-                halide_pixel_index,
-                solver.create_term(len(mapped_output_datas), halide_pixel_index.get_sort()),
-            ),
-            solver.create_term(output_var_idx, halide_pixel_index.get_sort()),
-        )
-
-        solver.fts.add_invar(
-            solver.create_term(
-                solver.ops.Equal, halide_pixel_index, halide_pixel_index_var
+            halide_pixel_index_var = solver.create_fts_state_var(
+                f"halide_pixel_index_{str(mapped_output_var_name)}", bvsort16
             )
-        )
 
-        halide_out = solver.create_fts_state_var(
-            f"halide_out_{str(mapped_output_var_name)}", bvsort16
-        )
+            # Precalculate the halide pixel index based on the memory tile schedule
+            assert valid_name in solver.stencil_valid_to_port_controller
+            memtile = solver.stencil_valid_to_port_controller[valid_name]
 
-        solver.fts.add_invar(
-            solver.create_term(
-                solver.ops.Equal,
-                halide_out,
-                output_pixel_array(halide_pixel_index),
+            # This is a list that stores the number of valid pixels at each cycle
+            # Can use this to index into halide output pixel array
+            cycle_to_halide_idx, valids = mem_tile_get_num_valids(
+                solver.stencil_valid_to_schedule[memtile],
+                solver.max_cycles,
+                iterator_support=6,
             )
-        )
 
-        # solver.fts.assign_next(halide_out, output_pixel_array(halide_pixel_index))
+            cycle_to_halide_lut = []
+            for i, idx in enumerate(cycle_to_halide_idx):
+                cycle_to_halide_lut.append(
+                    (
+                        solver.create_const(i, bvsort16),
+                        solver.create_const(idx, bvsort16),
+                    )
+                )
 
-        data_eq = solver.create_term(solver.ops.Equal, mapped_output_var, halide_out)
+            cycle_to_halide_idx_var = solver.create_lut(
+                f"{memtile}_cycle_to_halide_idx_lut",
+                cycle_to_halide_lut,
+                bvsort16,
+                bvsort16,
+            )
 
-        out_symbol_data_eq = solver.create_fts_state_var(
-            f"out_symbol_data_eq_{str(mapped_output_var_name)}", data_eq.get_sort()
-        )
-        solver.fts.add_invar(
-            solver.create_term(solver.ops.Equal, out_symbol_data_eq, data_eq)
-        )
+            halide_pixel_index = cycle_to_halide_idx_var(solver.cycle_count)
 
-        imp = solver.create_term(solver.ops.Implies, valid_eq, data_eq)
+            halide_pixel_index = solver.create_term(
+                solver.ops.BVAdd,
+                solver.create_term(
+                    solver.ops.BVMul,
+                    halide_pixel_index,
+                    solver.create_term(
+                        len(mapped_output_datas), halide_pixel_index.get_sort()
+                    ),
+                ),
+                solver.create_term(output_var_idx, halide_pixel_index.get_sort()),
+            )
 
-        property_term = solver.create_term(solver.ops.And, property_term, imp)
+            solver.fts.add_invar(
+                solver.create_term(
+                    solver.ops.Equal, halide_pixel_index, halide_pixel_index_var
+                )
+            )
+
+            halide_out = solver.create_fts_state_var(
+                f"halide_out_{str(mapped_output_var_name)}", bvsort16
+            )
+
+            solver.fts.add_invar(
+                solver.create_term(
+                    solver.ops.Equal,
+                    halide_out,
+                    output_pixel_array(halide_pixel_index),
+                )
+            )
+
+            # solver.fts.assign_next(halide_out, output_pixel_array(halide_pixel_index))
+
+            data_eq = solver.create_term(
+                solver.ops.Equal, mapped_output_var, halide_out
+            )
+
+            out_symbol_data_eq = solver.create_fts_state_var(
+                f"out_symbol_data_eq_{str(mapped_output_var_name)}", data_eq.get_sort()
+            )
+            solver.fts.add_invar(
+                solver.create_term(solver.ops.Equal, out_symbol_data_eq, data_eq)
+            )
+
+            imp = solver.create_term(solver.ops.Implies, valid_eq, data_eq)
+
+            property_term = solver.create_term(solver.ops.And, property_term, imp)
 
     print("input_to_output_cycle_dep", input_to_output_cycle_dep)
 
@@ -274,8 +283,6 @@ def create_valids_property_term(
     solver,
     output_symbols,
     mapped_output_datas,
-    halide_out_symbols,
-    input_to_output_cycle_dep,
     bvsort16,
     bvsort1,
 ):
@@ -335,12 +342,7 @@ def create_valids_property_term(
 
 def create_cycle_count_property_term(
     solver,
-    output_symbols,
-    mapped_output_datas,
-    halide_out_symbols,
-    input_to_output_cycle_dep,
     bvsort16,
-    bvsort1,
 ):
     # Create property term that says cycle count incremements every 2 bmc counters
     check_cycle_count = solver.create_fts_state_var("check_cycle_count", bvsort16)
@@ -509,7 +511,7 @@ def verify_design_top(interconnect, coreir_file):
     solver = Solver()
 
     solver.starting_cycle = 0
-    solver.max_cycles = 400
+    solver.max_cycles = 200
 
     sys.path.append(os.path.abspath(app_dir))
 
@@ -517,12 +519,9 @@ def verify_design_top(interconnect, coreir_file):
         f"{app_dir.split(os.sep)[-2]}_pono_testbench", "create_app"
     )
 
-    hw_input_stencil, hw_output_stencil = create_app(
-        solver, starting_pixel_state_var=0, ending_pixel_state_var=0
+    halide_ins_and_outs = create_app(
+        solver, starting_pixel_state_var=0, ending_pixel_state_var=solver.max_cycles
     )
-    # So since we start at a known cycle, we don't need big arrays for confiuring the mem tiles
-    # We can just constrain the starting cycle + check pixels
-    # Or better yet, just constrain the start state
 
     solver.solver.set_opt("produce-models", "true")
 
@@ -547,28 +546,43 @@ def verify_design_top(interconnect, coreir_file):
         else:
             mapped_output_datas.append(output_var)
 
+    halide_to_mapped_inputs = {}
+    halide_to_mapped_outputs = {}
+
+    for k in halide_ins_and_outs.keys():
+        for m in sorted(list(input_symbols.keys())):
+            if k in m:
+                if k not in halide_to_mapped_inputs:
+                    halide_to_mapped_inputs[k] = []
+                halide_to_mapped_inputs[k].append(m)
+
+    for k in halide_ins_and_outs.keys():
+        for m in sorted(list(mapped_output_datas)):
+            if k in m:
+                if k not in halide_to_mapped_outputs:
+                    halide_to_mapped_outputs[k] = []
+                halide_to_mapped_outputs[k].append(m)
+
+    print(halide_to_mapped_inputs)
+    print(halide_to_mapped_outputs)
+
     print("Setting input constraints")
-    set_inputs(solver, input_symbols, hw_input_stencil, bvsort16)
+    set_inputs(
+        solver, input_symbols, halide_ins_and_outs, halide_to_mapped_inputs, bvsort16
+    )
 
     input_to_output_cycle_dep = solver.first_valid_output
 
     print("Creating property term")
     cycle_count_property_term = create_cycle_count_property_term(
         solver,
-        output_symbols,
-        mapped_output_datas,
-        hw_output_stencil,
-        input_to_output_cycle_dep,
         bvsort16,
-        bvsort1,
     )
 
     valids_property_term = create_valids_property_term(
         solver,
         output_symbols,
         mapped_output_datas,
-        hw_output_stencil,
-        input_to_output_cycle_dep,
         bvsort16,
         bvsort1,
     )
@@ -577,7 +591,8 @@ def verify_design_top(interconnect, coreir_file):
         solver,
         output_symbols,
         mapped_output_datas,
-        hw_output_stencil,
+        halide_ins_and_outs,
+        halide_to_mapped_outputs,
         input_to_output_cycle_dep,
         bvsort16,
         bvsort1,
@@ -654,8 +669,6 @@ def verify_design_top(interconnect, coreir_file):
             "halide_valid",
         ]
 
-
-
         symbols = (
             list(input_symbols.keys())
             + list(output_symbols.keys())
@@ -664,4 +677,4 @@ def verify_design_top(interconnect, coreir_file):
 
         print_trace(solver, bmc, symbols, waveform_signals)
 
-    breakpoint()
+    # breakpoint()

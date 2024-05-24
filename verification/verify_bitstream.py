@@ -18,12 +18,7 @@ import time
 import os
 import sys
 import pono
-from .verify_design_top import (
-    import_from,
-    print_trace,
-    flatten,
-    set_clk_rst_flush
-)
+from .verify_design_top import import_from, print_trace, flatten, set_clk_rst_flush
 
 import copy
 import json
@@ -46,14 +41,17 @@ from archipelago.pnr_graph import (
 def set_bitstream_cycle_count(solver):
     bvsort16 = solver.create_bvsort(16)
 
-
     bmc_equals_6 = solver.create_term(
         solver.ops.Equal, solver.bmc_counter, solver.create_term(6, bvsort16)
     )
 
     solver.fts.add_invar(
-        solver.create_term(solver.ops.Implies, bmc_equals_6, 
-            solver.create_term(solver.ops.Equal, solver.cycle_count, solver.create_term(0, bvsort16))
+        solver.create_term(
+            solver.ops.Implies,
+            bmc_equals_6,
+            solver.create_term(
+                solver.ops.Equal, solver.cycle_count, solver.create_term(0, bvsort16)
+            ),
         )
     )
 
@@ -62,6 +60,7 @@ def set_bitstream_cycle_count(solver):
             solver.fts.add_invar(
                 solver.create_term(solver.ops.Equal, term, solver.cycle_count)
             )
+
 
 def set_garnet_inputs(solver, garnet_inputs):
 
@@ -73,9 +72,7 @@ def set_garnet_inputs(solver, garnet_inputs):
     if clk in solver.fts.inputvars:
         solver.fts.promote_inputvar(clk)
     solver.fts.constrain_init(
-        solver.create_term(
-            solver.ops.Equal, clk, solver.create_term(1, clk.get_sort())
-        )
+        solver.create_term(solver.ops.Equal, clk, solver.create_term(1, clk.get_sort()))
     )
     ite = solver.create_term(
         solver.ops.Ite,
@@ -111,7 +108,7 @@ def set_garnet_inputs(solver, garnet_inputs):
         )
     )
 
-    flush_val = (2**flush.get_sort().get_width()) - 1
+    flush_val = (2 ** flush.get_sort().get_width()) - 1
 
     solver.fts_assert_at_times(
         flush,
@@ -121,13 +118,17 @@ def set_garnet_inputs(solver, garnet_inputs):
     )
 
     solver.fts.add_invar(
-        solver.create_term(solver.ops.Equal, stall, solver.create_term(0, stall.get_sort()))
+        solver.create_term(
+            solver.ops.Equal, stall, solver.create_term(0, stall.get_sort())
+        )
     )
 
     for name, term in garnet_inputs.items():
         if "config" in name:
             solver.fts.add_invar(
-                solver.create_term(solver.ops.Equal, term, solver.create_term(0, term.get_sort()))
+                solver.create_term(
+                    solver.ops.Equal, term, solver.create_term(0, term.get_sort())
+                )
             )
 
 
@@ -138,12 +139,14 @@ def create_bitstream_property_term(
     garnet_inputs,
     garnet_outputs,
     placement,
-    input_to_output_cycle_dep
+    input_to_output_cycle_dep,
 ):
 
     bvsort16 = solver.create_bvsort(16)
 
-    for pnr_idx, (input_pnr_name, input_symbol_pnr) in enumerate(input_symbols_pnr.items()):
+    for pnr_idx, (input_pnr_name, input_symbol_pnr) in enumerate(
+        input_symbols_pnr.items()
+    ):
         name = input_pnr_name.replace(".out", "")
         assert name in placement, f"{name} not in placement"
 
@@ -180,13 +183,19 @@ def create_bitstream_property_term(
 
         solver.fts.add_invar(
             solver.create_term(
-                solver.ops.Equal, input_garnet_d1, input_symbol_pnr
+                solver.ops.Equal,
+                input_garnet_d1,
+                input_symbol_pnr,
                 # solver.ops.Equal, input_garnet_d1, solver.create_term(0, input_garnet_d1.get_sort())
             )
         )
 
-        state_var = solver.create_fts_state_var(input_pnr_name + "_state", garnet_input.get_sort())
-        input_var = solver.create_fts_input_var(input_pnr_name + "_input", garnet_input.get_sort())
+        state_var = solver.create_fts_state_var(
+            input_pnr_name + "_state", garnet_input.get_sort()
+        )
+        input_var = solver.create_fts_input_var(
+            input_pnr_name + "_input", garnet_input.get_sort()
+        )
 
         clk_low = solver.create_term(
             solver.ops.Equal,
@@ -199,7 +208,9 @@ def create_bitstream_property_term(
             solver.create_term(solver.ops.Ite, clk_low, input_var, state_var),
         )
 
-        solver.fts.add_invar(solver.create_term(solver.ops.Equal, state_var, input_symbol_pnr))
+        solver.fts.add_invar(
+            solver.create_term(solver.ops.Equal, state_var, input_symbol_pnr)
+        )
 
     property_term = solver.create_term(True)
 
@@ -278,7 +289,7 @@ def verify_bitstream(
     solver.app_dir = f"{app_dir}/verification"
 
     solver.starting_cycle = 0
-    solver.max_cycles = 1000
+    solver.max_cycles = 100
 
     interconnect.pipeline_config_interval = pipeline_config_interval
 
@@ -287,7 +298,6 @@ def verify_bitstream(
 
     if not os.path.exists(solver.app_dir):
         os.mkdir(solver.app_dir)
-
 
     # load PnR results
     packed_file = coreir_file.replace("design_top.json", "design.packed")
@@ -307,7 +317,6 @@ def verify_bitstream(
         placement, routing, id_to_name, netlist, 1, 0, 1, False
     )
 
-
     nx_pnr = pnr_to_nx(
         routing_result_graph,
         read_coreir(coreir_file),
@@ -324,11 +333,25 @@ def verify_bitstream(
 
     remove_config_regs(f"/aha/garnet/garnet.v", f"{solver.app_dir}/garnet_no_regs.sv")
 
-    interconnect_def = flatten_garnet(app_dir=solver.app_dir, garnet_filename=f"{solver.app_dir}/garnet_no_regs.sv", garnet_flattened=f"{solver.app_dir}/garnet_flattened.v")
+    interconnect_def = flatten_garnet(
+        app_dir=solver.app_dir,
+        garnet_filename=f"{solver.app_dir}/garnet_no_regs.sv",
+        garnet_flattened=f"{solver.app_dir}/garnet_flattened.v",
+    )
 
-    config_garnet(interconnect, bitstream, f"{solver.app_dir}/garnet_flattened.v", f"{solver.app_dir}/garnet_configed.v", interconnect_def)
+    config_garnet(
+        interconnect,
+        bitstream,
+        f"{solver.app_dir}/garnet_flattened.v",
+        f"{solver.app_dir}/garnet_configed.v",
+        interconnect_def,
+    )
 
-    garnet_to_btor(app_dir=solver.app_dir, garnet_filename=f"{solver.app_dir}/garnet_configed.v", btor_filename=f"{solver.app_dir}/garnet_configed.btor2")
+    garnet_to_btor(
+        app_dir=solver.app_dir,
+        garnet_filename=f"{solver.app_dir}/garnet_configed.v",
+        btor_filename=f"{solver.app_dir}/garnet_configed.btor2",
+    )
 
     solver.read_btor2(f"{solver.app_dir}/garnet_configed.btor2")
 
@@ -341,7 +364,6 @@ def verify_bitstream(
 
     input_to_output_cycle_dep = solver.first_valid_output + 3
 
-
     property_term = create_bitstream_property_term(
         solver,
         input_symbols_pnr,
@@ -349,7 +371,7 @@ def verify_bitstream(
         garnet_inputs,
         garnet_outputs,
         placement,
-        input_to_output_cycle_dep
+        input_to_output_cycle_dep,
     )
 
     prop = pono.Property(solver.solver, property_term)
@@ -386,8 +408,6 @@ def verify_bitstream(
         symbols += list(garnet_inputs.keys())
         # symbols += list(garnet_outputs.keys())
 
-
         print_trace(solver, bmc, symbols, waveform_signals)
-
 
         breakpoint()
