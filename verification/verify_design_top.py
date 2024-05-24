@@ -16,6 +16,7 @@ import re
 from tabulate import tabulate
 from verified_agile_hardware.solver import Solver
 import smt_switch as ss
+import multiprocessing
 
 
 def set_clk_rst_flush(solver):
@@ -117,7 +118,12 @@ def set_inputs(solver, input_symbols, halide_image_symbols, bvsort16):
     for pix_idx, pix in enumerate(flatten(halide_image_symbols)):
         lut_vals.append((solver.create_const(pix_idx, bvsort16), pix))
 
-    input_pixel = solver.create_lut("input_pixel_array", lut_vals, bvsort16, bvsort16)
+    starting_index = len(input_symbols) * solver.starting_cycle
+    ending_index = (len(input_symbols) * solver.max_cycles) + len(input_symbols)
+
+    input_pixel = solver.create_lut(
+        "input_pixel_array", lut_vals, bvsort16, bvsort16, starting_index, ending_index
+    )
 
     # Don't know if this is general enough
     for input_idx, input_var in enumerate(input_symbols.values()):
@@ -151,17 +157,14 @@ def create_property_term(
     bvsort1,
 ):
 
-    starting_cycle_count = solver.create_fts_state_var("starting_cycle_count", bvsort16)
-
-    solver.fts.constrain_init(
-        solver.create_term(solver.ops.Equal, starting_cycle_count, solver.cycle_count)
-    )
-
-    solver.fts.assign_next(starting_cycle_count, starting_cycle_count)
-
     lut_vals = []
     for pix_idx, pix in enumerate(flatten(halide_out_symbols)):
         lut_vals.append((solver.create_const(pix_idx, bvsort16), pix))
+
+    starting_index = len(mapped_output_datas) * solver.starting_cycle
+    ending_index = (len(mapped_output_datas) * solver.max_cycles) + len(
+        mapped_output_datas
+    )
 
     output_pixel_array = solver.create_lut(
         "output_pixel_array", lut_vals, bvsort16, bvsort16
@@ -207,6 +210,8 @@ def create_property_term(
             cycle_to_halide_lut,
             bvsort16,
             bvsort16,
+            solver.starting_cycle,
+            solver.max_cycles,
         )
 
         halide_pixel_index = cycle_to_halide_idx_var(solver.cycle_count)
@@ -216,7 +221,9 @@ def create_property_term(
             solver.create_term(
                 solver.ops.BVMul,
                 halide_pixel_index,
-                solver.create_term(len(mapped_output_datas), halide_pixel_index.get_sort()),
+                solver.create_term(
+                    len(mapped_output_datas), halide_pixel_index.get_sort()
+                ),
             ),
             solver.create_term(output_var_idx, halide_pixel_index.get_sort()),
         )
@@ -316,6 +323,8 @@ def create_valids_property_term(
             cycle_to_halide_idx_lut,
             bvsort16,
             bvsort1,
+            solver.starting_cycle,
+            solver.max_cycles,
         )
 
         halide_valid = cycle_to_halide_idx_var(solver.cycle_count)
@@ -496,7 +505,11 @@ def import_from(module, name):
     return getattr(module, name)
 
 
-def verify_design_top(interconnect, coreir_file):
+def verify_design_top_parallel(
+    interconnect, coreir_file, starting_cycle=0, ending_cycle=100
+):
+    print("Checking pixels", starting_cycle, "to", ending_cycle)
+
     file_info = {}
     file_info["port_remapping"] = coreir_file.replace(
         "design_top_map.json", "design.port_remap"
@@ -508,8 +521,8 @@ def verify_design_top(interconnect, coreir_file):
     # Instantiate solver object
     solver = Solver()
 
-    solver.starting_cycle = 0
-    solver.max_cycles = 400
+    solver.starting_cycle = starting_cycle
+    solver.max_cycles = ending_cycle
 
     sys.path.append(os.path.abspath(app_dir))
 
@@ -518,7 +531,9 @@ def verify_design_top(interconnect, coreir_file):
     )
 
     hw_input_stencil, hw_output_stencil = create_app(
-        solver, starting_pixel_state_var=0, ending_pixel_state_var=0
+        solver,
+        starting_pixel_state_var=solver.starting_cycle,
+        ending_pixel_state_var=solver.max_cycles,
     )
     # So since we start at a known cycle, we don't need big arrays for confiuring the mem tiles
     # We can just constrain the starting cycle + check pixels
@@ -527,7 +542,7 @@ def verify_design_top(interconnect, coreir_file):
     solver.solver.set_opt("produce-models", "true")
 
     solver.file_info = file_info
-    solver.app_dir = f"{app_dir}/verification"
+    solver.app_dir = f"{app_dir}/verification_{starting_cycle}"
 
     solver, input_symbols, output_symbols = nx_to_smt(nx, interconnect, solver, app_dir)
 
@@ -602,8 +617,7 @@ def verify_design_top(interconnect, coreir_file):
     btor_solver = solver
     bmc = pono.Bmc(prop, solver.fts, btor_solver.solver)
 
-    # check_cycles = solver.first_valid_output + 1 + check_pixels
-    check_cycles = solver.max_cycles
+    check_cycles = solver.max_cycles - solver.starting_cycle
 
     print("First valid output at cycle", solver.first_valid_output)
     print("Running BMC for", check_cycles, "cycles")
@@ -654,8 +668,6 @@ def verify_design_top(interconnect, coreir_file):
             "halide_valid",
         ]
 
-
-
         symbols = (
             list(input_symbols.keys())
             + list(output_symbols.keys())
@@ -664,4 +676,57 @@ def verify_design_top(interconnect, coreir_file):
 
         print_trace(solver, bmc, symbols, waveform_signals)
 
+
+import concurrent.futures
+
+
+def verify_design_top(interconnect, coreir_file):
+
+    total_output_pixels = 64 * 64
+    first_output_pixel_at_cycle = 1
+    num_cores = 30
+
+    total_cycles = total_output_pixels + first_output_pixel_at_cycle
+
+    pixels_per_core = total_output_pixels // num_cores
+
+    # for i in range(num_cores):
+    #     starting_cycle = i * cycles_per_core
+    #     ending_cycle = starting_cycle + cycles_per_core
+
+    check_pixels = []
+
+    check_pixel = 0
+    while check_pixel < total_output_pixels:
+        starting_cycle = check_pixel
+        ending_cycle = (
+            starting_cycle + pixels_per_core + first_output_pixel_at_cycle - 1
+        )
+        # verify_design_top_parallel(interconnect, coreir_file, starting_cycle, ending_cycle)
+        # print("Checking pixels", starting_cycle, "to", ending_cycle)
+        check_pixels.append((starting_cycle, ending_cycle))
+        check_pixel += pixels_per_core
+
+    def verify_design_top_parallel_wrapper(args):
+        starting_cycle, ending_cycle = args
+        print("Checking pixels", starting_cycle, "to", ending_cycle)
+        verify_design_top_parallel(
+            interconnect, coreir_file, starting_cycle, ending_cycle
+        )
+
+    # processes = []
+    # for check_pixel in check_pixels:
+    #     process = multiprocessing.Process(target=verify_design_top_parallel_wrapper, args=(check_pixel,))
+    #     processes.append(process)
+    #     process.start()
+
+    # for process in processes:
+    #     process.join()
+
+    # for check_pixel in check_pixels:
+    #     verify_design_top_parallel_wrapper(check_pixel)
+
+    verify_design_top_parallel_wrapper(check_pixels[-1])
+
     breakpoint()
+    # verify_design_top_parallel(interconnect, coreir_file, starting_cycle, ending_cycle)

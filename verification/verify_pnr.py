@@ -56,7 +56,9 @@ def set_pnr_inputs(
     for input_coreir_name in input_symbols_coreir:
         # find the matching pnr input
         input_coreir_name_sliced = input_coreir_name.split(".")[1]
-        for pnr_idx, (input_pnr_name, input_pnr_symbol) in enumerate(input_pnr_names_to_symbols.items()):
+        for pnr_idx, (input_pnr_name, input_pnr_symbol) in enumerate(
+            input_pnr_names_to_symbols.items()
+        ):
             if input_coreir_name_sliced in input_pnr_name:
                 # map coreir name and pnr ID back to nodes
                 input_coreir = input_symbols_coreir[input_coreir_name]
@@ -103,7 +105,6 @@ def set_pnr_inputs(
         solver.fts.add_invar(solver.create_term(solver.ops.Equal, state_var, v))
 
 
-
 def get_output_array_idx(
     solver, bvsort16, mapped_output_var_name, valid_name, pnr=False
 ):
@@ -139,6 +140,8 @@ def get_output_array_idx(
         cycle_to_idx_var_lut,
         bvsort16,
         solver.create_bvsort(1),
+        solver.starting_cycle,
+        solver.max_cycles,
     )
 
     pixel_index = cycle_to_idx_var(solver.cycle_count)
@@ -577,8 +580,8 @@ def verify_pnr(interconnect, coreir_file, instance_to_instr, pipeline_config_int
 
     else:
 
-        # vcd_printer = pono.VCDWitnessPrinter(solver.fts, bmc.witness())
-        # vcd_printer.dump_trace_to_file("/aha/dense_only_sparse.vcd")
+        vcd_printer = pono.VCDWitnessPrinter(solver.fts, bmc.witness())
+        vcd_printer.dump_trace_to_file("/aha/dense_only_sparse.vcd")
 
         symbols = (
             list(output_symbols_coreir.keys())
