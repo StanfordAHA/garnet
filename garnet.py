@@ -599,13 +599,15 @@ class Garnet(Generator):
         routing.update(routing_fix)
 
         bitstream = []
-        bitstream += self.interconnect.get_route_bitstream(routing)
+        skip_addr = self.interconnect.get_skip_addr()
         bitstream += self.fix_pond_flush_bug(placement, routing)
         bitstream += self.get_placement_bitstream(placement, id_to_name,
                                                   instance_to_instr)
-
-        skip_addr = self.interconnect.get_skip_addr()
-        bitstream = compress_config_data(bitstream, skip_compression=skip_addr)
+        # Skip zeros for placement bitstream
+        bitstream = compress_config_data(bitstream, skip_compression=skip_addr, skip_zero=True)
+        bitstream += self.interconnect.get_route_bitstream(routing)
+        # Avoid skipping zeros for routing bitstream to reset pipelining registers in back-to-back kernels
+        bitstream = compress_config_data(bitstream, skip_compression=skip_addr, skip_zero=False)
         inputs, outputs = self.get_input_output(netlist)
         input_interface, output_interface, \
             (reset, valid, en) = self.get_io_interface(inputs,

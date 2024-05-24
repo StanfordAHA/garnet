@@ -77,6 +77,10 @@ task Environment::write_data(Kernel kernel);
     repeat (10) @(vifc_proc.cbd);
     foreach (kernel.inputs[i]) begin
         foreach (kernel.inputs[i].io_tiles[j]) begin
+            if (kernel.inputs[i].io_tiles[j].is_glb_input == 1) begin
+                // Skip writing input data that is already in GLB
+                continue;
+            end
             start_time = $realtime;
             $display("[%s] write input_%0d_block_%0d to glb start at %0t", kernel.name, i, j,
                      start_time);

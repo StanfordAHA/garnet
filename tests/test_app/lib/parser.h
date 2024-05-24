@@ -52,6 +52,9 @@ struct IOTileInfo {
     int cycle_stride[LOOP_LEVEL];
     int data_stride[LOOP_LEVEL];
     int extent[LOOP_LEVEL];
+
+    // For back-to-back kernels
+    int is_glb_input;
 };
 
 struct IOInfo {
@@ -98,6 +101,7 @@ int get_io_tile_loop_dim(void *info, int index);
 int get_io_tile_extent(void *info, int index, int extent_idx);
 int get_io_tile_cycle_stride(void *info, int index, int stride_idx);
 int get_io_tile_data_stride(void *info, int index, int stride_idx);
+int get_io_tile_is_glb_input(void *info, int index); // for back-to-back kernels judge if the input is already in global buffer
 
 // helper functions to access data from SV testbench
 int get_num_groups(void *info);
