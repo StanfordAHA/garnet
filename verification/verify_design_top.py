@@ -599,6 +599,15 @@ def verify_design_top_parallel(
                     halide_to_mapped_outputs[k] = []
                 halide_to_mapped_outputs[k].append(m)
 
+    if len(halide_to_mapped_outputs) == 0:
+        for k in halide_ins_and_outs.keys():
+            k_new = k.replace("stencil", "")
+            for m in sorted(list(mapped_output_datas)):
+                if k_new in m:
+                    if k not in halide_to_mapped_outputs:
+                        halide_to_mapped_outputs[k] = []
+                    halide_to_mapped_outputs[k].append(m)
+
     print(halide_to_mapped_inputs)
     print(halide_to_mapped_outputs)
 
@@ -695,7 +704,7 @@ def verify_design_top_parallel(
 
         if res2 is None or res2:
             print("\n\033[91m" + "Valid can never be 1" + "\033[0m")
-            return False
+            raise Exception("Counterexample found")
         else:
             print(
                 "\n\033[92m" + "Formal check of mapped application passed" + "\033[0m"
@@ -723,7 +732,7 @@ def verify_design_top_parallel(
 
         print_trace(solver, bmc, symbols, waveform_signals)
 
-        return False
+        raise Exception("Counterexample found")
 
 
 import concurrent.futures
@@ -763,29 +772,31 @@ def verify_design_top(interconnect, coreir_file):
             interconnect, coreir_file, starting_cycle, ending_cycle
         )
 
-    results = []
-    processes = []
-    for check_pixel in check_pixels:
-        process = multiprocessing.Process(
-            target=verify_design_top_parallel_wrapper, args=(check_pixel,)
-        )
-        processes.append(process)
-        process.start()
+    if False:
+        results = []
+        processes = []
+        for check_pixel in check_pixels:
+            process = multiprocessing.Process(
+                target=verify_design_top_parallel_wrapper, args=(check_pixel,)
+            )
+            processes.append(process)
+            process.start()
 
-    for process in processes:
-        process.join()
-        results.append(process.exitcode)
+        for process in processes:
+            process.join()
+            results.append(process.exitcode)
 
-    if 1 in results:
-        print("\n\033[91m" + "Failed" + "\033[0m")
+        if 1 in results:
+            print("\n\033[91m" + "Failed" + "\033[0m")
+        else:
+            print("\n\033[92m" + "Passed" + "\033[0m")
     else:
-        print("\n\033[92m" + "Passed" + "\033[0m")
 
     # for check_pixel in check_pixels:
     #     verify_design_top_parallel_wrapper(check_pixel)
 
-    # verify_design_top_parallel_wrapper(check_pixels[-2])
+        # verify_design_top_parallel_wrapper(check_pixels[0])
 
-    # verify_design_top_parallel(interconnect, coreir_file, starting_cycle, ending_cycle)
+        verify_design_top_parallel_wrapper((0, 200))
 
     breakpoint()
