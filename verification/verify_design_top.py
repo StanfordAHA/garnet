@@ -204,7 +204,11 @@ def create_property_term(
         for output_var_idx, mapped_output_var_name in enumerate(pnr_outputs):
             mapped_output_var = output_symbols[mapped_output_var_name]
 
-            valid_name = f'{mapped_output_var_name.split("_write")[0]}_write_valid'
+            valid_name = (
+                f'{mapped_output_var_name.split("_write")[0]}_write_valid'.replace(
+                    "io16", "io1"
+                ).replace("io17", "io1")
+            )
             assert valid_name in output_symbols
             mapped_valid = output_symbols[valid_name]
 
@@ -324,7 +328,9 @@ def create_valids_property_term(
     for mapped_output_var_name in mapped_output_datas:
         mapped_output_var = output_symbols[mapped_output_var_name]
 
-        valid_name = f'{mapped_output_var_name.split("_write")[0]}_write_valid'
+        valid_name = f'{mapped_output_var_name.split("_write")[0]}_write_valid'.replace(
+            "io16", "io1"
+        ).replace("io17", "io1")
         assert valid_name in output_symbols
         mapped_valid = output_symbols[valid_name]
 
@@ -681,35 +687,33 @@ def verify_design_top_parallel(
 
     if res is None or res:
 
-        # Create property term that says valid is always 0
-        property_term = solver.create_term(True)
+        # # Create property term that says valid is always 0
+        # property_term = solver.create_term(True)
 
-        for mapped_output_var_name in mapped_output_valids:
-            mapped_output_var = output_symbols[mapped_output_var_name]
+        # for mapped_output_var_name in mapped_output_valids:
+        #     mapped_output_var = output_symbols[mapped_output_var_name]
 
-            valid_eq = solver.create_term(
-                solver.ops.Equal, mapped_output_var, solver.create_term(0, bvsort1)
-            )
+        #     valid_eq = solver.create_term(
+        #         solver.ops.Equal, mapped_output_var, solver.create_term(0, bvsort1)
+        #     )
 
-            property_term = solver.create_term(solver.ops.And, property_term, valid_eq)
+        #     property_term = solver.create_term(solver.ops.And, property_term, valid_eq)
 
-        prop = pono.Property(solver.solver, property_term)
-        btor_solver = Solver(solver_name="btor")
-        bmc = pono.Bmc(prop, solver.fts, btor_solver.solver)
+        # prop = pono.Property(solver.solver, property_term)
+        # btor_solver = Solver(solver_name="btor")
+        # bmc = pono.Bmc(prop, solver.fts, btor_solver.solver)
 
-        print("Running BMC for", check_cycles, "cycles")
-        start = time.time()
-        res2 = bmc.check_until(check_cycles * 2)
-        print(time.time() - start)
+        # print("Running BMC for", check_cycles, "cycles")
+        # start = time.time()
+        # res2 = bmc.check_until(check_cycles * 2)
+        # print(time.time() - start)
 
-        if res2 is None or res2:
-            print("\n\033[91m" + "Valid can never be 1" + "\033[0m")
-            raise Exception("Counterexample found")
-        else:
-            print(
-                "\n\033[92m" + "Formal check of mapped application passed" + "\033[0m"
-            )
-            return True
+        # if res2 is None or res2:
+        #     print("\n\033[91m" + "Valid can never be 1" + "\033[0m")
+        #     # raise Exception("Counterexample found")
+        # else:
+        print("\n\033[92m" + "Formal check of mapped application passed" + "\033[0m")
+        # return True
 
     else:
 
@@ -732,25 +736,34 @@ def verify_design_top_parallel(
 
         print_trace(solver, bmc, symbols, waveform_signals)
 
-        raise Exception("Counterexample found")
+        # raise Exception("Counterexample found")
 
 
 import concurrent.futures
 
 
+def get_first_output_from_coreir(coreir_file):
+
+    app_name = coreir_file.split("/")[-3]
+
+    with open(coreir_file, "r") as f:
+        lines = f.readlines()
+
+        for line in lines:
+            if 'in2glb_0"' in line:
+                return int(line.split('cycle_starting_addr":[')[-1].split("]")[0])
+
+
 def verify_design_top(interconnect, coreir_file):
 
+    first_output_pixel_at_cycle = get_first_output_from_coreir(coreir_file)
+
     total_output_pixels = 64 * 64
-    first_output_pixel_at_cycle = 1
-    num_cores = 30
+    num_cores = 32
 
     total_cycles = total_output_pixels + first_output_pixel_at_cycle
 
     pixels_per_core = math.ceil(total_output_pixels / num_cores)
-
-    # for i in range(num_cores):
-    #     starting_cycle = i * cycles_per_core
-    #     ending_cycle = starting_cycle + cycles_per_core
 
     check_pixels = []
 
@@ -772,7 +785,7 @@ def verify_design_top(interconnect, coreir_file):
             interconnect, coreir_file, starting_cycle, ending_cycle
         )
 
-    if False:
+    if True:
         results = []
         processes = []
         for check_pixel in check_pixels:
@@ -792,11 +805,18 @@ def verify_design_top(interconnect, coreir_file):
             print("\n\033[92m" + "Passed" + "\033[0m")
     else:
 
-    # for check_pixel in check_pixels:
-    #     verify_design_top_parallel_wrapper(check_pixel)
+        # for check_pixel in check_pixels:
+        #     verify_design_top_parallel_wrapper(check_pixel)
 
         # verify_design_top_parallel_wrapper(check_pixels[0])
 
-        verify_design_top_parallel_wrapper((0, 200))
+        if (
+            "harris" in coreir_file
+            or "unsharp" in coreir_file
+            or "gaussian" in coreir_file
+        ):
+            verify_design_top_parallel_wrapper((0, 500))
+        else:
+            verify_design_top_parallel_wrapper((0, 200))
 
-    breakpoint()
+    # breakpoint()

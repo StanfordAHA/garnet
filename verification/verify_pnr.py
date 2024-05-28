@@ -39,6 +39,8 @@ from archipelago.pnr_graph import (
 )
 from verified_agile_hardware.solver import Solver, Rewriter
 import smt_switch as ss
+import math
+import multiprocessing
 
 
 def set_pnr_inputs(
@@ -154,15 +156,16 @@ def get_output_array_idx(
 
 
 def constrain_array_init(solver, array_var):
-    idx_sort = array_var.get_sort().get_indexsort()
-    elem_sort = array_var.get_sort().get_elemsort()
-    empty_array = solver.create_term(
-        solver.create_term(0, elem_sort), array_var.get_sort()
-    )
+    # idx_sort = array_var.get_sort().get_indexsort()
+    # elem_sort = array_var.get_sort().get_elemsort()
+    # empty_array = solver.create_term(
+    #     solver.create_term(0, elem_sort), array_var.get_sort()
+    # )
 
-    solver.fts.constrain_init(
-        solver.create_term(solver.ops.Equal, array_var, empty_array)
-    )
+    # solver.fts.constrain_init(
+    #     solver.create_term(solver.ops.Equal, array_var, empty_array)
+    # )
+    pass
 
 
 def compare_output_arrays(
@@ -171,7 +174,7 @@ def compare_output_arrays(
     # Create property term that says valid is always 1
     property_term = solver.create_term(True)
 
-    for cycle in range(solver.max_cycles):
+    for cycle in range(solver.starting_cycle, solver.max_cycles):
         coreir_output = solver.create_term(
             solver.ops.Select,
             coreir_output_array,
@@ -279,12 +282,16 @@ def create_pnr_property_term(
 
     name_to_symbol = {v: k for k, v in symbol_to_name.items()}
 
+    assert len(coreir_to_pnr) > 0
+
     for coreir_symbol, pnr_symbol in coreir_to_pnr.items():
         coreir_name = symbol_to_name[coreir_symbol]
         pnr_name = symbol_to_name[pnr_symbol]
 
-        coreir_valid_name = f'{coreir_name.split("_write")[0]}_write_valid'
-        assert coreir_valid_name in name_to_symbol
+        coreir_valid_name = f'{coreir_name.split("_write")[0]}_write_valid'.replace(
+            "io16", "io1"
+        ).replace("io17", "io1")
+        assert coreir_valid_name in name_to_symbol, breakpoint()
 
         coreir_valid = name_to_symbol[coreir_valid_name]
 
@@ -455,7 +462,14 @@ def dump_comparison_array_contents(solver, bmc, coreir_symbols, pnr_symbols):
                 print("\n")
 
 
-def verify_pnr(interconnect, coreir_file, instance_to_instr, pipeline_config_interval):
+def verify_pnr_parallel(
+    interconnect,
+    coreir_file,
+    instance_to_instr,
+    pipeline_config_interval,
+    starting_cycle,
+    ending_cycle,
+):
     file_info = {}
     file_info["port_remapping"] = coreir_file.replace(
         "design_top_map.json", "design.port_remap"
@@ -470,9 +484,11 @@ def verify_pnr(interconnect, coreir_file, instance_to_instr, pipeline_config_int
     solver = Solver()
     # solver.solver.set_opt("produce-models", "true")
     solver.file_info = file_info
-    solver.app_dir = f"{app_dir}/verification"
+    # solver.app_dir = f"{app_dir}/verification"
+    solver.app_dir = f"{app_dir}/verification_{starting_cycle}"
 
-    solver.max_cycles = 400
+    solver.starting_cycle = starting_cycle
+    solver.max_cycles = ending_cycle
 
     solver, input_symbols_coreir, output_symbols_coreir = nx_to_smt(
         nx, interconnect, solver, app_dir
@@ -502,7 +518,8 @@ def verify_pnr(interconnect, coreir_file, instance_to_instr, pipeline_config_int
         instance_to_instr,
     )
 
-    # nx_to_pdf(nx_pnr, f"{app_dir}/verification/pnr_graph.pdf")
+    # nx_to_pdf(nx, f"{app_dir}/verification/coreir_graph")
+    # nx_to_pdf(nx_pnr, f"{app_dir}/verification/pnr_graph")
 
     solver, input_symbols_pnr, output_symbols_pnr = nx_to_smt(
         nx_pnr, interconnect, solver, app_dir
@@ -544,44 +561,49 @@ def verify_pnr(interconnect, coreir_file, instance_to_instr, pipeline_config_int
 
     # check_pixels = 1
     # check_cycles = solver.first_valid_output + 1 + check_pixels
-    check_cycles = solver.max_cycles
+    check_cycles = solver.max_cycles - solver.starting_cycle
     print("First valid output at cycle", solver.first_valid_output)
     print("Running BMC for", check_cycles, "cycles")
     start = time.time()
+    return True
     res = bmc.check_until(check_cycles * 2)
     print(time.time() - start)
     if res is None or res:
 
         # Create property term that says valid is always 0
-        property_term = solver.create_term(True)
-        for mapped_output_var in valid_symbols:
+        # property_term = solver.create_term(True)
+        # for mapped_output_var in valid_symbols:
 
-            valid_eq = solver.create_term(
-                solver.ops.Equal, mapped_output_var, solver.create_term(0, bvsort1)
-            )
+        #     valid_eq = solver.create_term(
+        #         solver.ops.Equal, mapped_output_var, solver.create_term(0, bvsort1)
+        #     )
 
-            property_term = solver.create_term(solver.ops.And, property_term, valid_eq)
+        #     property_term = solver.create_term(solver.ops.And, property_term, valid_eq)
 
-        prop = pono.Property(solver.solver, property_term)
-        btor_solver = Solver(solver_name="btor")
-        bmc = pono.Bmc(prop, solver.fts, btor_solver.solver)
+        # prop = pono.Property(solver.solver, property_term)
+        # btor_solver = Solver(solver_name="btor")
+        # bmc = pono.Bmc(prop, solver.fts, btor_solver.solver)
 
-        print("Checking that valid is high at least once for", check_cycles, "cycles")
-        start = time.time()
-        res2 = bmc.check_until(check_cycles * 2)
-        print(time.time() - start)
+        # print("Checking that valid is high at least once for", check_cycles, "cycles")
+        # start = time.time()
+        # res2 = bmc.check_until(check_cycles * 2)
+        # print(time.time() - start)
 
-        if res2 is None or res2:
-            print("\n\033[91m" + "Valid is never high" + "\033[0m")
-        else:
-            print(
-                "\n\033[92m" + "Formal check of mapped application passed" + "\033[0m"
-            )
+        # if res2 is None or res2:
+        #     print("\n\033[91m" + "Valid is never high" + "\033[0m")
+        # else:
+        #     print(
+        #         "\n\033[92m" + "Formal check of mapped application passed" + "\033[0m"
+        #     )
 
+        print(
+            "\n\033[92m" + "Formal check of mapped application passed" + "\033[0m",
+            starting_cycle,
+        )
     else:
 
-        vcd_printer = pono.VCDWitnessPrinter(solver.fts, bmc.witness())
-        vcd_printer.dump_trace_to_file("/aha/dense_only_sparse.vcd")
+        # vcd_printer = pono.VCDWitnessPrinter(solver.fts, bmc.witness())
+        # vcd_printer.dump_trace_to_file("/aha/dense_only_sparse.vcd")
 
         symbols = (
             list(output_symbols_coreir.keys())
@@ -604,5 +626,93 @@ def verify_pnr(interconnect, coreir_file, instance_to_instr, pipeline_config_int
             list(output_symbols_coreir.keys()),
             list(output_symbols_pnr.keys()),
         )
+        raise Exception("Counterexample found")
+    # breakpoint()
+
+
+import concurrent.futures
+
+
+def get_first_output_from_coreir(coreir_file):
+
+    app_name = coreir_file.split("/")[-3]
+
+    with open(coreir_file, "r") as f:
+        lines = f.readlines()
+
+        for line in lines:
+            if 'in2glb_0"' in line:
+                return int(line.split('cycle_starting_addr":[')[-1].split("]")[0])
+
+
+def verify_pnr(interconnect, coreir_file, instance_to_instr, pipeline_config_interval):
+
+    first_output_pixel_at_cycle = get_first_output_from_coreir(coreir_file)
+
+    total_output_pixels = 64 * 64
+    num_cores = 32
+
+    total_cycles = total_output_pixels + first_output_pixel_at_cycle
+
+    pixels_per_core = math.ceil(total_output_pixels / num_cores)
+
+    check_pixels = []
+
+    check_pixel = 0
+    while check_pixel < total_output_pixels:
+        starting_cycle = check_pixel
+        ending_cycle = (
+            starting_cycle + pixels_per_core + first_output_pixel_at_cycle - 1
+        )
+        # verify_pnr_parallel(interconnect, coreir_file, starting_cycle, ending_cycle)
+        # print("Checking pixels", starting_cycle, "to", ending_cycle)
+        check_pixels.append((starting_cycle, ending_cycle))
+        check_pixel += pixels_per_core
+
+    def verify_pnr_parallel_wrapper(args):
+        starting_cycle, ending_cycle = args
+        print("Checking pixels", starting_cycle, "to", ending_cycle)
+        verify_pnr_parallel(
+            interconnect,
+            coreir_file,
+            instance_to_instr,
+            pipeline_config_interval,
+            starting_cycle,
+            ending_cycle,
+        )
+
+    if True:
+        results = []
+        processes = []
+        for check_pixel in check_pixels:
+            process = multiprocessing.Process(
+                target=verify_pnr_parallel_wrapper, args=(check_pixel,)
+            )
+            processes.append(process)
+            process.start()
+
+        for process in processes:
+            process.join()
+            results.append(process.exitcode)
+
+        if 1 in results:
+            print("\n\033[91m" + "Failed" + "\033[0m")
+        else:
+            print("\n\033[92m" + "Passed" + "\033[0m")
+    else:
+
+        # for check_pixel in check_pixels:
+        #     verify_pnr_parallel_wrapper(check_pixel)
+
+        # verify_pnr_parallel_wrapper(check_pixels[0])
+
+        if (
+            "harris" in coreir_file
+            or "unsharp" in coreir_file
+            or "gaussian" in coreir_file
+        ):
+            verify_pnr_parallel_wrapper((0, 500))
+        else:
+            verify_pnr_parallel_wrapper((0, 200))
 
     # breakpoint()

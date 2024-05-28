@@ -289,7 +289,7 @@ def verify_bitstream(
     solver.app_dir = f"{app_dir}/verification"
 
     solver.starting_cycle = 0
-    solver.max_cycles = 100
+    solver.max_cycles = 500
 
     interconnect.pipeline_config_interval = pipeline_config_interval
 
