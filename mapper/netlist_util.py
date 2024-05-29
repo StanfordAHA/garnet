@@ -202,7 +202,7 @@ class CreateIDs(Visitor):
     def __init__(self, inst_info):
         self.inst_info = inst_info
 
-    def doit(self, dag: IODag):
+    def doit(self, dag: IODag, offset):
         self.tile_types = set()
         self.node_to_type = {}
         self.node_to_id = {}
@@ -212,7 +212,7 @@ class CreateIDs(Visitor):
             nodes.sort()
 
             for idx, node in enumerate(nodes):
-                self.node_to_id[node] = f"{tile_type}{idx}"
+                self.node_to_id[node] = f"{tile_type}{idx + offset}"
 
         return self.node_to_id
 
@@ -1154,6 +1154,7 @@ def create_netlist_info(
     input_broadcast_branch_factor=4,
     input_broadcast_max_leaves=16,
     ready_valid=True,
+    offset = 0
 ):
     if load_only:
         packed_file = os.path.join(app_dir, "design.packed")
@@ -1186,7 +1187,7 @@ def create_netlist_info(
             return "i"
 
     node_info = {t: tile_to_char(t) for t in tile_info}
-    nodes_to_ids = CreateIDs(node_info).doit(pdag)
+    nodes_to_ids = CreateIDs(node_info).doit(pdag, offset)
 
     if load_only:
         names_to_ids = {name: id_ for id_, name in id_to_name.items()}

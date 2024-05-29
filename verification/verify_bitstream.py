@@ -323,9 +323,7 @@ def verify_bitstream(
         instance_to_instr,
     )
 
-    _, input_symbols_pnr, output_symbols_pnr = nx_to_smt(
-        nx_pnr, interconnect, solver, app_dir
-    )
+    _, input_symbols_pnr, output_symbols_pnr = nx_to_smt(nx_pnr, interconnect, solver)
 
     set_bitstream_cycle_count(solver)
 

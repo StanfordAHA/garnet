@@ -570,7 +570,7 @@ def verify_design_top_parallel(
     solver.file_info = file_info
     solver.app_dir = f"{app_dir}/verification_{starting_cycle}"
 
-    solver, input_symbols, output_symbols = nx_to_smt(nx, interconnect, solver, app_dir)
+    solver, input_symbols, output_symbols = nx_to_smt(nx, interconnect, solver)
 
     set_clk_rst_flush(solver)
 

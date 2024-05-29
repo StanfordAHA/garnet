@@ -17,6 +17,7 @@ import archipelago.io
 from lassen.sim import PE_fc as lassen_fc
 from verification.verify_design_top import verify_design_top
 from verification.verify_pnr import verify_pnr
+from verification.verify_pipeline import verify_pipeline
 from verification.verify_bitstream import verify_bitstream
 from daemon.daemon import GarnetDaemon
 
@@ -340,7 +341,7 @@ class Garnet(Generator):
         self.pes_with_packed_ponds = {pe: pond for pond, pe in packed_ponds.items()}
 
     def load_netlist(self, app, load_only, pipeline_input_broadcasts,
-                     input_broadcast_branch_factor, input_broadcast_max_leaves):
+                     input_broadcast_branch_factor, input_broadcast_max_leaves, offset = 0):
 
         import metamapper.peak_util as putil
         from mapper.netlist_util import create_netlist_info, print_netlist_info
@@ -427,7 +428,8 @@ class Garnet(Generator):
                                            pipeline_input_broadcasts,
                                            input_broadcast_branch_factor,
                                            input_broadcast_max_leaves,
-                                           self.ready_valid)
+                                           self.ready_valid,
+                                           offset = offset)
 
         # Remapping all of the ports in the application to generic ports that exist in the hardware
         # Seems really brittle, we should probably do this in a better way
@@ -510,7 +512,7 @@ class Garnet(Generator):
         return (netlist_info["id_to_name"], netlist_info["instance_to_instrs"], netlist_info["netlist"],
                 netlist_info["buses"])
 
-    def place_and_route(self, args, load_only=False): 
+    def place_and_route(self, args, load_only=False, offset = 0): 
 
         # place_and_route() used to have a bunch of parameters with defaults
         # that were in conflict with and overridden by existing higher level
@@ -528,7 +530,8 @@ class Garnet(Generator):
                               load_only,
                               pipeline_input_broadcasts,
                               input_broadcast_branch_factor,
-                              input_broadcast_max_leaves)
+                              input_broadcast_max_leaves,
+                              offset)
 
         app_dir = os.path.dirname(halide_src)
         if unconstrained_io:
@@ -824,7 +827,8 @@ def pnr(garnet, args, app):
         shutil.copy(args.app, design_top_map)
 
     
-    verify_design_top(garnet.interconnect, design_top_map)
+    # verify_design_top(garnet.interconnect, design_top_map)
+
 
     placement, routing, id_to_name, instance_to_instr, netlist, bus = \
         garnet.place_and_route(args, load_only=args.generate_bitstream_only)
@@ -838,7 +842,34 @@ def pnr(garnet, args, app):
         placement, routing, id_to_name, instance_to_instr, netlist, bus = \
             garnet.place_and_route(args, load_only=True)
 
-    #verify_pnr(garnet.interconnect, design_top_map, instance_to_instr, garnet.pipeline_config_interval)
+    # verify_pnr(garnet.interconnect, design_top_map, instance_to_instr, garnet.pipeline_config_interval)
+
+    run_verify_pipeline = True
+
+    if run_verify_pipeline:
+
+        design_top = str(args.app)
+        packed_file = str(args.app).replace("design_top.json", "design.packed")
+        placement_file = str(args.app).replace("design_top.json", "design.place")
+        routing_file = str(args.app).replace("design_top.json", "design.route")
+
+        shutil.copy(design_top, design_top.replace("design_top.json", "design_top_pnr.json"))
+        shutil.copy(packed_file, packed_file.replace("design.packed", "design_pnr.packed"))
+        shutil.copy(placement_file, placement_file.replace("design.place", "design_pnr.place"))
+        shutil.copy(routing_file, routing_file.replace("design.route", "design_pnr.route"))
+
+        os.environ['POST_PNR_ITR'] = '1'
+
+        placement, routing, id_to_name, instance_to_instr_pipelined, netlist, bus = \
+            garnet.place_and_route(args, load_only=args.generate_bitstream_only, offset = 1000)
+
+        reschedule_pipelined_app(app)
+
+        placement, routing, id_to_name, instance_to_instr_pipelined, netlist, bus = \
+            garnet.place_and_route(args, load_only=True, offset = 1000)
+
+        verify_pipeline(garnet.interconnect, design_top, instance_to_instr, instance_to_instr_pipelined, garnet.pipeline_config_interval)
+
 
     bitstream, iorved_tuple = garnet.generate_bitstream(
         args.app,

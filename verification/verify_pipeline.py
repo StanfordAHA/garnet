@@ -43,53 +43,18 @@ import math
 import multiprocessing
 
 
-def set_pnr_inputs(
-    solver, input_symbols_coreir, input_symbols_pnr, bvsort16, id_to_name
-):
+def set_pnr_inputs(solver, input_symbols_pnr, input_symbols_pipelined, bvsort16):
 
-    # Map pnr symbols to names
-    input_pnr_names_to_symbols = {}
-    for pnr_symbol_name, pnr_symbol in input_symbols_pnr.items():
-        input_pnr_id = pnr_symbol_name.split(".")[0]
-        input_pnr_name = id_to_name[input_pnr_id]
-        input_pnr_names_to_symbols[input_pnr_name] = pnr_symbol
+    for k, v in input_symbols_pnr.items():
+        pnr_name = k.split(".")[0]
+        pipelined_var = pnr_name[0] + str(int(pnr_name[1:]) + 1000) + ".out"
+        solver.fts.add_invar(
+            solver.create_term(
+                solver.ops.Equal, input_symbols_pipelined[pipelined_var], v
+            )
+        )
 
-    # set each input symbol in coreir and pnr graphs equal
-    for input_coreir_name in input_symbols_coreir:
-        # find the matching pnr input
-        input_coreir_name_sliced = input_coreir_name.split(".")[1]
-        for pnr_idx, (input_pnr_name, input_pnr_symbol) in enumerate(
-            input_pnr_names_to_symbols.items()
-        ):
-            if input_coreir_name_sliced in input_pnr_name:
-                # map coreir name and pnr ID back to nodes
-                input_coreir = input_symbols_coreir[input_coreir_name]
-                input_pnr_short = solver.fts.make_term(
-                    ss.Op(
-                        ss.primops.Extract, input_coreir.get_sort().get_width() - 1, 0
-                    ),
-                    input_pnr_symbol,
-                )
-
-                # PnR inputs are delayed by 1 cycle
-
-                input_coreir_d0 = solver.create_fts_state_var(
-                    input_coreir_name + "_d0_" + str(pnr_idx), input_coreir.get_sort()
-                )
-                input_coreir_d1 = solver.create_fts_state_var(
-                    input_coreir_name + "_d1_" + str(pnr_idx), input_coreir.get_sort()
-                )
-
-                solver.fts.assign_next(input_coreir_d0, input_coreir)
-                solver.fts.assign_next(input_coreir_d1, input_coreir_d0)
-
-                solver.fts.add_invar(
-                    solver.create_term(
-                        solver.ops.Equal, input_coreir_d1, input_pnr_short
-                    )
-                )
-
-    for k, v in input_symbols_coreir.items():
+    for k, v in input_symbols_pnr.items():
         state_var = solver.create_fts_state_var(k + "_state", v.get_sort())
         input_var = solver.create_fts_input_var(k + "_input", v.get_sort())
 
@@ -156,16 +121,16 @@ def get_output_array_idx(
 
 
 def constrain_array_init(solver, array_var):
-    # idx_sort = array_var.get_sort().get_indexsort()
-    # elem_sort = array_var.get_sort().get_elemsort()
-    # empty_array = solver.create_term(
-    #     solver.create_term(0, elem_sort), array_var.get_sort()
-    # )
+    idx_sort = array_var.get_sort().get_indexsort()
+    elem_sort = array_var.get_sort().get_elemsort()
+    empty_array = solver.create_term(
+        solver.create_term(0, elem_sort), array_var.get_sort()
+    )
 
-    # solver.fts.constrain_init(
-    #     solver.create_term(solver.ops.Equal, array_var, empty_array)
-    # )
-    pass
+    solver.fts.constrain_init(
+        solver.create_term(solver.ops.Equal, array_var, empty_array)
+    )
+    # pass
 
 
 def compare_output_arrays(
@@ -232,72 +197,56 @@ def compare_output_arrays(
 
 def create_pnr_property_term(
     solver,
-    symbols_coreir,
     symbols_pnr,
+    symbols_pipelined,
     bvsort16,
     bvsort1,
-    id_to_name,
+    id_to_name_pnr,
+    id_to_name_pipelined,
     input_to_output_cycle_dep,
 ):
 
-    coreir_to_pnr = {}
-    coreir_to_pnr_valids = {}
-    coreir_to_valid = {}
+    pnr_to_pipelined = {}
     pnr_to_valid = {}
+    pipelined_to_valid = {}
     symbol_to_name = {}
-    pnr_symbol_to_name = {}
     valid_symbols = []
 
-    for pnr_symbol_name, pnr_symbol in symbols_pnr.items():
-        pnr_id = pnr_symbol_name.split(".")[-1]
-        pnr_coreir_name = id_to_name[pnr_id]
+    id_to_name_pnr_reversed = {v: k for k, v in id_to_name_pnr.items()}
+    id_to_name_pipelined_reversed = {v: k for k, v in id_to_name_pipelined.items()}
 
-        for coreir_symbol_name, coreir_symbol in symbols_coreir.items():
-            coreir_name = coreir_symbol_name.split(".")[-1]
-            if coreir_name in pnr_coreir_name:
+    for k, v in symbols_pnr.items():
+        if "I" in k:
+            pnr_id = k.split(".")[-1]
+            pnr_name = id_to_name_pnr[pnr_id]
 
-                if (
-                    coreir_symbol.get_sort().get_width() == 1
-                    and pnr_symbol.get_sort().get_width() == 1
-                ):
-                    coreir_to_pnr_valids[coreir_symbol] = pnr_symbol
-                    symbol_to_name[coreir_symbol] = coreir_symbol_name
-                    symbol_to_name[pnr_symbol] = pnr_coreir_name
-                    valid_symbols.append(coreir_symbol)
-                    valid_symbols.append(pnr_symbol)
-                    pnr_symbol_to_name[pnr_symbol] = pnr_symbol_name
-                else:
-                    pnr_symbol_short = solver.fts.make_term(
-                        ss.Op(
-                            ss.primops.Extract,
-                            coreir_symbol.get_sort().get_width() - 1,
-                            0,
-                        ),
-                        pnr_symbol,
-                    )
-                    coreir_to_pnr[coreir_symbol] = pnr_symbol_short
-                    symbol_to_name[coreir_symbol] = coreir_symbol_name
-                    symbol_to_name[pnr_symbol_short] = pnr_coreir_name
-                    pnr_symbol_to_name[pnr_symbol_short] = pnr_symbol_name
+            pipelined_id = id_to_name_pipelined_reversed[pnr_name]
 
-    name_to_symbol = {v: k for k, v in symbol_to_name.items()}
+            pnr_to_pipelined[v] = symbols_pipelined["out." + pipelined_id]
 
-    assert len(coreir_to_pnr) > 0
+            pnr_valid_name = f'{pnr_name.split("_write")[0]}_write_valid'.replace(
+                "io16", "io1"
+            ).replace("io17", "io1")
 
-    for coreir_symbol, pnr_symbol in coreir_to_pnr.items():
-        coreir_name = symbol_to_name[coreir_symbol]
-        pnr_name = symbol_to_name[pnr_symbol]
+            pnr_valid_id = id_to_name_pnr_reversed[pnr_valid_name]
+            pipelined_valid_id = id_to_name_pipelined_reversed[pnr_valid_name]
 
-        coreir_valid_name = f'{coreir_name.split("_write")[0]}_write_valid'.replace(
-            "io16", "io1"
-        ).replace("io17", "io1")
-        assert coreir_valid_name in name_to_symbol, breakpoint()
+            pnr_to_valid[v] = symbols_pnr["out." + pnr_valid_id]
+            pipelined_to_valid[symbols_pipelined["out." + pipelined_id]] = (
+                symbols_pipelined["out." + pipelined_valid_id]
+            )
 
-        coreir_valid = name_to_symbol[coreir_valid_name]
+            symbol_to_name[v] = "out." + pnr_id
+            symbol_to_name[symbols_pipelined["out." + pipelined_id]] = (
+                "out." + pipelined_id
+            )
+            symbol_to_name[symbols_pnr["out." + pnr_valid_id]] = "out." + pnr_valid_id
+            symbol_to_name[symbols_pipelined["out." + pipelined_valid_id]] = (
+                "out." + pipelined_valid_id
+            )
 
-        coreir_to_valid[coreir_symbol] = coreir_valid
-
-        pnr_to_valid[pnr_symbol] = coreir_to_pnr_valids[coreir_valid]
+            valid_symbols.append(symbols_pnr["out." + pnr_valid_id])
+            valid_symbols.append(symbols_pipelined["out." + pipelined_valid_id])
 
     # If solver.bmc_counter is less than to solver.first_valid_output
     output_dep_on_input = solver.create_term(
@@ -309,58 +258,59 @@ def create_pnr_property_term(
     property_term = solver.create_term(True)
 
     # create an array and counter for each output variable
-    for coreir_symbol, pnr_symbol in coreir_to_pnr.items():
+    for pnr_symbol, pipelined_symbol in pnr_to_pipelined.items():
 
-        coreir_valid = coreir_to_valid[coreir_symbol]
+        pipelined_valid = pipelined_to_valid[pipelined_symbol]
 
         # create array for CoreIR output/valids
-        coreir_output_array = solver.create_fts_state_var(
-            symbol_to_name[coreir_symbol] + "_array",
+        pipelined_output_array = solver.create_fts_state_var(
+            symbol_to_name[pipelined_symbol] + "_array",
             solver.solver.make_sort(
-                ss.sortkinds.ARRAY, bvsort16, coreir_symbol.get_sort()
+                ss.sortkinds.ARRAY, bvsort16, pipelined_symbol.get_sort()
             ),
         )
-        constrain_array_init(solver, coreir_output_array)
-        coreir_valid_array = solver.create_fts_state_var(
-            symbol_to_name[coreir_valid] + "_valid_array",
+        constrain_array_init(solver, pipelined_output_array)
+        pipelined_valid_array = solver.create_fts_state_var(
+            symbol_to_name[pipelined_valid] + "_valid_array",
             solver.solver.make_sort(ss.sortkinds.ARRAY, bvsort16, bvsort1),
         )
-        constrain_array_init(solver, coreir_valid_array)
+        constrain_array_init(solver, pipelined_valid_array)
 
-        coreir_array_idx = get_output_array_idx(
+        pipelined_array_idx = get_output_array_idx(
             solver,
             bvsort16,
-            symbol_to_name[coreir_symbol],
-            symbol_to_name[coreir_valid],
+            symbol_to_name[pipelined_symbol],
+            symbol_to_name[pipelined_valid],
+            pnr=True,
         )
 
-        # Store coreir_symbol in coreir_output_array at coreir_array_idx
-        coreir_output_array_next = solver.create_term(
+        # Store pipelined_symbol in pipelined_output_array at pipelined_array_idx
+        pipelined_output_array_next = solver.create_term(
             solver.ops.Store,
-            coreir_output_array,
-            coreir_array_idx,
-            coreir_symbol,
+            pipelined_output_array,
+            pipelined_array_idx,
+            pipelined_symbol,
         )
 
-        coreir_valid_array_next = solver.create_term(
+        pipelined_valid_array_next = solver.create_term(
             solver.ops.Store,
-            coreir_valid_array,
-            coreir_array_idx,
-            coreir_valid,
+            pipelined_valid_array,
+            pipelined_array_idx,
+            pipelined_valid,
         )
 
         pnr_valid = pnr_to_valid[pnr_symbol]
 
         # create array for pnr output/valids
         pnr_output_array = solver.create_fts_state_var(
-            pnr_symbol_to_name[pnr_symbol] + "_array",
+            symbol_to_name[pnr_symbol] + "_array",
             solver.solver.make_sort(
                 ss.sortkinds.ARRAY, bvsort16, pnr_symbol.get_sort()
             ),
         )
         constrain_array_init(solver, pnr_output_array)
         pnr_valid_array = solver.create_fts_state_var(
-            pnr_symbol_to_name[pnr_valid] + "_valid_array",
+            symbol_to_name[pnr_valid] + "_valid_array",
             solver.solver.make_sort(ss.sortkinds.ARRAY, bvsort16, bvsort1),
         )
         constrain_array_init(solver, pnr_valid_array)
@@ -368,8 +318,8 @@ def create_pnr_property_term(
         pnr_array_idx = get_output_array_idx(
             solver,
             bvsort16,
-            pnr_symbol_to_name[pnr_symbol],
-            pnr_symbol_to_name[pnr_valid],
+            symbol_to_name[pnr_symbol],
+            symbol_to_name[pnr_valid],
             pnr=True,
         )
 
@@ -389,21 +339,21 @@ def create_pnr_property_term(
         )
 
         solver.fts.assign_next(
-            coreir_output_array,
+            pipelined_output_array,
             solver.create_term(
                 solver.ops.Ite,
                 output_dep_on_input,
-                coreir_output_array,
-                coreir_output_array_next,
+                pipelined_output_array,
+                pipelined_output_array_next,
             ),
         )
         solver.fts.assign_next(
-            coreir_valid_array,
+            pipelined_valid_array,
             solver.create_term(
                 solver.ops.Ite,
                 output_dep_on_input,
-                coreir_valid_array,
-                coreir_valid_array_next,
+                pipelined_valid_array,
+                pipelined_valid_array_next,
             ),
         )
         solver.fts.assign_next(
@@ -427,9 +377,9 @@ def create_pnr_property_term(
 
         prop = compare_output_arrays(
             solver,
-            coreir_output_array,
+            pipelined_output_array,
             pnr_output_array,
-            coreir_valid_array,
+            pipelined_valid_array,
             pnr_valid_array,
         )
 
@@ -462,22 +412,20 @@ def dump_comparison_array_contents(solver, bmc, coreir_symbols, pnr_symbols):
                 print("\n")
 
 
-def verify_pnr_parallel(
+def verify_pipeline_parallel(
     interconnect,
     coreir_file,
     instance_to_instr,
+    instance_to_instr_pipelined,
     pipeline_config_interval,
     starting_cycle,
     ending_cycle,
 ):
     file_info = {}
     file_info["port_remapping"] = coreir_file.replace(
-        "design_top_map.json", "design.port_remap"
+        "design_top.json", "design.port_remap"
     )
     app_dir = os.path.dirname(coreir_file)  # coreir_file has mapped dataflow graph
-
-    cmod = read_coreir(coreir_file)
-    nx = coreir_to_nx(cmod)
 
     interconnect.pipeline_config_interval = pipeline_config_interval
 
@@ -490,40 +438,66 @@ def verify_pnr_parallel(
     solver.starting_cycle = starting_cycle
     solver.max_cycles = ending_cycle
 
-    solver, input_symbols_coreir, output_symbols_coreir = nx_to_smt(
-        nx, interconnect, solver
-    )
-
     # load PnR results
-    packed_file = coreir_file.replace("design_top_map.json", "design.packed")
-    placement_file = coreir_file.replace("design_top_map.json", "design.place")
-    routing_file = coreir_file.replace("design_top_map.json", "design.route")
+    packed_file = coreir_file.replace("design_top.json", "design_pnr.packed")
+    placement_file = coreir_file.replace("design_top.json", "design_pnr.place")
+    routing_file = coreir_file.replace("design_top.json", "design_pnr.route")
 
     netlist, buses = pythunder.io.load_netlist(packed_file)
-    id_to_name = pythunder.io.load_id_to_name(packed_file)
+    id_to_name_pnr = pythunder.io.load_id_to_name(packed_file)
 
-    solver.id_to_name = id_to_name
+    solver.id_to_name = id_to_name_pnr
+
+    placement = load_placement(placement_file)
+    routing = load_routing_result(routing_file)
+
+    # Construct PnR result graph
+    routing_result_graph_pnr = construct_graph(
+        placement, routing, id_to_name_pnr, netlist, 1, 0, 1, False
+    )
+
+    nx_pnr = pnr_to_nx(
+        routing_result_graph_pnr,
+        read_coreir(coreir_file.replace("design_top.json", "design_top_pnr.json")),
+        instance_to_instr,
+    )
+
+    solver, input_symbols_pnr, output_symbols_pnr = nx_to_smt(
+        nx_pnr, interconnect, solver
+    )
+
+    # Pipelined PnR graph
+
+    # load PnR results
+    packed_file = coreir_file.replace("design_top.json", "design.packed")
+    placement_file = coreir_file.replace("design_top.json", "design.place")
+    routing_file = coreir_file.replace("design_top.json", "design.route")
+
+    netlist, buses = pythunder.io.load_netlist(packed_file)
+    id_to_name_pipelined = pythunder.io.load_id_to_name(packed_file)
+
+    solver.id_to_name = id_to_name_pipelined
 
     placement = load_placement(placement_file)
     routing = load_routing_result(routing_file)
 
     # Construct PnR result graph
     routing_result_graph = construct_graph(
-        placement, routing, id_to_name, netlist, 1, 0, 1, False
+        placement, routing, id_to_name_pipelined, netlist, 1, 0, 1, False
     )
 
-    nx_pnr = pnr_to_nx(
+    nx_pipelined = pnr_to_nx(
         routing_result_graph,
-        read_coreir(coreir_file.replace("design_top_map.json", "design_top.json")),
+        read_coreir(coreir_file.replace("design_top.json", "design_top.json")),
         instance_to_instr,
     )
 
-    # nx_to_pdf(nx, f"{app_dir}/verification/coreir_graph")
-    # nx_to_pdf(nx_pnr, f"{app_dir}/verification/pnr_graph")
-
-    solver, input_symbols_pnr, output_symbols_pnr = nx_to_smt(
-        nx_pnr, interconnect, solver
+    solver, input_symbols_pipelined, output_symbols_pipelined = nx_to_smt(
+        nx_pipelined, interconnect, solver
     )
+
+    # nx_to_pdf(nx_pnr, f"{app_dir}/verification/pnr_graph")
+    # nx_to_pdf(nx_pipelined, f"{app_dir}/verification/pipelined_graph")
 
     set_clk_rst_flush(solver)
     synchronize_cycle_counts(solver)
@@ -531,19 +505,18 @@ def verify_pnr_parallel(
     bvsort16 = solver.create_bvsort(16)
     bvsort1 = solver.create_bvsort(1)
 
-    set_pnr_inputs(
-        solver, input_symbols_coreir, input_symbols_pnr, bvsort16, id_to_name
-    )
+    set_pnr_inputs(solver, input_symbols_pnr, input_symbols_pipelined, bvsort16)
 
     input_to_output_cycle_dep = solver.first_valid_output
 
     property_term, valid_symbols = create_pnr_property_term(
         solver,
-        output_symbols_coreir,
         output_symbols_pnr,
+        output_symbols_pipelined,
         bvsort16,
         bvsort1,
-        id_to_name,
+        id_to_name_pnr,
+        id_to_name_pipelined,
         input_to_output_cycle_dep,
     )
 
@@ -605,10 +578,10 @@ def verify_pnr_parallel(
         # vcd_printer.dump_trace_to_file("/aha/dense_only_sparse.vcd")
 
         symbols = (
-            list(output_symbols_coreir.keys())
+            list(output_symbols_pipelined.keys())
             + list(output_symbols_pnr.keys())
             + list(input_symbols_pnr.keys())
-            + list(input_symbols_coreir.keys())
+            + list(input_symbols_pipelined.keys())
         )
 
         waveform_signals = [
@@ -622,7 +595,7 @@ def verify_pnr_parallel(
         dump_comparison_array_contents(
             solver,
             bmc,
-            list(output_symbols_coreir.keys()),
+            list(output_symbols_pipelined.keys()),
             list(output_symbols_pnr.keys()),
         )
         raise Exception("Counterexample found")
@@ -644,7 +617,13 @@ def get_first_output_from_coreir(coreir_file):
                 return int(line.split('cycle_starting_addr":[')[-1].split("]")[0])
 
 
-def verify_pnr(interconnect, coreir_file, instance_to_instr, pipeline_config_interval):
+def verify_pipeline(
+    interconnect,
+    coreir_file,
+    instance_to_instr,
+    instance_to_instr_pipelined,
+    pipeline_config_interval,
+):
 
     first_output_pixel_at_cycle = get_first_output_from_coreir(coreir_file)
 
@@ -663,29 +642,30 @@ def verify_pnr(interconnect, coreir_file, instance_to_instr, pipeline_config_int
         ending_cycle = (
             starting_cycle + pixels_per_core + first_output_pixel_at_cycle - 1
         )
-        # verify_pnr_parallel(interconnect, coreir_file, starting_cycle, ending_cycle)
+        # verify_pipeline_parallel(interconnect, coreir_file, starting_cycle, ending_cycle)
         # print("Checking pixels", starting_cycle, "to", ending_cycle)
         check_pixels.append((starting_cycle, ending_cycle))
         check_pixel += pixels_per_core
 
-    def verify_pnr_parallel_wrapper(args):
+    def verify_pipeline_parallel_wrapper(args):
         starting_cycle, ending_cycle = args
         print("Checking pixels", starting_cycle, "to", ending_cycle)
-        verify_pnr_parallel(
+        verify_pipeline_parallel(
             interconnect,
             coreir_file,
             instance_to_instr,
+            instance_to_instr_pipelined,
             pipeline_config_interval,
             starting_cycle,
             ending_cycle,
         )
 
-    if True:
+    if False:
         results = []
         processes = []
         for check_pixel in check_pixels:
             process = multiprocessing.Process(
-                target=verify_pnr_parallel_wrapper, args=(check_pixel,)
+                target=verify_pipeline_parallel_wrapper, args=(check_pixel,)
             )
             processes.append(process)
             process.start()
@@ -700,18 +680,6 @@ def verify_pnr(interconnect, coreir_file, instance_to_instr, pipeline_config_int
             print("\n\033[92m" + "Passed" + "\033[0m")
     else:
 
-        # for check_pixel in check_pixels:
-        #     verify_pnr_parallel_wrapper(check_pixel)
-
-        # verify_pnr_parallel_wrapper(check_pixels[0])
-
-        if (
-            "harris" in coreir_file
-            or "unsharp" in coreir_file
-            or "gaussian" in coreir_file
-        ):
-            verify_pnr_parallel_wrapper((0, 500))
-        else:
-            verify_pnr_parallel_wrapper((0, 200))
+        verify_pipeline_parallel_wrapper((0, 200))
 
     # breakpoint()
