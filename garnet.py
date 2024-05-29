@@ -830,7 +830,7 @@ def pnr(garnet, args, app):
     # verify_design_top(garnet.interconnect, design_top_map)
 
 
-    placement, routing, id_to_name, instance_to_instr, netlist, bus = \
+    placement, routing, id_to_name, instance_to_instr_pnr, netlist, bus = \
         garnet.place_and_route(args, load_only=args.generate_bitstream_only)
 
     # When 'generate_bitstream_only' is set, we do not actually do any NEW pnr;
@@ -839,10 +839,10 @@ def pnr(garnet, args, app):
     if args.pipeline_pnr and not args.generate_bitstream_only:
         reschedule_pipelined_app(app)
 
-        placement, routing, id_to_name, instance_to_instr, netlist, bus = \
+        placement, routing, id_to_name, instance_to_instr_pnr, netlist, bus = \
             garnet.place_and_route(args, load_only=True)
 
-    # verify_pnr(garnet.interconnect, design_top_map, instance_to_instr, garnet.pipeline_config_interval)
+    # verify_pnr(garnet.interconnect, design_top_map, instance_to_instr_pnr, garnet.pipeline_config_interval)
 
     run_verify_pipeline = True
 
@@ -853,22 +853,27 @@ def pnr(garnet, args, app):
         placement_file = str(args.app).replace("design_top.json", "design.place")
         routing_file = str(args.app).replace("design_top.json", "design.route")
 
+        app_dir = "/".join(str(args.app).split("/")[0:-1])
+        stencil_valid_latencies_file = app_dir + "/" + app_dir.split("/")[-2] + "_stencil_valid_latencies.json"
+
+
         shutil.copy(design_top, design_top.replace("design_top.json", "design_top_pnr.json"))
         shutil.copy(packed_file, packed_file.replace("design.packed", "design_pnr.packed"))
         shutil.copy(placement_file, placement_file.replace("design.place", "design_pnr.place"))
         shutil.copy(routing_file, routing_file.replace("design.route", "design_pnr.route"))
+        shutil.copy(stencil_valid_latencies_file, stencil_valid_latencies_file.replace("latencies.json", "latencies_pnr.json"))
 
-        os.environ['POST_PNR_ITR'] = '1'
+        os.environ['POST_PNR_ITR'] = 'max'
 
-        placement, routing, id_to_name, instance_to_instr_pipelined, netlist, bus = \
+        placement, routing, id_to_name, instance_to_instr, netlist, bus = \
             garnet.place_and_route(args, load_only=args.generate_bitstream_only, offset = 1000)
 
         reschedule_pipelined_app(app)
 
-        placement, routing, id_to_name, instance_to_instr_pipelined, netlist, bus = \
+        placement, routing, id_to_name, instance_to_instr, netlist, bus = \
             garnet.place_and_route(args, load_only=True, offset = 1000)
 
-        verify_pipeline(garnet.interconnect, design_top, instance_to_instr, instance_to_instr_pipelined, garnet.pipeline_config_interval)
+        verify_pipeline(garnet.interconnect, design_top, instance_to_instr_pnr, instance_to_instr, garnet.pipeline_config_interval)
 
 
     bitstream, iorved_tuple = garnet.generate_bitstream(

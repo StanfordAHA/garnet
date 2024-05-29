@@ -108,8 +108,22 @@ def set_pnr_inputs(
 
 
 def get_output_array_idx(
-    solver, bvsort16, mapped_output_var_name, valid_name, pnr=False
+    solver,
+    bvsort16,
+    mapped_output_var_name,
+    valid_name,
+    stencil_valid_latencies_filename=None,
+    stencil_valid_name="",
+    pnr=False,
 ):
+
+    valid_latency = 0
+    if stencil_valid_latencies_filename is not None:
+        with open(stencil_valid_latencies_filename, "r") as f:
+            stencil_valid_latencies = json.load(f)
+            assert stencil_valid_name in stencil_valid_latencies, breakpoint()
+            valid_latency = -int(stencil_valid_latencies[stencil_valid_name])
+
     pixel_index_var = solver.create_fts_state_var(
         f"pixel_index_{str(mapped_output_var_name)}", bvsort16
     )
@@ -129,6 +143,8 @@ def get_output_array_idx(
     # PnR has an output IO tile register
     if pnr:
         cycle_to_idx = [0] + cycle_to_idx
+
+    cycle_to_idx = [0] * valid_latency + cycle_to_idx
 
     cycle_to_idx_var_lut = []
 
@@ -156,16 +172,15 @@ def get_output_array_idx(
 
 
 def constrain_array_init(solver, array_var):
-    # idx_sort = array_var.get_sort().get_indexsort()
-    # elem_sort = array_var.get_sort().get_elemsort()
-    # empty_array = solver.create_term(
-    #     solver.create_term(0, elem_sort), array_var.get_sort()
-    # )
+    idx_sort = array_var.get_sort().get_indexsort()
+    elem_sort = array_var.get_sort().get_elemsort()
+    empty_array = solver.create_term(
+        solver.create_term(0, elem_sort), array_var.get_sort()
+    )
 
-    # solver.fts.constrain_init(
-    #     solver.create_term(solver.ops.Equal, array_var, empty_array)
-    # )
-    pass
+    solver.fts.constrain_init(
+        solver.create_term(solver.ops.Equal, array_var, empty_array)
+    )
 
 
 def compare_output_arrays(
@@ -680,7 +695,7 @@ def verify_pnr(interconnect, coreir_file, instance_to_instr, pipeline_config_int
             ending_cycle,
         )
 
-    if True:
+    if False:
         results = []
         processes = []
         for check_pixel in check_pixels:
@@ -700,18 +715,6 @@ def verify_pnr(interconnect, coreir_file, instance_to_instr, pipeline_config_int
             print("\n\033[92m" + "Passed" + "\033[0m")
     else:
 
-        # for check_pixel in check_pixels:
-        #     verify_pnr_parallel_wrapper(check_pixel)
-
-        # verify_pnr_parallel_wrapper(check_pixels[0])
-
-        if (
-            "harris" in coreir_file
-            or "unsharp" in coreir_file
-            or "gaussian" in coreir_file
-        ):
-            verify_pnr_parallel_wrapper((0, 500))
-        else:
-            verify_pnr_parallel_wrapper((0, 200))
+        verify_pnr_parallel_wrapper((0, 200))
 
     # breakpoint()

@@ -21,6 +21,12 @@ from .verify_design_top import (
     synchronize_cycle_counts,
 )
 
+from .verify_pnr import (
+    get_output_array_idx,
+    constrain_array_init,
+    compare_output_arrays,
+)
+
 import copy
 import json
 import argparse
@@ -72,130 +78,7 @@ def set_pnr_inputs(solver, input_symbols_pnr, input_symbols_pipelined, bvsort16)
         solver.fts.add_invar(solver.create_term(solver.ops.Equal, state_var, v))
 
 
-def get_output_array_idx(
-    solver, bvsort16, mapped_output_var_name, valid_name, pnr=False
-):
-    pixel_index_var = solver.create_fts_state_var(
-        f"pixel_index_{str(mapped_output_var_name)}", bvsort16
-    )
-
-    # Precalculate the halide pixel index based on the memory tile schedule
-    assert valid_name in solver.stencil_valid_to_port_controller, breakpoint()
-    memtile = solver.stencil_valid_to_port_controller[valid_name]
-
-    # This is a list that stores the number of valid pixels at each cycle
-    # Can use this to index into halide output pixel array
-    cycle_to_idx, valids = mem_tile_get_num_valids(
-        solver.stencil_valid_to_schedule[memtile],
-        solver.max_cycles,
-        iterator_support=6,
-    )
-
-    # PnR has an output IO tile register
-    if pnr:
-        cycle_to_idx = [0] + cycle_to_idx
-
-    cycle_to_idx_var_lut = []
-
-    for i, idx in enumerate(cycle_to_idx):
-        cycle_to_idx_var_lut.append(
-            (solver.create_term(i, bvsort16), solver.create_term(idx, bvsort16))
-        )
-
-    cycle_to_idx_var = solver.create_lut(
-        f"{memtile}_cycle_to_idx_var",
-        cycle_to_idx_var_lut,
-        bvsort16,
-        solver.create_bvsort(1),
-        solver.starting_cycle,
-        solver.max_cycles,
-    )
-
-    pixel_index = cycle_to_idx_var(solver.cycle_count)
-
-    solver.fts.add_invar(
-        solver.create_term(solver.ops.Equal, pixel_index, pixel_index_var)
-    )
-
-    return pixel_index
-
-
-def constrain_array_init(solver, array_var):
-    idx_sort = array_var.get_sort().get_indexsort()
-    elem_sort = array_var.get_sort().get_elemsort()
-    empty_array = solver.create_term(
-        solver.create_term(0, elem_sort), array_var.get_sort()
-    )
-
-    solver.fts.constrain_init(
-        solver.create_term(solver.ops.Equal, array_var, empty_array)
-    )
-    # pass
-
-
-def compare_output_arrays(
-    solver, coreir_output_array, pnr_output_array, coreir_valid_array, pnr_valid_array
-):
-    # Create property term that says valid is always 1
-    property_term = solver.create_term(True)
-
-    for cycle in range(solver.starting_cycle, solver.max_cycles):
-        coreir_output = solver.create_term(
-            solver.ops.Select,
-            coreir_output_array,
-            solver.create_const(cycle, solver.create_bvsort(16)),
-        )
-        pnr_output = solver.create_term(
-            solver.ops.Select,
-            pnr_output_array,
-            solver.create_const(cycle, solver.create_bvsort(16)),
-        )
-
-        coreir_valid = solver.create_term(
-            solver.ops.Select,
-            coreir_valid_array,
-            solver.create_const(cycle, solver.create_bvsort(16)),
-        )
-        pnr_valid = solver.create_term(
-            solver.ops.Select,
-            pnr_valid_array,
-            solver.create_const(cycle, solver.create_bvsort(16)),
-        )
-
-        # prop = solver.create_term(
-        #     solver.ops.Implies,
-        #     solver.create_term(solver.ops.Equal, coreir_valid, solver.create_term(1, solver.create_bvsort(1))),
-        #     solver.create_term(solver.ops.Equal, coreir_valid, pnr_valid),
-        # )
-
-        # property_term = solver.create_term(solver.ops.And, property_term, prop)
-
-        both_valid = solver.create_term(
-            solver.ops.And,
-            solver.create_term(
-                solver.ops.Equal,
-                coreir_valid,
-                solver.create_term(1, solver.create_bvsort(1)),
-            ),
-            solver.create_term(
-                solver.ops.Equal,
-                pnr_valid,
-                solver.create_term(1, solver.create_bvsort(1)),
-            ),
-        )
-
-        prop = solver.create_term(
-            solver.ops.Implies,
-            both_valid,
-            solver.create_term(solver.ops.Equal, coreir_output, pnr_output),
-        )
-
-        property_term = solver.create_term(solver.ops.And, property_term, prop)
-
-    return property_term
-
-
-def create_pnr_property_term(
+def create_pipeline_property_term(
     solver,
     symbols_pnr,
     symbols_pipelined,
@@ -276,11 +159,22 @@ def create_pnr_property_term(
         )
         constrain_array_init(solver, pipelined_valid_array)
 
+        stencil_valid_name_pipe = id_to_name_pipelined[
+            solver.stencil_valid_to_port_controller[symbol_to_name[pipelined_valid]]
+        ]
+
+        app_dir = "/".join(str(solver.app_dir).split("/")[0:-1])
+        stencil_valid_latencies_file = (
+            app_dir + "/" + app_dir.split("/")[-2] + "_stencil_valid_latencies.json"
+        )
+
         pipelined_array_idx = get_output_array_idx(
             solver,
             bvsort16,
             symbol_to_name[pipelined_symbol],
             symbol_to_name[pipelined_valid],
+            stencil_valid_latencies_file,
+            stencil_valid_name_pipe,
             pnr=True,
         )
 
@@ -315,11 +209,21 @@ def create_pnr_property_term(
         )
         constrain_array_init(solver, pnr_valid_array)
 
+        stencil_valid_name_pnr = id_to_name_pnr[
+            solver.stencil_valid_to_port_controller[symbol_to_name[pnr_valid]]
+        ]
+        app_dir = "/".join(str(solver.app_dir).split("/")[0:-1])
+        stencil_valid_latencies_file_pnr = (
+            app_dir + "/" + app_dir.split("/")[-2] + "_stencil_valid_latencies_pnr.json"
+        )
+
         pnr_array_idx = get_output_array_idx(
             solver,
             bvsort16,
             symbol_to_name[pnr_symbol],
             symbol_to_name[pnr_valid],
+            stencil_valid_latencies_file_pnr,
+            stencil_valid_name_pnr,
             pnr=True,
         )
 
@@ -435,6 +339,10 @@ def verify_pipeline_parallel(
     # solver.app_dir = f"{app_dir}/verification"
     solver.app_dir = f"{app_dir}/verification_{starting_cycle}"
 
+    # Create solver.app_dir if it doesn't exist
+    if not os.path.exists(solver.app_dir):
+        os.makedirs(solver.app_dir)
+
     solver.starting_cycle = starting_cycle
     solver.max_cycles = ending_cycle
 
@@ -488,7 +396,7 @@ def verify_pipeline_parallel(
 
     nx_pipelined = pnr_to_nx(
         routing_result_graph,
-        read_coreir(coreir_file.replace("design_top.json", "design_top.json")),
+        read_coreir(coreir_file),
         instance_to_instr,
     )
 
@@ -509,7 +417,7 @@ def verify_pipeline_parallel(
 
     input_to_output_cycle_dep = solver.first_valid_output
 
-    property_term, valid_symbols = create_pnr_property_term(
+    property_term, valid_symbols = create_pipeline_property_term(
         solver,
         output_symbols_pnr,
         output_symbols_pipelined,
@@ -660,7 +568,7 @@ def verify_pipeline(
             ending_cycle,
         )
 
-    if False:
+    if True:
         results = []
         processes = []
         for check_pixel in check_pixels:
