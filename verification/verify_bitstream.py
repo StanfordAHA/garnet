@@ -18,7 +18,14 @@ import time
 import os
 import sys
 import pono
-from .verify_design_top import import_from, print_trace, flatten, set_clk_rst_flush
+from .verify_design_top import (
+    import_from,
+    print_trace,
+    flatten,
+    set_clk_rst_flush,
+    synchronize_cycle_counts,
+    get_first_output_from_coreir,
+)
 
 import copy
 import json
@@ -36,6 +43,8 @@ from archipelago.pnr_graph import (
     TileNode,
     RouteNode,
 )
+import math
+import multiprocessing
 
 
 def set_bitstream_cycle_count(solver):
@@ -84,42 +93,58 @@ def set_garnet_inputs(solver, garnet_inputs):
     )
     solver.fts.assign_next(clk, ite)
 
-    rst_times = [0, 1]
-    if reset in solver.fts.inputvars:
-        solver.fts.promote_inputvar(reset)
-    solver.fts.constrain_init(
-        solver.create_term(
-            solver.ops.Equal, reset, solver.create_term(1, reset.get_sort())
-        )
-    )
-    solver.fts_assert_at_times(
-        reset,
-        solver.create_term(1, reset.get_sort()),
-        solver.create_term(0, reset.get_sort()),
-        rst_times,
-    )
+    # rst_times = [0, 1]
+    # if reset in solver.fts.inputvars:
+    #     solver.fts.promote_inputvar(reset)
+    # solver.fts.constrain_init(
+    #     solver.create_term(
+    #         solver.ops.Equal, reset, solver.create_term(1, reset.get_sort())
+    #     )
+    # )
+    # solver.fts_assert_at_times(
+    #     reset,
+    #     solver.create_term(1, reset.get_sort()),
+    #     solver.create_term(0, reset.get_sort()),
+    #     rst_times,
+    # )
 
-    flush_times = [2, 3]
-    if flush in solver.fts.inputvars:
-        solver.fts.promote_inputvar(flush)
-    solver.fts.constrain_init(
-        solver.create_term(
-            solver.ops.Equal, flush, solver.create_term(0, flush.get_sort())
-        )
-    )
+    # flush_times = [2, 3]
+    # if flush in solver.fts.inputvars:
+    #     solver.fts.promote_inputvar(flush)
+    # solver.fts.constrain_init(
+    #     solver.create_term(
+    #         solver.ops.Equal, flush, solver.create_term(0, flush.get_sort())
+    #     )
+    # )
 
-    flush_val = (2 ** flush.get_sort().get_width()) - 1
+    # flush_val = (2 ** flush.get_sort().get_width()) - 1
 
-    solver.fts_assert_at_times(
-        flush,
-        solver.create_term(flush_val, flush.get_sort()),
-        solver.create_term(0, flush.get_sort()),
-        flush_times,
-    )
+    # solver.fts_assert_at_times(
+    #     flush,
+    #     solver.create_term(flush_val, flush.get_sort()),
+    #     solver.create_term(0, flush.get_sort()),
+    #     flush_times,
+    # )
+
+    # solver.fts.add_invar(
+    #     solver.create_term(
+    #         solver.ops.Equal, stall, solver.create_term(0, stall.get_sort())
+    #     )
+    # )
 
     solver.fts.add_invar(
         solver.create_term(
             solver.ops.Equal, stall, solver.create_term(0, stall.get_sort())
+        )
+    )
+    solver.fts.add_invar(
+        solver.create_term(
+            solver.ops.Equal, flush, solver.create_term(0, flush.get_sort())
+        )
+    )
+    solver.fts.add_invar(
+        solver.create_term(
+            solver.ops.Equal, reset, solver.create_term(0, reset.get_sort())
         )
     )
 
@@ -275,8 +300,14 @@ def create_bitstream_property_term(
     return property_term
 
 
-def verify_bitstream(
-    interconnect, coreir_file, instance_to_instr, pipeline_config_interval, bitstream
+def verify_bitstream_parallel(
+    interconnect,
+    coreir_file,
+    instance_to_instr,
+    pipeline_config_interval,
+    bitstream,
+    starting_cycle,
+    ending_cycle,
 ):
     file_info = {}
     file_info["port_remapping"] = coreir_file.replace(
@@ -286,18 +317,18 @@ def verify_bitstream(
 
     solver = Solver()
     solver.file_info = file_info
-    solver.app_dir = f"{app_dir}/verification"
+    solver.app_dir = f"{app_dir}/verification_{starting_cycle}"
 
-    solver.starting_cycle = 0
-    solver.max_cycles = 500
+    if not os.path.exists(solver.app_dir):
+        os.mkdir(solver.app_dir)
+
+    solver.starting_cycle = starting_cycle
+    solver.max_cycles = ending_cycle
 
     interconnect.pipeline_config_interval = pipeline_config_interval
 
     bvsort16 = solver.create_bvsort(16)
     bvsort1 = solver.create_bvsort(1)
-
-    if not os.path.exists(solver.app_dir):
-        os.mkdir(solver.app_dir)
 
     # load PnR results
     packed_file = coreir_file.replace("design_top.json", "design.packed")
@@ -312,6 +343,37 @@ def verify_bitstream(
     placement = load_placement(placement_file)
     routing = load_routing_result(routing_file)
 
+    solver.placement = placement
+
+    # remove_config_regs(f"/aha/garnet/garnet.v", f"{solver.app_dir}/garnet_no_regs.sv")
+
+    # interconnect_def = flatten_garnet(
+    #     app_dir=solver.app_dir,
+    #     garnet_filename=f"{solver.app_dir}/garnet_no_regs.sv",
+    #     garnet_flattened=f"{solver.app_dir}/garnet_flattened.v",
+    # )
+
+    # config_garnet(
+    #     interconnect,
+    #     bitstream,
+    #     f"{solver.app_dir}/garnet_flattened.v",
+    #     f"{solver.app_dir}/garnet_configed.v",
+    #     interconnect_def,
+    # )
+
+    # garnet_to_btor(
+    #     app_dir=solver.app_dir,
+    #     garnet_filename=f"{solver.app_dir}/garnet_configed.v",
+    #     btor_filename=f"{solver.app_dir}/garnet_configed.btor2",
+    # )
+
+    solver.read_btor2(f"{app_dir}/verification/garnet_configed.btor2")
+
+    garnet_inputs = get_garnet_inputs(solver)
+    garnet_outputs = get_garnet_btor_outputs(
+        solver, f"{app_dir}/verification/garnet_configed.btor2"
+    )
+
     # Construct PnR result graph
     routing_result_graph = construct_graph(
         placement, routing, id_to_name, netlist, 1, 0, 1, False
@@ -323,44 +385,15 @@ def verify_bitstream(
         instance_to_instr,
     )
 
+    set_garnet_inputs(solver, garnet_inputs)
+
     _, input_symbols_pnr, output_symbols_pnr = nx_to_smt(nx_pnr, interconnect, solver)
 
-    set_bitstream_cycle_count(solver)
+    synchronize_cycle_counts(solver)
 
     set_clk_rst_flush(solver)
 
-    remove_config_regs(f"/aha/garnet/garnet.v", f"{solver.app_dir}/garnet_no_regs.sv")
-
-    interconnect_def = flatten_garnet(
-        app_dir=solver.app_dir,
-        garnet_filename=f"{solver.app_dir}/garnet_no_regs.sv",
-        garnet_flattened=f"{solver.app_dir}/garnet_flattened.v",
-    )
-
-    config_garnet(
-        interconnect,
-        bitstream,
-        f"{solver.app_dir}/garnet_flattened.v",
-        f"{solver.app_dir}/garnet_configed.v",
-        interconnect_def,
-    )
-
-    garnet_to_btor(
-        app_dir=solver.app_dir,
-        garnet_filename=f"{solver.app_dir}/garnet_configed.v",
-        btor_filename=f"{solver.app_dir}/garnet_configed.btor2",
-    )
-
-    solver.read_btor2(f"{solver.app_dir}/garnet_configed.btor2")
-
-    garnet_inputs = get_garnet_inputs(solver)
-    garnet_outputs = get_garnet_btor_outputs(
-        solver, f"{solver.app_dir}/garnet_configed.btor2"
-    )
-
-    set_garnet_inputs(solver, garnet_inputs)
-
-    input_to_output_cycle_dep = solver.first_valid_output + 3
+    input_to_output_cycle_dep = solver.first_valid_output + 2
 
     property_term = create_bitstream_property_term(
         solver,
@@ -372,12 +405,16 @@ def verify_bitstream(
         input_to_output_cycle_dep,
     )
 
+    # property_term = solver.create_term(
+    #    solver.ops.BVUlt, solver.bmc_counter, solver.create_term((solver.max_cycles * 2)-1, bvsort16)
+    # )
+
     prop = pono.Property(solver.solver, property_term)
 
     btor_solver = solver
     bmc = pono.Bmc(prop, solver.fts, btor_solver.solver)
 
-    check_cycles = solver.max_cycles
+    check_cycles = solver.max_cycles - solver.starting_cycle
 
     print("First valid output at cycle", solver.first_valid_output)
     print("Running BMC for", check_cycles, "cycles")
@@ -409,3 +446,93 @@ def verify_bitstream(
         print_trace(solver, bmc, symbols, waveform_signals)
 
         # breakpoint()
+
+
+def verify_bitstream(
+    interconnect, coreir_file, instance_to_instr, pipeline_config_interval, bitstream
+):
+
+    app_dir = os.path.dirname(coreir_file)
+    app_dir = f"{app_dir}/verification"
+
+    if not os.path.exists(app_dir):
+        os.mkdir(app_dir)
+
+    first_output_pixel_at_cycle = get_first_output_from_coreir(coreir_file)
+
+    total_output_pixels = 64 * 64
+    num_cores = 32
+
+    total_cycles = total_output_pixels + first_output_pixel_at_cycle
+
+    pixels_per_core = math.ceil(total_output_pixels / num_cores)
+
+    check_pixels = []
+
+    check_pixel = 0
+    while check_pixel < total_output_pixels:
+        starting_cycle = check_pixel
+        ending_cycle = (
+            starting_cycle + pixels_per_core + first_output_pixel_at_cycle - 1
+        )
+        check_pixels.append((starting_cycle, ending_cycle))
+        check_pixel += pixels_per_core
+
+    def verify_bitstream_parallel_wrapper(args):
+        starting_cycle, ending_cycle = args
+        print("Checking pixels", starting_cycle, "to", ending_cycle)
+        verify_bitstream_parallel(
+            interconnect,
+            coreir_file,
+            instance_to_instr,
+            pipeline_config_interval,
+            bitstream,
+            starting_cycle,
+            ending_cycle,
+        )
+
+    remove_config_regs(f"/aha/garnet/garnet.v", f"{app_dir}/garnet_no_regs.sv")
+
+    interconnect_def = flatten_garnet(
+        app_dir=app_dir,
+        garnet_filename=f"{app_dir}/garnet_no_regs.sv",
+        garnet_flattened=f"{app_dir}/garnet_flattened.v",
+    )
+
+    config_garnet(
+        interconnect,
+        bitstream,
+        f"{app_dir}/garnet_flattened.v",
+        f"{app_dir}/garnet_configed.v",
+        interconnect_def,
+    )
+
+    garnet_to_btor(
+        app_dir=app_dir,
+        garnet_filename=f"{app_dir}/garnet_configed.v",
+        btor_filename=f"{app_dir}/garnet_configed.btor2",
+    )
+
+    if True:
+        results = []
+        processes = []
+        for check_pixel in check_pixels:
+            process = multiprocessing.Process(
+                target=verify_bitstream_parallel_wrapper, args=(check_pixel,)
+            )
+            processes.append(process)
+            process.start()
+
+        for process in processes:
+            process.join()
+            results.append(process.exitcode)
+
+        if 1 in results:
+            print("\n\033[91m" + "Failed" + "\033[0m")
+        else:
+            print("\n\033[92m" + "Passed" + "\033[0m")
+    else:
+
+        verify_bitstream_parallel_wrapper((0, 200))
+
+    # breakpoint()

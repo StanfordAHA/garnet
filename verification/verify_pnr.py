@@ -497,10 +497,11 @@ def verify_pnr_parallel(
     interconnect.pipeline_config_interval = pipeline_config_interval
 
     solver = Solver()
-    # solver.solver.set_opt("produce-models", "true")
     solver.file_info = file_info
-    # solver.app_dir = f"{app_dir}/verification"
     solver.app_dir = f"{app_dir}/verification_{starting_cycle}"
+
+    if not os.path.exists(solver.app_dir):
+        os.mkdir(solver.app_dir)
 
     solver.starting_cycle = starting_cycle
     solver.max_cycles = ending_cycle

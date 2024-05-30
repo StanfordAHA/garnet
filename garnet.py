@@ -844,7 +844,8 @@ def pnr(garnet, args, app):
 
     # verify_pnr(garnet.interconnect, design_top_map, instance_to_instr_pnr, garnet.pipeline_config_interval)
 
-    run_verify_pipeline = True
+
+    run_verify_pipeline = False
 
     if run_verify_pipeline:
 
@@ -875,6 +876,8 @@ def pnr(garnet, args, app):
 
         verify_pipeline(garnet.interconnect, design_top, instance_to_instr_pnr, instance_to_instr, garnet.pipeline_config_interval)
 
+    else:
+        instance_to_instr = instance_to_instr_pnr
 
     bitstream, iorved_tuple = garnet.generate_bitstream(
         args.app,
@@ -913,7 +916,7 @@ def pnr(garnet, args, app):
         json.dump(config, f)
     write_out_bitstream(args.output, bitstream)
 
-    # verify_bitstream(garnet.interconnect, str(args.app), instance_to_instr, garnet.pipeline_config_interval, bitstream)
+    verify_bitstream(garnet.interconnect, str(args.app), instance_to_instr, garnet.pipeline_config_interval, bitstream)
 
 
 def reschedule_pipelined_app(app):
