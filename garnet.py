@@ -735,6 +735,10 @@ def parse_args():
     parser.add_argument("--dual-port", action="store_true")
     parser.add_argument("--rf", action="store_true")
     parser.add_argument("--dac-exp", action="store_true")
+    parser.add_argument("--verify-design-top", action="store_true")
+    parser.add_argument("--verify-pnr", action="store_true")
+    parser.add_argument("--verify-pipeline", action="store_true")
+    parser.add_argument("--verify-bitstream", action="store_true")
 
     # Daemon choices are maybe ['help', 'launch', 'use', 'kill', 'force', 'status', 'wait']
     parser.add_argument('--daemon', type=str, choices=GarnetDaemon.choices, default=None)
@@ -826,8 +830,8 @@ def pnr(garnet, args, app):
         # copy args.app to design_top_map
         shutil.copy(args.app, design_top_map)
 
-    
-    # verify_design_top(garnet.interconnect, design_top_map)
+    if args.verify_design_top:
+        verify_design_top(garnet.interconnect, design_top_map)
 
 
     placement, routing, id_to_name, instance_to_instr_pnr, netlist, bus = \
@@ -842,12 +846,11 @@ def pnr(garnet, args, app):
         placement, routing, id_to_name, instance_to_instr_pnr, netlist, bus = \
             garnet.place_and_route(args, load_only=True)
 
-    # verify_pnr(garnet.interconnect, design_top_map, instance_to_instr_pnr, garnet.pipeline_config_interval)
+    if args.verify_pnr:
+        verify_pnr(garnet.interconnect, design_top_map, instance_to_instr_pnr, garnet.pipeline_config_interval)
 
 
-    run_verify_pipeline = False
-
-    if run_verify_pipeline:
+    if args.verify_pipeline:
 
         design_top = str(args.app)
         packed_file = str(args.app).replace("design_top.json", "design.packed")
@@ -916,7 +919,8 @@ def pnr(garnet, args, app):
         json.dump(config, f)
     write_out_bitstream(args.output, bitstream)
 
-    verify_bitstream(garnet.interconnect, str(args.app), instance_to_instr, garnet.pipeline_config_interval, bitstream)
+    if args.verify_bitstream:
+        verify_bitstream(garnet.interconnect, str(args.app), instance_to_instr, garnet.pipeline_config_interval, bitstream)
 
 
 def reschedule_pipelined_app(app):
