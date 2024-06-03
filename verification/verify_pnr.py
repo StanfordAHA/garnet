@@ -112,17 +112,32 @@ def get_output_array_idx(
     bvsort16,
     mapped_output_var_name,
     valid_name,
-    stencil_valid_latencies_filename=None,
+    nx_graph=None,
     stencil_valid_name="",
     pnr=False,
 ):
 
     valid_latency = 0
-    if stencil_valid_latencies_filename is not None:
-        with open(stencil_valid_latencies_filename, "r") as f:
-            stencil_valid_latencies = json.load(f)
-            assert stencil_valid_name in stencil_valid_latencies, breakpoint()
-            valid_latency = -int(stencil_valid_latencies[stencil_valid_name])
+    if nx_graph is not None:
+        io_nx_node = valid_name.split("out.")[1]
+        valid_nx_node = stencil_valid_name
+
+        found_io_tile = False
+
+        curr_node = valid_nx_node
+
+        while not found_io_tile:
+
+            assert len(list(nx_graph.successors(curr_node))) == 1, breakpoint()
+            curr_node = list(nx_graph.successors(curr_node))[0]
+
+            if nx_graph.nodes[curr_node]["node_type"] == "coreir.reg":
+                valid_latency += 1
+
+            if curr_node == io_nx_node:
+                found_io_tile = True
+
+        valid_latency -= 1
 
     pixel_index_var = solver.create_fts_state_var(
         f"pixel_index_{str(mapped_output_var_name)}", bvsort16
@@ -253,6 +268,8 @@ def create_pnr_property_term(
     bvsort1,
     id_to_name,
     input_to_output_cycle_dep,
+    nx_coreir,
+    nx_pnr,
 ):
 
     coreir_to_pnr = {}
@@ -342,11 +359,17 @@ def create_pnr_property_term(
         )
         constrain_array_init(solver, coreir_valid_array)
 
+        stencil_valid_id_coreir = solver.stencil_valid_to_port_controller[
+            coreir_symbol_to_name[coreir_valid]
+        ]
+
         coreir_array_idx = get_output_array_idx(
             solver,
             bvsort16,
             symbol_to_name[coreir_symbol],
             symbol_to_name[coreir_valid],
+            nx_coreir,
+            stencil_valid_id_coreir,
         )
 
         # Store coreir_symbol in coreir_output_array at coreir_array_idx
@@ -380,11 +403,17 @@ def create_pnr_property_term(
         )
         constrain_array_init(solver, pnr_valid_array)
 
+        stencil_valid_id_pnr = solver.stencil_valid_to_port_controller[
+            pnr_symbol_to_name[pnr_valid]
+        ]
+
         pnr_array_idx = get_output_array_idx(
             solver,
             bvsort16,
             pnr_symbol_to_name[pnr_symbol],
             pnr_symbol_to_name[pnr_valid],
+            nx_pnr,
+            stencil_valid_id_pnr,
             pnr=True,
         )
 
@@ -561,6 +590,8 @@ def verify_pnr_parallel(
         bvsort1,
         id_to_name,
         input_to_output_cycle_dep,
+        nx,
+        nx_pnr,
     )
 
     print("Named terms", len(solver.fts.named_terms))
@@ -696,7 +727,7 @@ def verify_pnr(interconnect, coreir_file, instance_to_instr, pipeline_config_int
             ending_cycle,
         )
 
-    if False:
+    if True:
         results = []
         processes = []
         for check_pixel in check_pixels:

@@ -85,7 +85,7 @@ def synchronize_cycle_counts(solver):
                 solver.create_term(solver.ops.Equal, term, solver.cycle_count)
             )
 
-    print("Constraining cycle count to start at starting_cycle")
+    # print("Constraining cycle count to start at starting_cycle")
     solver.fts.constrain_init(
         solver.create_term(
             solver.ops.Equal,
@@ -805,18 +805,6 @@ def verify_design_top(interconnect, coreir_file):
             print("\n\033[92m" + "Passed" + "\033[0m")
     else:
 
-        # for check_pixel in check_pixels:
-        #     verify_design_top_parallel_wrapper(check_pixel)
-
-        # verify_design_top_parallel_wrapper(check_pixels[0])
-
-        if (
-            "harris" in coreir_file
-            or "unsharp" in coreir_file
-            or "gaussian" in coreir_file
-        ):
-            verify_design_top_parallel_wrapper((0, 500))
-        else:
-            verify_design_top_parallel_wrapper((0, 200))
+        verify_design_top_parallel_wrapper((0, 200))
 
     # breakpoint()

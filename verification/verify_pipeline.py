@@ -87,6 +87,8 @@ def create_pipeline_property_term(
     id_to_name_pnr,
     id_to_name_pipelined,
     input_to_output_cycle_dep,
+    nx_pnr,
+    nx_pipelined,
 ):
 
     pnr_to_pipelined = {}
@@ -159,22 +161,17 @@ def create_pipeline_property_term(
         )
         constrain_array_init(solver, pipelined_valid_array)
 
-        stencil_valid_name_pipe = id_to_name_pipelined[
-            solver.stencil_valid_to_port_controller[symbol_to_name[pipelined_valid]]
+        stencil_valid_id_pipe = solver.stencil_valid_to_port_controller[
+            symbol_to_name[pipelined_valid]
         ]
-
-        app_dir = "/".join(str(solver.app_dir).split("/")[0:-1])
-        stencil_valid_latencies_file = (
-            app_dir + "/" + app_dir.split("/")[-2] + "_stencil_valid_latencies.json"
-        )
 
         pipelined_array_idx = get_output_array_idx(
             solver,
             bvsort16,
             symbol_to_name[pipelined_symbol],
             symbol_to_name[pipelined_valid],
-            stencil_valid_latencies_file,
-            stencil_valid_name_pipe,
+            nx_pipelined,
+            stencil_valid_id_pipe,
             pnr=True,
         )
 
@@ -209,21 +206,17 @@ def create_pipeline_property_term(
         )
         constrain_array_init(solver, pnr_valid_array)
 
-        stencil_valid_name_pnr = id_to_name_pnr[
-            solver.stencil_valid_to_port_controller[symbol_to_name[pnr_valid]]
+        stencil_valid_id_pnr = solver.stencil_valid_to_port_controller[
+            symbol_to_name[pnr_valid]
         ]
-        app_dir = "/".join(str(solver.app_dir).split("/")[0:-1])
-        stencil_valid_latencies_file_pnr = (
-            app_dir + "/" + app_dir.split("/")[-2] + "_stencil_valid_latencies_pnr.json"
-        )
 
         pnr_array_idx = get_output_array_idx(
             solver,
             bvsort16,
             symbol_to_name[pnr_symbol],
             symbol_to_name[pnr_valid],
-            stencil_valid_latencies_file_pnr,
-            stencil_valid_name_pnr,
+            nx_pnr,
+            stencil_valid_id_pnr,
             pnr=True,
         )
 
@@ -404,8 +397,8 @@ def verify_pipeline_parallel(
         nx_pipelined, interconnect, solver
     )
 
-    # nx_to_pdf(nx_pnr, f"{app_dir}/verification/pnr_graph")
-    # nx_to_pdf(nx_pipelined, f"{app_dir}/verification/pipelined_graph")
+    nx_to_pdf(nx_pnr, f"{app_dir}/verification/pnr_graph")
+    nx_to_pdf(nx_pipelined, f"{app_dir}/verification/pipelined_graph")
 
     set_clk_rst_flush(solver)
     synchronize_cycle_counts(solver)
@@ -426,11 +419,13 @@ def verify_pipeline_parallel(
         id_to_name_pnr,
         id_to_name_pipelined,
         input_to_output_cycle_dep,
+        nx_pnr,
+        nx_pipelined,
     )
 
-    print("Named terms", len(solver.fts.named_terms))
-    print("State vars", len(solver.fts.statevars))
-    print("Trans size", len(str(solver.fts.trans)))
+    # print("Named terms", len(solver.fts.named_terms))
+    # print("State vars", len(solver.fts.statevars))
+    # print("Trans size", len(str(solver.fts.trans)))
 
     # property_term = solver.create_term(
     #    solver.ops.BVUlt, solver.bmc_counter, solver.create_term((solver.max_cycles * 2)-1, bvsort16)
@@ -443,8 +438,8 @@ def verify_pipeline_parallel(
     # check_pixels = 1
     # check_cycles = solver.first_valid_output + 1 + check_pixels
     check_cycles = solver.max_cycles - solver.starting_cycle
-    print("First valid output at cycle", solver.first_valid_output)
-    print("Running BMC for", check_cycles, "cycles")
+    # print("First valid output at cycle", solver.first_valid_output)
+    # print("Running BMC for", check_cycles, "cycles")
     start = time.time()
     res = bmc.check_until(check_cycles * 2)
     print(time.time() - start)
@@ -476,10 +471,11 @@ def verify_pipeline_parallel(
         #         "\n\033[92m" + "Formal check of mapped application passed" + "\033[0m"
         #     )
 
-        print(
-            "\n\033[92m" + "Formal check of mapped application passed" + "\033[0m",
-            starting_cycle,
-        )
+        # print(
+        #     "\n\033[92m" + "Formal check of mapped application passed" + "\033[0m",
+        #     starting_cycle,
+        # )
+        pass
     else:
 
         # vcd_printer = pono.VCDWitnessPrinter(solver.fts, bmc.witness())

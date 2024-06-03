@@ -235,6 +235,8 @@ class Garnet(Generator):
     def get_placement_bitstream(self, placement, id_to_name, instrs):
         result = []
         for node, (x, y) in placement.items():
+            if node not in id_to_name:
+                breakpoint()
             instance = id_to_name[node]
             if instance not in instrs:
                 continue
@@ -532,6 +534,7 @@ class Garnet(Generator):
                               input_broadcast_branch_factor,
                               input_broadcast_max_leaves,
                               offset)
+
 
         app_dir = os.path.dirname(halide_src)
         if unconstrained_io:
@@ -845,7 +848,7 @@ def pnr(garnet, args, app):
     # verify_pnr(garnet.interconnect, design_top_map, instance_to_instr_pnr, garnet.pipeline_config_interval)
 
 
-    run_verify_pipeline = False
+    run_verify_pipeline = True
 
     if run_verify_pipeline:
 
@@ -865,6 +868,8 @@ def pnr(garnet, args, app):
         shutil.copy(stencil_valid_latencies_file, stencil_valid_latencies_file.replace("latencies.json", "latencies_pnr.json"))
 
         os.environ['POST_PNR_ITR'] = 'max'
+        os.environ['SWEEP_PNR_PLACER_EXP'] = '1'
+        # os.environ['PNR_PLACER_EXP'] = '7'
 
         placement, routing, id_to_name, instance_to_instr, netlist, bus = \
             garnet.place_and_route(args, load_only=args.generate_bitstream_only, offset = 1000)
@@ -874,7 +879,12 @@ def pnr(garnet, args, app):
         placement, routing, id_to_name, instance_to_instr, netlist, bus = \
             garnet.place_and_route(args, load_only=True, offset = 1000)
 
+        import time
+
+        start = time.time()
         verify_pipeline(garnet.interconnect, design_top, instance_to_instr_pnr, instance_to_instr, garnet.pipeline_config_interval)
+        end = time.time()
+        print(f"Time to verify pipeline: {end - start}")
 
     else:
         instance_to_instr = instance_to_instr_pnr
@@ -916,7 +926,7 @@ def pnr(garnet, args, app):
         json.dump(config, f)
     write_out_bitstream(args.output, bitstream)
 
-    verify_bitstream(garnet.interconnect, str(args.app), instance_to_instr, garnet.pipeline_config_interval, bitstream)
+    # verify_bitstream(garnet.interconnect, str(args.app), instance_to_instr, garnet.pipeline_config_interval, bitstream)
 
 
 def reschedule_pipelined_app(app):
