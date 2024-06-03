@@ -6,6 +6,7 @@ import matplotlib
 matplotlib.use('pdf')  # resolve the subplot() stuck issue
 import matplotlib.pyplot as plt
 import pdb
+import pandas as pd
 
 # might need the following package
 # apt-get install libnuma-dev
@@ -132,7 +133,7 @@ def get_signal_report(fsdb_file, signal_list, output_f="signal_report.txt"):
             signal.extend(s_sub)
     signal_mul = " ".join(signal)
     cmd = f"fsdbreport {fsdb_file} -csv -s {signal_mul} -of b -o {output_f}"
-    # print(cmd)
+    print(cmd)
 
     subprocess.run(cmd, shell=True)
 
@@ -312,10 +313,10 @@ def main():
     glb_read_signal = "fiber_access_16_inst/read_scanner/block_rd_out"
     
     clk = "/top/dut/clk_in"
-    fsdb_file = "cgra.fsdb"
+    fsdb_file = "mat_mask_tri_failing_concat.fsdb"
     report_f = "signal_report.txt"
 
-    # Generate Signal RC
+    # Generate Signal Report
     signal_tracker = []
     for tile in tiles:
         cmd_prefix = f"{prefix}{tile[1]}"
@@ -326,9 +327,9 @@ def main():
                 sub_tracker.append(tile[0])
                 if "fiber_access" in tile[0]:
                     if "X" not in tile[0] and "x" not in tile[0]:  # Use only the write signals
-                        # for signal in signals_in[0]:
-                        #     signal_rv = [f"{cmd_prefix}{tile_path}{tile_name}_flat/{signal}_{suffix}_" for suffix in ("ready_f", "valid_f", "f")]
-                        #     sub_tracker.append(signal_rv)
+                        for signal in signals_in[0]:
+                            signal_rv = [f"{cmd_prefix}{tile_path}{tile_name}_flat/{signal}_{suffix}_" for suffix in ("ready_f", "valid_f", "f")]
+                            sub_tracker.append(signal_rv)
                         
                         for signal in signals_in[1]:  # Avoid the issue with Val mode
                             signal_rv = [f"{cmd_prefix}{tile_path}{tile_name}_flat/{signal}_{suffix}_" for suffix in ("ready_f", "valid_f", "f")]
@@ -356,19 +357,30 @@ def main():
 
                 else:
                     for signal in signals_in:
-                        # group_cmd = f"addGroup {tile[0]}"
                         signal_rv = [f"{cmd_prefix}{tile_path}{tile_name}_flat/{signal}_{suffix}_" for suffix in ("ready_f", "valid_f", "f")]
                         sub_tracker.append(signal_rv)
 
-                    # for signal in signals_out:
-                    #     # group_cmd = f"addGroup {tile[0]}"
-                    #     signal_rv = [f"{cmd_prefix}{tile_path}{tile_name}_flat/{signal}_{suffix}_" for suffix in ("ready_f", "valid_f", "f")]
-                    #     sub_tracker.append(signal_rv)
+                    for signal in signals_out:
+                        # TODO confirm with Zhouhua commenting this back in doesn't break things
+                        signal_rv = [f"{cmd_prefix}{tile_path}{tile_name}_flat/{signal}_{suffix}_" for suffix in ("ready_f", "valid_f", "f")]
+                        sub_tracker.append(signal_rv)
         signal_tracker.append(sub_tracker)
-    # print(signal_tracker)
+    print("Signal tracker", signal_tracker)
     all_dur = get_signal_report(fsdb_file, signal_tracker, report_f)
+    
+    # write intersect performance to a file
+    with open('/aha/garnet/intersect_perf.txt', 'w') as f:
+        for dur in all_dur:
+            if "intersect" in dur[0] or "union" in dur[0]:
+                dur_num = dur[1][0]
+                print(dur[0])
+                print((dur_num[3]+dur_num[4])/dur_num[1])
+                f.write(dur[0])
+                f.write(": ")
+                f.write(str((dur_num[3]+dur_num[4])/dur_num[1]))
+                f.write("\n")
+
     height = int(0.3 * len(all_dur))
-    print(height)
     fig, ax = plt.subplots(figsize=(30, height))
     y_ticks = [15 + 10 * i for i in range(len(all_dur))]
     y_labels = [i[0] for i in all_dur]
@@ -388,6 +400,94 @@ def main():
     plt.cla()
     plt.clf()
     plt.close()
+
+
+    file_path = '/aha/garnet/tests/test_app/signal_report.txt'
+
+    df = pd.read_csv(file_path)
+    df = df.drop(df.columns[0], axis=1)
+
+    def bundle_columns(df, bundle_size=3):
+        # Number of bundles
+        num_bundles = (len(df.columns) + bundle_size - 1) // bundle_size
+        bundles = {}
+        for i in range(num_bundles):
+            start_col = i * bundle_size
+            end_col = start_col + bundle_size
+            # bundle name is name of third column
+            bundle_name = df.columns[end_col - 1]
+            bundles[bundle_name] = df.iloc[:, start_col:end_col]
+        return bundles
+
+    # Get the bundled columns
+    bundled_columns = bundle_columns(df)
+
+    # Function to convert binary to hexadecimal
+    def binary_to_special_format(binary_val):
+        try:
+            # Remove curly braces if present
+            binary_str = binary_val.strip('{}')
+            # Ensure binary_str is at least 17 bits long
+            binary_str = binary_str.zfill(17)
+            # Check if the 17th bit (index 16) is 1
+            if binary_str[-17] == '1':
+                # Convert binary string to integer
+                value = int(binary_str, 2)
+                # Check specific mappings
+                special_mappings = {
+                    0x10000: 'S0',
+                    0x10001: 'S1',
+                    0x10002: 'S2',
+                    0x10003: 'S3',
+                    0x10004: 'S4',
+                    0x10100: 'D',
+                }
+                # Return the special format if it exists
+                return special_mappings.get(value, f'0x{value:X}')
+            else:
+                return f'0x{int(binary_str, 2):X}'
+        except ValueError:
+            return None
+
+    streams = {}
+
+
+    # preserve topological sort
+    for tile in tiles:
+        # Process each bundle
+        for bundle_name, bundle_df in bundled_columns.items():
+            assert bundle_df.shape[1] == 3
+
+            # Filter rows where the first two columns are both 1
+            filtered_df = bundle_df[(bundle_df.iloc[:, 0] == 1) & (bundle_df.iloc[:, 1] == 1)]
+            
+            # Keep only the third column
+            third_column = filtered_df.iloc[:, 2]
+            hex_column = third_column.apply(lambda x: binary_to_special_format(str(x)))
+
+            # Create a dictionary where the key is the name of the value column and the value is the list of hex values
+            if tile[1] in bundle_name:
+                # add string after slash to tile name
+                port = bundle_name.split("/")[-1]
+                name = f"{tile[0]} {port}"
+                streams[name] = hex_column.tolist()
+
+
+    # Write streams to file
+    with open('streams.txt', 'w') as file:
+        for stream_name, stream_values in streams.items():
+            file.write(f'{stream_name}:\n')
+            tile = 0
+            file.write(f'Tile {tile}: ')
+            for value in stream_values:
+                if value == 'D':
+                    file.write(f'{value} ')
+                    tile += 1
+                    file.write(f'Tile {tile}: ')
+                else:
+                    file.write(f'{value}, ')
+            file.write('\n')
+
 
 
 if __name__ == "__main__":
