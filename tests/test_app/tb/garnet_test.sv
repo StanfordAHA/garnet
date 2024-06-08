@@ -22,7 +22,7 @@ program garnet_test #(
     //============================================================================//
     // local variables
     //============================================================================//
-    Kernel kernels[];
+    Kernel kernels[$]; // use dynamic array for potential glb tiling
     Environment env;
 
     initial begin
@@ -53,6 +53,8 @@ program garnet_test #(
         int num_app;
         int result;
         string app_dirs[$], temp_str;
+        Kernel temp_kernel, kernel;
+        int kernel_glb_tiling_cnt = 0;
 
         num_cols = NUM_CGRA_COLS;
         result   = initialize_monitor(num_cols);
@@ -75,9 +77,24 @@ program garnet_test #(
             end
         end
 
-        kernels = new[num_app];
         foreach (app_dirs[i]) begin
-            kernels[i] = new(app_dirs[i], dpr);
+            temp_kernel = new(app_dirs[i], dpr);
+            if (temp_kernel.num_glb_tiling > 0) begin
+                // Replicate kernels if glb_tiling is enabled
+                temp_kernel.glb_tiling_cnt = kernel_glb_tiling_cnt;
+                kernel_glb_tiling_cnt++;
+                kernels.push_back(temp_kernel);
+                repeat (temp_kernel.num_glb_tiling - 1) begin
+                    kernel = new(app_dirs[i], dpr);
+                    kernel.glb_tiling_cnt = kernel_glb_tiling_cnt;
+                    kernel_glb_tiling_cnt++;
+                    kernels.push_back(kernel);
+                end
+                kernel_glb_tiling_cnt = 0;
+            end else begin
+                // No glb tiling
+                kernels.push_back(temp_kernel);
+            end
         end
     endfunction
 
