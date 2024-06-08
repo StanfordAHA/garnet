@@ -337,7 +337,7 @@ void *parse_metadata(char *filename) {
         exit(1);
     }
 
-    // Hacky way for conv layer output padding
+    // Hacky way for conv layer output padding and glb tiling
     // Set os env var to get layer shape
     json_t const *halide_gen_args = json_getProperty(json, "HALIDE_GEN_ARGS");
     if (halide_gen_args && JSON_OBJ == json_getType(halide_gen_args)) {
@@ -351,6 +351,32 @@ void *parse_metadata(char *filename) {
                 value = json_getValue(property);
                 // Set the environment variable
                 setenv(key, value, 1);
+            }
+        }
+    }
+
+    // Parse num_glb_tiling for GLB tiling, by default 0
+    json_t const *glb_config_json = json_getProperty(json, "GLB_BANK_CONFIG");
+    if (!glb_config_json) {
+        // GLB_BANK_CONFIG is not set
+        info->num_glb_tiling = 0;
+        info->glb_tiling_cnt = 0;
+    } else {
+        json_t const *num_glb_tiling_json = json_getProperty(glb_config_json, "num_glb_tiling");
+        if (!num_glb_tiling_json || JSON_ARRAY != json_getType(num_glb_tiling_json)) {
+            // No num_glb_tiling or it is not an array, use default values
+            info->num_glb_tiling = 0;
+            info->glb_tiling_cnt = 0;
+        } else {
+            // Process the num_glb_tiling array
+            json_t const *num_tiling = json_getChild(num_glb_tiling_json);
+            if (num_tiling && JSON_INTEGER == json_getType(num_tiling)) {
+                info->num_glb_tiling = json_getInteger(num_tiling);
+                info->glb_tiling_cnt = 0;
+            } else {
+                // Invalid type for num_tiling, use default values
+                info->num_glb_tiling = 0;
+                info->glb_tiling_cnt = 0;
             }
         }
     }
@@ -584,6 +610,22 @@ int get_num_outputs(void *info) {
 int get_opal_dense_scanner_workaround(void *info) {
     GET_KERNEL_INFO(info);
     return kernel_info->opal_dense_scanner_workaround;
+}
+
+// For GLB tiling
+int get_num_glb_tiling(void *info) {
+    GET_KERNEL_INFO(info);
+    return kernel_info->num_glb_tiling;
+}
+
+int get_glb_tiling_cnt(void *info) {
+    GET_KERNEL_INFO(info);
+    return kernel_info->glb_tiling_cnt;
+}
+
+void update_glb_tiling_cnt(void *info, int cnt) {
+    GET_KERNEL_INFO(info);
+    kernel_info->glb_tiling_cnt = cnt;
 }
 
 void *get_io_tile_info(void *info, int index) {
