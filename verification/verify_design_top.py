@@ -570,6 +570,9 @@ def verify_design_top_parallel(
     solver.file_info = file_info
     solver.app_dir = f"{app_dir}/verification_{starting_cycle}"
 
+    if not os.path.exists(solver.app_dir):
+        os.mkdir(solver.app_dir)
+
     solver, input_symbols, output_symbols = nx_to_smt(nx, interconnect, solver)
 
     set_clk_rst_flush(solver)
@@ -669,9 +672,9 @@ def verify_design_top_parallel(
 
     prop = pono.Property(solver.solver, property_term)
 
-    print("Named terms", len(solver.fts.named_terms))
-    print("State vars", len(solver.fts.statevars))
-    print("Trans size", len(str(solver.fts.trans)))
+    # print("Named terms", len(solver.fts.named_terms))
+    # print("State vars", len(solver.fts.statevars))
+    # print("Trans size", len(str(solver.fts.trans)))
 
     # btor_solver = Solver(solver_name="btor")
     btor_solver = solver
@@ -679,10 +682,11 @@ def verify_design_top_parallel(
 
     check_cycles = solver.max_cycles - solver.starting_cycle
 
-    print("First valid output at cycle", solver.first_valid_output)
-    print("Running BMC for", check_cycles, "cycles")
+    # print("First valid output at cycle", solver.first_valid_output)
+    # print("Running BMC for", check_cycles, "cycles")
     start = time.time()
     res = bmc.check_until(check_cycles * 2)
+    # res = None
     print(time.time() - start)
 
     if res is None or res:
@@ -759,6 +763,7 @@ def verify_design_top(interconnect, coreir_file):
     first_output_pixel_at_cycle = get_first_output_from_coreir(coreir_file)
 
     total_output_pixels = 64 * 64
+    # total_output_pixels = 8 * 8
     num_cores = 32
 
     total_cycles = total_output_pixels + first_output_pixel_at_cycle
@@ -805,6 +810,6 @@ def verify_design_top(interconnect, coreir_file):
             print("\n\033[92m" + "Passed" + "\033[0m")
     else:
 
-        verify_design_top_parallel_wrapper((0, 200))
+        verify_design_top_parallel_wrapper((0, 400))
 
     # breakpoint()

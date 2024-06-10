@@ -360,7 +360,7 @@ def create_pnr_property_term(
         constrain_array_init(solver, coreir_valid_array)
 
         stencil_valid_id_coreir = solver.stencil_valid_to_port_controller[
-            coreir_symbol_to_name[coreir_valid]
+            symbol_to_name[coreir_valid]
         ]
 
         coreir_array_idx = get_output_array_idx(
@@ -368,8 +368,6 @@ def create_pnr_property_term(
             bvsort16,
             symbol_to_name[coreir_symbol],
             symbol_to_name[coreir_valid],
-            nx_coreir,
-            stencil_valid_id_coreir,
         )
 
         # Store coreir_symbol in coreir_output_array at coreir_array_idx
@@ -594,9 +592,9 @@ def verify_pnr_parallel(
         nx_pnr,
     )
 
-    print("Named terms", len(solver.fts.named_terms))
-    print("State vars", len(solver.fts.statevars))
-    print("Trans size", len(str(solver.fts.trans)))
+    # print("Named terms", len(solver.fts.named_terms))
+    # print("State vars", len(solver.fts.statevars))
+    # print("Trans size", len(str(solver.fts.trans)))
 
     # property_term = solver.create_term(
     #    solver.ops.BVUlt, solver.bmc_counter, solver.create_term((solver.max_cycles * 2)-1, bvsort16)

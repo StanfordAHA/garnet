@@ -397,8 +397,8 @@ def verify_pipeline_parallel(
         nx_pipelined, interconnect, solver
     )
 
-    nx_to_pdf(nx_pnr, f"{app_dir}/verification/pnr_graph")
-    nx_to_pdf(nx_pipelined, f"{app_dir}/verification/pipelined_graph")
+    # nx_to_pdf(nx_pnr, f"{app_dir}/verification/pnr_graph")
+    # nx_to_pdf(nx_pipelined, f"{app_dir}/verification/pipelined_graph")
 
     set_clk_rst_flush(solver)
     synchronize_cycle_counts(solver)
@@ -442,6 +442,7 @@ def verify_pipeline_parallel(
     # print("Running BMC for", check_cycles, "cycles")
     start = time.time()
     res = bmc.check_until(check_cycles * 2)
+    # res = None
     print(time.time() - start)
     if res is None or res:
 
@@ -471,11 +472,10 @@ def verify_pipeline_parallel(
         #         "\n\033[92m" + "Formal check of mapped application passed" + "\033[0m"
         #     )
 
-        # print(
-        #     "\n\033[92m" + "Formal check of mapped application passed" + "\033[0m",
-        #     starting_cycle,
-        # )
-        pass
+        print(
+            "\n\033[92m" + "Formal check of mapped application passed" + "\033[0m",
+            starting_cycle,
+        )
     else:
 
         # vcd_printer = pono.VCDWitnessPrinter(solver.fts, bmc.witness())

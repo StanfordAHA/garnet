@@ -20,6 +20,8 @@ from verification.verify_pnr import verify_pnr
 from verification.verify_pipeline import verify_pipeline
 from verification.verify_bitstream import verify_bitstream
 from daemon.daemon import GarnetDaemon
+import time
+
 
 # set the debug mode to false to speed up construction
 from gemstone.generator.generator import set_debug_mode
@@ -834,8 +836,10 @@ def pnr(garnet, args, app):
         shutil.copy(args.app, design_top_map)
 
     if args.verify_design_top:
+        start = time.time()
         verify_design_top(garnet.interconnect, design_top_map)
-
+        end = time.time()
+        print(f"Time to verify design top: {end - start}")
 
     placement, routing, id_to_name, instance_to_instr_pnr, netlist, bus = \
         garnet.place_and_route(args, load_only=args.generate_bitstream_only)
@@ -850,8 +854,11 @@ def pnr(garnet, args, app):
             garnet.place_and_route(args, load_only=True)
 
     if args.verify_pnr:
-        verify_pnr(garnet.interconnect, design_top_map, instance_to_instr_pnr, garnet.pipeline_config_interval)
 
+        start = time.time()
+        verify_pnr(garnet.interconnect, design_top_map, instance_to_instr_pnr, garnet.pipeline_config_interval)
+        end = time.time()
+        print(f"Time to verify pnr: {end - start}")
 
     if args.verify_pipeline:
 
@@ -882,7 +889,6 @@ def pnr(garnet, args, app):
         placement, routing, id_to_name, instance_to_instr, netlist, bus = \
             garnet.place_and_route(args, load_only=True, offset = 1000)
 
-        import time
 
         start = time.time()
         verify_pipeline(garnet.interconnect, design_top, instance_to_instr_pnr, instance_to_instr, garnet.pipeline_config_interval)
