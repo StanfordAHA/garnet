@@ -25,6 +25,7 @@ GLB_TILE_MEM_SIZE ?= 256
 TOOL ?= VCS
 SRAM_STUB ?= 0
 export WAVEFORM ?= 0
+# export WAVEFORM ?= 1
 export SAIF ?= 0
 
 # GLS 
@@ -36,8 +37,10 @@ GLB_TOP_SDF ?= gls/glb.sdf
 GLB_TILE_SDF ?= gls/glb_tile.sdf
 
 # runtime
-RUN_ARGS ?= +test01 +test02 +test03 +test04 +test05 +test06 +test07 +test08 +test09 +test10 +test11 +test12
-RUN_ARGS += +MAX_NUM_TEST=12
+# RUN_ARGS ?= +test01 +test02 +test03 +test04 +test05 +test06 +test07 +test08 +test09 +test10 +test11 +test12
+RUN_ARGS ?= +test01 +test02 +test03 +test04 +test05 +test06 +test07 +test08 +test09 +test10 +test11 +test14 +test15
+# RUN_ARGS ?= +test14 +test15
+RUN_ARGS += +MAX_NUM_TEST=15
 RUN_ARGS += +DEBUG
 RUN_LOG ?= run.log
 
@@ -74,7 +77,9 @@ GENERATE_TV = \
     python testvectors/gen_glb_test.py --data testvectors/1024_v0.dat --num_data 1024 --seed 0; \
     python testvectors/gen_glb_test.py --data testvectors/1024_v1.dat --num_data 1024 --seed 1; \
     python testvectors/gen_glb_test.py --data testvectors/3844_v0.dat --num_data 3844 --seed 0; \
-    python testvectors/gen_glb_test.py --data testvectors/3844_v0_b5.dat --num_data 3844 --seed 0 --num_blocks 5;
+    python testvectors/gen_glb_test.py --data testvectors/3844_v0_b5.dat --num_data 3844 --seed 0 --num_blocks 5; \
+    python testvectors/gen_glb_test.py --data testvectors/100_v0_b5.dat --num_data 100 --seed 0 --num_blocks 5;\
+    python testvectors/gen_glb_test.py --data testvectors/100_v0_b5_seg.dat --num_data 100 --seed 0 --num_blocks 5 --seg_mode 1;
 
 XRUN = xrun \
 	   -64bit \

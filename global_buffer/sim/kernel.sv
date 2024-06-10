@@ -28,6 +28,7 @@ class Kernel;
     st_valid_type st_valid_type_;
     ld_valid_type ld_valid_type_;
     int num_blocks;
+    bit seg_mode;
     int block_size_q[$];
     int tile_id;
     int bank_id;
@@ -42,12 +43,16 @@ class Kernel;
     int new_cycle_stride[LOOP_LEVEL];
     int new_data_stride[LOOP_LEVEL];
     string filename;
+    string gold_filename;
     data16 mem;
     data16 data_arr;
     data16 data_arr_out;
+    data16 data_arr_out_gold;
+    int gold_cnt;
     int total_cycle;
     data64 data64_arr;
     data64 data64_arr_out;
+    data64 data64_arr_out_gold;
 endclass
 
 class Test;
@@ -68,15 +73,16 @@ endclass
 
 function Test::new(string filename);
     int fd = $fopen(filename, "r");
-    string type_, st_valid_type_, ld_valid_type_, data_filename;
+    string type_, st_valid_type_, ld_valid_type_, data_filename, gold_filename;
     int num_blocks;
+    bit seg_mode;
     int tile_id, bank_id, dim;
     int tmp_start_addr, tmp_cycle_start_addr;
     string cycle_stride_s, extent_s, data_stride_s, tmp_s;
     string new_cycle_stride_s, new_extent_s, new_data_stride_s, new_tmp_s;
     string line;
     int start_tile, end_tile, tmp_tile;
-    int data_cnt;
+    int data_cnt, gold_cnt;
 
     $display("\n---- Test Initialization ----");
     if (fd) $display("Test file open %s", filename);
@@ -114,6 +120,12 @@ function Test::new(string filename);
             if (kernels[i].st_valid_type_ == ST_MODE_RV) begin
                 void'($fscanf(fd, " %d", num_blocks));
                 kernels[i].num_blocks = num_blocks;
+                void'($fscanf(fd, " %d", seg_mode));
+                kernels[i].seg_mode = seg_mode;
+                void'($fscanf(fd, " %s", gold_filename));
+                kernels[i].gold_filename = gold_filename;
+                void'($fscanf(fd, " %d", gold_cnt));
+                kernels[i].gold_cnt = gold_cnt;
             end
         end
         void'($fscanf(fd, " %d", dim));

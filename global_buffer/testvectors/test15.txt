@@ -1,0 +1,21 @@
+// Ready valid NEW, seg_mode = 1, seg stream
+2
+00
+G2F 0 0 2 2
+RV
+2
+64 64
+1 65
+1 64
+testvectors/4096_v0.dat
+F2G 0 1 0 0
+RV
+5
+1
+testvectors/100_v0_b5_seg.gold
+120
+1
+115
+1
+1
+testvectors/100_v0_b5_seg.dat
