@@ -20,6 +20,7 @@ from memory_core.memtile_util import NetlistBuilder
 from memory_core.reg_core import RegCore
 from memory_core.scanner_core import ScannerCore
 from memory_core.write_scanner_core import WriteScannerCore
+from memory_core.stream_arbiter_core import StreamArbiterCore
 from sam.onyx.parse_dot import *
 from sam.onyx.hw_nodes.hw_node import *
 from sam.onyx.hw_nodes.memory_node import MemoryNode
@@ -36,6 +37,7 @@ from sam.onyx.hw_nodes.crdhold_node import CrdHoldNode
 from sam.onyx.hw_nodes.repeat_node import RepeatNode
 from sam.onyx.hw_nodes.repsiggen_node import RepSigGenNode
 from sam.onyx.hw_nodes.fiberaccess_node import FiberAccessNode
+from sam.onyx.hw_nodes.stream_arbiter_node import StreamArbiterNode
 import magma as m
 import kratos
 import _kratos
@@ -54,6 +56,7 @@ from lake.modules.crddrop import CrdDrop
 from lake.modules.crdhold import CrdHold
 from lake.modules.strg_RAM import StrgRAM
 from lake.modules.stencil_valid import StencilValid
+from lake.modules.stream_arbiter import StreamArbiter
 import os
 from canal.util import IOSide
 from sam.onyx.generate_matrices import MatrixGenerator, get_tensor_from_files
@@ -474,6 +477,10 @@ class SparseTBBuilder(m.Generator2):
                 new_node_type = RepSigGenNode
                 core_name = "repeat_signal_generator"
                 core_inst = RepeatSignalGenerator()
+            elif hw_node_type == f"{HWNodeType.StreamArbiter}" or hw_node_type == HWNodeType.StreamArbiter:
+                new_node_type = StreamArbiterNode
+                core_name = "stream_arbiter"
+                core_inst = StreamArbiter()
             else:
                 raise NotImplementedError(f"{hw_node_type} not supported....")
 
@@ -1098,6 +1105,9 @@ class SparseTBBuilder(m.Generator2):
             elif hw_node_type == f"{HWNodeType.RepSigGen}" or hw_node_type == HWNodeType.RepSigGen:
                 new_node_type = RepSigGenNode
                 core_tag = "rsg"
+            elif hw_node_type == f"{HWNodeType.StreamArbiter}" or hw_node_type == HWNodeType.StreamArbiter:
+                new_node_type = StreamArbiterNode
+                core_tag = "stream_arbiter"
             else:
                 raise NotImplementedError(f"{hw_node_type} not supported....")
 
@@ -1124,16 +1134,18 @@ class SparseTBBuilder(m.Generator2):
                     direction = "write"
                     num_blocks = 1
                     tx_size = 7
+                    seg_mode = 0 # placeholder
                     if node.get_attributes()['mode'].strip('"') == 1 or node.get_attributes()['mode'].strip('"') == '1':
                         tx_size = 12
                 elif glb_type_ == 'fiberwrite' or glb_type_ == 'spaccumulator':
                     data = self.nlb.register_core("io_16", name=f"data_out_{glb_tensor_}_{glb_mode_}")
                     direction = "read"
                     glb_name = "CGRA_TO_GLB"
+                    num_blocks = 1
                     if 'vals' in glb_mode_ or 'vals' in node.get_attributes()['format'].strip('"'):
-                        num_blocks = 1
+                        seg_mode = 0
                     else:
-                        num_blocks = 2
+                        seg_mode = 1
                     tx_size = 1
                 elif glb_type_ == 'arrayvals':
                     glb_name = "GLB_TO_CGRA"
@@ -1141,6 +1153,7 @@ class SparseTBBuilder(m.Generator2):
                     direction = "write"
                     num_blocks = 1
                     tx_size = 7
+                    seg_mode = 0 # placeholder
                 else:
                     raise NotImplementedError
 
@@ -1161,6 +1174,7 @@ class SparseTBBuilder(m.Generator2):
                                        # ready=ready,
                                        direction=direction,
                                        num_blocks=num_blocks,
+                                       seg_mode=seg_mode,
                                        file_number=file_number,
                                        tx_size=tx_size,
                                        tensor=glb_tensor,
@@ -1168,7 +1182,7 @@ class SparseTBBuilder(m.Generator2):
                                        format=glb_format)
                 self.core_nodes[node.get_name()] = glb_node_use
 
-                self.glb_to_io_mapping[data] = (glb_tensor, glb_mode, direction, num_blocks, file_number)
+                self.glb_to_io_mapping[data] = (glb_tensor, glb_mode, direction, num_blocks, seg_mode, file_number)
 
                 glb_mode_ = glb_mode
                 if 'vals' not in glb_mode_:
@@ -1349,7 +1363,7 @@ class SparseTBBuilder(m.Generator2):
                     self.nlb.configure_tile(core_node.get_name(), pass_config_kwargs_tuple)
                 else:
                     if "glb" in node.get_name():
-                        node_config_kwargs['sparse_mode'] = 1
+                        node_config_kwargs['sparse_mode'] = 1  # maybe to add?
                     self.nlb.configure_tile(core_node.get_name(), (1, node_config_kwargs))
 
     def display_names(self):
@@ -1430,7 +1444,7 @@ def prepare_glb_collateral(glb_dir=None, bitstream=None, matrices_in=None, desig
     # Loop through the input matrices and create raw versions
     # for filename in os.listdir(matrices_in):
     for idx_, input_glb_tile in enumerate(input_glb_tiles):
-        (core, core_placement, tensor_desc_str, direction, num_blocks, file_number_) = input_glb_tile
+        (core, core_placement, tensor_desc_str, direction, num_blocks, seg_mode, file_number_) = input_glb_tile
         print(tensor_desc_str)
         print(matrices_in)
         print(file_number_)
@@ -1438,7 +1452,7 @@ def prepare_glb_collateral(glb_dir=None, bitstream=None, matrices_in=None, desig
         os.system(f"xxd -r -p {matrices_in}/{tensor_desc_str} > {glb_dir}/bin/{tensor_desc_str}.raw")
         with open(f"{matrices_in}/{tensor_desc_str}") as tmp_fp:
             num_lines = len(tmp_fp.readlines())
-        input_glb_tiles[idx_] = (core, core_placement, tensor_desc_str, num_lines, num_blocks, file_number_)
+        input_glb_tiles[idx_] = (core, core_placement, tensor_desc_str, num_lines, num_blocks, seg_mode, file_number_)
 
     design_meta_json = {}
     design_meta_json["testing"] = {
@@ -1461,7 +1475,7 @@ def prepare_glb_collateral(glb_dir=None, bitstream=None, matrices_in=None, desig
 
     tmp_json = None
     for input_glb_tile in input_glb_tiles:
-        (core, core_placement, tensor_desc_str, num_lines, num_blocks, file_number) = input_glb_tile
+        (core, core_placement, tensor_desc_str, num_lines, num_blocks, seg_mode, file_number) = input_glb_tile
         tmp_json = {
             "bitwidth": 16,
             "datafile": f"{tensor_desc_str}.raw",
@@ -1487,7 +1501,7 @@ def prepare_glb_collateral(glb_dir=None, bitstream=None, matrices_in=None, desig
         design_meta_json["IOs"]["inputs"].append(tmp_json)
 
     for idx_, output_glb_tile in enumerate(output_glb_tiles):
-        (core, core_placement, tensor_desc_str, direction, num_blocks, file_number) = output_glb_tile
+        (core, core_placement, tensor_desc_str, direction, num_blocks, seg_mode, file_number) = output_glb_tile
         print("tensor desc str: ", tensor_desc_str)
         print("file number: ", file_number)
         print("glb dir: ", glb_dir)
@@ -1496,11 +1510,11 @@ def prepare_glb_collateral(glb_dir=None, bitstream=None, matrices_in=None, desig
         os.system(f"xxd -r -p {glb_dir}/{tensor_desc_str}_{file_number} > {glb_dir}/bin/{tensor_desc_str}.raw")
         with open(f"{glb_dir}/{tensor_desc_str}_{file_number}") as tmp_fp:
             num_lines = len(tmp_fp.readlines())
-        output_glb_tiles[idx_] = (core, core_placement, tensor_desc_str, num_lines, num_blocks, file_number)
+        output_glb_tiles[idx_] = (core, core_placement, tensor_desc_str, num_lines, num_blocks, seg_mode, file_number)
 
     tmp_json = None
     for output_glb_tile in output_glb_tiles:
-        (core, core_placement, tensor_desc_str, num_lines, num_blocks, file_number) = output_glb_tile
+        (core, core_placement, tensor_desc_str, num_lines, num_blocks, seg_mode, file_number) = output_glb_tile
         tmp_json = {
             "bitwidth": 16,
             "datafile": f"{tensor_desc_str}.raw",
@@ -1511,6 +1525,7 @@ def prepare_glb_collateral(glb_dir=None, bitstream=None, matrices_in=None, desig
                     "name": f"{tensor_desc_str}",
                     "mode": "RV",
                     "num_blocks": num_blocks,
+                    "seg_mode": seg_mode,
                     "addr": {
                         "cycle_starting_addr": [0],
                         "cycle_stride": [1],
@@ -2967,7 +2982,7 @@ if __name__ == "__main__":
                     glb_map = stb.get_glb_mapping()
                     mode_map = stb.get_mode_map()
                     for core, desc_ in glb_map.items():
-                        tensor_, mode_, direction_, num_blocks_, file_no_ = desc_
+                        tensor_, mode_, direction_, num_blocks_, seg_mode_, file_no_ = desc_
                         # remap the mode...
                         if mode_ != 'vals':
                             if give_tensor:
@@ -2976,7 +2991,7 @@ if __name__ == "__main__":
                                 mode_ = mode_map[tensor_][int(mode_)][0]
                         core_placement = stb.get_core_placement(core)
                         tensor_desc_str = f"tensor_{tensor_}_mode_{mode_}"
-                        glb_info_.append((core, core_placement, tensor_desc_str, direction_, num_blocks_, file_no_))
+                        glb_info_.append((core, core_placement, tensor_desc_str, direction_, num_blocks_, seg_mode_, file_no_))
 
                     # prepare_glb_collateral(glb_dir=glb_dir,
                     prepare_glb_collateral(glb_dir=full_test_glb_dir,

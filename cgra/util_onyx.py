@@ -20,7 +20,7 @@ from memory_core.pond_core import PondCore
 from peak_core.peak_core import PeakCore
 from memory_core.scanner_core import ScannerCore
 from memory_core.intersect_core import IntersectCore
-from memory_core.stream_arb_core import StreamArbiterCore
+from memory_core.stream_arbiter_core import StreamArbiterCore
 from typing import Tuple, Dict, List, Tuple
 from passes.tile_id_pass.tile_id_pass import tile_id_physical
 from memory_core.reg_core import RegCore

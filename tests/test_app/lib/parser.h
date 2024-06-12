@@ -49,6 +49,7 @@ struct IOTileInfo {
     int num_blocks;
     char mode[BUFFER_SIZE];
     int loop_dim;
+    int seg_mode;
     int cycle_stride[LOOP_LEVEL];
     int data_stride[LOOP_LEVEL];
     int extent[LOOP_LEVEL];
