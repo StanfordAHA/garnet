@@ -4,13 +4,16 @@ import sys
 import os
 import subprocess
 
-def concat_files(input_files, output_file_path):
+def concat_files(input_files, output_file_path, strategy="single"):
     contents = []
     assert len(input_files) > 0
+    stream_id = 11
+    stream_id = stream_id.to_bytes(2, byteorder='big')
     try:
         str_stream = ""
         for file_path in input_files:
             with open(file_path, 'rb') as file:
+                contents.append(stream_id)
                 contents.append(file.read())
             str_stream += file_path + " "
 
