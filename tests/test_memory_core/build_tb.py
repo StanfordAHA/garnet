@@ -1810,6 +1810,30 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         output_matrix = output_matrix.astype(numpy.uint16)
         output_format = "CSF"
         output_name = "x"
+
+    elif 'mat_mask_tri_DA3sum_final.gv' in app_name:
+        b_mat = get_tensor(input_name='B', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                                dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+                                sparsity=0.9)
+
+        c_mat = get_tensor(input_name='C', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+                            sparsity=0.9)
+
+        d_mat = get_tensor(input_name='D', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['D'],
+                            sparsity=0.9)
+
+        e_mat = get_tensor(input_name='E', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                    dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['E'],
+                    sparsity=0.9)
+
+        output_matrix = numpy.zeros([1]) 
+        d_mat_trans = numpy.transpose(d_mat)
+        output_matrix[0] = numpy.sum(numpy.multiply(numpy.matmul(numpy.matmul(b_mat, c_mat, dtype=numpy.uint16, casting='unsafe'), d_mat_trans, dtype=numpy.uint16, casting='unsafe'), e_mat, dtype=numpy.uint16, casting='unsafe'))
+        output_matrix = output_matrix.astype(numpy.uint16)
+        output_format = "CSF"
+        output_name = "x"
     elif 'mat_vecmul_iter.gv' in app_name:
         vec_ordering = ((1, (0, 's')),)
         b_mat = get_tensor(input_name='B', shapes=[10, 8], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
