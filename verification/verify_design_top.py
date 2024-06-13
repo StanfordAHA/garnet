@@ -39,26 +39,58 @@ def set_clk_rst_flush(solver):
         )
         solver.fts.assign_next(clk, ite)
 
+    rst_times = [0, 1]
+    for rst in solver.rsts:
+        if rst in solver.fts.inputvars:
+            solver.fts.promote_inputvar(rst)
+        solver.fts.constrain_init(
+            solver.create_term(
+                solver.ops.Equal, rst, solver.create_term(0, rst.get_sort())
+            )
+        )
+        solver.fts_assert_at_times(
+            rst,
+            solver.create_term(0, rst.get_sort()),
+            solver.create_term(1, rst.get_sort()),
+            rst_times,
+        )
+
+    flush_times = [2, 3]
     for flush in solver.flushes:
-        solver.fts.add_invar(
+        if flush in solver.fts.inputvars:
+            solver.fts.promote_inputvar(flush)
+        solver.fts.constrain_init(
             solver.create_term(
                 solver.ops.Equal, flush, solver.create_term(0, flush.get_sort())
             )
         )
+        solver.fts_assert_at_times(
+            flush,
+            solver.create_term(1, flush.get_sort()),
+            solver.create_term(0, flush.get_sort()),
+            flush_times,
+        )
 
-    for name, term in solver.fts.named_terms.items():
-        if "valid_gate_inv" in name and not solver.fts.is_next_var(term):
-            solver.fts.constrain_init(
-                solver.create_term(
-                    solver.ops.Equal, term, solver.create_term(0, term.get_sort())
-                )
-            )
-        if "flushed" in name and not solver.fts.is_next_var(term):
-            solver.fts.constrain_init(
-                solver.create_term(
-                    solver.ops.Equal, term, solver.create_term(1, term.get_sort())
-                )
-            )
+    # for flush in solver.flushes:
+    #     solver.fts.add_invar(
+    #         solver.create_term(
+    #             solver.ops.Equal, flush, solver.create_term(0, flush.get_sort())
+    #         )
+    #     )
+
+    # for name, term in solver.fts.named_terms.items():
+    #     if "valid_gate_inv" in name and not solver.fts.is_next_var(term):
+    #         solver.fts.constrain_init(
+    #             solver.create_term(
+    #                 solver.ops.Equal, term, solver.create_term(0, term.get_sort())
+    #             )
+    #         )
+    #     if "flushed" in name and not solver.fts.is_next_var(term):
+    #         solver.fts.constrain_init(
+    #             solver.create_term(
+    #                 solver.ops.Equal, term, solver.create_term(1, term.get_sort())
+    #             )
+    #         )
 
 
 def synchronize_cycle_counts(solver):
@@ -79,20 +111,21 @@ def synchronize_cycle_counts(solver):
 
     # solver.fts.add_invar(cycle_count_in_range)
 
+
     for name, term in solver.fts.named_terms.items():
         if "cycle_count" in name and not solver.fts.is_next_var(term):
             solver.fts.add_invar(
                 solver.create_term(solver.ops.Equal, term, solver.cycle_count)
             )
 
-    # print("Constraining cycle count to start at starting_cycle")
-    solver.fts.constrain_init(
-        solver.create_term(
-            solver.ops.Equal,
-            solver.cycle_count,
-            solver.create_term(solver.starting_cycle, solver.cycle_count.get_sort()),
-        )
-    )
+    # # print("Constraining cycle count to start at starting_cycle")
+    # solver.fts.constrain_init(
+    #     solver.create_term(
+    #         solver.ops.Equal,
+    #         solver.cycle_count,
+    #         solver.create_term(solver.starting_cycle, solver.cycle_count.get_sort()),
+    #     )
+    # )
 
 
 def flatten(lst):
@@ -790,7 +823,7 @@ def verify_design_top(interconnect, coreir_file):
             interconnect, coreir_file, starting_cycle, ending_cycle
         )
 
-    if True:
+    if False:
         results = []
         processes = []
         for check_pixel in check_pixels:
@@ -810,6 +843,6 @@ def verify_design_top(interconnect, coreir_file):
             print("\n\033[92m" + "Passed" + "\033[0m")
     else:
 
-        verify_design_top_parallel_wrapper((0, 400))
+        verify_design_top_parallel_wrapper((0, 440))
 
     # breakpoint()

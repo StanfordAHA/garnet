@@ -161,6 +161,7 @@ def get_output_array_idx(
 
     cycle_to_idx = [0] * valid_latency + cycle_to_idx
 
+    # cycle_to_idx = [0]*2 + cycle_to_idx
     cycle_to_idx_var_lut = []
 
     for i, idx in enumerate(cycle_to_idx):
@@ -689,6 +690,20 @@ def get_first_output_from_coreir(coreir_file):
                 return int(line.split('cycle_starting_addr":[')[-1].split("]")[0])
 
 
+import signal
+
+class timeout:
+    def __init__(self, seconds=1, error_message='Timeout'):
+        self.seconds = seconds
+        self.error_message = f"Timeout after {seconds} seconds"
+    def handle_timeout(self, signum, frame):
+        raise Exception(self.error_message)
+    def __enter__(self):
+        signal.signal(signal.SIGALRM, self.handle_timeout)
+        signal.alarm(self.seconds)
+    def __exit__(self, type, value, traceback):
+        signal.alarm(0)
+
 def verify_pnr(interconnect, coreir_file, instance_to_instr, pipeline_config_interval):
 
     first_output_pixel_at_cycle = get_first_output_from_coreir(coreir_file)
@@ -725,7 +740,7 @@ def verify_pnr(interconnect, coreir_file, instance_to_instr, pipeline_config_int
             ending_cycle,
         )
 
-    if True:
+    if False:
         results = []
         processes = []
         for check_pixel in check_pixels:
@@ -745,6 +760,6 @@ def verify_pnr(interconnect, coreir_file, instance_to_instr, pipeline_config_int
             print("\n\033[92m" + "Passed" + "\033[0m")
     else:
 
-        verify_pnr_parallel_wrapper((0, 200))
-
+        verify_pnr_parallel_wrapper((0, total_cycles))
+           
     # breakpoint()

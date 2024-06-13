@@ -430,8 +430,7 @@ def verify_bitstream_parallel(
     #    check_cycles > solver.first_valid_output
     # ), "Check cycles less than first_valid_output"
     start = time.time()
-    # res = bmc.check_until(check_cycles * 2)
-    res = None
+    res = bmc.check_until(check_cycles * 2)
     print(time.time() - start)
 
     if res is None or res:
@@ -521,7 +520,7 @@ def verify_bitstream(
         btor_filename=f"{app_dir}/garnet_configed.btor2",
     )
 
-    if True:
+    if False:
         results = []
         processes = []
         for check_pixel in check_pixels:
@@ -541,6 +540,6 @@ def verify_bitstream(
             print("\n\033[92m" + "Passed" + "\033[0m")
     else:
 
-        verify_bitstream_parallel_wrapper((0, 300))
+        verify_bitstream_parallel_wrapper((0, 400))
 
     # breakpoint()
