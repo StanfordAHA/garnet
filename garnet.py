@@ -44,6 +44,7 @@ from lassen.sim import PE_fc as lassen_fc
 import metamapper.peak_util as putil
 from mapper.netlist_util import create_netlist_info, print_netlist_info
 from metamapper.coreir_mapper import Mapper
+from metamapper.map_design_top import map_design_top
 
 # set the debug mode to false to speed up construction
 set_debug_mode(False)
@@ -403,31 +404,54 @@ class Garnet(Generator):
         cutil.load_libs(["cgralib", "commonlib", "float"])
         c.run_passes(["flatten"])
 
-        nodes = gen_CoreIRNodes(16)
+        all_nodes = gen_CoreIRNodes(16)
+        arch_nodes = Nodes("Arch")
 
         putil.load_and_link_peak(
-            nodes,
+            arch_nodes,
             pe_header,
             {"global.PE": self.pe_fc},
         )
 
         putil.load_and_link_peak(
-            nodes,
+            arch_nodes,
             io_header,
             {"global.IO": IO_fc},
         )
 
         putil.load_and_link_peak(
-            nodes,
+            arch_nodes,
             bit_io_header,
             {"global.BitIO": BitIO_fc},
         )
+        
+        putil.load_and_link_peak(
+            all_nodes,
+            pe_header,
+            {"global.PE": self.pe_fc},
+        )
 
-        dag = cutil.coreir_to_dag(nodes, cmod)
-        tile_info = {"global.PE": self.pe_fc, "cgralib.Mem": nodes.peak_nodes["cgralib.Mem"],
-                     "global.IO": IO_fc, "global.BitIO": BitIO_fc, "cgralib.Pond": nodes.peak_nodes["cgralib.Pond"]}
+        putil.load_and_link_peak(
+            all_nodes,
+            io_header,
+            {"global.IO": IO_fc},
+        )
+
+        putil.load_and_link_peak(
+            all_nodes,
+            bit_io_header,
+            {"global.BitIO": BitIO_fc},
+        )
+        
+
+        dag = cutil.coreir_to_dag(all_nodes, cmod)
+        arch_nodes._node_names.add("cgralib.Mem")
+        arch_nodes._node_names.add("cgralib.Pond")
+        mapped_dag = map_design_top(app_dir, arch_nodes, dag)
+        tile_info = {"global.PE": self.pe_fc, "cgralib.Mem": all_nodes.peak_nodes["cgralib.Mem"],
+                     "global.IO": IO_fc, "global.BitIO": BitIO_fc, "cgralib.Pond": all_nodes.peak_nodes["cgralib.Pond"]}
         netlist_info = create_netlist_info(app_dir,
-                                           dag,
+                                           mapped_dag,
                                            tile_info,
                                            load_only,
                                            self.harden_flush,
@@ -459,7 +483,7 @@ class Garnet(Generator):
                     # get mode...
                     metadata = netlist_info['id_to_metadata'][tag_]
                     mode = "UB"
-                    if 'stencil_valid' in metadata["config"]:
+                    if 'stencil_valid' in metadata["config"] and "stencil_valid" in pin_:
                         mode = 'stencil_valid'
                     elif 'mode' in metadata and metadata['mode'] == 'sram':
                         mode = 'ROM'
@@ -472,6 +496,7 @@ class Garnet(Generator):
                         assert pin_ in hack_remap
                         pin_ = hack_remap[pin_]
                     pin_remap = mem_remap[mode][pin_]
+
                     connections_list[idx] = (tag_, pin_remap)
                 elif tag_[0] == 'p':
                     pin_remap = pe_remap['alu'][pin_]
