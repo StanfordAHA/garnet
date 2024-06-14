@@ -1004,7 +1004,8 @@ class SparseTBBuilder(m.Generator2):
                     mode = node.get_attributes()['mode'].strip('"')
                     # May not need to use/have dim size info for a certain tensor
                     if tensor in self.input_sizes:
-                        dim_size = self.input_sizes[tensor][int(mode)]
+                        dim = self.mode_map[tensor][int(mode)][0]
+                        dim_size = self.input_sizes[tensor][dim]
                     else:
                         dim_size = None
                     if 'vector_reduce_mode' in node.get_attributes():
@@ -2030,6 +2031,34 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         output_matrix = numpy.maximum(0, (numpy.matmul(b_mat, c_mat_trans, dtype=numpy.int16, casting='unsafe')))
         output_format = "CSF"
         output_name = "X"
+    
+    elif "concat_spmm.gv" in app_name:
+        b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                            dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+                            sparsity=0.8)  
+        c_mat = get_tensor(input_name='C', shapes=[8, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+                            sparsity=0.0, format='UNC')
+        d_mat = get_tensor(input_name='D', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['D'],
+                            sparsity=0.8)
+        e_mat = get_tensor(input_name='E', shapes=[8, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['E'],
+                            sparsity=0.0, format='UNC')
+        input_dims['B'] = tuple(b_mat.shape)
+        input_dims['C'] = tuple(c_mat.shape)
+        input_dims['D'] = tuple(d_mat.shape)
+        input_dims['E'] = tuple(e_mat.shape)
+
+        # First transpose c_mat
+        c_mat_trans = numpy.transpose(c_mat)
+        e_mat_trans = numpy.transpose(e_mat)
+        bd_concat = numpy.concatenate((b_mat, d_mat), axis=1)
+        ce_concat = numpy.concatenate((c_mat_trans, e_mat_trans), axis=0)
+        output_matrix = numpy.matmul(bd_concat, ce_concat, dtype=numpy.uint16, casting='unsafe')
+        output_format = "CSF"
+        output_name = "X"
+
     elif "spmv.gv" in app_name:
         b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                            dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
