@@ -313,7 +313,7 @@ def main():
     glb_read_signal = "fiber_access_16_inst/read_scanner/block_rd_out"
     
     clk = "/top/dut/clk_in"
-    fsdb_file = "mat_mask_tri_failing_concat.fsdb"
+    fsdb_file = "cgra.fsdb"
     report_f = "signal_report.txt"
 
     # Generate Signal Report
