@@ -76,6 +76,10 @@ struct KernelInfo {
     int reset_port;
     int opal_dense_scanner_workaround;
 
+    // control glb tiling
+    int num_glb_tiling;
+    int glb_tiling_cnt;
+
     char bin_dir[BUFFER_SIZE];
     char coreir_filename[BUFFER_SIZE];
     char bitstream_filename[BUFFER_SIZE];
@@ -113,6 +117,9 @@ int get_num_io_tiles(void *info, int index);
 int get_io_tile_x(void *info, int index);
 int get_io_tile_y(void *info, int index);
 int get_reset_index(void *info);
+int get_num_glb_tiling(void *info); // for GLB tiling
+int get_glb_tiling_cnt(void *info); // for GLB tiling
+void update_glb_tiling_cnt(void *info, int cnt); // for GLB tiling
 
 char *get_placement_filename(void *info);
 char *get_bitstream_filename(void *info);

@@ -151,7 +151,7 @@ int glb_map(void *kernel_, int dpr_enabled) {
             io_tile_info->tile = tile;
             io_tile_info->start_addr = (io_tile_info->start_addr << CGRA_BYTE_OFFSET) + ((tile * 2) << BANK_ADDR_WIDTH);
             printf("Mapping input_%0d_block_%0d to global buffer\n", i, j);
-            update_io_tile_configuration(io_tile_info, &kernel->config);
+            update_io_tile_configuration(io_tile_info, &kernel->config, kernel);
             if (i == 0 && j == 0) {
                 first_input_tile = tile;
             }
@@ -170,7 +170,7 @@ int glb_map(void *kernel_, int dpr_enabled) {
             io_tile_info->start_addr =
                 (io_tile_info->start_addr << CGRA_BYTE_OFFSET) + ((tile * 2 + 1) << BANK_ADDR_WIDTH);
             printf("Mapping output_%0d_block_%0d to global buffer\n", i, j);
-            update_io_tile_configuration(io_tile_info, &kernel->config);
+            update_io_tile_configuration(io_tile_info, &kernel->config, kernel);
         }
     }
 
@@ -273,7 +273,35 @@ bool output_padding_config(struct IOTileInfo *io_tile_info, int *start_addr, int
     return true;
 }
 
-int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigInfo *config_info) {
+bool glb_tiling_config(struct KernelInfo *kernel_info, struct IOTileInfo *io_tile_info, int *start_addr, int *cycle_start_addr) {
+
+    if (kernel_info->num_glb_tiling <= 0) return false;
+    int n_ic = atoi(getenv("n_ic"));
+    int unroll = atoi(getenv("unroll"));
+
+    if (io_tile_info->io == Output) {
+        if (io_tile_info->loop_dim == 2) {
+            io_tile_info->data_stride[0] *= kernel_info->num_glb_tiling;
+            io_tile_info->data_stride[1] *= kernel_info->num_glb_tiling;
+        }
+        // Adjust local cycle_start_addr for static mode
+        // TODO: The magic number 10 needs a formal calculation method.
+        *cycle_start_addr += 10;
+        printf("Output GLB tiling cnt: %d\n", kernel_info->glb_tiling_cnt);
+        *start_addr += (kernel_info->glb_tiling_cnt) * n_ic / unroll << CGRA_BYTE_OFFSET;
+    }
+    else {
+        if (io_tile_info->loop_dim == 2) {
+            io_tile_info->data_stride[0] *= kernel_info->num_glb_tiling;
+            io_tile_info->data_stride[1] *= kernel_info->num_glb_tiling;
+        }
+        printf("Input GLB tiling cnt: %d\n", kernel_info->glb_tiling_cnt);
+        *start_addr += (kernel_info->glb_tiling_cnt) * n_ic / unroll << CGRA_BYTE_OFFSET;
+    }
+    return true;
+}
+
+int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigInfo *config_info, struct KernelInfo *kernel_info) {
     int tile = io_tile_info->tile;
     int start_addr = io_tile_info->start_addr;
     int cycle_start_addr = io_tile_info->cycle_start_addr;
@@ -286,6 +314,7 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
 
     // If pad_o in env var call hacky padding function
     bool use_padding = output_padding_config(io_tile_info, &start_addr, &cycle_start_addr);
+    bool use_glb_tiling = glb_tiling_config(kernel_info, io_tile_info, &start_addr, &cycle_start_addr);
 
     // Convert extent/stride hardware-friendly
     for (int i = 0; i < loop_dim; i++) {
@@ -364,7 +393,7 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
             mode = ST_DMA_VALID_MODE_VALID;
 
         // If use hacky padding then switch to valid mode
-        if (use_padding) mode = ST_DMA_VALID_MODE_STATIC;
+        if (use_padding || use_glb_tiling) mode = ST_DMA_VALID_MODE_STATIC;
 
         add_config(config_info,
                    (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_ST_DMA_CTRL_R,

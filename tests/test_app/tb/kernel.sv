@@ -49,6 +49,14 @@ import "DPI-C" function int get_output_size(
 import "DPI-C" function int get_bs_size(chandle info);
 import "DPI-C" function int get_bs_tile(chandle info);
 import "DPI-C" function int get_bs_start_addr(chandle info);
+
+import "DPI-C" function int get_num_glb_tiling(chandle info); // For GLB tiling
+import "DPI-C" function int get_glb_tiling_cnt(chandle info); // For GLB tiling
+import "DPI-C" function void update_glb_tiling_cnt(
+    chandle info,
+    int cnt
+); // For GLB tiling
+
 import "DPI-C" function int get_io_tile_start_addr(
     chandle info,
     int index
@@ -147,6 +155,9 @@ class Kernel;
     int num_inputs;
     int num_outputs;
 
+    int num_glb_tiling;
+    int glb_tiling_cnt;
+
     // TODO: Put all these into IO inputs/outputs
     // input/output information for testing
     string input_filenames[];
@@ -234,6 +245,10 @@ function Kernel::new(string app_dir, int dpr);
     num_outputs = get_num_outputs(kernel_info);
     num_groups  = get_num_groups(kernel_info);
 
+    // For GLB tiling
+    num_glb_tiling = get_num_glb_tiling(kernel_info);
+    glb_tiling_cnt = get_glb_tiling_cnt(kernel_info);
+
     $display("[%s] num_inputs: %0d", name, num_inputs);
     $display("[%s] num_outputs: %0d", name, num_outputs);
     $display("[%s] num_groups: %0d", name, num_groups);
@@ -300,6 +315,10 @@ function Kernel::new(string app_dir, int dpr);
                 end else begin
                     num_pixels = num_pixels * get_io_tile_extent(io_info, j, k);
                 end
+            end
+            // For GLB tiling read memory region of entire feature map
+            if (num_glb_tiling > 0) begin
+                num_pixels = num_pixels * num_glb_tiling;
             end
             outputs[i].io_tiles[j].io_block_data = new[num_pixels];
         end
@@ -437,8 +456,11 @@ function int Kernel::kernel_map();
     chandle cfg;
     chandle io_info;
     int size;
+    int result;
 
-    int result = glb_map(kernel_info, dpr_enabled);
+    update_glb_tiling_cnt(kernel_info, this.glb_tiling_cnt); // for GLB tiling
+
+    result = glb_map(kernel_info, dpr_enabled);
     if (result == 0) begin
         $display("[%s] glb mapping failed", name);
         return result;
@@ -564,6 +586,10 @@ function void Kernel::compare();
 	foreach(tmp_output_name[j]) begin
             if (tmp_output_name[j]=="/") tmp_filename_nopath = "";
             else                         tmp_filename_nopath = {tmp_filename_nopath, tmp_output_name[j]};
+        end
+        // For GLB tiling, we only need to dump the last output
+        if (num_glb_tiling > 0 && glb_tiling_cnt < num_glb_tiling - 1) begin
+            return;
         end
         file_out = $fopen(tmp_filename_nopath, "a");
         for (int i = 0; i < output_data[idx].size(); i++) begin
