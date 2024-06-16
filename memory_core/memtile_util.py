@@ -746,23 +746,23 @@ class NetlistBuilder():
                     remapped_sig = self._core_remappings[mapped_core][signal_name]
                     self._netlist[conn_name][i] = (mapped_core, remapped_sig)
 
-        print("Done remapping...")
+        # print("Done remapping...")
 
-        # Combine broadcast signals to one line
-        conns_to_remove = []
-        for conn_name, connection_list in self._netlist.items():
-            if("I" in connection_list[0][0] and conn_name not in conns_to_remove):
-                input_broadcast_name = conn_name
-                input_broadcast_io = connection_list
-                for conn_name_inner, connection_list_inner in self._netlist.items():
-                    if conn_name_inner != input_broadcast_name and connection_list_inner[0][0] == input_broadcast_io[0][0]:
-                        self._netlist[input_broadcast_name].append(connection_list_inner[1])
-                        conns_to_remove.append(conn_name_inner)
+        # # Combine broadcast signals to one line
+        # conns_to_remove = []
+        # for conn_name, connection_list in self._netlist.items():
+        #     if("I" in connection_list[0][0] and conn_name not in conns_to_remove):
+        #         input_broadcast_name = conn_name
+        #         input_broadcast_io = connection_list
+        #         for conn_name_inner, connection_list_inner in self._netlist.items():
+        #             if conn_name_inner != input_broadcast_name and connection_list_inner[0][0] == input_broadcast_io[0][0]:
+        #                 self._netlist[input_broadcast_name].append(connection_list_inner[1])
+        #                 conns_to_remove.append(conn_name_inner)
 
 
-        for conn in conns_to_remove:
-            del self._netlist[conn]
-            del self._bus[conn]
+        # for conn in conns_to_remove:
+        #     del self._netlist[conn]
+        #     del self._bus[conn]
 
 
         self._placement, self._routing, _ = pnr(self._interconnect,
