@@ -1607,6 +1607,9 @@ def prepare_glb_collateral(glb_dir=None, bitstream=None, matrices_in=None, desig
 
 def write_glb_file(file_list, out_dir, out_name, give_tensor=None):
     output_lines = []
+    # for seed flow 
+    if not give_tensor:
+        output_lines.append(f"{0:04X}\n")
 
     for f in file_list:
         with open(f, 'r') as curr_file:
