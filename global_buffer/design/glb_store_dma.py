@@ -659,7 +659,7 @@ class GlbStoreDma(Generator):
                 self.rv_num_seg_cnt = 0
             elif self.strm_run & self.rv_is_addrdata & self.fifo_pop_ready:
                 self.rv_num_seg_cnt = self.rv_num_seg_cnt_total
-            elif (self.rv_num_data_cnt == 1) & self.fifo_pop_ready:
+            elif ((self.rv_num_data_cnt == 1) | (self.rv_is_metadata & (self.data_fifo2dma == 0))) & self.fifo_pop_ready:
                 self.rv_num_seg_cnt = self.rv_num_seg_cnt - 1
 
     @always_comb

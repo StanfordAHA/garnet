@@ -21,6 +21,7 @@ from memory_core.reg_core import RegCore
 from memory_core.scanner_core import ScannerCore
 from memory_core.write_scanner_core import WriteScannerCore
 from memory_core.stream_arbiter_core import StreamArbiterCore
+from memory_core.pass_through_core import PassThroughCore
 from sam.onyx.parse_dot import *
 from sam.onyx.hw_nodes.hw_node import *
 from sam.onyx.hw_nodes.memory_node import MemoryNode
@@ -38,6 +39,7 @@ from sam.onyx.hw_nodes.repeat_node import RepeatNode
 from sam.onyx.hw_nodes.repsiggen_node import RepSigGenNode
 from sam.onyx.hw_nodes.fiberaccess_node import FiberAccessNode
 from sam.onyx.hw_nodes.stream_arbiter_node import StreamArbiterNode
+from sam.onyx.hw_nodes.pass_through_node import PassThroughNode
 import magma as m
 import kratos
 import _kratos
@@ -57,6 +59,7 @@ from lake.modules.crdhold import CrdHold
 from lake.modules.strg_RAM import StrgRAM
 from lake.modules.stencil_valid import StencilValid
 from lake.modules.stream_arbiter import StreamArbiter
+from lake.modules.pass_through import PassThrough
 import os
 from canal.util import IOSide
 from sam.onyx.generate_matrices import MatrixGenerator, get_tensor_from_files
@@ -78,7 +81,9 @@ from sparse_app_mappings import get_tensor, get_lut_tensor
 from lassen.stdlib import *
 from peak.family import PyFamily
 from lassen.float import *
-
+import networkx as nx
+import copy
+import json
 
 class SparseTBBuilder(m.Generator2):
     def __init__(self, nlb: NetlistBuilder = None, graph: Graph = None, bespoke=False,
@@ -151,6 +156,51 @@ class SparseTBBuilder(m.Generator2):
             # CGRA Path
             self.register_cores()
             self.connect_cores()
+
+            # ### Kalhan added #####
+            # new_netlist = copy.deepcopy(self.nlb._netlist)
+            # new_bus = copy.deepcopy(self.nlb._bus)
+
+
+            # # Create graph from netlist without I/O
+            # G = nx.DiGraph()
+            # reg_num = 0
+            # edge_num = len(new_bus)
+            # ori_netlist = copy.deepcopy(new_netlist)
+            # input_broadcast = {}
+            # for edge, connections in ori_netlist.items():
+            #     src = connections[0]
+            #     dest = connections[1]
+            #     if "I" in src[0]:
+            #         del new_netlist[edge]
+            #         del new_bus[edge]
+                
+            #         if src not in input_broadcast:
+            #             new_netlist[f"e{edge_num}"] = [src, (f"r{reg_num}", "reg")]
+            #             new_bus[f"e{edge_num}"] = 17
+            #             edge_num += 1
+            #             new_netlist[f"e{edge_num}"] = [(f"r{reg_num}", "reg"), (f"r{reg_num+1}", "reg")]
+            #             new_bus[f"e{edge_num}"] = 17
+            #             edge_num += 1
+            #             reg_num += 1
+
+            #             input_broadcast[src] = [(f"r{reg_num}", "reg")]
+            #             reg_num += 1
+                    
+            #         input_broadcast[src].append(dest)
+                
+            # for key, value in input_broadcast.items():
+            #     edge = []
+            #     for val in value:
+            #         edge.append(val)
+            #     new_netlist[f"e{edge_num}"] = edge
+            #     new_bus[f"e{edge_num}"] = 17
+            #     edge_num += 1
+
+            # self.nlb._netlist = new_netlist
+            # self.nlb._bus = new_bus
+
+            # #### Kalhan added #####
 
             # Now replace the io
             self.nlb.generate_placement(fixed_io=self.glb_cores)
@@ -481,6 +531,10 @@ class SparseTBBuilder(m.Generator2):
                 new_node_type = StreamArbiterNode
                 core_name = "stream_arbiter"
                 core_inst = StreamArbiter()
+            elif hw_node_type == f"{HWNodeType.PassThrough}" or hw_node_type == HWNodeType.PassThrough:
+                new_node_type = PassThroughNode
+                core_name = "pass_through"
+                core_inst = PassThrough()
             else:
                 raise NotImplementedError(f"{hw_node_type} not supported....")
 
@@ -1108,6 +1162,9 @@ class SparseTBBuilder(m.Generator2):
             elif hw_node_type == f"{HWNodeType.StreamArbiter}" or hw_node_type == HWNodeType.StreamArbiter:
                 new_node_type = StreamArbiterNode
                 core_tag = "stream_arbiter"
+            elif hw_node_type == f"{HWNodeType.PassThrough}" or hw_node_type == HWNodeType.PassThrough:
+                new_node_type = PassThroughNode
+                core_tag = "pass_through"
             else:
                 raise NotImplementedError(f"{hw_node_type} not supported....")
 
@@ -1235,12 +1292,13 @@ class SparseTBBuilder(m.Generator2):
                     # We want to map these cores to the same FA if we can
                     node_attr = node.get_attributes()
                     if 'vector_reduce_mode' not in node_attr:
-                       tensor = node_attr['tensor'].strip('"')
-                       if 'mode' in node_attr:
-                           mode = node_attr['mode'].strip('"') 
-                       else:
-                           mode = 'vals'
-                       color =  tensor + mode
+                        tensor = node_attr['tensor'].strip('"')
+                        stream_id = str(node_attr['stream_id'])
+                        if 'mode' in node_attr:
+                            mode = node_attr['mode'].strip('"') 
+                        else:
+                            mode = 'vals'
+                        color =  tensor + mode + stream_id
                     else:
                         color = node_attr['fa_color']
                     if color not in self.color_to_fa:
@@ -1279,6 +1337,7 @@ class SparseTBBuilder(m.Generator2):
         for edge in edges:
             src_name = edge.get_source()
             dst_name = edge.get_destination()
+            print(f"Connecting {src_name} to {dst_name}")
 
             if self.use_fa:
                 # If the nodes have the same fa_color, don't connect them explicitly
@@ -2562,6 +2621,7 @@ if __name__ == "__main__":
     parser.add_argument('--unroll', type=int, default=1)
     parser.add_argument('--suitesparse_data_tile_pairs', type=str, default=None, nargs='+')
     parser.add_argument('--opal-workaround', action="store_true")
+    parser.add_argument('--mem_block_size', type=int, default=1000)
 
     args = parser.parse_args()
     bespoke = args.bespoke
@@ -2602,7 +2662,9 @@ if __name__ == "__main__":
     unroll = args.unroll
     suitesparse_data_tile_pairs = args.suitesparse_data_tile_pairs
     opal_workaround = args.opal_workaround
+    mem_block_size = args.mem_block_size
 
+    # Unreachable for ss regress flow
     if do_comparison:
         # This is where we do the fallback comparison...
         # First get gold matrix from the output...
@@ -2638,6 +2700,7 @@ if __name__ == "__main__":
         os.mkdir(sim_dir)
     test_dump_dir = sim_dir
 
+    # Unreachable for ss regress flow
     if run_all is not None:
 
         for test_module in glob.glob(os.path.join(test_mem_core_dir, "*.*v")):
@@ -2835,7 +2898,7 @@ if __name__ == "__main__":
                 if sam_graph not in sdgs:
                     sdg = SAMDotGraph(filename=sam_graph, local_mems=True, use_fork=use_fork,
                                       use_fa=use_fiber_access, unroll=unroll, collat_dir=collat_dir,
-                                      opal_workaround=opal_workaround)
+                                      opal_workaround=opal_workaround, mem_block_size=mem_block_size)
                     sdgs[sam_graph] = sdg
                 else:
                     print("REUSE SDG")
@@ -2852,8 +2915,8 @@ if __name__ == "__main__":
 
                 # Need to unroll this as well
                 clean = True
-                # Assume we are unrolling 'B' for now...
-                for i in range(unroll):
+                # Assume we are unrolling 'B' for now... Update, change it to const 1
+                for i in range(1):
                     ##### Handling app level file stuff #####
                     output_matrix, output_format, output_name, input_dims = software_gold(sam_graph, matrix_tmp_dir,
                                                                                                        give_tensor, print_inputs,
@@ -2870,7 +2933,7 @@ if __name__ == "__main__":
                 
                 clean = True
 
-                for i in range(unroll):
+                for i in range(1): # change unroll to const 1
                     out_mat = MatrixGenerator(name=output_names[i], shape=None, sparsity=0.5,
                                               format=output_formats[i], dump_dir=gold_dir, tensor=output_matrices[i], clean=clean)
 
@@ -2924,7 +2987,7 @@ if __name__ == "__main__":
                     if not os.path.isdir(full_test_glb_dir):
                         os.mkdir(full_test_glb_dir)
 
-                    for i in range(unroll):
+                    for i in range(1): # change unroll to const 1
                         out_mats[i].dump_outputs(glb_override=True, glb_dump_dir=full_test_glb_dir, suffix=f"_{i}")
                         numpy.save(f"{full_test_glb_dir}/output_gold_{i}.npy", out_mats[i].get_matrix())
                         numpy.save(f"{glb_dir}/output_gold_{i}.npy", out_mats[i].get_matrix())
@@ -3010,7 +3073,7 @@ if __name__ == "__main__":
 
             del stbs[sam_graph]
 
-        # Need this before just_glb for early exits
+        # Need this before just_glb for early exits, not reachable for ss regress flow
         if not fault and gen_verilog:
             # Run the normal tb
             if gen_verilog:
@@ -3020,7 +3083,7 @@ if __name__ == "__main__":
                 print(test_mem_core_dir)
                 exit()
 
-        if just_glb:
+        if just_glb: # ss regress flow ends here
             print("Only generating glb collateral and leaving...")
             exit()
 

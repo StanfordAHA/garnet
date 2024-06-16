@@ -4,18 +4,20 @@ import sys
 import os
 import subprocess
 
-def concat_files(input_files, output_file_path, strategy="single"):
+def concat_files(input_files, output_file_path, unroll=1, strategy="single"):
     contents = []
     assert len(input_files) > 0
-    stream_id = 11
-    stream_id = stream_id.to_bytes(2, byteorder='big')
+    stream_id = 0
     try:
         str_stream = ""
         for file_path in input_files:
             with open(file_path, 'rb') as file:
-                contents.append(stream_id)
+                cur_id = stream_id.to_bytes(2, byteorder='big')
+                contents.append(cur_id)
                 contents.append(file.read())
             str_stream += file_path + " "
+            stream_id += 1
+            stream_id = stream_id % unroll
 
         with open(output_file_path, 'wb') as output_file:
             for content in contents:
@@ -36,6 +38,7 @@ def add_extents(json_tiles, output_file_path):
     num_input = len(tiles[0]['IOs']["inputs"])
     num_output = len(tiles[0]['IOs']["outputs"])
 
+    # check extents output meaning
     for i in range(num_input):
         # print(i)
         tile_base = tiles[0]['IOs']["inputs"][i]["shape"]
@@ -43,6 +46,10 @@ def add_extents(json_tiles, output_file_path):
         for j in range(1, len(tiles)):
             tile_base[0] += tiles[j]['IOs']["inputs"][i]["shape"][0]
             # print(tiles[j]['IOs']["inputs"][i]["shape"][0])
+        
+        # workaround for the different shape of the input and output, 
+        tile_base[0] += len(tiles)
+
         tiles[0]['IOs']["inputs"][i]["shape"] = tile_base
         # print(tile_base[0])
         tiles[0]['IOs']["inputs"][i]["io_tiles"][0]["addr"]["extent"] = tile_base
@@ -62,7 +69,7 @@ def add_extents(json_tiles, output_file_path):
     new_f.write(json_string)
     new_f.close()
 
-def create_concate(app_name = "matmul_ijk", dataset = "football", tiles = [0, 2, 3], concat_name = "concat"):
+def create_concate(app_name = "matmul_ijk", dataset = "football", tiles = [0, 2, 3], concat_name = "concat", unroll=1):
     base_dir_list = []
     for tile in tiles:
         base_dir_list.append(f"SPARSE_TESTS/{app_name}_{app_name}-{dataset}_tile{tile}/GLB_DIR/{app_name}_combined_seed_{app_name}-{dataset}_tile{tile}/bin/")
@@ -100,7 +107,7 @@ def create_concate(app_name = "matmul_ijk", dataset = "football", tiles = [0, 2,
         o_f_path = output_base_dir + input_file
         for base_dir in base_dir_list:
             i_f.append(base_dir + input_file)
-        concat_files(i_f, o_f_path)
+        concat_files(i_f, o_f_path, unroll)
 
     meta_files = []
     for base_dir in base_dir_list:
@@ -129,11 +136,13 @@ if __name__ == "__main__":
         if sys.argv[3].isdigit():
             app_name = sys.argv[1]
             dataset = sys.argv[2]
-            tile_list = [int(sys.argv[3])]
+            unroll = int(sys.argv[3])
+            tile_list = [int(sys.argv[4])]
             create_concate(app_name, dataset, tile_list)
         else:
             app_name = sys.argv[1]
             dataset = sys.argv[2]
             concat_name = sys.argv[3]
-            tile_list = sys.argv[4:]
-            create_concate(app_name, dataset, tile_list, concat_name=concat_name)
+            unroll = int(sys.argv[4])
+            tile_list = sys.argv[5:]
+            create_concate(app_name, dataset, tile_list, concat_name=concat_name, unroll=unroll)
