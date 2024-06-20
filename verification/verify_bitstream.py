@@ -430,8 +430,8 @@ def verify_bitstream_parallel(
     #    check_cycles > solver.first_valid_output
     # ), "Check cycles less than first_valid_output"
     start = time.time()
-    # res = bmc.check_until(check_cycles * 2)
-    res = None
+    res = bmc.check_until(check_cycles * 2)
+    # res = None
     print(time.time() - start)
 
     if res is None or res:
@@ -468,8 +468,8 @@ def verify_bitstream(
 
     first_output_pixel_at_cycle = get_first_output_from_coreir(coreir_file)
 
-    total_output_pixels = 64 * 64
-    num_cores = 32
+    total_output_pixels = 8 * 8
+    num_cores = 1
 
     total_cycles = total_output_pixels + first_output_pixel_at_cycle
 
@@ -499,6 +499,14 @@ def verify_bitstream(
             ending_cycle,
         )
 
+    placement_file = coreir_file.replace("design_top.json", "design.place")
+    placement = load_placement(placement_file)
+
+    packed_file = coreir_file.replace("design_top.json", "design.packed")
+
+    id_to_name = pythunder.io.load_id_to_name(packed_file)
+
+
     remove_config_regs(f"/aha/garnet/garnet.v", f"{app_dir}/garnet_no_regs.sv")
 
     interconnect_def = flatten_garnet(
@@ -507,12 +515,15 @@ def verify_bitstream(
         garnet_flattened=f"{app_dir}/garnet_flattened.v",
     )
 
+
     config_garnet(
         interconnect,
         bitstream,
         f"{app_dir}/garnet_flattened.v",
         f"{app_dir}/garnet_configed.v",
         interconnect_def,
+        placement,
+        id_to_name
     )
 
     garnet_to_btor(
@@ -521,7 +532,7 @@ def verify_bitstream(
         btor_filename=f"{app_dir}/garnet_configed.btor2",
     )
 
-    if True:
+    if False:
         results = []
         processes = []
         for check_pixel in check_pixels:
@@ -541,6 +552,6 @@ def verify_bitstream(
             print("\n\033[92m" + "Passed" + "\033[0m")
     else:
 
-        verify_bitstream_parallel_wrapper((0, 300))
+        verify_bitstream_parallel_wrapper((0, 528))
 
     # breakpoint()
