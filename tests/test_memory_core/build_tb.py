@@ -1531,7 +1531,7 @@ def prepare_glb_collateral(glb_dir=None, bitstream=None, matrices_in=None, desig
     with open(f"{glb_dir}/bin/design_meta.json", "w+") as metafile:
         json.dump(design_meta_json, metafile)
 
-def write_glb_file(file_list, out_dir, out_name, give_tensor=None):
+def write_glb_file(file_list, out_dir, out_name, use_fp=False):
     output_lines = []
 
     for f in file_list:
@@ -1541,16 +1541,13 @@ def write_glb_file(file_list, out_dir, out_name, give_tensor=None):
             # hexified = str(hex(len(all_lines)))[2:]
             output_lines.append(f"{len(all_lines):04X}\n")
             for l in all_lines:
-                # Convert to positive
-                if "." not in l.strip() or give_tensor:
-                    # no decimal point, it is an integer
-                    # suitesparse has data in floats so conv to float first then int
+                if not use_fp:
+                    # convert to an integer
                     temp_tkn = int(float(l.strip()))
                     if temp_tkn >= (2 ** 16):
                         temp_tkn = temp_tkn - (((temp_tkn // (2 ** 16)) * (2 ** 16)))
                     output_lines.append(f"{hex(temp_tkn & 0xFFFF)[2:].zfill(4)}\n")
                 else:
-                    # contains decimal point, should be interpreted as bfloat16
                     tmp_tkn = float(l.strip())
                     output_lines.append(f"{hex(int(float2bfbin(tmp_tkn), 2))[2:].zfill(4)}\n")
     out_path = f"{out_dir}/{out_name}"
@@ -1558,7 +1555,7 @@ def write_glb_file(file_list, out_dir, out_name, give_tensor=None):
         curr_file.writelines(output_lines)
 
 
-def coalesce_files(in_dir, out_dir, hack_files=None, unroll=1, give_tensor=None):
+def coalesce_files(in_dir, out_dir, hack_files=None, unroll=1, give_tensor=None, use_fp=False):
     # Hack to inject handmade files directly
     if hack_files is not None:
         for hack_file in hack_files:
@@ -1591,21 +1588,20 @@ def coalesce_files(in_dir, out_dir, hack_files=None, unroll=1, give_tensor=None)
                     # Now coalesce the seg/crd into a single file
                     write_glb_file([f'{in_dir}/tensor_{tname}_mode_{mode_num}_seg',
                                    f'{in_dir}/tensor_{tname}_mode_{mode_num}_crd'],
-                                   out_dir=out_dir, out_name=f'tensor_{tname}_mode_{mode_num}', give_tensor=give_tensor)
+                                   out_dir=out_dir, out_name=f'tensor_{tname}_mode_{mode_num}')
                     mode_num = mode_num + 1
                 elif f'tensor_{tname}_mode_{mode_num}_seg' in all_in_files:
                     write_glb_file([f'{in_dir}/tensor_{tname}_mode_{mode_num}_seg'],
-                                   out_dir=out_dir, out_name=f'tensor_{tname}_mode_{mode_num}', give_tensor=give_tensor)
+                                   out_dir=out_dir, out_name=f'tensor_{tname}_mode_{mode_num}')
                     mode_num = mode_num + 1
                 else:
                     done = True
         # Now do vals
         for copy_ in range(unroll):
             if f'tensor_{tname}_mode_vals' in all_in_files:
-                # write_glb_file([f'{in_dir}/tensor_{tname}_mode_vals'],
-                #                out_dir=out_dir, out_name=f'tensor_{tname}_mode_vals_{copy_}')
                 write_glb_file([f'{in_dir}/tensor_{tname}_mode_vals'],
-                               out_dir=out_dir, out_name=f'tensor_{tname}_mode_vals', give_tensor=give_tensor)
+                               out_dir=out_dir, out_name=f'tensor_{tname}_mode_vals', 
+                               use_fp=use_fp)
 
 
 def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None,
@@ -1626,6 +1622,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
 
     output_name = None
     input_dims = {}
+    use_fp = False
 
     if 'mat_elemadd.gv' in app_name:
         b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
@@ -1664,6 +1661,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
                                       dtype=numpy.float32, casting='unsafe')
         FExp = fpops.FExp_fc(PyFamily())
         exp = FExp()
+        use_fp = True
         for idx, val in numpy.ndenumerate(output_matrix):
             if val == 0.0:
                 continue
@@ -1724,6 +1722,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
             output_matrix[idx] = bfbin2float("{:016b}".format(int(result)))
         output_format = "CSF"
         output_name = "X"
+        use_fp = True
     elif 'mat_identity.gv' in app_name:
         b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                            dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
@@ -1918,6 +1917,34 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         output_matrix = numpy.matmul(b_mat, c_mat_trans, dtype=numpy.uint16, casting='unsafe')
         output_format = "CSF"
         output_name = "X"
+    elif 'matmul_ijk_crddrop_fp.gv' in app_name:
+        b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                                dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+                                sparsity=0.7, use_fp=True)
+        c_mat = get_tensor(input_name='C', shapes=[8, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                                dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+                                sparsity=0.7, use_fp=True)
+        c_mat_trans = numpy.transpose(c_mat)
+
+        output_matrix = numpy.zeros((b_mat.shape[0], c_mat_trans.shape[1]), dtype=numpy.float32)
+        FPU = fpu.FPU_fc(PyFamily())
+        fpu_func = FPU()
+        for i in range(0, output_matrix.shape[0]):
+            for j in range(0, output_matrix.shape[1]):
+                partial_sum = float2bfbin(0.0)
+                partial_sum = Data(int(partial_sum, 2))
+                for k in range(0, b_mat.shape[1]):
+                    b_val = float2bfbin(b_mat[i][k])
+                    b_val = Data(int(b_val, 2))
+                    c_val = float2bfbin(c_mat_trans[k][j])
+                    c_val = Data(int(c_val, 2))
+                    partial_prod, _, _ = fpu_func(fpu.FPU_t.FP_mul, b_val, c_val)
+                    partial_sum, _, _ = fpu_func(fpu.FPU_t.FP_add, partial_sum, partial_prod)
+                output_matrix[i][j] = bfbin2float("{:016b}".format(int(partial_sum)))
+
+        output_format = "CSF"
+        output_name = "X"
+        use_fp = True
     elif 'mat_mask_tri.gv' in app_name or 'mat_mask_tri_fiberwrite.gv' in app_name:
         b_mat = get_tensor(input_name='B', shapes=[20, 20], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                                 dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
@@ -1998,7 +2025,8 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
 
         output_format = "CSF"
         output_name = "X"
-    
+        use_fp = True
+
     elif "spmm_ijk_crddrop.gv" in app_name:
         # matrix b is completely dense
         b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
@@ -2468,7 +2496,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
                 print(vals)
             sys.stdout = original_stdout
 
-    return output_matrix, output_format, output_name, input_dims
+    return output_matrix, output_format, output_name, input_dims, use_fp
 
 
 def create_or_clean(dir_path):
@@ -2545,7 +2573,8 @@ if __name__ == "__main__":
     parser.add_argument('--compile_tb', action="store_true")
     parser.add_argument('--perf_debug', action="store_true")
     parser.add_argument('--unroll', type=int, default=1)
-    parser.add_argument('--suitesparse_data_tile_pairs', type=str, default=None, nargs='+')
+    parser.add_argument('--data_tile_pairs', type=str, default=None, nargs='+')
+    parser.add_argument('--kernel_name', type=str, default=None)
     parser.add_argument('--opal-workaround', action="store_true")
 
     args = parser.parse_args()
@@ -2585,7 +2614,8 @@ if __name__ == "__main__":
     compile_tb = args.compile_tb
     perf_debug = args.perf_debug
     unroll = args.unroll
-    suitesparse_data_tile_pairs = args.suitesparse_data_tile_pairs
+    data_tile_pairs = args.data_tile_pairs
+    kernel_name = args.kernel_name
     opal_workaround = args.opal_workaround
 
     if do_comparison:
@@ -2774,39 +2804,36 @@ if __name__ == "__main__":
             use_seeds = seeds
 
             if give_tensor:
-                use_seeds = suitesparse_data_tile_pairs
+                use_seeds = data_tile_pairs
             
-            print(use_seeds)
-
             for seed in use_seeds:
 
                 output_matrices = []
                 output_formats = []
                 output_names = []
                 out_mats = []
-
+                use_fp = False
+                seed_id = None
                 if not give_tensor:
                     numpy.random.seed(seed)
                     random.seed(seed)
+                    seed_id = seed
                 else:
-                    seed = seed.split("MAT_TMP_DIR/")[1]
-                    seed_sam_graph_name = seed.split("-")[0]
-                    #print(f"SEED SAM GRAPH NAME: {seed_sam_graph_name}")
-                    #print(f"SAM GRAPH NAME: {sam_graph_name}")
-                    if seed_sam_graph_name != sam_graph_name:
-                        continue
+                    # the "seed" here is the path to the input tile pair, we need to convert the path like string
+                    # to a unique id for every tile pair
+                    seed_id = kernel_name + "-" + seed.replace("/", "_")
 
-                output_dir = prep_test_dir(f"{base_dir}/{sam_graph_name}_{seed}", args.output_dir, "OUTPUT_DIR")
-                input_dir = prep_test_dir(f"{base_dir}/{sam_graph_name}_{seed}", args.input_dir, "INPUT_DIR")
+                output_dir = prep_test_dir(f"{base_dir}/{sam_graph_name}_{seed_id}", args.output_dir, "OUTPUT_DIR")
+                input_dir = prep_test_dir(f"{base_dir}/{sam_graph_name}_{seed_id}", args.input_dir, "INPUT_DIR")
                 if give_tensor:
-                    matrix_tmp_dir = os.path.join(tensor_locs, seed)
+                    matrix_tmp_dir = os.path.join(tensor_locs, kernel_name, seed)
                 elif mtx_tmp_dir is not None:
                     matrix_tmp_dir = mtx_tmp_dir
                 else:
-                    matrix_tmp_dir = prep_test_dir(f"{base_dir}/{sam_graph_name}_{seed}", args.matrix_tmp_dir, "MAT_TMP_DIR")
-                gold_dir = prep_test_dir(f"{base_dir}/{sam_graph_name}_{seed}", args.gold_dir, "GOLD_DIR")
-                glb_dir = prep_test_dir(f"{base_dir}/{sam_graph_name}_{seed}", args.glb_dir, "GLB_DIR")
-                collat_dir = prep_test_dir(f"{base_dir}/{sam_graph_name}_{seed}", args.glb_dir, "COLLAT_DIR")
+                    matrix_tmp_dir = prep_test_dir(f"{base_dir}/{sam_graph_name}_{seed_id}", args.matrix_tmp_dir, "MAT_TMP_DIR")
+                gold_dir = prep_test_dir(f"{base_dir}/{sam_graph_name}_{seed_id}", args.gold_dir, "GOLD_DIR")
+                glb_dir = prep_test_dir(f"{base_dir}/{sam_graph_name}_{seed_id}", args.glb_dir, "GLB_DIR")
+                collat_dir = prep_test_dir(f"{base_dir}/{sam_graph_name}_{seed_id}", args.glb_dir, "COLLAT_DIR")
                 output_dirs.append(output_dir)
                 input_dirs.append(input_dir)
                 matrix_tmp_dirs.append(matrix_tmp_dir)
@@ -2840,7 +2867,7 @@ if __name__ == "__main__":
                 # Assume we are unrolling 'B' for now...
                 for i in range(unroll):
                     ##### Handling app level file stuff #####
-                    output_matrix, output_format, output_name, input_dims = software_gold(sam_graph, matrix_tmp_dir,
+                    output_matrix, output_format, output_name, input_dims, use_fp = software_gold(sam_graph, matrix_tmp_dir,
                                                                                                        give_tensor, print_inputs,
                                                                                                        zero_input=zero_input,
                                                                                                        tensor_orderings=mode_map,
@@ -2851,7 +2878,7 @@ if __name__ == "__main__":
 
                     output_matrices.append(output_matrix)
                     output_formats.append(output_format)
-                    output_names.append(output_name)
+                    output_names.append(output_name)    
                 
                 clean = True
 
@@ -2899,7 +2926,7 @@ if __name__ == "__main__":
                     else:
                         combined_str = ""
 
-                    full_test_name = f"{test_name_base}_{combined_str}_seed_{seed}"
+                    full_test_name = f"{test_name_base}_{combined_str}_seed_{seed_id}"
 
                     full_test_glb_dir = f"{glb_dir}/{full_test_name}"
 
@@ -2931,7 +2958,8 @@ if __name__ == "__main__":
                 # hack_in_files = ['./tensor_b_mode_0', './tensor_b_mode_vals']
                 hack_in_files = None
                 coalesce_files(in_dir=matrix_tmp_dir, out_dir=input_dir,
-                               hack_files=hack_in_files, unroll=unroll, give_tensor=give_tensor)
+                               hack_files=hack_in_files, unroll=unroll, 
+                               give_tensor=give_tensor, use_fp=use_fp)
 
                 # Clean up output dir...
                 # If it doesn't exist, make it
@@ -3031,7 +3059,7 @@ if __name__ == "__main__":
             if args.trace:
                 my_env['WAVEFORM'] = "1"
 
-            my_env['TEST_DIR'] = f"{os.path.abspath(base_dir)}/{sam_graph_name}_{seed}"
+            my_env['TEST_DIR'] = f"{os.path.abspath(base_dir)}/{sam_graph_name}_{seed_id}"
 
             my_env['UNROLL'] = f"{unroll}"
 
