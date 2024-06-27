@@ -40,6 +40,7 @@ class GlbStoreDma(Generator):
                                             size=self._params.queue_depth, explicit_array=True)
         self.cfg_data_network_f2g_mux = self.input("cfg_data_network_f2g_mux", self._params.cgra_per_glb)
         self.cfg_st_dma_num_blocks = self.input("cfg_st_dma_num_blocks", self._params.axi_data_width)
+        self.cfg_st_dma_rv_seg_mode = self.input("cfg_st_dma_rv_seg_mode", 1)
 
         self.st_dma_start_pulse = self.input("st_dma_start_pulse", 1)
         self.st_dma_done_interrupt = self.output("st_dma_done_interrupt", 1)
@@ -84,12 +85,15 @@ class GlbStoreDma(Generator):
         self.cycle_valid = self.var("cycle_valid", 1)
         self.cycle_count = self.var("cycle_count", self._params.cycle_count_width)
         self.cycle_current_addr = self.var("cycle_current_addr", self._params.cycle_count_width)
+        self.data_base_addr = self.var("data_base_addr", self._params.glb_addr_width + 1)
         self.data_current_addr = self.var("data_current_addr", self._params.glb_addr_width + 1)
+        self.data_current_addr_pre = self.var("data_current_addr_pre", self._params.glb_addr_width + 1)
         self.loop_mux_sel = self.var("loop_mux_sel", clog2(self._params.store_dma_loop_level))
         self.repeat_cnt = self.var("repeat_cnt", clog2(self._params.queue_depth) + 1)
 
         # ready_valid controller
         self.block_done = self.var("block_done", 1)
+        self.seg_done = self.var("seg_done", 1)
         self.is_last_block = self.var("is_last_block", 1)
         self.data_ready_g2f_w = self.var("data_ready_g2f_w", 1)
         self.cycle_counter_en = self.var("cycle_counter_en", 1)
@@ -106,7 +110,11 @@ class GlbStoreDma(Generator):
         self.fifo_full = self.var("fifo_full", 1)
         self.fifo2cgra_ready = self.var("fifo2cgra_ready", 1)
         self.rv_is_metadata = self.var("rv_is_metadata", 1)
+        self.rv_is_addrdata = self.var("rv_is_addrdata", 1)
+        self.rv_base_addr = self.var("rv_num_base_addr", self._params.glb_addr_width)
         self.rv_num_data_cnt = self.var("rv_num_data_cnt", self._params.cgra_data_width)
+        self.rv_num_seg_cnt = self.var("rv_num_seg_cnt", 2)  # we would have a max of 2 seg
+        self.rv_num_seg_cnt_total = self.var("rv_num_seg_cnt_total", 2)
         self.rv_num_blocks_cnt = self.var("rv_num_blocks_cnt", self._params.axi_data_width)
 
         if self._params.queue_depth != 1:
@@ -146,12 +154,18 @@ class GlbStoreDma(Generator):
         self.add_done_pulse_last_pipeline()
         self.add_always(self.interrupt_ff)
         self.add_always(self.block_done_logic)
+        self.add_always(self.seg_done_logic)
         self.add_always(self.loop_done_muxed_logic)
         self.add_always(self.rv_num_blocks_cnt_ff)
         self.add_always(self.rv_is_last_block_comb)
         self.add_always(self.rv_metadata_ff)
         self.add_always(self.rv_num_data_cnt_ff)
         self.add_always(self.data_ready_g2f_comb)
+        self.add_always(self.rv_addrdata_ff)
+        self.add_always(self.rv_base_addr_ff)
+        self.add_always(self.data_addr_gen_start_addr_comb)
+        self.add_always(self.rv_num_seg_cnt_ff)
+        self.add_always(self.rv_num_seg_cnt_total_comb)
 
         # ready/valid control
         self.wire(self.rv_mode_on, (self.cfg_st_dma_ctrl_valid_mode == self._params.st_dma_valid_mode_ready_valid))
@@ -234,22 +248,33 @@ class GlbStoreDma(Generator):
                        clk=self.clk,
                        clk_en=const(1, 1),
                        reset=self.reset,
-                       restart=self.st_dma_start_pulse_r,
+                       restart=self.st_dma_start_pulse_r | self.rv_is_addrdata,
+                    #    start_addr=self.data_base_addr,
                        step=self.iter_step_valid,
                        mux_sel=self.loop_mux_sel,
                        addr_out=self.data_current_addr)
-        self.wire(self.data_stride_addr_gen.start_addr, ext(self.current_dma_header["start_addr"],
-                                                            self._params.glb_addr_width + 1))
+        # In RV mode, the start address is given by the header of each block
+        # self.wire(self.data_stride_addr_gen.start_addr, ext(self.current_dma_header["start_addr"],
+        #                                                     self._params.glb_addr_width + 1))
+        self.wire(self.data_stride_addr_gen.start_addr, self.data_base_addr)
         for i in range(self._params.store_dma_loop_level):
             self.wire(self.data_stride_addr_gen.strides[i], self.current_dma_header[f"stride_{i}"])
 
     @always_comb
     def block_done_logic(self):
         if self.rv_mode_on:
-            self.block_done = self.strm_run & ~self.rv_is_metadata & (
-                ((self.rv_num_data_cnt == 1) & self.fifo_pop_ready) | (self.rv_num_data_cnt == 0))
+            self.block_done = self.strm_run & ~self.rv_is_metadata & ~self.rv_is_addrdata & self.seg_done &\
+            (((self.rv_num_seg_cnt == 1) & self.fifo_pop_ready) | (self.rv_num_seg_cnt == 0))
         else:
             self.block_done = 0
+
+    @always_comb
+    def seg_done_logic(self):
+        if self.rv_mode_on:
+            self.seg_done = self.strm_run & ~self.rv_is_metadata & ~self.rv_is_addrdata & (
+                ((self.rv_num_data_cnt == 1) & self.fifo_pop_ready) | (self.rv_num_data_cnt == 0))
+        else:
+            self.seg_done = 0
 
     @always_comb
     def loop_done_muxed_logic(self):
@@ -277,12 +302,20 @@ class GlbStoreDma(Generator):
         if self.reset:
             self.rv_is_metadata = 0
         elif self.rv_mode_on:
-            if self.st_dma_start_pulse_r:
-                self.rv_is_metadata = 1
-            elif (self.rv_mode_on & self.block_done & ~self.is_last_block):
+            if (self.rv_is_addrdata & self.fifo_pop_ready) |\
+                ((self.rv_num_seg_cnt != 1) & (self.rv_num_data_cnt == 1) & self.fifo_pop_ready):
                 self.rv_is_metadata = 1
             elif self.rv_is_metadata & self.fifo_pop_ready:
                 self.rv_is_metadata = 0
+        # if self.reset:
+        #     self.rv_is_metadata = 0
+        # elif self.rv_mode_on:
+        #     if self.st_dma_start_pulse_r:
+        #         self.rv_is_metadata = 1
+        #     elif (self.rv_mode_on & self.block_done & ~self.is_last_block):
+        #         self.rv_is_metadata = 1
+        #     elif self.rv_is_metadata & self.fifo_pop_ready:
+        #         self.rv_is_metadata = 0
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def rv_num_data_cnt_ff(self):
@@ -429,7 +462,7 @@ class GlbStoreDma(Generator):
         if self.cycle_counter_en:
             self.iter_step_valid = self.cycle_valid
         elif self.rv_mode_on:
-            self.iter_step_valid = self.strm_run & self.fifo_pop_ready
+            self.iter_step_valid = self.strm_run & self.fifo_pop_ready & ~self.rv_is_addrdata
         else:
             self.iter_step_valid = self.strm_data_valid
 
@@ -589,3 +622,49 @@ class GlbStoreDma(Generator):
                 self.st_dma_done_interrupt = 1
             elif self.st_dma_done_pulse_last:
                 self.st_dma_done_interrupt = 0
+
+    @always_ff((posedge, "clk"), (posedge, "reset"))
+    def rv_addrdata_ff(self):
+        if self.reset:
+            self.rv_is_addrdata = 0
+        elif self.rv_mode_on:
+            if self.st_dma_start_pulse_r:
+                self.rv_is_addrdata = 1
+            elif (self.rv_mode_on & self.block_done & ~self.is_last_block):
+                self.rv_is_addrdata = 1
+            elif self.rv_is_addrdata & self.fifo_pop_ready:
+                self.rv_is_addrdata = 0
+
+    @always_ff((posedge, "clk"), (posedge, "reset"))
+    def rv_base_addr_ff(self):
+        if self.reset:
+            self.rv_base_addr = 0
+        elif self.rv_is_addrdata:
+            self.rv_base_addr = self.current_dma_header["start_addr"] + self.data_fifo2dma
+
+    @always_comb
+    def data_addr_gen_start_addr_comb(self):
+        if self.rv_mode_on:
+            self.data_base_addr = ext(self.rv_base_addr, self._params.glb_addr_width + 1)
+        else:
+            self.data_base_addr = ext(self.current_dma_header["start_addr"],
+                                                       self._params.glb_addr_width + 1)
+
+    @always_ff((posedge, "clk"), (posedge, "reset"))
+    def rv_num_seg_cnt_ff(self):
+        if self.reset:
+            self.rv_num_seg_cnt = 0
+        else:
+            if self.st_dma_start_pulse_r:
+                self.rv_num_seg_cnt = 0
+            elif self.strm_run & self.rv_is_addrdata & self.fifo_pop_ready:
+                self.rv_num_seg_cnt = self.rv_num_seg_cnt_total
+            elif ((self.rv_num_data_cnt == 1) | (self.rv_is_metadata & (self.data_fifo2dma == 0))) & self.fifo_pop_ready:
+                self.rv_num_seg_cnt = self.rv_num_seg_cnt - 1
+
+    @always_comb
+    def rv_num_seg_cnt_total_comb(self):
+        if self.cfg_st_dma_rv_seg_mode:
+            self.rv_num_seg_cnt_total = 2
+        else:
+            self.rv_num_seg_cnt_total = 1

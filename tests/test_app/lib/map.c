@@ -403,6 +403,9 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
                    (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_ST_DMA_NUM_BLOCKS_R,
                    (io_tile_info->num_blocks << GLB_ST_DMA_NUM_BLOCKS_VALUE_F_LSB));
         add_config(config_info,
+                   (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_ST_DMA_RV_SEG_MODE_R,
+                   (io_tile_info->seg_mode << GLB_ST_DMA_RV_SEG_MODE_VALUE_F_LSB));
+        add_config(config_info,
                    (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_ST_DMA_HEADER_0_DIM_R,
                    loop_dim);
         add_config(

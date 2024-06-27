@@ -92,6 +92,7 @@ program glb_test (
         int i_extent[LOOP_LEVEL];
         int latency;
         int data_cnt = 0;
+        int gold_cnt = 0;
         bit done = 0;
         int num_chained_prev = 0;
         int num_chained_next = 0;
@@ -233,11 +234,29 @@ program glb_test (
                 for (int j = 0; j < kernels[i].dim; j++) begin
                     data_cnt *= kernels[i].extent[j];
                 end
+
+                gold_cnt = data_cnt;
+                if (kernels[i].st_valid_type_ == ST_MODE_RV) begin
+                    gold_cnt = kernels[i].gold_cnt;
+                end
+
                 kernels[i].data_arr = new[data_cnt];
-                kernels[i].data_arr_out = new[data_cnt];
+                kernels[i].data_arr_out = new[gold_cnt];
                 $readmemh(kernels[i].filename, kernels[i].data_arr);
+                
+                if (kernels[i].st_valid_type_ == ST_MODE_RV) begin
+                    kernels[i].data_arr_out_gold = new[gold_cnt];
+                    $readmemh(kernels[i].gold_filename, kernels[i].data_arr_out_gold);
+                end
+
                 kernels[i].data64_arr = convert_16b_to_64b(kernels[i].data_arr);
-                kernels[i].data64_arr_out = new[kernels[i].data64_arr.size()];
+
+                if (kernels[i].st_valid_type_ == ST_MODE_RV) begin
+                    kernels[i].data64_arr_out_gold = convert_16b_to_64b(kernels[i].data_arr_out_gold);
+                    kernels[i].data64_arr_out = new[kernels[i].data64_arr_out_gold.size()];
+                end else begin
+                    kernels[i].data64_arr_out = new[kernels[i].data64_arr.size()];
+                end
 
                 // Store the data to PRR queue.
                 write_prr(kernels[i].tile_id, kernels[i].data_arr, kernels[i].st_valid_type_);
@@ -250,7 +269,7 @@ program glb_test (
                                   kernels[i].cycle_start_addr, kernels[i].dim,
                                   kernels[i].new_extent, kernels[i].new_cycle_stride,
                                   kernels[i].new_data_stride, kernels[i].st_valid_type_,
-                                  kernels[i].num_blocks);
+                                  kernels[i].num_blocks, kernels[i].seg_mode);
             end else if (kernels[i].type_ == SRAM) begin
                 kernels[i].data_arr = new[kernels[i].extent[0]];
                 kernels[i].data_arr_out = new[kernels[i].extent[0]];
@@ -324,8 +343,15 @@ program glb_test (
                 $display("F2G Comparison");
                 // err += compare_64b_arr(kernels[i].data64_arr, kernels[i].data64_arr_out);
                 kernels[i].data_arr_out = convert_64b_to_16b(kernels[i].data64_arr_out);
-                kernels[i].data_arr_out = new[kernels[i].data_arr.size()](kernels[i].data_arr_out);
-                err += compare_16b_arr(kernels[i].data_arr, kernels[i].data_arr_out);
+
+                if (kernels[i].st_valid_type_ == ST_MODE_RV) begin
+                    kernels[i].data_arr_out = new[kernels[i].data_arr_out_gold.size()](kernels[i].data_arr_out);
+                    err += compare_glb_stream(kernels[i].data_arr_out_gold, kernels[i].data_arr_out);
+                end else begin
+                    kernels[i].data_arr_out = new[kernels[i].data_arr.size()](kernels[i].data_arr_out);
+                    err += compare_16b_arr(kernels[i].data_arr, kernels[i].data_arr_out);
+                end
+
             end else if (kernels[i].type_ == PCFG) begin
                 $display("PCFG Comparison");
                 err += compare_64b_arr(kernels[i].data64_arr, kernels[i].data64_arr_out);
@@ -618,7 +644,8 @@ program glb_test (
     task automatic f2g_dma_configure(input int tile_id, bit on, [AXI_DATA_WIDTH-1:0] start_addr,
                                      [AXI_DATA_WIDTH-1:0] cycle_start_addr, int dim,
                                      int extent[LOOP_LEVEL], int cycle_stride[LOOP_LEVEL],
-                                     int data_stride[LOOP_LEVEL], bit [1:0] valid_mode, bit [AXI_DATA_WIDTH-1:0] num_blocks);
+                                     int data_stride[LOOP_LEVEL], bit [1:0] valid_mode, bit [AXI_DATA_WIDTH-1:0] num_blocks,
+                                     bit seg_mode);
         glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_CTRL_R,
                       ((2'b10 << `GLB_ST_DMA_CTRL_DATA_MUX_F_LSB)
                     | (on << `GLB_ST_DMA_CTRL_MODE_F_LSB)
@@ -654,6 +681,12 @@ program glb_test (
         glb_cfg_read(
             (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_NUM_BLOCKS_R,
             (num_blocks << `GLB_ST_DMA_NUM_BLOCKS_VALUE_F_LSB));
+        glb_cfg_write(
+            (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_RV_SEG_MODE_R,
+            (seg_mode << `GLB_ST_DMA_RV_SEG_MODE_VALUE_F_LSB));
+        glb_cfg_read(
+            (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_RV_SEG_MODE_R,
+            (seg_mode << `GLB_ST_DMA_RV_SEG_MODE_VALUE_F_LSB));
         // NOTE: Each stride/range address difference is 'hc
         for (int i = 0; i < dim; i++) begin
             glb_cfg_write(
@@ -1058,6 +1091,38 @@ program glb_test (
             err++;
         end
         foreach (data_arr_0[i]) begin
+            if (data_arr_0[i] !== data_arr_1[i]) begin
+                err++;
+                if (err > MAX_NUM_ERRORS) begin
+                    $display("The number of errors reached %0d. Do not print anymore",
+                             MAX_NUM_ERRORS);
+                    break;
+                end
+                $display("Data different. index: %0d, data_arr_0: 0x%0h, data_arr_1: 0x%0h", i,
+                         data_arr_0[i], data_arr_1[i]);
+            end
+        end
+        if (err > 0) begin
+            $error("Two data array are Different");
+            return 1;
+        end
+        $display("Two data array are same");
+        return 0;
+    endfunction
+
+    function automatic int compare_glb_stream(ref [15:0] data_arr_0[], ref [15:0] data_arr_1[]);
+        int size_0 = data_arr_0.size();
+        int size_1 = data_arr_1.size();
+        int err;
+        if (size_0 != size_1) begin
+            $display("Data array size is different. data_arr_0: %0d, data_arr_1: %0d", size_0,
+                     size_1);
+            err++;
+        end
+        foreach (data_arr_0[i]) begin
+            if (data_arr_0[i] == 16'hFFF) begin
+                continue;
+            end
             if (data_arr_0[i] !== data_arr_1[i]) begin
                 err++;
                 if (err > MAX_NUM_ERRORS) begin

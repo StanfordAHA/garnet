@@ -1,4 +1,4 @@
-// Ready valid
+// Ready valid IMPORTANT: OLD version for GLB on opal
 2
 00
 G2F 0 0 2 2
