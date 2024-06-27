@@ -20,6 +20,8 @@ from memory_core.pond_core import PondCore
 from peak_core.peak_core import PeakCore
 from memory_core.scanner_core import ScannerCore
 from memory_core.intersect_core import IntersectCore
+from memory_core.stream_arbiter_core import StreamArbiterCore
+from memory_core.pass_through_core import PassThroughCore
 from typing import Tuple, Dict, List, Tuple
 from passes.tile_id_pass.tile_id_pass import tile_id_physical
 from memory_core.reg_core import RegCore
@@ -46,6 +48,8 @@ from lake.modules.crdhold import CrdHold
 from lake.modules.strg_RAM import StrgRAM
 from lake.modules.stencil_valid import StencilValid
 from lake.modules.buffet_like import BuffetLike
+from lake.modules.stream_arbiter import StreamArbiter
+from lake.modules.pass_through import PassThrough
 from lake.top.fiber_access import FiberAccess
 from lake.modules.onyx_pe import OnyxPE
 from lake.modules.onyx_dense_pe import OnyxDensePE
@@ -248,6 +252,11 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
         repeat = Repeat(fifo_depth=fifo_depth, perf_debug=perf_debug)
 
         rsg = RepeatSignalGenerator(passthru=False, fifo_depth=fifo_depth, perf_debug=perf_debug)
+
+        stream_arb = StreamArbiter(fifo_depth=fifo_depth, perf_debug=perf_debug)
+
+        pass_through = PassThrough(fifo_depth=fifo_depth, perf_debug=perf_debug)
+
         controllers_2 = []
 
         controllers_2.append(isect)
@@ -256,6 +265,8 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
         controllers_2.append(repeat)
         controllers_2.append(rsg)
         controllers_2.append(reduce_pe_cluster)
+        controllers_2.append(stream_arb)
+        controllers_2.append(pass_through)
 
         altcore = [(CoreCombinerCore, {'controllers_list': controllers_2,
                                        'use_sim_sram': not physical_sram,

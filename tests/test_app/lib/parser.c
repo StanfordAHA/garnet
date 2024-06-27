@@ -111,6 +111,14 @@ int parse_io_tile_info(struct IOTileInfo *io_tile_info, json_t const *io_tile_js
         io_tile_info->num_blocks = json_getInteger(num_blocks_json);
     }
 
+    // parse seg_mode
+    json_t const *seg_mode_json = json_getProperty(io_tile_json, "seg_mode");
+    if (!seg_mode_json || JSON_INTEGER != json_getType(seg_mode_json)) {
+        io_tile_info->seg_mode = 1;
+    } else {
+        io_tile_info->seg_mode = json_getInteger(seg_mode_json);
+    }
+
     // parse addr
     json_t const *addr_json = json_getProperty(io_tile_json, "addr");
     if (!addr_json || JSON_OBJ != json_getType(addr_json)) {
