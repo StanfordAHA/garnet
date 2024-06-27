@@ -59,25 +59,23 @@ def add_extents(json_tiles, output_file_path):
     new_f.write(json_string)
     new_f.close()
 
-def create_concate(app_name = "matmul_ijk", dataset = "football", tiles = [0, 2, 3], concat_name = "concat"):
+def create_concate(app_name = "matmul_ijk", kernel_name = "football", tiles = [0, 2, 3], concat_name = "concat"):
     base_dir_list = []
     for tile in tiles:
-        base_dir_list.append(f"SPARSE_TESTS/{app_name}_{app_name}-{dataset}_tile{tile}/GLB_DIR/{app_name}_combined_seed_{app_name}-{dataset}_tile{tile}/bin/")
+        base_dir_list.append(f"SPARSE_TESTS/{app_name}_{tile}/GLB_DIR/{app_name}_combined_seed_{tile}/bin/")
     
-    # output_tile = ""
-    # for tile in tiles:
-    #     output_tile += f"_t{tile}"
-    output_tile = "_" + concat_name
+    output_tile_name = f"{app_name}_{kernel_name}-tile_{concat_name}"
+    output_tile_bin_name = f"{app_name}_combined_seed_{kernel_name}-tile_{concat_name}"
     
-    output_base_dir = f"SPARSE_TESTS/{app_name}_{app_name}-{dataset}_tile{output_tile}/GLB_DIR/{app_name}_combined_seed_{app_name}-{dataset}_tile{output_tile}/bin/"
+    output_base_dir = f"SPARSE_TESTS/{output_tile_name}/GLB_DIR/{output_tile_bin_name}/bin/"
 
     t_base = "/aha/garnet/"
-    if os.path.exists(t_base + f"SPARSE_TESTS/{app_name}_{app_name}-{dataset}_tile{output_tile}"):
-        subprocess.run(["rm", "-rf", t_base + f"SPARSE_TESTS/{app_name}_{app_name}-{dataset}_tile{output_tile}"])
+    if os.path.exists(t_base + f"SPARSE_TESTS/{output_tile_name}"):
+        subprocess.run(["rm", "-rf", t_base + f"SPARSE_TESTS/{output_tile_name}"])
 
-    subprocess.run(["cp", "-rf", t_base + f"SPARSE_TESTS/{app_name}_{app_name}-{dataset}_tile{tiles[0]}/", t_base + f"SPARSE_TESTS/{app_name}_{app_name}-{dataset}_tile{output_tile}/"])
-    output_base_dir_s = t_base + f"SPARSE_TESTS/{app_name}_{app_name}-{dataset}_tile{output_tile}/GLB_DIR/{app_name}_combined_seed_{app_name}-{dataset}_tile{output_tile}"
-    output_base_dir_s_pre = t_base + f"SPARSE_TESTS/{app_name}_{app_name}-{dataset}_tile{output_tile}/GLB_DIR/{app_name}_combined_seed_{app_name}-{dataset}_tile{tiles[0]}"
+    subprocess.run(["cp", "-rf", t_base + f"SPARSE_TESTS/{app_name}_{tiles[0]}/", t_base + f"SPARSE_TESTS/{output_tile_name}/"])
+    output_base_dir_s = t_base + f"SPARSE_TESTS/{output_tile_name}/GLB_DIR/{output_tile_bin_name}"
+    output_base_dir_s_pre = t_base + f"SPARSE_TESTS/{output_tile_name}/GLB_DIR/{app_name}_combined_seed_{tiles[0]}"
     subprocess.run(["mv", output_base_dir_s_pre, output_base_dir_s])
 
     design_meta = base_dir_list[0] + "design_meta.json"
@@ -108,12 +106,12 @@ def create_concate(app_name = "matmul_ijk", dataset = "football", tiles = [0, 2,
     # this one is without bin folder
     base_dir_list = []
     for tile in tiles:
-        base_dir_list.append(f"SPARSE_TESTS/{app_name}_{app_name}-{dataset}_tile{tile}/GLB_DIR/{app_name}_combined_seed_{app_name}-{dataset}_tile{tile}/")
+        base_dir_list.append(f"SPARSE_TESTS/{app_name}_{tile}/GLB_DIR/{app_name}_combined_seed_{tile}/")
     gold_files = []
     for base_dir in base_dir_list:
         gold_files.append(t_base + base_dir + "output_gold_0.npy")
     
-    output_base_dir = f"SPARSE_TESTS/{app_name}_{app_name}-{dataset}_tile{output_tile}/GLB_DIR/{app_name}_combined_seed_{app_name}-{dataset}_tile{output_tile}/"
+    output_base_dir = f"SPARSE_TESTS/{output_tile_name}/GLB_DIR/{output_tile_bin_name}/"
     for i in range(len(gold_files)):
         subprocess.run(["cp", gold_files[i],t_base + output_base_dir + f"output_gold_{i}.npy"])
 
@@ -125,12 +123,12 @@ if __name__ == "__main__":
         assert len(sys.argv) >= 3
         if sys.argv[3].isdigit():
             app_name = sys.argv[1]
-            dataset = sys.argv[2]
+            kernel_name = sys.argv[2]
             tile_list = [int(sys.argv[3])]
-            create_concate(app_name, dataset, tile_list)
+            create_concate(app_name, kernel_name, tile_list)
         else:
             app_name = sys.argv[1]
-            dataset = sys.argv[2]
+            kernel_name = sys.argv[2]
             concat_name = sys.argv[3]
             tile_list = sys.argv[4:]
-            create_concate(app_name, dataset, tile_list, concat_name=concat_name)
+            create_concate(app_name, kernel_name, tile_list, concat_name=concat_name)
