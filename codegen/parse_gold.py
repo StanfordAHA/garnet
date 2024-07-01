@@ -2,10 +2,16 @@ import numpy as np
 import os
 import glob
 from textwrap import dedent
-import random
 import sys
 
-def parse_gold(f, name_list):
+def parse_gold(app_name, data):
+
+    tilefiles = glob.glob("tiles_chip_test/tile*")
+    f = open(f"dot_h_files/{app_name}/{data}/{app_name}_{data}_gold.h", 'w')
+    name_list = []
+    for i in range(0, len(tilefiles)):
+        name_list.append(f"tile{i}")
+
 
     counter = 0
     # TODO assumes all tiles are same size and square
@@ -13,12 +19,13 @@ def parse_gold(f, name_list):
     gold_list = []
 
     for gold in name_list:
-        gold_list.append(np.load(f"./{gold}/output_gold_0.npy"))
+        gold_list.append(np.load(f"tiles_chip_test/{gold}/output_gold_0.npy"))
     
+    f.write("#define AHASOC_CGRA_DATA_BASE    (0x20400000UL)  /*!< (CGRA DATA ) Base Address */\n")
+
     for idx, gold in enumerate(gold_list):
         if(not np.any(gold)):
             counter += 1
-            print("all zeroes")
         
         f_str = f'''
         const uint16_t gold_{idx}_[{gold.shape[0] * gold.shape[1]}] = 
@@ -61,11 +68,11 @@ def parse_gold(f, name_list):
     uint16_t mode1_idx = 0;
     uint16_t vals_idx = 0;
 
-    const uint32_t read_start_addr = 0x20000;
+    const uint32_t read_start_addr = 0x10000;
 
     uint16_t * read_base = (uint16_t*) (AHASOC_CGRA_DATA_BASE + read_start_addr);
-    uint16_t * read_base2 = (uint16_t*) (AHASOC_CGRA_DATA_BASE + read_start_addr + 0x40000);
-    uint16_t * read_base3 = (uint16_t*) (AHASOC_CGRA_DATA_BASE + read_start_addr + 2*0x40000);
+    uint16_t * read_base2 = (uint16_t*) (AHASOC_CGRA_DATA_BASE + read_start_addr + 0x20000);
+    uint16_t * read_base3 = (uint16_t*) (AHASOC_CGRA_DATA_BASE + read_start_addr + 2*0x20000);
 
     for(uint16_t run = 0; run < runs; run++){{
 
@@ -131,7 +138,7 @@ def parse_gold(f, name_list):
         for(uint16_t i = 0; i < {gold_list[0].shape[0]}; i++){{
         for(uint16_t j = 0; j < {gold_list[0].shape[0]}; j++){{
             if(check_ptr[{gold_list[0].shape[0]}*i+j] != gold_ptr[{gold_list[0].shape[0]}*i+j]){{
-            trace_printf(\"error! tile: %d, x: %d y:%d gold_ptr:%d check_ptr:%d\\n\", run, i, j, gold_ptr[{gold_list[0].shape[0]}*i+j], check_ptr[{gold_list[0].shape[0]}*i+j]);
+            printf(\"error! tile: %d, x: %d y:%d gold_ptr:%d check_ptr:%d\\n\", run, i, j, gold_ptr[{gold_list[0].shape[0]}*i+j], check_ptr[{gold_list[0].shape[0]}*i+j]);
             err++;
             }}
         }}
@@ -150,16 +157,6 @@ def parse_gold(f, name_list):
 
 
 if __name__ == '__main__':
-    app_name = sys.argv[1]
-    datum = sys.argv[2]
-    os.chdir("tiles_chip_test")
-    tilefiles = glob.glob("tile*")
-    # print(tilefiles)
-    f = open(f"../dot_h_files/{app_name}/{datum}/{app_name}_{datum}_gold.h", 'w')
-    # name_list = tilefiles
-    name_list = []
-    for i in range(0, len(tilefiles)):
-        name_list.append(f"tile{i}")
-    print(name_list)
-    parse_gold(f, name_list)
+    parse_gold(app_name, data)
+
 
