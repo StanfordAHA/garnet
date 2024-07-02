@@ -1677,7 +1677,7 @@ def coalesce_files(in_dir, out_dir, hack_files=None, unroll=1, give_tensor=None,
         for copy_ in range(unroll):
             if f'tensor_{tname}_mode_vals' in all_in_files:
                 # TODO: This is a hack for now, get rid of this 
-                if tname not in ['fp_exp']:
+                if tname not in ['fp_exp', 'fp_div']:
                     write_glb_file([f'{in_dir}/tensor_{tname}_mode_vals'],
                                 out_dir=out_dir, out_name=f'tensor_{tname}_mode_vals', 
                                 use_fp=use_fp)
@@ -2008,22 +2008,22 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
                                 sparsity=0.7, use_fp=True)
         c_mat_trans = numpy.transpose(c_mat)
 
-        output_matrix = numpy.zeros((b_mat.shape[0], c_mat_trans.shape[1]), dtype=numpy.float32)
-        FPU = fpu.FPU_fc(PyFamily())
-        fpu_func = FPU()
-        for i in range(0, output_matrix.shape[0]):
-            for j in range(0, output_matrix.shape[1]):
-                partial_sum = float2bfbin(0.0)
-                partial_sum = Data(int(partial_sum, 2))
-                for k in range(0, b_mat.shape[1]):
-                    b_val = float2bfbin(b_mat[i][k])
-                    b_val = Data(int(b_val, 2))
-                    c_val = float2bfbin(c_mat_trans[k][j])
-                    c_val = Data(int(c_val, 2))
-                    partial_prod, _, _ = fpu_func(fpu.FPU_t.FP_mul, b_val, c_val)
-                    partial_sum, _, _ = fpu_func(fpu.FPU_t.FP_add, partial_sum, partial_prod)
-                output_matrix[i][j] = bfbin2float("{:016b}".format(int(partial_sum)))
-
+#        output_matrix = numpy.zeros((b_mat.shape[0], c_mat_trans.shape[1]), dtype=numpy.float32)
+#        FPU = fpu.FPU_fc(PyFamily())
+#        fpu_func = FPU()
+#        for i in range(0, output_matrix.shape[0]):
+#            for j in range(0, output_matrix.shape[1]):
+#                partial_sum = float2bfbin(0.0)
+#                partial_sum = Data(int(partial_sum, 2))
+#                for k in range(0, b_mat.shape[1]):
+#                    b_val = float2bfbin(b_mat[i][k])
+#                    b_val = Data(int(b_val, 2))
+#                    c_val = float2bfbin(c_mat_trans[k][j])
+#                    c_val = Data(int(c_val, 2))
+#                    partial_prod, _, _ = fpu_func(fpu.FPU_t.FP_mul, b_val, c_val)
+#                    partial_sum, _, _ = fpu_func(fpu.FPU_t.FP_add, partial_sum, partial_prod)
+#                output_matrix[i][j] = bfbin2float("{:016b}".format(int(partial_sum)))
+        output_matrix = numpy.matmul(b_mat, c_mat_trans, dtype=numpy.float32)
         output_format = "CSF"
         output_name = "X"
         use_fp = True
