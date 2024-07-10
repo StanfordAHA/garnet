@@ -20,8 +20,7 @@ def generate_main(app_name, input_list, output_list):
 #include \"./{app_name}/input_script.h\"
 #include \"./{app_name}/unrolling.h\"
 #include \"./{app_name}/reg_write.h\"
-// Skip gold checking
-// #include \"./{app_name}/gold.h\"
+#include \"./{app_name}/gold.h\"
 #include "print_action.h"
 #include "glb.h"
 #include "glc.h"
@@ -213,8 +212,7 @@ int main(int argc, char* argv[])
 
   printf(\"check gold data\\n\");
 
-  // Skip error checking for power flow
-  // errors = check_gold_data();
+  errors = check_gold_data();
   
   printf(\"total errors: %d\\n\", errors);
 
