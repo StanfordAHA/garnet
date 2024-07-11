@@ -1676,9 +1676,14 @@ def coalesce_files(in_dir, out_dir, hack_files=None, unroll=1, give_tensor=None,
         # Now do vals
         for copy_ in range(unroll):
             if f'tensor_{tname}_mode_vals' in all_in_files:
-                write_glb_file([f'{in_dir}/tensor_{tname}_mode_vals'],
-                               out_dir=out_dir, out_name=f'tensor_{tname}_mode_vals', 
-                               use_fp=use_fp)
+                # TODO: This is a hack for now, get rid of this 
+                if tname not in ['fp_exp', 'fp_div']:
+                    write_glb_file([f'{in_dir}/tensor_{tname}_mode_vals'],
+                                out_dir=out_dir, out_name=f'tensor_{tname}_mode_vals', 
+                                use_fp=use_fp)
+                else:
+                    write_glb_file([f'{in_dir}/tensor_{tname}_mode_vals'],
+                                out_dir=out_dir, out_name=f'tensor_{tname}_mode_vals')
 
 
 def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None,
