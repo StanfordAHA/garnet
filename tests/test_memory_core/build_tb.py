@@ -161,46 +161,113 @@ class SparseTBBuilder(m.Generator2):
             # new_netlist = copy.deepcopy(self.nlb._netlist)
             # new_bus = copy.deepcopy(self.nlb._bus)
 
-
             # # Create graph from netlist without I/O
             # G = nx.DiGraph()
+            # remove_edges = ["data_in", "data_out", "passthrough", "stream_arb"]
+            # for edge, connections in new_netlist.items():
+            #     src = connections[0][0]
+            #     dest = connections[1][0]
+            #     src_name = self.nlb._core_names[src]
+            #     dest_name = self.nlb._core_names[dest]
+            #     if not (any (edge in src_name for edge in remove_edges) or any (edge in dest_name for edge in remove_edges)):
+            #         G.add_edge(src, dest, name=edge)
+            #     if "buffer_passthrough" in src_name or "buffer_passthrough" in dest_name:
+            #         G.add_edge(src, dest, name=edge)
+
+
+            # # Get first node and initialize dictionary
+            # first_nodes = [node for node in G.nodes if len(list(G.predecessors(node))) == 0]
+            # dist = {}
+            # parent_node = first_nodes[0]
+            # dist = {node: None for node in G.nodes}
+            # for node in first_nodes:
+            #     dist[node] = 0
+            
+
+            # # longest path from source to any other node
+            # for node in G.nodes:
+            #     for parent_node in first_nodes:
+            #         if dist[node] is None:
+            #             all_paths = list(nx.all_simple_paths(G, source=parent_node, target=node))
+            #             # check all_paths is not empty list
+            #             print(all_paths)
+            #             if all_paths:
+            #                 dist[node] = max(len(arr)-1 for arr in all_paths)
+            
+            # edge_add = {}
+
+            # # add to refs coming out of fiberlookups
+            # for node in G.nodes:
+            #     remapping = self.nlb._core_names[node]
+            #     if "fiber_access" in remapping and "X" not in remapping and "vals" not in remapping:
+            #         outgoing_edges = G.out_edges(node, data=True)
+            #         for edge in outgoing_edges:
+            #             src = edge[0]
+            #             dest = edge[1]
+            #             name = edge[2]['name']
+            #             if "pos" in new_netlist[name][0][1]:
+            #                 edge_add[name] = 6
+
+                
+            # # Compare incoming edges to add fifos
+            # topological_order = list(nx.topological_sort(G))
+            # for node in topological_order:
+            #     incoming_edges = G.in_edges(node, data=True)
+            #     if len(incoming_edges) > 1:
+            #         max_length = dist[node]
+            #         for edge in incoming_edges:
+            #             src = edge[0]
+            #             dest = edge[1]
+            #             name = edge[2]['name']
+            #             if dist[src] < max_length - 1:
+            #                 # add fifos to balance + fifos added for fiberlookup refs
+            #                 if name in edge_add:
+            #                     prev_edge_add = edge_add[name]
+            #                 else:
+            #                     prev_edge_add = 0
+            #                 edge_add[name] = 2*(max_length - dist[src] - 1) + prev_edge_add
+
+            # # max edge_add 16
+            # for edge in edge_add:
+            #    if edge_add[edge] > 8:
+            #        edge_add[edge] = 8
+            # print("Edge Add:")
+            # print(edge_add)
+            # # breakpoint()            
+
             # reg_num = 0
             # edge_num = len(new_bus)
-            # ori_netlist = copy.deepcopy(new_netlist)
-            # input_broadcast = {}
-            # for edge, connections in ori_netlist.items():
-            #     src = connections[0]
-            #     dest = connections[1]
-            #     if "I" in src[0]:
-            #         del new_netlist[edge]
-            #         del new_bus[edge]
-                
-            #         if src not in input_broadcast:
-            #             new_netlist[f"e{edge_num}"] = [src, (f"r{reg_num}", "reg")]
-            #             new_bus[f"e{edge_num}"] = 17
-            #             edge_num += 1
-            #             new_netlist[f"e{edge_num}"] = [(f"r{reg_num}", "reg"), (f"r{reg_num+1}", "reg")]
-            #             new_bus[f"e{edge_num}"] = 17
-            #             edge_num += 1
-            #             reg_num += 1
+            # for edge in list(new_netlist.keys()):
+            #     src = new_netlist[edge][0]
+            #     dest = new_netlist[edge][1]
 
-            #             input_broadcast[src] = [(f"r{reg_num}", "reg")]
-            #             reg_num += 1
-                    
-            #         input_broadcast[src].append(dest)
-                
-            # for key, value in input_broadcast.items():
-            #     edge = []
-            #     for val in value:
-            #         edge.append(val)
-            #     new_netlist[f"e{edge_num}"] = edge
+            #     num_fifo = 0
+            #     if edge in edge_add:
+            #         num_fifo = edge_add[edge]
+
+            #     if num_fifo == 0:
+            #         continue
+
+            #     del new_netlist[edge]
+            #     del new_bus[edge]
+
+            #     new_netlist[f"e{edge_num}"] = [src, (f"r{reg_num}", "reg")]
             #     new_bus[f"e{edge_num}"] = 17
             #     edge_num += 1
 
+            #     for i in range(2*num_fifo-1):
+            #         new_netlist[f"e{edge_num}"] = [(f"r{reg_num}", "reg"), (f"r{reg_num+1}", "reg")]
+            #         new_bus[f"e{edge_num}"] = 17
+            #         edge_num += 1
+            #         reg_num += 1
+
+            #     new_netlist[f"e{edge_num}"] = [(f"r{reg_num}", "reg"), dest]
+            #     new_bus[f"e{edge_num}"] = 17
+            #     edge_num += 1
+            #     reg_num += 1
+            
             # self.nlb._netlist = new_netlist
             # self.nlb._bus = new_bus
-
-            # #### Kalhan added #####
 
             # Now replace the io
             self.nlb.generate_placement(fixed_io=self.glb_cores)
@@ -1039,6 +1106,7 @@ class SparseTBBuilder(m.Generator2):
 
         for node in self.graph.get_nodes():
             kwargs = {}
+            print(node.get_attributes())
             hw_node_type = node.get_attributes()['hwnode']
             new_node_type = None
             core_tag = None
@@ -1165,6 +1233,19 @@ class SparseTBBuilder(m.Generator2):
             elif hw_node_type == f"{HWNodeType.PassThrough}" or hw_node_type == HWNodeType.PassThrough:
                 new_node_type = PassThroughNode
                 core_tag = "pass_through"
+                edges_to_pass_through = [edge for edge in self.graph.get_edges() if edge.get_destination() == node.get_name()]
+                print(edges_to_pass_through)
+                assert len(edges_to_pass_through) == 1
+                print(edges_to_pass_through[0].get_attributes())
+                edge = edges_to_pass_through[0]
+                # from ref need to pass conn_to_tensor, if it has tensor name ('-' in comment), ex. in-C
+                if 'comment' in edge.get_attributes() and '-' in edge.get_attributes()['comment'].strip('"'):
+                    conn_to_tensor = {}
+                    conn_to_tensor[0] = edge.get_attributes()['comment'].strip('"').split('-')[1]
+                    kwargs = {'conn_to_tensor': conn_to_tensor}
+                else:
+                    kwargs = {}
+
             else:
                 raise NotImplementedError(f"{hw_node_type} not supported....")
 
@@ -1346,6 +1427,8 @@ class SparseTBBuilder(m.Generator2):
                 dst_node = self.find_node_by_name(dst_name)
                 src_attr = src_node.get_attributes()
                 dst_attr = dst_node.get_attributes()
+                print(src_attr)
+                print(dst_attr)
                 if 'fa_color' in src_attr and 'fa_color' in dst_attr:
                     if src_attr['fa_color'] == dst_attr['fa_color']:
                         continue
@@ -1363,7 +1446,8 @@ class SparseTBBuilder(m.Generator2):
                     dst_core_node = _d
                 else:
                     dst_core_node = self.core_nodes[dst_name]
-
+                print(src_core_node)
+                print(dst_core_node)
                 addtl_conns = src_core_node.connect(dst_core_node, edge, kwargs)
             else:
                 addtl_conns = self.core_nodes[src_name].connect(self.core_nodes[dst_name], edge)
@@ -2902,6 +2986,86 @@ if __name__ == "__main__":
                     sdg = SAMDotGraph(filename=sam_graph, local_mems=True, use_fork=use_fork,
                                       use_fa=use_fiber_access, unroll=unroll, collat_dir=collat_dir,
                                       opal_workaround=opal_workaround, mem_block_size=mem_block_size)
+                    graph = sdg.get_graph()
+                    # Add passthrough nodes out of refs and and in front of crddrop outers
+                    # First refs
+                    edges = graph.get_edges()
+                    edges_to_edit = []
+                    for edge in edges:
+                        src = edge.get_source()
+                        dst = edge.get_destination()
+                        src_node = graph.get_node(src)
+                        dst_node = graph.get_node(dst)
+                        print(f"EDGE: {src} -> {dst}")
+                        src_node_type = src_node[0].get_attributes()["type"]
+                        print(f"SRC TYPE: {src_node_type}")
+                        dst_node_type = dst_node[0].get_attributes()["type"]
+                        print(f"DST TYPE: {dst_node_type}")
+                        print(edge.get_attributes())
+                        if "type" in edge.get_attributes():
+                            edge_type = edge.get_attributes()["type"]
+                        else:
+                            edge_type = None
+                        if "comment" in edge.get_attributes():
+                            comment_type = edge.get_attributes()["comment"]
+                        else:
+                            comment_type = None
+                        print(f"EDGE TYPE: {edge_type}")
+                        if src_node_type == '"fiberlookup"' and edge_type == '"ref"':
+                            edges_to_edit.append(edge)
+                            print(f"EDGE TO EDIT: {src} -> {dst}")
+                        if dst_node_type == '"crddrop"' and 'outer' in comment_type.strip('"'):
+                            edges_to_edit.append(edge)
+                            print(f"EDGE TO EDIT: {src} -> {dst}")
+                    
+                    # graph.write_png("/aha/before.png")
+
+                    # Add node to edges
+                    for edge in edges_to_edit:
+                        src = edge.get_source()
+                        dst = edge.get_destination()
+                        src_node = graph.get_node(src)
+                        dst_node = graph.get_node(dst)
+                        attrs = copy.deepcopy(src_node[0].get_attributes())
+                        og_label = attrs['label']
+                        og_label = og_label.split('_')[0]
+                        print("Attrs")
+                        print(attrs)
+                        del attrs['label']
+                        del attrs['hwnode']
+                        if 'fa_color' in attrs:
+                            del attrs['fa_color']
+                        edge_attrs = copy.deepcopy(edge.get_attributes())
+                        del edge_attrs['label']
+                        edge_type =  edge_attrs['type'].strip('"')
+
+                        node_exists = graph.get_node(f"passthrough_buffer_{src}_{edge_type}")
+                        print("NODE EXISTS")
+                        print(node_exists)
+                        if node_exists == []:
+                            node = pydot.Node(f"passthrough_buffer_{src}_{edge_type}", **attrs, label=f"{og_label}_buffer_passthrough_{edge_type}", hwnode=f"{HWNodeType.PassThrough}")
+                            graph.add_node(node)
+                        else:
+                            node = node_exists[0]
+
+                        possible_edges = graph.get_edge(src, dst)
+                        index = 0
+                        for edge_check in possible_edges:
+                            if edge.get_attributes() == edge_check.get_attributes():
+                                break
+                            index += 1
+                        check = graph.del_edge(src, dst, index)
+
+                        print(f"CHECK: {check}")
+                        edge_to_passthrough_exists = graph.get_edge(src, node.get_name())
+                        print("EDGE TO PASSTHROUGH EXISTS")
+                        print(edge_to_passthrough_exists)
+                        if edge_to_passthrough_exists == []:
+                            edge1 = pydot.Edge(src=src_node[0], dst=node, **edge_attrs, label=f"pass_through_buffer0_{src}_{edge_type}",)
+                            graph.add_edge(edge1)
+                        edge2 = pydot.Edge(src=node, dst=dst_node[0], **edge_attrs, label=f"pass_through_buffer1_{src}_{edge_type}")
+                        graph.add_edge(edge2)
+                    # graph.write_png("/aha/after.png")
                     sdgs[sam_graph] = sdg
                 else:
                     print("REUSE SDG")
