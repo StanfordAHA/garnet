@@ -158,10 +158,10 @@ class SparseTBBuilder(m.Generator2):
             self.connect_cores()
 
             # ### Kalhan added #####
-            # new_netlist = copy.deepcopy(self.nlb._netlist)
-            # new_bus = copy.deepcopy(self.nlb._bus)
+            new_netlist = copy.deepcopy(self.nlb._netlist)
+            new_bus = copy.deepcopy(self.nlb._bus)
 
-            # # Create graph from netlist without I/O
+            # Create graph from netlist without I/O
             # G = nx.DiGraph()
             # remove_edges = ["data_in", "data_out", "passthrough", "stream_arb"]
             # for edge, connections in new_netlist.items():
