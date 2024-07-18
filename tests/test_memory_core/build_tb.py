@@ -2006,7 +2006,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
             d_0_crd.append(j)
             for k in range(len(d_mat[0])):
                 v = d_mat[j][k]
-                if v != 0 or i == j:
+                if v != 0 or k == j:
                     d_1_crd.append(k)
                     d_v.append(v)
             d_1_seg.append(len(d_1_crd))
@@ -2017,7 +2017,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
             e_0_crd.append(k)
             for j in range(len(e_mat[0])):
                 v = e_mat[k][j]
-                if v != 0 or i == j:
+                if v != 0 or k == j:
                     e_1_crd.append(j)
                     e_v.append(v)
             e_1_seg.append(len(e_1_crd))
