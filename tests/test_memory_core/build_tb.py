@@ -173,8 +173,17 @@ class SparseTBBuilder(m.Generator2):
                     G.add_edge(src, dest, name=edge)
                 if "buffer_passthrough" in src_name or "buffer_passthrough" in dest_name:
                     G.add_edge(src, dest, name=edge)
-
-
+            
+            # break cycles
+            cycles = list(nx.simple_cycles(G))
+            print("Cycles:")
+            print(cycles)
+            while cycles: 
+                for cycle in cycles:
+                    G.remove_edge(cycle[0], cycle[1])
+                    break
+                cycles = list(nx.simple_cycles(G))
+            
             # Get first node and initialize dictionary
             first_nodes = [node for node in G.nodes if len(list(G.predecessors(node))) == 0]
             dist = {}
