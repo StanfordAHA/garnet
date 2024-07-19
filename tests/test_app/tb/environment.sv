@@ -23,7 +23,8 @@ class Environment;
     ProcDriver proc_drv;
     AxilDriver axil_drv;
 
-    extern function new(Kernel kernels[], vAxilIfcDriver vifc_axil, vProcIfcDriver vifc_proc);
+    int dpr;
+    extern function new(Kernel kernels[], vAxilIfcDriver vifc_axil, vProcIfcDriver vifc_proc, int dpr);
     extern function void build();
     extern task write_bs(Kernel kernel);
     extern task write_data(Kernel kernel);
@@ -42,10 +43,11 @@ class Environment;
     extern task compare();
 endclass
 
-function Environment::new(Kernel kernels[], vAxilIfcDriver vifc_axil, vProcIfcDriver vifc_proc);
+function Environment::new(Kernel kernels[], vAxilIfcDriver vifc_axil, vProcIfcDriver vifc_proc, int dpr);
     this.kernels   = kernels;
     this.vifc_axil = vifc_axil;
     this.vifc_proc = vifc_proc;
+    this.dpr = dpr;
 endfunction
 
 function void Environment::build();
@@ -339,20 +341,36 @@ task Environment::run();
     // turn on interrupt
     set_interrupt_on();
 
-    foreach (kernels[i]) begin
-        automatic int j = i;
-        fork
-            begin
-                write_bs(kernels[j]);
-                glb_configure(kernels[j]);
-                cgra_configure(kernels[j]);
-                write_data(kernels[j]);
-                kernel_test(kernels[j]);
-                read_data(kernels[j]);
-            end
-        join_none
+    if (dpr) begin
+        foreach (kernels[i]) begin
+            automatic int j = i;
+            fork
+                begin
+                    write_bs(kernels[j]);
+                    glb_configure(kernels[j]);
+                    cgra_configure(kernels[j]);
+                    write_data(kernels[j]);
+                    kernel_test(kernels[j]);
+                    read_data(kernels[j]);
+                end
+            join_none
+        end
+        wait fork;
+    end else begin
+        foreach (kernels[i]) begin
+            automatic int j = i;
+                begin
+                    write_bs(kernels[j]);
+                    glb_configure(kernels[j]);
+                    cgra_configure(kernels[j]);
+                    write_data(kernels[j]);
+                    kernel_test(kernels[j]);
+                    read_data(kernels[j]);
+                    kernels[j].compare();
+                end
+        end
+
     end
-    wait fork;
 endtask
 
 task Environment::compare();

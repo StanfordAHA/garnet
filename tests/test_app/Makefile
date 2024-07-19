@@ -68,10 +68,6 @@ VCS = vcs \
 	  -ldflags "-Wl,--no-as-needed" \
 	  -CFLAGS "-m64" \
 	  -top top \
-	  -kdb \
-	  +vpi \
-	  +memcbk \
-	  +vcsd \
 	  +vcs+lic+wait \
 	  +vcs+initreg+random \
 	  +overlap \
@@ -83,7 +79,7 @@ VCS = vcs \
 XRUN = xrun \
 	   -64bit \
 	   -sv \
-	   -timescale 100ps/1ps \
+	   -timescale 1ps/1ps \
 	   -debug \
 	   -sysv \
 	   -top top \
@@ -137,6 +133,7 @@ compile:
 
 .PHONY: run
 run:
+	@rm -rf *.txt; rm -rf ../../SPARSE_TESTS/batch_*
 	$(RUN) $(DUMP_ARGS) $(RUN_ARGS) $(APP_ARGS)
 
 .PHONY: sim

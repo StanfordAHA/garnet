@@ -71,6 +71,9 @@ import time
 import gemstone
 #import torch
 from sparse_app_mappings import get_tensor
+import networkx as nx
+import copy
+import json
 
 
 class SparseTBBuilder(m.Generator2):
@@ -144,6 +147,119 @@ class SparseTBBuilder(m.Generator2):
             # CGRA Path
             self.register_cores()
             self.connect_cores()
+
+            # ### Kalhan added #####
+            new_netlist = copy.deepcopy(self.nlb._netlist)
+            new_bus = copy.deepcopy(self.nlb._bus)
+
+            # Create graph from netlist without I/O
+            G = nx.DiGraph()
+            remove_edges = ["data_in", "data_out", "passthrough", "stream_arb"]
+            for edge, connections in new_netlist.items():
+                src = connections[0][0]
+                dest = connections[1][0]
+                src_name = self.nlb._core_names[src]
+                dest_name = self.nlb._core_names[dest]
+                if not (any (edge in src_name for edge in remove_edges) or any (edge in dest_name for edge in remove_edges)):
+                    G.add_edge(src, dest, name=edge)
+                if "buffer_passthrough" in src_name or "buffer_passthrough" in dest_name:
+                    G.add_edge(src, dest, name=edge)
+
+
+            # Get first node and initialize dictionary
+            first_nodes = [node for node in G.nodes if len(list(G.predecessors(node))) == 0]
+            dist = {}
+            parent_node = first_nodes[0]
+            dist = {node: None for node in G.nodes}
+            for node in first_nodes:
+                dist[node] = 0
+            
+
+            # longest path from source to any other node
+            for node in G.nodes:
+                for parent_node in first_nodes:
+                    if dist[node] is None:
+                        all_paths = list(nx.all_simple_paths(G, source=parent_node, target=node))
+                        # check all_paths is not empty list
+                        print(all_paths)
+                        if all_paths:
+                            dist[node] = max(len(arr)-1 for arr in all_paths)
+            
+            edge_add = {}
+
+            # add to refs coming out of fiberlookups
+            for node in G.nodes:
+                remapping = self.nlb._core_names[node]
+                if "fiber_access" in remapping and "X" not in remapping and "vals" not in remapping:
+                    outgoing_edges = G.out_edges(node, data=True)
+                    for edge in outgoing_edges:
+                        src = edge[0]
+                        dest = edge[1]
+                        name = edge[2]['name']
+                        if "pos" in new_netlist[name][0][1]:
+                            edge_add[name] = 6
+
+                
+            # Compare incoming edges to add fifos
+            topological_order = list(nx.topological_sort(G))
+            for node in topological_order:
+                incoming_edges = G.in_edges(node, data=True)
+                if len(incoming_edges) > 1:
+                    max_length = dist[node]
+                    for edge in incoming_edges:
+                        src = edge[0]
+                        dest = edge[1]
+                        name = edge[2]['name']
+                        if dist[src] < max_length - 1:
+                            # add fifos to balance + fifos added for fiberlookup refs
+                            if name in edge_add:
+                                prev_edge_add = edge_add[name]
+                            else:
+                                prev_edge_add = 0
+                            edge_add[name] = 2*(max_length - dist[src] - 1) + prev_edge_add
+
+            # max edge_add 16
+            for edge in edge_add:
+               if edge_add[edge] > 8:
+                   edge_add[edge] = 8
+            print("Edge Add:")
+            print(edge_add)
+            # breakpoint()            
+
+            reg_num = 0
+            edge_num = len(new_bus)
+            for edge in list(new_netlist.keys()):
+                src = new_netlist[edge][0]
+                dest = new_netlist[edge][1]
+
+                num_fifo = 0
+                if edge in edge_add:
+                    num_fifo = edge_add[edge]
+
+                if num_fifo == 0:
+                    continue
+
+                del new_netlist[edge]
+                del new_bus[edge]
+
+                new_netlist[f"e{edge_num}"] = [src, (f"r{reg_num}", "reg")]
+                new_bus[f"e{edge_num}"] = 17
+                edge_num += 1
+
+                for i in range(2*num_fifo-1):
+                    new_netlist[f"e{edge_num}"] = [(f"r{reg_num}", "reg"), (f"r{reg_num+1}", "reg")]
+                    new_bus[f"e{edge_num}"] = 17
+                    edge_num += 1
+                    reg_num += 1
+
+                new_netlist[f"e{edge_num}"] = [(f"r{reg_num}", "reg"), dest]
+                new_bus[f"e{edge_num}"] = 17
+                edge_num += 1
+                reg_num += 1
+            
+            self.nlb._netlist = new_netlist
+            self.nlb._bus = new_bus
+
 
             # Now replace the io
             self.nlb.generate_placement(fixed_io=self.glb_cores)
