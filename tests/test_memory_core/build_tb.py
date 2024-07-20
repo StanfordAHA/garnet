@@ -157,7 +157,7 @@ class SparseTBBuilder(m.Generator2):
             self.register_cores()
             self.connect_cores()
 
-            # ### Kalhan added #####
+            # ### Balance SAM graph with interconnect FIFOs #####
             new_netlist = copy.deepcopy(self.nlb._netlist)
             new_bus = copy.deepcopy(self.nlb._bus)
 
@@ -192,7 +192,6 @@ class SparseTBBuilder(m.Generator2):
             for node in first_nodes:
                 dist[node] = 0
             
-
             # longest path from source to any other node
             for node in G.nodes:
                 for parent_node in first_nodes:
@@ -217,7 +216,6 @@ class SparseTBBuilder(m.Generator2):
                         if "pos" in new_netlist[name][0][1]:
                             edge_add[name] = 6
 
-                
             # Compare incoming edges to add fifos
             topological_order = list(nx.topological_sort(G))
             for node in topological_order:
@@ -236,13 +234,12 @@ class SparseTBBuilder(m.Generator2):
                                 prev_edge_add = 0
                             edge_add[name] = 2*(max_length - dist[src] - 1) + prev_edge_add
 
-            # max edge_add 16
+            # max edge_add 8
             for edge in edge_add:
                if edge_add[edge] > 8:
                    edge_add[edge] = 8
             print("Edge Add:")
             print(edge_add)
-            # breakpoint()            
 
             reg_num = 0
             edge_num = len(new_bus)
@@ -2996,8 +2993,8 @@ if __name__ == "__main__":
                                       use_fa=use_fiber_access, unroll=unroll, collat_dir=collat_dir,
                                       opal_workaround=opal_workaround, mem_block_size=mem_block_size)
                     graph = sdg.get_graph()
-                    # Add passthrough nodes out of refs and and in front of crddrop outers
-                    # First refs
+
+                    # Add passthrough nodes out of refs and and in front of crddrop outers for better buffering
                     edges = graph.get_edges()
                     edges_to_edit = []
                     for edge in edges:
@@ -3005,12 +3002,8 @@ if __name__ == "__main__":
                         dst = edge.get_destination()
                         src_node = graph.get_node(src)
                         dst_node = graph.get_node(dst)
-                        print(f"EDGE: {src} -> {dst}")
                         src_node_type = src_node[0].get_attributes()["type"]
-                        print(f"SRC TYPE: {src_node_type}")
                         dst_node_type = dst_node[0].get_attributes()["type"]
-                        print(f"DST TYPE: {dst_node_type}")
-                        print(edge.get_attributes())
                         if "type" in edge.get_attributes():
                             edge_type = edge.get_attributes()["type"]
                         else:
@@ -3019,16 +3012,12 @@ if __name__ == "__main__":
                             comment_type = edge.get_attributes()["comment"]
                         else:
                             comment_type = None
-                        print(f"EDGE TYPE: {edge_type}")
                         if src_node_type == '"fiberlookup"' and edge_type == '"ref"':
                             edges_to_edit.append(edge)
-                            print(f"EDGE TO EDIT: {src} -> {dst}")
                         if dst_node_type == '"crddrop"' and 'outer' in comment_type.strip('"'):
                             edges_to_edit.append(edge)
-                            print(f"EDGE TO EDIT: {src} -> {dst}")
                     
                     # graph.write_png("/aha/before.png")
-
                     # Add node to edges
                     for edge in edges_to_edit:
                         src = edge.get_source()
