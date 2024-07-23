@@ -46,3 +46,6 @@ tests/*/obj_dir/
 dump/
 # COSA temporary files
 CoSA*tmp.out
+
+# Spasrse Tests temporary files
+SPARSE_TESTS/
