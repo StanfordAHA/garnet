@@ -14,7 +14,7 @@ def get_tensor(input_name=None, shapes=None, give_tensor=False,
         assert tensor_ordering is not None
         shape_ = read_inputs(os.path.join(tmp_dir, f"tensor_{input_name}_mode_shape"))
         matrix_gen = get_tensor_from_files(name=input_name, files_dir=tmp_dir, shape=shape_, base=10, early_terminate='x',
-                                           tensor_ordering=tensor_ordering)
+                                           tensor_ordering=tensor_ordering, use_fp=use_fp)
     else:
         assert dump is not None
         assert shapes is not None
