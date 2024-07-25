@@ -84,6 +84,7 @@ from lassen.float import *
 import networkx as nx
 import copy
 import json
+import toml
 
 class SparseTBBuilder(m.Generator2):
     def __init__(self, nlb: NetlistBuilder = None, graph: Graph = None, bespoke=False,
@@ -1776,6 +1777,53 @@ def coalesce_files(in_dir, out_dir, hack_files=None, unroll=1, give_tensor=None,
                                 out_dir=out_dir, out_name=f'tensor_{tname}_mode_vals')
 
 
+def generate_inputs(app_name):
+    # Use lego to generate input matrices
+    input_file_dir = os.path.join("input/aha_regress", app_name)
+    program_file = os.path.join(input_file_dir, "program.txt")
+    tensor_file = os.path.join(input_file_dir, "tensor.txt")
+    try:
+        print(f"=== Lego Generating CPP Code ===")
+        tile = subprocess.run(["python", "main.py", 
+                                "--program", program_file, 
+                                "--tensor", tensor_file, 
+                                "--output_dir" , "/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR",
+                                "--mode", "rtl"], 
+                                cwd="/aha/Lego_v0")
+        tile.check_returncode()
+    except subprocess.CalledProcessError as e:
+        print(e.stderr)
+
+    try: 
+        print(f"=== Lego Compiling CPP Code ===")
+        tile = subprocess.run(["g++", "-o", "main", "main.cpp", 
+                               "src/data_parser.cpp", 
+                               "src/mem_op.cpp", 
+                               "src/activation.cpp"],
+                                cwd="/aha/Lego_v0")   
+        tile.check_returncode()
+    except subprocess.CalledProcessError as e:
+        print(e.stderr)
+
+    try: 
+        print(f"=== Lego Tiling ===")
+        tile = subprocess.run(["./main", "tiling"], cwd="/aha/Lego_v0")
+        tile.check_returncode()
+    except subprocess.CalledProcessError as e:
+        print(e.stderr)
+
+    subtile_paths_list = os.path.join("/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR", app_name, "subtile_paths_0.toml")
+    with open(subtile_paths_list, 'r') as f:
+        tile_pairs_dict = toml.load(f)
+        data_tile_pairs = tile_pairs_dict["sam_config"]["sam_path"]
+        # FIXME: for now, only supports testing a single tile
+        assert(len(data_tile_pairs) == 1)
+    matrix_tmp_dir = os.path.join("/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR", app_name, data_tile_pairs[0])
+
+    return matrix_tmp_dir
+
+
+
 def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None,
                   zero_input=False, tensor_orderings=None, clean=True, suffix=""):
 
@@ -1797,864 +1845,875 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
     use_fp = False
 
     if 'mat_elemadd.gv' in app_name:
-        b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                           sparsity=0.8)
-        c_mat = get_tensor(input_name='C', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
-                           sparsity=0.9)
-
-        output_matrix = numpy.add(b_mat, c_mat, dtype=numpy.uint16, casting='unsafe')
-        output_format = "CSF"
-        output_name = "X"
-    elif 'mat_elemadd_relu.gv' in app_name:
-        b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                           sparsity=0.0)
-        c_mat = get_tensor(input_name='C', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
-                           sparsity=0.0)
-
-        output_matrix = numpy.maximum(0, numpy.add(b_mat, c_mat, dtype=numpy.int16, casting='unsafe'))
-        output_format = "CSF"
-        output_name = "X"
-    elif 'mat_elemadd_leakyrelu_exp.gv' in app_name:
-        b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                           sparsity=0.8, use_fp=True)
-        c_mat = get_tensor(input_name='C', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
-                           sparsity=0.9, use_fp=True)
-        exp_mat = get_lut_tensor(dump=matrix_tmp_dir, suffix=suffix, clean=False, func='fp_exp')
-
-        output_matrix = numpy.add(b_mat, c_mat, dtype=numpy.float32, casting='unsafe')
-        output_matrix = numpy.maximum(output_matrix, 
-                                      numpy.multiply(output_matrix, 0.2, dtype=numpy.float32, casting='unsafe'), 
-                                      dtype=numpy.float32, casting='unsafe')
-        FExp = fpops.FExp_fc(PyFamily())
-        exp = FExp()
-        use_fp = True
-        for idx, val in numpy.ndenumerate(output_matrix):
-            if val == 0.0:
-                continue
-            val = float2bfbin(val)
-            op = Data(int(val, 2))
-            result = exp(op)
-            output_matrix[idx] = bfbin2float("{:016b}".format(int(result)))
-        output_format = "CSF"
-        output_name = "X"
-    elif 'mat_elemadd3.gv' in app_name:
-        b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                           sparsity=0.8)
-
-        c_mat = get_tensor(input_name='C', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
-                           sparsity=0.9)
-
-        d_mat = get_tensor(input_name='D', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['D'],
-                           sparsity=0.8)
-
-        output_matrix = numpy.add(d_mat, numpy.add(b_mat, c_mat,
-                                                   dtype=numpy.uint16, casting='unsafe'), dtype=numpy.uint16, casting='unsafe')
-        output_format = "CSF"
-        output_name = "X"
-    elif 'mat_elemmul.gv' in app_name:
-        b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                           sparsity=0.8)
-        c_mat = get_tensor(input_name='C', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
-                           sparsity=0.9)
-
-        output_matrix = numpy.multiply(b_mat, c_mat, dtype=numpy.uint16, casting='unsafe')
-        output_format = "CSF"
-        output_name = "X"
-    elif 'mat_elemdiv.gv' in app_name:
-        b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                           sparsity=0.8, use_fp=True)
-        c_mat = get_tensor(input_name='C', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
-                           sparsity=0.9, use_fp=True)
-        div_mat = get_lut_tensor(dump=matrix_tmp_dir, suffix=suffix, clean=False, func='fp_div')
-
-        output_matrix = numpy.zeros_like(b_mat, dtype=numpy.float32)
-        FDiv = fpops.FDiv_fc(PyFamily())
-        div = FDiv()
-        for idx, _ in numpy.ndenumerate(output_matrix):            
-            if b_mat[idx] == 0 or c_mat[idx] == 0:
-                continue
-            b_val_bfbin = float2bfbin(b_mat[idx])
-            op_b = Data(int(b_val_bfbin, 2))
-            c_val_bfbin = float2bfbin(c_mat[idx])
-            op_c = Data(int(c_val_bfbin, 2))
-            result = div(op_b, op_c)
-            output_matrix[idx] = bfbin2float("{:016b}".format(int(result)))
-        output_format = "CSF"
-        output_name = "X"
-        use_fp = True
-    elif 'mat_identity.gv' in app_name:
-        b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                           sparsity=0.8)
-
-        output_matrix = b_mat
-        output_format = "CSF"
-        output_name = "X"
-    elif 'mat_dn2sp.gv' in app_name:
-        b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                           sparsity=0.8, format="UNC")
+        # b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                        #    dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+                        #    sparsity=0.8)
+        # c_mat = get_tensor(input_name='C', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                        #    dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+                        #    sparsity=0.9)
+    
+        output_dims = []
+        with open(f"{matrix_tmp_dir}/tensor_X_mode_shape", "r") as f:
+            lines = f.readlines()
+            for line in lines:
+                output_dims.append(int(line.strip()))
         
-        input_dims['B'] = tuple(b_mat.shape)
-        output_matrix = b_mat
-        output_format = "CSF"
-        output_name = "X"
-    elif 'mat_sp2dn.gv' in app_name:
-        b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                           sparsity=1.0, format="UNC")
-        c_mat = get_tensor(input_name='C', shapes=[10, 12], give_tensor=False, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
-                           sparsity=0.8)
-
-        input_dims['B'] = tuple(b_mat.shape)
-        output_matrix = c_mat
-        output_format = "CSF"
-        output_name = "X"
-    elif 'mat_identity_dense.gv' in app_name:
-        b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='UNC', dump_dir=matrix_tmp_dir)
-        b_matrix.dump_outputs()
-        b_mat = b_matrix.get_matrix()
-
-        output_matrix = b_mat
-        output_format = "UNC"
-        output_name = "X"
-    elif 'mat_mattransmul.gv' in app_name:
-        vec_ordering = ((1, (0, 's')),)
-        print(vec_ordering)
-        b_mat = get_tensor(input_name='b', shapes=[1], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['b'],
-                           sparsity=0)
-        C_mat = get_tensor(input_name='C', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
-                           sparsity=0.8)
-        d_mat = get_tensor(input_name='d', shapes=[10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['d'],
-                           sparsity=0.9)
-        e_mat = get_tensor(input_name='e', shapes=[1], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['e'],
-                           sparsity=0)
-        f_mat = get_tensor(input_name='f', shapes=[10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['f'],
-                           sparsity=0.8)
-
-        output_matrix = numpy.add(numpy.multiply(e_mat, f_mat, dtype=numpy.uint16, casting='unsafe'),
-                                  numpy.multiply(b_mat,
-                                                 numpy.matmul(C_mat, d_mat,
-                                                              dtype=numpy.uint16,
-                                                              casting='unsafe'),
-                                                 dtype=numpy.uint16,
-                                                 casting='unsafe'),
-                                  dtype=numpy.uint16, casting='unsafe')
-        output_format = "CSF"
-        output_name = "x"
-
-    elif 'mat_mask_tri.gv' in app_name in app_name:
-        b_mat = get_tensor(input_name='B', shapes=[10, 8], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                                dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                                sparsity=0.9)
-
-        c_mat = get_tensor(input_name='C', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
-                            sparsity=0.9)
-
-        d_mat = get_tensor(input_name='D', shapes=[8, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['D'],
-                            sparsity=0.9)
-
-        output_matrix = numpy.zeros([1]) 
-        d_mat_trans = numpy.transpose(d_mat)
-        output_matrix[0] = numpy.sum(numpy.multiply(numpy.matmul(c_mat, d_mat_trans, dtype=numpy.uint16, casting='unsafe'), b_mat, dtype=numpy.uint16, casting='unsafe'))
-        output_matrix = output_matrix.astype(numpy.uint16)
-        output_format = "CSF"
-        output_name = "x"
-    elif 'mat_vecmul_iter.gv' in app_name:
-        vec_ordering = ((1, (0, 's')),)
-        b_mat = get_tensor(input_name='B', shapes=[10, 8], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                                dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                                sparsity=0.9)
-
-        c_mat = get_tensor(input_name='C', shapes=[8, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
-                            sparsity=0.9)
-
-        d_mat = get_tensor(input_name='D', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['D'],
-                            sparsity=0.9)
-
-        e_mat = get_tensor(input_name='E', shapes=[12, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['E'],
-                            sparsity=0.9)
-        f_mat = get_tensor(input_name='f', shapes=[10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=vec_ordering,
-                           sparsity=0.9)
-
-        c_mat_trans = numpy.transpose(c_mat)
-        d_mat_trans = numpy.transpose(d_mat)
-        e_mat_trans = numpy.transpose(e_mat)
-        b_c_mat = numpy.matmul(b_mat, c_mat, dtype=numpy.uint16, casting='unsafe')
-        b_c_d_mat = numpy.matmul(b_c_mat, d_mat, dtype=numpy.uint16, casting='unsafe')
-        b_c_d_e_mat = numpy.matmul(b_c_d_mat, e_mat, dtype=numpy.uint16, casting='unsafe')
-        output_matrix = numpy.matmul(b_c_d_e_mat, f_mat, dtype=numpy.uint16, casting='unsafe')
-        output_matrix = output_matrix.astype(numpy.uint16)
-        output_format = "CSF"
-        output_name = "x"
-    elif 'mat_residual.gv' in app_name:
-        vec_ordering = ((1, (0, 's')),)
-        b_mat = get_tensor(input_name='b', shapes=[10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['b'],
-                           sparsity=0.8)
-        C_mat = get_tensor(input_name='C', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
-                           sparsity=0.9)
-        d_mat = get_tensor(input_name='d', shapes=[12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=vec_ordering,
-                           sparsity=0.8)
-
-        output_matrix = numpy.subtract(b_mat,
-                                       numpy.matmul(C_mat, d_mat, dtype=numpy.uint16, casting='unsafe'),
-                                       dtype=numpy.uint16, casting='unsafe')
-        output_format = "CSF"
-        output_name = "x"
-        # raise NotImplementedError
-    elif 'mat_sddmm.gv' in app_name:
-        b_mat = get_tensor(input_name='B', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                           sparsity=0.8)
-        c_mat = get_tensor(input_name='C', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['B'],
-                           sparsity=0.9, format='UNC')
-        d_mat = get_tensor(input_name='D', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['D'],
-                           sparsity=0.8, format='UNC')
-
-        d_mat_trans = numpy.transpose(d_mat)
-
-        # Have to include the input dimensions for mapping
-        input_dims['B'] = tuple(b_mat.shape)
-        input_dims['C'] = tuple(c_mat.shape)
-        input_dims['D'] = tuple(d_mat.shape)
-
-        tmp = numpy.matmul(c_mat, d_mat_trans, dtype=numpy.uint16, casting='unsafe')
-        output_matrix = numpy.multiply(b_mat, tmp, dtype=numpy.uint16, casting='unsafe')
-        output_format = "CSF"
-        output_name = "X"
-        # raise NotImplementedError
-    elif 'mat_vecmul_ij.gv' in app_name:
-        vec_ordering = ((1, (0, 's')),)
-        b_mat = get_tensor(input_name='B', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                           sparsity=0.7)
-        c_mat = get_tensor(input_name='c', shapes=[10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['c'],
-                           sparsity=0.7)
-
-        output_matrix = numpy.matmul(b_mat, c_mat, dtype=numpy.uint16, casting='unsafe')
-        output_format = "CSF"
-        output_name = "x"
-    elif 'mat_vecmul_ji.gv' in app_name:
-        b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                           sparsity=0.8)
-        c_mat = get_tensor(input_name='c', shapes=[10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
-                           sparsity=0.9)
-
-        b_mat_trans = numpy.transpose(b_mat)
-        output_matrix = numpy.matmul(b_mat_trans, c_mat, dtype=numpy.uint16, casting='unsafe')
-        output_format = "CSF"
-        output_name = "x"
-    elif 'matmul_ijk_crddrop.gv' in app_name:
-        b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                               dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                               sparsity=0.7)
-        c_mat = get_tensor(input_name='C', shapes=[8, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                               dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
-                               sparsity=0.7)
-        c_mat_trans = numpy.transpose(c_mat)
-
-        output_matrix = numpy.matmul(b_mat, c_mat_trans, dtype=numpy.uint16, casting='unsafe')
-        output_format = "CSF"
-        output_name = "X"
-    elif 'matmul_ijk_crddrop_fp.gv' in app_name:
-        b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                                dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                                sparsity=0.7, use_fp=True)
-        c_mat = get_tensor(input_name='C', shapes=[8, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                                dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
-                                sparsity=0.7, use_fp=True)
-        c_mat_trans = numpy.transpose(c_mat)
-
-        output_matrix = numpy.zeros((b_mat.shape[0], c_mat_trans.shape[1]), dtype=numpy.float32)
-        if not give_tensor:
-            FPU = fpu.FPU_fc(PyFamily())
-            fpu_func = FPU()
-            for i in range(0, output_matrix.shape[0]):
-                for j in range(0, output_matrix.shape[1]):
-                    partial_sum = float2bfbin(0.0)
-                    partial_sum = Data(int(partial_sum, 2))
-                    for k in range(0, b_mat.shape[1]):
-                        b_val = float2bfbin(b_mat[i][k])
-                        b_val = Data(int(b_val, 2))
-                        c_val = float2bfbin(c_mat_trans[k][j])
-                        c_val = Data(int(c_val, 2))
-                        partial_prod, _, _ = fpu_func(fpu.FPU_t.FP_mul, b_val, c_val)
-                        partial_sum, _, _ = fpu_func(fpu.FPU_t.FP_add, partial_sum, partial_prod)
-                    output_matrix[i][j] = bfbin2float("{:016b}".format(int(partial_sum)))
-        else:
-            with open(f"{matrix_tmp_dir}/output_gold.h", "r") as f:
-                for i in range(output_matrix.shape[0]):
-                    for j in range(output_matrix.shape[1]):
-                        output_matrix[i][j] = float(f.readline().strip())
-
-        output_format = "CSF"
-        output_name = "X"
-        use_fp = True
-    elif 'mat_mask_tri.gv' in app_name or 'mat_mask_tri_fiberwrite.gv' in app_name:
-        b_mat = get_tensor(input_name='B', shapes=[20, 20], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                                dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                                sparsity=0.2)
-
-        c_mat = get_tensor(input_name='C', shapes=[20, 20], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
-                            sparsity=0.2)
-
-        d_mat = get_tensor(input_name='D', shapes=[20, 20], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['D'],
-                            sparsity=0.2)
-
-        output_matrix = numpy.zeros([1]) 
-        d_mat_trans = numpy.transpose(d_mat)
-        output_matrix[0] = numpy.sum(numpy.multiply(numpy.matmul(c_mat, d_mat_trans, dtype=numpy.uint16, casting='unsafe'), b_mat, dtype=numpy.uint16, casting='unsafe'))
-        output_matrix = output_matrix.astype(numpy.uint16)
-        output_format = "CSF"
-        output_name = "x"
-    elif 'mat_vecmul_iter.gv' in app_name:
-        vec_ordering = ((1, (0, 's')),)
-        b_mat = get_tensor(input_name='B', shapes=[5, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                                dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                                sparsity=0.2)
-        c_mat = get_tensor(input_name='C', shapes=[10, 7], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
-                            sparsity=0.2)
-        d_mat = get_tensor(input_name='D', shapes=[7, 3], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['D'],
-                            sparsity=0.2)
-        e_mat = get_tensor(input_name='E', shapes=[3, 5], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['E'],
-                            sparsity=0.2)
-        f_mat = get_tensor(input_name='f', shapes=[5], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=vec_ordering,
-                           sparsity=0.2)
-
-        # First transpose c_mat
-        c_mat_trans = numpy.transpose(c_mat)
-        d_mat_trans = numpy.transpose(d_mat)
-        e_mat_trans = numpy.transpose(e_mat)
-        b_c_mat = numpy.matmul(b_mat, c_mat, dtype=numpy.uint16, casting='unsafe')
-        b_c_d_mat = numpy.matmul(b_c_mat, d_mat, dtype=numpy.uint16, casting='unsafe')
-        b_c_d_e_mat = numpy.matmul(b_c_d_mat, e_mat, dtype=numpy.uint16, casting='unsafe')
-        output_matrix = numpy.matmul(b_c_d_e_mat, f_mat, dtype=numpy.uint16, casting='unsafe')
-        output_matrix = output_matrix.astype(numpy.uint16)
-        output_format = "CSF"
-        output_name = "x"
-
-    elif "spmm_ijk_crddrop_fp.gv" in app_name:
-        # matrix b is completely dense
-        b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                           sparsity=0.0, format='UNC', use_fp=True)
-        c_mat = get_tensor(input_name='C', shapes=[13, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
-                           sparsity=0.8, use_fp=True)
-        input_dims['B'] = tuple(b_mat.shape)
-        input_dims['C'] = tuple(c_mat.shape)
-        # First transpose c_mat
-        c_mat_trans = numpy.transpose(c_mat)
+        output_matrix = numpy.zeros(output_dims, dtype=numpy.uint16)
+        with open(f"{matrix_tmp_dir}/output_gold.h", "r") as f:
+            for i in range(output_matrix.shape[0]):
+                for j in range(output_matrix.shape[1]):
+                    output_matrix[i][j] = float(f.readline().strip())
         
-        output_matrix = numpy.zeros((b_mat.shape[0], c_mat_trans.shape[1]), dtype=numpy.float32)
-        FPU = fpu.FPU_fc(PyFamily())
-        fpu_func = FPU()
-        for i in range(0, output_matrix.shape[0]):
-            for j in range(0, output_matrix.shape[1]):
-                partial_sum = float2bfbin(0.0)
-                partial_sum = Data(int(partial_sum, 2))
-                for k in range(0, b_mat.shape[1]):
-                    b_val = float2bfbin(b_mat[i][k])
-                    b_val = Data(int(b_val, 2))
-                    c_val = float2bfbin(c_mat_trans[k][j])
-                    c_val = Data(int(c_val, 2))
-                    partial_prod, _, _ = fpu_func(fpu.FPU_t.FP_mul, b_val, c_val)
-                    partial_sum, _, _ = fpu_func(fpu.FPU_t.FP_add, partial_sum, partial_prod)
-                output_matrix[i][j] = bfbin2float("{:016b}".format(int(partial_sum)))
-
         output_format = "CSF"
         output_name = "X"
-        use_fp = True
+    # elif 'mat_elemadd_relu.gv' in app_name:
+    #     b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+    #                        sparsity=0.0)
+    #     c_mat = get_tensor(input_name='C', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+    #                        sparsity=0.0)
 
-    elif "spmm_ijk_crddrop.gv" in app_name:
-        # matrix b is completely dense
-        b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                            dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                            sparsity=0.0, format='UNC')
-        c_mat = get_tensor(input_name='C', shapes=[13, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
-                            sparsity=0.8)
-        input_dims['B'] = tuple(b_mat.shape)
-        input_dims['C'] = tuple(c_mat.shape)
-        # First transpose c_mat
-        c_mat_trans = numpy.transpose(c_mat)
-        output_matrix = numpy.matmul(b_mat, c_mat_trans, dtype=numpy.uint16, casting='unsafe')
-        output_format = "CSF"
-        output_name = "X"
+    #     output_matrix = numpy.maximum(0, numpy.add(b_mat, c_mat, dtype=numpy.int16, casting='unsafe'))
+    #     output_format = "CSF"
+    #     output_name = "X"
+    # elif 'mat_elemadd_leakyrelu_exp.gv' in app_name:
+    #     b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+    #                        sparsity=0.8, use_fp=True)
+    #     c_mat = get_tensor(input_name='C', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+    #                        sparsity=0.9, use_fp=True)
+    #     exp_mat = get_lut_tensor(dump=matrix_tmp_dir, suffix=suffix, clean=False, func='fp_exp')
+
+    #     output_matrix = numpy.add(b_mat, c_mat, dtype=numpy.float32, casting='unsafe')
+    #     output_matrix = numpy.maximum(output_matrix, 
+    #                                   numpy.multiply(output_matrix, 0.2, dtype=numpy.float32, casting='unsafe'), 
+    #                                   dtype=numpy.float32, casting='unsafe')
+    #     FExp = fpops.FExp_fc(PyFamily())
+    #     exp = FExp()
+    #     use_fp = True
+    #     for idx, val in numpy.ndenumerate(output_matrix):
+    #         if val == 0.0:
+    #             continue
+    #         val = float2bfbin(val)
+    #         op = Data(int(val, 2))
+    #         result = exp(op)
+    #         output_matrix[idx] = bfbin2float("{:016b}".format(int(result)))
+    #     output_format = "CSF"
+    #     output_name = "X"
+    # elif 'mat_elemadd3.gv' in app_name:
+    #     b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+    #                        sparsity=0.8)
+
+    #     c_mat = get_tensor(input_name='C', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+    #                        sparsity=0.9)
+
+    #     d_mat = get_tensor(input_name='D', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['D'],
+    #                        sparsity=0.8)
+
+    #     output_matrix = numpy.add(d_mat, numpy.add(b_mat, c_mat,
+    #                                                dtype=numpy.uint16, casting='unsafe'), dtype=numpy.uint16, casting='unsafe')
+    #     output_format = "CSF"
+    #     output_name = "X"
+    # elif 'mat_elemmul.gv' in app_name:
+    #     b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+    #                        sparsity=0.8)
+    #     c_mat = get_tensor(input_name='C', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+    #                        sparsity=0.9)
+
+    #     output_matrix = numpy.multiply(b_mat, c_mat, dtype=numpy.uint16, casting='unsafe')
+    #     output_format = "CSF"
+    #     output_name = "X"
+    # elif 'mat_elemdiv.gv' in app_name:
+    #     b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+    #                        sparsity=0.8, use_fp=True)
+    #     c_mat = get_tensor(input_name='C', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+    #                        sparsity=0.9, use_fp=True)
+    #     div_mat = get_lut_tensor(dump=matrix_tmp_dir, suffix=suffix, clean=False, func='fp_div')
+
+    #     output_matrix = numpy.zeros_like(b_mat, dtype=numpy.float32)
+    #     FDiv = fpops.FDiv_fc(PyFamily())
+    #     div = FDiv()
+    #     for idx, _ in numpy.ndenumerate(output_matrix):            
+    #         if b_mat[idx] == 0 or c_mat[idx] == 0:
+    #             continue
+    #         b_val_bfbin = float2bfbin(b_mat[idx])
+    #         op_b = Data(int(b_val_bfbin, 2))
+    #         c_val_bfbin = float2bfbin(c_mat[idx])
+    #         op_c = Data(int(c_val_bfbin, 2))
+    #         result = div(op_b, op_c)
+    #         output_matrix[idx] = bfbin2float("{:016b}".format(int(result)))
+    #     output_format = "CSF"
+    #     output_name = "X"
+    #     use_fp = True
+    # elif 'mat_identity.gv' in app_name:
+    #     b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+    #                        sparsity=0.8)
+
+    #     output_matrix = b_mat
+    #     output_format = "CSF"
+    #     output_name = "X"
+    # elif 'mat_dn2sp.gv' in app_name:
+    #     b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+    #                        sparsity=0.8, format="UNC")
+        
+    #     input_dims['B'] = tuple(b_mat.shape)
+    #     output_matrix = b_mat
+    #     output_format = "CSF"
+    #     output_name = "X"
+    # elif 'mat_sp2dn.gv' in app_name:
+    #     b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+    #                        sparsity=1.0, format="UNC")
+    #     c_mat = get_tensor(input_name='C', shapes=[10, 12], give_tensor=False, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+    #                        sparsity=0.8)
+
+    #     input_dims['B'] = tuple(b_mat.shape)
+    #     output_matrix = c_mat
+    #     output_format = "CSF"
+    #     output_name = "X"
+    # elif 'mat_identity_dense.gv' in app_name:
+    #     b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='UNC', dump_dir=matrix_tmp_dir)
+    #     b_matrix.dump_outputs()
+    #     b_mat = b_matrix.get_matrix()
+
+    #     output_matrix = b_mat
+    #     output_format = "UNC"
+    #     output_name = "X"
+    # elif 'mat_mattransmul.gv' in app_name:
+    #     vec_ordering = ((1, (0, 's')),)
+    #     print(vec_ordering)
+    #     b_mat = get_tensor(input_name='b', shapes=[1], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['b'],
+    #                        sparsity=0)
+    #     C_mat = get_tensor(input_name='C', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+    #                        sparsity=0.8)
+    #     d_mat = get_tensor(input_name='d', shapes=[10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['d'],
+    #                        sparsity=0.9)
+    #     e_mat = get_tensor(input_name='e', shapes=[1], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['e'],
+    #                        sparsity=0)
+    #     f_mat = get_tensor(input_name='f', shapes=[10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['f'],
+    #                        sparsity=0.8)
+
+    #     output_matrix = numpy.add(numpy.multiply(e_mat, f_mat, dtype=numpy.uint16, casting='unsafe'),
+    #                               numpy.multiply(b_mat,
+    #                                              numpy.matmul(C_mat, d_mat,
+    #                                                           dtype=numpy.uint16,
+    #                                                           casting='unsafe'),
+    #                                              dtype=numpy.uint16,
+    #                                              casting='unsafe'),
+    #                               dtype=numpy.uint16, casting='unsafe')
+    #     output_format = "CSF"
+    #     output_name = "x"
+
+    # elif 'mat_mask_tri.gv' in app_name in app_name:
+    #     b_mat = get_tensor(input_name='B', shapes=[10, 8], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                             dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+    #                             sparsity=0.9)
+
+    #     c_mat = get_tensor(input_name='C', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                         dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+    #                         sparsity=0.9)
+
+    #     d_mat = get_tensor(input_name='D', shapes=[8, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                         dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['D'],
+    #                         sparsity=0.9)
+
+    #     output_matrix = numpy.zeros([1]) 
+    #     d_mat_trans = numpy.transpose(d_mat)
+    #     output_matrix[0] = numpy.sum(numpy.multiply(numpy.matmul(c_mat, d_mat_trans, dtype=numpy.uint16, casting='unsafe'), b_mat, dtype=numpy.uint16, casting='unsafe'))
+    #     output_matrix = output_matrix.astype(numpy.uint16)
+    #     output_format = "CSF"
+    #     output_name = "x"
+    # elif 'mat_vecmul_iter.gv' in app_name:
+    #     vec_ordering = ((1, (0, 's')),)
+    #     b_mat = get_tensor(input_name='B', shapes=[10, 8], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                             dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+    #                             sparsity=0.9)
+
+    #     c_mat = get_tensor(input_name='C', shapes=[8, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                         dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+    #                         sparsity=0.9)
+
+    #     d_mat = get_tensor(input_name='D', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                         dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['D'],
+    #                         sparsity=0.9)
+
+    #     e_mat = get_tensor(input_name='E', shapes=[12, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                         dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['E'],
+    #                         sparsity=0.9)
+    #     f_mat = get_tensor(input_name='f', shapes=[10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=vec_ordering,
+    #                        sparsity=0.9)
+
+    #     c_mat_trans = numpy.transpose(c_mat)
+    #     d_mat_trans = numpy.transpose(d_mat)
+    #     e_mat_trans = numpy.transpose(e_mat)
+    #     b_c_mat = numpy.matmul(b_mat, c_mat, dtype=numpy.uint16, casting='unsafe')
+    #     b_c_d_mat = numpy.matmul(b_c_mat, d_mat, dtype=numpy.uint16, casting='unsafe')
+    #     b_c_d_e_mat = numpy.matmul(b_c_d_mat, e_mat, dtype=numpy.uint16, casting='unsafe')
+    #     output_matrix = numpy.matmul(b_c_d_e_mat, f_mat, dtype=numpy.uint16, casting='unsafe')
+    #     output_matrix = output_matrix.astype(numpy.uint16)
+    #     output_format = "CSF"
+    #     output_name = "x"
+    # elif 'mat_residual.gv' in app_name:
+    #     vec_ordering = ((1, (0, 's')),)
+    #     b_mat = get_tensor(input_name='b', shapes=[10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['b'],
+    #                        sparsity=0.8)
+    #     C_mat = get_tensor(input_name='C', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+    #                        sparsity=0.9)
+    #     d_mat = get_tensor(input_name='d', shapes=[12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=vec_ordering,
+    #                        sparsity=0.8)
+
+    #     output_matrix = numpy.subtract(b_mat,
+    #                                    numpy.matmul(C_mat, d_mat, dtype=numpy.uint16, casting='unsafe'),
+    #                                    dtype=numpy.uint16, casting='unsafe')
+    #     output_format = "CSF"
+    #     output_name = "x"
+    #     # raise NotImplementedError
+    # elif 'mat_sddmm.gv' in app_name:
+    #     b_mat = get_tensor(input_name='B', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+    #                        sparsity=0.8)
+    #     c_mat = get_tensor(input_name='C', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['B'],
+    #                        sparsity=0.9, format='UNC')
+    #     d_mat = get_tensor(input_name='D', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['D'],
+    #                        sparsity=0.8, format='UNC')
+
+    #     d_mat_trans = numpy.transpose(d_mat)
+
+    #     # Have to include the input dimensions for mapping
+    #     input_dims['B'] = tuple(b_mat.shape)
+    #     input_dims['C'] = tuple(c_mat.shape)
+    #     input_dims['D'] = tuple(d_mat.shape)
+
+    #     tmp = numpy.matmul(c_mat, d_mat_trans, dtype=numpy.uint16, casting='unsafe')
+    #     output_matrix = numpy.multiply(b_mat, tmp, dtype=numpy.uint16, casting='unsafe')
+    #     output_format = "CSF"
+    #     output_name = "X"
+    #     # raise NotImplementedError
+    # elif 'mat_vecmul_ij.gv' in app_name:
+    #     vec_ordering = ((1, (0, 's')),)
+    #     b_mat = get_tensor(input_name='B', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+    #                        sparsity=0.7)
+    #     c_mat = get_tensor(input_name='c', shapes=[10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['c'],
+    #                        sparsity=0.7)
+
+    #     output_matrix = numpy.matmul(b_mat, c_mat, dtype=numpy.uint16, casting='unsafe')
+    #     output_format = "CSF"
+    #     output_name = "x"
+    # elif 'mat_vecmul_ji.gv' in app_name:
+    #     b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+    #                        sparsity=0.8)
+    #     c_mat = get_tensor(input_name='c', shapes=[10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+    #                        sparsity=0.9)
+
+    #     b_mat_trans = numpy.transpose(b_mat)
+    #     output_matrix = numpy.matmul(b_mat_trans, c_mat, dtype=numpy.uint16, casting='unsafe')
+    #     output_format = "CSF"
+    #     output_name = "x"
+    # elif 'matmul_ijk_crddrop.gv' in app_name:
+    #     b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                            dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+    #                            sparsity=0.7)
+    #     c_mat = get_tensor(input_name='C', shapes=[8, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+    #                            sparsity=0.7)
+    #     c_mat_trans = numpy.transpose(c_mat)
+
+    #     output_matrix = numpy.matmul(b_mat, c_mat_trans, dtype=numpy.uint16, casting='unsafe')
+    #     output_format = "CSF"
+    #     output_name = "X"
+    # elif 'matmul_ijk_crddrop_fp.gv' in app_name:
+    #     b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                             dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+    #                             sparsity=0.7, use_fp=True)
+    #     c_mat = get_tensor(input_name='C', shapes=[8, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                             dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+    #                             sparsity=0.7, use_fp=True)
+    #     c_mat_trans = numpy.transpose(c_mat)
+
+    #     output_matrix = numpy.zeros((b_mat.shape[0], c_mat_trans.shape[1]), dtype=numpy.float32)
+    #     if not give_tensor:
+    #         FPU = fpu.FPU_fc(PyFamily())
+    #         fpu_func = FPU()
+    #         for i in range(0, output_matrix.shape[0]):
+    #             for j in range(0, output_matrix.shape[1]):
+    #                 partial_sum = float2bfbin(0.0)
+    #                 partial_sum = Data(int(partial_sum, 2))
+    #                 for k in range(0, b_mat.shape[1]):
+    #                     b_val = float2bfbin(b_mat[i][k])
+    #                     b_val = Data(int(b_val, 2))
+    #                     c_val = float2bfbin(c_mat_trans[k][j])
+    #                     c_val = Data(int(c_val, 2))
+    #                     partial_prod, _, _ = fpu_func(fpu.FPU_t.FP_mul, b_val, c_val)
+    #                     partial_sum, _, _ = fpu_func(fpu.FPU_t.FP_add, partial_sum, partial_prod)
+    #                 output_matrix[i][j] = bfbin2float("{:016b}".format(int(partial_sum)))
+    #     else:
+    #         with open(f"{matrix_tmp_dir}/output_gold.h", "r") as f:
+    #             for i in range(output_matrix.shape[0]):
+    #                 for j in range(output_matrix.shape[1]):
+    #                     output_matrix[i][j] = float(f.readline().strip())
+
+    #     output_format = "CSF"
+    #     output_name = "X"
+    #     use_fp = True
+    # elif 'mat_mask_tri.gv' in app_name or 'mat_mask_tri_fiberwrite.gv' in app_name:
+    #     b_mat = get_tensor(input_name='B', shapes=[20, 20], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                             dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+    #                             sparsity=0.2)
+
+    #     c_mat = get_tensor(input_name='C', shapes=[20, 20], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                         dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+    #                         sparsity=0.2)
+
+    #     d_mat = get_tensor(input_name='D', shapes=[20, 20], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                         dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['D'],
+    #                         sparsity=0.2)
+
+    #     output_matrix = numpy.zeros([1]) 
+    #     d_mat_trans = numpy.transpose(d_mat)
+    #     output_matrix[0] = numpy.sum(numpy.multiply(numpy.matmul(c_mat, d_mat_trans, dtype=numpy.uint16, casting='unsafe'), b_mat, dtype=numpy.uint16, casting='unsafe'))
+    #     output_matrix = output_matrix.astype(numpy.uint16)
+    #     output_format = "CSF"
+    #     output_name = "x"
+    # elif 'mat_vecmul_iter.gv' in app_name:
+    #     vec_ordering = ((1, (0, 's')),)
+    #     b_mat = get_tensor(input_name='B', shapes=[5, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                             dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+    #                             sparsity=0.2)
+    #     c_mat = get_tensor(input_name='C', shapes=[10, 7], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                         dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+    #                         sparsity=0.2)
+    #     d_mat = get_tensor(input_name='D', shapes=[7, 3], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                         dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['D'],
+    #                         sparsity=0.2)
+    #     e_mat = get_tensor(input_name='E', shapes=[3, 5], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                         dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['E'],
+    #                         sparsity=0.2)
+    #     f_mat = get_tensor(input_name='f', shapes=[5], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=vec_ordering,
+    #                        sparsity=0.2)
+
+    #     # First transpose c_mat
+    #     c_mat_trans = numpy.transpose(c_mat)
+    #     d_mat_trans = numpy.transpose(d_mat)
+    #     e_mat_trans = numpy.transpose(e_mat)
+    #     b_c_mat = numpy.matmul(b_mat, c_mat, dtype=numpy.uint16, casting='unsafe')
+    #     b_c_d_mat = numpy.matmul(b_c_mat, d_mat, dtype=numpy.uint16, casting='unsafe')
+    #     b_c_d_e_mat = numpy.matmul(b_c_d_mat, e_mat, dtype=numpy.uint16, casting='unsafe')
+    #     output_matrix = numpy.matmul(b_c_d_e_mat, f_mat, dtype=numpy.uint16, casting='unsafe')
+    #     output_matrix = output_matrix.astype(numpy.uint16)
+    #     output_format = "CSF"
+    #     output_name = "x"
+
+    # elif "spmm_ijk_crddrop_fp.gv" in app_name:
+    #     # matrix b is completely dense
+    #     b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+    #                        sparsity=0.0, format='UNC', use_fp=True)
+    #     c_mat = get_tensor(input_name='C', shapes=[13, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+    #                        sparsity=0.8, use_fp=True)
+    #     input_dims['B'] = tuple(b_mat.shape)
+    #     input_dims['C'] = tuple(c_mat.shape)
+    #     # First transpose c_mat
+    #     c_mat_trans = numpy.transpose(c_mat)
+        
+    #     output_matrix = numpy.zeros((b_mat.shape[0], c_mat_trans.shape[1]), dtype=numpy.float32)
+    #     FPU = fpu.FPU_fc(PyFamily())
+    #     fpu_func = FPU()
+    #     for i in range(0, output_matrix.shape[0]):
+    #         for j in range(0, output_matrix.shape[1]):
+    #             partial_sum = float2bfbin(0.0)
+    #             partial_sum = Data(int(partial_sum, 2))
+    #             for k in range(0, b_mat.shape[1]):
+    #                 b_val = float2bfbin(b_mat[i][k])
+    #                 b_val = Data(int(b_val, 2))
+    #                 c_val = float2bfbin(c_mat_trans[k][j])
+    #                 c_val = Data(int(c_val, 2))
+    #                 partial_prod, _, _ = fpu_func(fpu.FPU_t.FP_mul, b_val, c_val)
+    #                 partial_sum, _, _ = fpu_func(fpu.FPU_t.FP_add, partial_sum, partial_prod)
+    #             output_matrix[i][j] = bfbin2float("{:016b}".format(int(partial_sum)))
+
+    #     output_format = "CSF"
+    #     output_name = "X"
+    #     use_fp = True
+
+    # elif "spmm_ijk_crddrop.gv" in app_name:
+    #     # matrix b is completely dense
+    #     b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                         dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+    #                         sparsity=0.0, format='UNC')
+    #     c_mat = get_tensor(input_name='C', shapes=[13, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                         dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+    #                         sparsity=0.8)
+    #     input_dims['B'] = tuple(b_mat.shape)
+    #     input_dims['C'] = tuple(c_mat.shape)
+    #     # First transpose c_mat
+    #     c_mat_trans = numpy.transpose(c_mat)
+    #     output_matrix = numpy.matmul(b_mat, c_mat_trans, dtype=numpy.uint16, casting='unsafe')
+    #     output_format = "CSF"
+    #     output_name = "X"
  
-    elif "spmm_ijk_crddrop" in app_name and "relu" in app_name:
-        # matrix b is completely dense
-        b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                            dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                            sparsity=0.0, format='UNC')
-        c_mat = get_tensor(input_name='C', shapes=[13, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
-                            sparsity=0.8)
-        input_dims['B'] = tuple(b_mat.shape)
-        input_dims['C'] = tuple(c_mat.shape)
-        # First transpose c_mat
-        c_mat_trans = numpy.transpose(c_mat)
-        output_matrix = numpy.maximum(0, (numpy.matmul(b_mat, c_mat_trans, dtype=numpy.int16, casting='unsafe')))
-        output_format = "CSF"
-        output_name = "X"
-    elif "spmv.gv" in app_name:
-        b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                           sparsity=0.5)
-        c_mat = get_tensor(input_name='c', shapes=[12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['c'],
-                           sparsity=0.0, format='UNC')
-        # First transpose c_mat
-        input_dims['c'] = tuple(c_mat.shape)
-        output_matrix = numpy.matmul(b_mat, c_mat, dtype=numpy.uint16, casting='unsafe')
-        output_format = "CSF"
-        output_name = "x"
-    elif 'spmv' in app_name and "relu" in app_name:
-        b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                           sparsity=0.5)
-        c_mat = get_tensor(input_name='c', shapes=[12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['c'],
-                           sparsity=0.0, format='UNC')
-        input_dims['c'] = tuple(c_mat.shape)
-        output_matrix = numpy.maximum(0,(numpy.matmul(b_mat, c_mat, dtype=numpy.int16, casting='unsafe')))
-        output_format = "CSF"
-        output_name = "x"
-    elif 'matmul_ijk.gv' in app_name:
-        b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                            dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                            sparsity=0.7)
-        # for seed: gets a C has ss01 then transposes it to make it a valid ss10
-        # for suitesparse: reads in C (ss10) transposed and then we transpose again to match the files we got in python to get gold
-        c_mat = get_tensor(input_name='C', shapes=[8, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
-                            sparsity=0.7)
-        c_mat_trans = numpy.transpose(c_mat)
+    # elif "spmm_ijk_crddrop" in app_name and "relu" in app_name:
+    #     # matrix b is completely dense
+    #     b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                         dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+    #                         sparsity=0.0, format='UNC')
+    #     c_mat = get_tensor(input_name='C', shapes=[13, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                         dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+    #                         sparsity=0.8)
+    #     input_dims['B'] = tuple(b_mat.shape)
+    #     input_dims['C'] = tuple(c_mat.shape)
+    #     # First transpose c_mat
+    #     c_mat_trans = numpy.transpose(c_mat)
+    #     output_matrix = numpy.maximum(0, (numpy.matmul(b_mat, c_mat_trans, dtype=numpy.int16, casting='unsafe')))
+    #     output_format = "CSF"
+    #     output_name = "X"
+    # elif "spmv.gv" in app_name:
+    #     b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+    #                        sparsity=0.5)
+    #     c_mat = get_tensor(input_name='c', shapes=[12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['c'],
+    #                        sparsity=0.0, format='UNC')
+    #     # First transpose c_mat
+    #     input_dims['c'] = tuple(c_mat.shape)
+    #     output_matrix = numpy.matmul(b_mat, c_mat, dtype=numpy.uint16, casting='unsafe')
+    #     output_format = "CSF"
+    #     output_name = "x"
+    # elif 'spmv' in app_name and "relu" in app_name:
+    #     b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+    #                        sparsity=0.5)
+    #     c_mat = get_tensor(input_name='c', shapes=[12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['c'],
+    #                        sparsity=0.0, format='UNC')
+    #     input_dims['c'] = tuple(c_mat.shape)
+    #     output_matrix = numpy.maximum(0,(numpy.matmul(b_mat, c_mat, dtype=numpy.int16, casting='unsafe')))
+    #     output_format = "CSF"
+    #     output_name = "x"
+    # elif 'matmul_ijk.gv' in app_name:
+    #     b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                         dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+    #                         sparsity=0.7)
+    #     # for seed: gets a C has ss01 then transposes it to make it a valid ss10
+    #     # for suitesparse: reads in C (ss10) transposed and then we transpose again to match the files we got in python to get gold
+    #     c_mat = get_tensor(input_name='C', shapes=[8, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                         dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+    #                         sparsity=0.7)
+    #     c_mat_trans = numpy.transpose(c_mat)
 
-        output_matrix = numpy.matmul(b_mat, c_mat_trans, dtype=numpy.uint16, casting='unsafe')
-        output_format = "CSF"
-        output_name = "X"
-    # MO: new ikj test 
-    elif 'matmul_ikj.gv' in app_name:
-        b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                               dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                               sparsity=0.8)
+    #     output_matrix = numpy.matmul(b_mat, c_mat_trans, dtype=numpy.uint16, casting='unsafe')
+    #     output_format = "CSF"
+    #     output_name = "X"
+    # # MO: new ikj test 
+    # elif 'matmul_ikj.gv' in app_name:
+    #     b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                            dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+    #                            sparsity=0.8)
 
-        c_mat = get_tensor(input_name='C', shapes=[12, 8], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                               dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
-                               sparsity=0.9)
+    #     c_mat = get_tensor(input_name='C', shapes=[12, 8], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+    #                            sparsity=0.9)
 
-        output_matrix = numpy.matmul(b_mat, c_mat, dtype=numpy.uint16, casting='unsafe')
-        output_format = "CSF"
-        output_name = "X"
-    elif "matmul" in app_name and "relu" in app_name:
-        b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                               dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                               sparsity=0.8)
+    #     output_matrix = numpy.matmul(b_mat, c_mat, dtype=numpy.uint16, casting='unsafe')
+    #     output_format = "CSF"
+    #     output_name = "X"
+    # elif "matmul" in app_name and "relu" in app_name:
+    #     b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                            dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+    #                            sparsity=0.8)
 
-        c_mat = get_tensor(input_name='C', shapes=[8, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                               dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
-                               sparsity=0.9)
+    #     c_mat = get_tensor(input_name='C', shapes=[8, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+    #                            sparsity=0.9)
 
-        # First transpose c_mat
-        c_mat_trans = numpy.transpose(c_mat)
-        output_matrix = numpy.maximum(0, (numpy.matmul(b_mat, c_mat_trans, dtype=numpy.int16, casting='unsafe')))
-        output_format = "CSF"
-        output_name = "X"
-    elif 'matmul_jik.gv' in app_name:
-        b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                           sparsity=0.8)
-        c_mat = get_tensor(input_name='C', shapes=[8, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
-                           sparsity=0.9)
+    #     # First transpose c_mat
+    #     c_mat_trans = numpy.transpose(c_mat)
+    #     output_matrix = numpy.maximum(0, (numpy.matmul(b_mat, c_mat_trans, dtype=numpy.int16, casting='unsafe')))
+    #     output_format = "CSF"
+    #     output_name = "X"
+    # elif 'matmul_jik.gv' in app_name:
+    #     b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+    #                        sparsity=0.8)
+    #     c_mat = get_tensor(input_name='C', shapes=[8, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+    #                        sparsity=0.9)
 
-        c_mat_trans = numpy.transpose(c_mat)
-        output_matrix = numpy.matmul(b_mat, c_mat_trans, dtype=numpy.uint16, casting='unsafe')
-        output_matrix = numpy.transpose(output_matrix)
-        output_format = "CSF"
-        output_name = "X"
-    elif 'masked_broadcast.gv' in app_name and 'trans' in app_name:
-        B_mat = get_tensor(input_name='B', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump= matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                           sparsity=0.5)
-        c_mat = get_tensor(input_name='c', shapes=[10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['c'], 
-                           sparsity=0.0)
-        assert c_mat.shape[0] == B_mat.shape[0]
+    #     c_mat_trans = numpy.transpose(c_mat)
+    #     output_matrix = numpy.matmul(b_mat, c_mat_trans, dtype=numpy.uint16, casting='unsafe')
+    #     output_matrix = numpy.transpose(output_matrix)
+    #     output_format = "CSF"
+    #     output_name = "X"
+    # elif 'masked_broadcast.gv' in app_name and 'trans' in app_name:
+    #     B_mat = get_tensor(input_name='B', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump= matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+    #                        sparsity=0.5)
+    #     c_mat = get_tensor(input_name='c', shapes=[10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['c'], 
+    #                        sparsity=0.0)
+    #     assert c_mat.shape[0] == B_mat.shape[0]
 
-        output_matrix = numpy.zeros((10, 10), dtype=numpy.uint16)
-        for i in range(0, output_matrix.shape[0]):
-            for j in range(0, output_matrix.shape[1]):
-                if B_mat[i][j] != 0:   
-                    output_matrix[i][j] = c_mat[i]
-        output_format = "CSF"
-        output_name = "X"
-    elif 'masked_broadcast.gv' in app_name:
-        B_mat = get_tensor(input_name='B', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump= matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                           sparsity=0.5)
-        c_mat = get_tensor(input_name='c', shapes=[10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['c'], 
-                           sparsity=0.0)
-        assert c_mat.shape[0] == B_mat.shape[0]
+    #     output_matrix = numpy.zeros((10, 10), dtype=numpy.uint16)
+    #     for i in range(0, output_matrix.shape[0]):
+    #         for j in range(0, output_matrix.shape[1]):
+    #             if B_mat[i][j] != 0:   
+    #                 output_matrix[i][j] = c_mat[i]
+    #     output_format = "CSF"
+    #     output_name = "X"
+    # elif 'masked_broadcast.gv' in app_name:
+    #     B_mat = get_tensor(input_name='B', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump= matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+    #                        sparsity=0.5)
+    #     c_mat = get_tensor(input_name='c', shapes=[10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['c'], 
+    #                        sparsity=0.0)
+    #     assert c_mat.shape[0] == B_mat.shape[0]
 
-        output_matrix = numpy.zeros((10, 10), dtype=numpy.uint16)
-        for i in range(0, output_matrix.shape[0]):
-            for j in range(0, output_matrix.shape[1]):
-                if B_mat[i][j] != 0:   
-                    output_matrix[i][j] = c_mat[j]
-        output_format = "CSF"
-        output_name = "X"
-    elif 'matmul_jki.gv' in app_name:
-        raise NotImplementedError
-        b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
-        c_matrix = MatrixGenerator(name="C", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
-        b_matrix.dump_outputs()
-        c_matrix.dump_outputs()
-        b_mat = b_matrix.get_matrix()
-        c_mat = c_matrix.get_matrix()
-        # First transpose c_mat
-        c_mat_trans = numpy.transpose(c_mat)
-        output_matrix = numpy.matmul(b_mat, c_mat_trans)
-        output_name = "X"
-    elif 'matmul_kij.gv' in app_name:
-        raise NotImplementedError
-        b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
-        c_matrix = MatrixGenerator(name="C", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
-        b_matrix.dump_outputs()
-        c_matrix.dump_outputs()
-        b_mat = b_matrix.get_matrix()
-        c_mat = c_matrix.get_matrix()
-        # First transpose c_mat
-        c_mat_trans = numpy.transpose(c_mat)
-        output_matrix = numpy.matmul(b_mat, c_mat_trans)
-        output_name = "X"
-    elif 'matmul_kji.gv' in app_name:
-        raise NotImplementedError
-        b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
-        c_matrix = MatrixGenerator(name="C", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
-        b_matrix.dump_outputs()
-        c_matrix.dump_outputs()
-        b_mat = b_matrix.get_matrix()
-        c_mat = c_matrix.get_matrix()
-        # First transpose c_mat
-        c_mat_trans = numpy.transpose(c_mat)
-        output_matrix = numpy.matmul(b_mat, c_mat_trans)
-        output_name = "X"
-    elif 'tensor3_elemadd.gv' in app_name:
-        b_mat = get_tensor(input_name='B', shapes=[10, 12, 8], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                           sparsity=0.8)
-        c_mat = get_tensor(input_name='C', shapes=[10, 12, 8], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
-                           sparsity=0.9)
+    #     output_matrix = numpy.zeros((10, 10), dtype=numpy.uint16)
+    #     for i in range(0, output_matrix.shape[0]):
+    #         for j in range(0, output_matrix.shape[1]):
+    #             if B_mat[i][j] != 0:   
+    #                 output_matrix[i][j] = c_mat[j]
+    #     output_format = "CSF"
+    #     output_name = "X"
+    # elif 'matmul_jki.gv' in app_name:
+    #     raise NotImplementedError
+    #     b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+    #     c_matrix = MatrixGenerator(name="C", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+    #     b_matrix.dump_outputs()
+    #     c_matrix.dump_outputs()
+    #     b_mat = b_matrix.get_matrix()
+    #     c_mat = c_matrix.get_matrix()
+    #     # First transpose c_mat
+    #     c_mat_trans = numpy.transpose(c_mat)
+    #     output_matrix = numpy.matmul(b_mat, c_mat_trans)
+    #     output_name = "X"
+    # elif 'matmul_kij.gv' in app_name:
+    #     raise NotImplementedError
+    #     b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+    #     c_matrix = MatrixGenerator(name="C", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+    #     b_matrix.dump_outputs()
+    #     c_matrix.dump_outputs()
+    #     b_mat = b_matrix.get_matrix()
+    #     c_mat = c_matrix.get_matrix()
+    #     # First transpose c_mat
+    #     c_mat_trans = numpy.transpose(c_mat)
+    #     output_matrix = numpy.matmul(b_mat, c_mat_trans)
+    #     output_name = "X"
+    # elif 'matmul_kji.gv' in app_name:
+    #     raise NotImplementedError
+    #     b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+    #     c_matrix = MatrixGenerator(name="C", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+    #     b_matrix.dump_outputs()
+    #     c_matrix.dump_outputs()
+    #     b_mat = b_matrix.get_matrix()
+    #     c_mat = c_matrix.get_matrix()
+    #     # First transpose c_mat
+    #     c_mat_trans = numpy.transpose(c_mat)
+    #     output_matrix = numpy.matmul(b_mat, c_mat_trans)
+    #     output_name = "X"
+    # elif 'tensor3_elemadd.gv' in app_name:
+    #     b_mat = get_tensor(input_name='B', shapes=[10, 12, 8], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+    #                        sparsity=0.8)
+    #     c_mat = get_tensor(input_name='C', shapes=[10, 12, 8], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+    #                        sparsity=0.9)
 
-        output_matrix = numpy.add(c_mat, b_mat, dtype=numpy.uint16, casting='unsafe')
-        output_format = "CSF"
-        output_name = "X"
-    elif 'tensor3_elemmul.gv' in app_name:
-        b_mat = get_tensor(input_name='B', shapes=[10, 12, 8], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                           sparsity=0.8)
-        c_mat = get_tensor(input_name='C', shapes=[10, 12, 8], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
-                           sparsity=0.9)
+    #     output_matrix = numpy.add(c_mat, b_mat, dtype=numpy.uint16, casting='unsafe')
+    #     output_format = "CSF"
+    #     output_name = "X"
+    # elif 'tensor3_elemmul.gv' in app_name:
+    #     b_mat = get_tensor(input_name='B', shapes=[10, 12, 8], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+    #                        sparsity=0.8)
+    #     c_mat = get_tensor(input_name='C', shapes=[10, 12, 8], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+    #                        sparsity=0.9)
 
-        output_matrix = numpy.multiply(c_mat, b_mat, dtype=numpy.uint16, casting='unsafe')
-        output_format = "CSF"
-        output_name = "X"
-    elif 'tensor3_identity.gv' in app_name:
-        b_mat = get_tensor(input_name='B', shapes=[10, 10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                           sparsity=0.8)
+    #     output_matrix = numpy.multiply(c_mat, b_mat, dtype=numpy.uint16, casting='unsafe')
+    #     output_format = "CSF"
+    #     output_name = "X"
+    # elif 'tensor3_identity.gv' in app_name:
+    #     b_mat = get_tensor(input_name='B', shapes=[10, 10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+    #                        sparsity=0.8)
 
-        output_matrix = b_mat
-        output_format = "CSF"
-        output_name = "X"
-    elif 'tensor3_innerprod.gv' in app_name:
-        b_mat = get_tensor(input_name='B', shapes=[10, 10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                           sparsity=0.8)
+    #     output_matrix = b_mat
+    #     output_format = "CSF"
+    #     output_name = "X"
+    # elif 'tensor3_innerprod.gv' in app_name:
+    #     b_mat = get_tensor(input_name='B', shapes=[10, 10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+    #                        sparsity=0.8)
 
-        c_mat = get_tensor(input_name='C', shapes=[10, 10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
-                           sparsity=0.9)
+    #     c_mat = get_tensor(input_name='C', shapes=[10, 10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+    #                        sparsity=0.9)
 
-        output_matrix = numpy.zeros([1])
-        output_matrix[0] = numpy.sum(numpy.multiply(c_mat, b_mat, dtype=numpy.uint16, casting='unsafe'), dtype=numpy.uint16)
-        output_matrix = output_matrix.astype(numpy.uint16)
-        output_format = "CSF"
-        output_name = "x"
-    elif 'tensor3_mttkrp.gv' in app_name:
-        b_mat = get_tensor(input_name='B', shapes=[10, 10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                           sparsity=0.8)
+    #     output_matrix = numpy.zeros([1])
+    #     output_matrix[0] = numpy.sum(numpy.multiply(c_mat, b_mat, dtype=numpy.uint16, casting='unsafe'), dtype=numpy.uint16)
+    #     output_matrix = output_matrix.astype(numpy.uint16)
+    #     output_format = "CSF"
+    #     output_name = "x"
+    # elif 'tensor3_mttkrp.gv' in app_name:
+    #     b_mat = get_tensor(input_name='B', shapes=[10, 10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+    #                        sparsity=0.8)
 
-        c_mat = get_tensor(input_name='C', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
-                           sparsity=0.9)
+    #     c_mat = get_tensor(input_name='C', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+    #                        sparsity=0.9)
 
-        d_mat = get_tensor(input_name='D', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['D'],
-                           sparsity=0.8)
+    #     d_mat = get_tensor(input_name='D', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['D'],
+    #                        sparsity=0.8)
 
-        # "X(i,j)=B(i,k,l)*C(j,k)*D(j,l) -f=X:ss -f=B:sss -f=C:ss -f=D:ss" 
-        output_matrix = numpy.einsum("ikl,jk,jl->ij", b_mat, c_mat, d_mat, dtype=numpy.uint16, casting='unsafe')
+    #     # "X(i,j)=B(i,k,l)*C(j,k)*D(j,l) -f=X:ss -f=B:sss -f=C:ss -f=D:ss" 
+    #     output_matrix = numpy.einsum("ikl,jk,jl->ij", b_mat, c_mat, d_mat, dtype=numpy.uint16, casting='unsafe')
 
-        output_format = "CSF"
-        output_name = "X"
-    elif 'tensor3_mttkrp_unfused1.gv' in app_name:
-        c_mat = get_tensor(input_name='C', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
-                            sparsity=0.9)
+    #     output_format = "CSF"
+    #     output_name = "X"
+    # elif 'tensor3_mttkrp_unfused1.gv' in app_name:
+    #     c_mat = get_tensor(input_name='C', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                         dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+    #                         sparsity=0.9)
 
-        d_mat = get_tensor(input_name='D', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['D'],
-                            sparsity=0.8)
+    #     d_mat = get_tensor(input_name='D', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                         dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['D'],
+    #                         sparsity=0.8)
 
-        c_mat_trans = numpy.transpose(c_mat)
-        d_mat_trans = numpy.transpose(d_mat)
-        # "T(j,k,l)=C(j,k)*D(j,l) -f=T:sss -f=C:ss -f=D:ss" 
-        output_matrix = numpy.einsum("jk,jl->jkl", c_mat, d_mat, dtype=numpy.uint16, casting='unsafe')
-        output_format = "CSF"
-        output_name = "X"
-    elif 'tensor3_mttkrp_unfused2.gv' in app_name:
-        b_mat = get_tensor(input_name='B', shapes=[10, 10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['B'],
-                            sparsity=0.9)
+    #     c_mat_trans = numpy.transpose(c_mat)
+    #     d_mat_trans = numpy.transpose(d_mat)
+    #     # "T(j,k,l)=C(j,k)*D(j,l) -f=T:sss -f=C:ss -f=D:ss" 
+    #     output_matrix = numpy.einsum("jk,jl->jkl", c_mat, d_mat, dtype=numpy.uint16, casting='unsafe')
+    #     output_format = "CSF"
+    #     output_name = "X"
+    # elif 'tensor3_mttkrp_unfused2.gv' in app_name:
+    #     b_mat = get_tensor(input_name='B', shapes=[10, 10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                         dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['B'],
+    #                         sparsity=0.9)
 
-        t_mat = get_tensor(input_name='T', shapes=[10, 10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['T'],
-                            sparsity=0.8)
+    #     t_mat = get_tensor(input_name='T', shapes=[10, 10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                         dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['T'],
+    #                         sparsity=0.8)
 
-        # "X(i,j)=B(i,k,l)*T(j,k,l) -f=X:ss -f=B:sss -f=T:sss" 
-        output_matrix = numpy.einsum("ikl,jkl->ij", b_mat, t_mat, dtype=numpy.uint16, casting='unsafe')
+    #     # "X(i,j)=B(i,k,l)*T(j,k,l) -f=X:ss -f=B:sss -f=T:sss" 
+    #     output_matrix = numpy.einsum("ikl,jkl->ij", b_mat, t_mat, dtype=numpy.uint16, casting='unsafe')
 
-        output_format = "CSF"
-        output_name = "X"
-    elif 'tensor3_ttm.gv' in app_name:
-        b_mat = get_tensor(input_name='B', shapes=[10, 10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                           sparsity=0.8)
+    #     output_format = "CSF"
+    #     output_name = "X"
+    # elif 'tensor3_ttm.gv' in app_name:
+    #     b_mat = get_tensor(input_name='B', shapes=[10, 10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+    #                        sparsity=0.8)
 
-        c_mat = get_tensor(input_name='C', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
-                           sparsity=0.9)
+    #     c_mat = get_tensor(input_name='C', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+    #                        sparsity=0.9)
 
-        c_mat_trans = numpy.transpose(c_mat)
-        output_matrix = numpy.matmul(b_mat, c_mat_trans, dtype=numpy.uint16, casting='unsafe')
-        output_format = "CSF"
-        output_name = "X"
-    elif 'tensor3_ttv.gv' in app_name:
-        b_mat = get_tensor(input_name='B', shapes=[10, 10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                           sparsity=0.8)
+    #     c_mat_trans = numpy.transpose(c_mat)
+    #     output_matrix = numpy.matmul(b_mat, c_mat_trans, dtype=numpy.uint16, casting='unsafe')
+    #     output_format = "CSF"
+    #     output_name = "X"
+    # elif 'tensor3_ttv.gv' in app_name:
+    #     b_mat = get_tensor(input_name='B', shapes=[10, 10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+    #                        sparsity=0.8)
 
-        c_mat = get_tensor(input_name='c', shapes=[10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['c'],
-                           sparsity=0.9)
+    #     c_mat = get_tensor(input_name='c', shapes=[10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['c'],
+    #                        sparsity=0.9)
 
-        output_matrix = numpy.matmul(b_mat, c_mat, dtype=numpy.uint16, casting='unsafe')
-        output_format = "CSF"
-        output_name = "X"
-    elif 'vec_elemadd.gv' in app_name:
-        b_mat = get_tensor(input_name='b', shapes=[10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['b'],
-                           sparsity=0.8)
+    #     output_matrix = numpy.matmul(b_mat, c_mat, dtype=numpy.uint16, casting='unsafe')
+    #     output_format = "CSF"
+    #     output_name = "X"
+    # elif 'vec_elemadd.gv' in app_name:
+    #     b_mat = get_tensor(input_name='b', shapes=[10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['b'],
+    #                        sparsity=0.8)
 
-        c_mat = get_tensor(input_name='c', shapes=[10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['c'],
-                           sparsity=0.9)
+    #     c_mat = get_tensor(input_name='c', shapes=[10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['c'],
+    #                        sparsity=0.9)
 
-        output_matrix = numpy.add(c_mat, b_mat, dtype=numpy.uint16, casting='unsafe')
-        output_format = "CSF"
-        output_name = "x"
-    elif 'vec_elemmul.gv' in app_name:
-        b_mat = get_tensor(input_name='b', shapes=[10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['b'],
-                           sparsity=0.8)
+    #     output_matrix = numpy.add(c_mat, b_mat, dtype=numpy.uint16, casting='unsafe')
+    #     output_format = "CSF"
+    #     output_name = "x"
+    # elif 'vec_elemmul.gv' in app_name:
+    #     b_mat = get_tensor(input_name='b', shapes=[10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['b'],
+    #                        sparsity=0.8)
 
-        c_mat = get_tensor(input_name='c', shapes=[10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['c'],
-                           sparsity=0.9)
+    #     c_mat = get_tensor(input_name='c', shapes=[10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['c'],
+    #                        sparsity=0.9)
 
-        # First transpose c_mat
-        output_matrix = numpy.multiply(c_mat, b_mat, dtype=numpy.uint16, casting='unsafe')
-        output_format = "CSF"
-        output_name = "x"
-    elif 'vec_identity.gv' in app_name:
-        b_mat = get_tensor(input_name='b', shapes=[10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['b'],
-                           sparsity=0.8)
-        output_matrix = b_mat
-        output_format = "CSF"
-        output_name = "x"
-    elif 'vec_scalar_mul.gv' in app_name:
-        b_mat = get_tensor(input_name='b', shapes=[1], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['b'],
-                           sparsity=0.8)
+    #     # First transpose c_mat
+    #     output_matrix = numpy.multiply(c_mat, b_mat, dtype=numpy.uint16, casting='unsafe')
+    #     output_format = "CSF"
+    #     output_name = "x"
+    # elif 'vec_identity.gv' in app_name:
+    #     b_mat = get_tensor(input_name='b', shapes=[10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['b'],
+    #                        sparsity=0.8)
+    #     output_matrix = b_mat
+    #     output_format = "CSF"
+    #     output_name = "x"
+    # elif 'vec_scalar_mul.gv' in app_name:
+    #     b_mat = get_tensor(input_name='b', shapes=[1], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['b'],
+    #                        sparsity=0.8)
 
-        c_mat = get_tensor(input_name='c', shapes=[10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['c'],
-                           sparsity=0.9)
+    #     c_mat = get_tensor(input_name='c', shapes=[10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+    #                        dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['c'],
+    #                        sparsity=0.9)
 
-        output_matrix = numpy.multiply(c_mat, b_mat, dtype=numpy.uint16, casting='unsafe')
-        output_format = "CSF"
-        output_name = "x"
-    elif 'mat_identity_crdhold' in app_name:
-        b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
-        b_matrix.dump_outputs()
-        b_mat = b_matrix.get_matrix()
-        output_matrix = b_mat
-        output_format = "COO"
-    elif 'vec_spacc_simple.gv' in app_name:
-        b_matrix = MatrixGenerator(name="B", shape=[16, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
-        b_matrix.dump_outputs()
-        b_mat = b_matrix.get_matrix()
-        print(b_mat)
-        output_matrix = numpy.add.reduce(b_mat, dtype=numpy.uint16)
-        print(output_matrix)
-        # exit()
-        output_format = "CSF"
-        output_name = "x"
-    elif 'tensor4_multiply2.gv' in app_name:
-        # X(i,k,j,m)=B(i,j,k,l)*C(i,l,j,m)
-        # X=ssss0123,B=ssss0213,C=ssss0231
+    #     output_matrix = numpy.multiply(c_mat, b_mat, dtype=numpy.uint16, casting='unsafe')
+    #     output_format = "CSF"
+    #     output_name = "x"
+    # elif 'mat_identity_crdhold' in app_name:
+    #     b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+    #     b_matrix.dump_outputs()
+    #     b_mat = b_matrix.get_matrix()
+    #     output_matrix = b_mat
+    #     output_format = "COO"
+    # elif 'vec_spacc_simple.gv' in app_name:
+    #     b_matrix = MatrixGenerator(name="B", shape=[16, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+    #     b_matrix.dump_outputs()
+    #     b_mat = b_matrix.get_matrix()
+    #     print(b_mat)
+    #     output_matrix = numpy.add.reduce(b_mat, dtype=numpy.uint16)
+    #     print(output_matrix)
+    #     # exit()
+    #     output_format = "CSF"
+    #     output_name = "x"
+    # elif 'tensor4_multiply2.gv' in app_name:
+    #     # X(i,k,j,m)=B(i,j,k,l)*C(i,l,j,m)
+    #     # X=ssss0123,B=ssss0213,C=ssss0231
 
-        # generate B(j,k,j,l) and C(i,j,m,l)
-        b_matrix = MatrixGenerator(name="B", shape=[10, 12, 14, 16],
-                                   sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
-        c_matrix = MatrixGenerator(name="C", shape=[10, 14, 8, 16],
-                                   sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
-        b_matrix.dump_outputs()
-        c_matrix.dump_outputs()
+    #     # generate B(j,k,j,l) and C(i,j,m,l)
+    #     b_matrix = MatrixGenerator(name="B", shape=[10, 12, 14, 16],
+    #                                sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+    #     c_matrix = MatrixGenerator(name="C", shape=[10, 14, 8, 16],
+    #                                sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+    #     b_matrix.dump_outputs()
+    #     c_matrix.dump_outputs()
 
-        # permute matrix for gold generation
-        b_mat = b_matrix.get_matrix()
-        c_mat = c_matrix.get_matrix()
-        b_ref = torch.from_numpy(b_mat)  # [i,k,j,l]
-        c_ref = torch.from_numpy(c_mat)  # [i,j,m,l]
-        b_ref = torch.permute(b_ref, (0, 2, 1, 3))  # [i,j,k,l]
-        c_ref = torch.permute(c_ref, (0, 3, 1, 2))  # [i,l,j,m]
+    #     # permute matrix for gold generation
+    #     b_mat = b_matrix.get_matrix()
+    #     c_mat = c_matrix.get_matrix()
+    #     b_ref = torch.from_numpy(b_mat)  # [i,k,j,l]
+    #     c_ref = torch.from_numpy(c_mat)  # [i,j,m,l]
+    #     b_ref = torch.permute(b_ref, (0, 2, 1, 3))  # [i,j,k,l]
+    #     c_ref = torch.permute(c_ref, (0, 3, 1, 2))  # [i,l,j,m]
 
-        print("--------------B_ref after permute--------------")
-        print(b_ref.shape)
-        print(b_ref)
-        print("--------------C_ref after permute--------------")
-        print(c_ref.shape)
-        print(c_ref)
+    #     print("--------------B_ref after permute--------------")
+    #     print(b_ref.shape)
+    #     print(b_ref)
+    #     print("--------------C_ref after permute--------------")
+    #     print(c_ref.shape)
+    #     print(c_ref)
 
-        output_ref = torch.einsum('ijkl, iljm->ikjm', b_ref, c_ref).numpy()
-        print("--------------output_ref--------------")
-        print(output_ref.shape)  # ikjm
-        print(output_ref)
-        output_matrix = output_ref
-        output_format = "CSF"
-        output_name = "X"
-    elif 'tensor4_multiply.gv' in app_name:
-        # X(i,j,k,l)=B(i,k,j,m)*C(i,l,j,m)ikjm, iljm->ijkl
-        # X=ssss0123,B=ssss0213,C=ssss0213
+    #     output_ref = torch.einsum('ijkl, iljm->ikjm', b_ref, c_ref).numpy()
+    #     print("--------------output_ref--------------")
+    #     print(output_ref.shape)  # ikjm
+    #     print(output_ref)
+    #     output_matrix = output_ref
+    #     output_format = "CSF"
+    #     output_name = "X"
+    # elif 'tensor4_multiply.gv' in app_name:
+    #     # X(i,j,k,l)=B(i,k,j,m)*C(i,l,j,m)ikjm, iljm->ijkl
+    #     # X=ssss0123,B=ssss0213,C=ssss0213
 
-        # generate B(j,k,j,m) and C(i,l,j,m)
-        b_matrix = MatrixGenerator(name="B", shape=[10, 14, 12, 8], sparsity=0.7,
-                                   format='CSF', dump_dir=matrix_tmp_dir)
-        c_matrix = MatrixGenerator(name="C", shape=[10, 14, 16, 8], sparsity=0.7,
-                                   format='CSF', dump_dir=matrix_tmp_dir)
-        b_matrix.dump_outputs()
-        c_matrix.dump_outputs()
+    #     # generate B(j,k,j,m) and C(i,l,j,m)
+    #     b_matrix = MatrixGenerator(name="B", shape=[10, 14, 12, 8], sparsity=0.7,
+    #                                format='CSF', dump_dir=matrix_tmp_dir)
+    #     c_matrix = MatrixGenerator(name="C", shape=[10, 14, 16, 8], sparsity=0.7,
+    #                                format='CSF', dump_dir=matrix_tmp_dir)
+    #     b_matrix.dump_outputs()
+    #     c_matrix.dump_outputs()
 
-        # permute matrix for gold generation
-        b_mat = b_matrix.get_matrix()
-        c_mat = c_matrix.get_matrix()
-        B_ref = torch.from_numpy(b_mat)
-        C_ref = torch.from_numpy(c_mat)
+    #     # permute matrix for gold generation
+    #     b_mat = b_matrix.get_matrix()
+    #     c_mat = c_matrix.get_matrix()
+    #     B_ref = torch.from_numpy(b_mat)
+    #     C_ref = torch.from_numpy(c_mat)
 
-        B_ref = torch.permute(B_ref, (0, 2, 1, 3))
-        C_ref = torch.permute(C_ref, (0, 2, 1, 3))
+    #     B_ref = torch.permute(B_ref, (0, 2, 1, 3))
+    #     C_ref = torch.permute(C_ref, (0, 2, 1, 3))
 
-        print("------------------------after permute B_ref: ")
-        print(B_ref.shape)
-        print(B_ref)
-        print("------------------------after permute C_ref: ")
-        print(C_ref.shape)
-        print(C_ref)
+    #     print("------------------------after permute B_ref: ")
+    #     print(B_ref.shape)
+    #     print(B_ref)
+    #     print("------------------------after permute C_ref: ")
+    #     print(C_ref.shape)
+    #     print(C_ref)
 
-        output_matrix = torch.einsum('ikjm, iljm->ijkl', B_ref, C_ref).numpy()
-        print("--------------output_ref--------------")
-        print(output_matrix.shape)
-        print(output_matrix)
-        output_format = "CSF"
-        output_name = "X"
-    elif 'tensor3_linear_multiply.gv' in app_name:
-        # X(i,j,k)=B(j,l)*C(i,l,k)
-        # X=sss012,B=ss01,C=sss021
-        # generate B(j,l) and C(i,k,l)
-        b_matrix = MatrixGenerator(name="B", shape=[14, 16], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
-        c_matrix = MatrixGenerator(name="C", shape=[10, 12, 16], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
-        b_matrix.dump_outputs()
-        c_matrix.dump_outputs()
+    #     output_matrix = torch.einsum('ikjm, iljm->ijkl', B_ref, C_ref).numpy()
+    #     print("--------------output_ref--------------")
+    #     print(output_matrix.shape)
+    #     print(output_matrix)
+    #     output_format = "CSF"
+    #     output_name = "X"
+    # elif 'tensor3_linear_multiply.gv' in app_name:
+    #     # X(i,j,k)=B(j,l)*C(i,l,k)
+    #     # X=sss012,B=ss01,C=sss021
+    #     # generate B(j,l) and C(i,k,l)
+    #     b_matrix = MatrixGenerator(name="B", shape=[14, 16], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+    #     c_matrix = MatrixGenerator(name="C", shape=[10, 12, 16], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+    #     b_matrix.dump_outputs()
+    #     c_matrix.dump_outputs()
 
-        # permute matrix for gold generation
-        b_mat = b_matrix.get_matrix()
-        c_mat = c_matrix.get_matrix()
-        B_ref = torch.from_numpy(b_mat)
-        C_ref = torch.from_numpy(c_mat)
+    #     # permute matrix for gold generation
+    #     b_mat = b_matrix.get_matrix()
+    #     c_mat = c_matrix.get_matrix()
+    #     B_ref = torch.from_numpy(b_mat)
+    #     C_ref = torch.from_numpy(c_mat)
 
-        C_ref = torch.permute(C_ref, (0, 2, 1))
+    #     C_ref = torch.permute(C_ref, (0, 2, 1))
 
-        print("---------------B_ref---------------")
-        print(B_ref.shape)
-        print(B_ref)
-        print("---------------C_ref---------------")
-        print(C_ref.shape)
-        print(C_ref)
+    #     print("---------------B_ref---------------")
+    #     print(B_ref.shape)
+    #     print(B_ref)
+    #     print("---------------C_ref---------------")
+    #     print(C_ref.shape)
+    #     print(C_ref)
 
-        output_matrix = torch.einsum('jl, ilk->ijk', B_ref, C_ref).numpy()
-        print("---------------output_matrix---------------")
-        print(output_matrix.shape)
-        print(output_matrix)
-        output_format = "CSF"
-        output_name = "X"
+    #     output_matrix = torch.einsum('jl, ilk->ijk', B_ref, C_ref).numpy()
+    #     print("---------------output_matrix---------------")
+    #     print(output_matrix.shape)
+    #     print(output_matrix)
+    #     output_format = "CSF"
+    #     output_name = "X"
     else:
         raise NotImplementedError
 
@@ -3012,7 +3071,8 @@ if __name__ == "__main__":
                 elif mtx_tmp_dir is not None:
                     matrix_tmp_dir = mtx_tmp_dir
                 else:
-                    matrix_tmp_dir = prep_test_dir(f"{base_dir}/{sam_graph_name}_{seed_id}", args.matrix_tmp_dir, "MAT_TMP_DIR")
+                    matrix_tmp_dir = generate_inputs(sam_graph_name)
+                        
                 gold_dir = prep_test_dir(f"{base_dir}/{sam_graph_name}_{seed_id}", args.gold_dir, "GOLD_DIR")
                 glb_dir = prep_test_dir(f"{base_dir}/{sam_graph_name}_{seed_id}", args.glb_dir, "GLB_DIR")
                 collat_dir = prep_test_dir(f"{base_dir}/{sam_graph_name}_{seed_id}", args.glb_dir, "COLLAT_DIR")
