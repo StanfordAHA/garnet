@@ -1844,28 +1844,21 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
     input_dims = {}
     use_fp = False
 
-    if 'mat_elemadd.gv' in app_name:
-        # b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                        #    dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                        #    sparsity=0.8)
-        # c_mat = get_tensor(input_name='C', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                        #    dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
-                        #    sparsity=0.9)
+    output_dims = []
+    with open(f"{matrix_tmp_dir}/tensor_X_mode_shape", "r") as f:
+        lines = f.readlines()
+        for line in lines:
+            output_dims.append(int(line.strip()))
     
-        output_dims = []
-        with open(f"{matrix_tmp_dir}/tensor_X_mode_shape", "r") as f:
-            lines = f.readlines()
-            for line in lines:
-                output_dims.append(int(line.strip()))
-        
-        output_matrix = numpy.zeros(output_dims, dtype=numpy.uint16)
-        with open(f"{matrix_tmp_dir}/output_gold.h", "r") as f:
-            for i in range(output_matrix.shape[0]):
-                for j in range(output_matrix.shape[1]):
-                    output_matrix[i][j] = float(f.readline().strip())
-        
-        output_format = "CSF"
-        output_name = "X"
+    output_matrix = numpy.zeros(output_dims, dtype=numpy.uint16)
+    with open(f"{matrix_tmp_dir}/output_gold.h", "r") as f:
+        for i in range(output_matrix.shape[0]):
+            for j in range(output_matrix.shape[1]):
+                output_matrix[i][j] = float(f.readline().strip())
+    
+    output_format = "CSF"
+    output_name = "X"
+    
     # elif 'mat_elemadd_relu.gv' in app_name:
     #     b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
     #                        dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
@@ -2714,8 +2707,8 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
     #     print(output_matrix)
     #     output_format = "CSF"
     #     output_name = "X"
-    else:
-        raise NotImplementedError
+    # else:
+    #     raise NotImplementedError
 
     if print_inputs is not None:
         if b_mat is not None:
