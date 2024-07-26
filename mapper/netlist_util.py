@@ -1079,8 +1079,8 @@ def create_netlist_info(
     node_info = {t: tile_to_char(t) for t in tile_info}
     nodes_to_ids = CreateIDs(node_info).doit(pdag)
 
-    if load_only:
-        name_to_id = {name: id_ for id_, name in id_to_name.items()}
+    # if load_only:
+    #     name_to_id = {name: id_ for id_, name in id_to_name.items()}
 
     info = {}
     info["id_to_name"] = {id: node for node, id in nodes_to_ids.items()}
