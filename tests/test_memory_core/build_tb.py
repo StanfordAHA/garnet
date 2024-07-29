@@ -1585,7 +1585,7 @@ def prepare_glb_collateral(glb_dir=None, bitstream=None, matrices_in=None, desig
     if not os.path.exists(glb_dir):
         os.mkdir(glb_dir)
 
-    shutil.copytree(test_dump_dir, f"{glb_dir}/bin", dirs_exist_ok=True)
+    shutil.copytree(test_dump_dir, f"{glb_dir}/bin", dirs_exist_ok=True, ignore=shutil.ignore_patterns('*.graph'))
 
     input_glb_tiles = [glb_tile for glb_tile in glb_info if glb_tile[3] == 'write']
     output_glb_tiles = [glb_tile for glb_tile in glb_info if glb_tile[3] == 'read']
@@ -2754,7 +2754,7 @@ if __name__ == "__main__":
     parser.add_argument('--data_tile_pairs', type=str, default=None, nargs='+')
     parser.add_argument('--kernel_name', type=str, default=None)
     parser.add_argument('--opal-workaround', action="store_true")
-    parser.add_argument('--mem_block_size', type=int, default=1000)
+    parser.add_argument('--mem_block_size', type=int, default=2048)
 
     args = parser.parse_args()
     bespoke = args.bespoke
