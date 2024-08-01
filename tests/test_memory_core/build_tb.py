@@ -755,12 +755,8 @@ class SparseTBBuilder(m.Generator2):
                     print(glb_mode_)
                     print(self.mode_map)
                     if 'vals' not in glb_mode_:
-                        if self.give_tensor:
-                            glb_mode_ = int(glb_mode_)
-                            glb_mode = glb_mode_
-                        else:
-                            glb_mode_ = int(glb_mode_)
-                            glb_mode = self.mode_map[glb_tensor][glb_mode_][0]
+                        glb_mode_ = int(glb_mode_)
+                        glb_mode = glb_mode_
                     else:
                         glb_mode = glb_mode_
                     # Get the handle for these pins, then instantiate glb
@@ -857,12 +853,8 @@ class SparseTBBuilder(m.Generator2):
                     glb_tensor = node_.get_tensor()
                     glb_mode_ = node_.get_mode()
                     if 'vals' not in glb_mode_:
-                        if self.give_tensor:
-                            glb_mode_ = int(glb_mode_)
-                            glb_mode = glb_mode_
-                        else:
-                            glb_mode_ = int(glb_mode_)
-                            glb_mode = self.mode_map[glb_tensor][glb_mode_][0]
+                        glb_mode_ = int(glb_mode_)
+                        glb_mode = glb_mode_
                     else:
                         glb_mode = glb_mode_
                 else:
@@ -1331,13 +1323,8 @@ class SparseTBBuilder(m.Generator2):
 
                 glb_mode_ = glb_mode
                 if 'vals' not in glb_mode_:
-                    if self.give_tensor:
-                        glb_mode_ = int(glb_mode_)
-                        glb_mode__ = glb_mode_
-                    else:
-                        print(self.mode_map)
-                        glb_mode_ = int(glb_mode_)
-                        glb_mode__ = self.mode_map[glb_tensor][glb_mode_][0]
+                    glb_mode_ = int(glb_mode_)
+                    glb_mode__ = glb_mode_
                 else:
                     glb_mode__ = glb_mode_
 
@@ -1793,6 +1780,7 @@ def generate_inputs(app_name):
         tile.check_returncode()
     except subprocess.CalledProcessError as e:
         print(e.stderr)
+        raise RuntimeError("Lego failed to generate input matrices")
 
     try: 
         print(f"=== Lego Compiling CPP Code ===")
@@ -1804,6 +1792,7 @@ def generate_inputs(app_name):
         tile.check_returncode()
     except subprocess.CalledProcessError as e:
         print(e.stderr)
+        raise RuntimeError("Lego failed to generate input matrices")
 
     try: 
         print(f"=== Lego Tiling ===")
@@ -1811,6 +1800,7 @@ def generate_inputs(app_name):
         tile.check_returncode()
     except subprocess.CalledProcessError as e:
         print(e.stderr)
+        raise RuntimeError("Lego failed to generate input matrices")
 
     subtile_paths_list = os.path.join("/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR", app_name, "subtile_paths_0.toml")
     with open(subtile_paths_list, 'r') as f:
@@ -1845,19 +1835,22 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
     use_fp = False
 
     output_dims = []
-    with open(f"{matrix_tmp_dir}/tensor_X_mode_shape", "r") as f:
+    with open(f"{matrix_tmp_dir}/tensor_out_mode_shape", "r") as f:
         lines = f.readlines()
         for line in lines:
             output_dims.append(int(line.strip()))
     
     output_matrix = numpy.zeros(output_dims, dtype=numpy.uint16)
     with open(f"{matrix_tmp_dir}/output_gold.h", "r") as f:
-        for i in range(output_matrix.shape[0]):
-            for j in range(output_matrix.shape[1]):
-                output_matrix[i][j] = float(f.readline().strip())
+        for idx, _ in numpy.ndenumerate(output_matrix):
+            output_matrix[idx] = float(f.readline().strip())
     
     output_format = "CSF"
-    output_name = "X"
+    output_name = None
+    if len(output_dims) == 1: 
+        output_name = "x"
+    else:
+        output_name = "X"
     
     # elif 'mat_elemadd_relu.gv' in app_name:
     #     b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
@@ -3305,10 +3298,7 @@ if __name__ == "__main__":
                         tensor_, mode_, direction_, num_blocks_, seg_mode_, file_no_ = desc_
                         # remap the mode...
                         if mode_ != 'vals':
-                            if give_tensor:
-                                mode_ = mode_
-                            else:
-                                mode_ = mode_map[tensor_][int(mode_)][0]
+                            mode_ = mode_
                         core_placement = stb.get_core_placement(core)
                         tensor_desc_str = f"tensor_{tensor_}_mode_{mode_}"
                         glb_info_.append((core, core_placement, tensor_desc_str, direction_, num_blocks_, seg_mode_, file_no_))
