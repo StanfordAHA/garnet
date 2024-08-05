@@ -137,6 +137,9 @@ if [ "$use_container" == True ]; then
       # MAKE SURE the docker container gets killed when this script dies.
       trap "docker kill $container_name" EXIT
 
+      # aha/bashrc does important things in bg, but does not normally get invoked via 'docker exec'
+      docker exec $container_name /bin/bash -c 'source /aha/aha/bin/docker-bashrc; wait'
+
       # Delete all dangling images created more than 6 hours ago.
       # Notice that we prune images *after* starting container (pruner
       # will refuse to kill image w/ active container)
