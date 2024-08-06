@@ -1813,7 +1813,6 @@ def generate_inputs(app_name):
     return matrix_tmp_dir
 
 
-
 def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None,
                   zero_input=False, tensor_orderings=None, clean=True, suffix=""):
 
