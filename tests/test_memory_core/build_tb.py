@@ -1838,18 +1838,30 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         lines = f.readlines()
         for line in lines:
             output_dims.append(int(line.strip()))
-    
-    output_matrix = numpy.zeros(output_dims, dtype=numpy.uint16)
-    with open(f"{matrix_tmp_dir}/output_gold.h", "r") as f:
-        for idx, _ in numpy.ndenumerate(output_matrix):
-            output_matrix[idx] = float(f.readline().strip())
-    
+
     output_format = "CSF"
     output_name = None
+    # vector outputs have the name 'x'
+    # tensors of 2 or higher dimensions have the name 'X'
     if len(output_dims) == 1: 
         output_name = "x"
     else:
         output_name = "X"
+
+    output_matrix = numpy.zeros(output_dims, dtype=numpy.uint16)
+
+    # Transpose since the gold matrix may be filled in column order if the 
+    # tensor ordering is 10
+    rearrng_axis = []
+    output_mode_map = tensor_orderings[output_name]
+    for reorder_tup in output_mode_map:
+        rearrng_axis.append(reorder_tup[0])
+    output_matrix = numpy.transpose(output_matrix, rearrng_axis)
+    with open(f"{matrix_tmp_dir}/output_gold.h", "r") as f:
+        for idx, _ in numpy.ndenumerate(output_matrix):
+            output_matrix[idx] = float(f.readline().strip())
+    # transpose it back to the original shape
+    output_matrix = numpy.transpose(output_matrix, rearrng_axis)
     
     # elif 'mat_elemadd_relu.gv' in app_name:
     #     b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
@@ -3239,6 +3251,11 @@ if __name__ == "__main__":
                         out_mats[i].dump_outputs(glb_override=True, glb_dump_dir=full_test_glb_dir, suffix=f"_{i}")
                         numpy.save(f"{full_test_glb_dir}/output_gold_{i}.npy", out_mats[i].get_matrix())
                         numpy.save(f"{glb_dir}/output_gold_{i}.npy", out_mats[i].get_matrix())
+
+                    with open(f"{glb_dir}/output_mode_map.json", "w+") as mode_map_file:
+                        mode_map_file.write(json.dumps(mode_map[output_name]))
+                    with open(f"{full_test_glb_dir}/output_mode_map.json", "w+") as mode_map_file:
+                        mode_map_file.write(json.dumps(mode_map[output_name]))
 
                     with open(f"{glb_dir}/output_name.txt", "w+") as outputname_h_:
                         outputname_h_.write(f"{output_name}\n")
