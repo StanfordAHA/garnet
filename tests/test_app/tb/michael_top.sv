@@ -60,12 +60,29 @@ module top;
     //============================================================================//
     // instantiate dut
     //============================================================================//
-    Garnet dut (
+
+   supply1 VDD;
+   supply0 VSS;
+
+    GarnetSOC_pad_frame_Garnet (
+    //Garnet dut (
         // clk/reset/interrupt
         .clk_in              (clk),
         .reset_in            (reset),
         .interrupt           (interrupt),
         .cgra_running_clk_out(  /*unused*/),
+        .clk_in_clone1	     (clk),
+	.clk_in_clone2	     (clk),
+        .FE_OFN1440_cgra_reset_n (~reset),
+        .FE_OFN1397_cgra_reset_n (~reset),
+        .FE_OFN1353_cgra_reset_n (reset),
+        .FE_OFN1308_cgra_reset_n (~reset),
+        .FE_OFN1287_cgra_reset_n (~reset),
+        .FE_OFN1283_cgra_reset_n (~reset),
+        .FE_OFN1277_cgra_reset_n (~reset),
+        .FE_OFN3878_n (reset),
+	.FE_OFN3884_n (~reset),
+        .p1           (~reset),
 
         // proc ifc
         .proc_packet_wr_en        (p_ifc.wr_en),
@@ -100,7 +117,13 @@ module top;
         .jtag_tdi   (  /*unused*/),
         .jtag_tdo   (  /*unused*/),
         .jtag_tms   (  /*unused*/),
-        .jtag_trst_n(  /*unused*/)
+        .jtag_trst_n(  /*unused*/),
+
+        // Supplies
+        .VDD(VDD),
+        .VSS(VSS)
+
+
     );
 
 

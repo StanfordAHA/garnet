@@ -58,6 +58,7 @@ int glb_map(void *kernel_) {
     struct KernelInfo *kernel = kernel_;
     int num_groups = kernel->num_groups;
     printf("number of groups: %d\n", num_groups);
+    printf("monitor groups: %d\n", monitor.num_groups);
 
     // This is just greedy algorithm to schedule applications
     // TODO: Need a better way to schedule kernels
