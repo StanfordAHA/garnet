@@ -38,6 +38,16 @@ else
     [ "$WHICH_SOC" == "amber" ] || module load calibre/2021.2_18
 fi
 
+# 08/2024 Joe upgraded system to redhat-compatible "rocket" i.e.
+# 'cat /etc/redhat-release' yields the string "Rocky Linux release 8.10 (Green Obsidian)"
+# calibre binaries die because they invoke a script 'calibre_host_info' that expects
+# 'cat /etc/redhat-release' to test positive for `egrep -i 'centos|red *hat|redhat|suse|sles'`,
+# so 'cgra_info' sets 'OS_VENDOR=unknown' and then the follow-on script 'calibre_vco'
+# errs out with a message like "Invalid operating system environment"
+
+# We can prevent this (maybe?) by setting an environment variable
+# 'export USE_CALIBRE_VCO=aoi' that shortcuts the OS check.
+export USE_CALIBRE_VCO=aoi
+
 module load prime/latest
 module load ext/latest
-
