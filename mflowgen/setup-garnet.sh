@@ -51,3 +51,7 @@ export USE_CALIBRE_VCO=aoi
 
 module load prime/latest
 module load ext/latest
+
+# Let's try a thing maybe
+unset OA_UNSUPPORTED_PLAT
+export OA_HOME=/cad/cadence/ICADVM20.10.330/oa_v22.60.090
