@@ -1,3 +1,17 @@
+# 08/2024 Joe upgraded system to redhat-compatible "rocky" i.e.
+# 'cat /etc/redhat-release' yields the string "Rocky Linux release 8.10 (Green Obsidian)"
+# calibre binaries die because they invoke a script 'calibre_host_info' that expects
+# 'cat /etc/redhat-release' to test positive for `egrep -i 'centos|red *hat|redhat|suse|sles'`,
+# so 'cgra_info' sets 'OS_VENDOR=unknown' and then the follow-on script 'calibre_vco'
+# errs out with a message like "Invalid operating system environment"
+
+# We can prevent this (maybe?) by setting an environment variable
+# 'export USE_CALIBRE_VCO=aoi' that shortcuts the OS check.
+# Lots of things break if we don't do this FIRST
+
+test -e /etc/os-release && source /etc/os-release  # Sets os-related vars including ID
+[ "$ID" == "rocky" ] && export USE_CALIBRE_VCO=aoi
+
 source /cad/modules/tcl/init/sh
 
 module load base/1.0
@@ -53,19 +67,6 @@ unset OA_HOME
 echo "AFTER:  OA_HOME=$OA_HOME"
 echo ""
 
-
-# 08/2024 Joe upgraded system to redhat-compatible "rocky" i.e.
-# 'cat /etc/redhat-release' yields the string "Rocky Linux release 8.10 (Green Obsidian)"
-# calibre binaries die because they invoke a script 'calibre_host_info' that expects
-# 'cat /etc/redhat-release' to test positive for `egrep -i 'centos|red *hat|redhat|suse|sles'`,
-# so 'cgra_info' sets 'OS_VENDOR=unknown' and then the follow-on script 'calibre_vco'
-# errs out with a message like "Invalid operating system environment"
-
-# We can prevent this (maybe?) by setting an environment variable
-# 'export USE_CALIBRE_VCO=aoi' that shortcuts the OS check.
-
-test -e /etc/os-release && source /etc/os-release  # Sets os-related vars including ID
-[ "$ID" == "rocky" ] && export USE_CALIBRE_VCO=aoi
 
 # 08/2024 Joe upgraded some of the machines from rhel 7 to rocky 8
 # and oh boy did that mess things up
