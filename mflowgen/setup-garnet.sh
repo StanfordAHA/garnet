@@ -54,7 +54,7 @@ echo "AFTER:  OA_HOME=$OA_HOME"
 echo ""
 
 
-# 08/2024 Joe upgraded system to redhat-compatible "rocket" i.e.
+# 08/2024 Joe upgraded system to redhat-compatible "rocky" i.e.
 # 'cat /etc/redhat-release' yields the string "Rocky Linux release 8.10 (Green Obsidian)"
 # calibre binaries die because they invoke a script 'calibre_host_info' that expects
 # 'cat /etc/redhat-release' to test positive for `egrep -i 'centos|red *hat|redhat|suse|sles'`,
@@ -67,12 +67,16 @@ echo ""
 test -e /etc/os-release && source /etc/os-release  # Sets os-related vars including ID
 [ "$ID" == "rocky" ] && export USE_CALIBRE_VCO=aoi
 
-# 08/2024 Joe upgraded some of the machines from rhel 7 to rocket 8
+# 08/2024 Joe upgraded some of the machines from rhel 7 to rocky 8
 # and oh boy did that mess things up
 
 # Let's try a thing maybe
 test -e /etc/os-release && source /etc/os-release  # Sets os-related vars including ID
 if [ "$ID" == "rocky" ]; then
+    echo "reset OA_HOME" etc.
     unset OA_UNSUPPORTED_PLAT
     export OA_HOME=/cad/cadence/ICADVM20.10.330/oa_v22.60.090
+    echo "NOW:  OA_HOME=$OA_HOME"
+    echo "NOW:  OA_UNSUPPORTED_PLAT is unset"
+    echo "NOW:  USE_CALIBRE_VCO=$USE_CALIBRE_VCO"
 fi
