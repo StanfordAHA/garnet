@@ -314,23 +314,12 @@ echo "--- ENVIRONMENT - CAD TOOLS"; echo ""
 echo Sourcing $garnet/mflowgen/setup-garnet.sh ...
 source $garnet/mflowgen/setup-garnet.sh
 
+# 08/2024 OA_HOME weirdness was here (ish), now is offloaded to setup-garnet.sh
+
 ##############################################################################
 # Recheck python/pip versions b/c CAD modules can muck them up :(
 echo Recheck python/pip versions
 check_pyversions
-
-# 08/2024 Moving this to setup-garnet.sh!!!
-# ##############################################################################
-# # OA_HOME weirdness
-# # OA_HOME *** WILL DRIVE ME MAD!!! ***
-# echo "--- UNSET OA_HOME"
-# echo ""
-# echo "buildkite (but not arm7 (???)) errs if OA_HOME is set"
-# echo "BEFORE: OA_HOME=$OA_HOME"
-# echo "unset OA_HOME"
-# unset OA_HOME
-# echo "AFTER:  OA_HOME=$OA_HOME"
-# echo ""
 
 # Okay let's check and see what we got.
 echo "--- REQUIREMENTS CHECK, sourcing $garnet/bin/requirements_check.sh"; echo ""
