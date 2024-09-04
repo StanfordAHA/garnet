@@ -1098,8 +1098,19 @@ class SparseTBBuilder(m.Generator2):
                 new_node_type = ComputeNode
                 # core_tag = "fake_pe"
                 core_tag = "alu"
+                if "is_mapped_from_complex_op" in node.get_attributes():
+                    assert 'original_complex_op_id' in node.get_attributes()
+                    is_mapped_from_complex_op = node.get_attributes()["is_mapped_from_complex_op"]
+                    original_complex_op_id = node.get_attributes()["original_complex_op_id"].strip('"')
+                else:
+                    is_mapped_from_complex_op = False
+                    original_complex_op_id = None
                 kwargs = {
-                    "op": node.get_attributes()['label'].strip('"')
+                    "op": node.get_attributes()['label'].strip('"'),
+                    "sam_graph_node_id": node.get_name(),
+                    "mapped_coreir_dir": self.collat_dir,
+                    "is_mapped_from_complex_op": is_mapped_from_complex_op,
+                    "original_complex_op_id": original_complex_op_id
                 }
             # elif hw_node_type == f"{HWNodeType.Broadcast}":
                 # new_node = GLBNode()
@@ -1555,7 +1566,7 @@ def prepare_glb_collateral(glb_dir=None, bitstream=None, matrices_in=None, desig
                         "dimensionality": 1,
                         # "extent": [num_lines],
                         # HAX for testing against GLB
-                        "extent": [2048],
+                        "extent": [1024],
                         # "extent": [num_lines * 10 + 500],
                         "write_data_starting_addr": [0],
                         "write_data_stride": [1]
@@ -2405,10 +2416,41 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['D'],
                            sparsity=0.8)
 
+        # "X(i,j)=B(i,k,l)*C(j,k)*D(j,l) -f=X:ss -f=B:sss -f=C:ss -f=D:ss" 
+        output_matrix = numpy.einsum("ikl,jk,jl->ij", b_mat, c_mat, d_mat, dtype=numpy.uint16, casting='unsafe')
+
+        output_format = "CSF"
+        output_name = "X"
+    elif 'tensor3_mttkrp_unfused1.gv' in app_name:
+
+
+        c_mat = get_tensor(input_name='C', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+                            sparsity=0.9)
+
+        d_mat = get_tensor(input_name='D', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['D'],
+                            sparsity=0.8)
+
         c_mat_trans = numpy.transpose(c_mat)
         d_mat_trans = numpy.transpose(d_mat)
-        output_matrix = numpy.einsum("ikl,lj,kj->ij", b_mat, d_mat_trans, c_mat_trans, dtype=numpy.uint16, casting='unsafe')
-        # output_matrix = numpy.einsum("ikl,jl,jk->ij", b_mat, d_mat, c_mat, dtype=numpy.uint16, casting='unsafe')
+        # "T(j,k,l)=C(j,k)*D(j,l) -f=T:sss -f=C:ss -f=D:ss" 
+        output_matrix = numpy.einsum("jk,jl->jkl", c_mat, d_mat, dtype=numpy.uint16, casting='unsafe')
+        output_format = "CSF"
+        output_name = "X"
+    elif 'tensor3_mttkrp_unfused2.gv' in app_name:
+
+
+        b_mat = get_tensor(input_name='B', shapes=[10, 10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['B'],
+                            sparsity=0.9)
+
+        t_mat = get_tensor(input_name='T', shapes=[10, 10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['T'],
+                            sparsity=0.8)
+
+        # "X(i,j)=B(i,k,l)*T(j,k,l) -f=X:ss -f=B:sss -f=T:sss" 
+        output_matrix = numpy.einsum("ikl,jkl->ij", b_mat, t_mat, dtype=numpy.uint16, casting='unsafe')
 
         output_format = "CSF"
         output_name = "X"
@@ -2457,10 +2499,6 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
 
         # First transpose c_mat
         output_matrix = numpy.add(c_mat, b_mat, dtype=numpy.uint16, casting='unsafe')
-        print("test matrices")
-        print(b_mat)
-        print(c_mat)
-        print(output_matrix)
         output_format = "CSF"
         output_name = "x"
     elif 'vec_elemmul.gv' in app_name:
@@ -2908,7 +2946,6 @@ if __name__ == "__main__":
                                    # Soften the flush...?
                                    harden_flush=harden_flush,
                                    altcore=None,
-                                   ready_valid=True,
                                    add_pond=add_pond,
                                    scgra=True,
                                    perf_debug=perf_debug)
@@ -3055,7 +3092,7 @@ if __name__ == "__main__":
                     # sdg = SAMDotGraph(filename=sam_graph, local_mems=True, use_fork=use_fork,
                     #                   use_fa=use_fiber_access, unroll=unroll)
                     sdg = SAMDotGraph(filename=sam_graph, local_mems=True, use_fork=use_fork,
-                                      use_fa=use_fiber_access, unroll=unroll)
+                                      use_fa=use_fiber_access, unroll=unroll, collat_dir=collat_dir)
                     sdgs[sam_graph] = sdg
                 else:
                     print("REUSE SDG")
