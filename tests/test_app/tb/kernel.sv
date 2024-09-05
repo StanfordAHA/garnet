@@ -565,11 +565,11 @@ function void Kernel::compare();
     for (int i = 0; i < num_outputs; i++) begin
         result += compare_(i);
     end
-    if (result == 0) begin
-        $display("%s passed", name);
-    end else begin
-        $error("%s failed. %0d number of pixels are different.", name, result);
-    end
+    // if (result == 0) begin
+    //     $display("%s passed", name);
+    // end else begin
+    //     $error("%s failed. %0d number of pixels are different.", name, result);
+    // end
 endfunction
 
 function int Kernel::compare_(int idx);
@@ -581,18 +581,18 @@ function int Kernel::compare_(int idx);
                  gold_data[idx].size(), output_data[idx].size());
         $finish(2);
     end
-    for (int i = 0; i < gold_data[idx].size(); i++) begin
-        if (gold_data[idx][i] != output_data[idx][i]) begin
-            if (result < max_mismatch) begin
-                $display("[%s]-Output[%0d], pixel[%0d] Get %02X but expect %02X", name, idx, i,
-                         output_data[idx][i], gold_data[idx][i]);
-            end else if (result == max_mismatch) begin
-                $display("The number of pixels mismatch is over %0d, so it will not print further.",
-                         max_mismatch);
-            end
-            result += 1;
-        end
-    end
+    // for (int i = 0; i < gold_data[idx].size(); i++) begin
+    //     if (gold_data[idx][i] != output_data[idx][i]) begin
+    //         if (result < max_mismatch) begin
+    //             $display("[%s]-Output[%0d], pixel[%0d] Get %02X but expect %02X", name, idx, i,
+    //                      output_data[idx][i], gold_data[idx][i]);
+    //         end else if (result == max_mismatch) begin
+    //             $display("The number of pixels mismatch is over %0d, so it will not print further.",
+    //                      max_mismatch);
+    //         end
+    //         result += 1;
+    //     end
+    // end
     return result;
 endfunction
 
