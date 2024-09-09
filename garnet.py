@@ -770,7 +770,7 @@ def parse_args():
 def build_verilog(args, garnet):
     garnet_circ = garnet.circuit()
     magma.compile("garnet", garnet_circ, output="coreir-verilog",
-                  coreir_libs={"float_CW"},
+                  coreir_libs={"float_DW"},
                   passes=["rungenerators", "inline_single_instances", "clock_gate"],
                   inline=False)
 
