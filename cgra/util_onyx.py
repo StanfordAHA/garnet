@@ -192,7 +192,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
     m.compile(f"garnet_PE",
               pe_child,
               output="coreir-verilog",
-              coreir_libs={"float_CW"},
+              coreir_libs={"float_DW"},
               verilog_prefix=pe_prefix)
     m.clear_cachedFunctions()
     m.frontend.coreir_.ResetCoreIR()
