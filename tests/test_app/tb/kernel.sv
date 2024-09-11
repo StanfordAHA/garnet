@@ -19,7 +19,7 @@ import "DPI-C" function chandle get_output_info(
     chandle info,
     int index
 );
-import "DPI-C" function int glb_map(chandle kernel);
+import "DPI-C" function int glb_map(chandle kernel, int dpr_enabled);
 import "DPI-C" function int get_num_groups(chandle info);
 import "DPI-C" function int get_group_start(chandle info);
 import "DPI-C" function int get_num_inputs(chandle info);
@@ -49,6 +49,14 @@ import "DPI-C" function int get_output_size(
 import "DPI-C" function int get_bs_size(chandle info);
 import "DPI-C" function int get_bs_tile(chandle info);
 import "DPI-C" function int get_bs_start_addr(chandle info);
+
+import "DPI-C" function int get_num_glb_tiling(chandle info); // For GLB tiling
+import "DPI-C" function int get_glb_tiling_cnt(chandle info); // For GLB tiling
+import "DPI-C" function void update_glb_tiling_cnt(
+    chandle info,
+    int cnt
+); // For GLB tiling
+
 import "DPI-C" function int get_io_tile_start_addr(
     chandle info,
     int index
@@ -75,6 +83,10 @@ import "DPI-C" function int get_io_tile_cycle_stride(
     chandle info,
     int index,
     int stride_idx
+);
+import "DPI-C" function int get_io_tile_is_glb_input( // for back-to-back kernels
+    chandle info,
+    int index
 );
 import "DPI-C" function chandle get_kernel_configuration(chandle info);
 import "DPI-C" function chandle get_pcfg_configuration(chandle info);
@@ -117,6 +129,7 @@ typedef struct {
     int tile;
     int start_addr;
     int num_data;
+    int is_glb_input; // for back-to-back kernels to judge if input is already in glb
     data_array_t io_block_data;
 } IOTile;
 
@@ -135,10 +148,15 @@ class Kernel;
     string placement_filename;
     string bitstream_filename;
 
+    int dpr_enabled;
+
     int num_groups;
     int group_start;
     int num_inputs;
     int num_outputs;
+
+    int num_glb_tiling;
+    int glb_tiling_cnt;
 
     // TODO: Put all these into IO inputs/outputs
     // input/output information for testing
@@ -168,7 +186,7 @@ class Kernel;
     Config kernel_cfg[];
     Config bs_cfg[];
 
-    extern function new(string app_dir);
+    extern function new(string app_dir, int dpr);
     extern function void display();
     extern function data_array_t parse_input_data(int idx);
     extern function data_array_t parse_gold_data(int idx);
@@ -188,13 +206,16 @@ class Kernel;
     extern function Config get_strm_start_config();
 endclass
 
-function Kernel::new(string app_dir);
+function Kernel::new(string app_dir, int dpr);
     string app_name, meta_filename;
     int last_str_idx;
     chandle io_info;
     int num_io_tiles;
     int num_pixels;
     int loop_dim;
+
+    dpr_enabled = dpr;
+
 
     last_str_idx = app_dir.getc(app_dir.len() - 1) == "/" ? app_dir.len() - 2 : app_dir.len() - 1;
     for (int i = app_dir.len() - 1; i >= 0; i--) begin
@@ -223,6 +244,10 @@ function Kernel::new(string app_dir);
     num_inputs  = get_num_inputs(kernel_info);
     num_outputs = get_num_outputs(kernel_info);
     num_groups  = get_num_groups(kernel_info);
+
+    // For GLB tiling
+    num_glb_tiling = get_num_glb_tiling(kernel_info);
+    glb_tiling_cnt = get_glb_tiling_cnt(kernel_info);
 
     $display("[%s] num_inputs: %0d", name, num_inputs);
     $display("[%s] num_outputs: %0d", name, num_outputs);
@@ -290,6 +315,10 @@ function Kernel::new(string app_dir);
                 end else begin
                     num_pixels = num_pixels * get_io_tile_extent(io_info, j, k);
                 end
+            end
+            // For GLB tiling read memory region of entire feature map
+            if (num_glb_tiling > 0) begin
+                num_pixels = num_pixels * num_glb_tiling;
             end
             outputs[i].io_tiles[j].io_block_data = new[num_pixels];
         end
@@ -427,8 +456,11 @@ function int Kernel::kernel_map();
     chandle cfg;
     chandle io_info;
     int size;
+    int result;
 
-    int result = glb_map(kernel_info);
+    update_glb_tiling_cnt(kernel_info, this.glb_tiling_cnt); // for GLB tiling
+
+    result = glb_map(kernel_info, dpr_enabled);
     if (result == 0) begin
         $display("[%s] glb mapping failed", name);
         return result;
@@ -436,6 +468,7 @@ function int Kernel::kernel_map();
 
     // update group_start offset and add offset
     group_start = get_group_start(kernel_info);
+    $display("[%s] group_start: %0d", name, group_start);
 
     // TODO: This should be done at the hardware later
     add_offset_bitstream(bitstream_data, group_start * 4);
@@ -449,6 +482,7 @@ function int Kernel::kernel_map();
         for (int j = 0; j < inputs[i].num_io_tiles; j++) begin
             inputs[i].io_tiles[j].tile = get_io_tile_map_tile(io_info, j);
             inputs[i].io_tiles[j].start_addr = get_io_tile_start_addr(io_info, j);
+            inputs[i].io_tiles[j].is_glb_input = get_io_tile_is_glb_input(io_info, j); // for back-to-back kernels
         end
     end
 
@@ -530,6 +564,7 @@ function void Kernel::compare();
     string tmp_output_name;
     string tmp_filename_nopath = "";
     int tmp_output_name_len;
+    int last_line;
     // Hacky way to interleave output data in io_block to final output
     // TODO: Make interleave and uninterleave as a function
     for (int i = 0; i < num_outputs; i++) begin
@@ -552,24 +587,36 @@ function void Kernel::compare();
             if (tmp_output_name[j]=="/") tmp_filename_nopath = "";
             else                         tmp_filename_nopath = {tmp_filename_nopath, tmp_output_name[j]};
         end
-        file_out = $fopen(tmp_filename_nopath, "w");
+        // For GLB tiling, we only need to dump the last output
+        if (num_glb_tiling > 0 && glb_tiling_cnt < num_glb_tiling - 1) begin
+            return;
+        end
+        file_out = $fopen(tmp_filename_nopath, "a");
         for (int i = 0; i < output_data[idx].size(); i++) begin
             if (i % 8 == 7) begin
                 $fwrite(file_out, "%4h\n", output_data[idx][i]);
+                last_line = 1;
             end else begin
                 $fwrite(file_out, "%4h ", output_data[idx][i]);
+                last_line = 0;
             end
         end
+        $fwrite(file_out, "\n");
+        if (last_line == 0) begin
+            $fwrite(file_out, "\n");
+        end
+        $fclose(file_out);
     end
-    result = 0;
-    for (int i = 0; i < num_outputs; i++) begin
-        result += compare_(i);
-    end
-    if (result == 0) begin
-        $display("%s passed", name);
-    end else begin
-        $error("%s failed. %0d number of pixels are different.", name, result);
-    end
+    // turn off pixels check since we already have offsite close check for dense fp and bit accurate check for dense int 
+    // result = 0;
+    // for (int i = 0; i < num_outputs; i++) begin
+    //     result += compare_(i);
+    // end
+    // if (result == 0) begin
+    //     $display("%s passed", name);
+    // end else begin
+    //     $error("%s failed. %0d number of pixels are different.", name, result);
+    // end
 endfunction
 
 function int Kernel::compare_(int idx);

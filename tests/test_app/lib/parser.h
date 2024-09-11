@@ -7,9 +7,9 @@
 #define MAX_NUM_IO 16
 #define MAX_NUM_IO_TILES 16
 #define BUFFER_SIZE 1024
-#define MAX_NUM_KERNEL 16
+#define MAX_NUM_KERNEL 128
 #define MAX_JSON_FIELDS 2048
-#define MAX_CONFIG 40
+#define MAX_CONFIG 8192
 
 #define GET_BS_INFO(info) struct BitstreamInfo *bs_info = (struct BitstreamInfo *)info
 #define GET_KERNEL_INFO(info) struct KernelInfo *kernel_info = (struct KernelInfo *)info
@@ -52,6 +52,9 @@ struct IOTileInfo {
     int cycle_stride[LOOP_LEVEL];
     int data_stride[LOOP_LEVEL];
     int extent[LOOP_LEVEL];
+
+    // For back-to-back kernels
+    int is_glb_input;
 };
 
 struct IOInfo {
@@ -70,6 +73,11 @@ struct KernelInfo {
     int num_groups;
     // index to the inputs, need to multiply by 2
     int reset_port;
+    int opal_dense_scanner_workaround;
+
+    // control glb tiling
+    int num_glb_tiling;
+    int glb_tiling_cnt;
 
     char bin_dir[BUFFER_SIZE];
     char coreir_filename[BUFFER_SIZE];
@@ -97,6 +105,7 @@ int get_io_tile_loop_dim(void *info, int index);
 int get_io_tile_extent(void *info, int index, int extent_idx);
 int get_io_tile_cycle_stride(void *info, int index, int stride_idx);
 int get_io_tile_data_stride(void *info, int index, int stride_idx);
+int get_io_tile_is_glb_input(void *info, int index); // for back-to-back kernels judge if the input is already in global buffer
 
 // helper functions to access data from SV testbench
 int get_num_groups(void *info);
@@ -107,6 +116,9 @@ int get_num_io_tiles(void *info, int index);
 int get_io_tile_x(void *info, int index);
 int get_io_tile_y(void *info, int index);
 int get_reset_index(void *info);
+int get_num_glb_tiling(void *info); // for GLB tiling
+int get_glb_tiling_cnt(void *info); // for GLB tiling
+void update_glb_tiling_cnt(void *info, int cnt); // for GLB tiling
 
 char *get_placement_filename(void *info);
 char *get_bitstream_filename(void *info);

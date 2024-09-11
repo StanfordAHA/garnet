@@ -202,6 +202,13 @@ int parse_io_tile_info(struct IOTileInfo *io_tile_info, json_t const *io_tile_js
         cnt++;
     }
 
+    // Parse is_glb_input for back-to-back kernels
+    json_t const *is_glb_input_json = json_getProperty(io_tile_json, "is_glb_input");
+    if (!is_glb_input_json || JSON_INTEGER != json_getType(is_glb_input_json)) {
+        io_tile_info->is_glb_input = 0;  // Default to 0 if not found or not an integer
+    } else {
+        io_tile_info->is_glb_input = json_getInteger(is_glb_input_json);
+    }
     return SUCCESS;
 }
 
@@ -330,6 +337,50 @@ void *parse_metadata(char *filename) {
         exit(1);
     }
 
+    // Hacky way for conv layer output padding and glb tiling
+    // Set os env var to get layer shape
+    json_t const *halide_gen_args = json_getProperty(json, "HALIDE_GEN_ARGS");
+    if (halide_gen_args && JSON_OBJ == json_getType(halide_gen_args)) {
+        json_t const *property;
+        const char *key;
+        const char *value;
+
+        for (property = json_getChild(halide_gen_args); property != 0; property = json_getSibling(property)) {
+            key = json_getName(property);
+            if (key && JSON_INTEGER == json_getType(property)) {
+                value = json_getValue(property);
+                // Set the environment variable
+                setenv(key, value, 1);
+            }
+        }
+    }
+
+    // Parse num_glb_tiling for GLB tiling, by default 0
+    json_t const *glb_config_json = json_getProperty(json, "GLB_BANK_CONFIG");
+    if (!glb_config_json) {
+        // GLB_BANK_CONFIG is not set
+        info->num_glb_tiling = 0;
+        info->glb_tiling_cnt = 0;
+    } else {
+        json_t const *num_glb_tiling_json = json_getProperty(glb_config_json, "num_glb_tiling");
+        if (!num_glb_tiling_json || JSON_ARRAY != json_getType(num_glb_tiling_json)) {
+            // No num_glb_tiling or it is not an array, use default values
+            info->num_glb_tiling = 0;
+            info->glb_tiling_cnt = 0;
+        } else {
+            // Process the num_glb_tiling array
+            json_t const *num_tiling = json_getChild(num_glb_tiling_json);
+            if (num_tiling && JSON_INTEGER == json_getType(num_tiling)) {
+                info->num_glb_tiling = json_getInteger(num_tiling);
+                info->glb_tiling_cnt = 0;
+            } else {
+                // Invalid type for num_tiling, use default values
+                info->num_glb_tiling = 0;
+                info->glb_tiling_cnt = 0;
+            }
+        }
+    }
+
     // Parse testing field
     json_t const *testing_json = json_getProperty(json, "testing");
     if (!testing_json || JSON_OBJ != json_getType(testing_json)) {
@@ -361,6 +412,15 @@ void *parse_metadata(char *filename) {
         puts("Error, the placement property is not found.");
         exit(1);
     }
+
+    // parse the sparse app indicator field
+    json_t const *opal_dense_scanner_workaround_json = json_getProperty(testing_json, "opal_dense_scanner_workaround");
+    if (!opal_dense_scanner_workaround_json || JSON_INTEGER != json_getType(opal_dense_scanner_workaround_json)) {
+        info->opal_dense_scanner_workaround = 0;
+    } else {
+        info->opal_dense_scanner_workaround = json_getInteger(opal_dense_scanner_workaround_json);
+    }
+
     strncpy(info->placement_filename, dir, strnlen(dir, BUFFER_SIZE));
     strncat(info->placement_filename, json_getValue(place_json), BUFFER_SIZE);
 
@@ -547,6 +607,27 @@ int get_num_outputs(void *info) {
     return kernel_info->num_outputs;
 }
 
+int get_opal_dense_scanner_workaround(void *info) {
+    GET_KERNEL_INFO(info);
+    return kernel_info->opal_dense_scanner_workaround;
+}
+
+// For GLB tiling
+int get_num_glb_tiling(void *info) {
+    GET_KERNEL_INFO(info);
+    return kernel_info->num_glb_tiling;
+}
+
+int get_glb_tiling_cnt(void *info) {
+    GET_KERNEL_INFO(info);
+    return kernel_info->glb_tiling_cnt;
+}
+
+void update_glb_tiling_cnt(void *info, int cnt) {
+    GET_KERNEL_INFO(info);
+    kernel_info->glb_tiling_cnt = cnt;
+}
+
 void *get_io_tile_info(void *info, int index) {
     GET_IO_INFO(info);
     return &io_info->io_tiles[index];
@@ -638,6 +719,11 @@ int get_io_tile_cycle_stride(void *info, int index, int stride_idx) {
 int get_io_tile_extent(void *info, int index, int extent_idx) {
     GET_IO_INFO(info);
     return io_info->io_tiles[index].extent[extent_idx];
+}
+
+int get_io_tile_is_glb_input(void *info, int index) {
+    GET_IO_INFO(info);
+    return io_info->io_tiles[index].is_glb_input;
 }
 
 int get_output_size(void *info, int index) {

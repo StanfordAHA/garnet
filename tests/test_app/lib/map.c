@@ -54,41 +54,57 @@ void update_bs_configuration(struct BitstreamInfo *bs_info) {
                size);
 }
 
-int glb_map(void *kernel_) {
+int glb_map(void *kernel_, int dpr_enabled) {
     struct KernelInfo *kernel = kernel_;
     int num_groups = kernel->num_groups;
-    printf("number of groups: %d\n", num_groups);
+    printf("number of groups: %d\n",  kernel->num_groups);
+    printf("number of inputs: %d\n",  kernel->num_inputs);
+    printf("number of outputs: %d\n",  kernel->num_outputs);
 
-    // This is just greedy algorithm to schedule applications
-    // TODO: Need a better way to schedule kernels
-    int group_start = -1;
-    for (int i = 0; i < monitor.num_groups; i++) {
-        int success = 0;
-        for (int j = 0; j < num_groups; j++) {
-            // if the number of groups required exceeds the hardware resources, then
-            // fail
-            if ((i + j) >= monitor.num_groups) {
-                success = -1;
-                break;
-            }
-            if (monitor.groups[i + j] != 0) {
-                break;
-            }
-            if (j == (num_groups - 1)) {
-                group_start = i;
-                success = 1;
-            }
-        }
-        if (success != 0) break;
-    }
-    // no available group
-    if (group_start == -1) {
+    printf("monitor.num_groups: %d\n", monitor.num_groups);
+
+    if (num_groups > monitor.num_groups) {
         printf("Application does not fit on array. Possible error CGRA too small, applications overlapping\n");
         return 0;
     }
 
-    for (int i = group_start; i < group_start + num_groups; i++) {
-        monitor.groups[i] = 1;
+    int group_start;
+    // DPR needs to check if enough array space
+    if (dpr_enabled == 1) {
+        // This is just greedy algorithm to schedule applications
+        // TODO: Need a better way to schedule kernels
+        group_start = -1;
+        for (int i = 0; i < monitor.num_groups; i++) {
+            int success = 0;
+            for (int j = 0; j < num_groups; j++) {
+                // if the number of groups required exceeds the hardware resources, then
+                // fail
+                if ((i + j) >= monitor.num_groups) {
+                    success = -1;
+                    break;
+                }
+                if (monitor.groups[i + j] != 0) {
+                    break;
+                }
+                if (j == (num_groups - 1)) {
+                    group_start = i;
+                    success = 1;
+                }
+            }
+            if (success != 0) break;
+        }
+        // no available group
+        if (group_start == -1) {
+            printf("Combination of Applications does not fit on array. Possible error CGRA too small, applications overlapping\n");
+            return 0;
+        }
+
+        for (int i = group_start; i < group_start + num_groups; i++) {
+            monitor.groups[i] = 1;
+        }
+    // DPR is not enabled so just clear the group start
+    } else {
+        group_start = 0;
     }
     kernel->group_start = group_start;
 
@@ -122,6 +138,7 @@ int glb_map(void *kernel_) {
     int num_inputs = kernel->num_inputs;
     int num_outputs = kernel->num_outputs;
     int first_input_tile;
+    int last_input_tile;
 
     struct IOInfo *io_info;
     struct IOTileInfo *io_tile_info;
@@ -134,12 +151,14 @@ int glb_map(void *kernel_) {
             io_tile_info->tile = tile;
             io_tile_info->start_addr = (io_tile_info->start_addr << CGRA_BYTE_OFFSET) + ((tile * 2) << BANK_ADDR_WIDTH);
             printf("Mapping input_%0d_block_%0d to global buffer\n", i, j);
-            update_io_tile_configuration(io_tile_info, &kernel->config);
+            update_io_tile_configuration(io_tile_info, &kernel->config, kernel);
             if (i == 0 && j == 0) {
                 first_input_tile = tile;
             }
         }
     }
+    // book keeping last input tile so we can tie the flush to a unused glb tile
+    last_input_tile = tile;
 
     for (int i = 0; i < num_outputs; i++) {
         io_info = get_output_info(kernel, i);
@@ -151,16 +170,27 @@ int glb_map(void *kernel_) {
             io_tile_info->start_addr =
                 (io_tile_info->start_addr << CGRA_BYTE_OFFSET) + ((tile * 2 + 1) << BANK_ADDR_WIDTH);
             printf("Mapping output_%0d_block_%0d to global buffer\n", i, j);
-            update_io_tile_configuration(io_tile_info, &kernel->config);
+            update_io_tile_configuration(io_tile_info, &kernel->config, kernel);
         }
     }
 
+    // unset padding var after a kernel is mapped
+    if(getenv("pad_o_left") != NULL) unsetenv("pad_o_left");
+    if(getenv("pad_o_right") != NULL) unsetenv("pad_o_right");
+
     // configure flush crossbar
     int kernel_crossbar_config = 0;
-    for (int i = group_start; i < group_start + num_groups; i++) {
-        crossbar_config[i] = first_input_tile;
+    if (!kernel->opal_dense_scanner_workaround) {
+        for (int i = group_start; i < group_start + num_groups; i++) {
+            crossbar_config[i] = first_input_tile;
+        }
+    } else {
+        for (int i = group_start; i < group_start + num_groups; i++) {
+            crossbar_config[i] = last_input_tile + 1;
+        }
     }
-    for (int i = 0; i < GROUP_SIZE; i++) {
+
+    for (int i = 0; i < MAX_NUM_GROUPS; i++) {
         kernel_crossbar_config += (crossbar_config[i] << (((int)ceil(log(NUM_GLB_TILES) / log(2))) * i));
     }
     add_config(&kernel->config, GLC_GLB_FLUSH_CROSSBAR_R, kernel_crossbar_config << GLC_GLB_FLUSH_CROSSBAR_SEL_F_LSB);
@@ -197,7 +227,81 @@ int glb_map(void *kernel_) {
     return 1;
 }
 
-int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigInfo *config_info) {
+// Hacky functions to update IO tile configurations for output padding
+bool output_padding_config(struct IOTileInfo *io_tile_info, int *start_addr, int *cycle_start_addr) {
+    // get layer shape from env var parsed in design_meta.json; see parser.c
+    // HALIDE_GEN_ARGS added to design_meta.json; see parse_design_meta.py in H2H
+    if (getenv("pad_o_left") == NULL && getenv("pad_o_right") == NULL) {
+        return false;
+    }
+    int in_img = atoi(getenv("in_img"));
+    int pad_o_left = atoi(getenv("pad_o_left"));
+    int pad_o_right = atoi(getenv("pad_o_right"));
+    int ksize = atoi(getenv("ksize"));
+    int stride = atoi(getenv("stride"));
+    int n_oc = atoi(getenv("n_oc"));
+    int glb_o = atoi(getenv("glb_o"));
+    int out_img = floor((in_img - ksize) / stride) + 1;
+
+    int padded_X_ext = out_img + (pad_o_left + pad_o_right);
+    int match_cnt = 0;
+    if (io_tile_info->io == Output) {
+        // calculate extents and strides for X and Y dims
+        for (int i = 0; i < io_tile_info->loop_dim; i++) {
+            if (io_tile_info->extent[i] == padded_X_ext) {
+                match_cnt++;
+                if (match_cnt == 1) {
+                    // outer column dim
+                    io_tile_info->extent[i] -= (pad_o_left + pad_o_right);
+                }
+                else if (match_cnt == 2) {
+                    // inner row dim
+                    io_tile_info->data_stride[i] += (pad_o_left + pad_o_right) * n_oc / glb_o;
+                    io_tile_info->extent[i] -= (pad_o_left + pad_o_right);
+                    break;
+                }
+            }
+        }
+
+        // Adjust local start_addr for first row padding
+        *start_addr += ((n_oc * pad_o_left / glb_o) * (out_img + (pad_o_left + pad_o_right) + 1)) << CGRA_BYTE_OFFSET;
+
+        // Adjust local cycle_start_addr for static mode
+        // TODO: The magic number 10 needs a formal calculation method.
+        *cycle_start_addr += 10;
+    }
+    return true;
+}
+
+bool glb_tiling_config(struct KernelInfo *kernel_info, struct IOTileInfo *io_tile_info, int *start_addr, int *cycle_start_addr) {
+
+    if (kernel_info->num_glb_tiling <= 0) return false;
+    int n_ic = atoi(getenv("n_ic"));
+    int unroll = atoi(getenv("unroll"));
+
+    if (io_tile_info->io == Output) {
+        if (io_tile_info->loop_dim == 2) {
+            io_tile_info->data_stride[0] *= kernel_info->num_glb_tiling;
+            io_tile_info->data_stride[1] *= kernel_info->num_glb_tiling;
+        }
+        // Adjust local cycle_start_addr for static mode
+        // TODO: The magic number 10 needs a formal calculation method.
+        *cycle_start_addr += 10;
+        printf("Output GLB tiling cnt: %d\n", kernel_info->glb_tiling_cnt);
+        *start_addr += (kernel_info->glb_tiling_cnt) * n_ic / unroll << CGRA_BYTE_OFFSET;
+    }
+    else {
+        if (io_tile_info->loop_dim == 2) {
+            io_tile_info->data_stride[0] *= kernel_info->num_glb_tiling;
+            io_tile_info->data_stride[1] *= kernel_info->num_glb_tiling;
+        }
+        printf("Input GLB tiling cnt: %d\n", kernel_info->glb_tiling_cnt);
+        *start_addr += (kernel_info->glb_tiling_cnt) * n_ic / unroll << CGRA_BYTE_OFFSET;
+    }
+    return true;
+}
+
+int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigInfo *config_info, struct KernelInfo *kernel_info) {
     int tile = io_tile_info->tile;
     int start_addr = io_tile_info->start_addr;
     int cycle_start_addr = io_tile_info->cycle_start_addr;
@@ -207,6 +311,10 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
     int cycle_stride[LOOP_LEVEL];
     int mux_sel;
     int mode;
+
+    // If pad_o in env var call hacky padding function
+    bool use_padding = output_padding_config(io_tile_info, &start_addr, &cycle_start_addr);
+    bool use_glb_tiling = glb_tiling_config(kernel_info, io_tile_info, &start_addr, &cycle_start_addr);
 
     // Convert extent/stride hardware-friendly
     for (int i = 0; i < loop_dim; i++) {
@@ -226,6 +334,10 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         mux_sel = 0b10;
 
     if (io_tile_info->io == Input) {
+
+        // Point to the other bank if the input is stored in GLB
+        if (io_tile_info->is_glb_input == 1) start_addr = start_addr + (1 << BANK_ADDR_WIDTH);
+
         if (strcmp(io_tile_info->mode, "RV") == 0)
             mode = LD_DMA_VALID_MODE_READY_VALID;
         else
@@ -279,6 +391,10 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
             mode = ST_DMA_VALID_MODE_READY_VALID;
         else
             mode = ST_DMA_VALID_MODE_VALID;
+
+        // If use hacky padding then switch to valid mode
+        if (use_padding || use_glb_tiling) mode = ST_DMA_VALID_MODE_STATIC;
+
         add_config(config_info,
                    (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_ST_DMA_CTRL_R,
                    ((0b01 << GLB_ST_DMA_CTRL_MODE_F_LSB) | (mode << GLB_ST_DMA_CTRL_VALID_MODE_F_LSB) |
