@@ -601,13 +601,40 @@ class Garnet(Generator):
                 bitstream += self.interconnect.get_node_bitstream_config(source_node, dest_node)
         return bitstream
 
+    def write_zero_to_config_regs(self, bitstream):
+        from gemstone.common.configurable import ConfigRegister
+
+        # This is a fix for the Onyx pond hardware to avoid random flushes in the pond from previous layers
+        for loc, tile in self.interconnect.tile_circuits.items():
+            for feature in tile.features():
+                for child in feature.children():
+                    if isinstance(child, ConfigRegister):
+                        # comment out these lines if want to debug reg name
+                        # if feature.instance_name is None:
+                        #     print(tile.instance_name, feature.name() + "_inst0", child.instance_name, "none")
+                        # else:
+                        #     print(tile.instance_name, feature.instance_name, child.instance_name)
+                        if feature.instance_name: # write zeros to all config registers of interconnect
+                            feature_addr = tile.features().index(feature)
+                            child_addr = child.addr
+                            tile_id_width = tile.tile_id_width
+                            slice_start = tile.feature_config_slice.start
+                            tile_id = self.interconnect.get_tile_id(*loc)
+                            addr = (
+                                tile_id
+                                | (child_addr << slice_start)
+                                | (feature_addr << tile_id_width)
+                            )
+                            bitstream.append((addr,0))
+
     def generate_bitstream(self, halide_src, placement, routing, id_to_name, instance_to_instr, netlist, bus,
-                           compact=False):
+                           compact=False, end_to_end=True):
         routing_fix = archipelago.power.reduce_switching(routing, self.interconnect,
                                                          compact=compact)
         routing.update(routing_fix)
-        
+
         bitstream = []
+        if end_to_end: self.write_zero_to_config_regs(bitstream)
         bitstream += self.interconnect.get_route_bitstream(routing)
         bitstream += self.fix_pond_flush_bug(placement, routing)
         bitstream += self.get_placement_bitstream(placement, id_to_name,
@@ -616,7 +643,7 @@ class Garnet(Generator):
         skip_addr = self.interconnect.get_skip_addr()
         bitstream = compress_config_data(bitstream, skip_compression=skip_addr)
         inputs, outputs = self.get_input_output(netlist)
-        input_interface, output_interface,\
+        input_interface, output_interface, \
             (reset, valid, en) = self.get_io_interface(inputs,
                                                        outputs,
                                                        placement,

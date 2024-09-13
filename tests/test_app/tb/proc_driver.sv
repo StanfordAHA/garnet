@@ -7,6 +7,8 @@ class ProcDriver;
     extern task write_data(int start_addr, data_array_t data_q);
     extern task write(int addr, bit [BANK_DATA_WIDTH-1:0] data);
     extern task read_data(int start_addr, ref data_array_t data_q);
+    extern task write_byte(int addr, bit [BANK_DATA_WIDTH-1:0] data, int byte_offset);
+    extern task clear_last_rows_and_columns(int start_addr, int C, int X, int Y, int trunc_size);
 endclass
 
 function ProcDriver::new(vProcIfcDriver vif, semaphore proc_lock);
@@ -102,4 +104,58 @@ task ProcDriver::read_data(int start_addr, ref data_array_t data_q);
 
     repeat (10) @(vif.cbd);
     proc_lock.put(1);
+endtask
+
+task ProcDriver::write_byte(int addr, bit [BANK_DATA_WIDTH-1:0] data, int byte_offset);
+    bit [7:0] wr_strb; // Strobe for byte-level control
+
+    // Calculate the write strobe based on the byte offset
+    wr_strb = 8'b0; // Clear all strobe bits
+    wr_strb[byte_offset] = 1'b1; // Set strobe for the lower byte of the desired 16-bit word
+    wr_strb[byte_offset + 1] = 1'b1; // Set strobe for the upper byte of the desired 16-bit word
+
+    vif.cbd.wr_en   <= 1'b1;
+    vif.cbd.wr_strb <= wr_strb;
+    vif.cbd.wr_addr <= addr;
+    vif.cbd.wr_data <= data;
+    @(vif.cbd);
+    vif.cbd.wr_en   <= 0;
+    vif.cbd.wr_strb <= 0;
+    vif.cbd.wr_addr <= 0;
+    vif.cbd.wr_data <= 0;
+endtask
+
+task ProcDriver::clear_last_rows_and_columns(int start_addr, int C, int X, int Y, int trunc_size);
+    bit [GLB_ADDR_WIDTH-1:0] cur_addr;
+    bit [BANK_DATA_WIDTH-1:0] zero_data = 0;
+    int ch, x, y;
+    int byte_offset; // Byte offset for writing
+
+    proc_lock.get(1);
+    assert (BANK_DATA_WIDTH == 64);
+    assert (CGRA_BYTE_OFFSET == 1);
+
+    // Loop over each channel
+    for (ch = 0; ch < C; ch++) begin
+        // Calculate byte offset for current channel
+        byte_offset = (ch % 4) << CGRA_BYTE_OFFSET; // 4 = BANK_DATA_WIDTH / WORD_WIDTH
+
+        // Clear the last trunc_size rows for each channel
+        for (x = 0; x < X; x++) begin
+            for (int tr = Y - trunc_size; tr < Y; tr++) begin
+                cur_addr = start_addr + ((tr * X * C + x * C + ch) << CGRA_BYTE_OFFSET); // Calculate the address for each element in the last trunc_size rows
+                write_byte(cur_addr, zero_data, byte_offset); // Write zero data
+            end
+        end
+
+        // Clear the last trunc_size columns for each channel
+        for (y = 0; y < Y; y++) begin
+            for (int tc = X - trunc_size; tc < X; tc++) begin
+                cur_addr = start_addr + ((y * X * C + tc * C + ch) << CGRA_BYTE_OFFSET); // Calculate the address for each element in the last trunc_size columns
+                write_byte(cur_addr, zero_data, byte_offset); // Write zero data
+            end
+        end
+    end
+
+    proc_lock.put(1); // Release lock
 endtask

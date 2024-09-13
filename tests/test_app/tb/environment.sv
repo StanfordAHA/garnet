@@ -106,6 +106,17 @@ task Environment::read_data(Kernel kernel);
             // "Hierarchical reference to a structure array member connected to task ref-port is not supported"
             // proc_drv.read_data(kernel.outputs[i].io_tiles[j].start_addr,
             //                    kernel.outputs[i].io_tiles[j].io_block_data);
+
+            // $display("[%s] clear last rows and columns of output_%0d_block_%0d", kernel.name, i, j);
+            // // Note that C should be channel number per GLB tile
+            // proc_drv.clear_last_rows_and_columns(
+            //     kernel.outputs[i].io_tiles[j].start_addr,
+            //     4,
+            //     56,
+            //     56,
+            //     1
+            // );
+
             data_q = new[kernel.outputs[i].io_tiles[j].io_block_data.size()];
             proc_drv.read_data(kernel.outputs[i].io_tiles[j].start_addr, data_q);
             kernel.outputs[i].io_tiles[j].io_block_data = data_q;
