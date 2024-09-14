@@ -11,6 +11,7 @@
 import "DPI-C" function chandle parse_metadata(string filename);
 import "DPI-C" function chandle get_place_info(chandle info);
 import "DPI-C" function chandle get_bs_info(chandle info);
+import "DPI-C" function chandle get_shape_info(chandle info);
 import "DPI-C" function chandle get_input_info(
     chandle info,
     int index
@@ -49,6 +50,15 @@ import "DPI-C" function int get_output_size(
 import "DPI-C" function int get_bs_size(chandle info);
 import "DPI-C" function int get_bs_tile(chandle info);
 import "DPI-C" function int get_bs_start_addr(chandle info);
+
+import "DPI-C" function int get_shape_in_img(chandle info);
+import "DPI-C" function int get_shape_pad_o_left(chandle info);
+import "DPI-C" function int get_shape_pad_o_right(chandle info);
+import "DPI-C" function int get_shape_ksize(chandle info);
+import "DPI-C" function int get_shape_stride(chandle info);
+import "DPI-C" function int get_shape_n_oc(chandle info);
+import "DPI-C" function int get_shape_glb_o(chandle info);
+import "DPI-C" function int get_shape_trunc_size(chandle info);
 
 import "DPI-C" function int get_num_glb_tiling(chandle info); // For GLB tiling
 import "DPI-C" function int get_glb_tiling_cnt(chandle info); // For GLB tiling
@@ -143,7 +153,7 @@ class Kernel;
     // name stores the index and the name of Kernel
     string name;
 
-    chandle kernel_info, bs_info;
+    chandle kernel_info, bs_info, shape_info;
 
     string placement_filename;
     string bitstream_filename;
@@ -157,6 +167,16 @@ class Kernel;
 
     int num_glb_tiling;
     int glb_tiling_cnt;
+
+    // Shape info only for end-to-end dense CNN
+    int in_img;
+    int pad_o_left;
+    int pad_o_right;
+    int ksize;
+    int stride;
+    int n_oc;
+    int glb_o;
+    int trunc_size;
 
     // TODO: Put all these into IO inputs/outputs
     // input/output information for testing
@@ -240,6 +260,18 @@ function Kernel::new(string app_dir, int dpr);
     bitstream_filename = get_bitstream_filename(kernel_info);
     bs_info = get_bs_info(kernel_info);
     assert_(bs_info != null, $sformatf("Unable to find %s", bitstream_filename));
+
+    // Only for end-to-end dense CNN
+    shape_info = get_shape_info(kernel_info);
+    assert_(shape_info != null, "Unable to find shape info");
+    in_img = get_shape_in_img(shape_info);
+    pad_o_left = get_shape_pad_o_left(shape_info);
+    pad_o_right = get_shape_pad_o_right(shape_info);
+    ksize = get_shape_ksize(shape_info);
+    stride = get_shape_stride(shape_info);
+    n_oc = get_shape_n_oc(shape_info);
+    glb_o = get_shape_glb_o(shape_info);
+    trunc_size = get_shape_trunc_size(shape_info);
 
     num_inputs  = get_num_inputs(kernel_info);
     num_outputs = get_num_outputs(kernel_info);

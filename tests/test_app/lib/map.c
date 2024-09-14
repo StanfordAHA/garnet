@@ -174,10 +174,6 @@ int glb_map(void *kernel_, int dpr_enabled) {
         }
     }
 
-    // unset padding var after a kernel is mapped
-    if(getenv("pad_o_left") != NULL) unsetenv("pad_o_left");
-    if(getenv("pad_o_right") != NULL) unsetenv("pad_o_right");
-
     // configure flush crossbar
     int kernel_crossbar_config = 0;
     if (!kernel->opal_dense_scanner_workaround) {
@@ -228,19 +224,20 @@ int glb_map(void *kernel_, int dpr_enabled) {
 }
 
 // Hacky functions to update IO tile configurations for output padding
-bool output_padding_config(struct IOTileInfo *io_tile_info, int *start_addr, int *cycle_start_addr) {
-    // get layer shape from env var parsed in design_meta.json; see parser.c
+bool output_padding_config(struct KernelInfo *kernel_info, struct IOTileInfo *io_tile_info, int *start_addr, int *cycle_start_addr) {
+    // get layer shape from ShapeInfo struct parsed from design_meta.json; see parser.c
     // HALIDE_GEN_ARGS added to design_meta.json; see parse_design_meta.py in H2H
-    if (getenv("pad_o_left") == NULL && getenv("pad_o_right") == NULL) {
+    struct ShapeInfo *shape_info = get_shape_info(kernel_info);
+    if (shape_info->pad_o_left == 0 && shape_info->pad_o_right == 0) {
         return false;
     }
-    int in_img = atoi(getenv("in_img"));
-    int pad_o_left = atoi(getenv("pad_o_left"));
-    int pad_o_right = atoi(getenv("pad_o_right"));
-    int ksize = atoi(getenv("ksize"));
-    int stride = atoi(getenv("stride"));
-    int n_oc = atoi(getenv("n_oc"));
-    int glb_o = atoi(getenv("glb_o"));
+    int in_img = shape_info->in_img;
+    int pad_o_left = shape_info->pad_o_left;
+    int pad_o_right = shape_info->pad_o_right;
+    int ksize = shape_info->ksize;
+    int stride = shape_info->stride;
+    int n_oc = shape_info->n_oc;
+    int glb_o = shape_info->glb_o;
     int out_img = floor((in_img - ksize) / stride) + 1;
 
     int padded_X_ext = out_img + (pad_o_left + pad_o_right);
@@ -313,7 +310,7 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
     int mode;
 
     // If pad_o in env var call hacky padding function
-    bool use_padding = output_padding_config(io_tile_info, &start_addr, &cycle_start_addr);
+    bool use_padding = output_padding_config(kernel_info, io_tile_info, &start_addr, &cycle_start_addr);
     bool use_glb_tiling = glb_tiling_config(kernel_info, io_tile_info, &start_addr, &cycle_start_addr);
 
     // Convert extent/stride hardware-friendly

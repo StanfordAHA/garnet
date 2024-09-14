@@ -107,15 +107,17 @@ task Environment::read_data(Kernel kernel);
             // proc_drv.read_data(kernel.outputs[i].io_tiles[j].start_addr,
             //                    kernel.outputs[i].io_tiles[j].io_block_data);
 
-            // $display("[%s] clear last rows and columns of output_%0d_block_%0d", kernel.name, i, j);
-            // // Note that C should be channel number per GLB tile
-            // proc_drv.clear_last_rows_and_columns(
-            //     kernel.outputs[i].io_tiles[j].start_addr,
-            //     4,
-            //     56,
-            //     56,
-            //     1
-            // );
+            if (kernel.trunc_size > 0) begin
+                $display("[%s] clear last %0d rows and columns of output_%0d_block_%0d", kernel.name, kernel.trunc_size, i, j);
+                // Note that C should be channel number per GLB tile
+                proc_drv.clear_last_rows_and_columns(
+                    kernel.outputs[i].io_tiles[j].start_addr,
+                    kernel.n_oc / kernel.glb_o,
+                    (kernel.in_img - kernel.ksize) / kernel.stride + 1 + kernel.pad_o_left + kernel.pad_o_right,
+                    (kernel.in_img - kernel.ksize) / kernel.stride + 1 + kernel.pad_o_left + kernel.pad_o_right,
+                    kernel.trunc_size
+                );
+            end
 
             data_q = new[kernel.outputs[i].io_tiles[j].io_block_data.size()];
             proc_drv.read_data(kernel.outputs[i].io_tiles[j].start_addr, data_q);

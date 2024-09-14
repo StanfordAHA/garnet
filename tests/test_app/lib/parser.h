@@ -14,6 +14,7 @@
 #define GET_BS_INFO(info) struct BitstreamInfo *bs_info = (struct BitstreamInfo *)info
 #define GET_KERNEL_INFO(info) struct KernelInfo *kernel_info = (struct KernelInfo *)info
 #define GET_CONFIG_INFO(info) struct ConfigInfo *config_info = (struct ConfigInfo *)info
+#define GET_SHAPE_INFO(info) struct ShapeInfo *shape_info = (struct ShapeInfo *)info
 
 struct Configuration {
     int addr;
@@ -65,6 +66,17 @@ struct IOInfo {
     struct IOTileInfo io_tiles[MAX_NUM_IO_TILES];
 };
 
+struct ShapeInfo {
+    int in_img;
+    int pad_o_left;
+    int pad_o_right;
+    int ksize;
+    int stride;
+    int n_oc;
+    int glb_o;
+    int trunc_size; // To write zeros to last rows and cols
+};
+
 struct KernelInfo {
     int num_inputs;
     int num_outputs;
@@ -87,6 +99,9 @@ struct KernelInfo {
     struct IOInfo *input_info[MAX_NUM_IO];
     struct IOInfo *output_info[MAX_NUM_IO];
     struct BitstreamInfo *bitstream_info;
+    
+    // Only for dense CNN
+    struct ShapeInfo shape_info;
 
     // NOTE: What is the best place to store config information?
     // Most config should go into each IOInfo by having separate
@@ -98,6 +113,7 @@ void *parse_metadata(char *filename);
 void *parse_schedule(json_t const *IOs_json);
 int parse_num_group(struct KernelInfo *info);
 void *get_bs_info(void *info);
+void *get_shape_info(void *info);
 void *get_input_info(void *info, int index);
 void *get_output_info(void *info, int index);
 void *get_io_tile_info(void *info, int index);

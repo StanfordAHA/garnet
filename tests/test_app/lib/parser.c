@@ -21,6 +21,9 @@ static int bitstream_info_index = 0;
 static struct IOInfo io_info_list[MAX_NUM_KERNEL * MAX_NUM_IO];
 static int io_info_index = 0;
 
+static struct ShapeInfo shape_info_list[MAX_NUM_KERNEL];
+static int shape_info_index = 0;
+
 // parse the route file to calculate the number of columns used
 int parse_num_group(struct KernelInfo *info) {
     char *filename = info->bitstream_filename;
@@ -340,17 +343,39 @@ void *parse_metadata(char *filename) {
     // Hacky way for conv layer output padding and glb tiling
     // Set os env var to get layer shape
     json_t const *halide_gen_args = json_getProperty(json, "HALIDE_GEN_ARGS");
+
     if (halide_gen_args && JSON_OBJ == json_getType(halide_gen_args)) {
         json_t const *property;
         const char *key;
-        const char *value;
+
+        // Access the current ShapeInfo from the KernelInfo struct
+        GET_KERNEL_INFO(info);
+        struct ShapeInfo *current_shape_info = &kernel_info->shape_info;
 
         for (property = json_getChild(halide_gen_args); property != 0; property = json_getSibling(property)) {
             key = json_getName(property);
+
             if (key && JSON_INTEGER == json_getType(property)) {
-                value = json_getValue(property);
-                // Set the environment variable
-                setenv(key, value, 1);
+                int value = json_getInteger(property);  // Assuming values are integers
+
+                // Assign the value to the correct field in the ShapeInfo struct based on the key
+                if (strcmp(key, "in_img") == 0) {
+                    current_shape_info->in_img = value;
+                } else if (strcmp(key, "pad_o_left") == 0) {
+                    current_shape_info->pad_o_left = value;
+                } else if (strcmp(key, "pad_o_right") == 0) {
+                    current_shape_info->pad_o_right = value;
+                } else if (strcmp(key, "ksize") == 0) {
+                    current_shape_info->ksize = value;
+                } else if (strcmp(key, "stride") == 0) {
+                    current_shape_info->stride = value;
+                } else if (strcmp(key, "n_oc") == 0) {
+                    current_shape_info->n_oc = value;
+                } else if (strcmp(key, "glb_o") == 0) {
+                    current_shape_info->glb_o = value;
+                } else if (strcmp(key, "trunc_size") == 0) {
+                    current_shape_info->trunc_size = value;
+                }
             }
         }
     }
@@ -575,6 +600,51 @@ void *parse_metadata(char *filename) {
 void *get_bs_info(void *info) {
     GET_KERNEL_INFO(info);
     return kernel_info->bitstream_info;
+}
+
+void *get_shape_info(void *info) {
+    GET_KERNEL_INFO(info);
+    return &(kernel_info->shape_info);
+}
+
+int get_shape_in_img(void *info) {
+    GET_SHAPE_INFO(info);
+    return shape_info->in_img;
+}
+
+int get_shape_pad_o_left(void *info) {
+    GET_SHAPE_INFO(info);
+    return shape_info->pad_o_left;
+}
+
+int get_shape_pad_o_right(void *info) {
+    GET_SHAPE_INFO(info);
+    return shape_info->pad_o_right;
+}
+
+int get_shape_ksize(void *info) {
+    GET_SHAPE_INFO(info);
+    return shape_info->ksize;
+}
+
+int get_shape_stride(void *info) {
+    GET_SHAPE_INFO(info);
+    return shape_info->stride;
+}
+
+int get_shape_n_oc(void *info) {
+    GET_SHAPE_INFO(info);
+    return shape_info->n_oc;
+}
+
+int get_shape_glb_o(void *info) {
+    GET_SHAPE_INFO(info);
+    return shape_info->glb_o;
+}
+
+int get_shape_trunc_size(void *info) {
+    GET_SHAPE_INFO(info);
+    return shape_info->trunc_size;
 }
 
 void *get_input_info(void *info, int index) {
