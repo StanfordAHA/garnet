@@ -375,6 +375,10 @@ void *parse_metadata(char *filename) {
                     current_shape_info->glb_o = value;
                 } else if (strcmp(key, "trunc_size") == 0) {
                     current_shape_info->trunc_size = value;
+                } else if (strcmp(key, "n_ic") == 0) {
+                    current_shape_info->n_ic = value;
+                } else if (strcmp(key, "unroll") == 0) {
+                    current_shape_info->unroll = value;
                 }
             }
         }

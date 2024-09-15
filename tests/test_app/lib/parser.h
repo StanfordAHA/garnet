@@ -75,6 +75,8 @@ struct ShapeInfo {
     int n_oc;
     int glb_o;
     int trunc_size; // To write zeros to last rows and cols
+    int n_ic;
+    int unroll;
 };
 
 struct KernelInfo {

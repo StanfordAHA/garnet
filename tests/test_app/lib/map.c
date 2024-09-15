@@ -273,8 +273,9 @@ bool output_padding_config(struct KernelInfo *kernel_info, struct IOTileInfo *io
 bool glb_tiling_config(struct KernelInfo *kernel_info, struct IOTileInfo *io_tile_info, int *start_addr, int *cycle_start_addr) {
 
     if (kernel_info->num_glb_tiling <= 0) return false;
-    int n_ic = atoi(getenv("n_ic"));
-    int unroll = atoi(getenv("unroll"));
+    struct ShapeInfo *shape_info = get_shape_info(kernel_info);
+    int n_ic = shape_info->n_ic;
+    int unroll = shape_info->unroll;
 
     if (io_tile_info->io == Output) {
         if (io_tile_info->loop_dim == 2) {
