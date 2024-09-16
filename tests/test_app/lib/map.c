@@ -15,6 +15,7 @@
 #define MAX_NUM_GROUPS MAX_NUM_COLS / GROUP_SIZE
 
 int crossbar_config[GROUP_SIZE];
+bool DISABLE_DOUBLE_BUFFER = false; // Flag to disable double buffering; for end-to-end CNNs
 struct Monitor {
     int num_groups;
     int num_glb_tiles;
@@ -165,10 +166,14 @@ int glb_map(void *kernel_, int dpr_enabled) {
         int num_io_tiles = io_info->num_io_tiles;
         for (int j = 0; j < num_io_tiles; j++) {
             io_tile_info = get_io_tile_info(io_info, j);
+            if (io_tile_info->pos.x % 2 == 0)
+                DISABLE_DOUBLE_BUFFER = true;
             tile = (group_start * GROUP_SIZE + io_tile_info->pos.x) / 2;
             io_tile_info->tile = tile;
-            io_tile_info->start_addr =
-                (io_tile_info->start_addr << CGRA_BYTE_OFFSET) + ((tile * 2 + 1) << BANK_ADDR_WIDTH);
+            if (DISABLE_DOUBLE_BUFFER)
+                io_tile_info->start_addr = (io_tile_info->start_addr << CGRA_BYTE_OFFSET) + ((tile * 2) << BANK_ADDR_WIDTH);
+            else
+                io_tile_info->start_addr = (io_tile_info->start_addr << CGRA_BYTE_OFFSET) + ((tile * 2 + 1) << BANK_ADDR_WIDTH);
             printf("Mapping output_%0d_block_%0d to global buffer\n", i, j);
             update_io_tile_configuration(io_tile_info, &kernel->config, kernel);
         }
@@ -333,8 +338,8 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
 
     if (io_tile_info->io == Input) {
 
-        // Point to the other bank if the input is stored in GLB
-        if (io_tile_info->is_glb_input == 1) start_addr = start_addr + (1 << BANK_ADDR_WIDTH);
+        // Point to the other bank if the input is stored in GLB for double buffering
+        if (io_tile_info->is_glb_input == 1 && !DISABLE_DOUBLE_BUFFER) start_addr = start_addr + (1 << BANK_ADDR_WIDTH);
 
         if (strcmp(io_tile_info->mode, "RV") == 0)
             mode = LD_DMA_VALID_MODE_READY_VALID;
