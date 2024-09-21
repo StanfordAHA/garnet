@@ -170,10 +170,14 @@ int glb_map(void *kernel_, int dpr_enabled) {
                 DISABLE_DOUBLE_BUFFER = true;
             tile = (group_start * GROUP_SIZE + io_tile_info->pos.x) / 2;
             io_tile_info->tile = tile;
-            if (DISABLE_DOUBLE_BUFFER)
+            if (DISABLE_DOUBLE_BUFFER) {
+                printf("Disabling double buffering for output_%0d_block_%0d\n", i, j);
                 io_tile_info->start_addr = (io_tile_info->start_addr << CGRA_BYTE_OFFSET) + ((tile * 2) << BANK_ADDR_WIDTH);
-            else
+            }
+            else {
+                printf("Using double buffering for output_%0d_block_%0d\n", i, j);
                 io_tile_info->start_addr = (io_tile_info->start_addr << CGRA_BYTE_OFFSET) + ((tile * 2 + 1) << BANK_ADDR_WIDTH);
+            }
             printf("Mapping output_%0d_block_%0d to global buffer\n", i, j);
             update_io_tile_configuration(io_tile_info, &kernel->config, kernel);
         }
@@ -236,6 +240,7 @@ bool output_padding_config(struct KernelInfo *kernel_info, struct IOTileInfo *io
     if (shape_info->pad_o_left == 0 && shape_info->pad_o_right == 0) {
         return false;
     }
+    printf("Using output padding\n");
     int in_img = shape_info->in_img;
     int pad_o_left = shape_info->pad_o_left;
     int pad_o_right = shape_info->pad_o_right;
@@ -243,7 +248,20 @@ bool output_padding_config(struct KernelInfo *kernel_info, struct IOTileInfo *io
     int stride = shape_info->stride;
     int n_oc = shape_info->n_oc;
     int glb_o = shape_info->glb_o;
-    int out_img = floor((in_img - ksize) / stride) + 1;
+    int unroll = shape_info->unroll;
+    int out_img;
+    if (shape_info->out_img == 0) {
+        out_img = floor((in_img - ksize) / stride) + 1;
+    }
+    else {
+        out_img = shape_info->out_img;
+    }
+    if (glb_o == 0 && unroll != 0) {
+        glb_o = unroll;
+    } else if (glb_o == 0 && unroll == 0) {
+        printf("Error: glb_o and unroll are both 0\n");
+        exit(1);
+    }
 
     int padded_X_ext = out_img + (pad_o_left + pad_o_right);
     int match_cnt = 0;

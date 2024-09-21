@@ -59,6 +59,8 @@ import "DPI-C" function int get_shape_stride(chandle info);
 import "DPI-C" function int get_shape_n_oc(chandle info);
 import "DPI-C" function int get_shape_glb_o(chandle info);
 import "DPI-C" function int get_shape_trunc_size(chandle info);
+import "DPI-C" function int get_shape_out_img(chandle info);
+import "DPI-C" function int get_shape_unroll(chandle info);
 
 import "DPI-C" function int get_num_glb_tiling(chandle info); // For GLB tiling
 import "DPI-C" function int get_glb_tiling_cnt(chandle info); // For GLB tiling
@@ -177,6 +179,8 @@ class Kernel;
     int n_oc;
     int glb_o;
     int trunc_size;
+    int out_img;
+    int unroll;
 
     // TODO: Put all these into IO inputs/outputs
     // input/output information for testing
@@ -272,6 +276,8 @@ function Kernel::new(string app_dir, int dpr);
     n_oc = get_shape_n_oc(shape_info);
     glb_o = get_shape_glb_o(shape_info);
     trunc_size = get_shape_trunc_size(shape_info);
+    out_img = get_shape_out_img(shape_info);
+    unroll = get_shape_unroll(shape_info);
 
     num_inputs  = get_num_inputs(kernel_info);
     num_outputs = get_num_outputs(kernel_info);

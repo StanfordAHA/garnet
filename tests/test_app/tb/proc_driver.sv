@@ -129,7 +129,7 @@ task ProcDriver::clear_last_rows_and_columns(int start_addr, int C, int X, int Y
     bit [GLB_ADDR_WIDTH-1:0] cur_addr;
     bit [BANK_DATA_WIDTH-1:0] zero_data = 0;
     int ch, x, y;
-    int byte_offset; // Byte offset for writing
+    int byte_offset; // Byte offset for word within 64-bit data width
 
     proc_lock.get(1);
     assert (BANK_DATA_WIDTH == 64);
@@ -137,13 +137,13 @@ task ProcDriver::clear_last_rows_and_columns(int start_addr, int C, int X, int Y
 
     // Loop over each channel
     for (ch = 0; ch < C; ch++) begin
-        // Calculate byte offset for current channel
-        byte_offset = (ch % 4) << CGRA_BYTE_OFFSET; // 4 = BANK_DATA_WIDTH / WORD_WIDTH
 
         // Clear the last trunc_size rows for each channel
         for (x = 0; x < X; x++) begin
             for (int tr = Y - trunc_size; tr < Y; tr++) begin
-                cur_addr = start_addr + ((tr * X * C + x * C + ch) << CGRA_BYTE_OFFSET); // Calculate the address for each element in the last trunc_size rows
+                int word_index = tr * X * C + x * C + ch;
+                cur_addr = start_addr + ((word_index / 4) * 4 * 2); // Adjust the block address for 4-word-wide data (64 bits) and multiply by 2 for the byte offset
+                byte_offset = (word_index % 4) * 2; // Each word is 16 bits (2 bytes)
                 write_byte(cur_addr, zero_data, byte_offset); // Write zero data
             end
         end
@@ -151,7 +151,9 @@ task ProcDriver::clear_last_rows_and_columns(int start_addr, int C, int X, int Y
         // Clear the last trunc_size columns for each channel
         for (y = 0; y < Y; y++) begin
             for (int tc = X - trunc_size; tc < X; tc++) begin
-                cur_addr = start_addr + ((y * X * C + tc * C + ch) << CGRA_BYTE_OFFSET); // Calculate the address for each element in the last trunc_size columns
+                int word_index = y * X * C + tc * C + ch;
+                cur_addr = start_addr + ((word_index / 4) * 4 * 2);
+                byte_offset = (word_index % 4) * 2; // Each word is 16 bits, so multiply by 2 for byte offset
                 write_byte(cur_addr, zero_data, byte_offset); // Write zero data
             end
         end

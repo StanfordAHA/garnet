@@ -379,6 +379,8 @@ void *parse_metadata(char *filename) {
                     current_shape_info->n_ic = value;
                 } else if (strcmp(key, "unroll") == 0) {
                     current_shape_info->unroll = value;
+                } else if (strcmp(key, "out_img") == 0) {
+                    current_shape_info->out_img = value;
                 }
             }
         }
@@ -649,6 +651,16 @@ int get_shape_glb_o(void *info) {
 int get_shape_trunc_size(void *info) {
     GET_SHAPE_INFO(info);
     return shape_info->trunc_size;
+}
+
+int get_shape_out_img(void *info) {
+    GET_SHAPE_INFO(info);
+    return shape_info->out_img;
+}
+
+int get_shape_unroll(void *info) {
+    GET_SHAPE_INFO(info);
+    return shape_info->unroll;
 }
 
 void *get_input_info(void *info, int index) {

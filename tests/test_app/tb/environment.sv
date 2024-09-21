@@ -109,12 +109,22 @@ task Environment::read_data(Kernel kernel);
 
             if (kernel.trunc_size > 0) begin
                 $display("[%s] clear last %0d rows and columns of output_%0d_block_%0d", kernel.name, kernel.trunc_size, i, j);
+                if (kernel.out_img == 0) begin
+                    kernel.out_img = (kernel.in_img - kernel.ksize) / kernel.stride + 1;
+                end
+                if (kernel.glb_o == 0) begin
+                    kernel.glb_o = kernel.unroll;
+                end
+                if (kernel.n_oc == 0) begin
+                    // raise error
+                    $error("[%s] n_oc is not set", kernel.name);
+                end
                 // Note that C should be channel number per GLB tile
                 proc_drv.clear_last_rows_and_columns(
                     kernel.outputs[i].io_tiles[j].start_addr,
                     kernel.n_oc / kernel.glb_o,
-                    (kernel.in_img - kernel.ksize) / kernel.stride + 1 + kernel.pad_o_left + kernel.pad_o_right,
-                    (kernel.in_img - kernel.ksize) / kernel.stride + 1 + kernel.pad_o_left + kernel.pad_o_right,
+                    kernel.out_img + kernel.pad_o_left + kernel.pad_o_right,
+                    kernel.out_img + kernel.pad_o_left + kernel.pad_o_right,
                     kernel.trunc_size
                 );
             end
