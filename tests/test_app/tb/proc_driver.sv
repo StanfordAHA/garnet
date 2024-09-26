@@ -9,6 +9,9 @@ class ProcDriver;
     extern task read_data(int start_addr, ref data_array_t data_q);
     extern task write_byte(int addr, bit [BANK_DATA_WIDTH-1:0] data, int byte_offset);
     extern task clear_last_rows_and_columns(int start_addr, int C, int X, int Y, int trunc_size);
+    extern task reset_cgra();
+
+    logic cgra_reset;
 endclass
 
 function ProcDriver::new(vProcIfcDriver vif, semaphore proc_lock);
@@ -160,4 +163,13 @@ task ProcDriver::clear_last_rows_and_columns(int start_addr, int C, int X, int Y
     end
 
     proc_lock.put(1); // Release lock
+endtask
+
+// Task to reset cgra between kernels
+task ProcDriver::reset_cgra();
+    $display("Resetting CGRA array");
+    cgra_reset = 1;
+    repeat (3) @(vif.cbd);
+    $display("Resetting CGRA array done");
+    cgra_reset = 0;
 endtask

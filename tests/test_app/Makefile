@@ -82,6 +82,7 @@ VCS = vcs \
 	  +vcs+initreg+random \
 	  +overlap \
 	  +v2k \
+	  +vcs+loopreport \
 	  -l vcs.log \
 	  $(WAVEFORM_ARGS) \
 	  $(COMPILE_ARGS) \

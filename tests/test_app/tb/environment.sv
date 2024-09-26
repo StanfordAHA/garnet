@@ -43,6 +43,7 @@ class Environment;
     extern task run();
     extern task compare();
     extern task clear_output_glb(Kernel kernel);
+    extern task reset_cgra();
 endclass
 
 function Environment::new(Kernel kernels[], vAxilIfcDriver vifc_axil, vProcIfcDriver vifc_proc, int dpr);
@@ -395,6 +396,11 @@ task Environment::clear_output_glb(Kernel kernel);
     end
 endtask
 
+// Task to reset CGRA between kernels
+task Environment::reset_cgra();
+    proc_drv.reset_cgra();
+endtask
+
 task Environment::run();
     // wait for reset
     repeat (20) @(vifc_proc.cbd);
@@ -429,6 +435,7 @@ task Environment::run();
                     kernel_test(kernels[j]);
                     read_data(kernels[j]);
                     kernels[j].compare();
+                    reset_cgra();
                 end
         end
     end

@@ -18,6 +18,7 @@ module top;
     logic clk;
     logic reset;
     logic interrupt;
+    logic cgra_reset;
 
     //============================================================================//
     // clk / reset generation
@@ -53,7 +54,8 @@ module top;
         .clk     (clk),
         .reset   (reset),
         .p_ifc   (p_ifc),
-        .axil_ifc(axil_ifc)
+        .axil_ifc(axil_ifc),
+        .cgra_reset(cgra_reset)
     );
 
     //============================================================================//
@@ -62,7 +64,7 @@ module top;
     Garnet dut (
         // clk/reset/interrupt
         .clk_in              (clk),
-        .reset_in            (reset),
+        .reset_in            (reset || cgra_reset),
         .interrupt           (interrupt),
         .cgra_running_clk_out(  /*unused*/),
 

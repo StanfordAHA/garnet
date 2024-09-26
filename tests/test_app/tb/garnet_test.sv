@@ -13,7 +13,8 @@ program garnet_test #(
     input logic clk,
     reset,
     proc_ifc p_ifc,
-    axil_ifc axil_ifc
+    axil_ifc axil_ifc,
+    output logic cgra_reset
 );
     int test_toggle = 0;
     int value;
@@ -43,6 +44,8 @@ program garnet_test #(
 
         // Dump out data between each test
         //env.compare();
+
+        cgra_reset = env.proc_drv.cgra_reset;
     end
 
     //============================================================================//
