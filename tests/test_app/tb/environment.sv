@@ -42,6 +42,7 @@ class Environment;
     extern task cgra_unstall(bit [NUM_CGRA_COLS-1:0] stall_mask);
     extern task run();
     extern task compare();
+    extern task clear_output_glb(Kernel kernel);
 endclass
 
 function Environment::new(Kernel kernels[], vAxilIfcDriver vifc_axil, vProcIfcDriver vifc_proc, int dpr);
@@ -363,6 +364,31 @@ task Environment::set_interrupt_on();
     axil_drv.write(`GLC_STRM_G2F_IER_R, {NUM_GLB_TILES{1'b1}});
 endtask
 
+// Write zeros to the output bank for end-to-end testing
+task Environment::clear_output_glb(Kernel kernel);
+    int bank_start_addr;
+    int zero_array_size;
+    data_array_t zero_array;
+    foreach (kernel.outputs[i]) begin
+        foreach (kernel.outputs[i].io_tiles[j]) begin
+            $display("[%s] clear output_%0d_block_%0d in GLB Bank before running kernel", kernel.name, i, j);
+
+            bank_start_addr = kernel.outputs[i].io_tiles[j].tile_x << BANK_ADDR_WIDTH;
+            $display("[%s] clear output_%0d_block_%0d in GLB Bank start at 0x%0h", kernel.name, i, j, bank_start_addr);
+
+            zero_array_size = 128 * 1024 * 8 / CGRA_DATA_WIDTH;
+            $display("[%s] clear output_%0d_block_%0d in GLB Bank size %0d words", kernel.name, i, j, zero_array_size);
+
+            zero_array = new[zero_array_size];
+            // Initialize the queue with zeros
+            foreach (zero_array[k]) begin
+                zero_array[k] = 0;
+            end
+            proc_drv.write_data(bank_start_addr, zero_array);
+        end
+    end
+endtask
+
 task Environment::run();
     // wait for reset
     repeat (20) @(vifc_proc.cbd);
@@ -393,6 +419,7 @@ task Environment::run();
                     glb_configure(kernels[j]);
                     cgra_configure(kernels[j]);
                     write_data(kernels[j]);
+                    clear_output_glb(kernels[j]);
                     kernel_test(kernels[j]);
                     read_data(kernels[j]);
                     kernels[j].compare();

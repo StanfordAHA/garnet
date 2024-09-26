@@ -28,6 +28,10 @@ import "DPI-C" function int get_num_io_tiles(
     chandle info,
     int index
 );
+import "DPI-C" function int get_io_tile_x(
+    chandle info,
+    int index
+);
 import "DPI-C" function int get_num_outputs(chandle info);
 import "DPI-C" function string get_placement_filename(chandle info);
 import "DPI-C" function string get_bitstream_filename(chandle info);
@@ -139,6 +143,7 @@ typedef bitstream_entry_t bitstream_t[];
 
 typedef struct {
     int tile;
+    int tile_x;
     int start_addr;
     int num_data;
     int is_glb_input; // for back-to-back kernels to judge if input is already in glb
@@ -521,6 +526,7 @@ function int Kernel::kernel_map();
             inputs[i].io_tiles[j].tile = get_io_tile_map_tile(io_info, j);
             inputs[i].io_tiles[j].start_addr = get_io_tile_start_addr(io_info, j);
             inputs[i].io_tiles[j].is_glb_input = get_io_tile_is_glb_input(io_info, j); // for back-to-back kernels
+            inputs[i].io_tiles[j].tile_x = get_io_tile_x(io_info, j);
         end
     end
 
@@ -529,6 +535,7 @@ function int Kernel::kernel_map();
         for (int j = 0; j < outputs[i].num_io_tiles; j++) begin
             outputs[i].io_tiles[j].tile = get_io_tile_map_tile(io_info, j);
             outputs[i].io_tiles[j].start_addr = get_io_tile_start_addr(io_info, j);
+            outputs[i].io_tiles[j].tile_x = get_io_tile_x(io_info, j);
         end
     end
 
