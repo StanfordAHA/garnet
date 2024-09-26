@@ -369,23 +369,29 @@ task Environment::clear_output_glb(Kernel kernel);
     int bank_start_addr;
     int zero_array_size;
     data_array_t zero_array;
-    foreach (kernel.outputs[i]) begin
-        foreach (kernel.outputs[i].io_tiles[j]) begin
-            $display("[%s] clear output_%0d_block_%0d in GLB Bank before running kernel", kernel.name, i, j);
 
-            bank_start_addr = kernel.outputs[i].io_tiles[j].tile_x << BANK_ADDR_WIDTH;
-            $display("[%s] clear output_%0d_block_%0d in GLB Bank start at 0x%0h", kernel.name, i, j, bank_start_addr);
+    if (kernel.num_glb_tiling <= 1) begin
+        foreach (kernel.outputs[i]) begin
+            foreach (kernel.outputs[i].io_tiles[j]) begin
+                $display("[%s] clear output_%0d_block_%0d in GLB Bank before running kernel", kernel.name, i, j);
 
-            zero_array_size = 128 * 1024 * 8 / CGRA_DATA_WIDTH;
-            $display("[%s] clear output_%0d_block_%0d in GLB Bank size %0d words", kernel.name, i, j, zero_array_size);
+                bank_start_addr = kernel.outputs[i].io_tiles[j].tile_x << BANK_ADDR_WIDTH;
+                $display("[%s] clear output_%0d_block_%0d in GLB Bank start at 0x%0h", kernel.name, i, j, bank_start_addr);
 
-            zero_array = new[zero_array_size];
-            // Initialize the queue with zeros
-            foreach (zero_array[k]) begin
-                zero_array[k] = 0;
+                zero_array_size = 128 * 1024 * 8 / CGRA_DATA_WIDTH;
+                $display("[%s] clear output_%0d_block_%0d in GLB Bank size %0d words", kernel.name, i, j, zero_array_size);
+
+                zero_array = new[zero_array_size];
+                // Initialize the queue with zeros
+                foreach (zero_array[k]) begin
+                    zero_array[k] = 0;
+                end
+                proc_drv.write_data(bank_start_addr, zero_array);
             end
-            proc_drv.write_data(bank_start_addr, zero_array);
         end
+    end else begin
+        $display("[%s] GLB tiling is enabled, skip clearing the output GLB bank", kernel.name);
+        $display("[%s] This means padding should not be used when GLB tiling is enabled", kernel.name);
     end
 endtask
 
