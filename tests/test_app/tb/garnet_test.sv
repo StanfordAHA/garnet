@@ -51,8 +51,12 @@ program garnet_test #(
         // Wait until 'env' and 'env.proc_drv' are initialized
         wait (env != null && env.proc_drv != null);
         cgra_reset = env.proc_drv.cgra_reset;
-        forever begin
-            @(env.proc_drv.cgra_reset);
+        while (!env.simulation_done) begin
+            @(env.proc_drv.cgra_reset or env.simulation_done);
+            if (env.simulation_done) begin
+                // Exit the loop if simulation is done
+                break;
+            end
             cgra_reset = env.proc_drv.cgra_reset;
         end
     end

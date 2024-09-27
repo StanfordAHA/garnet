@@ -24,6 +24,7 @@ class Environment;
     AxilDriver axil_drv;
 
     int dpr;
+    bit simulation_done = 0;
 
     extern function new(Kernel kernels[], vAxilIfcDriver vifc_axil, vProcIfcDriver vifc_proc, int dpr);
     extern function void build();
@@ -440,6 +441,10 @@ task Environment::run();
                 end
         end
     end
+
+    simulation_done = 1;
+    $display("Simulation done");
+
 endtask
 
 task Environment::compare();
