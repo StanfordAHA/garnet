@@ -427,6 +427,8 @@ task Environment::run();
         foreach (kernels[i]) begin
             automatic int j = i;
                 begin
+                    reset_cgra(); // Reset CGRA before starting the kernel
+                    set_interrupt_on(); // Re-enable interrupts after reset
                     write_bs(kernels[j]);
                     glb_configure(kernels[j]);
                     cgra_configure(kernels[j]);
@@ -435,7 +437,6 @@ task Environment::run();
                     kernel_test(kernels[j]);
                     read_data(kernels[j]);
                     kernels[j].compare();
-                    reset_cgra();
                 end
         end
     end

@@ -45,7 +45,16 @@ program garnet_test #(
         // Dump out data between each test
         //env.compare();
 
+    end
+
+    initial begin
+        // Wait until 'env' and 'env.proc_drv' are initialized
+        wait (env != null && env.proc_drv != null);
         cgra_reset = env.proc_drv.cgra_reset;
+        forever begin
+            @(env.proc_drv.cgra_reset);
+            cgra_reset = env.proc_drv.cgra_reset;
+        end
     end
 
     //============================================================================//

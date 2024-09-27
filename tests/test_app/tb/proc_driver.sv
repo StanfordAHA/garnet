@@ -11,7 +11,7 @@ class ProcDriver;
     extern task clear_last_rows_and_columns(int start_addr, int C, int X, int Y, int trunc_size);
     extern task reset_cgra();
 
-    logic cgra_reset;
+    logic cgra_reset = 0;
 endclass
 
 function ProcDriver::new(vProcIfcDriver vif, semaphore proc_lock);
@@ -169,7 +169,7 @@ endtask
 task ProcDriver::reset_cgra();
     $display("Resetting CGRA array");
     cgra_reset = 1;
-    repeat (3) @(vif.cbd);
+    repeat (10) @(vif.cbd);
     $display("Resetting CGRA array done");
     cgra_reset = 0;
 endtask
