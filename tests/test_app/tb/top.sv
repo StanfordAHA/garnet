@@ -30,9 +30,9 @@ module top;
 
     // reset generation
     initial begin
-        reset = 1;   // orig had nonblocking <= ... why?
+        reset <= 1;
         repeat (3) @(posedge clk);
-        reset = 0;   // orig had nonblocking <= ... why?
+        reset <= 0;
     end
 
     //============================================================================//
