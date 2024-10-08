@@ -61,7 +61,7 @@ endfunction
 task Environment::write_bs(Kernel kernel);
     realtime start_time, end_time;
     $timeformat(-9, 2, " ns");
-    repeat (10) @(vifc_proc.cbd);
+    repeat (10) @(posedge vifc_proc.clk);
     start_time = $realtime;
     $display("[%s] write bitstream to glb start at %0t", kernel.name, start_time);
     proc_drv.write_bs(kernel.bs_start_addr, kernel.bitstream_data);
@@ -74,7 +74,7 @@ endtask
 task Environment::write_data(Kernel kernel);
     realtime start_time, end_time;
     $timeformat(-9, 2, " ns");
-    repeat (10) @(vifc_proc.cbd);
+    repeat (10) @(posedge vifc_proc.clk);
     foreach (kernel.inputs[i]) begin
         foreach (kernel.inputs[i].io_tiles[j]) begin
             if (kernel.inputs[i].io_tiles[j].is_glb_input == 1) begin
@@ -97,7 +97,7 @@ endtask
 
 task Environment::read_data(Kernel kernel);
     data_array_t data_q;
-    repeat (20) @(vifc_proc.cbd);
+    repeat (20) @(posedge vifc_proc.clk);
 
     foreach (kernel.outputs[i]) begin
         foreach (kernel.outputs[i].io_tiles[j]) begin
@@ -302,8 +302,11 @@ task Environment::wait_interrupt(e_glb_ctrl glb_ctrl, bit [$clog2(NUM_GLB_TILES)
             end
         end
         begin
-            repeat (5_000_000) @(vifc_axil.cbd);
-            repeat (1_000_000) @(vifc_axil.cbd);
+            // Clock is 10ns, so can replace repeat(x) w/ repeat(10x) right?
+            // repeat (5_000_000) @(vifc_axil.cbd);
+            // repeat (1_000_000) @(vifc_axil.cbd);
+            # 50_000_000;
+            # 10_000_000;
             $error("@%0t: %m ERROR: Interrupt wait timeout ", $time);
             $finish;
         end
@@ -343,7 +346,7 @@ endtask
 
 task Environment::run();
     // wait for reset
-    repeat (20) @(vifc_proc.cbd);
+    repeat (20) @(posedge vifc_proc.clk);
 
     // turn on interrupt
     set_interrupt_on();
@@ -380,7 +383,7 @@ task Environment::run();
 endtask
 
 task Environment::compare();
-    repeat (20) @(vifc_axil.cbd);
+    repeat (20) @(posedge vifc_axil.clk);
     foreach (kernels[i]) begin
         kernels[i].compare();
     end
