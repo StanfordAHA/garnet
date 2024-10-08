@@ -22,7 +22,7 @@ task ProcDriver::write_bs(int start_addr, bitstream_t bs_q);
         cur_addr += 8;
     end
 
-    repeat (10) @(vif.cbd);
+    repeat (10) @(posedge vif.clk);
     proc_lock.put(1);
 endtask
 
@@ -48,20 +48,20 @@ task ProcDriver::write_data(int start_addr, data_array_t data_q);
         cur_addr += 8;
     end
 
-    repeat (10) @(vif.cbd);
+    repeat (10) @(posedge vif.clk);
     proc_lock.put(1);
 endtask
 
 task ProcDriver::write(int addr, bit [BANK_DATA_WIDTH-1:0] data);
-    vif.cbd.wr_en   <= 1'b1;
-    vif.cbd.wr_strb <= {(BANK_DATA_WIDTH / 8) {1'b1}};
-    vif.cbd.wr_addr <= addr;
-    vif.cbd.wr_data <= data;
-    @(vif.cbd);
-    vif.cbd.wr_en   <= 0;
-    vif.cbd.wr_strb <= 0;
-    vif.cbd.wr_addr <= 0;
-    vif.cbd.wr_data <= 0;
+    vif.wr_en   <= 1'b1;
+    vif.wr_strb <= {(BANK_DATA_WIDTH / 8) {1'b1}};
+    vif.wr_addr <= addr;
+    vif.wr_data <= data;
+    @(posedge vif.clk);
+    vif.wr_en   <= 0;
+    vif.wr_strb <= 0;
+    vif.wr_addr <= 0;
+    vif.wr_data <= 0;
 endtask
 
 task ProcDriver::read_data(int start_addr, ref data_array_t data_q);
@@ -70,36 +70,36 @@ task ProcDriver::read_data(int start_addr, ref data_array_t data_q);
     proc_lock.get(1);
     fork
         begin
-            @(vif.cbd);
+            @(posedge vif.clk);
             for (int i = 0; i < num_trans; i++) begin
-                vif.cbd.rd_en   <= 1'b1;
+                vif.rd_en   <= 1'b1;
                 // address increases by 8 every write
-                vif.cbd.rd_addr <= (start_addr + 8 * i);
-                @(vif.cbd);
+                vif.rd_addr <= (start_addr + 8 * i);
+                @(posedge vif.clk);
             end
-            vif.cbd.rd_en   <= 0;
-            vif.cbd.rd_addr <= 0;
+            vif.rd_en   <= 0;
+            vif.rd_addr <= 0;
         end
         begin
             for (int i = 0; i < num_trans; i++) begin
-                wait (vif.cbd.rd_data_valid);
+                wait (vif.rd_data_valid);
 
-                data_q[i*4] = vif.cbd.rd_data & 'hFFFF;
+                data_q[i*4] = vif.rd_data & 'hFFFF;
                 if ((i * 4 + 1) < num_words) begin
-                    data_q[i*4+1] = (vif.cbd.rd_data & (('hFFFF) << 16)) >> 16;
+                    data_q[i*4+1] = (vif.rd_data & (('hFFFF) << 16)) >> 16;
                 end
                 if ((i * 4 + 2) < num_words) begin
-                    data_q[i*4+2] = (vif.cbd.rd_data & (('hFFFF) << 32)) >> 32;
+                    data_q[i*4+2] = (vif.rd_data & (('hFFFF) << 32)) >> 32;
                 end
                 if ((i * 4 + 3) < num_words) begin
-                    data_q[i*4+3] = (vif.cbd.rd_data & (('hFFFF) << 48)) >> 48;
+                    data_q[i*4+3] = (vif.rd_data & (('hFFFF) << 48)) >> 48;
                 end
 
-                @(vif.cbd);
+                @(posedge vif.clk);
             end
         end
     join
 
-    repeat (10) @(vif.cbd);
+    repeat (10) @(posedge vif.clk);
     proc_lock.put(1);
 endtask
