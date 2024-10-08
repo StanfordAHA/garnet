@@ -60,7 +60,7 @@ endfunction
 
 task Environment::write_bs(Kernel kernel);
     realtime start_time, end_time;
-    $timeformat(-9, 2, " ns");
+    $timeformat(-9, 2, " ns", 0);
     repeat (10) @(posedge vifc_proc.clk);
     start_time = $realtime;
     $display("[%s] write bitstream to glb start at %0t", kernel.name, start_time);
@@ -73,7 +73,7 @@ endtask
 
 task Environment::write_data(Kernel kernel);
     realtime start_time, end_time;
-    $timeformat(-9, 2, " ns");
+    $timeformat(-9, 2, " ns", 0);
     repeat (10) @(posedge vifc_proc.clk);
     foreach (kernel.inputs[i]) begin
         foreach (kernel.inputs[i].io_tiles[j]) begin
@@ -116,7 +116,7 @@ endtask
 
 task Environment::glb_configure(Kernel kernel);
     realtime start_time, end_time;
-    $timeformat(-9, 2, " ns");
+    $timeformat(-9, 2, " ns", 0);
     start_time = $realtime;
     $display("[%s] glb configuration start at %0t", kernel.name, start_time);
     axil_drv.config_write(kernel.bs_cfg);
@@ -132,7 +132,7 @@ task Environment::cgra_configure(Kernel kernel);
     bit [NUM_CGRA_COLS-1:0] cgra_stall_mask;
 
     realtime start_time, end_time;
-    $timeformat(-9, 2, " ns");
+    $timeformat(-9, 2, " ns", 0);
 
     group_start = kernel.group_start;
     num_groups = kernel.num_groups;
@@ -199,7 +199,7 @@ task Environment::kernel_test(Kernel kernel);
     bit [NUM_GLB_TILES-1:0] glb_stall_mask;
     bit [NUM_CGRA_COLS-1:0] cgra_stall_mask;
     realtime start_time, end_time, g2f_end_time, latency;
-    $timeformat(-9, 2, " ns");
+    $timeformat(-9, 2, " ns", 0);
 
     group_start = kernel.group_start;
     num_groups = kernel.num_groups;
