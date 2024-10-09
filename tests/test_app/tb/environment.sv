@@ -336,9 +336,13 @@ endtask
 task Environment::set_interrupt_on();
     $display("Turn on interrupt enable registers");
     axil_drv.write(`GLC_GLOBAL_IER_R, 3'b111);
+    $display("Completed axil write 0");
     axil_drv.write(`GLC_PAR_CFG_G2F_IER_R, {NUM_GLB_TILES{1'b1}});
+    $display("Completed axil write 1");
     axil_drv.write(`GLC_STRM_F2G_IER_R, {NUM_GLB_TILES{1'b1}});
+    $display("Completed axil write 2");
     axil_drv.write(`GLC_STRM_G2F_IER_R, {NUM_GLB_TILES{1'b1}});
+    $display("Completed axil write 3");
 endtask
 
 task Environment::run();
@@ -348,17 +352,25 @@ task Environment::run();
     // turn on interrupt
     set_interrupt_on();
 
+    $display("Done setting interrupt on");
     if (dpr) begin
         foreach (kernels[i]) begin
             automatic int j = i;
             fork
                 begin
+                    
                     write_bs(kernels[j]);
+                    $display("DPR: Done write_bs for kernel%d", j);
                     glb_configure(kernels[j]);
+                    $display("DPR: Done glb_configure for kernel%d", j);
                     cgra_configure(kernels[j]);
+                    $display("DPR: Done cgra_configure for kernel%d", j);
                     write_data(kernels[j]);
+                    $display("DPR: Done write_data for kernel%d", j);
                     kernel_test(kernels[j]);
+                    $display("DPR: Done kernel_test for kernel%d", j);
                     read_data(kernels[j]);
+                    $display("DPR: Done read_data for kernel%d", j);
                 end
             join_none
         end
@@ -368,11 +380,17 @@ task Environment::run();
             automatic int j = i;
                 begin
                     write_bs(kernels[j]);
+                    $display("Done write_bs for kernel%d", j);
                     glb_configure(kernels[j]);
+                    $display("Done glb_configure for kernel%d", j);
                     cgra_configure(kernels[j]);
+                    $display("Done cgra_configure for kernel%d", j);
                     write_data(kernels[j]);
+                    $display("Done write_data for kernel%d", j);
                     kernel_test(kernels[j]);
+                    $display("Done kernel_test for kernel%d", j);
                     read_data(kernels[j]);
+                    $display("Done read_data for kernel%d", j);
                     kernels[j].compare();
                 end
         end
