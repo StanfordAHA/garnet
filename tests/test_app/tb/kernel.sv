@@ -9,7 +9,13 @@
 **===========================================================================*/
 
 import "DPI-C" function chandle parse_metadata(string filename);
-import "DPI-C" function chandle get_place_info(chandle info);
+
+// (1) This (get_place_info()) does not appear to exist in libcgra.so
+// (2) Also, looks like it is never used
+// Also, as a conequence of (1), verilator will not compile
+// So let's get rid of it!?
+// import "DPI-C" function chandle get_place_info(chandle info);
+
 import "DPI-C" function chandle get_bs_info(chandle info);
 import "DPI-C" function chandle get_input_info(
     chandle info,
@@ -346,7 +352,14 @@ function bitstream_t Kernel::parse_bitstream();
         int unsigned data;
         int code;
         bitstream_entry_t entry;
-        code = $fscanf(fp, "%08x %08x", entry.addr, entry.data);
+
+        // NOTE: verilator DOES NOT LIKE these struct refs
+        // code = $fscanf(fp, "%08x %08x", entry.addr, entry.data);
+
+        // Let's try this instead
+        addr = entry.addr; data = entry.data;
+        code = $fscanf(fp, "%08x %08x", addr, data);
+
         if (code == -1) continue;
         assert_(code == 2, $sformatf(
                 "Incorrect bs format. Expected 2 entries, got: %0d. Current entires: %0d",
