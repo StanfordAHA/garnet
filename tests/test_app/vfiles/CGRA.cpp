@@ -1,96 +1,136 @@
-// #define VTOP Vtop Vtop_CGRA
-// #include "Vtop_CGRA.h"
+// DESCRIPTION: Verilator: Verilog example module
+//
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2017 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
+//======================================================================
 
-#define VTOP Vtop
+// For std::unique_ptr
+#include <memory>
+
+// Include common routines
+#include <verilated.h>
+
+// Include model header, generated from Verilating "top.v"
 #include "Vtop.h"
+// #include "Vtop_top.h"
 
-#include "verilated.h"
-// #include "verilated_vcd_c.h"
+// Legacy function required only so linking works on Cygwin and MSVC++
+double sc_time_stamp() { return 0; }
 
-// clock.vp had this:
-//;    (Name=>'CLK_PERIOD', Val=>5000, Min=>2, Step=>2,
-//;    (Name=>'RST_PERIOD', Val=>1, Min=>1, Step=>1,
-//;    (Name=>'MAX_CYCLES', Val=>10, Min=>1, Step=>1,
+// See e.g. /usr/local/share/verilator/examples/make_tracing_c/sim_main.cpp
+int main(int argc, char** argv) {
 
-#define CLK_PERIOD 5000
-#define RST_PERIOD 1
+    // Create logs/ directory in case we have traces to put under it
+    Verilated::mkdir("logs");
 
-// #define MAX_CYCLES 10
-// ../tst/top_fftram.vp://; my $ncy = fftgen::log2($npoints) * ($npoints/2)/$nunits;
-// ../tst/top_fftram.vp://;     MAX_CYCLES=>  ($ncy+6)  # End simulation after complete cycle plus some.
+    // Construct a VerilatedContext to hold simulation time, etc.
+    // Multiple modules (made later below with Vtop) may share the same
+    // context to share time, or modules may have different contexts if
+    // they should be independent from each other.
 
-#define MAX_CYCLES 1000000 // "done" signal should stop us long before!
+    // Using unique_ptr is similar to
+    // "VerilatedContext* contextp = new VerilatedContext" then deleting at end.
+    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
+    // Do not instead make Vtop as a file-scope static variable, as the
+    // "C++ static initialization order fiasco" may cause a crash
 
+    // Set debug level, 0 is off, 9 is highest presently used
+    // May be overridden by commandArgs argument parsing
+    contextp->debug(0);
 
-// Called by $time in Verilog. "double" matches SystemC (do i even care?)
-double main_time;
-double sc_time_stamp () { return main_time; }
+    // Randomization reset policy
+    // May be overridden by commandArgs argument parsing
+    contextp->randReset(2);
 
-  int main(int argc, char **argv, char **env) {
-    int i;
-    int clk;
-    int ncy;
-    Verilated::commandArgs(argc, argv);
-    // init top verilog instance
-    // Vtop_CGRA* top = new Vtop_CGRA;
-    Vtop* top = new Vtop;
-    // init trace dump
-    //   Verilated::traceEverOn(true);
-    //   VerilatedVcdC* tfp = new VerilatedVcdC;
-    // top->trace (tfp, 99);
-    //   tfp->open ("counter.vcd");
+    // Verilator must compute traced signals
+    contextp->traceEverOn(true);
 
-    //Uncomment to debug "didn't converge" error (see verilator manual "verilator --help")
-    //Verilated::debug(1);
+    // Pass arguments so Verilated code can see them, e.g. $value$plusargs
+    // This needs to be called before you create any model
+    contextp->commandArgs(argc, argv);
 
-    top->eval(); // establish initial values?
-    exit(0);
+    // Construct the Verilated model, from Vtop.h generated from Verilating "top.v".
+    // Using unique_ptr is similar to "Vtop* top = new Vtop" then deleting at end.
+    // "TOP" will be the hierarchical name of the module.
+    const std::unique_ptr<Vtop> top{new Vtop{contextp.get(), "TOP"}};
+    /*
+    // Set Vtop's input signals
+    // top->reset_l = !0;
+    // top->clk = 0;
+    top->in_small = 1;
+    top->in_quad = 0x1234;
+    top->in_wide[0] = 0x11111111;
+    top->in_wide[1] = 0x22222222;
+    top->in_wide[2] = 0x3;
+    */
+    // Simulate until $finish
+    // while (!contextp->gotFinish()) {
+
+    // '5000' means 5ns. Why?
+    int ns=1000;
+    for (int i=0; i<(8.5*ns); i++) {
+        // Historical note, before Verilator 4.200 Verilated::gotFinish()
+        // was used above in place of contextp->gotFinish().
+        // Most of the contextp-> calls can use Verilated:: calls instead;
+        // the Verilated:: versions just assume there's a single context
+        // being used (per thread).  It's faster and clearer to use the
+        // newer contextp-> versions.
+
+        contextp->timeInc(1);  // 1 timeprecision period passes...
+        // Historical note, before Verilator 4.200 a sc_time_stamp()
+        // function was required instead of using timeInc.  Once timeInc()
+        // is called (with non-zero), the Verilated libraries assume the
+        // new API, and sc_time_stamp() will no longer work.
+
+        ////////////////////////////////////////////////////////////////////////
+        /*
+        // Toggle a fast (time/2 period) clock
+        top->clk = !top->clk;
+        // Toggle control signals on an edge that doesn't correspond
+        // to where the controls are sampled; in this example we do
+        // this only on a negedge of clk, because we know
+        // reset is not sampled there.
+        if (!top->clk) {
+            if (contextp->time() > 1 && contextp->time() < 10) {
+                top->reset_l = !1;  // Assert reset
+            } else {
+                top->reset_l = !0;  // Deassert reset
+            }
+            // Assign some other inputs
+            top->in_quad += 0x12;
+        }
+        */
+        ////////////////////////////////////////////////////////////////////////
+
+        // Evaluate model
+        // (If you have multiple models being simulated in the same
+        // timestep then instead of eval(), call eval_step() on each, then
+        // eval_end_step() on each. See the manual.)
+        top->eval();
+
+        /* ------------------------------------------------------------------------
+        // Read outputs
+        VL_PRINTF("[%" PRId64 "] clk=%x rstl=%x iquad=%" PRIx64 " -> oquad=%" PRIx64
+                  " owide=%x_%08x_%08x\n",
+                  contextp->time(), top->clk, top->reset_l, top->in_quad, top->out_quad,
+                  top->out_wide[2], top->out_wide[1], top->out_wide[0]);
+        */
+    }
+
+    // Final model cleanup
+    top->final();
+
+    // Coverage analysis (calling write only after the test is known to pass)
+#if VM_COVERAGE
+    Verilated::mkdir("logs");
+    contextp->coveragep()->write("logs/coverage.dat");
+#endif
+
+    // Final simulation summary
+    contextp->statsPrintSummary();
+
+    // Return good completion status
+    // Don't use exit() or destructor won't get called
+    return 0;
 }
-
-
-
-
-
-
-
-//     top->clk = 0;
-//     top->eval(); // establish initial values?
-//     ncy=0;
-// 
-//     // run simulation for 100 clock periods [20?]
-//     //  for (i=0; i<20; i++) {
-//     for (i=0; i<MAX_CYCLES; i++) {
-// 
-//         // First half cycle
-//         clk = 0;
-//         top->clk = 0;
-// 
-//         // top_CGRA should do this
-//         //       //      if (i == (RST_PERIOD)) {
-//         //       if (i == 1) {
-//         //           // $display("\nRESET!!!\n");
-//         //           if (top->rst_n == 1) printf("\nRESET!!!\n");
-//         //           top->rst_n = 0; // Wait 10 cy before pulling reset low (active)
-//         //       }
-// 
-//         // printf("------------------------------------------------------------------------------\n");
-//         // printf("clock.vp: reset=%d, ncy=%3d, time=%6d ns\n", top->rst_n, i, i);
-//         // printf("------------------------------------------------------------------------------\n");
-// 
-//         main_time = 500 * (2*i + clk); // Update the global clock for $time, I guess: 0, 500, 1000, ...
-//         top->eval();
-//         //tfp->dump(ncy+=5);
-// 
-//         // Second half cycle
-//         clk = 1;
-//         top->clk = 1;
-//         main_time = 500 * (2*i + clk); // Update the global clock for $time, I guess: 0, 500, 1000, ...
-//         top->eval();
-//         //tfp->dump(ncy+=5);
-// 
-//         if (Verilated::gotFinish())  exit(0);
-//         if (top->done == 1) break;
-//     }
-//     tfp->close();
-//     exit(0);
-// }
