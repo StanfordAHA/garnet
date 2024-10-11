@@ -45,6 +45,7 @@ class Environment;
     extern task compare();
     extern task clear_output_glb(Kernel kernel);
     extern task reset_cgra();
+    extern task read_input_data_and_dump_interleaved(Kernel kernel);
 endclass
 
 function Environment::new(Kernel kernels[], vAxilIfcDriver vifc_axil, vProcIfcDriver vifc_proc, int dpr);
@@ -139,6 +140,92 @@ task Environment::read_data(Kernel kernel);
         end
     end
 endtask
+
+task Environment::read_input_data_and_dump_interleaved(Kernel kernel);
+    data_array_t tile_data;
+    data_array_t interleaved_data;
+    integer file;
+    string filename;
+    integer i, j, k;
+    integer num_elements = 0;
+    integer element_count = 0;  // Counter to track elements for line breaks
+    integer num_io_tiles;
+
+    repeat (20) @(vifc_proc.cbd);
+
+    // Loop through inputs and interleave data from io_tiles
+    foreach (kernel.inputs[i]) begin
+        // Generate a unique filename for each input
+        filename = $sformatf("%s_input_%0d_data.txt", kernel.name, i);
+        $display("[%s] dumping data to file %s", kernel.name, filename);
+
+        file = $fopen(filename, "w");
+        if (file == 0) begin
+            $error("[%s] Failed to open file %s for writing", kernel.name, filename);
+            continue;  // Skip this input if the file cannot be opened
+        end
+
+        num_io_tiles = kernel.inputs[i].io_tiles.size();
+
+        // For each io_tile, read the data from memory
+        foreach (kernel.inputs[i].io_tiles[j]) begin
+            $display("[%s] read input_%0d_block_%0d from glb start", kernel.name, i, j);
+
+            // Read data from the io_tile's start address
+            tile_data = new[kernel.inputs[i].io_tiles[j].io_block_data.size()];
+            proc_drv.read_data(kernel.inputs[i].io_tiles[j].start_addr, tile_data);
+            kernel.inputs[i].io_tiles[j].io_block_data = tile_data;  // Store it in the block
+
+            $display("[%s] read input_%0d_block_%0d from glb end", kernel.name, i, j);
+        end
+
+        // Check if there is only one tile; no interleaving required
+        if (num_io_tiles == 1) begin
+            tile_data = kernel.inputs[i].io_tiles[0].io_block_data;
+
+            // Write data directly for a single tile
+            for (k = 0; k < tile_data.size(); k++) begin
+                if (element_count % 8 == 7) begin
+                    $fwrite(file, "%4h\n", tile_data[k]);  // No space before newline
+                end else begin
+                    $fwrite(file, "%4h ", tile_data[k]);  // Add space between elements
+                end
+                element_count += 1;
+            end
+        end else begin
+            // Interleave data from multiple tiles
+            num_elements = kernel.inputs[i].io_tiles[0].io_block_data.size();
+            interleaved_data = new[num_elements * num_io_tiles];
+
+            // Hacky way to interleave input data
+            for (j = 0; j < num_io_tiles; j++) begin
+                for (k = 0; k < num_elements; k++) begin
+                    interleaved_data[j + num_io_tiles * k] = kernel.inputs[i].io_tiles[j].io_block_data[k];
+                end
+            end
+
+            // Write interleaved data to the file
+            for (k = 0; k < interleaved_data.size(); k++) begin
+                if (element_count % 8 == 7) begin
+                    $fwrite(file, "%4h\n", interleaved_data[k]);  // No space before newline
+                end else begin
+                    $fwrite(file, "%4h ", interleaved_data[k]);  // Add space between elements
+                end
+                element_count += 1;
+            end
+        end
+
+        // Ensure there's a newline at the end of the file if the last write didn't add one
+        if (element_count % 8 != 0) begin
+            $fwrite(file, "\n");
+        end
+
+        $fclose(file);
+
+        $display("[%s] finished writing input_%0d data", kernel.name, i);
+    end
+endtask
+
 
 task Environment::glb_configure(Kernel kernel);
     realtime start_time, end_time;
@@ -392,7 +479,7 @@ task Environment::clear_output_glb(Kernel kernel);
             end
         end
     end else begin
-        $display("[%s] GLB tiling is enabled, skip clearing the output GLB bank", kernel.name);
+        $display("[%s] GLB tiling is enabled, skip clearing the output GLB Tile", kernel.name);
         $display("[%s] This means padding should not be used when GLB tiling is enabled", kernel.name);
     end
 endtask
@@ -434,6 +521,7 @@ task Environment::run();
                     glb_configure(kernels[j]);
                     cgra_configure(kernels[j]);
                     write_data(kernels[j]);
+                    // read_input_data_and_dump_interleaved(kernels[j]);
                     clear_output_glb(kernels[j]);
                     kernel_test(kernels[j]);
                     read_data(kernels[j]);

@@ -304,20 +304,28 @@ bool glb_tiling_config(struct KernelInfo *kernel_info, struct IOTileInfo *io_til
         if (io_tile_info->loop_dim == 2) {
             io_tile_info->data_stride[0] *= kernel_info->num_glb_tiling;
             io_tile_info->data_stride[1] *= kernel_info->num_glb_tiling;
+        } else if (io_tile_info->loop_dim == 3) {
+            // Only increase stride for X and Y dims
+            io_tile_info->data_stride[1] *= kernel_info->num_glb_tiling;
+            io_tile_info->data_stride[2] *= kernel_info->num_glb_tiling;
         }
         // Adjust local cycle_start_addr for static mode
         // TODO: The magic number 10 needs a formal calculation method.
         *cycle_start_addr += 10;
         printf("Output GLB tiling cnt: %d\n", kernel_info->glb_tiling_cnt);
-        *start_addr += (kernel_info->glb_tiling_cnt) * n_ic / unroll << CGRA_BYTE_OFFSET;
+        *start_addr += ((kernel_info->glb_tiling_cnt) * n_ic / unroll) << CGRA_BYTE_OFFSET;
     }
     else {
         if (io_tile_info->loop_dim == 2) {
             io_tile_info->data_stride[0] *= kernel_info->num_glb_tiling;
             io_tile_info->data_stride[1] *= kernel_info->num_glb_tiling;
+        } else if (io_tile_info->loop_dim == 3) {
+            // Only increase stride for X and Y dims
+            io_tile_info->data_stride[1] *= kernel_info->num_glb_tiling;
+            io_tile_info->data_stride[2] *= kernel_info->num_glb_tiling;
         }
         printf("Input GLB tiling cnt: %d\n", kernel_info->glb_tiling_cnt);
-        *start_addr += (kernel_info->glb_tiling_cnt) * n_ic / unroll << CGRA_BYTE_OFFSET;
+        *start_addr += ((kernel_info->glb_tiling_cnt) * n_ic / unroll) << CGRA_BYTE_OFFSET;
     }
     return true;
 }

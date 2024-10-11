@@ -634,18 +634,39 @@ class Garnet(Generator):
         routing.update(routing_fix)
 
         bitstream = []
+        bitstream_compact = []
         if end_to_end: 
             self.write_zero_to_config_regs(bitstream)
             skip_zero = False
         else:
             skip_zero = True
-        bitstream += self.interconnect.get_route_bitstream(routing)
-        bitstream += self.fix_pond_flush_bug(placement, routing)
-        bitstream += self.get_placement_bitstream(placement, id_to_name,
-                                                  instance_to_instr)
+
+        # bitstream += self.interconnect.get_route_bitstream(routing)
+        route_bs = self.interconnect.get_route_bitstream(routing)
+        bitstream += route_bs
+        bitstream_compact += route_bs
+
+        # bitstream += self.fix_pond_flush_bug(placement, routing)
+        fix_pond_flush_bs = self.fix_pond_flush_bug(placement, routing)
+        bitstream += fix_pond_flush_bs
+        bitstream_compact += fix_pond_flush_bs
+
+        # bitstream += self.get_placement_bitstream(placement, id_to_name,
+        #                                           instance_to_instr)
+        placement_bs = self.get_placement_bitstream(placement, id_to_name,
+                                                    instance_to_instr)
+        bitstream += placement_bs
+        bitstream_compact += placement_bs
 
         skip_addr = self.interconnect.get_skip_addr()
         bitstream = compress_config_data(bitstream, skip_compression=skip_addr, skip_zero=skip_zero)
+        bitstream_compact = compress_config_data(bitstream_compact, skip_compression=skip_addr, skip_zero=skip_zero)
+
+        bitstream_write_zero = []
+        for item in bitstream:
+            if item not in bitstream_compact:
+                bitstream_write_zero.append(item)
+
         inputs, outputs = self.get_input_output(netlist)
         input_interface, output_interface, \
             (reset, valid, en) = self.get_io_interface(inputs,
@@ -657,7 +678,7 @@ class Garnet(Generator):
         archipelago.io.dump_meta_file(
             halide_src, "design", os.path.dirname(halide_src))
         return bitstream, (input_interface, output_interface, reset, valid, en,
-                           delay)
+                           delay), bitstream_write_zero, bitstream_compact
 
     def compile_virtualize(self, halide_src, max_group):
         id_to_name, instance_to_instr, netlist, bus = self.map(halide_src)
@@ -895,7 +916,7 @@ def main():
                     input_broadcast_max_leaves=args.input_broadcast_max_leaves)
 
         bitstream, (inputs, outputs, reset, valid,
-                    en, delay) = garnet.generate_bitstream(args.app, placement, routing, id_to_name, instance_to_instr,
+                    en, delay), bitstream_write_zero, bitstream_compact = garnet.generate_bitstream(args.app, placement, routing, id_to_name, instance_to_instr,
                                                            netlist, bus, compact=args.compact)
 
         # write out the config file
@@ -923,6 +944,8 @@ def main():
         with open(f"{args.output}.json", "w+") as f:
             json.dump(config, f)
         write_out_bitstream(args.output, bitstream)
+        write_out_bitstream(f"{args.output}_zero", bitstream_write_zero)
+        write_out_bitstream(f"{args.output}_compact", bitstream_compact)
     elif args.virtualize and len(args.app) > 0:
         group_size = args.virtualize_group_size
         result = garnet.compile_virtualize(args.app, group_size)
