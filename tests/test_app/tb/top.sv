@@ -10,13 +10,15 @@
 `define CLK_PERIOD 1ns
 `endif
 
+// `define verilator TRUE // already defined i guess?
+
 import global_buffer_param::*;
 
 module top;
     timeunit 1ns; timeprecision 1ps;
 
-    logic clk;
-    logic reset;
+    logic clk        /*verilator clocker*/;
+    logic reset      /*verilator public*/;
     logic interrupt;
 
     //============================================================================//
@@ -28,11 +30,31 @@ module top;
         forever #(`CLK_PERIOD / 2.0) clk = !clk;
     end
 
-    // reset generation
+    // FIXME this can't stay; needs to be moved to verilator top.cpp
+    // and or surrounded by ifdef verilator etc.
+    // Print some stuff as an example
     initial begin
+       if ($test$plusargs("trace") != 0) begin
+          $display("[%0t] Tracing to logs/vlt_dump.vcd...\n", $time);
+          $dumpfile("logs/vlt_dump.vcd");
+          $dumpvars();
+       end
+       $display("[%0t] Model running...\n", $time);
+    end
+
+    // reset generation
+    // FIXME maybe remove $display debugging stuff someday
+    initial begin
+        $display("0 BEGIN reset = ", reset);
         reset = 1;   // orig had nonblocking <= ... why?
-        repeat (3) @(posedge clk);
+        // repeat (3) @(posedge clk);
+        repeat (3) begin
+           $display("repeat3 reset = ", reset);
+           @(posedge clk);
+        end
+        $display("repeat3+1 reset = ", reset);
         reset = 0;   // orig had nonblocking <= ... why?
+        $display("repeat3+2 reset = ", reset);
     end
 
     //============================================================================//
