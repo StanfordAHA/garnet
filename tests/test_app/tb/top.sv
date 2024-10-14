@@ -10,15 +10,13 @@
 `define CLK_PERIOD 1ns
 `endif
 
-// `define verilator TRUE // already defined i guess?
-
 import global_buffer_param::*;
 
 module top;
     timeunit 1ns; timeprecision 1ps;
 
-    logic clk        /*verilator clocker*/;
-    logic reset      /*verilator public*/;
+    logic clk;
+    logic reset;
     logic interrupt;
 
     //============================================================================//
@@ -30,9 +28,9 @@ module top;
         forever #(`CLK_PERIOD / 2.0) clk = !clk;
     end
 
-    // FIXME this can't stay; needs to be moved to verilator top.cpp
-    // and or surrounded by ifdef verilator etc.
-    // Print some stuff as an example
+`ifdef verilator
+    // Dump out the wave info
+    // FIXME think about moving this to verilator top-level CGRA.cpp or whatever
     initial begin
        if ($test$plusargs("trace") != 0) begin
           $display("[%0t] Tracing to logs/vlt_dump.vcd...\n", $time);
@@ -41,6 +39,7 @@ module top;
        end
        $display("[%0t] Model running...\n", $time);
     end
+`endif
 
     // reset generation
     // FIXME maybe remove $display debugging stuff someday

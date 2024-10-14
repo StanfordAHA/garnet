@@ -5,6 +5,9 @@
 // SPDX-License-Identifier: CC0-1.0
 //======================================================================
 
+#include <stdio.h>
+#include <stdlib.h>
+
 // For std::unique_ptr
 #include <memory>
 
@@ -68,8 +71,15 @@ int main(int argc, char** argv) {
     // while (!contextp->gotFinish()) {
 
     // '5000' means 5ns. Why?
-    int ns=1000;
-    for (int i=0; i<(8.5*ns); i++) {
+    int ns=1000; int half_ns=500;
+    // 80.5 x 1000 = 80 x 100 + 500
+    // for (int i=0; i<(80.5*ns); i++) {
+    for (int i=0; i<(1800.5*ns); i++) {
+    // for (int i=0; i<(12000.5*ns); i++) {
+        if ((i % (1*ns)) ==0) {
+            printf("t=%04d\n"; i);
+            fflush(stdout);
+        }
         // Historical note, before Verilator 4.200 Verilated::gotFinish()
         // was used above in place of contextp->gotFinish().
         // Most of the contextp-> calls can use Verilated:: calls instead;
