@@ -74,11 +74,12 @@ int main(int argc, char** argv) {
     int ns=1000; int half_ns=500;
     // 80.5 x 1000 = 80 x 100 + 500
     // for (int i=0; i<(80.5*ns); i++) {
-    for (int i=0; i<(1800.5*ns); i++) {
+    for (int i=0; i<(210.5*ns); i++) {
+    // for (int i=0; i<(1800.5*ns); i++) {
     // for (int i=0; i<(12000.5*ns); i++) {
+        // if (contextp->gotFinish()) break;
         if ((i % (1*ns)) ==0) {
-            printf("t=%04d\n"; i);
-            fflush(stdout);
+            printf("t= %4dns\n", i/1000); fflush(stdout);
         }
         // Historical note, before Verilator 4.200 Verilated::gotFinish()
         // was used above in place of contextp->gotFinish().
