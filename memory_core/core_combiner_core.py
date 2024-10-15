@@ -114,7 +114,7 @@ class CoreCombinerCore(LakeCoreBase):
 
             self.dut = self.CC.dut
 
-            print(self.dut)
+            #print(self.dut)
 
             circ = kts.util.to_magma(self.dut,
                                      flatten_array=True,
@@ -178,16 +178,12 @@ class CoreCombinerCore(LakeCoreBase):
                     # Default to UB mode since we get varying consistency in controller indication
                     instr['mode'] = 'UB'
 
-                print("BEFORE")
                 config_pre = self.dut.get_bitstream(instr)
-                print("AFTER")
 
                 # Add the runtime configuration to the final config
                 for name, v in config_pre:
                     configs = [self.get_config_data(name, v)] + configs
 
-                print("MEK2")
-                print(configs)
                 # Add in preloaded memory
                 if "init" in instr and instr['init'] is not None:
                     # this is SRAM content
@@ -208,14 +204,14 @@ class CoreCombinerCore(LakeCoreBase):
                         # And also transform this based on memory depth
                         addr = (addr % 256)
                         configs.append((addr, feat_addr, data))
-                print(configs)
+                #print(configs)
                 return configs
             elif self.pnr_tag == 'p':
                 instr['mode'] = 'alu'
                 config_pre = self.dut.get_bitstream(instr)
                 for name, v in config_pre:
                     configs = [self.get_config_data(name, v)] + configs
-                print(configs)
+                #print(configs)
                 return configs
         elif not isinstance(config_tuple, tuple):
             # It's a PE then...
@@ -249,13 +245,13 @@ class CoreCombinerCore(LakeCoreBase):
                 for name, v in config_dense_bypass:
                     configs = [self.get_config_data(name, v)] + configs
             # END BLOCK COMMENT 
-            print(configs)
+            #print(configs)
             return configs
         else:
             _, config_kwargs = config_tuple
         assert 'mode' in config_kwargs
 
-        print(config_kwargs)
+        # print(config_kwargs)
 
         # config_dict = {}
         # config_dict[self.runtime_mode] = config_kwargs

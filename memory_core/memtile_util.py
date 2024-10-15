@@ -583,7 +583,6 @@ class NetlistBuilder():
 
 
         core_remapping = None
-        print_diag = False
 
         # Choose the core combiner if the resource is in there...
         # if cc_core_supported is not None and core in cc_core_supported:
@@ -591,7 +590,6 @@ class NetlistBuilder():
             tag = self.core_to_tag[core]
             # tag = cc_core.pnr_info().get_tag_name()
             core_remapping = self.tag_to_port_remap[tag][core]
-            print_diag = True
             # cc_core.set_runtime_mode(core)
         elif core == "register":
             tag = "r"
@@ -636,8 +634,6 @@ class NetlistBuilder():
             tag = core.pnr_info().tag_name
 
         ret_str = f"{tag}{self._core_num}"
-        if print_diag:
-            print(f"Did this on: {ret_str}")
         if flushable:
             self._flushable.append(ret_str)
         self._cores.append(ret_str)
@@ -653,7 +649,7 @@ class NetlistBuilder():
 
     def add_connections_dict(self, connection_dict, defer_placement=False):
         for conn_block_name, connections_list in connection_dict.items():
-            print(f"Adding connection block: {conn_block_name}")
+            #print(f"Adding connection block: {conn_block_name}")
             assert isinstance(connections_list, list), f"Expecting list of connections at: {conn_block_name}"
             self.add_connections(connections_list, defer_placement=defer_placement)
 
@@ -738,10 +734,10 @@ class NetlistBuilder():
                         continue
                     # print(signal_name)
                     # print(self._core_remappings[mapped_core])
-                    print("Printing signal name")
-                    print(signal_name)
-                    print(mapped_core)
-                    print(self._core_remappings[mapped_core])
+                    # print("Printing signal name")
+                    # print(signal_name)
+                    # print(mapped_core)
+                    # print(self._core_remappings[mapped_core])
                     assert signal_name in self._core_remappings[mapped_core]
                     remapped_sig = self._core_remappings[mapped_core][signal_name]
                     self._netlist[conn_name][i] = (mapped_core, remapped_sig)

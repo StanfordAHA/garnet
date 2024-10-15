@@ -286,9 +286,6 @@ class Garnet(Generator):
             # bit_width = 16 if blk_id[0] == "I" else 1
             name = f"glb2io_{bit_width}_X{x:02X}_Y{y:02X}"
             input_interface.append(name)
-            print("WEIRD NAME ASSERTION")
-            print(name)
-            print(self.interconnect.interface())
             assert name in self.interconnect.interface()
             blk_name = id_to_name[blk_id]
             if "reset" in blk_name:
