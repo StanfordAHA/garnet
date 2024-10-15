@@ -39,6 +39,9 @@ echo ''
 echo "This took four minutes last time I ran it..."
 set -x
 
+# This failed HARD. SLOW compilation. ERRORs on execution.
+#   --runtime-debug -CFLAGS -DVL_DEBUG=1 \
+
 # Note: libcgra.so must be relative to ./obj_dir :(
 # TODO: find a better way to do this :(
 verilator $warn --timing --cc --exe vfiles/CGRA.cpp \
@@ -50,9 +53,7 @@ verilator $warn --timing --cc --exe vfiles/CGRA.cpp \
   -y $CW1 -y $CW2 \
   ../vfiles/libcgra.so
 
-o=obj_dir
-f=Vtop__Syms.cpp
-tail $o/$f
+# o=obj_dir; f=Vtop__Syms.cpp; tail $o/$f
 set +x
 
 exit
