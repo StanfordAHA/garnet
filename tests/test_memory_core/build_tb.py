@@ -157,6 +157,7 @@ class SparseTBBuilder(m.Generator2):
             self.register_cores()
             self.connect_cores()
 
+            print("Balancing SAM Graph with FIFOs")
             # ### Balance SAM graph with interconnect FIFOs #####
             new_netlist = copy.deepcopy(self.nlb._netlist)
             new_bus = copy.deepcopy(self.nlb._bus)
@@ -176,8 +177,6 @@ class SparseTBBuilder(m.Generator2):
             
             # break cycles
             cycles = list(nx.simple_cycles(G))
-            print("Cycles:")
-            print(cycles)
             while cycles: 
                 for cycle in cycles:
                     G.remove_edge(cycle[0], cycle[1])
@@ -198,7 +197,6 @@ class SparseTBBuilder(m.Generator2):
                     if dist[node] is None:
                         all_paths = list(nx.all_simple_paths(G, source=parent_node, target=node))
                         # check all_paths is not empty list
-                        print(all_paths)
                         if all_paths:
                             dist[node] = max(len(arr)-1 for arr in all_paths)
             
@@ -238,8 +236,7 @@ class SparseTBBuilder(m.Generator2):
             for edge in edge_add:
                if edge_add[edge] > 8:
                    edge_add[edge] = 8
-            print("Edge Add:")
-            print(edge_add)
+            print("Edges Added: ", edge_add)
 
             reg_num = 0
             edge_num = len(new_bus)
@@ -870,8 +867,6 @@ class SparseTBBuilder(m.Generator2):
                 data_h = f"io2glb_17_X{glb_out:02X}_Y00"
                 suffix = str(data_h)[10:]
 
-                print(data_h)
-                print(suffix)
 
                 ready_h = f"io2glb_17_{suffix}_ready"
                 valid_h = f"io2glb_17_{suffix}_valid"
@@ -1112,7 +1107,6 @@ class SparseTBBuilder(m.Generator2):
 
         for node in self.graph.get_nodes():
             kwargs = {}
-            print(node.get_attributes())
             hw_node_type = node.get_attributes()['hwnode']
             new_node_type = None
             core_tag = None
@@ -1240,9 +1234,7 @@ class SparseTBBuilder(m.Generator2):
                 new_node_type = PassThroughNode
                 core_tag = "pass_through"
                 edges_to_pass_through = [edge for edge in self.graph.get_edges() if edge.get_destination() == node.get_name()]
-                print(edges_to_pass_through)
                 assert len(edges_to_pass_through) == 1
-                print(edges_to_pass_through[0].get_attributes())
                 edge = edges_to_pass_through[0]
                 # from ref need to pass conn_to_tensor, if it has tensor name ('-' in comment), ex. in-C
                 if 'comment' in edge.get_attributes() and '-' in edge.get_attributes()['comment'].strip('"'):
@@ -1334,7 +1326,6 @@ class SparseTBBuilder(m.Generator2):
                         glb_mode_ = int(glb_mode_)
                         glb_mode__ = glb_mode_
                     else:
-                        print(self.mode_map)
                         glb_mode_ = int(glb_mode_)
                         glb_mode__ = self.mode_map[glb_tensor][glb_mode_][0]
                 else:
@@ -1344,7 +1335,6 @@ class SparseTBBuilder(m.Generator2):
                     self.glb_cores[data] = (self.input_ctr, 0)
                     self.glb_cores_w_map[(self.input_ctr, 0)] = glb_node_use
                     file_full = f"{{}}/tensor_{glb_tensor}_mode_{glb_mode__}_{file_number}"
-                    print(file_full)
 
                     file_full = f"\"{file_full}\""
                     self.plus_args.append((f"+X{self.input_ctr:02X}_Y00_FILE_NAME={file_full}\n", 'input'))
@@ -1424,7 +1414,7 @@ class SparseTBBuilder(m.Generator2):
         for edge in edges:
             src_name = edge.get_source()
             dst_name = edge.get_destination()
-            print(f"Connecting {src_name} to {dst_name}")
+            # print(f"Connecting {src_name} to {dst_name}")
 
             if self.use_fa:
                 # If the nodes have the same fa_color, don't connect them explicitly
@@ -1433,8 +1423,6 @@ class SparseTBBuilder(m.Generator2):
                 dst_node = self.find_node_by_name(dst_name)
                 src_attr = src_node.get_attributes()
                 dst_attr = dst_node.get_attributes()
-                print(src_attr)
-                print(dst_attr)
                 if 'fa_color' in src_attr and 'fa_color' in dst_attr:
                     if src_attr['fa_color'] == dst_attr['fa_color']:
                         continue
@@ -1452,8 +1440,6 @@ class SparseTBBuilder(m.Generator2):
                     dst_core_node = _d
                 else:
                     dst_core_node = self.core_nodes[dst_name]
-                print(src_core_node)
-                print(dst_core_node)
                 addtl_conns = src_core_node.connect(dst_core_node, edge, kwargs)
             else:
                 addtl_conns = self.core_nodes[src_name].connect(self.core_nodes[dst_name], edge)
@@ -1594,9 +1580,6 @@ def prepare_glb_collateral(glb_dir=None, bitstream=None, matrices_in=None, desig
     # for filename in os.listdir(matrices_in):
     for idx_, input_glb_tile in enumerate(input_glb_tiles):
         (core, core_placement, tensor_desc_str, direction, num_blocks, seg_mode, file_number_) = input_glb_tile
-        print(tensor_desc_str)
-        print(matrices_in)
-        print(file_number_)
         assert os.path.exists(f"{matrices_in}/{tensor_desc_str}")
         os.system(f"xxd -r -p {matrices_in}/{tensor_desc_str} > {glb_dir}/bin/{tensor_desc_str}.raw")
         with open(f"{matrices_in}/{tensor_desc_str}") as tmp_fp:
@@ -1651,9 +1634,9 @@ def prepare_glb_collateral(glb_dir=None, bitstream=None, matrices_in=None, desig
 
     for idx_, output_glb_tile in enumerate(output_glb_tiles):
         (core, core_placement, tensor_desc_str, direction, num_blocks, seg_mode, file_number) = output_glb_tile
-        print("tensor desc str: ", tensor_desc_str)
-        print("file number: ", file_number)
-        print("glb dir: ", glb_dir)
+        # print("tensor desc str: ", tensor_desc_str)
+        # print("file number: ", file_number)
+        # print("glb dir: ", glb_dir)
         assert os.path.exists(f"{glb_dir}/{tensor_desc_str}_{file_number}")
 
         os.system(f"xxd -r -p {glb_dir}/{tensor_desc_str}_{file_number} > {glb_dir}/bin/{tensor_desc_str}.raw")
@@ -1934,7 +1917,6 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         output_name = "X"
     elif 'mat_mattransmul.gv' in app_name:
         vec_ordering = ((1, (0, 's')),)
-        print(vec_ordering)
         b_mat = get_tensor(input_name='b', shapes=[1], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                            dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['b'],
                            sparsity=0)
@@ -2551,10 +2533,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         b_matrix = MatrixGenerator(name="B", shape=[16, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         b_matrix.dump_outputs()
         b_mat = b_matrix.get_matrix()
-        print(b_mat)
         output_matrix = numpy.add.reduce(b_mat, dtype=numpy.uint16)
-        print(output_matrix)
-        # exit()
         output_format = "CSF"
         output_name = "x"
     elif 'tensor4_multiply2.gv' in app_name:
@@ -2577,17 +2556,17 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         b_ref = torch.permute(b_ref, (0, 2, 1, 3))  # [i,j,k,l]
         c_ref = torch.permute(c_ref, (0, 3, 1, 2))  # [i,l,j,m]
 
-        print("--------------B_ref after permute--------------")
-        print(b_ref.shape)
-        print(b_ref)
-        print("--------------C_ref after permute--------------")
-        print(c_ref.shape)
-        print(c_ref)
+        # print("--------------B_ref after permute--------------")
+        # print(b_ref.shape)
+        # print(b_ref)
+        # print("--------------C_ref after permute--------------")
+        # print(c_ref.shape)
+        # print(c_ref)
 
         output_ref = torch.einsum('ijkl, iljm->ikjm', b_ref, c_ref).numpy()
-        print("--------------output_ref--------------")
-        print(output_ref.shape)  # ikjm
-        print(output_ref)
+        # print("--------------output_ref--------------")
+        # print(output_ref.shape)  # ikjm
+        # print(output_ref)
         output_matrix = output_ref
         output_format = "CSF"
         output_name = "X"
@@ -2612,17 +2591,17 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         B_ref = torch.permute(B_ref, (0, 2, 1, 3))
         C_ref = torch.permute(C_ref, (0, 2, 1, 3))
 
-        print("------------------------after permute B_ref: ")
-        print(B_ref.shape)
-        print(B_ref)
-        print("------------------------after permute C_ref: ")
-        print(C_ref.shape)
-        print(C_ref)
+        # print("------------------------after permute B_ref: ")
+        # print(B_ref.shape)
+        # print(B_ref)
+        # print("------------------------after permute C_ref: ")
+        # print(C_ref.shape)
+        # print(C_ref)
 
         output_matrix = torch.einsum('ikjm, iljm->ijkl', B_ref, C_ref).numpy()
-        print("--------------output_ref--------------")
-        print(output_matrix.shape)
-        print(output_matrix)
+        # print("--------------output_ref--------------")
+        # print(output_matrix.shape)
+        # print(output_matrix)
         output_format = "CSF"
         output_name = "X"
     elif 'tensor3_linear_multiply.gv' in app_name:
@@ -2642,17 +2621,17 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
 
         C_ref = torch.permute(C_ref, (0, 2, 1))
 
-        print("---------------B_ref---------------")
-        print(B_ref.shape)
-        print(B_ref)
-        print("---------------C_ref---------------")
-        print(C_ref.shape)
-        print(C_ref)
+        # print("---------------B_ref---------------")
+        # print(B_ref.shape)
+        # print(B_ref)
+        # print("---------------C_ref---------------")
+        # print(C_ref.shape)
+        # print(C_ref)
 
         output_matrix = torch.einsum('jl, ilk->ijk', B_ref, C_ref).numpy()
-        print("---------------output_matrix---------------")
-        print(output_matrix.shape)
-        print(output_matrix)
+        # print("---------------output_matrix---------------")
+        # print(output_matrix.shape)
+        # print(output_matrix)
         output_format = "CSF"
         output_name = "X"
     else:
@@ -2934,7 +2913,7 @@ if __name__ == "__main__":
                                    perf_debug=perf_debug)
 
         time_x = time.time()
-        print(f"TIME:\tcreate_cgra\t{time_x - time_0}")
+        # print(f"TIME:\tcreate_cgra\t{time_x - time_0}")
 
         if just_verilog:
             circuit = interconnect.circuit()
@@ -2947,7 +2926,7 @@ if __name__ == "__main__":
                              pnr_only=pnr_only)
 
         time_1 = time.time()
-        print(f"TIME:\tnlb\t{time_1 - time_x}")
+        # print(f"TIME:\tnlb\t{time_1 - time_x}")
 
     stb_to_gen = None
 
@@ -3023,10 +3002,8 @@ if __name__ == "__main__":
                 glb_dirs.append(glb_dir)
                 collat_dirs.append(collat_dir)
 
-                print(tensor_locs)
-                print(matrix_tmp_dir)
-
                 if sam_graph not in sdgs:
+                    print("SAM Graph Transformation")
                     sdg = SAMDotGraph(filename=sam_graph, local_mems=True, use_fork=use_fork,
                                       use_fa=use_fiber_access, unroll=unroll, collat_dir=collat_dir,
                                       opal_workaround=opal_workaround, mem_block_size=mem_block_size)
@@ -3065,8 +3042,6 @@ if __name__ == "__main__":
                         attrs = copy.deepcopy(src_node[0].get_attributes())
                         og_label = attrs['label']
                         og_label = og_label.split('_')[0]
-                        print("Attrs")
-                        print(attrs)
                         del attrs['label']
                         del attrs['hwnode']
                         if 'fa_color' in attrs:
@@ -3076,8 +3051,6 @@ if __name__ == "__main__":
                         edge_type =  edge_attrs['type'].strip('"')
 
                         node_exists = graph.get_node(f"passthrough_buffer_{src}_{edge_type}")
-                        print("NODE EXISTS")
-                        print(node_exists)
                         if node_exists == []:
                             node = pydot.Node(f"passthrough_buffer_{src}_{edge_type}", **attrs, label=f"{og_label}_buffer_passthrough_{edge_type}", hwnode=f"{HWNodeType.PassThrough}")
                             graph.add_node(node)
@@ -3092,10 +3065,7 @@ if __name__ == "__main__":
                             index += 1
                         check = graph.del_edge(src, dst, index)
 
-                        print(f"CHECK: {check}")
                         edge_to_passthrough_exists = graph.get_edge(src, node.get_name())
-                        print("EDGE TO PASSTHROUGH EXISTS")
-                        print(edge_to_passthrough_exists)
                         if edge_to_passthrough_exists == []:
                             edge1 = pydot.Edge(src=src_node[0], dst=node, **edge_attrs, label=f"pass_through_buffer0_{src}_{edge_type}",)
                             graph.add_edge(edge1)
@@ -3151,6 +3121,7 @@ if __name__ == "__main__":
                 if sam_graph not in stbs:
                     ##### Create the actual testbench mapping based on the SAM graph #####
                     # breakpoint()
+                    print("Perform PnR")
                     stb = SparseTBBuilder(nlb=nlb, graph=graph, bespoke=bespoke, input_dir=input_dir,
                                           # output_dir=output_dir, local_mems=not args.remote_mems, mode_map=tuple(mode_map.items()))
                                           output_dir=output_dir, local_mems=True, mode_map=tuple(mode_map.items()),
@@ -3173,7 +3144,7 @@ if __name__ == "__main__":
 
                     # Want to dump specific tests...
                     test_name_base = sam_graph.split('/')[-1].split(".")[0]
-                    print(f"TEST BASE NAME: {test_name_base}")
+                    print(f"TESTNAME: {test_name_base}")
 
                     if combined:
                         combined_str = "combined"
@@ -3184,7 +3155,7 @@ if __name__ == "__main__":
 
                     full_test_glb_dir = f"{glb_dir}/{full_test_name}"
 
-                    print(f"DUMPING GLB STUFF TO: {full_test_glb_dir}")
+                    print(f"DUMPING TESTBENCH DATA TO: {full_test_glb_dir}")
 
                     # Make sure glb path exists
                     if not os.path.isdir(full_test_glb_dir):
@@ -3225,10 +3196,10 @@ if __name__ == "__main__":
                         ret = os.remove(output_dir + "/" + filename)
 
                 time_2 = time.time()
-                print(f"TIME:\tglb\t{time_2 - time_1}")
+                # print(f"TIME:\tglb\t{time_2 - time_1}")
 
                 time_4 = time.time()
-                print(f"TIME:\tSTB\t{time_4 - time_3}")
+                # print(f"TIME:\tSTB\t{time_4 - time_3}")
 
                 # collat_dir = collat_dirs[idx_]
 
