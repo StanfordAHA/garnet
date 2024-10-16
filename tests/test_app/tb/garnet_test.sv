@@ -72,41 +72,30 @@ program garnet_test #(
 
         // Looking for...? Something like...?
         // +APP0=app0
-        $display("Looking for app args e.g. '+APP0=app0'"); $fflush();
+       $display("[%0t] garnet_test L75\n", $time);
         $display("Looking for app args e.g. '+APP0=app0'"); $fflush();
         num_app = 0;
         for (int i = 0; i < MAX_NUM_APPS; i++) begin
             automatic string arg_name = {$sformatf("APP%0d", i), "=%s"};
-           $display("L80 i=%d", i); $fflush();
             if ($value$plusargs(arg_name, temp_str)) begin
-               $display("L82 i=%d", i); $fflush();
                 // we have it
                 app_dirs.push_back(temp_str);
-               $display("L85 i=%d", i); $fflush();
                 $display("Found app '%s'", temp_str);
-
-// ???
-// Found app '/aha/garnet/SPARSE_TESTS/vec_elemadd_0/GLB_DIR/vec_elemadd_combined_seed_0'
-
-
             end else begin
-               $display("L88 i=%d", i); $fflush();
                 num_app = i;
                 break;
             end
         end
-       $display("L93"); $fflush();
         if (num_app == 0) begin
            $display("ERROR did not find app args"); $fflush();
            $finish(2);  // The only choices are 0,1,2; note $finish() is more drastic than $exit()
         end
-       $display("L98"); $fflush();
 
        // SEG FAULT HERE
        // -bash: line 233: 1055010 Segmentation fault      (core dumped) Vtop "$APP" +trace
 
         foreach (app_dirs[i]) begin
-           $display("processing app %d", i); $fflush();
+           $display("processing app #%0d", i); $fflush();
            
             temp_kernel = new(app_dirs[i], dpr);
             if (temp_kernel.num_glb_tiling > 0) begin

@@ -362,7 +362,7 @@ function bitstream_t Kernel::parse_bitstream();
 
         // NOTE: verilator DOES NOT LIKE these struct refs
         // code = $fscanf(fp, "%08x %08x", entry.addr, entry.data);
-       $display("kernel.sv line 365: FSCANF"); $fflush();
+       // $display("kernel.sv line 365: FSCANF"); $fflush();
 
         // Let's try this instead
         addr = entry.addr; data = entry.data;

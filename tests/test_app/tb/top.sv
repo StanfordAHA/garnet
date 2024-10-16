@@ -28,6 +28,13 @@ module top;
         forever #(`CLK_PERIOD / 2.0) clk = !clk;
     end
 
+    initial begin
+       // forever #(`CLK_PERIOD * 10) $display("[%0t] Model running...\n", $time);
+       $display("[%0t]", $time);
+       forever #(`CLK_PERIOD)
+         $display("[%0t]", $time);
+    end
+
 `ifdef verilator
     // Dump out the wave info
     // FIXME think about moving this to verilator top-level CGRA.cpp or whatever
@@ -44,16 +51,20 @@ module top;
     // reset generation
     // FIXME maybe remove $display debugging stuff someday
     initial begin
-        $display("0 BEGIN reset = ", reset);
+        $display("BEGIN reset = ", reset);
         reset = 1;   // orig had nonblocking <= ... why?
         // repeat (3) @(posedge clk);
-        repeat (3) begin
-           $display("repeat3 reset = ", reset);
-           @(posedge clk);
-        end
-        $display("repeat3+1 reset = ", reset);
+        // repeat (3) begin
+        //    $display("repeat3 reset = ", reset);
+        //    @(posedge clk);
+        // end
+       $display("repeat1/3 reset = ", reset); @(posedge clk);
+       $display("repeat2/3 reset = ", reset); @(posedge clk);
+       $display("repeat3/3 reset = ", reset); @(posedge clk);
+
+        $display("avant reset = ", reset);
         reset = 0;   // orig had nonblocking <= ... why?
-        $display("repeat3+2 reset = ", reset);
+        $display("apres reset = ", reset);
     end
 
     //============================================================================//
