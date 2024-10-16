@@ -24,6 +24,14 @@ double sc_time_stamp() { return 0; }
 // See e.g. /usr/local/share/verilator/examples/make_tracing_c/sim_main.cpp
 int main(int argc, char** argv) {
 
+    // can do e.g. 'vtop -this -that 10000 other-parm' to run for 10K ns
+    int MAX_NS = 2000;
+    for (int i=1; i<argc; i++) {
+        int maybe_integer = atoi(argv[i]);
+        if (maybe_integer > 0) MAX_NS = maybe_integer;
+    }
+    MAX_NS += 0.5;  // So we don't end on an edge
+
     // Create logs/ directory in case we have traces to put under it
     Verilated::mkdir("logs");
 
@@ -74,11 +82,16 @@ int main(int argc, char** argv) {
     int ns=1000; int half_ns=500;
     // 80.5 x 1000 = 80 x 100 + 500
     // for (int i=0; i<(80.5*ns); i++) {
-    for (int i=0; i<(210.5*ns); i++) {
+    // for (int i=0; i<(210.5*ns); i++) {
+    for (int i=0; i<(MAX_NS*ns); i++) {
     // for (int i=0; i<(1800.5*ns); i++) {
     // for (int i=0; i<(12000.5*ns); i++) {
         // if (contextp->gotFinish()) break;
-        if ((i % (1*ns)) ==0) {
+
+        bool do_print;
+        if (i <= 10*ns) do_print = !(i % (1*ns));
+        else do_print = !(i % (10*ns));
+        if (do_print) {
             printf("t= %4dns\n", i/1000); fflush(stdout);
         }
         // Historical note, before Verilator 4.200 Verilated::gotFinish()
