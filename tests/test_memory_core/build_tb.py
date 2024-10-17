@@ -1697,6 +1697,20 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         output_matrix = numpy.add(b_mat, c_mat, dtype=numpy.uint16, casting='unsafe')
         output_format = "CSF"
         output_name = "X"
+    if 'fp_mat_elemadd.gv' in app_name:
+        # PASSES
+        # to glb
+        # combined
+        b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+                           sparsity=0.8, use_fp=True)
+        c_mat = get_tensor(input_name='C', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+                           sparsity=0.9, use_fp=True)
+
+        output_matrix = numpy.add(b_mat, c_mat, dtype=numpy.float32, casting='unsafe')
+        output_format = "CSF"
+        output_name = "X"
     elif 'mat_elemadd_relu.gv' in app_name:
         b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                            dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
@@ -2036,7 +2050,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         # exit()
         output_format = "CSF"
         output_name = "x"
-    elif 'matmul_ijk_crddrop.gv' in app_name:
+    elif 'matmul_ijk_crddrop.gv' in app_name and "fp" not in app_name:
         b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                                dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
                                sparsity=0.7)
@@ -2124,12 +2138,12 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         output_name = "x"
     elif "spmm_ijk_crddrop.gv" in app_name:
         # matrix b is completely dense
-        b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+        b_mat = get_tensor(input_name='B', shapes=[30, 30], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                            dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                           sparsity=0.0, format='UNC')
-        c_mat = get_tensor(input_name='C', shapes=[13, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
                            sparsity=0.8)
+        c_mat = get_tensor(input_name='C', shapes=[30, 30], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+                           sparsity=0.0, format='UNC')
         input_dims['B'] = tuple(b_mat.shape)
         input_dims['C'] = tuple(c_mat.shape)
         # First transpose c_mat
@@ -2139,12 +2153,12 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         output_name = "X"
     elif "spmm_ijk_crddrop" in app_name and "relu" in app_name:
         # matrix b is completely dense
-        b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+        b_mat = get_tensor(input_name='B', shapes=[30, 30], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                             dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                            sparsity=0.0, format='UNC')
-        c_mat = get_tensor(input_name='C', shapes=[13, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                            sparsity=0.9)
+        c_mat = get_tensor(input_name='C', shapes=[30, 30], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                             dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
-                            sparsity=0.8)
+                            sparsity=0.0, format="UNC")
         input_dims['B'] = tuple(b_mat.shape)
         input_dims['C'] = tuple(c_mat.shape)
         # First transpose c_mat
@@ -2193,7 +2207,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         output_matrix = numpy.matmul(b_mat, c_mat_trans, dtype=numpy.uint16, casting='unsafe')
         output_format = "CSF"
         output_name = "X"
-    elif 'fp_matmul_ijk.gv' in app_name:
+    elif 'fp_matmul_ijk_crddrop.gv' in app_name:
         b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                             dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
                             sparsity=0.7, use_fp=True)
@@ -2220,6 +2234,31 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
                     partial_sum, _, _ = fpu_func(fpu.FPU_t.FP_add, partial_sum, partial_prod)
                 output_matrix[i][j] = bfbin2float("{:016b}".format(int(partial_sum)))
        
+        output_format = "CSF"
+        output_name = "X"
+    elif 'fp_matmul_ikj.gv' in app_name:
+        b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                               dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+                               sparsity=0.8, use_fp=True)
+        c_mat = get_tensor(input_name='C', shapes=[12, 8], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                               dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+                               sparsity=0.9, use_fp=True)
+
+        output_matrix = numpy.zeros((b_mat.shape[0], c_mat.shape[1]), dtype=numpy.float32)
+        FPU = fpu.FPU_fc(PyFamily())
+        fpu_func = FPU()
+        for i in range(0, output_matrix.shape[0]):
+            for j in range(0, output_matrix.shape[1]):
+                partial_sum = float2bfbin(0.0)
+                partial_sum = Data(int(partial_sum, 2))
+                for k in range(0, b_mat.shape[1]):
+                    b_val = float2bfbin(b_mat[i][k])
+                    b_val = Data(int(b_val, 2))
+                    c_val = float2bfbin(c_mat_trans[k][j])
+                    c_val = Data(int(c_val, 2))
+                    partial_prod, _, _ = fpu_func(fpu.FPU_t.FP_mul, b_val, c_val)
+                    partial_sum, _, _ = fpu_func(fpu.FPU_t.FP_add, partial_sum, partial_prod)
+                output_matrix[i][j] = bfbin2float("{:016b}".format(int(partial_sum)))
         output_format = "CSF"
         output_name = "X"
     elif 'fp_spmm_ijk.gv' in app_name:
