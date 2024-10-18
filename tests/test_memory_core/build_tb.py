@@ -148,117 +148,118 @@ class SparseTBBuilder(m.Generator2):
             self.register_cores()
             self.connect_cores()
 
-            # ### Kalhan added #####
-            new_netlist = copy.deepcopy(self.nlb._netlist)
-            new_bus = copy.deepcopy(self.nlb._bus)
+            if os.environ.get("BALANCE") is not None:
+                ## ### Kalhan added #####
+                new_netlist = copy.deepcopy(self.nlb._netlist)
+                new_bus = copy.deepcopy(self.nlb._bus)
 
-            # Create graph from netlist without I/O
-            G = nx.DiGraph()
-            remove_edges = ["data_in", "data_out", "passthrough", "stream_arb"]
-            for edge, connections in new_netlist.items():
-                src = connections[0][0]
-                dest = connections[1][0]
-                src_name = self.nlb._core_names[src]
-                dest_name = self.nlb._core_names[dest]
-                if not (any (edge in src_name for edge in remove_edges) or any (edge in dest_name for edge in remove_edges)):
-                    G.add_edge(src, dest, name=edge)
-                if "buffer_passthrough" in src_name or "buffer_passthrough" in dest_name:
-                    G.add_edge(src, dest, name=edge)
+                # Create graph from netlist without I/O
+                G = nx.DiGraph()
+                remove_edges = ["data_in", "data_out", "passthrough", "stream_arb"]
+                for edge, connections in new_netlist.items():
+                    src = connections[0][0]
+                    dest = connections[1][0]
+                    src_name = self.nlb._core_names[src]
+                    dest_name = self.nlb._core_names[dest]
+                    if not (any (edge in src_name for edge in remove_edges) or any (edge in dest_name for edge in remove_edges)):
+                        G.add_edge(src, dest, name=edge)
+                    if "buffer_passthrough" in src_name or "buffer_passthrough" in dest_name:
+                        G.add_edge(src, dest, name=edge)
 
 
-            # Get first node and initialize dictionary
-            first_nodes = [node for node in G.nodes if len(list(G.predecessors(node))) == 0]
-            dist = {}
-            parent_node = first_nodes[0]
-            dist = {node: None for node in G.nodes}
-            for node in first_nodes:
-                dist[node] = 0
-            
-
-            # longest path from source to any other node
-            for node in G.nodes:
-                for parent_node in first_nodes:
-                    if dist[node] is None:
-                        all_paths = list(nx.all_simple_paths(G, source=parent_node, target=node))
-                        # check all_paths is not empty list
-                        print(all_paths)
-                        if all_paths:
-                            dist[node] = max(len(arr)-1 for arr in all_paths)
-            
-            edge_add = {}
-
-            # add to refs coming out of fiberlookups
-            for node in G.nodes:
-                remapping = self.nlb._core_names[node]
-                if "fiber_access" in remapping and "X" not in remapping and "vals" not in remapping:
-                    outgoing_edges = G.out_edges(node, data=True)
-                    for edge in outgoing_edges:
-                        src = edge[0]
-                        dest = edge[1]
-                        name = edge[2]['name']
-                        if "pos" in new_netlist[name][0][1]:
-                            edge_add[name] = 6
-
+                # Get first node and initialize dictionary
+                first_nodes = [node for node in G.nodes if len(list(G.predecessors(node))) == 0]
+                dist = {}
+                parent_node = first_nodes[0]
+                dist = {node: None for node in G.nodes}
+                for node in first_nodes:
+                    dist[node] = 0
                 
-            # Compare incoming edges to add fifos
-            topological_order = list(nx.topological_sort(G))
-            for node in topological_order:
-                incoming_edges = G.in_edges(node, data=True)
-                if len(incoming_edges) > 1:
-                    max_length = dist[node]
-                    for edge in incoming_edges:
-                        src = edge[0]
-                        dest = edge[1]
-                        name = edge[2]['name']
-                        if dist[src] < max_length - 1:
-                            # add fifos to balance + fifos added for fiberlookup refs
-                            if name in edge_add:
-                                prev_edge_add = edge_add[name]
-                            else:
-                                prev_edge_add = 0
-                            edge_add[name] = 2*(max_length - dist[src] - 1) + prev_edge_add
 
-            # max edge_add 16
-            for edge in edge_add:
-               if edge_add[edge] > 8:
-                   edge_add[edge] = 8
-            print("Edge Add:")
-            print(edge_add)
-            # breakpoint()            
+                # longest path from source to any other node
+                for node in G.nodes:
+                    for parent_node in first_nodes:
+                        if dist[node] is None:
+                            all_paths = list(nx.all_simple_paths(G, source=parent_node, target=node))
+                            # check all_paths is not empty list
+                            print(all_paths)
+                            if all_paths:
+                                dist[node] = max(len(arr)-1 for arr in all_paths)
+                
+                edge_add = {}
 
-            reg_num = 0
-            edge_num = len(new_bus)
-            for edge in list(new_netlist.keys()):
-                src = new_netlist[edge][0]
-                dest = new_netlist[edge][1]
+                # add to refs coming out of fiberlookups
+                for node in G.nodes:
+                    remapping = self.nlb._core_names[node]
+                    if "fiber_access" in remapping and "X" not in remapping and "vals" not in remapping:
+                        outgoing_edges = G.out_edges(node, data=True)
+                        for edge in outgoing_edges:
+                            src = edge[0]
+                            dest = edge[1]
+                            name = edge[2]['name']
+                            if "pos" in new_netlist[name][0][1]:
+                                edge_add[name] = 6
 
-                num_fifo = 0
-                if edge in edge_add:
-                    num_fifo = edge_add[edge]
+                    
+                # Compare incoming edges to add fifos
+                topological_order = list(nx.topological_sort(G))
+                for node in topological_order:
+                    incoming_edges = G.in_edges(node, data=True)
+                    if len(incoming_edges) > 1:
+                        max_length = dist[node]
+                        for edge in incoming_edges:
+                            src = edge[0]
+                            dest = edge[1]
+                            name = edge[2]['name']
+                            if dist[src] < max_length - 1:
+                                # add fifos to balance + fifos added for fiberlookup refs
+                                if name in edge_add:
+                                    prev_edge_add = edge_add[name]
+                                else:
+                                    prev_edge_add = 0
+                                edge_add[name] = 2*(max_length - dist[src] - 1) + prev_edge_add
 
-                if num_fifo == 0:
-                    continue
+                # max edge_add 16
+                for edge in edge_add:
+                    if edge_add[edge] > 8:
+                        edge_add[edge] = 8
 
-                del new_netlist[edge]
-                del new_bus[edge]
+                print("Edge Add:")
+                print(edge_add)
 
-                new_netlist[f"e{edge_num}"] = [src, (f"r{reg_num}", "reg")]
-                new_bus[f"e{edge_num}"] = 17
-                edge_num += 1
+                reg_num = 0
+                edge_num = len(new_bus)
+                for edge in list(new_netlist.keys()):
+                    src = new_netlist[edge][0]
+                    dest = new_netlist[edge][1]
 
-                for i in range(2*num_fifo-1):
-                    new_netlist[f"e{edge_num}"] = [(f"r{reg_num}", "reg"), (f"r{reg_num+1}", "reg")]
+                    num_fifo = 0
+                    if edge in edge_add:
+                        num_fifo = edge_add[edge]
+
+                    if num_fifo == 0:
+                        continue
+
+                    del new_netlist[edge]
+                    del new_bus[edge]
+
+                    new_netlist[f"e{edge_num}"] = [src, (f"r{reg_num}", "reg")]
+                    new_bus[f"e{edge_num}"] = 17
+                    edge_num += 1
+
+                    for i in range(2*num_fifo-1):
+                        new_netlist[f"e{edge_num}"] = [(f"r{reg_num}", "reg"), (f"r{reg_num+1}", "reg")]
+                        new_bus[f"e{edge_num}"] = 17
+                        edge_num += 1
+                        reg_num += 1
+
+                    new_netlist[f"e{edge_num}"] = [(f"r{reg_num}", "reg"), dest]
                     new_bus[f"e{edge_num}"] = 17
                     edge_num += 1
                     reg_num += 1
-
-                new_netlist[f"e{edge_num}"] = [(f"r{reg_num}", "reg"), dest]
-                new_bus[f"e{edge_num}"] = 17
-                edge_num += 1
-                reg_num += 1
-            
-            self.nlb._netlist = new_netlist
-            self.nlb._bus = new_bus
+                
+                self.nlb._netlist = new_netlist
+                self.nlb._bus = new_bus
 
 
             # Now replace the io
@@ -1800,17 +1801,17 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         # combined
         # piped
 
-        b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+        b_mat = get_tensor(input_name='B', shapes=[30, 30], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                            dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                           sparsity=0.8)
+                           sparsity=0.95)
 
-        c_mat = get_tensor(input_name='C', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+        c_mat = get_tensor(input_name='C', shapes=[30, 30], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
-                           sparsity=0.9)
+                           sparsity=0.95)
 
-        d_mat = get_tensor(input_name='D', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+        d_mat = get_tensor(input_name='D', shapes=[30, 30], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['D'],
-                           sparsity=0.8)
+                           sparsity=0.95)
 
         output_matrix = numpy.add(d_mat, numpy.add(b_mat, c_mat,
                                                    dtype=numpy.uint16, casting='unsafe'), dtype=numpy.uint16, casting='unsafe')
@@ -2496,18 +2497,18 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         output_format = "CSF"
         output_name = "x"
     elif 'matmul_ijk_crddrop.gv' in app_name:
-        b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+        b_mat = get_tensor(input_name='B', shapes=[30, 30], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                                dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                               sparsity=0.7)
-        c_mat = get_tensor(input_name='C', shapes=[8, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                               sparsity=0.90)
+        c_mat = get_tensor(input_name='C', shapes=[30, 30], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                                dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
-                               sparsity=0.7)
+                               sparsity=0.90)
 
         # First transpose c_mat
         c_mat_trans = numpy.transpose(c_mat)
-        print("\nBMAT is: \n", b_mat)
-        print("\nCMAT is: \n", c_mat)
-        print("\nCMAT_TRANS is: \n", c_mat_trans)
+        # print("\nBMAT is: \n", b_mat)
+        # print("\nCMAT is: \n", c_mat)
+        # print("\nCMAT_TRANS is: \n", c_mat_trans)
         output_matrix = numpy.matmul(b_mat, c_mat_trans, dtype=numpy.uint16, casting='unsafe')
         output_format = "CSF"
         output_name = "X"
@@ -2842,42 +2843,151 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
     elif 'tensor3_mttkrp.gv' in app_name:
 
 
-        b_matrix =  numpy.load("/aha/garnet/b_matrix.npy")
-        b_mat = MatrixGenerator(name="B", tensor=b_matrix, dump_dir=matrix_tmp_dir, clean=False)
-        b_mat.dump_outputs(suffix=suffix)
+        # b_matrix =  numpy.load("/aha/garnet/b_matrix.npy")
+        # b_mat = MatrixGenerator(name="B", tensor=b_matrix, dump_dir=matrix_tmp_dir, clean=False)
+        # b_mat.dump_outputs(suffix=suffix)
 
-        c_matrix =  numpy.load("/aha/garnet/c_matrix.npy")
-        c_mat = MatrixGenerator(name="C", tensor=c_matrix, dump_dir=matrix_tmp_dir, clean=False)
-        c_mat.dump_outputs(suffix=suffix)
+        # c_matrix =  numpy.load("/aha/garnet/c_matrix.npy")
+        # c_mat = MatrixGenerator(name="C", tensor=c_matrix, dump_dir=matrix_tmp_dir, clean=False)
+        # c_mat.dump_outputs(suffix=suffix)
 
-        d_matrix =  numpy.load("/aha/garnet/d_matrix.npy")
-        d_mat = MatrixGenerator(name="D", tensor=d_matrix, dump_dir=matrix_tmp_dir, clean=False)
-        d_mat.dump_outputs(suffix=suffix)
+        # d_matrix =  numpy.load("/aha/garnet/d_matrix.npy")
+        # d_mat = MatrixGenerator(name="D", tensor=d_matrix, dump_dir=matrix_tmp_dir, clean=False)
+        # d_mat.dump_outputs(suffix=suffix)
 
-        b_mat = get_tensor(input_name='B', shapes=[10, 10, 10], give_tensor=True, tmp_dir=matrix_tmp_dir,
+        b_mat = get_tensor(input_name='B', shapes=[10, 10, 10], give_tensor=False, tmp_dir=matrix_tmp_dir,
                            dump=matrix_tmp_dir, suffix=suffix, clean=True, tensor_ordering=tensor_orderings['B'],
                            sparsity=0.99)
 
-        c_mat = get_tensor(input_name='C', shapes=[10, 10], give_tensor=True, tmp_dir=matrix_tmp_dir,
+        c_mat = get_tensor(input_name='C', shapes=[10, 10], give_tensor=False, tmp_dir=matrix_tmp_dir,
                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
                            sparsity=0.01)
 
-        d_mat = get_tensor(input_name='D', shapes=[10, 10], give_tensor=True, tmp_dir=matrix_tmp_dir,
+        d_mat = get_tensor(input_name='D', shapes=[10, 10], give_tensor=False, tmp_dir=matrix_tmp_dir,
                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['D'],
                            sparsity=0.01)
 
-        print("b_mat")
-        print(b_mat)
-        print("c_mat")
-        print(c_mat)
-        print("d_mat")
-        print(d_mat)
+ 
+        b_0_crd = []
+        b_0_seg = [0]
+        b_1_crd = []
+        b_1_seg = [0]
+        b_2_crd = []
+        b_2_seg = [0]
+        b_v = []
+        c_0_crd = []
+        c_0_seg = [0]
+        c_1_crd = []
+        c_1_seg = [0]
+        c_v = []
+        d_0_crd = []
+        d_0_seg = [0]
+        d_1_crd = []
+        d_1_seg = [0]
+        d_v = []
+
+
+        # create the new B from b_mat
+        for i in range(len(b_mat)):
+            b_0_crd.append(i)
+            for j in range(len(b_mat[0])):
+                b_1_crd.append(j)
+                for k in range(len(b_mat[0][0])):
+                    v = b_mat[i][j][k]
+                    if v != 0 or i == j == k:
+                        b_2_crd.append(k)
+                        b_v.append(v)
+                b_2_seg.append(len(b_2_crd))
+            b_1_seg.append(len(b_1_crd))
+        b_0_seg.append(len(b_0_crd))
+
+        # create the new C from c_mat
+        for i in range(len(c_mat)):
+            c_0_crd.append(i)
+            for j in range(len(c_mat[0])):
+                v = c_mat[i][j]
+                if v != 0 or i == j:
+                    c_1_crd.append(j)
+                    c_v.append(v)
+            c_1_seg.append(len(c_1_crd))
+        c_0_seg.append(len(c_0_crd))
+
+        # create the new D from d_mat
+        for j in range(len(d_mat)):
+            d_0_crd.append(j)
+            for k in range(len(d_mat[0])):
+                v = d_mat[j][k]
+                if v != 0 or k == j:
+                    d_1_crd.append(k)
+                    d_v.append(v)
+            d_1_seg.append(len(d_1_crd))
+        d_0_seg.append(len(d_0_crd))
+
+
+        # write the new B
+        with open(f"{matrix_tmp_dir}/tensor_B_mode_0_crd", "w+") as crd_file:
+            crd_file.writelines([f"{crd}\n" for crd in b_0_crd])
+            crd_file.close()
+        with open(f"{matrix_tmp_dir}/tensor_B_mode_0_seg", "w+") as seg_file:
+            seg_file.writelines([f"{seg}\n" for seg in b_0_seg])
+            seg_file.close()
+        with open(f"{matrix_tmp_dir}/tensor_B_mode_1_crd", "w+") as crd_file:
+            crd_file.writelines([f"{crd}\n" for crd in b_1_crd])
+            crd_file.close()
+        with open(f"{matrix_tmp_dir}/tensor_B_mode_1_seg", "w+") as seg_file:
+            seg_file.writelines([f"{seg}\n" for seg in b_1_seg])
+            seg_file.close()
+        with open(f"{matrix_tmp_dir}/tensor_B_mode_2_crd", "w+") as crd_file:
+            crd_file.writelines([f"{crd}\n" for crd in b_2_crd])
+            crd_file.close()
+        with open(f"{matrix_tmp_dir}/tensor_B_mode_2_seg", "w+") as seg_file:
+            seg_file.writelines([f"{seg}\n" for seg in b_2_seg])
+            seg_file.close()
+        with open(f"{matrix_tmp_dir}/tensor_B_mode_vals", "w+") as val_file:
+            val_file.writelines([f"{val}\n" for val in b_v])
+            val_file.close()
+
+        # write the new C
+        with open(f"{matrix_tmp_dir}/tensor_C_mode_0_crd", "w+") as crd_file:
+            crd_file.writelines([f"{crd}\n" for crd in c_0_crd])
+            crd_file.close()
+        with open(f"{matrix_tmp_dir}/tensor_C_mode_0_seg", "w+") as seg_file:
+            seg_file.writelines([f"{seg}\n" for seg in c_0_seg])
+            seg_file.close()
+        with open(f"{matrix_tmp_dir}/tensor_C_mode_1_crd", "w+") as crd_file:
+            crd_file.writelines([f"{crd}\n" for crd in c_1_crd])
+            crd_file.close()
+        with open(f"{matrix_tmp_dir}/tensor_C_mode_1_seg", "w+") as seg_file:
+            seg_file.writelines([f"{seg}\n" for seg in c_1_seg])
+            seg_file.close()
+        with open(f"{matrix_tmp_dir}/tensor_C_mode_vals", "w+") as val_file:
+            val_file.writelines([f"{val}\n" for val in c_v])
+            val_file.close()
+
+        # write the new D
+        with open(f"{matrix_tmp_dir}/tensor_D_mode_0_crd", "w+") as crd_file:
+            crd_file.writelines([f"{crd}\n" for crd in d_0_crd])
+            crd_file.close()
+        with open(f"{matrix_tmp_dir}/tensor_D_mode_0_seg", "w+") as seg_file:
+            seg_file.writelines([f"{seg}\n" for seg in d_0_seg])
+            seg_file.close()
+        with open(f"{matrix_tmp_dir}/tensor_D_mode_1_crd", "w+") as crd_file:
+            crd_file.writelines([f"{crd}\n" for crd in d_1_crd])
+            crd_file.close()
+        with open(f"{matrix_tmp_dir}/tensor_D_mode_1_seg", "w+") as seg_file:
+            seg_file.writelines([f"{seg}\n" for seg in d_1_seg])
+            seg_file.close()
+        with open(f"{matrix_tmp_dir}/tensor_D_mode_vals", "w+") as val_file:
+            val_file.writelines([f"{val}\n" for val in d_v])
+            val_file.close()
+
 
 
         # "X(i,j)=B(i,k,l)*C(j,k)*D(j,l) -f=X:ss -f=B:sss -f=C:ss -f=D:ss" 
-        c_mat_trans = numpy.transpose(c_mat)
-        d_mat_trans = numpy.transpose(d_mat)
-        output_matrix = numpy.einsum("ikl,lj,kj->ij", b_mat, d_mat_trans, c_mat_trans, dtype=numpy.uint16, casting='unsafe')
+        # c_mat_trans = numpy.transpose(c_mat)
+        # d_mat_trans = numpy.transpose(d_mat)
+        # output_matrix = numpy.einsum("ikl,lj,kj->ij", b_mat, d_mat_trans, c_mat_trans, dtype=numpy.uint16, casting='unsafe')
+        output_matrix = numpy.einsum("ikl,jk,jl->ij", b_mat, c_mat, d_mat, dtype=numpy.uint16, casting='unsafe')
 
 
         print("output_matrix")
@@ -2945,11 +3055,11 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
 
         b_mat = get_tensor(input_name='B', shapes=[10, 10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                            dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                           sparsity=0.8)
+                           sparsity=0.90)
 
         c_mat = get_tensor(input_name='C', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
-                           sparsity=0.9)
+                           sparsity=0.90)
 
         c_mat_trans = numpy.transpose(c_mat)
         # First transpose c_mat
@@ -2960,11 +3070,11 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
 
         b_mat = get_tensor(input_name='B', shapes=[10, 10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                            dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                           sparsity=0.8)
+                           sparsity=0.67)
 
         c_mat = get_tensor(input_name='c', shapes=[10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['c'],
-                           sparsity=0.9)
+                           sparsity=0.67)
 
         # First transpose c_mat
         output_matrix = numpy.matmul(b_mat, c_mat, dtype=numpy.uint16, casting='unsafe')
