@@ -38,8 +38,44 @@ program garnet_test #(
 
        $display("about to build"); $fflush();
         env = new(kernels, axil_ifc, p_ifc, dpr);
+
+// THIS WORKS get a pulse at 101ns
+
+
+    @(posedge axil_ifc.clk);                 // WAS CLOCKING @(vif.cbd)
+    axil_ifc.wvalid = 1'b0;                // WAS CLOCKING vif.cbd<>
+    @(posedge axil_ifc.clk);                 // WAS CLOCKING @(vif.cbd)
+   $display("gtest 36: i see axil_ifc.wvalid = %0d (should be 0)", axil_ifc.wvalid); $fflush();
+
+    axil_ifc.wvalid = 1'b1;                // WAS CLOCKING axil_ifc.cbd<>
+    @(posedge axil_ifc.clk);                 // WAS CLOCKING @(axil_ifc.cbd)
+   $display("gtest 39: i see axil_ifc.wvalid = %0d (should be 1)", axil_ifc.wvalid); $fflush();
+
+    axil_ifc.wvalid = 1'b0;                // WAS CLOCKING axil_ifc.cbd<>
+    @(posedge axil_ifc.clk);                 // WAS CLOCKING @(axil_ifc.cbd)
+   $display("gtest 44: i see axil_ifc.wvalid = %0d (should be 0)", axil_ifc.wvalid); $fflush();
+
         env.build();
-       $display("done did build"); $fflush();
+       $display("done did build"); $fflush();  // happens at 103ns
+
+
+// THIS WORKS get a pulse at 105.5ns
+
+    @(posedge axil_ifc.clk);                 // WAS CLOCKING @(vif.cbd)
+    axil_ifc.wvalid = 1'b0;                // WAS CLOCKING vif.cbd<>
+    @(posedge axil_ifc.clk);                 // WAS CLOCKING @(vif.cbd)
+   $display("gtest 36a: i see axil_ifc.wvalid = %0d (should be 0)", axil_ifc.wvalid); $fflush();
+
+    axil_ifc.wvalid = 1'b1;                // WAS CLOCKING axil_ifc.cbd<>
+    @(posedge axil_ifc.clk);                 // WAS CLOCKING @(axil_ifc.cbd)
+   $display("gtest 39a: i see axil_ifc.wvalid = %0d (should be 1)", axil_ifc.wvalid); $fflush();
+
+    axil_ifc.wvalid = 1'b0;                // WAS CLOCKING axil_ifc.cbd<>
+    @(posedge axil_ifc.clk);                 // WAS CLOCKING @(axil_ifc.cbd)
+   $display("gtest 44a: i see axil_ifc.wvalid = %0d (should be 0)", axil_ifc.wvalid); $fflush();
+
+
+
 
         test_toggle = 1;
         env.run();

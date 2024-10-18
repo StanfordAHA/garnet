@@ -219,11 +219,15 @@ always_ff @(posedge clk or posedge reset) begin
         end
     end
     else if (wr_state == WR_REQ_GLC) begin
+        $display("I see axi_wvalid=%0d", axi_wvalid); $fflush();
+        $display("I see axi_wready=%0d", axi_wready); $fflush();
+        $display("I see (wv & wr) = %0d", axi_wvalid & axi_wready); $fflush();
         if (axi_wvalid & axi_wready) begin
             axi_wready <= 1'h0;
             axi_glc_cfg_wr_en <= 1'h1;
             axi_glc_cfg_wr_data <= axi_wdata;
             wr_wait_cnt <= 'd0;
+           $display("glc_axi_ctrl.sv: gonna WAIT now 223"); $fflush();
             wr_state <= WR_WAIT;
         end
     end
@@ -233,6 +237,7 @@ always_ff @(posedge clk or posedge reset) begin
             axi_glb_cfg_wr_en <= 1'h1;
             axi_glb_cfg_wr_data <= axi_wdata;
             wr_wait_cnt <= 14;
+           $display("glc_axi_ctrl.sv: gonna WAIT now 237"); $fflush();
             wr_state <= WR_WAIT;
         end
     end

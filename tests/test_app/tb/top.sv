@@ -85,8 +85,13 @@ module top;
         .clk     (clk),
         .reset   (reset),
         .p_ifc   (p_ifc),
+        // .axil_ifc(axil_ifc.driver) // this did not help anything
         .axil_ifc(axil_ifc)
     );
+   always @(posedge clk) begin
+      $display("top.sv    137 i see  axil_ifc.wvalid = %d", axil_ifc.wvalid); $fflush();
+   end
+   
 
     //============================================================================//
     // instantiate dut
@@ -133,6 +138,5 @@ module top;
         .jtag_tms   (  /*unused*/),
         .jtag_trst_n(  /*unused*/)
     );
-
 
 endmodule
