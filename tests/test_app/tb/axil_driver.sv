@@ -22,15 +22,28 @@ task AxilDriver::config_write(Config cfg[]);
 endtask
 
 task AxilDriver::write(bit [CGRA_AXI_ADDR_WIDTH-1:0] addr, bit [CGRA_AXI_DATA_WIDTH-1:0] data);
+    // $display("AXI-Lite Write. Addr: %08h, Data: %08h", addr, data);
     $display("AXI-Lite Write. Addr: %08h, Data: %08h", addr, data);
-   $display("axil_driver: Gettum lockum"); $fflush();
-
+    $display("axil_driver: Gettum lockum"); $fflush();
     axil_lock.get(1);
-   $display("axil_driver: Gottum lockum"); $fflush();
+    $display("axil_driver: Gottum lockum"); $fflush();
+
+    $display("axil_driver 32: i see vif.wvalid = %0d", vif.wvalid); $fflush();
+
+    @(posedge vif.clk);                 // WAS CLOCKING @(vif.cbd)
+    vif.awaddr  <= addr;                // WAS CLOCKING vif.cbd.<>
+    vif.awvalid <= 1'b1;                // WAS CLOCKING vif.cbd<>
+    for (int i = 0; i < 100; i++) begin
+        if (vif.awready == 1) break;    // WAS CLOCKING vif.cbd<>
+        @(posedge vif.clk);             // WAS CLOCKING @(vif.cbd)
+        if (i == 99) return;  // axi slave is not ready
+    end
 
 
 
-   $display("axil_driver 32: i see vif.wvalid = %0d", vif.wvalid); $fflush();
+
+
+
 
     @(posedge vif.clk);                 // WAS CLOCKING @(vif.cbd)
     vif.wvalid = 1'b0;                // WAS CLOCKING vif.cbd<>
