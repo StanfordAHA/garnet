@@ -11,7 +11,7 @@ endclass
 
 // function AxilDriver::new(vAxilIfcDriver vif, semaphore axil_lock);
 function AxilDriver::new(vAxilIfc vif, semaphore axil_lock);
-    this.vif = vif.driver;
+    this.vif = vif;
     this.axil_lock = axil_lock;
 endfunction
 
