@@ -10,7 +10,8 @@ class AxilDriver;
 endclass
 
 function AxilDriver::new(vAxilIfcDriver vif, semaphore axil_lock);
-    this.vif = vif;
+    // this.vif = vif;           // BAD. Also: type mismatch
+    this.vif = vif.driver;       // GOOD maybe. Also: fixes wvalid bug
     this.axil_lock = axil_lock;
 endfunction
 
