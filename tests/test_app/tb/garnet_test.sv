@@ -7,6 +7,17 @@
 **===========================================================================*/
 import "DPI-C" function int initialize_monitor(int num_cols);
 
+
+
+
+
+
+
+
+
+
+
+
 program garnet_test #(
     parameter int MAX_NUM_APPS = 1000
 ) (
@@ -24,6 +35,22 @@ semaphore axil_lock;
    
    bit [CGRA_AXI_DATA_WIDTH-1:0] data;
    
+task env_run ();
+   
+   begin
+      // wait for reset
+      // repeat (20) @(posedge vifc_proc.clk);
+      $display("environment L350: // wait for reset"); $fflush();
+      repeat (20) @(posedge p_ifc.clk);
+      $display("environment L352: waited 20 clocks"); $fflush();
+   end
+endtask
+
+
+
+
+
+
 
 
     //============================================================================//
@@ -31,6 +58,9 @@ semaphore axil_lock;
     //============================================================================//
     Kernel kernels[$]; // use dynamic array for potential glb tiling
     // Environment env;
+
+
+
 
     initial begin
        axil_lock = new(1);
@@ -65,11 +95,16 @@ semaphore axil_lock;
 
        // env.run();
 
-         // wait for reset
-         // repeat (20) @(posedge vifc_proc.clk);
-         $display("environment L350: // wait for reset"); $fflush();
-         repeat (20) @(posedge p_ifc.clk);
-         $display("environment L352: waited 20 clocks"); $fflush();
+//         // wait for reset
+//         // repeat (20) @(posedge vifc_proc.clk);
+//         $display("environment L350: // wait for reset"); $fflush();
+//         repeat (20) @(posedge p_ifc.clk);
+//         $display("environment L352: waited 20 clocks"); $fflush();
+
+       // Task must have no args, else cannot see signals in gtkwave (???)
+             env_run();
+
+
 
          // turn on interrupt
          // set_interrupt_on();
