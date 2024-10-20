@@ -2358,13 +2358,13 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         output_format = "CSF"
         output_name = "X"
     elif 'fp_matmul_ikj.gv' in app_name:
-        b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+        b_mat = get_tensor(input_name='B', shapes=[12, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                                dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
                                sparsity=0.8, use_fp=True)
-        c_mat = get_tensor(input_name='C', shapes=[12, 8], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+        c_mat = get_tensor(input_name='C', shapes=[12, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                                dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
                                sparsity=0.9, use_fp=True)
-
+        
         output_matrix = numpy.zeros((b_mat.shape[0], c_mat.shape[1]), dtype=numpy.float32)
         FPU = fpu.FPU_fc(PyFamily())
         fpu_func = FPU()
@@ -2375,7 +2375,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
                 for k in range(0, b_mat.shape[1]):
                     b_val = float2bfbin(b_mat[i][k])
                     b_val = Data(int(b_val, 2))
-                    c_val = float2bfbin(c_mat_trans[k][j])
+                    c_val = float2bfbin(c_mat[k][j])
                     c_val = Data(int(c_val, 2))
                     partial_prod, _, _ = fpu_func(fpu.FPU_t.FP_mul, b_val, c_val)
                     partial_sum, _, _ = fpu_func(fpu.FPU_t.FP_add, partial_sum, partial_prod)
