@@ -19,13 +19,22 @@ program garnet_test #(
     int value;
     int dpr = 0;
 
+semaphore axil_lock;
+   bit [CGRA_AXI_ADDR_WIDTH-1:0] addr;
+   
+   bit [CGRA_AXI_DATA_WIDTH-1:0] data;
+   
+
+
     //============================================================================//
     // local variables
     //============================================================================//
     Kernel kernels[$]; // use dynamic array for potential glb tiling
-    Environment env;
+    // Environment env;
 
     initial begin
+       axil_lock = new(1);
+       
         if ($value$plusargs("DPR=%d", value)) begin
             dpr = 1;
         end
@@ -37,7 +46,7 @@ program garnet_test #(
        $display("done did map"); $fflush();
 
        $display("about to build"); $fflush();
-        env = new(kernels, axil_ifc, p_ifc, dpr);
+        // env = new(kernels, axil_ifc, p_ifc, dpr);
 
 // THIS WORKS get a pulse at 101ns
 
@@ -55,7 +64,19 @@ program garnet_test #(
     @(posedge axil_ifc.clk);                 // WAS CLOCKING @(axil_ifc.cbd)
    $display("gtest 44: i see axil_ifc.wvalid = %0d (should be 0)", axil_ifc.wvalid); $fflush();
 
-        env.build();
+//    semaphore proc_lock;
+//    semaphore axil_lock;
+//    vAxilIfcDriver vifc_axil;
+//    vProcIfcDriver vifc_proc;
+//        env.build();
+
+//    proc_lock = new(1);
+//    axil_lock = new(1);
+//    proc_drv  = new(vifc_proc, proc_lock);
+//    axil_drv  = new(vifc_axil, axil_lock);
+
+
+
        $display("done did build"); $fflush();  // happens at 103ns
 
 
@@ -70,6 +91,7 @@ program garnet_test #(
     @(posedge axil_ifc.clk);                 // WAS CLOCKING @(axil_ifc.cbd)
    $display("gtest 39a: i see axil_ifc.wvalid = %0d (should be 1)", axil_ifc.wvalid); $fflush();
 
+    // this happens at around 107ns
     axil_ifc.wvalid = 1'b0;                // WAS CLOCKING axil_ifc.cbd<>
     @(posedge axil_ifc.clk);                 // WAS CLOCKING @(axil_ifc.cbd)
    $display("gtest 44a: i see axil_ifc.wvalid = %0d (should be 0)", axil_ifc.wvalid); $fflush();
@@ -77,8 +99,85 @@ program garnet_test #(
 
 
 
+
+
+
+
+
+
+
         test_toggle = 1;
-        env.run();
+
+
+
+       // env.run();
+
+
+    $display("environment L350: // wait for reset"); $fflush();
+       // repeat (20) @(posedge vifc_proc.clk);
+    repeat (20) @(posedge p_ifc.clk);
+    // 127ns
+    $display("environment L352: waited 20 clocks"); $fflush();
+
+
+//    AxilDriver axil_drv;
+
+
+
+   // 128ns maybe
+   $display("FOO time [%t]", $time);
+    $display("axil_driver 36: i see vif.wvalid = %0d (should be 0)", axil_ifc.wvalid); $fflush();
+    axil_ifc.wvalid = 1'b1;                // WAS CLOCKING vif.cbd<>
+    // vif.driver.wvalid = 1'b1;  // MemberSel of non-variable
+    @(posedge axil_ifc.clk);                 // WAS CLOCKING @(vif.cbd)
+    $display("axil_driver 39: i see vif.wvalid = %0d (should be 1)", axil_ifc.wvalid); $fflush();
+    repeat (20) @(posedge axil_ifc.clk);
+    @(posedge axil_ifc.clk);                 // WAS CLOCKING @(vif.cbd)
+    axil_ifc.wvalid = 1'b0;                // WAS CLOCKING vif.cbd<>
+
+
+// ==============================================================================
+// ==============================================================================
+// ==============================================================================
+// semaphore axil_lock;
+// bit [CGRA_AXI_ADDR_WIDTH-1:0] addr, 
+// bit [CGRA_AXI_DATA_WIDTH-1:0] data);
+
+
+//       // set_interrupt_on();
+    $display("Turn on interrupt enable registers");
+//    axil_ifc.write(`GLC_GLOBAL_IER_R, 3'b111);
+
+
+       addr = `GLC_GLOBAL_IER_R;
+       data = 3'b111;
+
+    // $display("AXI-Lite Write. Addr: %08h, Data: %08h", addr, data);
+    $display("AXI-Lite Write. Addr: %08h, Data: %08h", addr, data);
+    $display("axil_driver: Gettum lockum"); $fflush();
+    axil_lock.get(1);
+    $display("axil_driver: Gottum lockum"); $fflush();
+
+
+
+    $display("axil_driver 32: i see axil_ifc.wvalid = %0d", axil_ifc.wvalid); $fflush();
+
+    @(posedge axil_ifc.clk);                 // WAS CLOCKING @(vif.cbd)
+    axil_ifc.awaddr  = addr;                // WAS CLOCKING vif.cbd.<>
+    axil_ifc.awvalid = 1'b1;                // WAS CLOCKING vif.cbd<>
+    for (int i = 0; i < 100; i++) begin
+        if (axil_ifc.awready == 1) break;    // WAS CLOCKING vif.cbd<>
+        @(posedge axil_ifc.clk);             // WAS CLOCKING @(vif.cbd)
+        // if (i == 99) return;  // axi slave is not ready
+    end
+
+    $finish(0);
+
+
+
+
+
+
         test_toggle = 0;
 
         // Dump out data between each test

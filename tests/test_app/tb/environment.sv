@@ -355,9 +355,37 @@ endtask
 
 task Environment::run();
     // wait for reset
+    // 107ns
     $display("environment L350: // wait for reset"); $fflush();
     repeat (20) @(posedge vifc_proc.clk);
+    // 127ns
     $display("environment L352: waited 20 clocks"); $fflush();
+
+
+   // 128ns maybe
+   $display("FOO time [%t]", $time);
+    $display("axil_driver 36: i see vif.wvalid = %0d (should be 0)", vifc_axil.wvalid); $fflush();
+    vifc_axil.wvalid = 1'b1;                // WAS CLOCKING vif.cbd<>
+    // vif.driver.wvalid = 1'b1;  // MemberSel of non-variable
+    @(posedge vifc_axil.clk);                 // WAS CLOCKING @(vif.cbd)
+    $display("axil_driver 39: i see vif.wvalid = %0d (should be 1)", vifc_axil.wvalid); $fflush();
+    repeat (20) @(posedge vifc_axil.clk);
+    @(posedge vifc_axil.clk);                 // WAS CLOCKING @(vif.cbd)
+    vifc_axil.wvalid = 1'b0;                // WAS CLOCKING vif.cbd<>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     // turn on interrupt
     set_interrupt_on();
