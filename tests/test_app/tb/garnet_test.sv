@@ -167,7 +167,7 @@ program garnet_test #(
     endfunction
 
    task env_run();
-      begin
+ //     begin
          // wait for reset
          // repeat (20) @(posedge vifc_proc.clk);
          $display("environment L350: // wait for reset"); $fflush();
@@ -178,7 +178,7 @@ program garnet_test #(
          // set_interrupt_on();
          // task Environment::set_interrupt_on();
          $display("Turn on interrupt enable registers");
-      end
+//      end
 
              // axil_drv.write(`GLC_GLOBAL_IER_R, 3'b111);
              // task AxilDriver::write(... addr, ... data);
