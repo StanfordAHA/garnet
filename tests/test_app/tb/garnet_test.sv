@@ -36,12 +36,6 @@ semaphore axil_lock;
    
    task axil_drive_write();
       begin
-             // axil_drv.write(`GLC_GLOBAL_IER_R, 3'b111);
-             // task AxilDriver::write(... addr, ... data);
-
-               // bit [CGRA_AXI_ADDR_WIDTH-1:0] addr, 
-               // bit [CGRA_AXI_DATA_WIDTH-1:0] data);
-               addr = `GLC_GLOBAL_IER_R; data = 3'b111;
 
              $display("AXI-Lite Write. Addr: %08h, Data: %08h", addr, data);
 
@@ -147,6 +141,13 @@ semaphore axil_lock;
 
        // Task must have no args, else cannot see signals in gtkwave (???)
              env_run();
+
+             // axil_drv.write(`GLC_GLOBAL_IER_R, 3'b111);
+             // task AxilDriver::write(... addr, ... data);
+
+               // bit [CGRA_AXI_ADDR_WIDTH-1:0] addr, 
+               // bit [CGRA_AXI_DATA_WIDTH-1:0] data);
+               addr = `GLC_GLOBAL_IER_R; data = 3'b111;
        axil_drive_write();
        
 
