@@ -32,19 +32,63 @@ program garnet_test #(
 
 semaphore axil_lock;
    bit [CGRA_AXI_ADDR_WIDTH-1:0] addr;
-   
    bit [CGRA_AXI_DATA_WIDTH-1:0] data;
    
-task env_run ();
-   
-   begin
-      // wait for reset
-      // repeat (20) @(posedge vifc_proc.clk);
-      $display("environment L350: // wait for reset"); $fflush();
-      repeat (20) @(posedge p_ifc.clk);
-      $display("environment L352: waited 20 clocks"); $fflush();
-   end
-endtask
+   task axil_drive_write();
+      begin
+             // axil_drv.write(`GLC_GLOBAL_IER_R, 3'b111);
+             // task AxilDriver::write(... addr, ... data);
+
+               // bit [CGRA_AXI_ADDR_WIDTH-1:0] addr, 
+               // bit [CGRA_AXI_DATA_WIDTH-1:0] data);
+               addr = `GLC_GLOBAL_IER_R; data = 3'b111;
+
+             $display("AXI-Lite Write. Addr: %08h, Data: %08h", addr, data);
+
+             // axil_lock.get(1);
+             // semaphore axil_lock;
+             $display("axil_driver: Gettum lockum"); $fflush();
+             axil_lock.get(1);
+             $display("axil_driver: Gottum lockum"); $fflush();
+
+             // @(vif.cbd);
+             // vif.cbd.awaddr  <= addr;
+             // vif.cbd.awvalid <= 1'b1;
+             // for (int i = 0; i < 100; i++) begin
+             //     if (vif.cbd.awready == 1) break;
+             //     @(vif.cbd);
+             //     if (i == 99) return;  // axi slave is not ready
+             // end
+
+             @(posedge axil_ifc.clk);                 // WAS CLOCKING @(vif.cbd)
+             axil_ifc.awaddr  = addr;                // WAS CLOCKING vif.cbd.<>
+             axil_ifc.awvalid = 1'b1;                // WAS CLOCKING vif.cbd<>
+             for (int i = 0; i < 100; i++) begin
+                 if (axil_ifc.awready == 1) break;    // WAS CLOCKING vif.cbd<>
+                 @(posedge axil_ifc.clk);             // WAS CLOCKING @(vif.cbd)
+                 // if (i == 99) return;  // axi slave is not ready
+             end
+
+
+      end
+   endtask
+      
+
+   task env_run ();
+      begin
+         // wait for reset
+         // repeat (20) @(posedge vifc_proc.clk);
+         $display("environment L350: // wait for reset"); $fflush();
+         repeat (20) @(posedge p_ifc.clk);
+         $display("environment L352: waited 20 clocks"); $fflush();
+
+         // turn on interrupt
+         // set_interrupt_on();
+         // task Environment::set_interrupt_on();
+         $display("Turn on interrupt enable registers");
+      end
+   endtask
+
 
 
 
@@ -103,46 +147,11 @@ endtask
 
        // Task must have no args, else cannot see signals in gtkwave (???)
              env_run();
+       axil_drive_write();
+       
 
 
 
-         // turn on interrupt
-         // set_interrupt_on();
-         // task Environment::set_interrupt_on();
-           $display("Turn on interrupt enable registers");
-
-             // axil_drv.write(`GLC_GLOBAL_IER_R, 3'b111);
-             // task AxilDriver::write(... addr, ... data);
-
-               // bit [CGRA_AXI_ADDR_WIDTH-1:0] addr, 
-               // bit [CGRA_AXI_DATA_WIDTH-1:0] data);
-               addr = `GLC_GLOBAL_IER_R; data = 3'b111;
-
-             $display("AXI-Lite Write. Addr: %08h, Data: %08h", addr, data);
-
-             // axil_lock.get(1);
-             // semaphore axil_lock;
-             $display("axil_driver: Gettum lockum"); $fflush();
-             axil_lock.get(1);
-             $display("axil_driver: Gottum lockum"); $fflush();
-
-             // @(vif.cbd);
-             // vif.cbd.awaddr  <= addr;
-             // vif.cbd.awvalid <= 1'b1;
-             // for (int i = 0; i < 100; i++) begin
-             //     if (vif.cbd.awready == 1) break;
-             //     @(vif.cbd);
-             //     if (i == 99) return;  // axi slave is not ready
-             // end
-
-             @(posedge axil_ifc.clk);                 // WAS CLOCKING @(vif.cbd)
-             axil_ifc.awaddr  = addr;                // WAS CLOCKING vif.cbd.<>
-             axil_ifc.awvalid = 1'b1;                // WAS CLOCKING vif.cbd<>
-             for (int i = 0; i < 100; i++) begin
-                 if (axil_ifc.awready == 1) break;    // WAS CLOCKING vif.cbd<>
-                 @(posedge axil_ifc.clk);             // WAS CLOCKING @(vif.cbd)
-                 // if (i == 99) return;  // axi slave is not ready
-             end
 
     $finish(0);
 
