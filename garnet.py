@@ -154,7 +154,7 @@ class Garnet(Generator):
 
             mu2cgra=magma.In(magma.Array[(32, magma.Bits[16])])
             mu2cgra_valid=magma.In(magma.Bit)
-            mu2cgra_ready=magma.In(magma.Bit)
+            cgra2mu_ready=magma.Out(magma.Bit)
 
         )
 
