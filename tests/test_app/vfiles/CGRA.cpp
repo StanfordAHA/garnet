@@ -52,7 +52,9 @@ int main(int argc, char** argv) {
 
     // Randomization reset policy
     // May be overridden by commandArgs argument parsing
-    contextp->randReset(2);
+    // 0: init to zero; 1: init to 1; 2: init to random
+    // contextp->randReset(2);
+    contextp->randReset(0);
 
     // Verilator must compute traced signals
     contextp->traceEverOn(true);

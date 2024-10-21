@@ -29,6 +29,7 @@ task AxilDriver::write(bit [CGRA_AXI_ADDR_WIDTH-1:0] addr, bit [CGRA_AXI_DATA_WI
 
     @(posedge vif.clk);                 // WAS CLOCKING @(vif.cbd)
     vif.awaddr  <= addr;                // WAS CLOCKING vif.cbd.<>
+    $display("NOOOOOOOOO"); $fflush();
     vif.awvalid <= 1'b1;                // WAS CLOCKING vif.cbd<>
     for (int i = 0; i < 100; i++) begin
         if (vif.awready == 1) break;    // WAS CLOCKING vif.cbd<>

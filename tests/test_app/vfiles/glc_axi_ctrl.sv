@@ -205,7 +205,9 @@ always_ff @(posedge clk or posedge reset) begin
                 wr_state <= WR_REQ_GLC;
                 // cfg glc clock gating off
                 cfg_wr_glc_clk_en <= 1;
+               $display("axi_awaddr=%x", axi_awaddr);  // 122ns
                 axi_glc_cfg_wr_addr <= axi_awaddr;
+               $display("now axi_glc_cfg_wr_addr=%x", axi_glc_cfg_wr_addr);
             end
             else begin
                 wr_state <= WR_REQ_GLB;
@@ -219,9 +221,10 @@ always_ff @(posedge clk or posedge reset) begin
         end
     end
     else if (wr_state == WR_REQ_GLC) begin
-        $display("I see axi_wvalid=%0d", axi_wvalid); $fflush();
-        $display("I see axi_wready=%0d", axi_wready); $fflush();
-        $display("I see (wv & wr) = %0d", axi_wvalid & axi_wready); $fflush();
+        $display("welcome to state WR_REQ_GLC");
+        // $display("I see axi_wvalid=%0d", axi_wvalid); $fflush();
+        // $display("I see axi_wready=%0d", axi_wready); $fflush();
+        // $display("I see (wv & wr) = %0d", axi_wvalid & axi_wready); $fflush();
         if (axi_wvalid & axi_wready) begin
             axi_wready <= 1'h0;
             axi_glc_cfg_wr_en <= 1'h1;
