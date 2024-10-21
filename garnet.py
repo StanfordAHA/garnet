@@ -57,6 +57,7 @@ class Garnet(Generator):
             io_side = IOSide.None_
         else:
             io_side = IOSide.North
+            #io_side = IOSide.West
 
         # Build GLB unless interconnect_only (CGRA-only) requested
 
@@ -150,6 +151,11 @@ class Garnet(Generator):
             axi4_slave=AXI4LiteIfc(axi_addr_width, axi_data_width).slave,
             interrupt=magma.Out(magma.Bit),
             cgra_running_clk_out=magma.Out(magma.Clock),
+
+            mu2cgra=magma.In(magma.Array[(32, magma.Bits[16])])
+            mu2cgra_valid=magma.In(magma.Bit)
+            mu2cgra_ready=magma.In(magma.Bit)
+
         )
 
         # top <-> global controller ports connection
