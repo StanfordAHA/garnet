@@ -19,9 +19,15 @@ program garnet_test #(
     int dpr = 0;
 
     semaphore axil_lock;
+    semaphore proc_lock;
+
     bit [CGRA_AXI_ADDR_WIDTH-1:0] addr;
     bit [CGRA_AXI_DATA_WIDTH-1:0] data;
 
+    //  task Environment::write_bs(Kernel kernel);
+    realtime start_time, end_time;
+    ProcDriver proc_drv;
+   
     //============================================================================//
     // local variables
     //============================================================================//
@@ -30,6 +36,8 @@ program garnet_test #(
 
     initial begin
        axil_lock = new(1);
+       proc_lock = new(1);
+
        
         if ($value$plusargs("DPR=%d", value)) begin
             dpr = 1;
@@ -46,43 +54,13 @@ program garnet_test #(
         // env.build();
 
         test_toggle = 1;
-
-       // env.run();
-       env_run();  // Task must have no args, else cannot see signals in gtkwave (???)
-
-       
-
-
-
-
-    $finish(0);
-
-
-
-
-// ==============================================================================
-// ==============================================================================
-// ==============================================================================
-// bit [CGRA_AXI_ADDR_WIDTH-1:0] addr, 
-// bit [CGRA_AXI_DATA_WIDTH-1:0] data);
-
-
-
-
-
-//    $display("axil_driver 32: i see axil_ifc.wvalid = %0d", axil_ifc.wvalid); $fflush();
-
-
-
-
-
-
-
+        env_run();  // Task must have no args, else cannot see signals in gtkwave (???)
         test_toggle = 0;
 
         // Dump out data between each test
         //env.compare();
        $display("done did all of garnet_test i guess"); $fflush();
+       $finish(0);
     end
 
     //============================================================================//
@@ -194,6 +172,45 @@ program garnet_test #(
       addr = `GLC_STRM_G2F_IER_R;    data =   1'b1; axil_drive_write();
 
 // BOOKMARK what comes after set_interrupt_on?
+
+    // if (dpr) begin
+    //     foreach (kernels[i]) begin
+    //         automatic int j = i;
+    //         fork
+    //             begin
+    //                 write_bs(kernels[j]);
+
+
+// TODO NEXT this should be a task e.g. 'env_write_bs'
+    //  // Want to do one of these where kernel=kernel[0]
+    //  task Environment::write_bs(Kernel kernel);
+    //      realtime start_time, end_time;
+    //      $timeformat(-9, 2, " ns");
+    //      repeat (10) @(vifc_proc.cbd);
+    //      start_time = $realtime;
+    //      $display("[%s] write bitstream to glb start at %0t", kernel.name, start_time);
+    //      proc_drv.write_bs(kernel.bs_start_addr, kernel.bitstream_data);
+    //      end_time = $realtime;
+    //      $display("[%s] write bitstream to glb end at %0t", kernel.name, end_time);
+    //      $display("[%s] It takes %0t time to write the bitstream to glb.", kernel.name,
+    //               end_time - start_time);
+    //  endtask
+
+    $timeformat(-9, 2, " ns", 0);
+    // repeat (10) @(vifc_proc.cbd);
+    repeat (10) @(p_ifc.clk);
+    start_time = $realtime;
+    $display("[%s] write bitstream to glb start at %0t", kernels[0].name, start_time);
+
+    // TODO NEXT replace these with proc_drive_write_bs (see axil_drive_write above)
+    proc_drv  = new(p_ifc, proc_lock);
+    proc_drv.write_bs(kernels[0].bs_start_addr, kernels[0].bitstream_data);
+
+    end_time = $realtime;
+    $display("[%s] write bitstream to glb end at %0t", kernels[0].name, end_time);
+    $display("[%s] It takes %0t time to write the bitstream to glb.", kernels[0].name,
+             end_time - start_time);
+
 
 
    endtask
