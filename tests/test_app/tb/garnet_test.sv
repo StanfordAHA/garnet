@@ -171,8 +171,6 @@ program garnet_test #(
       addr = `GLC_STRM_F2G_IER_R;    data =   1'b1; axil_drive_write();
       addr = `GLC_STRM_G2F_IER_R;    data =   1'b1; axil_drive_write();
 
-// BOOKMARK what comes after set_interrupt_on?
-
     // if (dpr) begin
     //     foreach (kernels[i]) begin
     //         automatic int j = i;
@@ -202,9 +200,15 @@ program garnet_test #(
     start_time = $realtime;
     $display("[%s] write bitstream to glb start at %0t", kernels[0].name, start_time);
 
-    // TODO NEXT replace these with proc_drive_write_bs (see axil_drive_write above)
-    proc_drv  = new(p_ifc, proc_lock);
-    proc_drv.write_bs(kernels[0].bs_start_addr, kernels[0].bitstream_data);
+// BOOKMARK
+    // TODO NEXT replace these with ProcDriver_write_bs (see axil_drive_write above)
+    // proc_drv  = new(p_ifc, proc_lock);
+    // proc_drv.write_bs(kernels[0].bs_start_addr, kernels[0].bitstream_data);
+
+      ProcDriver_write_bs_start_addr = kernels[0].bs_start_addr;
+      ProcDriver_write_bs_bs_q = kernels[0].bitstream_data;
+      ProcDriver_write_bs();
+      
 
     end_time = $realtime;
     $display("[%s] write bitstream to glb end at %0t", kernels[0].name, end_time);
