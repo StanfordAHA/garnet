@@ -69,19 +69,17 @@ task Environment_run();
 
     // BOOKMARK
     // if (dpr) begin
-        // foreach (kernels[i]) begin
-        //     automatic int j = i;
-        //         fork
-        //             begin
-        //                 write_bs(kernels[j]);
-
-                           kernel = kernels[0];
-                           Environment_write_bs();
-        //              end
-// end // if (dpr)
-    
-    // BOOKMARK
-   endtask
+    // assert dpr == 0
+    foreach (kernels[i]) begin
+        automatic int j = i;  // WHY???
+        begin
+            // write_bs(kernels[j]);
+            kernel = kernels[j];
+            Environment_write_bs();
+        end
+        $display("\n...guess what there was %0d kernels...\n", j);
+    end
+endtask
 
 
 
