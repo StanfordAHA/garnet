@@ -1,9 +1,13 @@
-    //  task Environment::write_bs(Kernel kernel);
-    realtime start_time, end_time;
-    // ProcDriver proc_drv;
-   
-   // TODO this should be separate 'include' file, like task_axil_drive below...
-   task env_run();
+//  task Environment::write_bs(Kernel kernel);
+realtime start_time, end_time;
+// ProcDriver proc_drv;
+
+// Short-handle aliases for AxilDriver_write_{addr,data}
+bit [CGRA_AXI_ADDR_WIDTH-1:0] addr;
+bit [CGRA_AXI_DATA_WIDTH-1:0] data;
+
+// TODO this should be separate 'include' file, like task_axil_drive below...
+task Environment_run();
 
       // task Environment::run();
       // repeat (20) @(posedge vifc_proc.clk);

@@ -6,6 +6,7 @@
 ** Change history:  10/14/2020 - Implement the first version
 **===========================================================================*/
 import "DPI-C" function int initialize_monitor(int num_cols);
+
 program garnet_test #(
     parameter int MAX_NUM_APPS = 1000
 ) (
@@ -18,14 +19,10 @@ program garnet_test #(
     int value;
     int dpr = 0;
 
-    bit [CGRA_AXI_ADDR_WIDTH-1:0] addr;
-    bit [CGRA_AXI_DATA_WIDTH-1:0] data;
-
     //============================================================================//
     // local variables
     //============================================================================//
     Kernel kernels[$]; // use dynamic array for potential glb tiling
-    // Environment env;
 
     initial begin
         if ($value$plusargs("DPR=%d", value)) begin
@@ -36,14 +33,12 @@ program garnet_test #(
 
         $display("mapping..."); $fflush();
         map(kernels);
-        // $display("mapped."); $fflush();
 
         // No longer need "build()" b/c now using tasks instead of classes
-        // env = new(kernels, axil_ifc, p_ifc, dpr);
-        // env.build();
+        // env = new(kernels, axil_ifc, p_ifc, dpr); env.build();
 
         test_toggle = 1;
-        env_run();  // Task must have no args, else cannot see signals in gtkwave (???)
+        Environment_run();  // Task must have no args, else cannot see signals in gtkwave (???)
         test_toggle = 0;
 
         // Dump out data between each test
@@ -72,9 +67,7 @@ program garnet_test #(
             $display("Monitor initialization failed");
         end
 
-        // Looking for...? Something like...?
-        // +APP0=app0
-       $display("[%0t] garnet_test L75\n", $time);
+        $display("[%0t] garnet_test L75\n", $time);
         $display("Looking for app args e.g. '+APP0=app0'"); $fflush();
         num_app = 0;
         for (int i = 0; i < MAX_NUM_APPS; i++) begin
@@ -93,16 +86,13 @@ program garnet_test #(
            $finish(2);  // The only choices are 0,1,2; note $finish() is more drastic than $exit()
         end
 
-       // SEG FAULT HERE
-       // -bash: line 233: 1055010 Segmentation fault      (core dumped) Vtop "$APP" +trace
-
         foreach (app_dirs[i]) begin
-           $display("processing app #%0d", i); $fflush();
-           
+            $display("processing app #%0d", i); $fflush();
             temp_kernel = new(app_dirs[i], dpr);
+
             if (temp_kernel.num_glb_tiling > 0) begin
                 // Replicate kernels if glb_tiling is enabled
-      $display("// Replicate kernels if glb_tiling is enabled"); $fflush();
+                $display("// Replicate kernels if glb_tiling is enabled"); $fflush();
                 temp_kernel.glb_tiling_cnt = kernel_glb_tiling_cnt;
                 kernel_glb_tiling_cnt++;
                 kernels.push_back(temp_kernel);
@@ -115,7 +105,7 @@ program garnet_test #(
                 kernel_glb_tiling_cnt = 0;
             end else begin
                 // No glb tiling
-      $display("// No glb tiling"); $fflush();
+                $display("// No glb tiling"); $fflush();
                 kernels.push_back(temp_kernel);
             end
         end
