@@ -10,8 +10,8 @@ class AxilDriver;
 endclass
 
 function AxilDriver::new(vAxilIfcDriver vif, semaphore axil_lock);
-    // this.vif = vif;           // BAD. Also: type mismatch
-    this.vif = vif.driver;       // GOOD maybe. Also: fixes wvalid bug
+// function AxilDriver::new(vAxilIfc vif, semaphore axil_lock);
+    this.vif = vif;
     this.axil_lock = axil_lock;
 endfunction
 
@@ -22,16 +22,41 @@ task AxilDriver::config_write(Config cfg[]);
 endtask
 
 task AxilDriver::write(bit [CGRA_AXI_ADDR_WIDTH-1:0] addr, bit [CGRA_AXI_DATA_WIDTH-1:0] data);
+
     // $display("AXI-Lite Write. Addr: %08h, Data: %08h", addr, data);
+    $display("AXI-Lite Write. Addr: %08h, Data: %08h", addr, data);
     axil_lock.get(1);
+
     @(posedge vif.clk);                 // WAS CLOCKING @(vif.cbd)
     vif.awaddr  <= addr;                // WAS CLOCKING vif.cbd.<>
+    $display("NOOOOOOOOO"); $fflush();
     vif.awvalid <= 1'b1;                // WAS CLOCKING vif.cbd<>
     for (int i = 0; i < 100; i++) begin
         if (vif.awready == 1) break;    // WAS CLOCKING vif.cbd<>
         @(posedge vif.clk);             // WAS CLOCKING @(vif.cbd)
         if (i == 99) return;  // axi slave is not ready
     end
+
+    @(posedge vif.clk);                 // WAS CLOCKING @(vif.cbd)
+    // vif.wvalid = 1'b0;                // WAS CLOCKING vif.cbd<>
+    this.vif.wvalid = 1'b0;                // WAS CLOCKING vif.cbd<>
+    @(posedge vif.clk);                 // WAS CLOCKING @(vif.cbd)
+
+    // display output says 130ns but maybe actually 255ns...?
+    // state changes in GLC at 130ns so I guess this worked
+    // even though no visible pulse in gtkwave
+   $display("FOO time [%t]", $time);
+    $display("axil_driver 36: i see vif.wvalid = %0d (should be 0)", vif.wvalid); $fflush();
+    this.vif.wvalid = 1'b1;                // WAS CLOCKING vif.cbd<>
+    // vif.driver.wvalid = 1'b1;  // MemberSel of non-variable
+    @(posedge vif.clk);                 // WAS CLOCKING @(vif.cbd)
+    $display("axil_driver 39: i see vif.wvalid = %0d (should be 1)", vif.wvalid); $fflush();
+    repeat (20) @(posedge vif.clk);
+    @(posedge vif.clk);                 // WAS CLOCKING @(vif.cbd)
+    this.vif.wvalid = 1'b0;                // WAS CLOCKING vif.cbd<>
+
+
+
     @(posedge vif.clk);    // WAS CLOCKING @(vif.cbd)
     vif.awvalid <= 0;      // WAS CLOCKING vif.cbd<> (etc.)
     @(posedge vif.clk);    // WAS CLOCKING @(vif.cbd) (etc.)
@@ -53,34 +78,20 @@ task AxilDriver::write(bit [CGRA_AXI_ADDR_WIDTH-1:0] addr, bit [CGRA_AXI_DATA_WI
     @(posedge vif.clk);
     this.vif.bready <= 0;
     @(posedge vif.clk);
-    axil_lock.put(1);
+
+
+
+
+
+
+
+
+   $finish(0);
 endtask
 
 task AxilDriver::read(bit [CGRA_AXI_ADDR_WIDTH-1:0] addr,
                       ref bit [CGRA_AXI_DATA_WIDTH-1:0] data);
     axil_lock.get(1);
-    @(posedge vif.clk);
-    this.vif.araddr  <= addr;
-    this.vif.arvalid <= 1'b1;
-    this.vif.rready  <= 1;
-    for (int i = 0; i < 100; i++) begin
-        if (this.vif.arready == 1) break;
-        @(posedge vif.clk);
-        if (i == 99) return;  // axi slave is not ready
-    end
-    @(posedge vif.clk);
-    this.vif.arvalid <= 0;
-    @(posedge vif.clk);
-    for (int i = 0; i < 100; i++) begin
-        if (this.vif.rvalid == 1) break;
-        @(posedge vif.clk);
-        if (i == 99) return;  // axi slave is not ready
-    end
-    data = this.vif.rdata;
-    @(posedge vif.clk);
-    this.vif.rready <= 0;
-    @(posedge vif.clk);
-    // $display("AXI-Lite Read. Addr: %08h, Data: %08h", addr, data);
     axil_lock.put(1);
 endtask
 

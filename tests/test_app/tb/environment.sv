@@ -60,8 +60,13 @@ endfunction
 
 task Environment::write_bs(Kernel kernel);
     realtime start_time, end_time;
+   $display("environment wbs L63: new time format"); $fflush();
+
     $timeformat(-9, 2, " ns", 0);
     repeat (10) @(posedge vifc_proc.clk);
+   $display("environment L67: done waited 10 cy"); $fflush();
+   
+
     start_time = $realtime;
     $display("[%s] write bitstream to glb start at %0t", kernel.name, start_time);
     proc_drv.write_bs(kernel.bs_start_addr, kernel.bitstream_data);
@@ -97,6 +102,7 @@ endtask
 
 task Environment::read_data(Kernel kernel);
     data_array_t data_q;
+   $display("environment rdata"); $fflush();
     repeat (20) @(posedge vifc_proc.clk);
 
     foreach (kernel.outputs[i]) begin
@@ -116,9 +122,10 @@ endtask
 
 task Environment::glb_configure(Kernel kernel);
     realtime start_time, end_time;
+   $display("environment gbc L124: new time format"); $fflush();
     $timeformat(-9, 2, " ns", 0);
     start_time = $realtime;
-    $display("[%s] glb configuration start at %0t", kernel.name, start_time);
+    $display("[%s] glb configuration start at %0t", kernel.name, start_time); $fflush();
     axil_drv.config_write(kernel.bs_cfg);
     axil_drv.config_write(kernel.kernel_cfg);
     end_time = $realtime;
@@ -132,6 +139,7 @@ task Environment::cgra_configure(Kernel kernel);
     bit [NUM_CGRA_COLS-1:0] cgra_stall_mask;
 
     realtime start_time, end_time;
+   $display("environment cgconfig L141: new time format"); $fflush();
     $timeformat(-9, 2, " ns", 0);
 
     group_start = kernel.group_start;
@@ -141,7 +149,7 @@ task Environment::cgra_configure(Kernel kernel);
 
     cgra_stall(cgra_stall_mask);
     start_time = $realtime;
-    $display("[%s] fast configuration start at %0t", kernel.name, start_time);
+    $display("[%s] fast configuration start at %0t", kernel.name, start_time); $fflush();
     cfg = kernel.get_pcfg_start_config();
     axil_drv.write(cfg.addr, cfg.data);
 
@@ -173,6 +181,7 @@ task Environment::cgra_stall(bit [NUM_CGRA_COLS-1:0] stall_mask);
     bit [CGRA_AXI_DATA_WIDTH-1:0] wr_data;
 
     // Stall CGRA
+   $display("env L181 -- // Stall CGRA"); $fflush();
     axil_drv.read(`GLC_CGRA_STALL_R, data);
     wr_data = stall_mask | data;
     axil_drv.write(`GLC_CGRA_STALL_R, wr_data);
@@ -185,6 +194,7 @@ task Environment::cgra_unstall(bit [NUM_CGRA_COLS-1:0] stall_mask);
     bit [CGRA_AXI_DATA_WIDTH-1:0] wr_data;
 
     // Unstall CGRA
+   $display("env L194 -- // Unstall CGRA"); $fflush();
     axil_drv.read(`GLC_CGRA_STALL_R, data);
     wr_data = (~stall_mask) & data;
     axil_drv.write(`GLC_CGRA_STALL_R, wr_data);
@@ -199,6 +209,7 @@ task Environment::kernel_test(Kernel kernel);
     bit [NUM_GLB_TILES-1:0] glb_stall_mask;
     bit [NUM_CGRA_COLS-1:0] cgra_stall_mask;
     realtime start_time, end_time, g2f_end_time, latency;
+   $display("environment ktest: new time format"); $fflush();
     $timeformat(-9, 2, " ns", 0);
 
     group_start = kernel.group_start;
@@ -208,7 +219,7 @@ task Environment::kernel_test(Kernel kernel);
     cgra_unstall(cgra_stall_mask);
 
     start_time = $realtime;
-    $display("[%s] kernel start at %0t", kernel.name, start_time);
+    $display("[%s] kernel start at %0t", kernel.name, start_time); $fflush();
     cfg = kernel.get_strm_start_config();
     axil_drv.write(cfg.addr, cfg.data);
 
@@ -339,47 +350,20 @@ endtask
 task Environment::set_interrupt_on();
     $display("Turn on interrupt enable registers");
     axil_drv.write(`GLC_GLOBAL_IER_R, 3'b111);
-    axil_drv.write(`GLC_PAR_CFG_G2F_IER_R, {NUM_GLB_TILES{1'b1}});
-    axil_drv.write(`GLC_STRM_F2G_IER_R, {NUM_GLB_TILES{1'b1}});
-    axil_drv.write(`GLC_STRM_G2F_IER_R, {NUM_GLB_TILES{1'b1}});
+    $finish(0);
 endtask
 
 task Environment::run();
     // wait for reset
+    // 107ns
+    $display("environment L350: // wait for reset"); $fflush();
     repeat (20) @(posedge vifc_proc.clk);
+    // 127ns
+    $display("environment L352: waited 20 clocks"); $fflush();
 
     // turn on interrupt
     set_interrupt_on();
 
-    if (dpr) begin
-        foreach (kernels[i]) begin
-            automatic int j = i;
-            fork
-                begin
-                    write_bs(kernels[j]);
-                    glb_configure(kernels[j]);
-                    cgra_configure(kernels[j]);
-                    write_data(kernels[j]);
-                    kernel_test(kernels[j]);
-                    read_data(kernels[j]);
-                end
-            join_none
-        end
-        wait fork;
-    end else begin
-        foreach (kernels[i]) begin
-            automatic int j = i;
-                begin
-                    write_bs(kernels[j]);
-                    glb_configure(kernels[j]);
-                    cgra_configure(kernels[j]);
-                    write_data(kernels[j]);
-                    kernel_test(kernels[j]);
-                    read_data(kernels[j]);
-                    kernels[j].compare();
-                end
-        end
-    end
 endtask
 
 task Environment::compare();

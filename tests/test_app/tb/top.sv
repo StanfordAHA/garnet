@@ -51,6 +51,9 @@ module top;
     // reset generation
     // FIXME maybe remove $display debugging stuff someday
     initial begin
+       @(posedge clk);
+       @(posedge clk);
+       @(posedge clk);
         $display("BEGIN reset = ", reset);
         reset = 1;   // orig had nonblocking <= ... why?
         // repeat (3) @(posedge clk);
@@ -85,8 +88,13 @@ module top;
         .clk     (clk),
         .reset   (reset),
         .p_ifc   (p_ifc),
+        // .axil_ifc(axil_ifc.driver) // this did not help anything
         .axil_ifc(axil_ifc)
     );
+//   always @(posedge clk) begin
+//      $display("top.sv    137 i see  axil_ifc.wvalid = %d", axil_ifc.wvalid); $fflush();
+//   end
+   
 
     //============================================================================//
     // instantiate dut
@@ -133,6 +141,5 @@ module top;
         .jtag_tms   (  /*unused*/),
         .jtag_trst_n(  /*unused*/)
     );
-
 
 endmodule

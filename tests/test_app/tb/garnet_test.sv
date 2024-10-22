@@ -6,7 +6,6 @@
 ** Change history:  10/14/2020 - Implement the first version
 **===========================================================================*/
 import "DPI-C" function int initialize_monitor(int num_cols);
-
 program garnet_test #(
     parameter int MAX_NUM_APPS = 1000
 ) (
@@ -19,35 +18,49 @@ program garnet_test #(
     int value;
     int dpr = 0;
 
+    semaphore axil_lock;
+    semaphore proc_lock;
+
+    bit [CGRA_AXI_ADDR_WIDTH-1:0] addr;
+    bit [CGRA_AXI_DATA_WIDTH-1:0] data;
+
+    //  task Environment::write_bs(Kernel kernel);
+    realtime start_time, end_time;
+    ProcDriver proc_drv;
+   
     //============================================================================//
     // local variables
     //============================================================================//
     Kernel kernels[$]; // use dynamic array for potential glb tiling
-    Environment env;
+    // Environment env;
 
     initial begin
+       axil_lock = new(1);
+       proc_lock = new(1);
+
+       
         if ($value$plusargs("DPR=%d", value)) begin
             dpr = 1;
         end
 
         #100 initialize(dpr);
 
-       $display("about to map"); $fflush();
+        $display("mapping..."); $fflush();
         map(kernels);
-       $display("done did map"); $fflush();
+        // $display("mapped."); $fflush();
 
-       $display("about to build"); $fflush();
-        env = new(kernels, axil_ifc, p_ifc, dpr);
-        env.build();
-       $display("done did build"); $fflush();
+        // No longer need "build()" b/c now using tasks instead of classes
+        // env = new(kernels, axil_ifc, p_ifc, dpr);
+        // env.build();
 
         test_toggle = 1;
-        env.run();
+        env_run();  // Task must have no args, else cannot see signals in gtkwave (???)
         test_toggle = 0;
 
         // Dump out data between each test
         //env.compare();
        $display("done did all of garnet_test i guess"); $fflush();
+       $finish(0);
     end
 
     //============================================================================//
@@ -130,5 +143,55 @@ program garnet_test #(
             $display("Mapping kernel %0d Succeed", i);
         end
     endfunction
+
+   // TODO this should be separate 'include' file, like task_axil_drive below...
+   task env_run();
+
+      // task Environment::run();
+      // repeat (20) @(posedge vifc_proc.clk);
+
+      $display("environment L350: // wait for reset"); $fflush();  // 100ns
+      repeat (20) @(posedge p_ifc.clk);
+      $display("environment L352: waited 20 clocks"); $fflush();
+
+      // turn on interrupt
+      // set_interrupt_on();
+
+      // task Environment::set_interrupt_on();
+      $display("Turn on interrupt enable registers");
+
+      // axil_drv.write(`GLC_GLOBAL_IER_R, 3'b111);
+      // axil_drv.write(`GLC_PAR_CFG_G2F_IER_R, {NUM_GLB_TILES{1'b1}});
+      // axil_drv.write(`GLC_STRM_F2G_IER_R, {NUM_GLB_TILES{1'b1}});
+      // axil_drv.write(`GLC_STRM_G2F_IER_R, {NUM_GLB_TILES{1'b1}});
+      // endtask (set_interrupt_on)
+
+      addr = `GLC_GLOBAL_IER_R;      data = 3'b111; AxilDriver_write();
+      addr = `GLC_PAR_CFG_G2F_IER_R; data =   1'b1; AxilDriver_write();
+      addr = `GLC_STRM_F2G_IER_R;    data =   1'b1; AxilDriver_write();
+      addr = `GLC_STRM_G2F_IER_R;    data =   1'b1; AxilDriver_write();
+
+    // if (dpr) begin
+    //     foreach (kernels[i]) begin
+    //         automatic int j = i;
+    //         fork
+    //             begin
+    //                 write_bs(kernels[j]);
+
+
+      Environment_write_bs();
+      
+
+// BOOKMARK
+// TODO NEXT
+      // Environment.sv
+      // task Environment_write_bs()
+
+
+   endtask
+
+   `include "tb/Environment.sv"
+   `include "tb/AxilDriver.sv"
+   `include "tb/ProcDriver.sv"
 endprogram
 

@@ -24,8 +24,8 @@ double sc_time_stamp() { return 0; }
 // See e.g. /usr/local/share/verilator/examples/make_tracing_c/sim_main.cpp
 int main(int argc, char** argv) {
 
-    // can do e.g. 'vtop -this -that 10000 other-parm' to run for 10K ns
-    int MAX_NS = 2000;
+    // E.g. "vtop 300" to run for 300ns
+    int MAX_NS = 300;
     for (int i=1; i<argc; i++) {
         int maybe_integer = atoi(argv[i]);
         if (maybe_integer > 0) MAX_NS = maybe_integer;
@@ -52,7 +52,9 @@ int main(int argc, char** argv) {
 
     // Randomization reset policy
     // May be overridden by commandArgs argument parsing
-    contextp->randReset(2);
+    // 0: init to zero; 1: init to 1; 2: init to random
+    // contextp->randReset(2);
+    contextp->randReset(0);
 
     // Verilator must compute traced signals
     contextp->traceEverOn(true);

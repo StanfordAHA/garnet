@@ -20,6 +20,9 @@ warn='
   -Wno-CASEINCOMPLETE
   -Wno-UNOPTFLAT
 '
+# warn='
+#   -Wno-fatal
+# '
 
 # gb_param.svh is used by top.sv so must go first(?)
 VFILES=`echo vfiles/*.{v,sv,svh}`
