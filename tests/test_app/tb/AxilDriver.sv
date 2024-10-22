@@ -1,11 +1,16 @@
 // task AxilDriver::write(bit [CGRA_AXI_ADDR_WIDTH-1:0] addr, data);
+bit [CGRA_AXI_ADDR_WIDTH-1:0] AxilDriver_write_addr;
+bit [CGRA_AXI_DATA_WIDTH-1:0] AxilDriver_write_data;
 task AxilDriver_write();
+   AxilDriver_write_addr = addr;
+   AxilDriver_write_data = data;
 
    ////////////////////////////////////////////////////////////////////////
    // $display("AXI-Lite Write. Addr: %08h, Data: %08h", addr, data);
    // axil_lock.get(1);
 
-   $display("AXI-Lite Write. Addr: %08h, Data: %08h", addr, data);
+   $display("AXI-Lite Write. Addr: %08h, Data: %08h",
+            AxilDriver_write_addr, AxilDriver_write_data);
 
    // semaphore axil_lock;
    $display("axil_driver: Gettum lockum"); $fflush();
@@ -28,7 +33,7 @@ task AxilDriver_write();
    // awready advances controller state from WAIT(0) to WR_REQ_GLC(1)
    $display("axil_driver: address");         // 120ns
    @(posedge axil_ifc.clk);
-   axil_ifc.awaddr  = addr;
+   axil_ifc.awaddr  = AxilDriver_write_addr;
    axil_ifc.awvalid = 1'b1;
    // for (int i = 0; i < 100; i++) begin
    // FIXME?? seems like this should happen BEFORE aetting awvalid etc. above
@@ -67,7 +72,7 @@ task AxilDriver_write();
 
    // Axi controller should now be in state 1 (WR_REQ_GLC)  // 132ns
    $display("axil_driver: data");  // ~132ns
-   axil_ifc.wdata  = data;
+   axil_ifc.wdata  = AxilDriver_write_data;
    axil_ifc.wvalid = 1'b1;
    // Axi controller should now be in state 3 (WR_WAIT)  // 132ns
    // Then, after one cycle, on to state 4 (WR_RESP)     // 133ns
