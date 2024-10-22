@@ -1,3 +1,54 @@
+    //  task Environment::write_bs(Kernel kernel);
+    realtime start_time, end_time;
+    // ProcDriver proc_drv;
+   
+   // TODO this should be separate 'include' file, like task_axil_drive below...
+   task env_run();
+
+      // task Environment::run();
+      // repeat (20) @(posedge vifc_proc.clk);
+
+      $display("environment L350: // wait for reset"); $fflush();  // 100ns
+      repeat (20) @(posedge p_ifc.clk);
+      $display("environment L352: waited 20 clocks"); $fflush();
+
+      // turn on interrupt
+      // set_interrupt_on();
+
+      // task Environment::set_interrupt_on();
+      $display("Turn on interrupt enable registers");
+
+      // axil_drv.write(`GLC_GLOBAL_IER_R, 3'b111);
+      // axil_drv.write(`GLC_PAR_CFG_G2F_IER_R, {NUM_GLB_TILES{1'b1}});
+      // axil_drv.write(`GLC_STRM_F2G_IER_R, {NUM_GLB_TILES{1'b1}});
+      // axil_drv.write(`GLC_STRM_G2F_IER_R, {NUM_GLB_TILES{1'b1}});
+      // endtask (set_interrupt_on)
+
+      addr = `GLC_GLOBAL_IER_R;      data = 3'b111; AxilDriver_write();
+      addr = `GLC_PAR_CFG_G2F_IER_R; data =   1'b1; AxilDriver_write();
+      addr = `GLC_STRM_F2G_IER_R;    data =   1'b1; AxilDriver_write();
+      addr = `GLC_STRM_G2F_IER_R;    data =   1'b1; AxilDriver_write();
+
+    // if (dpr) begin
+    //     foreach (kernels[i]) begin
+    //         automatic int j = i;
+    //         fork
+    //             begin
+    //                 write_bs(kernels[j]);
+
+
+      Environment_write_bs();
+      
+
+// BOOKMARK
+// TODO NEXT
+      // Environment.sv
+      // task Environment_write_bs()
+
+
+   endtask
+
+
 task Environment_write_bs();
 
 // TODO NEXT this should be a task e.g. 'env_write_bs'

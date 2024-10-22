@@ -1,3 +1,8 @@
+semaphore proc_lock;
+initial begin
+   proc_lock = new(1);
+end
+
 ////////////////////////////////////////////////////////////////////////
 // task ProcDriver::write_bs(int start_addr, bitstream_t bs_q);
 bit [GLB_ADDR_WIDTH-1:0] ProcDriver_write_bs_start_addr;

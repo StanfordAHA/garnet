@@ -1,3 +1,8 @@
+semaphore axil_lock;
+initial begin
+   axil_lock = new(1);
+end
+
 // task AxilDriver::write(bit [CGRA_AXI_ADDR_WIDTH-1:0] addr, data);
 bit [CGRA_AXI_ADDR_WIDTH-1:0] AxilDriver_write_addr;
 bit [CGRA_AXI_DATA_WIDTH-1:0] AxilDriver_write_data;
