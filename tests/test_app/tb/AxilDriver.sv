@@ -40,7 +40,7 @@ task ProcDriver_write();
 endtask
 
 
-   task axil_drive_write();
+   task AxilDriver_write();
 
       ////////////////////////////////////////////////////////////////////////
       // $display("AXI-Lite Write. Addr: %08h, Data: %08h", addr, data);

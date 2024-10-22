@@ -166,10 +166,10 @@ program garnet_test #(
       // axil_drv.write(`GLC_STRM_G2F_IER_R, {NUM_GLB_TILES{1'b1}});
       // endtask (set_interrupt_on)
 
-      addr = `GLC_GLOBAL_IER_R;      data = 3'b111; axil_drive_write();
-      addr = `GLC_PAR_CFG_G2F_IER_R; data =   1'b1; axil_drive_write();
-      addr = `GLC_STRM_F2G_IER_R;    data =   1'b1; axil_drive_write();
-      addr = `GLC_STRM_G2F_IER_R;    data =   1'b1; axil_drive_write();
+      addr = `GLC_GLOBAL_IER_R;      data = 3'b111; AxilDriver_write();
+      addr = `GLC_PAR_CFG_G2F_IER_R; data =   1'b1; AxilDriver_write();
+      addr = `GLC_STRM_F2G_IER_R;    data =   1'b1; AxilDriver_write();
+      addr = `GLC_STRM_G2F_IER_R;    data =   1'b1; AxilDriver_write();
 
     // if (dpr) begin
     //     foreach (kernels[i]) begin
@@ -216,6 +216,6 @@ program garnet_test #(
 
    endtask
 
-   `include "tb/task_axil_drive.sv"
+   `include "tb/AxilDriver.sv"
 endprogram
 
