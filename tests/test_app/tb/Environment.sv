@@ -30,9 +30,26 @@ task Environment_write_bs();
              kernel.name, end_time - start_time);
 endtask // Environment_write_bs
 
+// TBD
 // task Environment::write_data(Kernel kernel);
 // task Environment::read_data(Kernel kernel);
+
 // task Environment::glb_configure(Kernel kernel);
+task Environment_glb_configure();
+    $timeformat(-9, 2, " ns", 0);
+    start_time = $realtime;
+    $display("[%s] glb configuration start at %0t", kernel.name, start_time);
+
+    // axil_drv.config_write(kernel.bs_cfg);
+    // axil_drv.config_write(kernel.kernel_cfg);
+    AxilDriver_cfg = kernel.bs_cfg;     AxilDriver_config_write();
+    AxilDriver_cfg = kernel.kernel_cfg; AxilDriver_config_write();
+
+    end_time = $realtime;
+    $display("[%s] glb configuration end at %0t", kernel.name, end_time);
+endtask
+
+// TBD
 // task Environment::cgra_configure(Kernel kernel);
 // function bit [NUM_GLB_TILES-1:0] Environment::calculate_glb_stall_mask(int start, int num);
 // function bit [NUM_CGRA_COLS-1:0] Environment::calculate_cgra_stall_mask(int start, int num);
@@ -69,13 +86,26 @@ task Environment_run();
 
     // BOOKMARK
     // if (dpr) begin
-    // assert dpr == 0
+    // assert dpr == 0  TODO
     foreach (kernels[i]) begin
         automatic int j = i;  // WHY???
         begin
             // write_bs(kernels[j]);
             kernel = kernels[j];
             Environment_write_bs();
+
+            // glb_configure(kernels[j]);
+            Environment_glb_configure();
+
+            // TODO
+            // cgra_configure(kernels[j]);
+            // write_data(kernels[j]);
+            // kernel_test(kernels[j]);
+            // read_data(kernels[j]);
+            // kernels[j].compare();
+
+            
+
         end
         $display("\n...guess what there was %0d kernels...\n", j);
     end

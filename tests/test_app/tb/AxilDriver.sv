@@ -1,9 +1,22 @@
-semaphore axil_lock;
-initial begin
-   axil_lock = new(1);
-end
+// class AxilDriver;
+// function AxilDriver::new(vAxilIfcDriver vif, semaphore axil_lock);
+
+// task AxilDriver::config_write(Config cfg[]);
+Config AxilDriver_cfg[];
+task AxilDriver_config_write();
+    foreach (AxilDriver_cfg[i]) begin
+        // write(AxilDriver_cfg[i].addr, AxilDriver_cfg[i].data);
+        addr = AxilDriver_cfg[i].addr;
+        data = AxilDriver_cfg[i].data;
+        AxilDriver_write();
+    end
+endtask
+
+
+
 
 // task AxilDriver::write(bit [CGRA_AXI_ADDR_WIDTH-1:0] addr, data);
+semaphore axil_lock; initial axil_lock = new(1);
 bit [CGRA_AXI_ADDR_WIDTH-1:0] AxilDriver_write_addr;
 bit [CGRA_AXI_DATA_WIDTH-1:0] AxilDriver_write_data;
 task AxilDriver_write();
