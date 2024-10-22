@@ -217,5 +217,6 @@ program garnet_test #(
    endtask
 
    `include "tb/AxilDriver.sv"
+   `include "tb/ProcDriver.sv"
 endprogram
 
