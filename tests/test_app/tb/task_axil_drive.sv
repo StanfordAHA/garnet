@@ -1,26 +1,12 @@
-//    proc_drv  = new(p_ifc, proc_lock);
-//    proc_drv.write_bs(kernels[0].bs_start_addr, kernels[0].bitstream_data);
+// TODO move procdriver tasks to task_proc_drive.sv etc.
 
+////////////////////////////////////////////////////////////////////////
 // task ProcDriver::write_bs(int start_addr, bitstream_t bs_q);
-//     bit [GLB_ADDR_WIDTH-1:0] cur_addr = start_addr;
-//     proc_lock.get(1);
-//     foreach (bs_q[i]) begin
-//         write(cur_addr, bs_q[i]);
-//         cur_addr += 8;
-//     end
-// 
-//     repeat (10) @(posedge vif.clk);
-//     proc_lock.put(1);
-// endtask
-
-// ProcDriver_write_bs()
-bit [GLB_ADDR_WIDTH-1:0]       ProcDriver_write_bs_start_addr;
-bitstream_t ProcDriver_write_bs_bs_q;
-   
-// task ProcDriver::write_bs(int start_addr, bitstream_t bs_q);
+bit [GLB_ADDR_WIDTH-1:0] ProcDriver_write_bs_start_addr;
 bit [GLB_ADDR_WIDTH-1:0] ProcDriver_write_bs_cur_addr;
-task ProcDriver_write_bs();
+bitstream_t              ProcDriver_write_bs_bs_q;
 
+task ProcDriver_write_bs();
    ProcDriver_write_bs_cur_addr = ProcDriver_write_bs_start_addr;
    proc_lock.get(1);
    foreach (ProcDriver_write_bs_bs_q[i]) begin
@@ -32,18 +18,14 @@ task ProcDriver_write_bs();
 
       ProcDriver_write_bs_cur_addr += 8;
    end
-
     repeat (10) @(posedge p_ifc.clk);
     proc_lock.put(1);
 endtask
 
-// write(cur_addr, bs_q[i]);
+////////////////////////////////////////////////////////////////////////
 // task ProcDriver::write(int addr, bit [BANK_DATA_WIDTH-1:0] data);
-
-   // task ProcDriver::write(int addr, bit [BANK_DATA_WIDTH-1:0] data);
-   int                            ProcDriver_write_addr;
-   bit [BANK_DATA_WIDTH-1:0]      ProcDriver_write_data;
-
+int                            ProcDriver_write_addr;
+bit [BANK_DATA_WIDTH-1:0]      ProcDriver_write_data;
 
 task ProcDriver_write();
     p_ifc.wr_en   = 1'b1;
