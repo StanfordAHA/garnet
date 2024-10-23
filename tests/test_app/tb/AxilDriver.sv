@@ -59,7 +59,6 @@ task AxilDriver_write();
       $display("Waiting for awready, i=%0d", i);  // 121-129ns
       if (axil_ifc.awready == 1) break;
       @(posedge axil_ifc.clk);
-      // if (i == 99) $display("axi slave is not ready 1");
       if (i == 9) $display("axi slave is not ready 1");
    end
    @(posedge axil_ifc.clk);
@@ -133,4 +132,38 @@ task AxilDriver_write();
    @(posedge axil_ifc.clk);
    axil_lock.put(1);
 
-   endtask
+endtask
+
+
+// task AxilDriver::read(bit [CGRA_AXI_ADDR_WIDTH-1:0]     addr,
+//                       ref bit [CGRA_AXI_DATA_WIDTH-1:0] data);
+bit [CGRA_AXI_ADDR_WIDTH-1:0] AxilDriver_read_addr;
+bit [CGRA_AXI_DATA_WIDTH-1:0] AxilDriver_read_data;
+task AxilDriver_read();
+    axil_lock.get(1);
+
+    @(posedge axil_ifc.clk);
+    axil_ifc.araddr  = AxilDriver_read_addr;
+    axil_ifc.arvalid = 1'b1;
+    axil_ifc.rready  = 1;
+    for (int i = 0; i < 10; i++) begin
+        if (axil_ifc.arready == 1) break;
+        @(posedge axil_ifc.clk);
+        if (i == 9) return;  // axi slave is not ready
+    end
+    @(posedge axil_ifc.clk);
+    axil_ifc.arvalid = 0;
+    @(posedge axil_ifc.clk);
+    for (int i = 0; i < 10; i++) begin
+        if (axil_ifc.rvalid == 1) break;
+        @(posedge axil_ifc.clk);
+        if (i == 9) return;  // axi slave is not ready
+    end
+    data = axil_ifc.rdata;
+    @(posedge axil_ifc.clk);
+    axil_ifc.rready = 0;
+    @(posedge axil_ifc.clk);
+    // $display("AXI-Lite Read. Addr: %08h, Data: %08h", addr, data);
+    axil_lock.put(1);
+endtask
+    
