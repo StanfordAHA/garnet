@@ -43,14 +43,24 @@ def config_port_pass(interconnect: Interconnect, pipeline=False):
             interconnect.wire(in_port, out_port)
 
 
-def stall_port_pass(interconnect: Interconnect, port_name: str, port_width=1, col_offset=1, pipeline=False):
+def stall_port_pass(interconnect: Interconnect, port_name: str, port_width=1, col_offset=1, pipeline=False, matrix_unit_stall_hack=False, matrix_unit_flush_hack=False):
     # x coordinate of garnet
-    x_min = interconnect.x_min
+
+    # MO: Temporary hack 
+    if(matrix_unit_stall_hack):
+        x_min = interconnect.x_min + 1
+    else: 
+        x_min = interconnect.x_min
+    #breakpoint()
     x_max = interconnect.x_max
+
     width = x_max - x_min + 1
+    #breakpoint()
+
+    #breakpoint()
 
     assert port_name in interconnect.ports
-    assert width % col_offset == 0
+    #assert width % col_offset == 0
     num_ports = width // col_offset
 
     interconnect.disconnect(port_name)
@@ -60,13 +70,20 @@ def stall_port_pass(interconnect: Interconnect, port_name: str, port_width=1, co
     
     # looping through columns and wire port every col_offset
     for i, x_coor in enumerate(range(x_min, x_min + width)):
+        #breakpoint()
+        #print(f"x_coor: {x_coor}")
         column = interconnect.get_column(x_coor)
         # skip tiles with no port_name
+        #breakpoint()
         column = [entry for entry in column if port_name in entry.ports]
         # wire configuration ports to first tile in column every col_offset
-        in_port = interconnect.ports[port_name][(i // col_offset) 
-                  * port_width:((i // col_offset) + 1) * port_width]
+        dividend_index = max(0, i-1) if matrix_unit_flush_hack else i
+
+        in_port = interconnect.ports[port_name][(dividend_index // col_offset) 
+                  * port_width:((dividend_index // col_offset) + 1) * port_width]
         out_port = column[0].ports[port_name]
+        # if(x_coor == 0):
+        #      breakpoint()
         if pipeline==True:
             pipeline_wire(interconnect,
                           in_port,
