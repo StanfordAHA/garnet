@@ -106,7 +106,9 @@ def glb_interconnect_wiring(garnet):
     for i in range(num_glb_tiles):
         data_bit_width = 17 if garnet.ready_valid else 16
         for j in range(col_per_glb):
-            x = i * col_per_glb + j
+            # MO: Temporary hack 
+            #x = i * col_per_glb + j 
+            x = i * col_per_glb + j + 1
             io2glb_16_port = f"io2glb_{data_bit_width}_X{x:02X}_Y{0:02X}"
             # FIXME
             io2glb_1_port = f"io2glb_1_X{x:02X}_Y{0:02X}"

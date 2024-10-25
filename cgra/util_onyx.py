@@ -9,6 +9,7 @@ from memory_core.crddrop_core import CrdDropCore
 from memory_core.crdhold_core import CrdHoldCore
 from memory_core.fake_pe_core import FakePECore
 from memory_core.io_core_rv import IOCoreReadyValid
+from memory_core.mu2f_io_core_rv import MU2F_IOCoreReadyValid
 from memory_core.repeat_core import RepeatCore
 from memory_core.repeat_signal_generator_core import RepeatSignalGeneratorCore
 from memory_core.write_scanner_core import WriteScannerCore
@@ -66,8 +67,12 @@ def get_actual_size(width: int, height: int, io_sides: IOSide):
         width += 1
     if io_sides & IOSide.South:
         height += 1
-    if io_sides & IOSide.West:
-        width += 1
+
+    # MO: Temporary hack 
+    # if io_sides & IOSide.West:
+    #     width += 1  
+    
+    width += 1
     return width, height
 
 
@@ -179,6 +184,9 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
 
     fifo_depth = 2
 
+    # MO: Temporary hack
+    using_matrix_unit = True
+    
     # if tech_map == 'intel':
     #     tm = Intel_Tech_Map(depth=mem_depth, width=macro_width)
     # else:
@@ -415,6 +423,8 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 core = None
             elif x in range(x_max + 1, width) and y in range(y_max + 1, height):
                 core = None
+            elif using_matrix_unit and x in range(x_min):
+                core = MU2F_IOCoreReadyValid(matrix_unit_data_width=16, tile_array_data_width=17, num_ios=2, allow_bypass=False)
             elif x in range(x_min) \
                     or x in range(x_max + 1, width) \
                     or y in range(y_min) \
@@ -456,6 +466,13 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
 
             cores[(x, y)] = core
 
+    for x in range(width):
+        for y in range(height):
+            print(f"Core at {x, y} is {cores[(x, y)]}")
+    
+    #breakpoint()
+            
+
     def create_core(xx: int, yy: int):
         return cores[(xx, yy)]
 
@@ -490,7 +507,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
     outputs = set()
     for core in cores.values():
         # Skip IO cores.
-        if core is None or isinstance(core, IOCoreValid) or isinstance(core, IOCoreReadyValid):
+        if core is None or isinstance(core, IOCoreValid) or isinstance(core, IOCoreReadyValid) or isinstance(core, MU2F_IOCoreReadyValid):
             continue
         inputs |= {i.qualified_name() for i in core.inputs()}
         outputs |= {o.qualified_name() for o in core.outputs()}
@@ -567,8 +584,14 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
 
     bit_width_str = 17 if ready_valid else 16
     track_list = list(range(num_tracks))
+
+    # MO: Temporary hack 
+    # io_in = {"f2io_1": [0], f"f2io_{bit_width_str}": [0]}
+    # io_out = {"io2f_1": track_list, f"io2f_{bit_width_str}": track_list}
+
     io_in = {"f2io_1": [0], f"f2io_{bit_width_str}": [0]}
     io_out = {"io2f_1": track_list, f"io2f_{bit_width_str}": track_list}
+
 
     for bit_width in bit_widths:
         if io_sides & IOSide.None_:

@@ -51,6 +51,10 @@ class Garnet(Generator):
         self.harden_flush = args.harden_flush
         self.pipeline_config_interval = args.pipeline_config_interval
 
+        # MO: Temporary hack 
+        matrix_unit_stall_hack = True
+        matrix_unit_flush_hack = True 
+
         # only north side has IO
         from canal.util import IOSide
         if args.standalone:
@@ -77,11 +81,11 @@ class Garnet(Generator):
 
         from passes.interconnect_port_pass import stall_port_pass, config_port_pass
         # make multiple stall ports
-        stall_port_pass(self.interconnect, port_name="stall", port_width=1, col_offset=1)
+        stall_port_pass(self.interconnect, port_name="stall", port_width=1, col_offset=1, matrix_unit_stall_hack=matrix_unit_stall_hack)
         # make multiple flush ports
         if self.harden_flush:
             stall_port_pass(self.interconnect, port_name="flush", port_width=1,
-                            col_offset=args.glb_params.num_cols_per_group, pipeline=True)
+                            col_offset=args.glb_params.num_cols_per_group, pipeline=True, matrix_unit_flush_hack=matrix_unit_flush_hack)
         # make multiple configuration ports
         config_port_pass(self.interconnect, pipeline=args.config_port_pipeline)
 
@@ -152,11 +156,17 @@ class Garnet(Generator):
             interrupt=magma.Out(magma.Bit),
             cgra_running_clk_out=magma.Out(magma.Clock),
 
-            mu2cgra=magma.In(magma.Array[(32, magma.Bits[16])])
+            mu2cgra=magma.In(magma.Array[(32, magma.Bits[16])]),
             mu2cgra_valid=magma.In(magma.Bit)
-            cgra2mu_ready=magma.Out(magma.Bit)
+            #cgra2mu_ready=magma.Out(magma.Bit)
 
         )
+        
+
+        # Test MU connection
+        
+        # self.wire(self.)
+
 
         # top <-> global controller ports connection
         self.wire(self.ports.clk_in, self.global_controller.ports.clk_in)
