@@ -740,7 +740,7 @@ class FixInputsOutputAndPipeline(Visitor):
         old_select_node,
         sinks,
         bit,
-        chain_branch_factor=2,
+        chain_branch_factor=3,
     ):
         if bit:
             register_source = BitRegisterSource
@@ -834,8 +834,8 @@ class FixInputsOutputAndPipeline(Visitor):
                         )
 
             # -----------------MEM-to-PE Paths Pipelining-------------------- #
-            elif False:
-                # elif "input_cgra_stencil" in io_child.iname:
+            # elif False:
+            elif "input_cgra_stencil" in io_child.iname:
                 new_node = new_children[0].select("data_out_0")
                 if "MEM2PE_REG_CHAIN" in os.environ:
                     if self.pipeline_inputs:
