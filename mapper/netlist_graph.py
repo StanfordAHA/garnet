@@ -507,18 +507,18 @@ class NetlistGraph:
         ifmap_IO_idx = [6, 8, 12, 14, 18, 20, 22, 26]
         output_IO_idx = [1, 3, 9, 11, 19, 21, 23, 25]
         
-#        for _ in range(len(weight_IO)):
-#            weight_IO[_].x = weight_IO_idx[_]
-#            weight_IO[_].y = 0
-#        for _ in range(len(ifmap_IO)):
-#            ifmap_IO[_].x = ifmap_IO_idx[_]
-#            ifmap_IO[_].y = 0
-#        for _ in range(len(output_IO)):
-#            output_IO[_].x = output_IO_idx[_]
-#            output_IO[_].y = 0
-#        for _ in range(len(stencil_IO)):
-#            stencil_IO[_].x = output_IO_idx[_]
-#            stencil_IO[_].y = 0 
+        for _ in range(len(weight_IO)):
+            weight_IO[_].x = weight_IO_idx[_]
+            weight_IO[_].y = 0
+        for _ in range(len(ifmap_IO)):
+            ifmap_IO[_].x = ifmap_IO_idx[_]
+            ifmap_IO[_].y = 0
+        for _ in range(len(output_IO)):
+            output_IO[_].x = output_IO_idx[_]
+            output_IO[_].y = 0
+        for _ in range(len(stencil_IO)):
+            stencil_IO[_].x = output_IO_idx[_]
+            stencil_IO[_].y = 0 
 
         # write position info into file
         with open(app_dir + "/manual.place", "w") as f:
