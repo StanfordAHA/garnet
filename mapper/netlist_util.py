@@ -740,7 +740,7 @@ class FixInputsOutputAndPipeline(Visitor):
         old_select_node,
         sinks,
         bit,
-        chain_branch_factor=3,
+        chain_branch_factor=4,
     ):
         if bit:
             register_source = BitRegisterSource
