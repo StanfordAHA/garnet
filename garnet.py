@@ -18,6 +18,8 @@ from lassen.sim import PE_fc as lassen_fc
 
 from daemon.daemon import GarnetDaemon
 
+from gemstone.common.configurable import ConfigurationType
+
 # set the debug mode to false to speed up construction
 from gemstone.generator.generator import set_debug_mode
 set_debug_mode(False)
@@ -52,7 +54,7 @@ class Garnet(Generator):
         self.pipeline_config_interval = args.pipeline_config_interval
 
         # MO: Temporary hack 
-        matrix_unit_stall_hack = True
+        matrix_unit_stall_hack = False
         matrix_unit_flush_hack = True 
 
         # only north side has IO
@@ -156,17 +158,44 @@ class Garnet(Generator):
             interrupt=magma.Out(magma.Bit),
             cgra_running_clk_out=magma.Out(magma.Clock),
 
-            mu2cgra=magma.In(magma.Array[(32, magma.Bits[16])]),
-            mu2cgra_valid=magma.In(magma.Bit)
+            # TODO: parametrize this? 
+            # TODO: Change matrix unit bits to 16 each for bFloat 16 
+            mu2cgra=magma.In(magma.Array[(32, magma.Bits[17])]),
+            mu2cgra_valid=magma.In(magma.Bit),
+            dummy_config=magma.In(magma.Array[(9,   ConfigurationType(32,
+                                              32))]),
+            #dummy_stall=magma.In(magma.Bit)
             #cgra2mu_ready=magma.Out(magma.Bit)
 
         )
-        
 
-        # Test MU connection
+        # Array[(9, ConfigurationType)]
+        # Array[(9, ConfigurationType)]
+      
+        #breakpoint()
+        # Dummy conn
+        self.wire(self.ports.dummy_config, self.interconnect.ports.config)
+        #self.wire(self.ports.dummy_stall, self.interconnect.get_column(0)[0].ports.stall)
+        #self.wire(self.ports.dummy_stall, self.interconnect.ports.stall[9])
+        #self.wire(self.ports.dummy_stall, self.interconnect.tile_circuits[(0, 1)].ports.stall)
         
+    
+        # Test MU connection
+        #breakpoint()
         # self.wire(self.)
 
+        # Matrix unit <-> interconnnect ports connection
+        # TODO: parametrize this; make it 32 when testing array bigger than 8x8
+        #self.wire(self.ports.mu2cgra[0], self.interconnect.ports.mu2io_17_0_X00_Y01)
+        for i in range(16):
+            io_num = i % 2
+            cgra_row_num = int(i/2 + 1)
+            self.wire(self.ports.mu2cgra[i], self.interconnect.ports[f"mu2io_17_{io_num}_X00_Y{cgra_row_num:02X}"])
+            self.wire(self.ports.mu2cgra_valid, self.interconnect.ports[f"mu2io_17_{io_num}_X00_Y{cgra_row_num:02X}_valid"])
+
+        
+        # MU IO/tile stall port hack
+        #self.wire(0, self.interconnect.tile_X00_Y01.stall)
 
         # top <-> global controller ports connection
         self.wire(self.ports.clk_in, self.global_controller.ports.clk_in)
@@ -213,7 +242,7 @@ class Garnet(Generator):
             self.add_port(name, self.interconnect.ports[name].type())
             self.wire(self.ports[name], self.interconnect.ports[name])
 
-        from gemstone.common.configurable import ConfigurationType
+        #from gemstone.common.configurable import ConfigurationType
         self.add_ports(
             clk=magma.In(magma.Clock),
             reset=magma.In(magma.AsyncReset),
