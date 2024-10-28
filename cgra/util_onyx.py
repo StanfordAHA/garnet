@@ -424,7 +424,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
             elif x in range(x_max + 1, width) and y in range(y_max + 1, height):
                 core = None
             elif using_matrix_unit and x in range(x_min):
-                core = MU2F_IOCoreReadyValid(matrix_unit_data_width=16, tile_array_data_width=17, num_ios=2, allow_bypass=False)
+                core = MU2F_IOCoreReadyValid(matrix_unit_data_width=17, tile_array_data_width=17, num_ios=2, allow_bypass=False)
             elif x in range(x_min) \
                     or x in range(x_max + 1, width) \
                     or y in range(y_min) \
@@ -590,7 +590,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
     # io_out = {"io2f_1": track_list, f"io2f_{bit_width_str}": track_list}
 
     io_in = {"f2io_1": [0], f"f2io_{bit_width_str}": [0]}
-    io_out = {"io2f_1": track_list, f"io2f_{bit_width_str}": track_list}
+    io_out = {"io2f_1": track_list, f"io2f_{bit_width_str}": track_list, f"io2f_{bit_width_str}_0": [0, 1], f"io2f_{bit_width_str}_1": [3, 4]}
 
 
     for bit_width in bit_widths:
@@ -619,6 +619,8 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                                 lift_ports=standalone,
                                 stall_signal_width=1,
                                 ready_valid=ready_valid)
+
+    #interconnect.connect_matrix_unit_stall_port()
     if hi_lo_tile_id:
         tile_id_physical(interconnect)
     if add_pd:

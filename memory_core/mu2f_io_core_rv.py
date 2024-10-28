@@ -26,7 +26,8 @@ class MU2F_IOCoreReadyValid(LakeCoreBase):
                          config_addr_width=config_addr_width,
                          data_width=16,
                          name="MU2F_IOCoreReadyValid",
-                         ready_valid=False) # setting ready_valid to false because custom ready_valid ports have already been created in the lake module
+                         ready_valid=True, # setting ready_valid to false because custom ready_valid ports have already been created in the lake module
+                         include_stall=True) # Temporary hack to remove the stall port, till stall port width is updated in generator 
 
         # Capture everything to the tile object
         self.matrix_unit_data_width = matrix_unit_data_width
@@ -113,7 +114,8 @@ class MU2F_IOCoreReadyValid(LakeCoreBase):
             configs = [self.get_config_data(name, v)] + configs
         for name, v in tile_config:
             configs = [self.get_config_data(name, v)] + configs
-        return configs
+        #return configs
+        return []
 
     def pnr_info(self):
         return [PnRTag("I", 2, self.DEFAULT_PRIORITY),

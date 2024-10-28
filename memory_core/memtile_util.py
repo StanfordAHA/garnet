@@ -71,7 +71,8 @@ class LakeCoreBase(ConfigurableCore):
                  data_width=16,
                  gate_flush=True,
                  ready_valid=False,
-                 name="LakeBase_inst"):
+                 name="LakeBase_inst",
+                 include_stall=True):
 
         self.__name = name
         self.__inputs = []
@@ -82,6 +83,8 @@ class LakeCoreBase(ConfigurableCore):
         self.__gate_flush = gate_flush
         self.__ready_valid = ready_valid
         self.__combinational_ports = set()
+
+        self._include_stall = include_stall
 
         super().__init__(config_addr_width=config_addr_width,
                          config_data_width=config_data_width)
@@ -188,9 +191,10 @@ class LakeCoreBase(ConfigurableCore):
         assert (len(self.__outputs) > 0)
 
         # We call clk_en stall at this level for legacy reasons????
-        self.add_ports(
-            stall=magma.In(TBit),
-        )
+        if self._include_stall:
+            self.add_ports(
+                stall=magma.In(TBit),
+            )
 
         # put a 1-bit register and a mux to select the control signals
         for control_signal, width in control_signals:
@@ -243,9 +247,10 @@ class LakeCoreBase(ConfigurableCore):
         self.wire(self.ports.clk, self.underlying.ports.clk)
 
         # Mem core uses clk_en (essentially active low stall)
-        self.stallInverter = FromMagma(mantle.DefineInvert(1))
-        self.wire(self.stallInverter.ports.I, self.ports.stall)
-        self.wire(self.stallInverter.ports.O[0], self.underlying.ports.clk_en[0])
+        if self._include_stall:
+            self.stallInverter = FromMagma(mantle.DefineInvert(1))
+            self.wire(self.stallInverter.ports.I, self.ports.stall)
+            self.wire(self.stallInverter.ports.O[0], self.underlying.ports.clk_en[0])
 
         # we have six? features in total
         # 0:    TILE
