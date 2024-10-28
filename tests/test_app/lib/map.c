@@ -9,7 +9,7 @@
 #include "glc.h"
 #include "global_buffer_param.h"
 
-#define MAX_NUM_COLS 32
+#define MAX_NUM_COLS 28
 #define MAX_NUM_GLB_TILES 16
 #define GROUP_SIZE 4
 #define MAX_NUM_GROUPS MAX_NUM_COLS / GROUP_SIZE
@@ -160,7 +160,7 @@ int glb_map(void *kernel_) {
     for (int i = group_start; i < group_start + num_groups; i++) {
         crossbar_config[i] = first_input_tile;
     }
-    for (int i = 0; i < GROUP_SIZE; i++) {
+    for (int i = 0; i < MAX_NUM_GROUPS; i++) {
         kernel_crossbar_config += (crossbar_config[i] << (((int)ceil(log(NUM_GLB_TILES) / log(2))) * i));
     }
     add_config(&kernel->config, GLC_GLB_FLUSH_CROSSBAR_R, kernel_crossbar_config << GLC_GLB_FLUSH_CROSSBAR_SEL_F_LSB);
