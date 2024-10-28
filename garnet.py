@@ -20,6 +20,9 @@ from daemon.daemon import GarnetDaemon
 
 from gemstone.common.configurable import ConfigurationType
 
+from gemstone.generator.from_magma import FromMagma
+import mantle 
+
 # set the debug mode to false to speed up construction
 from gemstone.generator.generator import set_debug_mode
 set_debug_mode(False)
@@ -164,20 +167,17 @@ class Garnet(Generator):
             mu2cgra_valid=magma.In(magma.Bit),
             dummy_config=magma.In(magma.Array[(9,   ConfigurationType(32,
                                               32))]),
-            #dummy_stall=magma.In(magma.Bit)
-            #cgra2mu_ready=magma.Out(magma.Bit)
+        
+            cgra2mu_ready=magma.Out(magma.Bit)
 
         )
 
-        # Array[(9, ConfigurationType)]
-        # Array[(9, ConfigurationType)]
-      
+       
+
         #breakpoint()
         # Dummy conn
         self.wire(self.ports.dummy_config, self.interconnect.ports.config)
-        #self.wire(self.ports.dummy_stall, self.interconnect.get_column(0)[0].ports.stall)
-        #self.wire(self.ports.dummy_stall, self.interconnect.ports.stall[9])
-        #self.wire(self.ports.dummy_stall, self.interconnect.tile_circuits[(0, 1)].ports.stall)
+
         
     
         # Test MU connection
@@ -186,14 +186,26 @@ class Garnet(Generator):
 
         # Matrix unit <-> interconnnect ports connection
         # TODO: parametrize this; make it 32 when testing array bigger than 8x8
-        #self.wire(self.ports.mu2cgra[0], self.interconnect.ports.mu2io_17_0_X00_Y01)
+    
+        self.cgra2mu_ready_and = FromMagma(mantle.DefineAnd(height=16, width=1))
+
+       # breakpoint()
+
         for i in range(16):
             io_num = i % 2
             cgra_row_num = int(i/2 + 1)
             self.wire(self.ports.mu2cgra[i], self.interconnect.ports[f"mu2io_17_{io_num}_X00_Y{cgra_row_num:02X}"])
             self.wire(self.ports.mu2cgra_valid, self.interconnect.ports[f"mu2io_17_{io_num}_X00_Y{cgra_row_num:02X}_valid"])
 
+            self.wire(self.cgra2mu_ready_and.ports[f"I{i}"], self.convert(self.interconnect.ports[f"mu2io_17_{io_num}_X00_Y{cgra_row_num:02X}_ready"], magma.Bits[1]))
+
+        self.wire(self.cgra2mu_ready_and.ports.O, self.convert(self.ports.cgra2mu_ready, magma.Bits[1]))
+
         
+        
+        
+
+
         # MU IO/tile stall port hack
         #self.wire(0, self.interconnect.tile_X00_Y01.stall)
 
