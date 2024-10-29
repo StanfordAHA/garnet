@@ -165,9 +165,6 @@ class Garnet(Generator):
             # TODO: Change matrix unit bits to 16 each for bFloat 16 
             mu2cgra=magma.In(magma.Array[(32, magma.Bits[17])]),
             mu2cgra_valid=magma.In(magma.Bit),
-            dummy_config=magma.In(magma.Array[(9,   ConfigurationType(32,
-                                              32))]),
-        
             cgra2mu_ready=magma.Out(magma.Bit)
 
         )
@@ -176,7 +173,7 @@ class Garnet(Generator):
 
         #breakpoint()
         # Dummy conn
-        self.wire(self.ports.dummy_config, self.interconnect.ports.config)
+        #self.wire(self.ports.dummy_config, self.interconnect.ports.config)
 
         
     
@@ -201,13 +198,6 @@ class Garnet(Generator):
 
         self.wire(self.cgra2mu_ready_and.ports.O, self.convert(self.ports.cgra2mu_ready, magma.Bits[1]))
 
-        
-        
-        
-
-
-        # MU IO/tile stall port hack
-        #self.wire(0, self.interconnect.tile_X00_Y01.stall)
 
         # top <-> global controller ports connection
         self.wire(self.ports.clk_in, self.global_controller.ports.clk_in)
