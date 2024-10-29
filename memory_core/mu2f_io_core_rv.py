@@ -118,8 +118,8 @@ class MU2F_IOCoreReadyValid(LakeCoreBase):
         return []
 
     def pnr_info(self):
-        return [PnRTag("I", 2, self.DEFAULT_PRIORITY),
-                PnRTag("i", 1, self.DEFAULT_PRIORITY),
+        return [PnRTag("U", 2, self.DEFAULT_PRIORITY),
+                PnRTag("u", 1, self.DEFAULT_PRIORITY),
                 ]
 
     # def inputs(self):
