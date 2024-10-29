@@ -87,21 +87,42 @@ def glb_interconnect_wiring(garnet):
     col_per_glb = width // num_glb_tiles
     assert width % num_glb_tiles == 0
 
+    #breakpoint()
+
     # parallel configuration ports wiring
     for i in range(num_glb_tiles):
+
         for j in range(col_per_glb):
             cfg_data_port_name = f"cgra_cfg_g2f_cfg_data_{i}_{j}"
             cfg_addr_port_name = f"cgra_cfg_g2f_cfg_addr_{i}_{j}"
             cfg_rd_en_port_name = f"cgra_cfg_g2f_cfg_rd_en_{i}_{j}"
             cfg_wr_en_port_name = f"cgra_cfg_g2f_cfg_wr_en_{i}_{j}"
+
+            # Matrix unit hack
+            # garnet.wire(garnet.global_buffer.ports[cfg_data_port_name],
+            #             garnet.interconnect.ports.config[i * col_per_glb + j].config_data)
+            # garnet.wire(garnet.global_buffer.ports[cfg_addr_port_name],
+            #             garnet.interconnect.ports.config[i * col_per_glb + j].config_addr)
+            # garnet.wire(garnet.global_buffer.ports[cfg_rd_en_port_name],
+            #             garnet.interconnect.ports.config[i * col_per_glb + j].read)
+            # garnet.wire(garnet.global_buffer.ports[cfg_wr_en_port_name],
+            #             garnet.interconnect.ports.config[i * col_per_glb + j].write)
+
             garnet.wire(garnet.global_buffer.ports[cfg_data_port_name],
-                        garnet.interconnect.ports.config[i * col_per_glb + j].config_data)
+                        garnet.interconnect.ports.config[i * col_per_glb + j + 1].config_data)
             garnet.wire(garnet.global_buffer.ports[cfg_addr_port_name],
-                        garnet.interconnect.ports.config[i * col_per_glb + j].config_addr)
+                        garnet.interconnect.ports.config[i * col_per_glb + j + 1].config_addr)
             garnet.wire(garnet.global_buffer.ports[cfg_rd_en_port_name],
-                        garnet.interconnect.ports.config[i * col_per_glb + j].read)
+                        garnet.interconnect.ports.config[i * col_per_glb + j + 1].read)
             garnet.wire(garnet.global_buffer.ports[cfg_wr_en_port_name],
-                        garnet.interconnect.ports.config[i * col_per_glb + j].write)
+                        garnet.interconnect.ports.config[i * col_per_glb + j + 1].write)
+
+    # Matrix unit hack
+    garnet.wire(Const(0), garnet.interconnect.ports.config[0].config_data)
+    garnet.wire(Const(0), garnet.interconnect.ports.config[0].config_addr)
+    garnet.wire(Const(0), garnet.interconnect.ports.config[0].read)
+    garnet.wire(Const(0), garnet.interconnect.ports.config[0].write)
+    
 
     # input/output stream ports wiring
     for i in range(num_glb_tiles):
