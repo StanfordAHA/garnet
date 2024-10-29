@@ -67,8 +67,11 @@ int parse_num_group(struct KernelInfo *info) {
 
         if (x > max_x) max_x = x;
     }
+    
 
-    info->num_groups = (max_x + GROUP_SIZE) / GROUP_SIZE;
+    // Matrix unit hack 
+    //info->num_groups = (max_x + GROUP_SIZE) / GROUP_SIZE;
+    info->num_groups = (max_x-1 + GROUP_SIZE) / GROUP_SIZE;
 
     // clean up
     fclose(fp);
