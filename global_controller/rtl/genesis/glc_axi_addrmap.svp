@@ -15,6 +15,7 @@
 //; my $glb_addr_width = parameter(NAME => 'glb_addr_width', VAL => 22, DOC => 'Width of glb_addr');
 //; my $num_glb_tiles = parameter(NAME => 'num_glb_tiles', VAL => 16, DOC => 'number of global buffer tiles');
 //; my $cgra_width = parameter(NAME => 'cgra_width', VAL => 32, DOC => 'cgra array width');
+//; my $cgra_width_including_io = parameter(NAME => 'cgra_width_including_io', VAL => 32, DOC => 'cgra array width + num IO tile columns west and east');
 
 // local parameter
 //; my $reg_addr_width = 5;
@@ -29,7 +30,7 @@ module `mname` (
     output logic [`$num_glb_tiles-1`:0]         axi_glb_clk_en_bank_master, 
     output logic [`$num_glb_tiles-1`:0]         axi_glb_pcfg_broadcast_stall, 
     output logic [$clog2(`$num_glb_tiles`)*`$cgra_width/4`-1:0] axi_glb_flush_crossbar_sel, 
-    output logic [`$cgra_width-1`:0]            axi_cgra_stall, 
+    output logic [`$cgra_width_including_io-1`:0]            axi_cgra_stall, 
 
 	// global buffer control signals
 	output logic [`$num_glb_tiles-1`:0]         strm_g2f_start_pulse,

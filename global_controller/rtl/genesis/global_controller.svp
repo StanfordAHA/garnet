@@ -18,6 +18,7 @@
 //; my $block_axi_addr_width = parameter(NAME => 'block_axi_addr_width', VAL => 12, DOC => 'Width of axi_addr for sub block');
 //; my $num_glb_tiles = parameter(NAME => 'num_glb_tiles', VAL => 16, DOC => 'number of global buffer tiles');
 //; my $cgra_width = parameter(NAME => 'cgra_width', VAL => 32, DOC => 'cgra array width');
+//; my $cgra_width_including_io = parameter(NAME => 'cgra_width_including_io', VAL => 32, DOC => 'cgra array width + num IO tile columns west and east');
 //; my $glb_tile_mem_size = parameter(NAME => 'glb_tile_mem_size', VAL => 256, DOC => 'size of global buffer tile memory size in KB');
 
 //============================================================================//
@@ -36,7 +37,7 @@ module `mname` (
     // cgra control signals
     output logic                                clk_out,
     output logic                                reset_out,
-    output logic [`$cgra_width-1`:0]            cgra_stall, 
+    output logic [`$cgra_width_including_io-1`:0] cgra_stall, 
     output logic [`$num_glb_tiles-1`:0]         glb_clk_en_master, 
     output logic [`$num_glb_tiles-1`:0]         glb_clk_en_bank_master, 
     output logic [`$num_glb_tiles-1`:0]         glb_pcfg_broadcast_stall, 
@@ -124,7 +125,7 @@ logic                                jtag_global_reset, axi_global_reset, global
 logic [`$num_glb_tiles-1`:0]         jtag_glb_clk_en_master, axi_glb_clk_en_master;
 logic [`$num_glb_tiles-1`:0]         jtag_glb_clk_en_bank_master, axi_glb_clk_en_bank_master;
 logic [`$num_glb_tiles-1`:0]         jtag_glb_pcfg_broadcast_stall, axi_glb_pcfg_broadcast_stall;
-logic [`$cgra_width-1`:0]            jtag_cgra_stall, axi_cgra_stall;
+logic [`$cgra_width_including_io-1`:0]            jtag_cgra_stall, axi_cgra_stall;
 logic [$clog2(`$num_glb_tiles`)*`$cgra_width/4`-1:0] axi_glb_flush_crossbar_sel;
 
 // global buffer configuration
