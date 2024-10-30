@@ -128,6 +128,7 @@ class Garnet(Generator):
         glb_tile_mem_size = 2 ** ((glb_params.bank_addr_width - 10)
                                   + math.ceil(math.log(glb_params.banks_per_tile, 2)))
 
+       
         self.global_controller = GlobalController(
             addr_width=self.config_addr_width,
             data_width=self.config_data_width,
@@ -135,6 +136,7 @@ class Garnet(Generator):
             axi_data_width=axi_data_width,
             num_glb_tiles=glb_params.num_glb_tiles,
             cgra_width=glb_params.num_cgra_cols,
+            cgra_width_including_io=glb_params.num_cgra_cols_including_io,
             glb_addr_width=glb_params.glb_addr_width,
             glb_tile_mem_size=glb_tile_mem_size,
             block_axi_addr_width=glb_params.axi_addr_width,
@@ -828,6 +830,10 @@ def parse_args():
     args.glb_params = gen_global_buffer_params(
         num_glb_tiles=args.width // 2,
         num_cgra_cols=args.width,
+
+        # Matrix unit hack 
+        num_cgra_cols_including_io=args.width + 1,
+
         # NOTE: We assume num_prr is same as num_glb_tiles
         num_prr=args.width // 2,
         glb_tile_mem_size=args.glb_tile_mem_size,

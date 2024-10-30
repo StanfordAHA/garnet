@@ -15,6 +15,7 @@ class GlobalControllerParams:
     block_axi_addr_width: int = 12
     num_glb_tiles: int = 16
     cgra_width: int = 32
+    cgra_width_including_io: int = 32
     glb_tile_mem_size: int = 256
 
 

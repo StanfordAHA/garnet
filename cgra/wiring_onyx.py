@@ -188,11 +188,12 @@ def glb_interconnect_wiring(garnet):
                         garnet.interconnect.ports.flush[i])
 
     # stall signal wiring
-    garnet.wire(garnet.global_buffer.ports.cgra_stall, garnet.interconnect.ports.stall[1:9])
+    garnet.wire(garnet.global_buffer.ports.cgra_stall, garnet.interconnect.ports.stall)
+    #garnet.wire(garnet.global_buffer.ports.cgra_stall, garnet.interconnect.ports.stall[1:9])
     
 
     # Matrix unit temporary stall hack
-    garnet.wire(Const(magma.Bit(0)), garnet.interconnect.ports.stall[0])
+    #garnet.wire(Const(magma.Bit(0)), garnet.interconnect.ports.stall[0])
 
     return garnet
 
