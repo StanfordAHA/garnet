@@ -56,6 +56,43 @@ module top;
         .axil_ifc(axil_ifc)
     );
 
+    wire [16:0] mu2cgra [31:0];
+    assign mu2cgra[0] = 17'b0;
+    assign mu2cgra[1] = 17'b0;
+    assign mu2cgra[2] = 17'b0;
+    assign mu2cgra[3] = 17'b0;
+    assign mu2cgra[4] = 17'b0;
+    assign mu2cgra[5] = 17'b0;
+    assign mu2cgra[6] = 17'b0;
+    assign mu2cgra[7] = 17'b0;
+    assign mu2cgra[8] = 17'b0;
+    assign mu2cgra[9] = 17'b0;
+    assign mu2cgra[10] = 17'b0;
+    assign mu2cgra[11] = 17'b0;
+    assign mu2cgra[12] = 17'b0;
+    assign mu2cgra[13] = 17'b0;
+    assign mu2cgra[14] = 17'b0;
+    assign mu2cgra[15] = 17'b0;
+    assign mu2cgra[16] = 17'b0;
+    assign mu2cgra[17] = 17'b0;
+    assign mu2cgra[18] = 17'b0;
+    assign mu2cgra[19] = 17'b0;
+    assign mu2cgra[20] = 17'b0;
+    assign mu2cgra[21] = 17'b0;
+    assign mu2cgra[22] = 17'b0;
+    assign mu2cgra[23] = 17'b0;
+    assign mu2cgra[24] = 17'b0;
+    assign mu2cgra[25] = 17'b0;
+    assign mu2cgra[26] = 17'b0;
+    assign mu2cgra[27] = 17'b0;
+    assign mu2cgra[28] = 17'b0;
+    assign mu2cgra[29] = 17'b0;
+    assign mu2cgra[30] = 17'b0;
+    assign mu2cgra[31] = 17'b0;
+
+
+
+
     //============================================================================//
     // instantiate dut
     //============================================================================//
@@ -99,7 +136,12 @@ module top;
         .jtag_tdi   (  /*unused*/),
         .jtag_tdo   (  /*unused*/),
         .jtag_tms   (  /*unused*/),
-        .jtag_trst_n(  /*unused*/)
+        .jtag_trst_n(  /*unused*/),
+
+        // matrix unit ifc
+        .mu2cgra_valid (1'b0),
+        .cgra2mu_ready (),
+        .mu2cgra(mu2cgra)
     );
 
 
