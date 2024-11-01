@@ -231,390 +231,242 @@ class NetlistGraph:
                 sink_node.add_source(source_node)
         reg_node.remove_sink(sink_node)
         source_node.remove_sink(reg_node)
-
-    def _find_source_mem(self, node, mem_list):
-        for snode in node.sources:
-            if "m" in snode.node_name:
-                mem_list.append(snode)
-                self._find_source_mem(snode, mem_list)
-
     
-    def _find_root_io_node(self, start_node):
-        node = start_node
-        while len(node.sources) > 0:
-            assert len(node.sources) == 1, "The assumption is that there is only one source for each node"
-            node = node.sources[0]
-        assert node.node_type == "I", "The root node should be an IO node"
-        assert "io16in" in node.node_id, "The root node should be an 16bit input node"
-        return node
+    def _find_root_node(self, start_node):
+        """
+        This function assumes there's only one source for each node,
+        then it will find the root node of the start_node.
+        """
+        current_node = start_node
+        while len(current_node.sources) > 0:
+            current_node = current_node.sources[0]
+        return current_node
     
-    def _find_root_mem_node(self, start_node):
-        node = start_node
-        while len(node.sources) > 0:
-            assert len(node.sources) == 1, "The assumption is that there is only one source for each node"
-            if node.node_type == "m":
-                return node
-            node = node.sources[0]
-        return None
-    
-    def _find_pe_source_ifmap_node(self, pe_node):
-        for source_node in pe_node.sources:
-            root_mem_node = self._find_root_mem_node(source_node)
-            if root_mem_node is not None:
-                return root_mem_node.node_name
-        return None
+    def _get_node_by_name(self, node_name):
+        match_nodes = []
+        for node in self.nodes:
+            if node_name == node.node_name:
+                match_nodes.append(node)
+        assert len(match_nodes) > 0, "No node with the name {}".format(node_name)
+        assert len(match_nodes) == 1, "There should be only one node with the name {}".format(node_name)
+        return match_nodes[0]
 
-
-    def manualy_place_resnet(self, app_dir):
-
-
+    def _analyze_pe_chain(self, app_dir, dump=False):
         pe_chains = []
-        
         for node in self.pe_nodes:
             if "mul_" in node.node_id:
                 # found a start of a pe chain, start traching and record the chain
                 new_pe_chain = {}
                 pe_node = node
-                # find its kernel IO node
-                for source_node in pe_node.sources:
-                    # the sources could be (1) itself, (2) kernel input, or (3) ifmap input
-                    # we need to find (2)
-                    if "p" in source_node.node_name:
-                        # this is case (1)
-                        continue
-                    else:
-                        root_io_node = self._find_root_io_node(start_node=source_node)
-                        if "kernel" in root_io_node.node_id:
-                            new_pe_chain["kernel_io"] = root_io_node.node_name
-                            break
-                # trace the entire pe chain
-                new_pe_chain["pe_chain"] = [pe_node.node_name]
-                new_pe_chain["input_mem"] = [self._find_pe_source_ifmap_node(pe_node)]
-                while pe_node.sinks[0].node_type == "p":
-                    pe_node = pe_node.sinks[0]
-                    assert len(pe_node.sinks) == 1, "Each PE should have only one sink"
-                    new_pe_chain["pe_chain"].append(pe_node.node_name)
-                    if "mul" in pe_node.node_id:
-                        new_pe_chain["input_mem"].append(self._find_pe_source_ifmap_node(pe_node))
-                # the last node should be a memory node
-                assert pe_node.sinks[0].node_type == "m", "PE chain should end with a memory node"
-                output_mem_node = pe_node.sinks[0]
+                # ---- [kernel_io] node name of the kernel IO node
+                for source_node in node.sources:
+                    root_node = self._find_root_node(start_node=source_node)
+                    if "kernel" in root_node.node_id:
+                        new_pe_chain["kernel_io"] = root_node.node_name
+                        break
+                # ---- [pe_chain] nodes names for each PE in the chain
+                new_pe_chain["pe_chain"] = []
+                current_node = node
+                while current_node.node_type == "p":
+                    new_pe_chain["pe_chain"].append(current_node.node_name)
+                    current_node = current_node.sinks[0]
+                # ---- [output_mem] node name for the accumulation output mem node
+                output_mem_node = current_node
                 new_pe_chain["output_mem"] = output_mem_node.node_name
-                # find the const node
+                # ---- [const] node name for the constant node
                 for source_node in output_mem_node.sources:
                     if "const" in source_node.node_id:
                         new_pe_chain["const"] = source_node.node_name
                         break
-                # is mem the end of mem chain?
+                # ---- [mem_chain_is_last] whether this pe chain is the last one
                 is_last = True
                 for sink_node in output_mem_node.sinks:
                     if sink_node.node_type == "m":
                         is_last = False
                         break
                 new_pe_chain["mem_chain_is_last"] = is_last
-                # trace the final output IO
-                temp_node = output_mem_node
-                while len(temp_node.sinks) > 0:
-                    sink_nodes_except_pe = [sink_node for sink_node in temp_node.sinks if sink_node.node_type != "p"]
-                    assert len(sink_nodes_except_pe) == 1, "Each node should have only one sink after excluding PE nodes"
-                    temp_node = sink_nodes_except_pe[0]
-                assert temp_node.node_type == "I", "The final node should be an IO node"
-                assert "io16" in temp_node.node_id, "The final node should be 16bit"
-                assert "output" in temp_node.node_id, "The final node should be an output node"
-                new_pe_chain["output_io"] = temp_node.node_name
-                # append this pe chain to the list
+                # ---- [output_io] The final 16b output IO node
+                current_node = output_mem_node
+                while len(current_node.sinks) > 0:
+                    sink_nodes_except_pe = [sink_node for sink_node in current_node.sinks if sink_node.node_type != "p"]
+                    current_node = sink_nodes_except_pe[0]
+                new_pe_chain["output_io"] = current_node.node_name
+                # Finally, append the info of this pe chain to the list
                 pe_chains.append(new_pe_chain)
             else:
                 # skip, not a start of a chain
                 pass
-        
+        # Sort by kernel_io, output_io, and mem_chain_is_last
+        pe_chains.sort(key=lambda x: x["kernel_io"])
+        for i in range(0, len(pe_chains), 4):
+            pe_chains[i:i+4] = sorted(pe_chains[i:i+4], key=lambda x: x["output_io"])
+        for i in range(0, len(pe_chains), 2):
+            pe_chains[i:i+2] = sorted(pe_chains[i:i+2], key=lambda x: x["mem_chain_is_last"])
         # write out pe chain info using json
-        with open(app_dir + "/resnet_pe_chains_info.txt", "w") as f:
-            f.write(json.dumps(pe_chains, indent=4))
+        if dump:
+            with open(app_dir + "/resnet_pe_chains_info.json", "w") as f:
+                f.write(json.dumps(pe_chains, indent=4))
+        return pe_chains
+
+    def manualy_place_resnet(self, app_dir):
+
+        # traverse and analyze the pe chain first
+        pe_chains = self._analyze_pe_chain(app_dir=app_dir, dump=True)
+
+        # place input mem from bottom to top
+        mem_node_names = ["m6", "m5", "m4", "m3", "m2", "m1", "m15", "m14", "m13", "m12", "m11", "m10", "m9", "m8", "m7", "m0"]
+        mem_node_x, mem_node_y = 15, 16
+        for node_name in mem_node_names:
+            node = self._get_node_by_name(node_name)
+            node.x, node.y = mem_node_x, mem_node_y
+            mem_node_y -= 1
         
-        breakpoint()
-        exit()
-
-        # HALIDE_GEN_ARGS = os.environ.get("HALIDE_GEN_ARGS")
-        # k_oc_match = re.search(r'k_oc=(\d+)', HALIDE_GEN_ARGS)
-        # k_ic_match = re.search(r'k_ic=(\d+)', HALIDE_GEN_ARGS)
-        # assert k_oc_match, "No k_oc in HALIDE_GEN_ARGS. Please turn off MANUAL_PLACER or re-define HALIDE_GEN_ARGS for resnet."
-        # assert k_ic_match, "No k_ic in HALIDE_GEN_ARGS. Please turn off MANUAL_PLACER or re-define HALIDE_GEN_ARGS for resnet."
-        # k_oc = int(k_oc_match.group(1))
-        # k_ic = int(k_ic_match.group(1))
-        # input_mem = []
-        # output_mem = []
-
-        # # extract input mem from bottom to top
-        # for node in self.mem_nodes:
-        #     if len(node.sinks) == k_oc and "mul" in node.sinks[0].node_id and "add" not in node.sinks[0].node_id:
-        #         input_mem.append(node)
-        #         break
-        # next_pe = input_mem[0].sinks[0].sinks[0]
-        # while True:
-        #     for node in next_pe.sources:
-        #         if "m" in node.node_name:
-        #             input_mem.append(node)
-        #     next_pe = next_pe.sinks[0]
-        #     if "mul" not in next_pe.node_id:
-        #         for node in next_pe.sinks[0].sources:
-        #             if "m" in node.node_name:
-        #                 input_mem.append(node)
-        #         break
-
-        # # place input mem from bottom to top
-        # input_mem_x = 15
-        # input_mem_y = 16
-        # for node in input_mem:
-        #     (node.x, node.y) = (input_mem_x, input_mem_y)
-        #     input_mem_y -= 1
-
-        # # extract output mem 
-        # # check whether have mem chaining
-        # mem_chain = False
-        # for node in self.mem_nodes:
-        #     for snode in node.sources:
-        #         if "m" in snode.node_name:
-        #             mem_chain = True
-        #             break
-        #     if mem_chain:
-        #         break
-        # # add output mem to list
-        # for node in self.mem_nodes:
-        #     is_output_mem = False
-        #     # if mem_chain and len(node.sources) == 3 and "I" in node.sinks[1].node_name:
-        #     if mem_chain and len(node.sources) == 3:
-        #         for sink_node in node.sinks:
-        #             if "I" in sink_node.node_name:
-        #                 is_output_mem = True
-        #                 break
-        #         if is_output_mem:
-        #             output_mem.append(node)
-        #             self._find_source_mem(node, output_mem)
-        #     elif not mem_chain and len(node.sources) == 2:
-        #         output_mem.append(node)
-
-        # # place output mem
-        # # starting from the first MEM column
-        # # assert k_oc > 4, "k_oc is too small; please unset MANUAL_PLACER"
-        # # output_mem_x = 3
-        # # output_mem_y = 1
-        # # if k_oc <= 8:
-        # #     for node in output_mem:
-        # #         (node.x, node.y) = (output_mem_x, output_mem_y)
-        # #         if output_mem_y < 2:
-        # #             output_mem_y += 1
-        # #         elif output_mem_x == round(k_oc / 4) * 4 - 5 and output_mem_y == 2:
-        # #             output_mem_x += 8
-        # #             output_mem_y = 1
-        # #         else:
-        # #             output_mem_x += 4
-        # #             output_mem_y = 1
-        # # else:
-        # #     for node in output_mem:
-        # #         (node.x, node.y) = (output_mem_x, output_mem_y)
-        # #         if output_mem_y < 2 or (output_mem_x == round(k_oc / 4) * 4 - 5 and output_mem_y < 4):
-        # #             output_mem_y += 1
-        # #         elif output_mem_x != round(k_oc / 4) * 4 - 5:
-        # #             output_mem_x += 4
-        # #             output_mem_y = 1
-        # #         else:
-        # #             output_mem_x += 8
-        # #             output_mem_y = 1
-        # out_mem_xy = [
-        #     (3, 2),
-        #     (3, 3),
-        #     (3, 5),
-        #     (3, 6),
-        #     (11, 2),
-        #     (11, 3),
-        #     (11, 5),
-        #     (11, 6),
-        #     (19, 2),
-        #     (19, 3),
-        #     (19, 5),
-        #     (19, 6),
-        #     (23, 2),
-        #     (23, 3),
-        #     (23, 5),
-        #     (23, 6)
-        # ]
-        # for node in output_mem:
-        #     (node.x, node.y) = out_mem_xy.pop(0)
-
-        # # place pe chains and const pes
-        # const_xy = [
-        #     (1, 7),
-        #     (1, 8),
-        #     (5, 7),
-        #     (5, 8),
-        #     (10, 7),
-        #     (10, 8),
-        #     (10, 9),
-        #     (10, 10),
-        #     (20, 7),
-        #     (20, 8),
-        #     (20, 9),
-        #     (20, 10),
-        #     (25, 7),
-        #     (25, 8),
-        #     (25, 9),
-        #     (25, 10)
-        # ]
-        # pe_xy = [
-        #     (0, 1),  (1, 2),  (0, 2), (0, 3), (0, 4), (0, 5), (0, 6), (0, 7), (0, 8), (0, 9), (0, 10), (0, 11), (0, 12), (0, 13), (0, 14), (0, 15), (0, 16),
-        #     (2, 1),  (1, 3),  (2, 2), (2, 3), (2, 4), (2, 5), (2, 6), (2, 7), (2, 8), (2, 9), (2, 10), (2, 11), (2, 12), (2, 13), (2, 14), (2, 15), (2, 16),
-        #     (4, 1),  (5, 5),  (4, 2), (4, 3), (4, 4), (4, 5), (4, 6), (4, 7), (4, 8), (4, 9), (4, 10), (4, 11), (4, 12), (4, 13), (4, 14), (4, 15), (4, 16),
-        #     (6, 1),  (5, 6),  (6, 2), (6, 3), (6, 4), (6, 5), (6, 6), (6, 7), (6, 8), (6, 9), (6, 10), (6, 11), (6, 12), (6, 13), (6, 14), (6, 15), (6, 16),
-        #     (8, 1),  (10, 2), (8, 2), (8, 3), (8, 4), (8, 5), (8, 6), (8, 7), (8, 8), (8, 9), (8, 10), (8, 11), (8, 12), (8, 13), (8, 14), (8, 15), (8, 16),
-        #     (9, 1),  (10, 3), (9, 2), (9, 3), (9, 4), (9, 5), (9, 6), (9, 7), (9, 8), (9, 9), (9, 10), (9, 11), (9, 12), (9, 13), (9, 14), (9, 15), (9, 16),
-        #     (12, 1), (10, 5), (12, 2), (12, 3), (12, 4), (12, 5), (12, 6), (12, 7), (12, 8), (12, 9), (12, 10), (12, 11), (12, 12), (12, 13), (12, 14), (12, 15), (12, 16),
-        #     (13, 1), (10, 6), (13, 2), (13, 3), (13, 4), (13, 5), (13, 6), (13, 7), (13, 8), (13, 9), (13, 10), (13, 11), (13, 12), (13, 13), (13, 14), (13, 15), (13, 16),
-        #     (14, 1), (20, 2), (14, 2), (14, 3), (14, 4), (14, 5), (14, 6), (14, 7), (14, 8), (14, 9), (14, 10), (14, 11), (14, 12), (14, 13), (14, 14), (14, 15), (14, 16),
-        #     (16, 1), (20, 3), (16, 2), (16, 3), (16, 4), (16, 5), (16, 6), (16, 7), (16, 8), (16, 9), (16, 10), (16, 11), (16, 12), (16, 13), (16, 14), (16, 15), (16, 16),
-        #     (17, 1), (20, 5), (17, 2), (17, 3), (17, 4), (17, 5), (17, 6), (17, 7), (17, 8), (17, 9), (17, 10), (17, 11), (17, 12), (17, 13), (17, 14), (17, 15), (17, 16),
-        #     (18, 1), (20, 6), (18, 2), (18, 3), (18, 4), (18, 5), (18, 6), (18, 7), (18, 8), (18, 9), (18, 10), (18, 11), (18, 12), (18, 13), (18, 14), (18, 15), (18, 16),
-        #     (21, 1), (25, 2), (21, 2), (21, 3), (21, 4), (21, 5), (21, 6), (21, 7), (21, 8), (21, 9), (21, 10), (21, 11), (21, 12), (21, 13), (21, 14), (21, 15), (21, 16),
-        #     (22, 1), (25, 3), (22, 2), (22, 3), (22, 4), (22, 5), (22, 6), (22, 7), (22, 8), (22, 9), (22, 10), (22, 11), (22, 12), (22, 13), (22, 14), (22, 15), (22, 16),
-        #     (24, 1), (25, 5), (24, 2), (24, 3), (24, 4), (24, 5), (24, 6), (24, 7), (24, 8), (24, 9), (24, 10), (24, 11), (24, 12), (24, 13), (24, 14), (24, 15), (24, 16),
-        #     (26, 1), (25, 6), (26, 2), (26, 3), (26, 4), (26, 5), (26, 6), (26, 7), (26, 8), (26, 9), (26, 10), (26, 11), (26, 12), (26, 13), (26, 14), (26, 15), (26, 16)
-        # ]
-        # accum_pe = []
-        # const_pe = []
-        # pe_x = 1
-        # pe_y = 1
-        # for node in output_mem:
-        #     for snode in node.sources:
-        #         if "const" in snode.node_id:
-        #             # (snode.x, snode.y) = (node.x - 3, node.y)
-        #             # if node.y > 2:
-        #             #     (snode.x, snode.y) = (node.x + 1, node.y - 2)
-        #             (snode.x, snode.y) = const_xy.pop(0)
-        #             const_pe.append(snode)
-        #         elif "muladd" in snode.node_id:
-        #             next_pe = snode
-        #             # (next_pe.x, next_pe.y) = (pe_x, pe_y)
-        #             # pe_y += 1
-        #             while True:
-        #                 (next_pe.x, next_pe.y) = pe_xy.pop(0)
-        #                 for snext_pe in next_pe.sources:
-        #                     if "p" in snext_pe.node_name:
-        #                         # if "add" in snext_pe.node_id and "mul" not in snext_pe.node_id:
-        #                         #     accum_pe.append(snext_pe)
-        #                         # (snext_pe.x, snext_pe.y) = (pe_x, pe_y)
-        #                         # if "muladd" in snext_pe.node_id:
-        #                         #     pe_y += 1
-        #                         next_pe = snext_pe
-        #                         break
-        #                 if "mul" in next_pe.node_id and "add" not in next_pe.node_id:
-        #                     # pe_y = 1
-        #                     (next_pe.x, next_pe.y) = pe_xy.pop(0)
-        #                     break
-        #     # if (pe_x + 2) % 4 != 0:
-        #     #     pe_x += 1
-        #     # else:
-        #     #     pe_x += 3
-        # assert len(pe_xy) == 0, "[error-manual-placer] Not all predefined positions are used"
-
-        # # place accum pes separately
-        # # for _ in range(len(const_pe)):
-        # #     (accum_pe[_].x, accum_pe[_].y) = (const_pe[_].x, const_pe[_].y + 2)
-
-        # # place stencil mem
-        # # glb_o_match = re.search(r'glb_o=(\d+)', HALIDE_GEN_ARGS)
-        # # glb_o = int(glb_o_match.group(1)) if glb_o_match else None
-        # # glb_i_match = re.search(r'glb_i=(\d+)', HALIDE_GEN_ARGS)
-        # # glb_i = int(glb_i_match.group(1)) if glb_i_match else None
-        # # if not glb_o_match:
-        # #     stencil_x = 3
-        # #     stencil_y = 5
-        # #     for node in self.mem_nodes:
-        # #         if len(node.sources) == 0:
-        # #             (node.x, node.y) = (stencil_x, stencil_y)
-        # #             if stencil_x == round(k_oc / 4) * 4 - 5 or glb_o <= 4:
-        # #                 stencil_x += 8
-        # #             else:
-        # #                 stencil_x += 4
-        # # else:
-        # #     stencil_x = 3
-        # #     stencil_y = 4
-        # #     for node in self.mem_nodes:
-        # #         if "port_controller" in node.node_id:
-        # #             (node.x, node.y) = (stencil_x, stencil_y)
-        # #             if stencil_x == round(k_oc / 4) * 4 - 9:
-        # #                 stencil_x += 4
-        # #                 stencil_y = 5
-        # #             elif stencil_x == round(k_oc / 4) * 4 - 5:
-        # #                 if stencil_y == 5:
-        # #                     stencil_y += 2
-        # #                 else:
-        # #                     stencil_x += 8
-        # #                     stencil_y = 4
-        # #             else:
-        # #                 stencil_x += 4
-        # out_valid_xy = [
-        #     (3, 1),
-        #     (3, 4),
-        #     (11, 1),
-        #     (11, 4),
-        #     (19, 1),
-        #     (19, 4),
-        #     (23, 1),
-        #     (23, 4)
-        # ]
-        # for node in self.mem_nodes:
-        #         if "port_controller" in node.node_id:
-        #             (node.x, node.y) = out_valid_xy.pop(0)
-
-        # # place IO tile, currently use fixed positions
-        # # if glb_o == 8:
-        # #     weight_IO_idx = [0, 24, 28, 4, 8, 12, 16, 20]
-        # #     ifmap_IO_idx = [2, 6, 26, 10, 22, 14, 18, 30]
-        # # elif glb_o == 7:
-        # #     weight_IO_idx = [0, 24, 4, 8, 12, 16, 20]
-        # #     ifmap_IO_idx = [2, 6, 26, 10, 22, 14, 18]
-        # # if glb_o == 4:
-        # #     output_IO_idx = [3, 11, 19, 27]
-        # # else:
-        # #     output_IO_idx = []
-        # # if glb_i == 8:
-        # #     output_IO_idx = [1, 5, 9, 11, 19, 23, 27, 31]
-        # # elif glb_i == 7:
-        # #     output_IO_idx = [1, 5, 9, 11, 19, 23, 27]
-        # # else:
-        # #     output_IO_idx = []
-        # weight_IO = []
-        # ifmap_IO = []
-        # output_IO = []
-        # stencil_IO = []
-
-        # for node in self.io_nodes:
-        #     if "io16in_kernel_host_stencil_clkwrk" in node.node_id:
-        #         weight_IO.append(node)
-        #     elif "io16in_input_host_stencil_clkwrk" in node.node_id:
-        #         ifmap_IO.append(node)
-        #     elif "io16_hw_output_stencil_clkwrk" in node.node_id:
-        #         output_IO.append(node)
-        #     else:
-        #         stencil_IO.append(node)
+        # Place the output mem
+        mem_node_names = [pe_chain["output_mem"] for pe_chain in pe_chains]
+        out_mem_pos = [
+            (3, 3),
+            (3, 2),
+            (3, 6),
+            (3, 5),
+            (11, 3),
+            (11, 2),
+            (11, 6),
+            (11, 5),
+            (19, 3),
+            (19, 2),
+            (19, 6),
+            (19, 5),
+            (23, 3),
+            (23, 2),
+            (23, 6),
+            (23, 5)
+        ]
+        for node_name in mem_node_names:
+            node = self._get_node_by_name(node_name)
+            node.x, node.y = out_mem_pos.pop(0)
         
-        # # override
-        # weight_IO_idx = [4, 10, 16, 24]
-        # ifmap_IO_idx = [6, 8, 12, 14, 18, 20, 22, 26]
-        # output_IO_idx = [1, 3, 9, 11, 19, 21, 23, 25]
+        # Place the const
+        const_node_names = [pe_chain["const"] for pe_chain in pe_chains]
+        const_pos = [
+            (1, 8),
+            (1, 7),
+            (5, 8),
+            (5, 7),
+            (10, 10),
+            (10, 9),
+            (10, 8),
+            (10, 7),
+            (20, 10),
+            (20, 9),
+            (20, 8),
+            (20, 7),
+            (25, 10),
+            (25, 9),
+            (25, 8),
+            (25, 7)
+        ]
+        for node_name in const_node_names:
+            node = self._get_node_by_name(node_name)
+            node.x, node.y = const_pos.pop(0)
         
-        # for _ in range(len(weight_IO)):
-        #     weight_IO[_].x = weight_IO_idx[_]
-        #     weight_IO[_].y = 0
-        # for _ in range(len(ifmap_IO)):
-        #     ifmap_IO[_].x = ifmap_IO_idx[_]
-        #     ifmap_IO[_].y = 0
-        # for _ in range(len(output_IO)):
-        #     output_IO[_].x = output_IO_idx[_]
-        #     output_IO[_].y = 0
-        # for _ in range(len(stencil_IO)):
-        #     stencil_IO[_].x = output_IO_idx[_]
-        #     stencil_IO[_].y = 0 
+        # Place the PE chain (MAC only)
+        adder_collection = []
+        pe_chain_pos_x = [0, 2, 4, 6, 8, 9, 12, 13, 14, 16, 17, 18, 21, 22, 24, 26]
+        for pe_chain in pe_chains:
+            pe_pos_x = pe_chain_pos_x.pop(0)
+            pe_pos_y = 16
+            for node_name in pe_chain["pe_chain"]:
+                node = self._get_node_by_name(node_name)
+                # skip the adder, do it later
+                if "$add_" in node.node_id:
+                    adder_collection.append(node)
+                    continue
+                node.x, node.y = pe_pos_x, pe_pos_y
+                pe_pos_y -= 1
+        
+        # Place the adders
+        adder_pos = [
+            (1, 3),
+            (1, 2),
+            (5, 6),
+            (5, 5),
+            (10, 3),
+            (10, 2),
+            (10, 6),
+            (10, 5),
+            (20, 3),
+            (20, 2),
+            (20, 6),
+            (20, 5),
+            (25, 3),
+            (25, 2),
+            (25, 6),
+            (25, 5)
+        ]
+        for node in adder_collection:
+            node.x, node.y = adder_pos.pop(0)
+        
+        # Place the ofmap IO nodes
+        ofmap_io_node_pos = [
+            (1, 0),
+            (3, 0),
+            (9, 0),
+            (11, 0),
+            (19, 0),
+            (21, 0),
+            (23, 0),
+            (25, 0)
+        ]
+        for node_name in ["I2", "I6", "I3", "I7", "I0", "I4", "I1", "I5"]:
+            pos = ofmap_io_node_pos.pop(0)
+            io16_node = self._get_node_by_name(node_name.upper())
+            io1_node = self._get_node_by_name(node_name.lower())
+            io16_node.x, io16_node.y = pos
+            io1_node.x, io1_node.y = pos
+        
+        # Place the kernel IO nodes
+        kernel_io_node_pos = [
+            (4, 0),
+            (10, 0),
+            (16, 0),
+            (24, 0)
+        ]
+        for node_name in ["I16", "I17", "I18", "I19"]:
+            node = self._get_node_by_name(node_name)
+            node.x, node.y =  kernel_io_node_pos.pop(0)
+        
+        # Place the ifmap IO nodes
+        ifmap_io_node_pos = [
+            (6, 0),  # This ifmap io node should connect to: m7, m15
+            (8, 0),  # This ifmap io node should connect to: m9, m2
+            (12, 0), # This ifmap io node should connect to: m11, m4
+            (14, 0), # This ifmap io node should connect to: m13, m6
+            (18, 0), # This ifmap io node should connect to: m12, m5
+            (20, 0), # This ifmap io node should connect to: m10, m3
+            (22, 0), # This ifmap io node should connect to: m8, m1
+            (26, 0)  # This ifmap io node should connect to: m0, m14
+        ]
+        for mem_node_name in ["m7", "m9", "m11", "m13", "m12", "m10", "m8", "m0"]:
+            # find the root IO node for each mem node in the list, then assign its position
+            mem_node = self._get_node_by_name(mem_node_name)
+            node = self._find_root_node(start_node=mem_node)
+            node.x, node.y = ifmap_io_node_pos.pop(0)
+        
+        # Place the mem nodes for ofmap 1bit valid (stencil valid)
+        valid_mem_node_pos = [
+            (3, 1),
+            (3, 4),
+            (11, 1),
+            (11, 4),
+            (19, 1),
+            (19, 4),
+            (23, 1),
+            (23, 4)
+        ]
+        for io1_node_name in ["i2", "i6", "i3", "i7", "i0", "i4", "i1", "i5"]:
+            io1_node = self._get_node_by_name(io1_node_name)
+            node = self._find_root_node(start_node=io1_node)
+            node.x, node.y = valid_mem_node_pos.pop(0)
 
         # write position info into file
         with open(app_dir + "/manual.place", "w") as f:
