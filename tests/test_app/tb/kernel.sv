@@ -9,13 +9,7 @@
 **===========================================================================*/
 
 import "DPI-C" function chandle parse_metadata(string filename);
-
-// (1) This (get_place_info()) does not appear to exist in libcgra.so
-// (2) Also, looks like it is never used
-// Also, as a conequence of (1), verilator will not compile
-// So let's get rid of it!?
-// import "DPI-C" function chandle get_place_info(chandle info);
-
+import "DPI-C" function chandle get_place_info(chandle info);
 import "DPI-C" function chandle get_bs_info(chandle info);
 import "DPI-C" function chandle get_input_info(
     chandle info,
@@ -287,13 +281,9 @@ function Kernel::new(string app_dir, int dpr);
         $display("input_%0d has %0d input blocks", i, num_io_tiles);
 
         if (num_io_tiles == 1) begin
-           $display("kernel.sv line 290"); $fflush();
-           
             inputs[i].io_tiles[0].num_data = input_data[i].size;
             inputs[i].io_tiles[0].io_block_data = input_data[i];
         end else begin
-           $display("kernel.sv line 295"); $fflush();
-
             for (int j = 0; j < num_io_tiles; j++) begin
                 num_pixels = input_data[i].size / num_io_tiles;
                 inputs[i].io_tiles[j].num_data = num_pixels;
@@ -305,7 +295,6 @@ function Kernel::new(string app_dir, int dpr);
             end
         end
     end
-   $display("kernel.sv line 308"); $fflush();
 
     for (int i = 0; i < num_outputs; i++) begin
         output_filenames[i] = get_output_filename(kernel_info, i);
@@ -334,14 +323,12 @@ function Kernel::new(string app_dir, int dpr);
             outputs[i].io_tiles[j].io_block_data = new[num_pixels];
         end
     end
-   $display("kernel.sv line 337"); $fflush();
 
     // parse gold data
     for (int i = 0; i < num_outputs; i++) begin
         gold_data[i] = parse_gold_data(i);
     end
 
-   $display("kernel.sv line 344"); $fflush();
     bs_size = get_bs_size(bs_info);
     bitstream_data = parse_bitstream();
 endfunction
@@ -359,16 +346,7 @@ function bitstream_t Kernel::parse_bitstream();
         int unsigned data;
         int code;
         bitstream_entry_t entry;
-
-        // NOTE: verilator DOES NOT LIKE these struct refs
-        // code = $fscanf(fp, "%08x %08x", entry.addr, entry.data);
-       // $display("kernel.sv line 365: FSCANF"); $fflush();
-
-        // Let's try this instead
-        addr = entry.addr; data = entry.data;
-        // code = $fscanf(fp, "%08x %08x", addr, data); Verilator does not like %08x
-        code = $fscanf(fp, "%x %x", addr, data);
-
+        code = $fscanf(fp, "%08x %08x", entry.addr, entry.data);
         if (code == -1) continue;
         assert_(code == 2, $sformatf(
                 "Incorrect bs format. Expected 2 entries, got: %0d. Current entires: %0d",

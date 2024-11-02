@@ -32,14 +32,10 @@ program garnet_test #(
 
         #100 initialize(dpr);
 
-       $display("about to map"); $fflush();
         map(kernels);
-       $display("done did map"); $fflush();
 
-       $display("about to build"); $fflush();
         env = new(kernels, axil_ifc, p_ifc, dpr);
         env.build();
-       $display("done did build"); $fflush();
 
         test_toggle = 1;
         env.run();
@@ -47,7 +43,6 @@ program garnet_test #(
 
         // Dump out data between each test
         //env.compare();
-       $display("done did all of garnet_test i guess"); $fflush();
     end
 
     //============================================================================//
@@ -70,37 +65,22 @@ program garnet_test #(
             $display("Monitor initialization failed");
         end
 
-        // Looking for...? Something like...?
-        // +APP0=app0
-       $display("[%0t] garnet_test L75\n", $time);
-        $display("Looking for app args e.g. '+APP0=app0'"); $fflush();
         num_app = 0;
         for (int i = 0; i < MAX_NUM_APPS; i++) begin
             automatic string arg_name = {$sformatf("APP%0d", i), "=%s"};
             if ($value$plusargs(arg_name, temp_str)) begin
                 // we have it
                 app_dirs.push_back(temp_str);
-                $display("Found app '%s'", temp_str);
             end else begin
                 num_app = i;
                 break;
             end
         end
-        if (num_app == 0) begin
-           $display("ERROR did not find app args"); $fflush();
-           $finish(2);  // The only choices are 0,1,2; note $finish() is more drastic than $exit()
-        end
-
-       // SEG FAULT HERE
-       // -bash: line 233: 1055010 Segmentation fault      (core dumped) Vtop "$APP" +trace
 
         foreach (app_dirs[i]) begin
-           $display("processing app #%0d", i); $fflush();
-           
             temp_kernel = new(app_dirs[i], dpr);
             if (temp_kernel.num_glb_tiling > 0) begin
                 // Replicate kernels if glb_tiling is enabled
-      $display("// Replicate kernels if glb_tiling is enabled"); $fflush();
                 temp_kernel.glb_tiling_cnt = kernel_glb_tiling_cnt;
                 kernel_glb_tiling_cnt++;
                 kernels.push_back(temp_kernel);
@@ -113,11 +93,9 @@ program garnet_test #(
                 kernel_glb_tiling_cnt = 0;
             end else begin
                 // No glb tiling
-      $display("// No glb tiling"); $fflush();
                 kernels.push_back(temp_kernel);
             end
         end
-        $display("End function 'initialize'"); $fflush();
     endfunction
 
     function void map(Kernel kernels[]);
