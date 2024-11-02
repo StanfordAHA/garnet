@@ -302,8 +302,8 @@ task Environment::wait_interrupt(e_glb_ctrl glb_ctrl, bit [$clog2(NUM_GLB_TILES)
             end
         end
         begin
-            repeat (5_000_000) @(vifc_axil.cbd);
-            repeat (1_000_000) @(vifc_axil.cbd);
+            repeat (5_000_000) @(posedge vifc_axil.clk);  // @(vifc_axil.cbd);
+            repeat (1_000_000) @(posedge vifc_axil.clk);  // @(vifc_axil.cbd);
             $error("@%0t: %m ERROR: Interrupt wait timeout ", $time);
             $finish;
         end
@@ -380,7 +380,7 @@ task Environment::run();
 endtask
 
 task Environment::compare();
-    repeat (20) @(vifc_axil.cbd);
+    repeat (20) @(posedge vifc_axil.clk);  // @(vifc_axil.cbd);
     foreach (kernels[i]) begin
         kernels[i].compare();
     end
