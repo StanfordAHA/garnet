@@ -25,12 +25,20 @@ program garnet_test #(
     Kernel kernels[$]; // use dynamic array for potential glb tiling
     Environment env;
 
+    // Incorrect timescale gave me no end of problems, so now I'm adding this to help future me.
+    function static void time_check(bit cond);
+        automatic string ex1 = "vcs '--timescale=1ps/1ps'";
+        automatic string ex2 = "verilator '--timescale 1ps/1ps'";
+        if (!cond)
+          $fatal(13, {$sformatf("\nINCORRECT TIMESCALE: use %s or %s\n\n", ex1, ex2)});
+    endfunction // time_check
+
     initial begin
         if ($value$plusargs("DPR=%d", value)) begin
             dpr = 1;
         end
 
-        #100 initialize(dpr);
+        #100 initialize(dpr);  // So...I guess this supposed to happen at 100ps not 100ns...
 
         map(kernels);
 
@@ -75,6 +83,10 @@ program garnet_test #(
                 num_app = i;
                 break;
             end
+        end
+        if (num_app == 0) begin
+           $display("ERROR did not find app args"); $fflush();
+           $finish(2);  // The only choices are 0,1,2; note $finish() is more drastic than $exit()
         end
 
         foreach (app_dirs[i]) begin

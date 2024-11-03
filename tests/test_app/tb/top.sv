@@ -13,6 +13,9 @@
 import global_buffer_param::*;
 
 module top;
+    // FIXME every other module assumes timescale == 1ps/1ps
+    // FIXME this one should do the same !!!
+    // (Also see time_check function in garnet_test.sv)
     timeunit 1ns; timeprecision 1ps;
 
     logic clk;
