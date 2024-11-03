@@ -61,7 +61,7 @@ endfunction
 task Environment::write_bs(Kernel kernel);
     realtime start_time, end_time;
     $timeformat(-9, 2, " ns");
-    repeat (10) @(vifc_proc.cbd);
+    repeat (10) @(posedge vifc_proc.clk);  // @(vifc_proc.cbd);
     start_time = $realtime;
     $display("[%s] write bitstream to glb start at %0t", kernel.name, start_time);
     proc_drv.write_bs(kernel.bs_start_addr, kernel.bitstream_data);
@@ -74,7 +74,7 @@ endtask
 task Environment::write_data(Kernel kernel);
     realtime start_time, end_time;
     $timeformat(-9, 2, " ns");
-    repeat (10) @(vifc_proc.cbd);
+    repeat (10) @(posedge vifc_proc.clk);  // @(vifc_proc.cbd);
     foreach (kernel.inputs[i]) begin
         foreach (kernel.inputs[i].io_tiles[j]) begin
             if (kernel.inputs[i].io_tiles[j].is_glb_input == 1) begin
@@ -97,7 +97,7 @@ endtask
 
 task Environment::read_data(Kernel kernel);
     data_array_t data_q;
-    repeat (20) @(vifc_proc.cbd);
+    repeat (20) @(posedge vifc_proc.clk);  // @(vifc_proc.cbd);
 
     foreach (kernel.outputs[i]) begin
         foreach (kernel.outputs[i].io_tiles[j]) begin
@@ -343,7 +343,7 @@ endtask
 
 task Environment::run();
     // wait for reset
-    repeat (20) @(vifc_proc.cbd);
+    repeat (20) @(posedge vifc_proc.clk);  // @(vifc_proc.cbd);
 
     // turn on interrupt
     set_interrupt_on();
