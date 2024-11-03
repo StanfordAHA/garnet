@@ -21,8 +21,10 @@ task AxilDriver::config_write(Config cfg[]);
 endtask
 
 task AxilDriver::write(bit [CGRA_AXI_ADDR_WIDTH-1:0] addr, bit [CGRA_AXI_DATA_WIDTH-1:0] data);
-    // $display("AXI-Lite Write. Addr: %08h, Data: %08h", addr, data);
+    $display("AXI-Lite Write. Addr: %08h, Data: %08h", addr, data);
     axil_lock.get(1);
+    @(posedge vif.clk);  // added to match non-clocking timing...
+
     @(posedge vif.clk);  // @(vif.cbd);
     vif.awaddr  <= addr;
     vif.awvalid <= 1'b1;
@@ -58,6 +60,8 @@ endtask
 task AxilDriver::read(bit [CGRA_AXI_ADDR_WIDTH-1:0] addr,
                       ref bit [CGRA_AXI_DATA_WIDTH-1:0] data);
     axil_lock.get(1);
+    @(posedge vif.clk);  // added to match non-clocking timing...
+
     @(posedge vif.clk);  // @(vif.cbd);
     this.vif.araddr  <= addr;
     this.vif.arvalid <= 1'b1;
@@ -79,7 +83,7 @@ task AxilDriver::read(bit [CGRA_AXI_ADDR_WIDTH-1:0] addr,
     @(posedge vif.clk);  // @(vif.cbd);
     this.vif.rready <= 0;
     @(posedge vif.clk);  // @(vif.cbd);
-    // $display("AXI-Lite Read. Addr: %08h, Data: %08h", addr, data);
+    $display("AXI-Lite Read. Addr: %08h, Data: %08h", addr, data);
     axil_lock.put(1);
 endtask
 
