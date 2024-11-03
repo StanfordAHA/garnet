@@ -8,11 +8,12 @@ if test -e obj_dir; then
     [[ $REPLY =~ ^[Yy] ]] && echo yes || exit 13
 fi
 
+# Should not be TIMESCALEMOD warnings if '--timescale' properly specified!!!
+#  -Wno-TIMESCALEMOD
 warn='
   -Wno-fatal
   -Wno-PINMISSING
   -Wno-PROTECTED
-  -Wno-TIMESCALEMOD
   -Wno-IMPLICITSTATIC
   -Wno-WIDTHEXPAND
   -Wno-WIDTHTRUNC
@@ -20,10 +21,14 @@ warn='
   -Wno-CASEINCOMPLETE
   -Wno-UNOPTFLAT
 '
+warn='
+  -Wno-fatal
+'
 
 # gb_param.svh is used by top.sv so must go first(?)
 VFILES=`echo vfiles/*.{v,sv,svh}`
 VFILES=`echo $VFILES | tr ' ' '\n' | grep -v global_buffer_param.svh`
+VFILES=`echo $VFILES | tr ' ' '\n' | grep -v garnet_stub.v`
 
 CW1=/cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CW/
 CW2=/cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CWTECH/
@@ -44,7 +49,9 @@ set -x
 
 # Note: libcgra.so must be relative to ./obj_dir :(
 # TODO: find a better way to do this :(
+
 verilator $warn --timing --cc --exe vfiles/CGRA.cpp \
+  --timescale 1ps/1ps \
   --trace \
   --top-module top \
   vfiles/global_buffer_param.svh \

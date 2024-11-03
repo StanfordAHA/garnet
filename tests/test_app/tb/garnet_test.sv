@@ -48,7 +48,7 @@ program garnet_test #(
     //============================================================================//
     // initialize
     //============================================================================//
-    function void initialize(int dpr);
+    function static void initialize(int dpr);
         int num_cols;
         int num_app;
         int result;

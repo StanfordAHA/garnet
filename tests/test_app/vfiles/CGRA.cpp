@@ -1,3 +1,6 @@
+// See /usr/local/share/verilator/examples/make_tracing_c/sim_main.cpp
+
+
 // DESCRIPTION: Verilator: Verilog example module
 //
 // This file ONLY is placed under the Creative Commons Public Domain, for
@@ -24,21 +27,21 @@ double sc_time_stamp() { return 0; }
 // See e.g. /usr/local/share/verilator/examples/make_tracing_c/sim_main.cpp
 int main(int argc, char** argv) {
 
-    // can do e.g. 'vtop -this -that 10000 other-parm' to run for 10K ns
-    int MAX_NS = 2000;
+    // '5000' means 5ns. Why? Maybe b/c timescale = 1ps/1ps
+    int ns = 1000; int half_ns = ns/2;
+
+    // E.g. "vtop 300" to run for 300ns
+    int MAX_NS = 300*ns;
     for (int i=1; i<argc; i++) {
         int maybe_integer = atoi(argv[i]);
         if (maybe_integer > 0) MAX_NS = maybe_integer;
     }
-    MAX_NS += 0.5;  // So we don't end on an edge
+    // MAX_NS += half_ns;  // So we don't end on an edge
 
     // Create logs/ directory in case we have traces to put under it
     Verilated::mkdir("logs");
 
     // Construct a VerilatedContext to hold simulation time, etc.
-    // Multiple modules (made later below with Vtop) may share the same
-    // context to share time, or modules may have different contexts if
-    // they should be independent from each other.
 
     // Using unique_ptr is similar to
     // "VerilatedContext* contextp = new VerilatedContext" then deleting at end.
@@ -52,7 +55,9 @@ int main(int argc, char** argv) {
 
     // Randomization reset policy
     // May be overridden by commandArgs argument parsing
-    contextp->randReset(2);
+    // 0: init to zero; 1: init to 1; 2: init to random
+    // contextp->randReset(2);
+    contextp->randReset(0);
 
     // Verilator must compute traced signals
     contextp->traceEverOn(true);
@@ -78,34 +83,30 @@ int main(int argc, char** argv) {
     // Simulate until $finish
     // while (!contextp->gotFinish()) {
 
-    // '5000' means 5ns. Why?
-    int ns=1000; int half_ns=500;
     // 80.5 x 1000 = 80 x 100 + 500
     // for (int i=0; i<(80.5*ns); i++) {
     // for (int i=0; i<(210.5*ns); i++) {
-    for (int i=0; i<(MAX_NS*ns); i++) {
+    // for (int i=0; i<(MAX_NS*ns); i++) {
+
+    int i=-1;
+    while (!contextp->gotFinish()) {
+        i++; if (i > MAX_NS*ns) break;  // (Note "i" starts at -1)
+
     // for (int i=0; i<(1800.5*ns); i++) {
     // for (int i=0; i<(12000.5*ns); i++) {
         // if (contextp->gotFinish()) break;
 
         bool do_print;
-        if (i <= 10*ns) do_print = !(i % (1*ns));
-        else do_print = !(i % (10*ns));
-        if (do_print) {
-            printf("t= %4dns\n", i/1000); fflush(stdout);
-        }
-        // Historical note, before Verilator 4.200 Verilated::gotFinish()
-        // was used above in place of contextp->gotFinish().
-        // Most of the contextp-> calls can use Verilated:: calls instead;
-        // the Verilated:: versions just assume there's a single context
-        // being used (per thread).  It's faster and clearer to use the
-        // newer contextp-> versions.
 
-        contextp->timeInc(1);  // 1 timeprecision period passes...
-        // Historical note, before Verilator 4.200 a sc_time_stamp()
-        // function was required instead of using timeInc.  Once timeInc()
-        // is called (with non-zero), the Verilated libraries assume the
-        // new API, and sc_time_stamp() will no longer work.
+        // if (i <= 10*ns) do_print = !(i % (1*ns));  // Print every ns for first 10ns
+        // else do_print = !(i % (10*ns));            // Then every 10ns thereafter
+        do_print = !(i % (10*ns));            // Print a timestamp every 10ns maybe
+        if (do_print) {
+            printf("[%0dns] CGRA.cpp loop # %dK\n", i/ns, i/1000); fflush(stdout);
+          //printf("[%0dns] vtop.cpp loop # %dK\n", i/ns, i/1000); fflush(stdout);
+        }
+        top->eval();
+        contextp->timeInc(1);  // 1ps maybe
 
         ////////////////////////////////////////////////////////////////////////
         /*
@@ -131,7 +132,7 @@ int main(int argc, char** argv) {
         // (If you have multiple models being simulated in the same
         // timestep then instead of eval(), call eval_step() on each, then
         // eval_end_step() on each. See the manual.)
-        top->eval();
+        // top->eval();
 
         /* ------------------------------------------------------------------------
         // Read outputs

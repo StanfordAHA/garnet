@@ -60,7 +60,7 @@ endfunction
 
 task Environment::write_bs(Kernel kernel);
     realtime start_time, end_time;
-    $timeformat(-9, 2, " ns");
+    $timeformat(-9, 2, " ns", 0);
     repeat (10) @(posedge vifc_proc.clk);  // @(vifc_proc.cbd);
     start_time = $realtime;
     $display("[%s] write bitstream to glb start at %0t", kernel.name, start_time);
@@ -73,7 +73,7 @@ endtask
 
 task Environment::write_data(Kernel kernel);
     realtime start_time, end_time;
-    $timeformat(-9, 2, " ns");
+    $timeformat(-9, 2, " ns", 0);
     repeat (10) @(posedge vifc_proc.clk);  // @(vifc_proc.cbd);
     foreach (kernel.inputs[i]) begin
         foreach (kernel.inputs[i].io_tiles[j]) begin
@@ -116,7 +116,7 @@ endtask
 
 task Environment::glb_configure(Kernel kernel);
     realtime start_time, end_time;
-    $timeformat(-9, 2, " ns");
+    $timeformat(-9, 2, " ns", 0);
     start_time = $realtime;
     $display("[%s] glb configuration start at %0t", kernel.name, start_time);
     axil_drv.config_write(kernel.bs_cfg);
@@ -132,7 +132,7 @@ task Environment::cgra_configure(Kernel kernel);
     bit [NUM_CGRA_COLS-1:0] cgra_stall_mask;
 
     realtime start_time, end_time;
-    $timeformat(-9, 2, " ns");
+    $timeformat(-9, 2, " ns", 0);
 
     group_start = kernel.group_start;
     num_groups = kernel.num_groups;
@@ -199,7 +199,7 @@ task Environment::kernel_test(Kernel kernel);
     bit [NUM_GLB_TILES-1:0] glb_stall_mask;
     bit [NUM_CGRA_COLS-1:0] cgra_stall_mask;
     realtime start_time, end_time, g2f_end_time, latency;
-    $timeformat(-9, 2, " ns");
+    $timeformat(-9, 2, " ns", 0);
 
     group_start = kernel.group_start;
     num_groups = kernel.num_groups;
@@ -302,10 +302,22 @@ task Environment::wait_interrupt(e_glb_ctrl glb_ctrl, bit [$clog2(NUM_GLB_TILES)
             end
         end
         begin
-            repeat (5_000_000) @(posedge vifc_axil.clk);  // @(vifc_axil.cbd);
-            repeat (1_000_000) @(posedge vifc_axil.clk);  // @(vifc_axil.cbd);
+            /*
+            // So...this runs forever I guess? and stops things if they run too long...?
+            // If things work correctly...? Someone else pulls $finish before this hits error condition?
+            repeat (5_000_000) @(posedge axil_ifc.clk);
+            repeat (1_000_000) @(posedge axil_ifc.clk);
             $error("@%0t: %m ERROR: Interrupt wait timeout ", $time);
             $finish;
+            */
+            // copilot gave me this one
+            forever begin
+                @(posedge vifc_axil.clk);
+                if ($time > 6_000_000) begin
+                    $error("@%0t: %m ERROR: Interrupt wait timeout ", $time);
+                    $finish;
+                end
+            end
         end
     join_any
     disable fork;
