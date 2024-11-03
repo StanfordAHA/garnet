@@ -75,6 +75,18 @@ make -C obj_dir/ -f Vtop.mk |& tee make-vtop.log$i; ((i++))
 
 exit
 
+i=3
+rmo
+verilator.sh |& tee vlog$i | less
+make -C obj_dir/ -f Vtop.mk |& tee make-vtop.log$i | cat -n | chop | less
+Vtop "$APP" |& tee vtop.log$i
+
+
+
+
+
+
+
 # NEXT: lookup g++ error msg: error: lvalue required as unary ‘&’ operand
 # g++ error lvalue required as unary ‘&’ operand
 # 
