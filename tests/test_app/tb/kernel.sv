@@ -354,7 +354,7 @@ function bitstream_t Kernel::parse_bitstream();
         bitstream_entry_t entry;
 
 // OOOF FIXME/TODO can we not find a code sequence here that works for both verilator and vcs???
-// Verilator (and verilog standard?) both seem to object to %08x
+// Both verilator (and verilog standard?) seem to object to %08x
 // HOWEVER vcs does not seem to work correctly with just %x
 `ifdef verilator
         addr = entry.addr; data = entry.data;
