@@ -20,6 +20,7 @@ from gemstone.common.util import compress_config_data
 from lake.top.extract_tile_info import *
 from archipelago import pnr
 import time
+#from mu2f_io_core_rv import MU2F_IOCoreReadyValid
 
 
 ONYX_PORT_REMAP = {
@@ -95,7 +96,7 @@ class LakeCoreBase(ConfigurableCore):
         '''
         # pass (autoflake flags this as an error if uncommented)
 
-    def wrap_lake_core(self):
+    def wrap_lake_core(self, skip_control_signals=False):
         # Typedefs for ease
         if self.data_width:
             TData = magma.Bits[self.data_width]
@@ -197,32 +198,43 @@ class LakeCoreBase(ConfigurableCore):
             )
 
         # put a 1-bit register and a mux to select the control signals
+  
         for control_signal, width in control_signals:
             if control_signal == "flush" and not self.__gate_flush:
                 continue
+            
+            # Skip these steps for MU2F IO Core 
             if width == 1:
-                mux = MuxWrapper(2, 1, name=f"{control_signal}_sel")
-                reg_value_name = f"{control_signal}_reg_value"
-                reg_sel_name = f"{control_signal}_reg_sel"
-                self.add_config(reg_value_name, 1)
-                self.add_config(reg_sel_name, 1)
-                self.wire(mux.ports.I[0], self.ports[control_signal])
-                self.wire(mux.ports.I[1], self.registers[reg_value_name].ports.O)
-                self.wire(mux.ports.S, self.registers[reg_sel_name].ports.O)
-                # 0 is the default wire, which takes from the routing network
-                self.wire(mux.ports.O[0], self.underlying.ports[control_signal][0])
-            else:
-                for i in range(width):
-                    mux = MuxWrapper(2, 1, name=f"{control_signal}_{i}_sel")
-                    reg_value_name = f"{control_signal}_{i}_reg_value"
-                    reg_sel_name = f"{control_signal}_{i}_reg_sel"
+                if skip_control_signals:
+                    self.wire(self.convert(self.ports[control_signal], magma.Bits[1]), self.underlying.ports[control_signal])
+                else: 
+                    mux = MuxWrapper(2, 1, name=f"{control_signal}_sel")
+                    reg_value_name = f"{control_signal}_reg_value"
+                    reg_sel_name = f"{control_signal}_reg_sel"
                     self.add_config(reg_value_name, 1)
                     self.add_config(reg_sel_name, 1)
-                    self.wire(mux.ports.I[0], self.ports[f"{control_signal}_{i}"])
+                    self.wire(mux.ports.I[0], self.ports[control_signal])
                     self.wire(mux.ports.I[1], self.registers[reg_value_name].ports.O)
                     self.wire(mux.ports.S, self.registers[reg_sel_name].ports.O)
                     # 0 is the default wire, which takes from the routing network
-                    self.wire(mux.ports.O[0], self.underlying.ports[control_signal][i])
+                    self.wire(mux.ports.O[0], self.underlying.ports[control_signal][0])
+
+                
+            else: 
+                for i in range(width):
+                    if skip_control_signals:
+                        self.wire(self.underlying.ports[control_signal][i], self.convert(self.ports[f"{control_signal}_{i}"], magma.Bits[1]))
+                    else:
+                        mux = MuxWrapper(2, 1, name=f"{control_signal}_{i}_sel")
+                        reg_value_name = f"{control_signal}_{i}_reg_value"
+                        reg_sel_name = f"{control_signal}_{i}_reg_sel"
+                        self.add_config(reg_value_name, 1)
+                        self.add_config(reg_sel_name, 1)
+                        self.wire(mux.ports.I[0], self.ports[f"{control_signal}_{i}"])
+                        self.wire(mux.ports.I[1], self.registers[reg_value_name].ports.O)
+                        self.wire(mux.ports.S, self.registers[reg_sel_name].ports.O)
+                        # 0 is the default wire, which takes from the routing network
+                        self.wire(mux.ports.O[0], self.underlying.ports[control_signal][i])
 
         # Wire the other signals up...
         for pname, pdir, expl_arr, ind, uname, full_bus in other_signals:

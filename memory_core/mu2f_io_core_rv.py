@@ -74,7 +74,7 @@ class MU2F_IOCoreReadyValid(LakeCoreBase):
         # Save as underlying circuit object
         self.underlying = FromMagma(circ)
 
-        self.wrap_lake_core()
+        self.wrap_lake_core(skip_control_signals=True)
 
         conf_names = list(self.registers.keys())
         conf_names.sort()
