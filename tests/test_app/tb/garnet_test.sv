@@ -52,8 +52,11 @@ program garnet_test #(
 
         #100 initialize(dpr);  // So...I guess this supposed to happen at 100ps not 100ns...
 
+        $display("mapping..."); $fflush();
         map(kernels);
 
+        // No longer need "build()" b/c now using tasks instead of classes
+        // env = new(kernels, axil_ifc, p_ifc, dpr); env.build();
         env = new(kernels, axil_ifc, p_ifc, dpr);
         env.build();
 
@@ -63,6 +66,8 @@ program garnet_test #(
 
         // Dump out data between each test
         //env.compare();
+       $display("done did all of garnet_test i guess"); $fflush();
+       $finish(0);
     end
 
     //============================================================================//
@@ -85,12 +90,15 @@ program garnet_test #(
             $display("Monitor initialization failed");
         end
 
+        $display("[%0tps] garnet_test L75\n", $time);
+        $display("Looking for app args e.g. '+APP0=app0'"); $fflush();
         num_app = 0;
         for (int i = 0; i < MAX_NUM_APPS; i++) begin
             automatic string arg_name = {$sformatf("APP%0d", i), "=%s"};
             if ($value$plusargs(arg_name, temp_str)) begin
                 // we have it
                 app_dirs.push_back(temp_str);
+                $display("Found app '%s'", temp_str);
             end else begin
                 num_app = i;
                 break;
@@ -102,9 +110,12 @@ program garnet_test #(
         end
 
         foreach (app_dirs[i]) begin
+            $display("processing app #%0d", i); $fflush();
             temp_kernel = new(app_dirs[i], dpr);
+
             if (temp_kernel.num_glb_tiling > 0) begin
                 // Replicate kernels if glb_tiling is enabled
+                $display("// Replicate kernels if glb_tiling is enabled"); $fflush();
                 temp_kernel.glb_tiling_cnt = kernel_glb_tiling_cnt;
                 kernel_glb_tiling_cnt++;
                 kernels.push_back(temp_kernel);
@@ -116,6 +127,7 @@ program garnet_test #(
                 end
                 kernel_glb_tiling_cnt = 0;
             end else begin
+                $display("// No glb tiling"); $fflush();
                 // No glb tiling
                 kernels.push_back(temp_kernel);
             end
@@ -131,6 +143,7 @@ program garnet_test #(
             end
             $display("Mapping kernel %0d Succeed", i);
         end
+        $display("End function 'initialize'"); $fflush();
     endfunction
 endprogram
 
