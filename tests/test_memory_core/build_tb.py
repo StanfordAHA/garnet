@@ -131,8 +131,12 @@ class SparseTBBuilder(m.Generator2):
 
         self.height = height
         self.width = width
-        self.input_ctr = 0
-        self.output_ctr = 1
+
+        # Matrix unit hack 
+        #self.input_ctr = 0
+        self.input_ctr = 1
+        #self.output_ctr = 1
+        self.output_ctr = 2
 
         self.glb_to_io_mapping = {}
         self.glb_cores = {}
@@ -156,7 +160,7 @@ class SparseTBBuilder(m.Generator2):
             # CGRA Path
             self.register_cores()
             self.connect_cores()
-
+        
             print("Balancing SAM Graph with FIFOs")
             # ### Balance SAM graph with interconnect FIFOs #####
             new_netlist = copy.deepcopy(self.nlb._netlist)
@@ -174,6 +178,7 @@ class SparseTBBuilder(m.Generator2):
                     G.add_edge(src, dest, name=edge)
                 if "buffer_passthrough" in src_name or "buffer_passthrough" in dest_name:
                     G.add_edge(src, dest, name=edge)
+
             
             # break cycles
             cycles = list(nx.simple_cycles(G))
