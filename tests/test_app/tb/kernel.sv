@@ -9,7 +9,13 @@
 **===========================================================================*/
 
 import "DPI-C" function chandle parse_metadata(string filename);
-import "DPI-C" function chandle get_place_info(chandle info);
+
+// (1) This (get_place_info()) does not appear to exist in libcgra.so
+// (2) Also, looks like it is never used
+// Also, as a conequence of (1), verilator will not compile (vcs is okay with it :( )
+// So let's get rid of it!?
+// import "DPI-C" function chandle get_place_info(chandle info);
+
 import "DPI-C" function chandle get_bs_info(chandle info);
 import "DPI-C" function chandle get_input_info(
     chandle info,
@@ -352,8 +358,18 @@ function bitstream_t Kernel::parse_bitstream();
         // NOTE: verilator DOES NOT LIKE these struct refs in the scanf
         // ALSO: verilator does not like %08x
         // Let's try this instead
+//        addr = entry.addr; data = entry.data;
+//        code = $fscanf(fp, "%x %x", addr, data);
+//        code = $fscanf(fp, "%08x %08x", entry.addr, entry.data);
+
+// OOOF FIXME/TODO can we not find a code sequence here that works for both verilator and vcs???
+`ifdef verilator
         addr = entry.addr; data = entry.data;
         code = $fscanf(fp, "%x %x", addr, data);
+`else
+        code = $fscanf(fp, "%08x %08x", entry.addr, entry.data);
+`endif
+
 
         if (code == -1) continue;
         assert_(code == 2, $sformatf(
