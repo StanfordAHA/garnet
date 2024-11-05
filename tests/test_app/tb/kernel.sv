@@ -353,24 +353,15 @@ function bitstream_t Kernel::parse_bitstream();
         int code;
         bitstream_entry_t entry;
 
-        // code = $fscanf(fp, "%08x %08x", entry.addr, entry.data);
-        //
-        // NOTE: verilator DOES NOT LIKE these struct refs in the scanf
-        // ALSO: verilator does not like %08x
-        // Let's try this instead
-//        addr = entry.addr; data = entry.data;
-//        code = $fscanf(fp, "%x %x", addr, data);
-//        code = $fscanf(fp, "%08x %08x", entry.addr, entry.data);
-
 // OOOF FIXME/TODO can we not find a code sequence here that works for both verilator and vcs???
+// Verilator (and verilog standard?) both seem to object to %08x
+// HOWEVER vcs does not seem to work correctly with just %x
 `ifdef verilator
         addr = entry.addr; data = entry.data;
         code = $fscanf(fp, "%x %x", addr, data);
 `else
         code = $fscanf(fp, "%08x %08x", entry.addr, entry.data);
 `endif
-
-
         if (code == -1) continue;
         assert_(code == 2, $sformatf(
                 "Incorrect bs format. Expected 2 entries, got: %0d. Current entires: %0d",
