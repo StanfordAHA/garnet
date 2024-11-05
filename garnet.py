@@ -198,7 +198,7 @@ class Garnet(Generator):
 
             self.wire(self.cgra2mu_ready_and.ports[f"I{i}"], self.convert(self.interconnect.ports[f"mu2io_17_{io_num}_X00_Y{cgra_row_num:02X}_ready"], magma.Bits[1]))
 
-        self.wire(self.cgra2mu_ready_and.ports.O, self.convert(self.ports.cgra2mu_ready, magma.Bits[1]))
+        self.wire(self.convert(self.cgra2mu_ready_and.ports.O, magma.bit), self.ports.cgra2mu_ready)
 
 
         # top <-> global controller ports connection
