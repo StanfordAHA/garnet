@@ -502,10 +502,14 @@ task Env_run();
         end
         wait fork;
     end else begin
+        $display("FOOOO dpr FALSE"); $fflush();
         foreach (kernels[i]) begin
             automatic int j = i;
                 begin
-                    env.write_bs(kernels[j]);
+                    // env.write_bs(kernels[j]);
+                    kernel = kernels[j];
+                    Env_write_bs();
+
                     env.glb_configure(kernels[j]);
                     env.cgra_configure(kernels[j]);
                     env.write_data(kernels[j]);
