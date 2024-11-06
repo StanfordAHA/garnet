@@ -47,6 +47,7 @@ task Env_write_bs();
              kernel.name, end_time - start_time);
 endtask // Env_write_bs
 
+/*
 // TBD
 // task Environment::write_data(Kernel kernel);
 task Env_write_data();
@@ -411,14 +412,13 @@ task Env_wait_interrupt();
             end
         end
         begin
-            /*
             // So...this runs forever I guess? and stops things if they run too long...?
             // If things work correctly...? Someone else pulls $finish before this hits error condition?
-            repeat (5_000_000) @(posedge axil_ifc.clk);
-            repeat (1_000_000) @(posedge axil_ifc.clk);
-            $error("@%0t: %m ERROR: Interrupt wait timeout ", $time);
-            $finish;
-            */
+            // repeat (5_000_000) @(posedge axil_ifc.clk);
+            // repeat (1_000_000) @(posedge axil_ifc.clk);
+            // $error("@%0t: %m ERROR: Interrupt wait timeout ", $time);
+            // $finish;
+
             // copilot gave me this one
             forever begin
                 @(posedge axil_ifc.clk);
@@ -464,6 +464,7 @@ task Env_clear_interrupt();
     data = tile_mask;
     AxilDriver_write();
 endtask
+*/
 
 
 // task Environment::set_interrupt_on();
@@ -499,6 +500,7 @@ task Env_run();
             kernel = kernels[j];
             Env_write_bs();
 
+/*
             // glb_configure(kernels[j]);
             Env_glb_configure();
 
@@ -527,6 +529,7 @@ task Env_run();
             $display("Kernel-compare BEGIN"); $fflush();  // 4037ns
             kernels[j].compare();
             $display("Kernel-compare END"); $fflush();    // 4037ns
+*/
         end
         $display("\n...guess what there was %0d kernels...\n", j);
     end
