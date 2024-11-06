@@ -127,11 +127,12 @@ program garnet_test #(
                 end
                 kernel_glb_tiling_cnt = 0;
             end else begin
-                $display("// No glb tiling"); $fflush();
                 // No glb tiling
+                $display("// No glb tiling"); $fflush();
                 kernels.push_back(temp_kernel);
             end
         end
+        $display("End function 'initialize'"); $fflush();
     endfunction
 
     function void map(Kernel kernels[]);
@@ -143,7 +144,7 @@ program garnet_test #(
             end
             $display("Mapping kernel %0d Succeed", i);
         end
-        $display("End function 'initialize'"); $fflush();
     endfunction
-endprogram
 
+   `include "tb/Environment.sv"
+endprogram
