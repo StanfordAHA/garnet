@@ -15,14 +15,14 @@ warn='
   -Wno-PINMISSING
   -Wno-PROTECTED
   -Wno-IMPLICITSTATIC
-  -Wno-WIDTHEXPAND
-  -Wno-WIDTHTRUNC
   -Wno-CMPCONST
   -Wno-CASEINCOMPLETE
   -Wno-UNOPTFLAT
 '
 warn='
   -Wno-fatal
+  -Wno-WIDTHEXPAND
+  -Wno-WIDTHTRUNC
 '
 
 # gb_param.svh is used by top.sv so must go first(?)

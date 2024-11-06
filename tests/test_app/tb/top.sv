@@ -33,9 +33,9 @@ module top;
 
     // reset generation
     initial begin
-        reset <= 1;
+        reset = 1;
         repeat (3) @(posedge clk);
-        reset <= 0;
+        reset = 0;
     end
 
     //============================================================================//

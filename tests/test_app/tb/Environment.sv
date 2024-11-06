@@ -47,7 +47,6 @@ task Env_write_bs();
              kernel.name, end_time - start_time);
 endtask // Env_write_bs
 
-/*
 // TBD
 // task Environment::write_data(Kernel kernel);
 task Env_write_data();
@@ -79,6 +78,7 @@ task Env_write_data();
     end
 endtask
 
+/*
 // task Environment::read_data(Kernel kernel);
 data_array_t Env_read_data_data_q;
 
@@ -510,9 +510,12 @@ task Env_run();
                     kernel = kernels[j];
                     Env_write_bs();       // env.write_bs(kernels[j]);
                     Env_glb_configure();  // env.glb_configure(kernel);
-                    //BOOKMARK
                     Env_cgra_configure(); // env.cgra_configure(kernel);
-                    env.write_data(kernel);
+                    //BOOKMARK
+                    Env_write_data();     // env.write_data(kernel);
+
+
+
                     env.kernel_test(kernel);
                     env.read_data(kernel);
                     kernel.compare();
@@ -529,23 +532,7 @@ endtask // tmp_erun
 // bit [CGRA_AXI_ADDR_WIDTH-1:0] addr;
 // bit [CGRA_AXI_DATA_WIDTH-1:0] data;
 
-task Env_run_old();
-    $display("environment L350: // wait for reset"); $fflush();  // 100ns
-    repeat (20) @(posedge p_ifc.clk);
-    $display("environment L352: waited 20 clocks"); $fflush();
-
-    // turn on interrupt
-    // set_interrupt_on();
-    Env_set_interrupt_on();
-
-    // if (dpr) begin
-    // assert dpr == 0  TODO
-    foreach (kernels[i]) begin
-        automatic int j = i;  // WHY???
-        begin
-            // write_bs(kernels[j]);
-            kernel = kernels[j];
-            Env_write_bs();
+// task Env_run_old();
 
 /*
             // glb_configure(kernels[j]);
@@ -576,10 +563,10 @@ task Env_run_old();
             $display("Kernel-compare BEGIN"); $fflush();  // 4037ns
             kernels[j].compare();
             $display("Kernel-compare END"); $fflush();    // 4037ns
-*/
         end
         $display("\n...guess what there was %0d kernels...\n", j);
     end
 endtask
+*/
 
 // task Environment::compare();
