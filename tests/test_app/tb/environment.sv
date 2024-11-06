@@ -353,6 +353,7 @@ task Environment::set_interrupt_on();
     axil_drv.write(`GLC_STRM_G2F_IER_R, {NUM_GLB_TILES{1'b1}});
 endtask
 
+/*
 task Environment::run();
     // wait for reset
     repeat (20) @(posedge vifc_proc.clk);  // @(vifc_proc.cbd);
@@ -390,6 +391,7 @@ task Environment::run();
         end
     end
 endtask
+*/
 
 task Environment::compare();
     repeat (20) @(posedge vifc_axil.clk);  // @(vifc_axil.cbd);

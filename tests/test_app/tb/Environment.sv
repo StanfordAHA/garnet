@@ -476,13 +476,55 @@ task Env_set_interrupt_on();
     addr = `GLC_STRM_G2F_IER_R;    data =   1'b1; AxilDriver_write();
 endtask
 
+task Env_run();
+    // wait for reset
+    $display("environment L350: // wait for reset"); $fflush();  // 100ns
+    repeat (20) @(posedge p_ifc.clk);
+    $display("environment L352: waited 20 clocks"); $fflush();
+
+    // turn on interrupt
+    env.set_interrupt_on();
+
+    if (dpr) begin
+        foreach (kernels[i]) begin
+            automatic int j = i;
+            fork
+                begin
+                    env.write_bs(kernels[j]);
+                    env.glb_configure(kernels[j]);
+                    env.cgra_configure(kernels[j]);
+                    env.write_data(kernels[j]);
+                    env.kernel_test(kernels[j]);
+                    env.read_data(kernels[j]);
+                end
+            join_none
+        end
+        wait fork;
+    end else begin
+        foreach (kernels[i]) begin
+            automatic int j = i;
+                begin
+                    env.write_bs(kernels[j]);
+                    env.glb_configure(kernels[j]);
+                    env.cgra_configure(kernels[j]);
+                    env.write_data(kernels[j]);
+                    env.kernel_test(kernels[j]);
+                    env.read_data(kernels[j]);
+                    kernels[j].compare();
+                end
+        end
+    end
+
+    //env.run();
+endtask // tmp_erun
+
 
 // task Environment::run();
 // Short-handle aliases for AxilDriver_write_{addr,data}
 // bit [CGRA_AXI_ADDR_WIDTH-1:0] addr;
 // bit [CGRA_AXI_DATA_WIDTH-1:0] data;
 
-task Env_run();
+task Env_run_old();
     $display("environment L350: // wait for reset"); $fflush();  // 100ns
     repeat (20) @(posedge p_ifc.clk);
     $display("environment L352: waited 20 clocks"); $fflush();
