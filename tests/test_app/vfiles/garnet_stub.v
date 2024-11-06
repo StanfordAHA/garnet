@@ -227,12 +227,12 @@ assign axi4_slave_arready = GlobalController_cfg_32_32_axi_13_32_inst0$global_co
 assign axi4_slave_awready = GlobalController_cfg_32_32_axi_13_32_inst0$global_controller_inst0_axi_awready;
 assign axi4_slave_bresp = GlobalController_cfg_32_32_axi_13_32_inst0$global_controller_inst0_axi_bresp;
 assign axi4_slave_bvalid = GlobalController_cfg_32_32_axi_13_32_inst0$global_controller_inst0_axi_bvalid;
-assign axi4_slave_rdata = GlobalController_cfg_32_32_axi_13_32_inst0$global_controller_inst0_axi_rdata;
+// assign axi4_slave_rdata = GlobalController_cfg_32_32_axi_13_32_inst0$global_controller_inst0_axi_rdata;
 assign axi4_slave_rresp = GlobalController_cfg_32_32_axi_13_32_inst0$global_controller_inst0_axi_rresp;
 assign axi4_slave_rvalid = GlobalController_cfg_32_32_axi_13_32_inst0$global_controller_inst0_axi_rvalid;
 assign axi4_slave_wready = GlobalController_cfg_32_32_axi_13_32_inst0$global_controller_inst0_axi_wready;
 assign cgra_running_clk_out = GlobalController_cfg_32_32_axi_13_32_inst0$global_controller_inst0_clk_out;
-assign interrupt = GlobalController_cfg_32_32_axi_13_32_inst0$global_controller_inst0_interrupt;
+// assign interrupt = GlobalController_cfg_32_32_axi_13_32_inst0$global_controller_inst0_interrupt;
 assign jtag_tdo = GlobalController_cfg_32_32_axi_13_32_inst0$global_controller_inst0_tdo;
 
 // # write to pcfg (0x1c): count to 15, then raise interrupt
