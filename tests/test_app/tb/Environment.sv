@@ -491,12 +491,15 @@ task Env_run();
             automatic int j = i;
             fork
                 begin
-                    env.write_bs(kernels[j]);
-                    env.glb_configure(kernels[j]);
-                    env.cgra_configure(kernels[j]);
-                    env.write_data(kernels[j]);
-                    env.kernel_test(kernels[j]);
-                    env.read_data(kernels[j]);
+                    // env.write_bs(kernels[j]);
+                    kernel = kernels[j];
+                    Env_write_bs();
+
+                    env.glb_configure(kernel);
+                    env.cgra_configure(kernel);
+                    env.write_data(kernel);
+                    env.kernel_test(kernel);
+                    env.read_data(kernel);
                 end
             join_none
         end
