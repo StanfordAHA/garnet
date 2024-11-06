@@ -121,7 +121,6 @@ task Env_glb_configure();
     end_time = $realtime;
     $display("[%s] glb configuration end at %0t", kernel.name, end_time);  // ~1500ns
 endtask
-/*
 
 // task Environment::cgra_configure(Kernel kernel);
 Config Env_cgra_configure_cfg;
@@ -208,6 +207,7 @@ task Env_cgra_stall();
     $display("Stall CGRA with stall mask %8h", Env_cgra_stall_mask);
 endtask
 
+/*
 // task Environment::cgra_unstall(bit [NUM_CGRA_COLS-1:0] stall_mask);
 bit [NUM_CGRA_COLS-1:0] Env_cgra_unstall_stall_mask;
 bit [CGRA_AXI_DATA_WIDTH-1:0] Env_cgra_unstall_data;
@@ -356,7 +356,7 @@ task Env_kernel_test();
 endtask // Env_kernel_test
 
 
-
+*/
 // task Environment::wait_interrupt(e_glb_ctrl glb_ctrl,
 //                                  bit [$clog2(NUM_GLB_TILES)-1:0] tile_num);
 // glc.svh:`define GLC_PAR_CFG_G2F_ISR_R 'h38
@@ -464,8 +464,6 @@ task Env_clear_interrupt();
     data = tile_mask;
     AxilDriver_write();
 endtask
-*/
-
 
 // task Environment::set_interrupt_on();
 task Env_set_interrupt_on();
@@ -509,15 +507,11 @@ task Env_run();
         foreach (kernels[i]) begin
             automatic int j = i;
                 begin
-                    // env.write_bs(kernels[j]);
                     kernel = kernels[j];
-                    Env_write_bs();
+                    Env_write_bs();       // env.write_bs(kernels[j]);
+                    Env_glb_configure();  // env.glb_configure(kernel);
                     //BOOKMARK
-
-                    // env.glb_configure(kernel);
-                    Env_glb_configure();
-
-                    env.cgra_configure(kernel);
+                    Env_cgra_configure(); // env.cgra_configure(kernel);
                     env.write_data(kernel);
                     env.kernel_test(kernel);
                     env.read_data(kernel);
