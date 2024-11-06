@@ -34,33 +34,22 @@ task AxilDriver_write();
    axil_lock.get(1);
    $display("AxilDriver_write() got the lock"); $fflush();
 
-   ////////////////////////////////////////////////////////////////////////
-   // @(vif.cbd);
-   // vif.cbd.awaddr  <= addr;
-   // vif.cbd.awvalid <= 1'b1;
-   // for (int i = 0; i < 100; i++) begin
-   //     if (vif.cbd.awready == 1) break;
-   //     @(vif.cbd);
-   //     if (i == 99) return;  // axi slave is not ready
-   // end
-   // @(vif.cbd);
-   // vif.cbd.awvalid <= 0;
-
    // Note: "slave not ready" timout will occur b/c awready stays false until data is read (below)
    // awready advances controller state from WAIT(0) to WR_REQ_GLC(1)
    $display("axil_driver: address");         // 120ns
 
     // # 900;    // What if...?
+   @(posedge axil_ifc.clk);  // added to match non-clocking timing...
    @(posedge axil_ifc.clk);
    axil_ifc.awaddr  = AxilDriver_write_addr;
    axil_ifc.awvalid = 1'b1;
    // for (int i = 0; i < 100; i++) begin
    // FIXME?? seems like this should happen BEFORE setting awvalid etc. above
-   for (int i = 0; i < 10; i++) begin
+   for (int i = 0; i < 100; i++) begin
       $display("Waiting for awready, i=%0d", i);  // 121-129ns
       if (axil_ifc.awready == 1) break;
       @(posedge axil_ifc.clk);
-      if (i == 9) $display("axi slave is not ready 1");
+      if (i == 99) $display("axi slave is not ready 1");
    end
    @(posedge axil_ifc.clk);
    axil_ifc.awvalid = 1'b0;
@@ -76,18 +65,6 @@ task AxilDriver_write();
    //     WR_RESP = 3'h4
    // } WrState;
 
-   ////////////////////////////////////////////////////////////////////////
-   // @(vif.cbd);
-   // this.vif.cbd.wdata  <= data;
-   // this.vif.cbd.wvalid <= 1'b1;
-   // for (int i = 0; i < 100; i++) begin
-   //    if (this.vif.cbd.wready == 1) break;
-   //    @(vif.cbd);
-   //     if (i == 99) return;  // axi slave is not ready
-   // end
-   // @(vif.cbd);
-   // this.vif.cbd.wvalid <= 0;
-
    // Axi controller should now be in state 1 (WR_REQ_GLC)  // 132ns
    $display("axil_driver: data");  // ~132ns
    axil_ifc.wdata  = AxilDriver_write_data;
@@ -97,42 +74,29 @@ task AxilDriver_write();
    // where it stays until wr_wait_cnt counts from clog2(14) down to zero
    // Then back to IDLE maybe (state 0)
    // for (int i = 0; i < 100; i++) begin
-   for (int i = 0; i < 20; i++) begin
+   for (int i = 0; i < 100; i++) begin
       if (axil_ifc.wready == 1) break;
       @(posedge axil_ifc.clk);
       // if (i == 99) $display("axi slave is not ready 2");  // ~224ns
-      if (i == 19) $display("axi slave is not ready 2");     // ~152ns
+      if (i == 99) $display("axi slave is not ready 2");     // ~152ns
    end
    @(posedge axil_ifc.clk);
    axil_ifc.wvalid = 1'b0;
    // Axi controller should now be in state 0 (WR_IDLE)   // 153ns
 
-   ////////////////////////////////////////////////////////////////////////
-   // this.vif.cbd.bready <= 1'b1;
-   // for (int i = 0; i < 100; i++) begin
-   //     if (this.vif.cbd.bvalid == 1) break;
-   //     @(vif.cbd);
-   //     if (i == 99) return;  // axi slave is not ready
-   // end
-   // @(vif.cbd);
-   // this.vif.cbd.bready <= 0;
-   // @(vif.cbd);
-   // axil_lock.put(1);
-
    // Releasing the bus I guess.
    axil_ifc.bready = 1'b1;    // 153ns
    //for (int i = 0; i < 100; i++) begin
-   for (int i = 0; i < 10; i++) begin
+   for (int i = 0; i < 100; i++) begin
       if (axil_ifc.bvalid == 1) break;
       @(posedge axil_ifc.clk);
       // if (i == 99) $display("axi slave is not ready 3");
-      if (i == 9) $display("axi slave is not ready 3");
+      if (i == 99) $display("axi slave is not ready 3");
    end
    @(posedge axil_ifc.clk);
    axil_ifc.bready = 0;   // 164ns
    @(posedge axil_ifc.clk);
    axil_lock.put(1);
-
 endtask
 
 
