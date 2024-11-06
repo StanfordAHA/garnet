@@ -31,7 +31,7 @@ class Environment;
     extern task write_data(Kernel kernel);
     extern task glb_configure(Kernel kernel);
     extern task cgra_configure(Kernel kernel);
-    extern task set_interrupt_on();
+    // extern task set_interrupt_on();
     extern task wait_interrupt(e_glb_ctrl glb_ctrl, bit [$clog2(NUM_GLB_TILES)-1:0] tile_num);
     extern task clear_interrupt(e_glb_ctrl glb_ctrl, bit [$clog2(NUM_GLB_TILES)-1:0] tile_num);
     extern task kernel_test(Kernel kernel);
@@ -40,7 +40,7 @@ class Environment;
     extern function bit [NUM_GLB_TILES-1:0] calculate_glb_stall_mask(int start, int num);
     extern task cgra_stall(bit [NUM_CGRA_COLS-1:0] stall_mask);
     extern task cgra_unstall(bit [NUM_CGRA_COLS-1:0] stall_mask);
-    extern task run();
+    // extern task run();
     extern task compare();
 endclass
 
