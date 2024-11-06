@@ -106,7 +106,7 @@ task Env_read_data();
     end
 endtask
 
-
+*/
 // task Environment::glb_configure(Kernel kernel);
 task Env_glb_configure();
     $timeformat(-9, 2, " ns", 0);
@@ -121,7 +121,7 @@ task Env_glb_configure();
     end_time = $realtime;
     $display("[%s] glb configuration end at %0t", kernel.name, end_time);  // ~1500ns
 endtask
-
+/*
 
 // task Environment::cgra_configure(Kernel kernel);
 Config Env_cgra_configure_cfg;
@@ -512,8 +512,11 @@ task Env_run();
                     // env.write_bs(kernels[j]);
                     kernel = kernels[j];
                     Env_write_bs();
+                    //BOOKMARK
 
-                    env.glb_configure(kernel);
+                    // env.glb_configure(kernel);
+                    Env_glb_configure();
+
                     env.cgra_configure(kernel);
                     env.write_data(kernel);
                     env.kernel_test(kernel);
