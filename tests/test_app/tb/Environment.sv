@@ -513,12 +513,12 @@ task Env_run();
                     kernel = kernels[j];
                     Env_write_bs();
 
-                    env.glb_configure(kernels[j]);
-                    env.cgra_configure(kernels[j]);
-                    env.write_data(kernels[j]);
-                    env.kernel_test(kernels[j]);
-                    env.read_data(kernels[j]);
-                    kernels[j].compare();
+                    env.glb_configure(kernel);
+                    env.cgra_configure(kernel);
+                    env.write_data(kernel);
+                    env.kernel_test(kernel);
+                    env.read_data(kernel);
+                    kernel.compare();
                 end
         end
     end
