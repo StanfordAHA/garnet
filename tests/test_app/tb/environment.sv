@@ -345,6 +345,7 @@ task Environment::clear_interrupt(e_glb_ctrl glb_ctrl, bit [$clog2(NUM_GLB_TILES
     axil_drv.write(addr, tile_mask);
 endtask
 
+/*
 task Environment::set_interrupt_on();
     $display("Turn on interrupt enable registers");
     axil_drv.write(`GLC_GLOBAL_IER_R, 3'b111);
@@ -353,7 +354,6 @@ task Environment::set_interrupt_on();
     axil_drv.write(`GLC_STRM_G2F_IER_R, {NUM_GLB_TILES{1'b1}});
 endtask
 
-/*
 task Environment::run();
     // wait for reset
     repeat (20) @(posedge vifc_proc.clk);  // @(vifc_proc.cbd);

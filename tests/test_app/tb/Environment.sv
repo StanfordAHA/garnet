@@ -483,7 +483,8 @@ task Env_run();
     $display("environment L352: waited 20 clocks"); $fflush();
 
     // turn on interrupt
-    env.set_interrupt_on();
+    // env.set_interrupt_on();
+    Env_set_interrupt_on();
 
     if (dpr) begin
         foreach (kernels[i]) begin
