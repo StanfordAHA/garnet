@@ -211,6 +211,7 @@ bit [CGRA_AXI_DATA_WIDTH-1:0] Env_cgra_unstall_data;
 bit [CGRA_AXI_DATA_WIDTH-1:0] Env_cgra_unstall_wr_data;
 task Env_cgra_unstall();
     // Unstall CGRA
+    Env_cgra_unstall_stall_mask = Env_cgra_stall_mask;
     $display("Welcome to Env_cgra_unstall()"); $fflush();
 
     // axil_drv.read(`GLC_CGRA_STALL_R, data);
@@ -222,9 +223,10 @@ task Env_cgra_unstall();
         & Env_cgra_unstall_data;
 
     // axil_drv.write(`GLC_CGRA_STALL_R, wr_data);
-        addr = Env_cgra_configure_cfg.addr; // "addr"? Really?
-        data = Env_cgra_configure_cfg.data;
-        AxilDriver_write();
+    addr = `GLC_CGRA_STALL_R;
+    data = Env_cgra_unstall_wr_data;
+    AxilDriver_write();
+
     // 3970ns
     $display("Unstall CGRA with stall mask %4h", Env_cgra_unstall_stall_mask);
 endtask // Env_cgra_unstall
@@ -313,6 +315,7 @@ task Env_kernel_test();
         end
     end
     wait fork;
+//okay to here maybe
 
     end_time = $realtime;
     $display("[%s] kernel end at %0t", kernel.name, end_time);  // 2934ns
@@ -419,7 +422,8 @@ task Env_wait_interrupt();
             // copilot gave me this one
             forever begin
                 @(posedge axil_ifc.clk);
-                if ($time > 6_000_000) begin
+                // if ($time > 6_000_000ns) begin  // FIXME this was originally ns I think
+                if ($time > 6_000_000ps) begin
                     $error("@%0t: %m ERROR: Interrupt wait timeout ", $time);
                     $finish;
                 end
@@ -510,9 +514,9 @@ task Env_run();
                     Env_cgra_configure(); // env.cgra_configure(kernel);
                     Env_write_data();     // env.write_data(kernel);
                     //BOOKMARK
+                    Env_kernel_test();    // env.kernel_test(kernel);
+                    //env.kernel_test(kernel);
 
-                    // Env_kernel_test();    // env.kernel_test(kernel);
-                    env.kernel_test(kernel);
                     env.read_data(kernel);
                     kernel.compare();
                 end
@@ -563,6 +567,24 @@ endtask // tmp_erun
         $display("\n...guess what there was %0d kernels...\n", j);
     end
 endtask
+
+    $display("FOOO calculate_cgra_stall_mask = %0x", calculate_cgra_stall_mask);
+    $display("FOOO num = %0d", num);
+    $display("FOOO start = %0x", start);
+        $display("FOOO (start + i) * 4 = %0x", (start + i) * 4);
+    $display("FOOO2 stall mask cgra_stall_mask still %0x, maybe should be 0x00ff", Env_cgra_stall_mask);
+    $display("FOOO3 stall mask cgra_stall_mask still %0x, maybe should be 0x00ff", Env_cgra_stall_mask);
+    $display("FOOO4 stall mask cgra_stall_mask still %0x, maybe should be 0x00ff", Env_cgra_stall_mask);
+    $display("FOOO1 got stall mask cgra_stall_mask %0x, maybe should be 0x00ff", Env_cgra_stall_mask);
+
+                $display("FOOO tile_num=%0d", tile_num); $fflush();
+
+// okay to here
+
+
+
+
+
 */
 
 // task Environment::compare();
