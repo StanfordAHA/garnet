@@ -99,7 +99,7 @@ task Env_read_data();
                 $display("calling ProcDriver_read_data()");  // 3002ns
                 ProcDriver_read_data();
 
-            kernel.outputs[i].io_tiles[j].io_block_data = Env_read_data_data_q;
+            kernel.outputs[i].io_tiles[j].io_block_data = PD_rdata_data_q;
             $display("[%s] read output_%0d_block_%0d from glb END", kernel.name, i, j);  // 3002ns
         end
     end
@@ -513,11 +513,9 @@ task Env_run();
                     Env_glb_configure();  // env.glb_configure(kernel);
                     Env_cgra_configure(); // env.cgra_configure(kernel);
                     Env_write_data();     // env.write_data(kernel);
-                    //BOOKMARK
                     Env_kernel_test();    // env.kernel_test(kernel);
-                    //env.kernel_test(kernel);
-
-                    env.read_data(kernel);
+                    Env_read_data();      // env.read_data(kernel);
+                    //BOOKMARK
                     kernel.compare();
                 end
         end
@@ -580,6 +578,17 @@ endtask
                 $display("FOOO tile_num=%0d", tile_num); $fflush();
 
 // okay to here
+            $display("Made a queue of size", Env_read_data_data_q.size()); $fflush();
+            $display("Copied a queue of size", PD_rdata_data_q.size()); $fflush();
+            $display("1 Gonna offload %0d blocks", PD_rdata_data_q.size()); $fflush();
+            $display("FOO BEFORE: PD_rdata_data_q.size() = %0d", PD_rdata_data_q.size()); $fflush();
+
+                    // env.write_bs(kernels[j]);
+                    // env.glb_configure(kernel);
+                    // env.cgra_configure(kernel);
+                    // env.write_data(kernel);
+                    // env.kernel_test(kernel);
+                    // env.read_data(kernel);
 
 
 

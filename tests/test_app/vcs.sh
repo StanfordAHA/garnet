@@ -50,9 +50,10 @@ mv simv csrc/ simv.daidir/ deleteme
 
 if test -f hw_output.txt; then
     echo WARNING found existing hw_output.txt
-    echo Sending it to savedir
+    echo Sending it to savedir and DELETING IT
     test -d savedir || mkdir savedir
     ~steveri/bin/save hw_output.txt
+    rm hw_output.txt
 fi
 
 /bin/bash \

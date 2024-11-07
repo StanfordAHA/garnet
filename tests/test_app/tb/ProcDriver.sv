@@ -143,9 +143,21 @@ task ProcDriver_read_data();
                 @(posedge p_ifc.clk);
             end
             $display("Offload %d data chunks END", PD_rdata_num_trans);  // 4027ns
+            $display("First output word is maybe...%0x",  PD_rdata_data_q[0]); $fflush();
         end
     join
     repeat (10) @(posedge p_ifc.clk);
     proc_lock.put(1);
 endtask
     
+/*
+    $display("FOO AFTER:  PD_rdata_data_q.size() = %0d", PD_rdata_data_q.size()); $fflush();
+    $display("2 Gonna offload %0d blocks", PD_rdata_num_words); $fflush();  // 3002ns
+ 
+                //$display("Maybe got data %0x",  p_ifc.rd_data); $fflush();
+
+
+
+ 
+ 
+ */
