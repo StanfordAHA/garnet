@@ -78,7 +78,6 @@ task Env_write_data();
     end
 endtask
 
-/*
 // task Environment::read_data(Kernel kernel);
 data_array_t Env_read_data_data_q;
 
@@ -106,7 +105,6 @@ task Env_read_data();
     end
 endtask
 
-*/
 // task Environment::glb_configure(Kernel kernel);
 task Env_glb_configure();
     $timeformat(-9, 2, " ns", 0);
@@ -207,7 +205,6 @@ task Env_cgra_stall();
     $display("Stall CGRA with stall mask %8h", Env_cgra_stall_mask);
 endtask
 
-/*
 // task Environment::cgra_unstall(bit [NUM_CGRA_COLS-1:0] stall_mask);
 bit [NUM_CGRA_COLS-1:0] Env_cgra_unstall_stall_mask;
 bit [CGRA_AXI_DATA_WIDTH-1:0] Env_cgra_unstall_data;
@@ -274,6 +271,7 @@ task Env_kernel_test();
                     $display("calling wait_interrupt(GLB_STRM_G2F_CTRL=0x%0x)",  // 2840ns
                              GLB_STRM_G2F_CTRL); $fflush();
                     glb_ctrl = GLB_STRM_G2F_CTRL;
+                    // FIXME tile_num not automatic. Will this be trouble?
                     tile_num = kernel.inputs[ii].io_tiles[jj].tile;
                     Env_wait_interrupt();
                     $display("returned from wait_interrupt()"); $fflush();
@@ -285,7 +283,7 @@ task Env_kernel_test();
                     // 2866ns
                     $display("calling clear_interrupt(GLB_STRM_G2F_CTRL)"); $fflush();
                     glb_ctrl = GLB_STRM_G2F_CTRL;  // 0x30
-                    tile_num   = kernel.inputs[ii].io_tiles[jj].tile;
+                    // tile_num   = kernel.inputs[ii].io_tiles[jj].tile;
                     Env_clear_interrupt();
                     $display("returning from clear_interrupt()"); $fflush();  // 2910ns
                 end
@@ -356,7 +354,6 @@ task Env_kernel_test();
 endtask // Env_kernel_test
 
 
-*/
 // task Environment::wait_interrupt(e_glb_ctrl glb_ctrl,
 //                                  bit [$clog2(NUM_GLB_TILES)-1:0] tile_num);
 // glc.svh:`define GLC_PAR_CFG_G2F_ISR_R 'h38
@@ -511,11 +508,10 @@ task Env_run();
                     Env_write_bs();       // env.write_bs(kernels[j]);
                     Env_glb_configure();  // env.glb_configure(kernel);
                     Env_cgra_configure(); // env.cgra_configure(kernel);
-                    //BOOKMARK
                     Env_write_data();     // env.write_data(kernel);
+                    //BOOKMARK
 
-
-
+                    // Env_kernel_test();    // env.kernel_test(kernel);
                     env.kernel_test(kernel);
                     env.read_data(kernel);
                     kernel.compare();
