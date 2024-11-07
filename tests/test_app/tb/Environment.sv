@@ -1,10 +1,15 @@
 // class Environment;
-// function Environment::new(Kernel kernels[], vAxilIfcDriver vifc_axil, vProcIfcDriver vifc_proc, int dpr);
+// function Environment::new(...)
 // function void Environment::build();
 
-// TODO
-// NOW: 'kernels[0]'
-// WANT: 'kernel'
+typedef enum int {
+    GLB_PCFG_CTRL,
+    GLB_STRM_G2F_CTRL,
+    GLB_STRM_F2G_CTRL
+} e_glb_ctrl;
+e_glb_ctrl glb_ctrl;
+
+// int dpr;  // Already declared in garnet_test.sv...
 
 realtime start_time, end_time, g2f_end_time, latency;
 Kernel kernel;
@@ -15,12 +20,6 @@ bit [CGRA_AXI_DATA_WIDTH-1:0] data;
 bit [NUM_GLB_TILES-1:0] Env_glb_stall_mask;
 bit [NUM_CGRA_COLS-1:0] Env_cgra_stall_mask;
 
-typedef enum int {
-    GLB_PCFG_CTRL,
-    GLB_STRM_G2F_CTRL,
-    GLB_STRM_F2G_CTRL
-} e_glb_ctrl;
-e_glb_ctrl glb_ctrl;
 
 bit [$clog2(NUM_GLB_TILES)-1:0] tile_num;
 
@@ -521,79 +520,7 @@ task Env_run();
         end
     end
 
-    //env.run();
-endtask // tmp_erun
+endtask // Env_run
 
-
-// task Environment::run();
-// Short-handle aliases for AxilDriver_write_{addr,data}
-// bit [CGRA_AXI_ADDR_WIDTH-1:0] addr;
-// bit [CGRA_AXI_DATA_WIDTH-1:0] data;
-
-// task Env_run_old();
-
-/*
-            // glb_configure(kernels[j]);
-            Env_glb_configure();
-
-            // Is this...what runs the program...?
-            // cgra_configure(kernels[j]);
-            $display(" Env_cgra_configure() BEGIN"); $fflush();  // 1490ns
-            Env_cgra_configure();
-            $display(" Env_cgra_configure() END"); $fflush();
-
-            // write_data(kernels[j]);
-            $display(" Env_write_data() BEGIN"); $fflush();  // 1680ns
-            Env_write_data();
-            $display(" Env_write_data() END"); $fflush();
-
-            // kernel_test(kernels[j]);
-            $display("Env_kernel_test() BEGIN"); $fflush();  // 2722ns
-            Env_kernel_test();
-            $display("Env_kernel_test() END"); $fflush();    // 2980ns
-
-            // read_data(kernels[j]);
-            $display("Env_read_data() BEGIN"); $fflush();    // 2982ns
-            Env_read_data();
-            $display("Env_read_data() END"); $fflush();      // 4037ns
-
-            // Dumps final output to a file "hw_output.txt" I guess??
-            $display("Kernel-compare BEGIN"); $fflush();  // 4037ns
-            kernels[j].compare();
-            $display("Kernel-compare END"); $fflush();    // 4037ns
-        end
-        $display("\n...guess what there was %0d kernels...\n", j);
-    end
-endtask
-
-    $display("FOOO calculate_cgra_stall_mask = %0x", calculate_cgra_stall_mask);
-    $display("FOOO num = %0d", num);
-    $display("FOOO start = %0x", start);
-        $display("FOOO (start + i) * 4 = %0x", (start + i) * 4);
-    $display("FOOO2 stall mask cgra_stall_mask still %0x, maybe should be 0x00ff", Env_cgra_stall_mask);
-    $display("FOOO3 stall mask cgra_stall_mask still %0x, maybe should be 0x00ff", Env_cgra_stall_mask);
-    $display("FOOO4 stall mask cgra_stall_mask still %0x, maybe should be 0x00ff", Env_cgra_stall_mask);
-    $display("FOOO1 got stall mask cgra_stall_mask %0x, maybe should be 0x00ff", Env_cgra_stall_mask);
-
-                $display("FOOO tile_num=%0d", tile_num); $fflush();
-
-// okay to here
-            $display("Made a queue of size", Env_read_data_data_q.size()); $fflush();
-            $display("Copied a queue of size", PD_rdata_data_q.size()); $fflush();
-            $display("1 Gonna offload %0d blocks", PD_rdata_data_q.size()); $fflush();
-            $display("FOO BEFORE: PD_rdata_data_q.size() = %0d", PD_rdata_data_q.size()); $fflush();
-
-                    // env.write_bs(kernels[j]);
-                    // env.glb_configure(kernel);
-                    // env.cgra_configure(kernel);
-                    // env.write_data(kernel);
-                    // env.kernel_test(kernel);
-                    // env.read_data(kernel);
-
-
-
-
-
-*/
 
 // task Environment::compare();
