@@ -23,7 +23,7 @@ program garnet_test #(
     // local variables
     //============================================================================//
     Kernel kernels[$]; // use dynamic array for potential glb tiling
-    Environment env;
+    //Environment env;
 
     // Incorrect timescale gave me no end of problems, so now I'm adding this to help future me.
     function static void time_check(bit cond);
@@ -57,8 +57,8 @@ program garnet_test #(
 
         // No longer need "build()" b/c now using tasks instead of classes
         // env = new(kernels, axil_ifc, p_ifc, dpr); env.build();
-        env = new(kernels, axil_ifc, p_ifc, dpr);
-        env.build();
+        // env = new(kernels, axil_ifc, p_ifc, dpr);
+        // env.build();
 
         test_toggle = 1;
         Env_run();
@@ -135,7 +135,7 @@ program garnet_test #(
             end
         end
         $display("End function 'initialize'"); $fflush();
-    endfunction
+    endfunction // initialize
 
     function void map(Kernel kernels[]);
         foreach (kernels[i]) begin
@@ -146,7 +146,7 @@ program garnet_test #(
             end
             $display("Mapping kernel %0d Succeed", i);
         end
-    endfunction
+    endfunction // map
 
    `include "tb/Environment.sv"
 endprogram
