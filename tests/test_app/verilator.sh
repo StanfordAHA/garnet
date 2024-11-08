@@ -17,12 +17,12 @@ warn='
   -Wno-IMPLICITSTATIC
   -Wno-CMPCONST
   -Wno-CASEINCOMPLETE
-  -Wno-UNOPTFLAT
 '
 warn='
   -Wno-fatal
   -Wno-WIDTHEXPAND
   -Wno-WIDTHTRUNC
+  -Wno-UNOPTFLAT
 '
 
 # gb_param.svh is used by top.sv so must go first(?)

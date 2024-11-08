@@ -1,7 +1,5 @@
-// See /usr/local/share/verilator/examples/make_tracing_c/sim_main.cpp
-
-
 // DESCRIPTION: Verilator: Verilog example module
+// See /usr/local/share/verilator/examples/make_tracing_c/sim_main.cpp
 //
 // This file ONLY is placed under the Creative Commons Public Domain, for
 // any use, without warranty, 2017 by Wilson Snyder.
