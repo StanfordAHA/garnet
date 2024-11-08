@@ -491,13 +491,12 @@ task Env_run();
                 begin
                     // env.write_bs(kernels[j]);
                     kernel = kernels[j];
-                    Env_write_bs();
-
-                    env.glb_configure(kernel);
-                    env.cgra_configure(kernel);
-                    env.write_data(kernel);
-                    env.kernel_test(kernel);
-                    env.read_data(kernel);
+                    Env_write_bs();       // env.write_bs(kernels[j]);
+                    Env_glb_configure();  // env.glb_configure(kernel);
+                    Env_cgra_configure(); // env.cgra_configure(kernel);
+                    Env_write_data();     // env.write_data(kernel);
+                    Env_kernel_test();    // env.kernel_test(kernel);
+                    Env_read_data();      // env.read_data(kernel);
                 end
             join_none
         end
