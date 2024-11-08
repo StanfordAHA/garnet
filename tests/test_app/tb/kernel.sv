@@ -235,7 +235,7 @@ function Kernel::new(string app_dir, int dpr);
     // meta file name is design_meat.json
     meta_filename = {app_dir, "/bin/", "design_meta.json"};
     $sformat(name, "APP%0d-%0s", cnt++, app_name);
-    $display("[%s]Initilizing the APP Done", name);
+    $display("[%s] Initializing the APP Done", name);
 
     app_state   = IDLE;
 
