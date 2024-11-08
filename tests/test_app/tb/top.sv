@@ -31,11 +31,47 @@ module top;
         forever #(`CLK_PERIOD / 2.0) clk = !clk;
     end
 
-    // reset generation
+    // Print a debug message on EVERY CLOCK
     initial begin
-        reset = 1;
-        repeat (3) @(posedge clk);
-        reset = 0;
+       // forever #(`CLK_PERIOD * 10) $display("[%0t] Model running...\n", $time);
+       $display("[%0t]", $time);
+       forever #(`CLK_PERIOD)
+         $display("[%0t]", $time);
+    end
+
+`ifdef verilator
+    // Dump out the wave info
+    // FIXME think about moving this to verilator top-level CGRA.cpp or whatever
+    initial begin
+       if ($test$plusargs("trace") != 0) begin
+          $display("[%0t] Tracing to logs/vlt_dump.vcd...\n", $time);
+          $dumpfile("logs/vlt_dump.vcd");
+          $dumpvars();
+       end
+       $display("[%0t] Model running...\n", $time);
+    end
+`endif
+
+    // reset generation
+    // FIXME maybe remove $display debugging stuff someday
+    initial begin
+       @(posedge clk);
+       @(posedge clk);
+       @(posedge clk);
+        $display("BEGIN reset = ", reset);
+        reset = 1;   // orig had nonblocking <= ... why?
+        // repeat (3) @(posedge clk);
+        // repeat (3) begin
+        //    $display("repeat3 reset = ", reset);
+        //    @(posedge clk);
+        // end
+       $display("repeat1/3 reset = ", reset); @(posedge clk);
+       $display("repeat2/3 reset = ", reset); @(posedge clk);
+       $display("repeat3/3 reset = ", reset); @(posedge clk);
+
+        $display("avant reset = ", reset);
+        reset = 0;   // orig had nonblocking <= ... why?
+        $display("apres reset = ", reset);
     end
 
     //============================================================================//
@@ -56,8 +92,12 @@ module top;
         .clk     (clk),
         .reset   (reset),
         .p_ifc   (p_ifc),
+        // .axil_ifc(axil_ifc.driver) // this did not help anything
         .axil_ifc(axil_ifc)
     );
+//   always @(posedge clk) begin
+//      $display("top.sv    137 i see  axil_ifc.wvalid = %d", axil_ifc.wvalid); $fflush();
+//   end
 
     //============================================================================//
     // instantiate dut
@@ -105,5 +145,19 @@ module top;
         .jtag_trst_n(  /*unused*/)
     );
 
+endmodule // top
 
-endmodule
+
+/*
+        reset = 1;
+        repeat (3) @(posedge clk);
+        reset = 0;
+
+    // reset generation
+    initial begin
+        reset = 1;
+        repeat (3) @(posedge clk);
+        reset = 0;
+    end
+
+*/
