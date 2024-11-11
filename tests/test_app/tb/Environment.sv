@@ -26,6 +26,11 @@ bit [$clog2(NUM_GLB_TILES)-1:0] tile_num;
 `include "tb/ProcDriver.sv"
 `include "tb/AxilDriver.sv"
 
+// Non-array trace vars for waveform debugging
+bitstream_entry_t bet0;
+int unsigned betdata0;
+int unsigned betaddr0;
+
 // task Environment::write_bs(Kernel kernel);
 task Env_write_bs();
     $timeformat(-9, 2, " ns", 0);
@@ -36,6 +41,11 @@ task Env_write_bs();
     // proc_drv  = new(p_ifc, proc_lock);
     // proc_drv.write_bs(kernel.bs_start_addr, kernel.bitstream_data);
 
+    // Debugging I hope
+    bet0 = kernel.bitstream_data[0];
+    betaddr0 = kernel.bitstream_data[0].addr;
+    betdata0 = kernel.bitstream_data[0].data;
+    
     ProcDriver_write_bs_start_addr = kernel.bs_start_addr;
     ProcDriver_write_bs_bs_q = kernel.bitstream_data;
     ProcDriver_write_bs();
@@ -145,6 +155,11 @@ task Env_cgra_configure();
     data = Env_cgra_configure_cfg.data;  // 0x01
     AxilDriver_write();
 
+`ifdef verilator
+    // FIXME off-by-one vs. vcs. Why?
+    @(posedge axil_ifc.clk);
+`endif
+
     // wait_interrupt(GLB_PCFG_CTRL, kernel.bs_tile);
     $display("calling wait_interrupt()"); $fflush();
     glb_ctrl = GLB_PCFG_CTRL;    // 0x38
@@ -251,17 +266,19 @@ task Env_kernel_test();
     Env_cgra_unstall();
 
     start_time = $realtime;
-    $display("[%s] kernel start at %0t", kernel.name, start_time);  // 2824ns
+    $display("[%s] kernel start at %0t", kernel.name, start_time);  // 1831ns (pointwise)
     Env_kernel_cfg = kernel.get_strm_start_config();
 
+    // A write of 0x10001 to address 0x18 starts data streaming to proc tiles.
     // axil_drv.write(cfg.addr, cfg.data);
     addr = Env_kernel_cfg.addr;  // 0x18
     data = Env_kernel_cfg.data;  // 0x10001
-    AxilDriver_write();
+    AxilDriver_write();          // This starts the (G2F) streaming
 
 // unstall_mask: addr=0x18, data=0x10001
 // stall_mask:   addr=0x1c, data=0x00001
 
+    // Wait for an interrupt to tell us when the streaming is done
     foreach (kernel.inputs[i]) begin
         foreach (kernel.inputs[i].io_tiles[j]) begin
             automatic int ii = i;
@@ -269,7 +286,7 @@ task Env_kernel_test();
             fork
                 begin
                     // wait_interrupt(GLB_STRM_G2F_CTRL, kernel.inputs[ii].io_tiles[jj].tile);
-                    $display("calling wait_interrupt(GLB_STRM_G2F_CTRL=0x%0x)",  // 2840ns
+                    $display("calling wait_interrupt(GLB_STRM_G2F_CTRL=0x%0x)",  // 1839ns
                              GLB_STRM_G2F_CTRL); $fflush();
                     glb_ctrl = GLB_STRM_G2F_CTRL;
                     // FIXME tile_num not automatic. Will this be trouble?
@@ -281,12 +298,12 @@ task Env_kernel_test();
                     // TODO should this clear() do anything?
                     // For now I have jimmied the stub to pull interrupt high for two cycles then low again
                     // clear_interrupt(GLB_PCFG_CTRL, kernel.bs_tile);
-                    // 2866ns
+                    // 5954ns
                     $display("calling clear_interrupt(GLB_STRM_G2F_CTRL)"); $fflush();
-                    glb_ctrl = GLB_STRM_G2F_CTRL;  // 0x30
+                    glb_ctrl = GLB_STRM_G2F_CTRL;  // 0x2 => 0x30
                     // tile_num   = kernel.inputs[ii].io_tiles[jj].tile;
                     Env_clear_interrupt();
-                    $display("returning from clear_interrupt()"); $fflush();  // 2910ns
+                    $display("returning from clear_interrupt()"); $fflush();  // 5962ns
                 end
             join_none
         end
@@ -304,7 +321,7 @@ task Env_kernel_test();
             fork
                 begin
                     // wait_interrupt(GLB_STRM_F2G_CTRL, kernel.outputs[ii].io_tiles[jj].tile);
-                    $display("calling wait_interrupt(GLB_STRM_F2G_CTRL)"); $fflush();  // 2911ns
+                    $display("calling wait_interrupt(GLB_STRM_F2G_CTRL)"); $fflush();  // 5962ns
                     glb_ctrl = GLB_STRM_F2G_CTRL;  // 0x30
                     tile_num = kernel.inputs[ii].io_tiles[jj].tile;
                     Env_wait_interrupt();
@@ -317,7 +334,7 @@ task Env_kernel_test();
 //okay to here maybe
 
     end_time = $realtime;
-    $display("[%s] kernel end at %0t", kernel.name, end_time);  // 2934ns
+    $display("[%s] kernel end at %0t", kernel.name, end_time);  // 5971ns
     $display("[%s] It takes %0t total time to run kernel.", kernel.name, end_time - start_time);
 
     total_output_size = 0;
@@ -337,7 +354,7 @@ task Env_kernel_test();
             automatic int jj = j;
             fork
                 begin
-                    // 2934ns
+                    // 5971ns
                     // clear_interrupt(GLB_STRM_F2G_CTRL, kernel.outputs[ii].io_tiles[jj].tile);
                     // TODO should this clear() do anything?
                     // For now I have jimmied the stub to pull interrupt high for two cycles then low again
@@ -367,16 +384,17 @@ string reg_name;
 // bit [CGRA_AXI_ADDR_WIDTH-1:0] addr;
 // bit [CGRA_AXI_DATA_WIDTH-1:0] data;
 task Env_wait_interrupt();
+
     $display("Welcome to wait_interrupt..."); $fflush();  // 1600ns, 2870ns
     // which interrupt
     if (glb_ctrl == GLB_PCFG_CTRL) begin
-        addr = `GLC_PAR_CFG_G2F_ISR_R;  // 0x38 (1600ns)
+        addr = `GLC_PAR_CFG_G2F_ISR_R;  // 0x38 - 673ns
         reg_name = "PCFG";
     end else if (glb_ctrl == GLB_STRM_G2F_CTRL) begin
-        addr = `GLC_STRM_G2F_ISR_R;     // 0x34 (2870ns)
+        addr = `GLC_STRM_G2F_ISR_R;     // 0x34 - 1839ns
         reg_name = "STRM_G2F";
     end else begin
-        addr = `GLC_STRM_F2G_ISR_R;     // 0x30
+        addr = `GLC_STRM_F2G_ISR_R;     // 0x30 - 5962ns
         reg_name = "STRM_F2G";
     end
 
@@ -391,7 +409,6 @@ task Env_wait_interrupt();
                 // level sensitive interrupt
 
                 // First we gotta getta interrupt
-                // 2870ns
                 $display("gettum interruptum"); $fflush();
                 wait (top.interrupt);
                 $display("gottum interruptum"); $fflush();
@@ -399,7 +416,7 @@ task Env_wait_interrupt();
                 // (Jimmied the stub to return 0xfffffff when it sees addr 0x38)
                 // axil_drv.read(addr, data);
                 AxilDriver_read_addr = addr;
-                AxilDriver_read();  // 1850ns
+                AxilDriver_read();
                 data = AxilDriver_read_data;
 
                 $display("Looking for interrupt on tile_num %0d", tile_num); $fflush();
@@ -427,7 +444,6 @@ task Env_wait_interrupt();
                     $finish;
                 end
             end
-            
         end
     join_any
     disable fork;
@@ -476,7 +492,7 @@ endtask
 
 task Env_run();
     // wait for reset
-    $display("environment L350: // wait for reset"); $fflush();  // 100ns
+    $display("environment L350: // wait for reset"); $fflush();  // 100ps
     repeat (20) @(posedge p_ifc.clk);
     $display("environment L352: waited 20 clocks"); $fflush();
 
@@ -522,4 +538,4 @@ task Env_run();
 endtask // Env_run
 
 
-// task Environment::compare();
+// task Environment::compare(); // unused?
