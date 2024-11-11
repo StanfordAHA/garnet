@@ -155,14 +155,8 @@ task Env_cgra_configure();
     addr = Env_cgra_configure_cfg.addr;  // 0x1c
     data = Env_cgra_configure_cfg.data;  // 0x01
     AxilDriver_write();
-
-`ifdef verilator
-    // FIXME off-by-one vs. vcs. Why?
-    @(posedge axil_ifc.clk);
-`endif
-
     // wait_interrupt(GLB_PCFG_CTRL, kernel.bs_tile);
-    $display("calling wait_interrupt()"); $fflush();
+    $display("calling wait_interrupt(GLB_PCFG_CTRL) = 0x38"); $fflush();
     glb_ctrl = GLB_PCFG_CTRL;    // 0x38
     tile_num   = kernel.bs_tile;
     Env_wait_interrupt();
@@ -287,8 +281,7 @@ task Env_kernel_test();
             fork
                 begin
                     // wait_interrupt(GLB_STRM_G2F_CTRL, kernel.inputs[ii].io_tiles[jj].tile);
-                    $display("calling wait_interrupt(GLB_STRM_G2F_CTRL=0x%0x)",  // 1839ns
-                             GLB_STRM_G2F_CTRL); $fflush();
+                    $display("calling wait_interrupt(GLB_STRM_G2F_CTRL) @ 0x34");  // 5954ns
                     glb_ctrl = GLB_STRM_G2F_CTRL;
                     // FIXME tile_num not automatic. Will this be trouble?
                     tile_num = kernel.inputs[ii].io_tiles[jj].tile;
@@ -301,7 +294,7 @@ task Env_kernel_test();
                     // clear_interrupt(GLB_PCFG_CTRL, kernel.bs_tile);
                     // 5954ns
                     $display("calling clear_interrupt(GLB_STRM_G2F_CTRL)"); $fflush();
-                    glb_ctrl = GLB_STRM_G2F_CTRL;  // 0x2 => 0x30
+                    glb_ctrl = GLB_STRM_G2F_CTRL;  // 0x2 => 0x34
                     // tile_num   = kernel.inputs[ii].io_tiles[jj].tile;
                     Env_clear_interrupt();
                     $display("returning from clear_interrupt()"); $fflush();  // 5962ns
@@ -322,7 +315,7 @@ task Env_kernel_test();
             fork
                 begin
                     // wait_interrupt(GLB_STRM_F2G_CTRL, kernel.outputs[ii].io_tiles[jj].tile);
-                    $display("calling wait_interrupt(GLB_STRM_F2G_CTRL)"); $fflush();  // 5962ns
+                    $display("calling wait_interrupt(GLB_STRM_F2G_CTRL) @ 0x30"); $fflush();  // 5962ns
                     glb_ctrl = GLB_STRM_F2G_CTRL;  // 0x30
                     tile_num = kernel.inputs[ii].io_tiles[jj].tile;
                     Env_wait_interrupt();
@@ -420,6 +413,10 @@ task Env_wait_interrupt();
                 $display("gettum interruptum"); $fflush();
                 wait (top.interrupt);
                 $display("gottum interruptum"); $fflush();
+
+`ifdef verilator
+                @(posedge axil_ifc.clk);  // Off-by-one before this wait
+`endif
                 // Reading from addr 0x38, expect to see xxxxx1
                 // (Jimmied the stub to return 0xfffffff when it sees addr 0x38)
                 // axil_drv.read(addr, data);
