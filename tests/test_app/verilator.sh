@@ -8,6 +8,9 @@ if test -e obj_dir; then
     [[ $REPLY =~ ^[Yy] ]] && echo yes || exit 13
 fi
 
+TRACE=""
+[ "$1" == "--trace" ] && TRACE='--trace'
+
 # Should not be TIMESCALEMOD warnings if '--timescale' properly specified!!!
 #  -Wno-TIMESCALEMOD
 warn='
@@ -39,27 +42,25 @@ echo ''
 echo VFILES= $VFILES | tr ' ' '\n'
 echo ''
 
-# Takes about a minute as of 10/2024
-# Took 4min today (also 10/2024) 
-echo "This took four minutes last time I ran it..."
+# Takes about a minute without --trace
+# Clsoer to 4 min if --trace is active
 set -x
-
-# This failed HARD. SLOW compilation. ERRORs on execution.
-#   --runtime-debug -CFLAGS -DVL_DEBUG=1 \
 
 # Note: libcgra.so must be relative to ./obj_dir :(
 # TODO: find a better way to do this :(
 
 # //  --trace \
 
+d=`pwd`
 verilator $warn --timing --cc --exe vfiles/CGRA.cpp \
   --timescale 1ps/1ps \
   --top-module top \
-  vfiles/global_buffer_param.svh \
+  $TRACE \
+  $d/vfiles/global_buffer_param.svh \
   $VFILES \
   -F tb/tb_cgra.f \
   -y $CW1 -y $CW2 \
-  ../vfiles/libcgra.so
+  $d/vfiles/libcgra.so
 
 # o=obj_dir; f=Vtop__Syms.cpp; tail $o/$f
 set +x
