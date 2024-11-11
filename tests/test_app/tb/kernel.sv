@@ -246,6 +246,8 @@ function Kernel::new(string app_dir, int dpr);
     bitstream_filename = get_bitstream_filename(kernel_info);
     bs_info = get_bs_info(kernel_info);
     assert_(bs_info != null, $sformatf("Unable to find %s", bitstream_filename));
+    // $display("FOO found filename %s", bitstream_filename);
+    // /nobackup/steveri/github/garnet/tests/test_app/test_data/pointwise/bin/pointwise.bs
 
     num_inputs  = get_num_inputs(kernel_info);
     num_outputs = get_num_outputs(kernel_info);
@@ -357,11 +359,13 @@ function bitstream_t Kernel::parse_bitstream();
 // Both verilator (and verilog standard?) seem to object to %08x
 // HOWEVER vcs does not seem to work correctly with just %x
 `ifdef verilator
-        addr = entry.addr; data = entry.data;
+        // addr = entry.addr; data = entry.data;
         code = $fscanf(fp, "%x %x", addr, data);
+        entry.addr = addr; entry.data = data;
 `else
         code = $fscanf(fp, "%08x %08x", entry.addr, entry.data);
 `endif
+        $display("FOO got addr %08x, data %08x", entry.addr, entry.data);
         if (code == -1) continue;
         assert_(code == 2, $sformatf(
                 "Incorrect bs format. Expected 2 entries, got: %0d. Current entires: %0d",
