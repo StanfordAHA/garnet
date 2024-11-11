@@ -107,7 +107,7 @@ bit [CGRA_AXI_DATA_WIDTH-1:0] AxilDriver_read_data;
 task AxilDriver_read();
     $display("AxilDriver_read() wants the lock"); $fflush();
     axil_lock.get(1);
-    $display("AxilDriver_read() got the lock"); $fflush();
+    $display("AxilDriver_read() got the lock"); $fflush();  // 5962ns
 
     @(posedge axil_ifc.clk);
     axil_ifc.araddr  = AxilDriver_read_addr;
@@ -120,7 +120,7 @@ task AxilDriver_read();
         if (i == 9) $display("axi slave is not ready 1");
     end
     @(posedge axil_ifc.clk);
-    axil_ifc.arvalid = 0;
+    axil_ifc.arvalid = 0;      // 5964.5ns
     @(posedge axil_ifc.clk);
     for (int i = 0; i < 10; i++) begin
         if (axil_ifc.rvalid == 1) break;
@@ -130,7 +130,7 @@ task AxilDriver_read();
     end
     AxilDriver_read_data = axil_ifc.rdata;
     @(posedge axil_ifc.clk);
-    axil_ifc.rready = 0;
+    axil_ifc.rready = 0;      // 5970.5ns
     @(posedge axil_ifc.clk);
     $display("[%0t] AXI-Lite Read. Addr: %08h, Data: %08h", 
              $time, AxilDriver_read_addr, AxilDriver_read_data);
