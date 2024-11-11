@@ -50,9 +50,10 @@ set -x
 # Note: libcgra.so must be relative to ./obj_dir :(
 # TODO: find a better way to do this :(
 
+# //  --trace \
+
 verilator $warn --timing --cc --exe vfiles/CGRA.cpp \
   --timescale 1ps/1ps \
-  --trace \
   --top-module top \
   vfiles/global_buffer_param.svh \
   $VFILES \
