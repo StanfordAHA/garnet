@@ -1,6 +1,7 @@
 // class Environment;
 // function Environment::new(...)
 // function void Environment::build();
+`define DEBUG_Environment
 
 typedef enum int {
     GLB_PCFG_CTRL,
@@ -380,6 +381,14 @@ endtask // Env_kernel_test
 // glc.svh:`define GLC_STRM_F2G_ISR_R 'h30
 // glc.svh:`define GLC_GLOBAL_ISR_R 'h3c
 
+// Must declare vars OUTSIDE fork b/c verilator is squirrely about declaraions inside.
+int i_wait;
+`ifdef DEBUG_Environment
+    int MAX_WAIT = 6000;  // 6000 is plenty for pointwise, config is just 124 words maybe.
+`else
+    int MAX_WAIT = 6000_000;
+`endif
+
 string reg_name;
 // bit [CGRA_AXI_ADDR_WIDTH-1:0] addr;
 // bit [CGRA_AXI_DATA_WIDTH-1:0] data;
@@ -398,8 +407,7 @@ task Env_wait_interrupt();
         reg_name = "STRM_F2G";
     end
 
-    // So...this does what?
-    // Starts two parallel threads?
+    // So...this does what? Starts two parallel threads?
     // When/if first thread gets and interrupt, we return?
     // ANd ALSO if no interrupt (or finish) after 6M cycles, we error and die?
     // Maybe...'join_any' means fork is complete when/if any subthread finishes??
@@ -428,27 +436,22 @@ task Env_wait_interrupt();
             end
         end
         begin
-            // So...this runs forever I guess? and stops things if they run too long...?
-            // If things work correctly...? Someone else pulls $finish before this hits error condition?
-            // repeat (5_000_000) @(posedge axil_ifc.clk);
-            // repeat (1_000_000) @(posedge axil_ifc.clk);
-            // $error("@%0t: %m ERROR: Interrupt wait timeout ", $time);
-            // $finish;
+            // We wait up to 6M ns for interrupt to clear
+            // When/if interrupt clears (above), this loop dies b/c 'join_any'
 
-            // copilot gave me this one
-            forever begin
+            // repeat (5_000_000) @(posedge axil_ifc.clk);
+            // Cannot use "repeat" b/c it confuses verilator in this context
+
+            for (i_wait = 0; i_wait < MAX_WAIT; i_wait++) begin
                 @(posedge axil_ifc.clk);
-                // if ($time > 6_000_000ns) begin  // FIXME this was originally ns I think
-                if ($time > 6_000_000ps) begin
-                    $error("@%0t: %m ERROR: Interrupt wait timeout ", $time);
-                    $finish;
-                end
             end
+            $error("@%0t: %m ERROR: Interrupt wait timeout ", $time);
+            $finish;
         end
     join_any
     disable fork;
+    $display("[%0t] FORK CANCELLED (right)?", $time);
 endtask
-
 
 // clear_interrupt(GLB_PCFG_CTRL, kernel.bs_tile); // TBD
 // glb_ctrl = GLB_PCFG_CTRL;
@@ -538,4 +541,11 @@ task Env_run();
 endtask // Env_run
 
 
-// task Environment::compare(); // unused?
+// task Environment::compare();
+/*
+    local_bs_q = kernel.parse_bitstream;
+    bet0 = local_bs_q[0];
+    betdata0 = local_bs_q[0].data;
+    ProcDriver_write_bs_bs_q = local_bs_q;
+*/
+
