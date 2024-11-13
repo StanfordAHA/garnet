@@ -53,7 +53,7 @@ task Env_write_bs();
 
     end_time = $realtime;
     $display("[%s] write bitstream to glb end at %0t", kernel.name, end_time);
-    $display("[%s] It takes %0t time to write the bitstream to glb.",
+    $display("[%s] It takes %0t time to write the bitstream to glb.\n",
              kernel.name, end_time - start_time);
 endtask // Env_write_bs
 
@@ -82,7 +82,7 @@ task Env_write_data();
             end_time = $realtime;
             $display("[%s] write input_%0d_block_%0d to glb end at %0t", kernel.name, i, j,
                      end_time);
-            $display("[%s] It takes %0t time to write %0d Byte data to glb.", kernel.name,
+            $display("[%s] It takes %0t time to write %0d Byte data to glb.\n", kernel.name,
                      end_time - start_time, kernel.inputs[i].io_tiles[j].num_data * 2);
         end
     end
@@ -98,6 +98,7 @@ task Env_read_data();
     foreach (kernel.outputs[i]) begin
         foreach (kernel.outputs[i].io_tiles[j]) begin
             // 3002ns
+            $display("");
             $display("[%s] read output_%0d_block_%0d from glb START", kernel.name, i, j);
 
             // Creates empty array of indicated size maybe (4096)
@@ -127,7 +128,7 @@ task Env_glb_configure();
     AxilDriver_cfg = kernel.kernel_cfg; AxilDriver_config_write();
 
     end_time = $realtime;
-    $display("[%s] glb configuration end at %0t", kernel.name, end_time);  // ~1500ns
+    $display("[%s] glb configuration end at %0t\n", kernel.name, end_time);  // 647.5ns
 endtask
 
 // task Environment::cgra_configure(Kernel kernel);
@@ -139,16 +140,11 @@ task Env_cgra_configure();
     group_start = kernel.group_start;
     num_groups = kernel.num_groups;
 
-    // glb_stall_mask = calculate_glb_stall_mask(group_start, num_groups); // unused???
-    $display("build stall mask"); $fflush();
     Env_cgra_stall_mask = calculate_cgra_stall_mask(group_start, num_groups);
-
-    $display("calling cgra_stall()"); $fflush();
-    // cgra_stall(cgra_stall_mask);
     Env_cgra_stall();
     start_time = $realtime;
     $display("[%s] fast configuration start at %0t", kernel.name, start_time);  // 1560ns
-    // Writes, maybe, 1'b1 to address 0x1c
+    // I think maybe this simply writes 1'b1 to address 0x1c
     Env_cgra_configure_cfg = kernel.get_pcfg_start_config();
 
     // axil_drv.write(cfg.addr, cfg.data);
@@ -160,20 +156,17 @@ task Env_cgra_configure();
     glb_ctrl = GLB_PCFG_CTRL;    // 0x38
     tile_num   = kernel.bs_tile;
     Env_wait_interrupt();
-    $display("returned from wait_interrupt()"); $fflush();
 
     // TODO should this clear() do anything?
     // For now I have jimmied the stub to pull interrupt high for two cycles then low again
     // clear_interrupt(GLB_PCFG_CTRL, kernel.bs_tile);
-    $display("calling clear_interrupt()"); $fflush();
     glb_ctrl = GLB_PCFG_CTRL;    // 0x38
     tile_num   = kernel.bs_tile;
     Env_clear_interrupt();
-    $display("returning from clear_interrupt()"); $fflush();
 
     end_time = $realtime;
     $display("[%s] fast configuration end at %0t", kernel.name, end_time);  // 1710ns
-    $display("[%s] It takes %0t time to do parallel configuration.", kernel.name,
+    $display("[%s] It takes %0t time to do parallel configuration.\n", kernel.name,
              end_time - start_time);
 endtask
 
@@ -200,7 +193,6 @@ bit [CGRA_AXI_DATA_WIDTH-1:0] Env_cgra_stall_wr_data;
 task Env_cgra_stall();
     // AxilDriver_read(`GLC_CGRA_STALL_R, Env_cgra_stall_data);  // TBD
     AxilDriver_read_addr = `GLC_CGRA_STALL_R;  // 0x8 (glc.svh)
-    $display("AxilDriver_read()"); $fflush();
     AxilDriver_read();
     Env_cgra_stall_data = AxilDriver_read_data;
 
@@ -209,9 +201,8 @@ task Env_cgra_stall();
     // AxilDriver_write(`GLC_CGRA_STALL_R, Env_cgra_stall_wr_data);
     addr = `GLC_CGRA_STALL_R;
     data = Env_cgra_stall_wr_data;
-    $display("AxilDriver_write()"); $fflush();
     AxilDriver_write();
-    $display("Stall CGRA with stall mask %8h", Env_cgra_stall_mask);
+    $display("Stall CGRA with stall mask %8h\n", Env_cgra_stall_mask);
 endtask
 
 // task Environment::cgra_unstall(bit [NUM_CGRA_COLS-1:0] stall_mask);
@@ -281,19 +272,18 @@ task Env_kernel_test();
             fork
                 begin
                     // wait_interrupt(GLB_STRM_G2F_CTRL, kernel.inputs[ii].io_tiles[jj].tile);
-                    $display("calling wait_interrupt(GLB_STRM_G2F_CTRL) @ 0x34");  // 5954ns
+                    $display("\nCalling wait_interrupt(GLB_STRM_G2F_CTRL) @ 0x34");  // 5954ns
                     glb_ctrl = GLB_STRM_G2F_CTRL;
                     // FIXME tile_num not automatic. Will this be trouble?
                     tile_num = kernel.inputs[ii].io_tiles[jj].tile;
                     Env_wait_interrupt();
-                    $display("returned from wait_interrupt()"); $fflush();
 
                     // clear_interrupt(GLB_STRM_G2F_CTRL, kernel.inputs[ii].io_tiles[jj].tile);
                     // TODO should this clear() do anything?
                     // For now I have jimmied the stub to pull interrupt high for two cycles then low again
                     // clear_interrupt(GLB_PCFG_CTRL, kernel.bs_tile);
                     // 5954ns
-                    $display("calling clear_interrupt(GLB_STRM_G2F_CTRL)"); $fflush();
+                    $display("\nCalling clear_interrupt(GLB_STRM_G2F_CTRL)"); $fflush();
                     glb_ctrl = GLB_STRM_G2F_CTRL;  // 0x2 => 0x34
                     // tile_num   = kernel.inputs[ii].io_tiles[jj].tile;
                     Env_clear_interrupt();
@@ -328,6 +318,7 @@ task Env_kernel_test();
 //okay to here maybe
 
     end_time = $realtime;
+    $display("\n");  // Note this makes TWO blank lines
     $display("[%s] kernel end at %0t", kernel.name, end_time);  // 5971ns
     $display("[%s] It takes %0t total time to run kernel.", kernel.name, end_time - start_time);
 
@@ -353,7 +344,7 @@ task Env_kernel_test();
                     // TODO should this clear() do anything?
                     // For now I have jimmied the stub to pull interrupt high for two cycles then low again
                     // clear_interrupt(GLB_PCFG_CTRL, kernel.bs_tile);
-                    $display("calling clear_interrupt(GLB_STRM_F2G_CTRL)"); $fflush();
+                    $display("\nCalling clear_interrupt(GLB_STRM_F2G_CTRL)"); $fflush();
                     glb_ctrl = GLB_STRM_F2G_CTRL;
                     tile_num   = kernel.inputs[ii].io_tiles[jj].tile;
                     Env_clear_interrupt();
@@ -410,10 +401,7 @@ task Env_wait_interrupt();
                 // level sensitive interrupt
 
                 // First we gotta getta interrupt
-                $display("gettum interruptum"); $fflush();
                 wait (top.interrupt);
-                $display("gottum interruptum"); $fflush();
-
 `ifdef verilator
                 @(posedge axil_ifc.clk);  // Off-by-one before this wait
 `endif
@@ -474,7 +462,7 @@ task Env_clear_interrupt();
         reg_name = "STRM_F2G";
     end
 
-    $display("%s interrupt clear", reg_name);
+    $display("%s interrupt clear\n", reg_name);
     // AxilDriver_write(addr, tile_mask);
     // addr = addr
     data = tile_mask;
@@ -492,12 +480,11 @@ endtask
 
 task Env_run();
     // wait for reset
-    $display("environment L350: // wait for reset"); $fflush();  // 100ps
+    $display("[%0t] wait for reset", $time);  // 100ps
     repeat (20) @(posedge p_ifc.clk);
-    $display("environment L352: waited 20 clocks"); $fflush();
 
     // turn on interrupt
-    // env.set_interrupt_on();
+    $display("[%0t] turn on interrupt", $time);  // 120ps?
     Env_set_interrupt_on();
 
     if (dpr) begin
@@ -518,7 +505,7 @@ task Env_run();
         end
         wait fork;
     end else begin
-        $display("FOOOO dpr FALSE"); $fflush();
+        $display("\n[%0t] dpr FALSE\n", $time);
         foreach (kernels[i]) begin
             automatic int j = i;
                 begin
@@ -546,3 +533,13 @@ endtask // Env_run
     ProcDriver_write_bs_bs_q = local_bs_q;
 */
 
+// glb_stall_mask = calculate_glb_stall_mask(group_start, num_groups); // unused???
+// $display("build stall mask"); $fflush();
+// $display("calling cgra_stall()"); $fflush();
+// cgra_stall(cgra_stall_mask);
+// $display("returned from wait_interrupt()"); $fflush();
+// $display("calling clear_interrupt()"); $fflush();
+// $display("returning from clear_interrupt()"); $fflush();
+// $display("returned from wait_interrupt()"); $fflush();
+// $display("gettum interruptum"); $fflush();
+// $display("gottum interruptum"); $fflush();

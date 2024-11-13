@@ -127,7 +127,7 @@ task AxilDriver_read();
     $display("[%0t] AXI-Lite Read. Addr: %08h, Data: %08h", 
              $time, AxilDriver_read_addr, AxilDriver_read_data);
     axil_lock.put(1);
-endtask
+endtask // AxilDriver_read
 
     // Debugging fodder
     // $display("AxilDriver_write() wants the lock");
