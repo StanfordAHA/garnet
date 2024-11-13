@@ -33,10 +33,8 @@ module top;
 
     // Print a debug message on EVERY CLOCK
     initial begin
-       // forever #(`CLK_PERIOD * 10) $display("[%0t] Model running...\n", $time);
        $display("[%0t]", $time);
-       forever #(`CLK_PERIOD)
-         $display("[%0t]", $time);
+       forever #(`CLK_PERIOD * 100) $display("[%0t]", $time);
     end
 
 `ifdef verilator
@@ -53,25 +51,18 @@ module top;
 `endif
 
     // reset generation
-    // FIXME maybe remove $display debugging stuff someday
     initial begin
-       @(posedge clk);
-       @(posedge clk);
-       @(posedge clk);
-        $display("BEGIN reset = ", reset);
-        reset = 1;   // orig had nonblocking <= ... why?
-        // repeat (3) @(posedge clk);
-        // repeat (3) begin
-        //    $display("repeat3 reset = ", reset);
-        //    @(posedge clk);
-        // end
-       $display("repeat1/3 reset = ", reset); @(posedge clk);
-       $display("repeat2/3 reset = ", reset); @(posedge clk);
-       $display("repeat3/3 reset = ", reset); @(posedge clk);
+        reset = 0; $display("[%0t] reset = 0", $time);
+        @(posedge clk);
+        @(posedge clk);
+        @(posedge clk);
 
-        $display("avant reset = ", reset);
-        reset = 0;   // orig had nonblocking <= ... why?
-        $display("apres reset = ", reset);
+        reset = 1; $display("[%0t] reset = 1", $time);
+        @(posedge clk);
+        @(posedge clk);
+        @(posedge clk);
+
+        reset = 0; $display("[%0t] reset = 0\n", $time);
     end
 
     //============================================================================//
