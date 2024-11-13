@@ -68,7 +68,7 @@ task ProcDriver_write_data();
     end
     repeat (10) @(posedge p_ifc.clk);
     proc_lock.put(1);
-    $display("ProcDriver_write_data() END"); $fflush();
+    $display("ProcDriver_write_data() END");
 endtask // ProcDriver_write_data
 
 
@@ -103,15 +103,13 @@ task ProcDriver_read_data();
     PD_rdata_num_trans = (PD_rdata_num_words + 3) / 4;  // Should be 1K
     proc_lock.get(1);
     fork
-        // Hm okay I guess these two blocks run in parallel
-        // The first block sets p_ifc address, the second block reads.
-        // There's no async messaging so I guess the timing is tricky...?
-        // FIXME maybe the timing should not be so tricky...?
+        // Process 1 initiates read by setting rd_en HIGH and feeding addresses one per cycle
+        // Process 2 unloads the data by waiting for data_valid signal and then reading data one per cycle
         begin
             // 3002ns
             // Counts from 10000 to...? 12000? by 8's
             // 0x10000 + 8 x 0x400 = 0x10000 + 0x2000 = 0x12000?
-            $display("Set %d consecutive addresses BEGIN", PD_rdata_num_trans);  // 3002ns
+            $display("Set     %0d consecutive addresses BEGIN", PD_rdata_num_trans);  // 3002ns
             @(posedge p_ifc.clk);
             for (int i = 0; i < PD_rdata_num_trans; i++) begin
                 p_ifc.rd_en = 1'b1;
@@ -149,15 +147,6 @@ task ProcDriver_read_data();
     repeat (10) @(posedge p_ifc.clk);
     proc_lock.put(1);
 endtask
-    
-/*
-    $display("FOO AFTER:  PD_rdata_data_q.size() = %0d", PD_rdata_data_q.size()); $fflush();
-    $display("2 Gonna offload %0d blocks", PD_rdata_num_words); $fflush();  // 3002ns
- 
-                //$display("Maybe got data %0x",  p_ifc.rd_data); $fflush();
 
 
-
- 
- 
- */
+    // $display("\n\nFOO plan is to read beginning at address %08x\n", PD_rdata_start_addr);
