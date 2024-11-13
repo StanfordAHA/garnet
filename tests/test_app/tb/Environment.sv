@@ -1,7 +1,5 @@
 // class Environment;
-// function Environment::new(...)
-// function void Environment::build();
-`define DEBUG_Environment
+//`define DEBUG_Environment  // Uncomment this for debugging
 
 typedef enum int {
     GLB_PCFG_CTRL,
