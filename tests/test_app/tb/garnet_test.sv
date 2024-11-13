@@ -52,7 +52,7 @@ program garnet_test #(
 
         #100 initialize(dpr);  // So...I guess this supposed to happen at 100ps not 100ns...
 
-        $display("mapping..."); $fflush();
+        $display("mapping...");
         map(kernels);
 
         // No longer need "build()" b/c now using tasks instead of classes
@@ -66,9 +66,9 @@ program garnet_test #(
 
         // Dump out data between each test
         //env.compare();
+        $display("");
         $display("done did all of garnet_test i guess");
-        $display("PASS PASS PASS PASS PASS PASS PASS PASS PASS PASS");
-        $fflush();
+        $display("PASS PASS PASS PASS PASS PASS PASS PASS PASS PASS\n");
         $finish(0);
     end
 
@@ -93,7 +93,7 @@ program garnet_test #(
         end
 
         $display("[%0tps] garnet_test L75\n", $time);
-        $display("Looking for app args e.g. '+APP0=app0'"); $fflush();
+        $display("Looking for app args e.g. '+APP0=app0'");
         num_app = 0;
         for (int i = 0; i < MAX_NUM_APPS; i++) begin
             automatic string arg_name = {$sformatf("APP%0d", i), "=%s"};
@@ -107,17 +107,17 @@ program garnet_test #(
             end
         end
         if (num_app == 0) begin
-           $display("ERROR did not find app args"); $fflush();
+           $display("ERROR did not find app args");
            $finish(2);  // The only choices are 0,1,2; note $finish() is more drastic than $exit()
         end
 
         foreach (app_dirs[i]) begin
-            $display("processing app #%0d", i); $fflush();
+            $display("[%0t] Processing app #%0d\n", $time, i);
             temp_kernel = new(app_dirs[i], dpr);
 
             if (temp_kernel.num_glb_tiling > 0) begin
                 // Replicate kernels if glb_tiling is enabled
-                $display("// Replicate kernels if glb_tiling is enabled"); $fflush();
+                $display("// Replicate kernels if glb_tiling is enabled");
                 temp_kernel.glb_tiling_cnt = kernel_glb_tiling_cnt;
                 kernel_glb_tiling_cnt++;
                 kernels.push_back(temp_kernel);
@@ -130,21 +130,21 @@ program garnet_test #(
                 kernel_glb_tiling_cnt = 0;
             end else begin
                 // No glb tiling
-                $display("// No glb tiling"); $fflush();
+                $display("\n// No glb tiling");
                 kernels.push_back(temp_kernel);
             end
         end
-        $display("End function 'initialize'"); $fflush();
+        $display("End function 'initialize'\n");
     endfunction // initialize
 
     function void map(Kernel kernels[]);
         foreach (kernels[i]) begin
-            $display("\nStart mapping kernel %0d", i);
+            $display("\n[%0t] Start mapping kernel %0d", $time, i);
             if (kernels[i].kernel_map() == 0) begin
                 $display("Mapping kernel %0d Failed", i);
                 $finish(2);
             end
-            $display("Mapping kernel %0d Succeed", i);
+            $display("[%0t] Mapping kernel %0d Succeed\n", $time, i);
         end
     endfunction // map
 
