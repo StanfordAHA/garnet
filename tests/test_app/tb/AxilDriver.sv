@@ -1,7 +1,8 @@
 // class AxilDriver;
 
-// function AxilDriver::new(vAxilIfcDriver vif, semaphore axil_lock);
-// => NO LONGER NEEDED
+// If protocol is broken, can shorten SLAVE_WAIT timeout for debugging
+// `define SLAVE_WAIT 10
+`define SLAVE_WAIT 100
 
 // task AxilDriver::config_write(Config cfg[]);
 Config AxilDriver_cfg[];
@@ -30,13 +31,10 @@ task AxilDriver_write();
             $time, AxilDriver_write_addr, AxilDriver_write_data);
 
    // semaphore axil_lock;
-   $display("AxilDriver_write() wants the lock"); $fflush();
    axil_lock.get(1);
-   $display("AxilDriver_write() got the lock"); $fflush();
 
    // Note: "slave not ready" timout will occur b/c awready stays false until data is read (below)
    // awready advances controller state from WAIT(0) to WR_REQ_GLC(1)
-   $display("axil_driver: address");         // 120ns
 
     // # 900;    // What if...?
    @(posedge axil_ifc.clk);  // added to match non-clocking timing...
@@ -46,7 +44,6 @@ task AxilDriver_write();
    // for (int i = 0; i < 100; i++) begin
    // FIXME?? seems like this should happen BEFORE setting awvalid etc. above
    for (int i = 0; i < 100; i++) begin
-      $display("Waiting for awready, i=%0d", i);  // 121-129ns
       if (axil_ifc.awready == 1) break;
       @(posedge axil_ifc.clk);
       if (i == 99) $display("axi slave is not ready 1");
@@ -66,7 +63,6 @@ task AxilDriver_write();
    // } WrState;
 
    // Axi controller should now be in state 1 (WR_REQ_GLC)  // 132ns
-   $display("axil_driver: data");  // ~132ns
    axil_ifc.wdata  = AxilDriver_write_data;
    axil_ifc.wvalid = 1'b1;
    // Axi controller should now be in state 3 (WR_WAIT)  // 132ns
@@ -105,28 +101,24 @@ endtask
 bit [CGRA_AXI_ADDR_WIDTH-1:0] AxilDriver_read_addr;
 bit [CGRA_AXI_DATA_WIDTH-1:0] AxilDriver_read_data;
 task AxilDriver_read();
-    $display("AxilDriver_read() wants the lock"); $fflush();
     axil_lock.get(1);
-    $display("AxilDriver_read() got the lock"); $fflush();  // 5962ns
 
     @(posedge axil_ifc.clk);
     axil_ifc.araddr  = AxilDriver_read_addr;
     axil_ifc.arvalid = 1'b1;
     axil_ifc.rready  = 1;
-    for (int i = 0; i < 10; i++) begin
+    for (int i = 0; i < `SLAVE_WAIT; i++) begin
         if (axil_ifc.arready == 1) break;
         @(posedge axil_ifc.clk);
-        // if (i == 9) return;  // axi slave is not ready
-        if (i == 9) $display("axi slave is not ready 1");
+        if (i == (`SLAVE_WAIT-1)) $display("axi slave is not ready 1");
     end
     @(posedge axil_ifc.clk);
     axil_ifc.arvalid = 0;      // 5964.5ns
     @(posedge axil_ifc.clk);
-    for (int i = 0; i < 10; i++) begin
-        if (axil_ifc.rvalid == 1) break;
+    for (int i = 0; i < `SLAVE_WAIT; i++) begin
+        if (axil_ifc.rvalid == 1) break;  // 
         @(posedge axil_ifc.clk);
-        // if (i == 9) return;  // axi slave is not ready
-        if (i == 9) $display("axi slave is not ready 2");
+        if (i == (`SLAVE_WAIT-1)) $display("axi slave is not ready 2");
     end
     AxilDriver_read_data = axil_ifc.rdata;
     @(posedge axil_ifc.clk);
@@ -134,7 +126,17 @@ task AxilDriver_read();
     @(posedge axil_ifc.clk);
     $display("[%0t] AXI-Lite Read. Addr: %08h, Data: %08h", 
              $time, AxilDriver_read_addr, AxilDriver_read_data);
-    $display("AxilDriver_read() releasing the lock"); $fflush();
     axil_lock.put(1);
-    $display("AxilDriver_read() released the lock"); $fflush();
 endtask
+
+    // Debugging fodder
+    // $display("AxilDriver_write() wants the lock");
+    // $display("AxilDriver_write() got the lock");
+    // $display("AxilDriver_read() wants the lock");
+    // $display("AxilDriver_read() got the lock");       // 5962ns
+    // $display("AxilDriver_read() releasing the lock");
+    // $display("AxilDriver_read() released the lock");
+
+    // $display("Waiting for awready, i=%0d", i);  // 121-129ns
+    // $display("axil_driver: data");              // ~132ns
+
