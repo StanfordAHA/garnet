@@ -286,7 +286,7 @@ function Kernel::new(string app_dir, int dpr);
         inputs[i].num_io_tiles = num_io_tiles;
         inputs[i].io_tiles = new[num_io_tiles];
 
-        $display("input_%0d has %0d input blocks", i, num_io_tiles);
+        $display("input_%0d has %0d input blocks\n", i, num_io_tiles);
 
         if (num_io_tiles == 1) begin
             inputs[i].io_tiles[0].num_data = input_data[i].size;
@@ -347,6 +347,7 @@ function bitstream_t Kernel::parse_bitstream();
 
     int fp = $fopen(bitstream_filename, "r");
     assert_(fp != 0, "Unable to read bitstream file");
+    $display("[%0t] Reading bitstream from %s", $time, bitstream_filename);
     while (!$feof(
         fp
     )) begin
@@ -365,7 +366,7 @@ function bitstream_t Kernel::parse_bitstream();
 `else
         code = $fscanf(fp, "%08x %08x", entry.addr, entry.data);
 `endif
-        $display("FOO got addr %08x, data %08x", entry.addr, entry.data);
+        if (i<4) $display(" - got addr %08x, data %08x", entry.addr, entry.data);
         if (code == -1) continue;
         assert_(code == 2, $sformatf(
                 "Incorrect bs format. Expected 2 entries, got: %0d. Current entires: %0d",
