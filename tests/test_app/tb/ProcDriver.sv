@@ -1,5 +1,8 @@
 // class ProcDriver;
 
+`define DBG_PROCDRIVER 0
+// `define DBG_PROCDRIVER 1  // for debugging
+
 // function ProcDriver::new(vProcIfcDriver vif, semaphore proc_lock);
 // NOT NEEDED b/c not a class no more
 
@@ -110,11 +113,14 @@ task ProcDriver_read_data();
             // Counts from 10000 to...? 12000? by 8's
             // 0x10000 + 8 x 0x400 = 0x10000 + 0x2000 = 0x12000?
             $display("Set     %0d consecutive addresses BEGIN", PD_rdata_num_trans);  // 3002ns
+            if (`DBG_PROCDRIVER) 
+              $display("\n\nFOO plan is to read beginning at address %08x\n", PD_rdata_start_addr);
             @(posedge p_ifc.clk);
             for (int i = 0; i < PD_rdata_num_trans; i++) begin
                 p_ifc.rd_en = 1'b1;
                 // address increases by 8 every write
                 p_ifc.rd_addr = (PD_rdata_start_addr + 8 * i);
+                if (`DBG_PROCDRIVER) $display("[%0t] Set addr = %08x", $time, p_ifc.rd_addr);
                 @(posedge p_ifc.clk);
             end
             p_ifc.rd_en   = 0;
@@ -124,21 +130,45 @@ task ProcDriver_read_data();
         // 4096 words means 1024 tansactions
         // So. When garnet.v is stubbed out, this takes 1K cycles to read 1K zeroes...
         begin
-            $display("Offload %d data chunks BEGIN", PD_rdata_num_trans);  // 3002ns
+            $display("Offload %0d data chunks BEGIN", PD_rdata_num_trans);  // 3002ns
             for (int i = 0; i < PD_rdata_num_trans; i++) begin
                 wait (p_ifc.rd_data_valid);  // This queers the deal if stub not hip...
+`ifdef verilator
+                // VCS data ready same cycle as valid sig arrives
+                // Verilator data not ready until one cycle AFTER valid signal
+                // FIXME this is a bug, somebody needs to figure out why timing is different!!!
+                @(posedge p_ifc.clk);
+`endif
+                if (`DBG_PROCDRIVER)
+                  $display("\n[%0t] FOO got data word %0x", $time, p_ifc.rd_data);
 
                 PD_rdata_data_q[i*4] = p_ifc.rd_data & 'hFFFF;
+                if (`DBG_PROCDRIVER)
+                  $display("[%0t] -- 0 PD_rdata_data_q[%04d] <= %0x", $time, i*4, PD_rdata_data_q[i*4]);
+
                 if ((i * 4 + 1) < PD_rdata_num_words) begin
                     PD_rdata_data_q[i*4+1] = (p_ifc.rd_data & (('hFFFF) << 16)) >> 16;
+                    if (`DBG_PROCDRIVER)
+                      $display("[%0t] -- 1 PD_rdata_data_q[%04d] <= %0x", $time, i*4+1, PD_rdata_data_q[i*4+1]);
                 end
+
                 if ((i * 4 + 2) < PD_rdata_num_words) begin
                     PD_rdata_data_q[i*4+2] = (p_ifc.rd_data & (('hFFFF) << 32)) >> 32;
+                    if (`DBG_PROCDRIVER)
+                      $display("[%0t] -- 2 PD_rdata_data_q[%04d] <= %0x", $time, i*4+2, PD_rdata_data_q[i*4+2]);
                 end
+
                 if ((i * 4 + 3) < PD_rdata_num_words) begin
                     PD_rdata_data_q[i*4+3] = (p_ifc.rd_data & (('hFFFF) << 48)) >> 48;
+                    if (`DBG_PROCDRIVER)
+                      $display("[%0t] -- 3 PD_rdata_data_q[%04d] <= %0x", $time, i*4+3, PD_rdata_data_q[i*4+3]);
                 end
+
+                if (`DBG_PROCDRIVER) $display("");
+`ifndef verilator
+                // FIXME somebody needs to figure out why vcs and verilator are different here!!!
                 @(posedge p_ifc.clk);
+`endif
             end
             $display("Offload %d data chunks END", PD_rdata_num_trans);  // 4027ns
             $display("First output word is maybe...%0x",  PD_rdata_data_q[0]); $fflush();
@@ -147,6 +177,3 @@ task ProcDriver_read_data();
     repeat (10) @(posedge p_ifc.clk);
     proc_lock.put(1);
 endtask
-
-
-    // $display("\n\nFOO plan is to read beginning at address %08x\n", PD_rdata_start_addr);
