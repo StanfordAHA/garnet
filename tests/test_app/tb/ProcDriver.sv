@@ -135,7 +135,7 @@ task ProcDriver_read_data();
                 wait (p_ifc.rd_data_valid);  // This queers the deal if stub not hip...
 `ifdef verilator
                 // VCS data ready same cycle as valid sig arrives
-                // Verilator data not ready until one cycle AFTER valid signal
+                // Vvverilator data not ready until one cycle AFTER valid signal
                 // FIXME this is a bug, somebody needs to figure out why timing is different!!!
                 @(posedge p_ifc.clk);
 `endif
