@@ -98,7 +98,7 @@ int main(int argc, char** argv) {
 
         // if (i <= 10*ns) do_print = !(i % (1*ns));  // Print every ns for first 10ns
         // else do_print = !(i % (10*ns));            // Then every 10ns thereafter
-        do_print = !(i % (10*ns));            // Print a timestamp every 10ns maybe
+        do_print = !(i % (100*ns));          // Print a timestamp every 100ns maybe
         if (do_print) {
             printf("[%0dns] CGRA.cpp loop # %dK\n", i/ns, i/1000); fflush(stdout);
           //printf("[%0dns] vtop.cpp loop # %dK\n", i/ns, i/1000); fflush(stdout);
