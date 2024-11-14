@@ -31,11 +31,13 @@ module top;
         forever #(`CLK_PERIOD / 2.0) clk = !clk;
     end
 
+`ifdef DEBUG_TOP
     // Print a debug message on EVERY CLOCK
     initial begin
        $display("[%0t]", $time);
        forever #(`CLK_PERIOD * 100) $display("[%0t]", $time);
     end
+`fi
 
 `ifdef verilator
     // Dump out the wave info
