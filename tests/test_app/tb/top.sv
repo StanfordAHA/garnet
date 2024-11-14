@@ -37,7 +37,7 @@ module top;
        $display("[%0t]", $time);
        forever #(`CLK_PERIOD * 100) $display("[%0t]", $time);
     end
-`fi
+`endif
 
 `ifdef verilator
     // Dump out the wave info
