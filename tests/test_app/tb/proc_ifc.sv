@@ -39,7 +39,6 @@ interface proc_ifc (
         input clk, wr_en, wr_strb, wr_addr, wr_data, rd_en, rd_addr, rd_data, rd_data_valid
     );
 
-
 endinterface
 
 typedef virtual proc_ifc vProcIfc;

@@ -54,6 +54,7 @@ module top;
 
     // reset generation
     initial begin
+        // Change reset to give a clear up-and-down pulse
         reset = 0; $display("[%0t] reset = 0", $time);
         @(posedge clk);
         @(posedge clk);

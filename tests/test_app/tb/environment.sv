@@ -31,7 +31,7 @@ class Environment;
     extern task write_data(Kernel kernel);
     extern task glb_configure(Kernel kernel);
     extern task cgra_configure(Kernel kernel);
-    // extern task set_interrupt_on();
+    extern task set_interrupt_on();
     extern task wait_interrupt(e_glb_ctrl glb_ctrl, bit [$clog2(NUM_GLB_TILES)-1:0] tile_num);
     extern task clear_interrupt(e_glb_ctrl glb_ctrl, bit [$clog2(NUM_GLB_TILES)-1:0] tile_num);
     extern task kernel_test(Kernel kernel);
@@ -40,7 +40,7 @@ class Environment;
     extern function bit [NUM_GLB_TILES-1:0] calculate_glb_stall_mask(int start, int num);
     extern task cgra_stall(bit [NUM_CGRA_COLS-1:0] stall_mask);
     extern task cgra_unstall(bit [NUM_CGRA_COLS-1:0] stall_mask);
-    // extern task run();
+    extern task run();
     extern task compare();
 endclass
 
@@ -60,8 +60,8 @@ endfunction
 
 task Environment::write_bs(Kernel kernel);
     realtime start_time, end_time;
-    $timeformat(-9, 2, " ns", 0);
-    repeat (10) @(posedge vifc_proc.clk);  // @(vifc_proc.cbd);
+    $timeformat(-9, 2, " ns");
+    repeat (10) @(vifc_proc.cbd);
     start_time = $realtime;
     $display("[%s] write bitstream to glb start at %0t", kernel.name, start_time);
     proc_drv.write_bs(kernel.bs_start_addr, kernel.bitstream_data);
@@ -73,8 +73,8 @@ endtask
 
 task Environment::write_data(Kernel kernel);
     realtime start_time, end_time;
-    $timeformat(-9, 2, " ns", 0);
-    repeat (10) @(posedge vifc_proc.clk);  // @(vifc_proc.cbd);
+    $timeformat(-9, 2, " ns");
+    repeat (10) @(vifc_proc.cbd);
     foreach (kernel.inputs[i]) begin
         foreach (kernel.inputs[i].io_tiles[j]) begin
             if (kernel.inputs[i].io_tiles[j].is_glb_input == 1) begin
@@ -97,7 +97,7 @@ endtask
 
 task Environment::read_data(Kernel kernel);
     data_array_t data_q;
-    repeat (20) @(posedge vifc_proc.clk);  // @(vifc_proc.cbd);
+    repeat (20) @(vifc_proc.cbd);
 
     foreach (kernel.outputs[i]) begin
         foreach (kernel.outputs[i].io_tiles[j]) begin
@@ -116,7 +116,7 @@ endtask
 
 task Environment::glb_configure(Kernel kernel);
     realtime start_time, end_time;
-    $timeformat(-9, 2, " ns", 0);
+    $timeformat(-9, 2, " ns");
     start_time = $realtime;
     $display("[%s] glb configuration start at %0t", kernel.name, start_time);
     axil_drv.config_write(kernel.bs_cfg);
@@ -132,7 +132,7 @@ task Environment::cgra_configure(Kernel kernel);
     bit [NUM_CGRA_COLS-1:0] cgra_stall_mask;
 
     realtime start_time, end_time;
-    $timeformat(-9, 2, " ns", 0);
+    $timeformat(-9, 2, " ns");
 
     group_start = kernel.group_start;
     num_groups = kernel.num_groups;
@@ -199,7 +199,7 @@ task Environment::kernel_test(Kernel kernel);
     bit [NUM_GLB_TILES-1:0] glb_stall_mask;
     bit [NUM_CGRA_COLS-1:0] cgra_stall_mask;
     realtime start_time, end_time, g2f_end_time, latency;
-    $timeformat(-9, 2, " ns", 0);
+    $timeformat(-9, 2, " ns");
 
     group_start = kernel.group_start;
     num_groups = kernel.num_groups;
@@ -302,22 +302,10 @@ task Environment::wait_interrupt(e_glb_ctrl glb_ctrl, bit [$clog2(NUM_GLB_TILES)
             end
         end
         begin
-            /*
-            // So...this runs forever I guess? and stops things if they run too long...?
-            // If things work correctly...? Someone else pulls $finish before this hits error condition?
-            repeat (5_000_000) @(posedge axil_ifc.clk);
-            repeat (1_000_000) @(posedge axil_ifc.clk);
+            repeat (5_000_000) @(vifc_axil.cbd);
+            repeat (1_000_000) @(vifc_axil.cbd);
             $error("@%0t: %m ERROR: Interrupt wait timeout ", $time);
             $finish;
-            */
-            // copilot gave me this one
-            forever begin
-                @(posedge vifc_axil.clk);
-                if ($time > 6_000_000) begin
-                    $error("@%0t: %m ERROR: Interrupt wait timeout ", $time);
-                    $finish;
-                end
-            end
         end
     join_any
     disable fork;
@@ -345,7 +333,6 @@ task Environment::clear_interrupt(e_glb_ctrl glb_ctrl, bit [$clog2(NUM_GLB_TILES
     axil_drv.write(addr, tile_mask);
 endtask
 
-/*
 task Environment::set_interrupt_on();
     $display("Turn on interrupt enable registers");
     axil_drv.write(`GLC_GLOBAL_IER_R, 3'b111);
@@ -356,7 +343,7 @@ endtask
 
 task Environment::run();
     // wait for reset
-    repeat (20) @(posedge vifc_proc.clk);  // @(vifc_proc.cbd);
+    repeat (20) @(vifc_proc.cbd);
 
     // turn on interrupt
     set_interrupt_on();
@@ -391,10 +378,9 @@ task Environment::run();
         end
     end
 endtask
-*/
 
 task Environment::compare();
-    repeat (20) @(posedge vifc_axil.clk);  // @(vifc_axil.cbd);
+    repeat (20) @(vifc_axil.cbd);
     foreach (kernels[i]) begin
         kernels[i].compare();
     end
