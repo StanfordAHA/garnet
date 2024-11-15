@@ -56,6 +56,7 @@ verilator $warn --timing --cc --exe vfiles/CGRA.cpp \
   --timescale 1ps/1ps \
   --top-module top \
   $TRACE \
+  --trace-params --trace-structs \
   $d/vfiles/global_buffer_param.svh \
   $VFILES \
   -F tb/tb_cgra.f \
