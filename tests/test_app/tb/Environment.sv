@@ -300,11 +300,11 @@ task Env_kernel_test();
         foreach (kernel.outputs[i].io_tiles[j]) begin
             automatic int ii = i;
             automatic int jj = j;
+            $display("[%0t] Processing interrupts for GLB_STRM_F2G_CTRL (0x30)", $time);
+            glb_ctrl = GLB_STRM_F2G_CTRL;  // 0x30
             fork
                 begin
                     // wait_interrupt(GLB_STRM_F2G_CTRL, kernel.outputs[ii].io_tiles[jj].tile);
-                    $display("calling wait_interrupt(GLB_STRM_F2G_CTRL) @ 0x30"); $fflush();  // 5962ns
-                    glb_ctrl = GLB_STRM_F2G_CTRL;  // 0x30
 
                     // Wait. What? This is no good. Right?
                     // Need a different global 'tile_num' val for each
@@ -312,29 +312,11 @@ task Env_kernel_test();
                     // Do I even need to debug/verify the problem?
 
                     tile_num = kernel.inputs[ii].io_tiles[jj].tile;
+                    $display("[%0t] Waiting on tile %0d", $time, tile_num);
                     Env_wait_interrupt();
                     $display("returned from wait_interrupt()"); $fflush();
-                end
-            join_none
-        end
-    end
-    wait fork;
-//okay to here maybe
 
-    foreach (kernel.outputs[i]) begin
-        foreach (kernel.outputs[i].io_tiles[j]) begin
-            automatic int ii = i;
-            automatic int jj = j;
-            fork
-                begin
-                    // 5971ns
-                    // clear_interrupt(GLB_STRM_F2G_CTRL, kernel.outputs[ii].io_tiles[jj].tile);
-                    // TODO should this clear() do anything?
-                    // For now I have jimmied the stub to pull interrupt high for two cycles then low again
-                    // clear_interrupt(GLB_PCFG_CTRL, kernel.bs_tile);
-                    $display("\nCalling clear_interrupt(GLB_STRM_F2G_CTRL)"); $fflush();
-                    glb_ctrl = GLB_STRM_F2G_CTRL;
-                    tile_num = kernel.inputs[ii].io_tiles[jj].tile;
+                    $display("\nCalling clear_interrupt(GLB_STRM_F2G_CTRL) for tile %0d", tile_num);
                     Env_clear_interrupt();
                     $display("returning from clear_interrupt()"); $fflush();
                 end
