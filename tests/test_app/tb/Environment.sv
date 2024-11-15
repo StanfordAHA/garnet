@@ -321,22 +321,6 @@ task Env_kernel_test();
     wait fork;
 //okay to here maybe
 
-    end_time = $realtime;
-    $display("\n");  // Note this makes TWO blank lines
-    $display("[%s] kernel end at %0t", kernel.name, end_time);  // 5971ns
-    $display("[%s] It takes %0t total time to run kernel.", kernel.name, end_time - start_time);
-
-    total_output_size = 0;
-    foreach (kernel.output_size[i]) begin
-        total_output_size += kernel.output_size[i];
-    end
-    $display("[%s] The size of output is %0d Byte.", kernel.name, total_output_size);
-
-    latency = end_time - g2f_end_time;
-    $display("[%s] The initial latency is %0t.", kernel.name, latency);
-    $display("[%s] The throughput is %.3f (GB/s).", kernel.name,
-             total_output_size / (g2f_end_time - start_time));
-
     foreach (kernel.outputs[i]) begin
         foreach (kernel.outputs[i].io_tiles[j]) begin
             automatic int ii = i;
@@ -358,6 +342,22 @@ task Env_kernel_test();
         end
     end
     wait fork;
+
+    end_time = $realtime;
+    $display("\n");  // Note this makes TWO blank lines
+    $display("[%s] kernel end at %0t", kernel.name, end_time);  // 5971ns
+    $display("[%s] It takes %0t total time to run kernel.", kernel.name, end_time - start_time);
+
+    total_output_size = 0;
+    foreach (kernel.output_size[i]) begin
+        total_output_size += kernel.output_size[i];
+    end
+    $display("[%s] The size of output is %0d Byte.", kernel.name, total_output_size);
+
+    latency = end_time - g2f_end_time;
+    $display("[%s] The initial latency is %0t.", kernel.name, latency);
+    $display("[%s] The throughput is %.3f (GB/s).", kernel.name,
+             total_output_size / (g2f_end_time - start_time));
 
 endtask // Env_kernel_test
 
