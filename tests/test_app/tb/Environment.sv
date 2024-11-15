@@ -256,7 +256,7 @@ task Env_kernel_test();
     // A write of 0x10001 to address 0x18 starts data streaming to proc tiles.
     // axil_drv.write(cfg.addr, cfg.data);
     addr = Env_kernel_cfg.addr;  // 0x18
-    data = Env_kernel_cfg.data;  // 0x10001
+    data = Env_kernel_cfg.data;  // 0x10001 ("begin streaming tile 1"?)
     AxilDriver_write();          // This starts the (G2F) streaming
 
 // unstall_mask: addr=0x18, data=0x10001
@@ -305,6 +305,12 @@ task Env_kernel_test();
                     // wait_interrupt(GLB_STRM_F2G_CTRL, kernel.outputs[ii].io_tiles[jj].tile);
                     $display("calling wait_interrupt(GLB_STRM_F2G_CTRL) @ 0x30"); $fflush();  // 5962ns
                     glb_ctrl = GLB_STRM_F2G_CTRL;  // 0x30
+
+                    // Wait. What? This is no good. Right?
+                    // Need a different global 'tile_num' val for each
+                    // separate process.  Right?
+                    // Do I even need to debug/verify the problem?
+
                     tile_num = kernel.inputs[ii].io_tiles[jj].tile;
                     Env_wait_interrupt();
                     $display("returned from wait_interrupt()"); $fflush();
@@ -344,7 +350,7 @@ task Env_kernel_test();
                     // clear_interrupt(GLB_PCFG_CTRL, kernel.bs_tile);
                     $display("\nCalling clear_interrupt(GLB_STRM_F2G_CTRL)"); $fflush();
                     glb_ctrl = GLB_STRM_F2G_CTRL;
-                    tile_num   = kernel.inputs[ii].io_tiles[jj].tile;
+                    tile_num = kernel.inputs[ii].io_tiles[jj].tile;
                     Env_clear_interrupt();
                     $display("returning from clear_interrupt()"); $fflush();
                 end
@@ -486,6 +492,8 @@ task Env_run();
     Env_set_interrupt_on();
 
     if (dpr) begin
+        $display("ERROR this version of testbench does not support dpr TRUE");
+        $finish(2);  // The only choices are 0,1,2; note $finish() is more drastic than $exit()
         foreach (kernels[i]) begin
             automatic int j = i;
             fork
@@ -514,7 +522,6 @@ task Env_run();
                     Env_write_data();     // env.write_data(kernel);
                     Env_kernel_test();    // env.kernel_test(kernel);
                     Env_read_data();      // env.read_data(kernel);
-                    //BOOKMARK
                     kernel.compare();
                 end
         end
