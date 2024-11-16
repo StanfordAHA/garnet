@@ -429,7 +429,6 @@ task Env_wait_interrupt();
                     tile_mask = (1 << tile_num);
                     if ((data[tile_num] & tile_mask) != 0) begin
                         $display("%s interrupt from tile %0d", reg_name, tile_num);
-                        found_interrupt = 1;
                         break;
                     end
                 end
