@@ -1,6 +1,9 @@
 // class Environment;
 //`define DEBUG_Environment  // Uncomment this for debugging
 
+semaphore interrupt_lock;
+initial interrupt_lock = new(1);
+
 typedef enum int {
     GLB_PCFG_CTRL,
     GLB_STRM_G2F_CTRL,
@@ -305,17 +308,19 @@ task Env_kernel_test();
         foreach (kernel.outputs[i].io_tiles[j]) begin
             automatic int ii = i;
             automatic int jj = j;
-            $display("[%0t] Processing interrupts for GLB_STRM_F2G_CTRL (0x30)", $time);
+            $display("[%0t] (i%0d,j%0d) Processing interrupts for GLB_STRM_F2G_CTRL (0x30)", $time, i, j);
             glb_ctrl = GLB_STRM_F2G_CTRL;  // 0x30
-            fork
-                begin
+
+            // Why fork? omg. each wait() call has its own fork :( :( :(
+            // fork
+            //     begin
                     one_cy_delay_if_vcs();  // FIXME why is this needed (e.g. for pointwise)
                     //  wait_interrupt(GLB_STRM_F2G_CTRL, kernel.inputs[ii].io_tiles[jj].tile);
                     // clear_interrupt(GLB_STRM_F2G_CTRL, kernel.inputs[ii].io_tiles[jj].tile);
                     Env_wait_interrupt();
                     $display("returned from wait_interrupt()");
-                end
-            join_none
+            //     end
+            // join_none
         end
     end
     wait fork;
@@ -393,6 +398,8 @@ task Env_wait_interrupt();
                 wait (top.interrupt);
                 one_cy_delay_if_verilator();  // Off-by-one before this wait
 
+                interrupt_lock.get(1);
+
                 // Got an interrupt. Some tile has finished streaming.
                 // Read the indicated reg to see which one. Then clear it why not.
 
@@ -403,6 +410,9 @@ task Env_wait_interrupt();
                 AxilDriver_read_addr = addr;
                 AxilDriver_read();
                 data = AxilDriver_read_data;
+
+                // There maybe be multiple interrupts all at once e.g. if
+                // data = 0xfff that means we got interrupts on tiles 0-11/
 
                 // I guess "data" is a bit vector showing which tile did the interrupt??
                 $display("Looking for interrupt on ANY TILE");
@@ -425,6 +435,9 @@ task Env_wait_interrupt();
                 data = tile_mask;
                 // FIXME wait...AxilDriver_read() uses AxilDriver_read_addr but AxilDriver_write just uses "addr"?
                 AxilDriver_write();
+
+                interrupt_lock.put(1);
+
                 $display("%s interrupt CLEARED\n", reg_name); $fflush();
                 break;  // end of forever loop maybe
             end
