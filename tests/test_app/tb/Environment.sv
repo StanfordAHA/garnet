@@ -2,7 +2,6 @@
 //`define DEBUG_Environment  // Uncomment this for debugging
 
 semaphore interrupt_lock;
-int   found_interrupt;
 initial interrupt_lock = new(1);
 
 
@@ -418,24 +417,21 @@ task Env_wait_interrupt();
 
                 // I guess "data" is a bit vector showing which tile did the interrupt??
                 $display("Looking for interrupt on ANY TILE");
-                found_interrupt = 0
-                for (tile_num=0; tile_num<NUM_GLB_TILES; tile_num++) begin
+                if (data == 0) begin
+                    $display("");
+                    $display("WARNING got interrupt, but it's not %s I guess.", reg_name);
+                    $display("Go back and wait for the next interrupt.");
+                    $display("");
+                    continue;
+                end
+                else for (tile_num=0; tile_num<NUM_GLB_TILES; tile_num++) begin
                     // if (data[tile_num] == 1) begin
                     tile_mask = (1 << tile_num);
                     if ((data[tile_num] & tile_mask) != 0) begin
                         $display("%s interrupt from tile %0d", reg_name, tile_num);
                         found_interrupt = 1;
                         break;
-                    end else begin
-                        continue;
                     end
-                end
-                if (found_interrupt == 0) begin
-                    $display("");
-                    $display("WARNING got interrupt, but it's not %s I guess.", reg_name);
-                    $display("Go back and wait for the next interrupt.");
-                    $display("");
-                    continue;
                 end
                 
                 // Clear the interrupt, why wait? Write to same register as above.
