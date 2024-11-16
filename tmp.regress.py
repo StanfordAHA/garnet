@@ -365,7 +365,7 @@ def test_hardcoded_dense_app(test, width, height, env_parameters, extra_args, la
         print(f"copying hardcoded bin folder", flush=True)
         shutil.copytree(f"{app_path}/bin_hardcoded", f"{app_path}/bin")
     except:
-        print(f"please don't delete hardcoded bin folder", flush=True)
+        raise RuntimeError(f"[ERROR] Please don't delete hardcoded bin folder")
 
     # To use daemon, call regress.py with args '--daemon auto'
     # --- extra_args=['--daemon', 'auto']
@@ -373,6 +373,21 @@ def test_hardcoded_dense_app(test, width, height, env_parameters, extra_args, la
     if (extra_args):
         if ('--daemon' in extra_args) and ('auto' in extra_args):
             use_daemon = [ "--daemon", "auto" ]
+
+    try:
+        buildkite_args = [
+                "aha",
+                "pnr",
+                test,
+                "--width", str(width),
+                "--height", str(height),
+                "--env-parameters", env_parameters,
+            ] + use_daemon + layer_array
+    except:
+        print("[INFO] Finished PnR which is expected to fail", flush=True)
+
+    print(f"[INFO] Re-copying design_top.json configuration", flush=True)
+    shutil.copy(f"{app_path}/bin_hardcoded/design_top.json", f"{app_path}/bin/design_top.json")
 
     buildkite_args = [
                 "aha",
@@ -438,7 +453,7 @@ def dispatch(args, extra_args=None):
         imported_tests = Tests(args.config)
 
     imported_tests = Tests("BLANK")
-    imported_tests.sparse_tests = ["tensor3_ttm"]
+    imported_tests.glb_tests = ["apps/camera_pipeline_2x2"]
 
 
 
