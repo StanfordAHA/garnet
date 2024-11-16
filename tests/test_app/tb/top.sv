@@ -33,8 +33,9 @@ module top;
 
     // Print a debug message every once in awhile
     initial begin
-       $display("[%0t]", $time);
-       forever #(`CLK_PERIOD * 1000) $display("[%0t]", $time);
+        $display("[%0t] Model running...\n", $time);
+        $display("[%0t]", $time);
+        forever #(`CLK_PERIOD * 1000) $display("[%0t]", $time);
     end
 
 `ifdef verilator
@@ -46,7 +47,6 @@ module top;
           $dumpfile("logs/vlt_dump.vcd");
           $dumpvars();
        end
-       $display("[%0t] Model running...\n", $time);
     end
 `endif
 
