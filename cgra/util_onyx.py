@@ -590,7 +590,8 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
     # io_out = {"io2f_1": track_list, f"io2f_{bit_width_str}": track_list}
 
     io_in = {"f2io_1": [0], f"f2io_{bit_width_str}": [0]}
-    io_out = {"io2f_1": track_list, f"io2f_{bit_width_str}": track_list, f"io2f_{bit_width_str}_0": [0, 1], f"io2f_{bit_width_str}_1": [3, 4]}
+    io_out = {"io2f_1": track_list, f"io2f_{bit_width_str}": track_list, f"io2f_{bit_width_str}_T0": [0], f"io2f_{bit_width_str}_T1": [1], 
+                                                    f"io2f_{bit_width_str}_T2": [2], f"io2f_{bit_width_str}_T3": [3], f"io2f_{bit_width_str}_T4": [4]}
 
 
     for bit_width in bit_widths:
