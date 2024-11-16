@@ -34,15 +34,15 @@ int unsigned betaddr0;
 
 task one_cy_delay_if_verilator();
 `ifdef verilator
-    $display("WARNING adding one extra cycle for verilator run");
-    @(posedge axil_ifc.clk);  // Off-by-one before this wait
+    // $display("WARNING adding one extra cycle for verilator run");
+    @(posedge axil_ifc.clk);
 `endif
 endtask // one_cy_delay_if_verliator
     
 task one_cy_delay_if_vcs();
 `ifndef verilator
-    $display("WARNING adding one extra cycle for vcs run");
-    @(posedge axil_ifc.clk);  // Off-by-one before this wait
+    // $display("WARNING adding one extra cycle for vcs run");
+    @(posedge axil_ifc.clk);
 `endif
 endtask // one_cy_delay_if_vcs
 
@@ -498,7 +498,7 @@ task Env_run();
                     Env_cgra_configure(); // env.cgra_configure(kernel);
                     Env_write_data();     // env.write_data(kernel);
                     Env_kernel_test();    // env.kernel_test(kernel);
-                    Env_read_data();      // env.read_data(kernel);
+                    Env_read_data();      $display("[%0t] read_data DONE", $time);
                     kernel.compare();
                 end
         end
