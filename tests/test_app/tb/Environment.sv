@@ -2,7 +2,9 @@
 //`define DEBUG_Environment  // Uncomment this for debugging
 
 semaphore interrupt_lock;
+int   found_interrupt;
 initial interrupt_lock = new(1);
+
 
 typedef enum int {
     GLB_PCFG_CTRL,
@@ -291,7 +293,7 @@ task Env_kernel_test();
                 begin
                     //  wait_interrupt(GLB_STRM_G2F_CTRL, kernel.inputs[ii].io_tiles[jj].tile);
                     // clear_interrupt(GLB_STRM_G2F_CTRL, kernel.inputs[ii].io_tiles[jj].tile);
-                    $display("\nCalling wait_interrupt(GLB_STRM_G2F_CTRL) @ 0x34");  // 5954ns
+                    $display("\n[%0t] (i%0d,j%0d) Calling wait_interrupt(GLB_STRM_G2F_CTRL) @ 0x34", $time, i, j);  // 5954ns
                     glb_ctrl = GLB_STRM_G2F_CTRL;
                     Env_wait_interrupt();
                 end
@@ -416,19 +418,26 @@ task Env_wait_interrupt();
 
                 // I guess "data" is a bit vector showing which tile did the interrupt??
                 $display("Looking for interrupt on ANY TILE");
+                found_interrupt = 0
                 for (tile_num=0; tile_num<NUM_GLB_TILES; tile_num++) begin
                     // if (data[tile_num] == 1) begin
                     tile_mask = (1 << tile_num);
                     if ((data[tile_num] & tile_mask) != 0) begin
                         $display("%s interrupt from tile %0d", reg_name, tile_num);
+                        found_interrupt = 1;
                         break;
+                    end else begin
+                        continue;
                     end
+                end
+                if (found_interrupt == 0) begin
                     $display("");
                     $display("WARNING got interrupt, but it's not %s I guess.", reg_name);
                     $display("Go back and wait for the next interrupt.");
                     $display("");
                     continue;
                 end
+                
                 // Clear the interrupt, why wait? Write to same register as above.
 
                 // tile_mask = (1 << tile_num);
