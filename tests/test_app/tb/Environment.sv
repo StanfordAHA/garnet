@@ -491,16 +491,18 @@ task Env_run();
         $display("\n[%0t] dpr FALSE\n", $time);
         foreach (kernels[i]) begin
             automatic int j = i;
-                begin
-                    kernel = kernels[j];
-                    Env_write_bs();       // env.write_bs(kernels[j]);
-                    Env_glb_configure();  // env.glb_configure(kernel);
-                    Env_cgra_configure(); // env.cgra_configure(kernel);
-                    Env_write_data();     // env.write_data(kernel);
-                    Env_kernel_test();    // env.kernel_test(kernel);
-                    Env_read_data();      $display("[%0t] read_data DONE", $time);
-                    kernel.compare();
-                end
+            begin
+                $display("[%0t] FOO process kernel %0d BEGIN", $time, j);
+                kernel = kernels[j];
+                Env_write_bs();       // env.write_bs(kernels[j]);
+                Env_glb_configure();  // env.glb_configure(kernel);
+                Env_cgra_configure(); // env.cgra_configure(kernel);
+                Env_write_data();     // env.write_data(kernel);
+                Env_kernel_test();    // env.kernel_test(kernel);
+                Env_read_data();      $display("[%0t] read_data DONE", $time);
+                kernel.compare();
+                $display("[%0t] FOO process kernel %0d END", $time, j);
+            end
         end
     end
 
