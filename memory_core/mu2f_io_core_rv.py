@@ -56,7 +56,6 @@ class MU2F_IOCoreReadyValid(LakeCoreBase):
             self.dut = IOCore_mu2f(matrix_unit_data_width=self.matrix_unit_data_width,
                               tile_array_data_width=self.tile_array_data_width,
                               fifo_depth=fifo_depth,
-                              num_ios = self.num_ios,
                               allow_bypass=self.allow_bypass,
                               use_almost_full=self.use_almost_full,
                               add_flush=True,
