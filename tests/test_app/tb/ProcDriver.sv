@@ -133,12 +133,12 @@ task ProcDriver_read_data();
             $display("Offload %0d data chunks BEGIN", PD_rdata_num_trans);  // 3002ns
             for (int i = 0; i < PD_rdata_num_trans; i++) begin
                 wait (p_ifc.rd_data_valid);  // This queers the deal if stub not hip...
-`ifdef verilator
+
                 // VCS data ready same cycle as valid sig arrives
                 // Vvverilator data not ready until one cycle AFTER valid signal
                 // FIXME this is a bug, somebody needs to figure out why timing is different!!!
-                @(posedge p_ifc.clk);
-`endif
+                one_cy_delay_if_verilator();
+
                 if (`DBG_PROCDRIVER)
                   $display("\n[%0t] FOO got data word %0x", $time, p_ifc.rd_data);
 

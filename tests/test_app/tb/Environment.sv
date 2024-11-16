@@ -30,6 +30,23 @@ bitstream_entry_t bet0;
 int unsigned betdata0;
 int unsigned betaddr0;
 
+// Convenience tasks to adjust vcs vs. verilator timing
+
+task one_cy_delay_if_verilator();
+`ifdef verilator
+    // $display("WARNING adding one extra cycle for verilator run");
+    @(posedge axil_ifc.clk);
+`endif
+endtask // one_cy_delay_if_verliator
+    
+task one_cy_delay_if_vcs();
+`ifndef verilator
+    // $display("WARNING adding one extra cycle for vcs run");
+    @(posedge axil_ifc.clk);
+`endif
+endtask // one_cy_delay_if_vcs
+
+
 // task Environment::write_bs(Kernel kernel);
 task Env_write_bs();
     $timeformat(-9, 2, " ns", 0);
@@ -149,18 +166,11 @@ task Env_cgra_configure();
     addr = Env_cgra_configure_cfg.addr;  // 0x1c
     data = Env_cgra_configure_cfg.data;  // 0x01
     AxilDriver_write();
-    // wait_interrupt(GLB_PCFG_CTRL, kernel.bs_tile);
+    //  wait_interrupt(GLB_PCFG_CTRL, kernel.bs_tile);
+    // clear_interrupt(GLB_PCFG_CTRL, kernel.bs_tile);
     $display("calling wait_interrupt(GLB_PCFG_CTRL) = 0x38"); $fflush();
     glb_ctrl = GLB_PCFG_CTRL;    // 0x38
-    tile_num   = kernel.bs_tile;
     Env_wait_interrupt();
-
-    // TODO should this clear() do anything?
-    // For now I have jimmied the stub to pull interrupt high for two cycles then low again
-    // clear_interrupt(GLB_PCFG_CTRL, kernel.bs_tile);
-    glb_ctrl = GLB_PCFG_CTRL;    // 0x38
-    tile_num   = kernel.bs_tile;
-    Env_clear_interrupt();
 
     end_time = $realtime;
     $display("[%s] fast configuration end at %0t", kernel.name, end_time);  // 1710ns
@@ -256,36 +266,31 @@ task Env_kernel_test();
     // A write of 0x10001 to address 0x18 starts data streaming to proc tiles.
     // axil_drv.write(cfg.addr, cfg.data);
     addr = Env_kernel_cfg.addr;  // 0x18
-    data = Env_kernel_cfg.data;  // 0x10001
+    data = Env_kernel_cfg.data;  // 0x10001 ("begin streaming tile 1"?)
     AxilDriver_write();          // This starts the (G2F) streaming
 
 // unstall_mask: addr=0x18, data=0x10001
 // stall_mask:   addr=0x1c, data=0x00001
 
     // Wait for an interrupt to tell us when the streaming is done
+    // These two 'foreach' loops are here to tell us HOW MANY tiles need to stream
+
+    // wait_interrupt() will service whatever interrupt happens next,
+    // and then the one after that, and so on until the right number
+    // have been found. i think.
+
+    // TODO these two loops could be tasks e.g. glb_stream_g2f() and glb_stream_f2g()
     foreach (kernel.inputs[i]) begin
         foreach (kernel.inputs[i].io_tiles[j]) begin
             automatic int ii = i;
             automatic int jj = j;
             fork
                 begin
-                    // wait_interrupt(GLB_STRM_G2F_CTRL, kernel.inputs[ii].io_tiles[jj].tile);
+                    //  wait_interrupt(GLB_STRM_G2F_CTRL, kernel.inputs[ii].io_tiles[jj].tile);
+                    // clear_interrupt(GLB_STRM_G2F_CTRL, kernel.inputs[ii].io_tiles[jj].tile);
                     $display("\nCalling wait_interrupt(GLB_STRM_G2F_CTRL) @ 0x34");  // 5954ns
                     glb_ctrl = GLB_STRM_G2F_CTRL;
-                    // FIXME tile_num not automatic. Will this be trouble?
-                    tile_num = kernel.inputs[ii].io_tiles[jj].tile;
                     Env_wait_interrupt();
-
-                    // clear_interrupt(GLB_STRM_G2F_CTRL, kernel.inputs[ii].io_tiles[jj].tile);
-                    // TODO should this clear() do anything?
-                    // For now I have jimmied the stub to pull interrupt high for two cycles then low again
-                    // clear_interrupt(GLB_PCFG_CTRL, kernel.bs_tile);
-                    // 5954ns
-                    $display("\nCalling clear_interrupt(GLB_STRM_G2F_CTRL)"); $fflush();
-                    glb_ctrl = GLB_STRM_G2F_CTRL;  // 0x2 => 0x34
-                    // tile_num   = kernel.inputs[ii].io_tiles[jj].tile;
-                    Env_clear_interrupt();
-                    $display("returning from clear_interrupt()"); $fflush();  // 5962ns
                 end
             join_none
         end
@@ -300,20 +305,20 @@ task Env_kernel_test();
         foreach (kernel.outputs[i].io_tiles[j]) begin
             automatic int ii = i;
             automatic int jj = j;
+            $display("[%0t] Processing interrupts for GLB_STRM_F2G_CTRL (0x30)", $time);
+            glb_ctrl = GLB_STRM_F2G_CTRL;  // 0x30
             fork
                 begin
-                    // wait_interrupt(GLB_STRM_F2G_CTRL, kernel.outputs[ii].io_tiles[jj].tile);
-                    $display("calling wait_interrupt(GLB_STRM_F2G_CTRL) @ 0x30"); $fflush();  // 5962ns
-                    glb_ctrl = GLB_STRM_F2G_CTRL;  // 0x30
-                    tile_num = kernel.inputs[ii].io_tiles[jj].tile;
+                    one_cy_delay_if_vcs();  // FIXME why is this needed (e.g. for pointwise)
+                    //  wait_interrupt(GLB_STRM_F2G_CTRL, kernel.inputs[ii].io_tiles[jj].tile);
+                    // clear_interrupt(GLB_STRM_F2G_CTRL, kernel.inputs[ii].io_tiles[jj].tile);
                     Env_wait_interrupt();
-                    $display("returned from wait_interrupt()"); $fflush();
+                    $display("returned from wait_interrupt()");
                 end
             join_none
         end
     end
     wait fork;
-//okay to here maybe
 
     end_time = $realtime;
     $display("\n");  // Note this makes TWO blank lines
@@ -330,28 +335,6 @@ task Env_kernel_test();
     $display("[%s] The initial latency is %0t.", kernel.name, latency);
     $display("[%s] The throughput is %.3f (GB/s).", kernel.name,
              total_output_size / (g2f_end_time - start_time));
-
-    foreach (kernel.outputs[i]) begin
-        foreach (kernel.outputs[i].io_tiles[j]) begin
-            automatic int ii = i;
-            automatic int jj = j;
-            fork
-                begin
-                    // 5971ns
-                    // clear_interrupt(GLB_STRM_F2G_CTRL, kernel.outputs[ii].io_tiles[jj].tile);
-                    // TODO should this clear() do anything?
-                    // For now I have jimmied the stub to pull interrupt high for two cycles then low again
-                    // clear_interrupt(GLB_PCFG_CTRL, kernel.bs_tile);
-                    $display("\nCalling clear_interrupt(GLB_STRM_F2G_CTRL)"); $fflush();
-                    glb_ctrl = GLB_STRM_F2G_CTRL;
-                    tile_num   = kernel.inputs[ii].io_tiles[jj].tile;
-                    Env_clear_interrupt();
-                    $display("returning from clear_interrupt()"); $fflush();
-                end
-            join_none
-        end
-    end
-    wait fork;
 
 endtask // Env_kernel_test
 
@@ -370,6 +353,8 @@ int i_wait;
 `else
     int MAX_WAIT = 6000_000;
 `endif
+
+bit [NUM_GLB_TILES-1:0] tile_mask;
 
 string reg_name;
 // bit [CGRA_AXI_ADDR_WIDTH-1:0] addr;
@@ -393,6 +378,12 @@ task Env_wait_interrupt();
     // When/if first thread gets and interrupt, we return?
     // ANd ALSO if no interrupt (or finish) after 6M cycles, we error and die?
     // Maybe...'join_any' means fork is complete when/if any subthread finishes??
+
+    // Wait for the next interrupt of the indicated type (e.g. GLB_PCFG_CTRL)
+    // regardless of which tile it comes from. What's important is that we get ALL
+    // the interrupts, not so much what order in which they arrive. I.e. the calling
+    // routine will loop until the right number of interrupts happen.Right?
+
     fork
         begin
             forever begin
@@ -400,22 +391,42 @@ task Env_wait_interrupt();
 
                 // First we gotta getta interrupt
                 wait (top.interrupt);
-`ifdef verilator
-                @(posedge axil_ifc.clk);  // Off-by-one before this wait
-`endif
+                one_cy_delay_if_verilator();  // Off-by-one before this wait
+
+                // Got an interrupt. Some tile has finished streaming.
+                // Read the indicated reg to see which one. Then clear it why not.
+
                 // Reading from addr 0x38, expect to see xxxxx1
                 // (Jimmied the stub to return 0xfffffff when it sees addr 0x38)
                 // axil_drv.read(addr, data);
+                // FIXME wait...AxilDriver_read() uses AxilDriver_read_addr but AxilDriver_write just uses "addr"?
                 AxilDriver_read_addr = addr;
                 AxilDriver_read();
                 data = AxilDriver_read_data;
 
-                $display("Looking for interrupt on tile_num %0d", tile_num); $fflush();
-                // I guess data is a bit vector showing which tile did the interrupt??
-                if (data[tile_num] == 1) begin
-                    $display("%s interrupt from tile %0d", reg_name, tile_num);
-                    break;
+                // I guess "data" is a bit vector showing which tile did the interrupt??
+                $display("Looking for interrupt on ANY TILE");
+                for (tile_num=0; tile_num<NUM_GLB_TILES; tile_num++) begin
+                    if (data[tile_num] == 1) begin
+                        $display("%s interrupt from tile %0d", reg_name, tile_num);
+                        break;
+                    end
+                    $display("");
+                    $display("WARNING got interrupt, but it's not %s I guess.", reg_name);
+                    $display("Go back and wait for the next interrupt.");
+                    $display("");
+                    continue;
                 end
+                // Clear the interrupt, why wait? Write to same register as above.
+
+                tile_mask = (1 << tile_num);
+                // AxilDriver_write(addr, tile_mask);
+                $display("%s interrupt clear\n", reg_name); $fflush();
+                data = tile_mask;
+                // FIXME wait...AxilDriver_read() uses AxilDriver_read_addr but AxilDriver_write just uses "addr"?
+                AxilDriver_write();
+                $display("%s interrupt CLEARED\n", reg_name); $fflush();
+                break;  // end of forever loop maybe
             end
         end
         begin
@@ -436,36 +447,8 @@ task Env_wait_interrupt();
     $display("[%0t] FORK CANCELLED (right)?", $time);
 endtask
 
-// clear_interrupt(GLB_PCFG_CTRL, kernel.bs_tile); // TBD
-// glb_ctrl = GLB_PCFG_CTRL;
-// tile_num   = kernel.bs_tile;
-// Env_clear_interrupt();
-
 // task Environment::clear_interrupt(e_glb_ctrl glb_ctrl, bit [$clog2(NUM_GLB_TILES)-1:0] tile_num);
-// bit [CGRA_AXI_ADDR_WIDTH-1:0] addr;
-// string reg_name;
-bit [NUM_GLB_TILES-1:0] tile_mask;
-task Env_clear_interrupt();
-    tile_mask = (1 << tile_num);
-
-    // which interrupt
-    if (glb_ctrl == GLB_PCFG_CTRL) begin
-        addr = `GLC_PAR_CFG_G2F_ISR_R;
-        reg_name = "PCFG";
-    end else if (glb_ctrl == GLB_STRM_G2F_CTRL) begin
-        addr = `GLC_STRM_G2F_ISR_R;
-        reg_name = "STRM_G2F";
-    end else begin
-        addr = `GLC_STRM_F2G_ISR_R;
-        reg_name = "STRM_F2G";
-    end
-
-    $display("%s interrupt clear\n", reg_name);
-    // AxilDriver_write(addr, tile_mask);
-    // addr = addr
-    data = tile_mask;
-    AxilDriver_write();
-endtask
+// Note clear_interrupt functionality is now embedded as part of wait_interrupt()
 
 // task Environment::set_interrupt_on();
 task Env_set_interrupt_on();
@@ -486,6 +469,8 @@ task Env_run();
     Env_set_interrupt_on();
 
     if (dpr) begin
+        $display("ERROR this version of testbench does not support dpr TRUE");
+        $finish(2);  // The only choices are 0,1,2; note $finish() is more drastic than $exit()
         foreach (kernels[i]) begin
             automatic int j = i;
             fork
@@ -506,17 +491,18 @@ task Env_run();
         $display("\n[%0t] dpr FALSE\n", $time);
         foreach (kernels[i]) begin
             automatic int j = i;
-                begin
-                    kernel = kernels[j];
-                    Env_write_bs();       // env.write_bs(kernels[j]);
-                    Env_glb_configure();  // env.glb_configure(kernel);
-                    Env_cgra_configure(); // env.cgra_configure(kernel);
-                    Env_write_data();     // env.write_data(kernel);
-                    Env_kernel_test();    // env.kernel_test(kernel);
-                    Env_read_data();      // env.read_data(kernel);
-                    //BOOKMARK
-                    kernel.compare();
-                end
+            begin
+                $display("[%0t] FOO process kernel %0d BEGIN", $time, j);
+                kernel = kernels[j];
+                Env_write_bs();       // env.write_bs(kernels[j]);
+                Env_glb_configure();  // env.glb_configure(kernel);
+                Env_cgra_configure(); // env.cgra_configure(kernel);
+                Env_write_data();     // env.write_data(kernel);
+                Env_kernel_test();    // env.kernel_test(kernel);
+                Env_read_data();      $display("[%0t] read_data DONE", $time);
+                kernel.compare();
+                $display("[%0t] FOO process kernel %0d END", $time, j);
+            end
         end
     end
 

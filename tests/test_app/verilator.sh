@@ -10,6 +10,7 @@ fi
 
 TRACE=""
 [ "$1" == "--trace" ] && TRACE='--trace'
+# [ "$1" == "--trace" ] && TRACE='--trace --trace-params --trace-structs'
 
 # Should not be TIMESCALEMOD warnings if '--timescale' properly specified!!!
 #  -Wno-TIMESCALEMOD

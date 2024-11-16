@@ -68,6 +68,7 @@ program garnet_test #(
         //env.compare();
         $display("");
         $display("done did all of garnet_test i guess");
+        $display("Time: %0t", $time);
         $display("PASS PASS PASS PASS PASS PASS PASS PASS PASS PASS\n");
         $finish(0);
     end
