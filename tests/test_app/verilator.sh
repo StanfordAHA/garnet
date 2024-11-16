@@ -10,6 +10,7 @@ fi
 
 TRACE=""
 [ "$1" == "--trace" ] && TRACE='--trace'
+# [ "$1" == "--trace" ] && TRACE='--trace --trace-params --trace-structs'
 
 # Should not be TIMESCALEMOD warnings if '--timescale' properly specified!!!
 #  -Wno-TIMESCALEMOD
@@ -56,7 +57,6 @@ verilator $warn --timing --cc --exe vfiles/CGRA.cpp \
   --timescale 1ps/1ps \
   --top-module top \
   $TRACE \
-  --trace-params --trace-structs \
   $d/vfiles/global_buffer_param.svh \
   $VFILES \
   -F tb/tb_cgra.f \
