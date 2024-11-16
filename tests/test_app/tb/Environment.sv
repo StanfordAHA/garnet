@@ -417,7 +417,9 @@ task Env_wait_interrupt();
                 // I guess "data" is a bit vector showing which tile did the interrupt??
                 $display("Looking for interrupt on ANY TILE");
                 for (tile_num=0; tile_num<NUM_GLB_TILES; tile_num++) begin
-                    if (data[tile_num] == 1) begin
+                    // if (data[tile_num] == 1) begin
+                    tile_mask = (1 << tile_num);
+                    if ((data[tile_num] & tile_mask) != 0) begin
                         $display("%s interrupt from tile %0d", reg_name, tile_num);
                         break;
                     end
@@ -429,7 +431,7 @@ task Env_wait_interrupt();
                 end
                 // Clear the interrupt, why wait? Write to same register as above.
 
-                tile_mask = (1 << tile_num);
+                // tile_mask = (1 << tile_num);
                 // AxilDriver_write(addr, tile_mask);
                 $display("%s interrupt clear\n", reg_name); $fflush();
                 data = tile_mask;
