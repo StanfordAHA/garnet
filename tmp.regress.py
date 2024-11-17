@@ -453,10 +453,8 @@ def dispatch(args, extra_args=None):
         imported_tests = Tests(args.config)
 
     imported_tests = Tests("BLANK")
-    imported_tests.glb_tests = ["apps/camera_pipeline_2x2"]
-
-
-
+    # imported_tests.glb_tests = ["apps/camera_pipeline_2x2"]
+    imported_tests.sparse_tests = ["mat_elemadd"]
 
 
     # Unpack imported_tests into convenient handles

@@ -6,9 +6,9 @@
 // - camera pipeline 2x2 needs more than 6K, I use 80K
 // - but 80K is not enough for mat_elemadd etc.
 // 
-// int MAX_WAIT = 6000;
+int MAX_WAIT = 6000;
 // int MAX_WAIT = 80_000;
-int MAX_WAIT = 6_000_000;
+// int MAX_WAIT = 6_000_000;
 
 typedef enum int {
     GLB_PCFG_CTRL,
@@ -399,7 +399,7 @@ task Env_wait_interrupt();
                 wait (top.interrupt);
                 one_cy_delay_if_verilator();  // Off-by-one before this wait
 
-                // Protection zone keeps everyone from clearing the same interrupt all at once maybe
+                // Exclusion zone keeps everyone from clearing the same interrupt all at once maybe
                 interrupt_lock.get(1);
 
                 // Got an interrupt. Some tile has finished streaming.
@@ -415,35 +415,53 @@ task Env_wait_interrupt();
 
                 // There maybe be multiple interrupts all at once e.g. if
                 // data = 0xfff that means we got interrupts on tiles 0-11/
-                // "Protection zone" see above prevents everyone from clearing the same tile
+                // "Exclusion zone" see above prevents everyone from clearing the same tile
 
                 $display("Looking for interrupt on ANY TILE");
                 if (data == 0) begin
                     $display("WARNING got interrupt, but not from %s apparently", reg_name);
                     continue;  // Keep waiting for the RIGHT interrupt
                 end
-                else for (tile_num=0; tile_num<NUM_GLB_TILES; tile_num++) begin
-                    // Clear (one of) the interrupting tile(s)
-                    tile_mask = (1 << tile_num);
-                    if ((data[tile_num] & tile_mask) != 0) begin
-                        $display("%s interrupt from tile %0d", reg_name, tile_num);
-                        break;
+/*
+                else begin
+                    $display("%s interrupt tiles %0x", reg_name, data);
+                    for (tile_num=0; tile_num<NUM_GLB_TILES; tile_num++) begin
+                        // Clear (one of) the interrupting tile(s)
+                        tile_mask = (1 << tile_num);
+                        $display("Check tile_num %0d using mask %0x"
+                        if ((data[tile_num] & tile_mask) != 0) begin
+                            $display("%s clearing tile %0d using mask", reg_name, tile_num, tile_mask);
+                            break;
+                        end
                     end
                 end
-                
-                // Clear the interrupt, use tile_mask from above.
-                // AxilDriver_write(addr, tile_mask);
+*/
+                else begin
+                    // Find lowest-numbered interrupting tile
+                    $display("%s interrupt tiles %0x", reg_name, data);
+                    for (tile_num=0; tile_num<NUM_GLB_TILES; tile_num++) begin
+                        if (data[tile_num] == 1) break;
+                        else continue;
+                        $display("ERROR this should be impossible!!?");
+                        $finish(2);  // "2" gives time, location, and mem stats
+                    end
+                end
 
+                // Clear interrupt from the chosen tile 'tile_num'
+                tile_mask = (1 << tile_num);
+                $display("%s clearing tile %0d using mask", reg_name, tile_num, tile_mask);
+
+                // AxilDriver_write(addr, tile_mask);
                 // FIXME wait...AxilDriver_read() uses AxilDriver_read_addr but
                 // AxilDriver_write just uses "addr"? This is an unpleasant asymmetry :(
-
+                $display("%s clearing tile %0d using mask", reg_name, tile_num, tile_mask);
                 $display("%s interrupt clear\n", reg_name);
                 data = tile_mask;
                 AxilDriver_write();  // Writes to interrupt reg addr from above
+                $display("%s interrupt CLEARED\n", reg_name);
 
-                interrupt_lock.put(1);
+                interrupt_lock.put(1);  // End exclusion zone
 
-                $display("%s interrupt CLEARED\n", reg_name); $fflush();
                 break;  // Gotta break out of forever loop, duh
             end
         end
