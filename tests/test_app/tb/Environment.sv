@@ -1,5 +1,14 @@
 // class Environment;
-//`define DEBUG_Environment  // Uncomment this for debugging
+
+// MAX_WAIT is related to how long it takes to read/write data to/from tiles
+// When debugging, it's good to limit MAX_WAIT so things don't run too long
+// - 6K is good enough for pointwise
+// - camera pipeline 2x2 needs more than 6K, I use 80K
+// - but 80K is not enough for mat_elemadd etc.
+// 
+// int MAX_WAIT = 6000;
+// int MAX_WAIT = 80_000;
+int MAX_WAIT = 6_000_000;
 
 typedef enum int {
     GLB_PCFG_CTRL,
@@ -348,12 +357,6 @@ endtask // Env_kernel_test
 
 // Must declare vars OUTSIDE fork b/c verilator is squirrely about declaraions inside.
 int i_wait;
-`ifdef DEBUG_Environment
-    int MAX_WAIT = 6000;  // 6000 is plenty for pointwise, config is just 124 words maybe.
-`else
-    int MAX_WAIT = 6000_000;
-`endif
-
 bit [NUM_GLB_TILES-1:0] tile_mask;
 
 string reg_name;
