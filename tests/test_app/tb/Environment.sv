@@ -399,33 +399,31 @@ task Env_wait_interrupt();
                 wait (top.interrupt);
                 one_cy_delay_if_verilator();  // Off-by-one before this wait
 
+                // Protection zone keeps everyone from clearing the same interrupt all at once maybe
                 interrupt_lock.get(1);
 
                 // Got an interrupt. Some tile has finished streaming.
                 // Read the indicated reg to see which one. Then clear it why not.
 
-                // Reading from addr 0x38, expect to see xxxxx1
-                // (Jimmied the stub to return 0xfffffff when it sees addr 0x38)
+                // FIXME wait...AxilDriver_read() uses AxilDriver_read_addr but
+                // AxilDriver_write just uses "addr"? This is an unpleasant asymmetry :(
+
                 // axil_drv.read(addr, data);
-                // FIXME wait...AxilDriver_read() uses AxilDriver_read_addr but AxilDriver_write just uses "addr"?
                 AxilDriver_read_addr = addr;
                 AxilDriver_read();
                 data = AxilDriver_read_data;
 
                 // There maybe be multiple interrupts all at once e.g. if
                 // data = 0xfff that means we got interrupts on tiles 0-11/
+                // "Protection zone" see above prevents everyone from clearing the same tile
 
-                // I guess "data" is a bit vector showing which tile did the interrupt??
                 $display("Looking for interrupt on ANY TILE");
                 if (data == 0) begin
-                    $display("");
-                    $display("WARNING got interrupt, but it's not %s I guess.", reg_name);
-                    $display("Go back and wait for the next interrupt.");
-                    $display("");
-                    continue;
+                    $display("WARNING got interrupt, but not from %s apparently", reg_name);
+                    continue;  // Keep waiting for the RIGHT interrupt
                 end
                 else for (tile_num=0; tile_num<NUM_GLB_TILES; tile_num++) begin
-                    // if (data[tile_num] == 1) begin
+                    // Clear (one of) the interrupting tile(s)
                     tile_mask = (1 << tile_num);
                     if ((data[tile_num] & tile_mask) != 0) begin
                         $display("%s interrupt from tile %0d", reg_name, tile_num);
@@ -433,28 +431,28 @@ task Env_wait_interrupt();
                     end
                 end
                 
-                // Clear the interrupt, why wait? Write to same register as above.
-
-                // tile_mask = (1 << tile_num);
+                // Clear the interrupt, use tile_mask from above.
                 // AxilDriver_write(addr, tile_mask);
-                $display("%s interrupt clear\n", reg_name); $fflush();
+
+                // FIXME wait...AxilDriver_read() uses AxilDriver_read_addr but
+                // AxilDriver_write just uses "addr"? This is an unpleasant asymmetry :(
+
+                $display("%s interrupt clear\n", reg_name);
                 data = tile_mask;
-                // FIXME wait...AxilDriver_read() uses AxilDriver_read_addr but AxilDriver_write just uses "addr"?
-                AxilDriver_write();
+                AxilDriver_write();  // Writes to interrupt reg addr from above
 
                 interrupt_lock.put(1);
 
                 $display("%s interrupt CLEARED\n", reg_name); $fflush();
-                break;  // end of forever loop maybe
+                break;  // Gotta break out of forever loop, duh
             end
         end
         begin
-            // We wait up to 6M ns for interrupt to clear
+            // Wait for streaming to finish, but don't wait forever.
+            // It can take 5M cycles or more for larger runs, see MAX_WAIT above.
             // When/if interrupt clears (above), this loop dies b/c 'join_any'
 
-            // repeat (5_000_000) @(posedge axil_ifc.clk);
-            // Cannot use "repeat" b/c it confuses verilator in this context
-
+            // repeat (MAX_WAIT) @(posedge...);  // "repeat" confuses verilator:(
             for (i_wait = 0; i_wait < MAX_WAIT; i_wait++) begin
                 @(posedge axil_ifc.clk);
             end
