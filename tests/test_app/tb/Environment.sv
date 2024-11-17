@@ -468,7 +468,7 @@ task Env_wait_interrupt();
             end
         end
         begin
-            $display("[%0t] FOO begin waiting on reg %s; MAX_WAIT=%0d", reg_name, MAX_WAIT);
+            $display("[%0t] FOO begin waiting on reg %s; MAX_WAIT=%0d", $time, reg_name, MAX_WAIT);
             
             // Wait for streaming to finish, but don't wait forever.
             // It can take 5M cycles or more for larger runs, see MAX_WAIT above.
@@ -480,7 +480,7 @@ task Env_wait_interrupt();
             // for (i_wait = 0; i_wait < MAX_WAIT; i_wait++) begin
             for (int i=0; i<MAX_WAIT; i++) @(posedge axil_ifc.clk);
 
-            $display("[%0t] FOO timeout waiting on reg %s", reg_name);
+            $display("[%0t] FOO timeout waiting on reg %s", $time, reg_name);
             $error("@%0t: %m ERROR: Interrupt wait timeout, waited %0d cy for reg %s", $time, i_wait, reg_name);
             $finish;
         end
