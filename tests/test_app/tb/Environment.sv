@@ -6,9 +6,9 @@
 // - camera pipeline 2x2 needs more than 6K, I use 80K
 // - but 80K is not enough for mat_elemadd etc.
 // 
-int MAX_WAIT = 6000;
+// int MAX_WAIT = 6000;
 // int MAX_WAIT = 80_000;
-// int MAX_WAIT = 6_000_000;
+int MAX_WAIT = 6_000_000;
 
 // Must declare vars OUTSIDE fork b/c verilator is squirrely about declaraions inside.
 int i_wait;
