@@ -171,7 +171,7 @@ task ProcDriver_read_data();
 `endif
             end
             $display("Offload %d data chunks END", PD_rdata_num_trans);  // 4027ns
-            $display("First output word is maybe...%0x",  PD_rdata_data_q[0]); $fflush();
+            $display("First output word is maybe...0x%04x",  PD_rdata_data_q[0]);
         end
     join
     repeat (10) @(posedge p_ifc.clk);
