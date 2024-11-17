@@ -297,7 +297,7 @@ task Env_kernel_test();
                 begin
                     //  wait_interrupt(GLB_STRM_G2F_CTRL, kernel.inputs[ii].io_tiles[jj].tile);
                     // clear_interrupt(GLB_STRM_G2F_CTRL, kernel.inputs[ii].io_tiles[jj].tile);
-                    $display("\nCalling wait_interrupt(GLB_STRM_G2F_CTRL) @ 0x34");  // 5954ns
+                    $display("\n[%0t] (i%0d,j%0d) Calling wait_interrupt(GLB_STRM_G2F_CTRL) @ 0x34", $time, i, j);  // 5954ns
                     glb_ctrl = GLB_STRM_G2F_CTRL;
                     Env_wait_interrupt();
                 end
@@ -314,7 +314,7 @@ task Env_kernel_test();
         foreach (kernel.outputs[i].io_tiles[j]) begin
             automatic int ii = i;
             automatic int jj = j;
-            $display("[%0t] Processing interrupts for GLB_STRM_F2G_CTRL (0x30)", $time);
+            $display("[%0t] (i%0d,j%0d) Processing interrupts for GLB_STRM_F2G_CTRL (0x30)", $time, i, j);
             glb_ctrl = GLB_STRM_F2G_CTRL;  // 0x30
             fork
                 begin
