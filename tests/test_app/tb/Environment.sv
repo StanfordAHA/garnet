@@ -1,5 +1,11 @@
 // class Environment;
-//`define DEBUG_Environment  // Uncomment this for debugging
+`define DEBUG_Environment  // Uncomment this for debugging
+`ifdef DEBUG_Environment
+    // int MAX_WAIT = 6000;  // 6000 is plenty for pointwise, config is just 124 words maybe.
+    int MAX_WAIT = 80_000;  // 6000 is plenty for pointwise, config is just 124 words maybe.
+`else
+    int MAX_WAIT = 6000_000;
+`endif
 
 semaphore interrupt_lock;
 initial interrupt_lock = new(1);
@@ -313,15 +319,15 @@ task Env_kernel_test();
             glb_ctrl = GLB_STRM_F2G_CTRL;  // 0x30
 
             // Why fork? omg. each wait() call has its own fork :( :( :(
-            // fork
-            //     begin
+            fork
+                begin
                     one_cy_delay_if_vcs();  // FIXME why is this needed (e.g. for pointwise)
                     //  wait_interrupt(GLB_STRM_F2G_CTRL, kernel.inputs[ii].io_tiles[jj].tile);
                     // clear_interrupt(GLB_STRM_F2G_CTRL, kernel.inputs[ii].io_tiles[jj].tile);
                     Env_wait_interrupt();
                     $display("returned from wait_interrupt()");
-            //     end
-            // join_none
+                end
+            join_none
         end
     end
     wait fork;
@@ -354,11 +360,6 @@ endtask // Env_kernel_test
 
 // Must declare vars OUTSIDE fork b/c verilator is squirrely about declaraions inside.
 int i_wait;
-`ifdef DEBUG_Environment
-    int MAX_WAIT = 6000;  // 6000 is plenty for pointwise, config is just 124 words maybe.
-`else
-    int MAX_WAIT = 6000_000;
-`endif
 
 bit [NUM_GLB_TILES-1:0] tile_mask;
 
