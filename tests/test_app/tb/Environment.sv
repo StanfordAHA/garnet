@@ -297,7 +297,9 @@ task Env_kernel_test();
                 begin
                     //  wait_interrupt(GLB_STRM_G2F_CTRL, kernel.inputs[ii].io_tiles[jj].tile);
                     // clear_interrupt(GLB_STRM_G2F_CTRL, kernel.inputs[ii].io_tiles[jj].tile);
-                    $display("\n[%0t] (i%0d,j%0d) Calling wait_interrupt(GLB_STRM_G2F_CTRL) @ 0x34", $time, i, j);  // 5954ns
+                    $display("\n[%0t] (i%0d,j%0d) Calling wait_interrupt(GLB_STRM_G2F_CTRL) @ 0x34", $time, ii, jj);  // 5954ns
+                    $display("\n[%0t] (t%0d) Calling wait_interrupt(GLB_STRM_G2F_CTRL) @ 0x34",
+                             $time, kernel.inputs[ii].io_tiles[jj].tile);  // 5954ns
                     glb_ctrl = GLB_STRM_G2F_CTRL;
                     Env_wait_interrupt();
                 end
@@ -466,15 +468,20 @@ task Env_wait_interrupt();
             end
         end
         begin
+            $display("[%0t] FOO begin waiting on reg %s; MAX_WAIT=%0d", reg_name, MAX_WAIT);
+            
             // Wait for streaming to finish, but don't wait forever.
             // It can take 5M cycles or more for larger runs, see MAX_WAIT above.
             // When/if interrupt clears (above), this loop dies b/c 'join_any'
 
             // repeat (MAX_WAIT) @(posedge...);  // "repeat" confuses verilator:(
-            for (i_wait = 0; i_wait < MAX_WAIT; i_wait++) begin
-                @(posedge axil_ifc.clk);
-            end
-            $error("@%0t: %m ERROR: Interrupt wait timeout ", $time);
+
+            // Oh boy it sure was dumb to try and use a global signal for the iterator :(
+            // for (i_wait = 0; i_wait < MAX_WAIT; i_wait++) begin
+            for (int = 0; i < MAX_WAIT; i++) @(posedge axil_ifc.clk);
+
+            $display("[%0t] FOO timeout waiting on reg %s", reg_name);
+            $error("@%0t: %m ERROR: Interrupt wait timeout, waited %0d cy for reg %s", $time, i_wait, reg_name);
             $finish;
         end
     join_any
