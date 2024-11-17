@@ -177,9 +177,11 @@ task Env_cgra_configure();
     AxilDriver_write();
     //  wait_interrupt(GLB_PCFG_CTRL, kernel.bs_tile);
     // clear_interrupt(GLB_PCFG_CTRL, kernel.bs_tile);
-    $display("calling wait_interrupt(GLB_PCFG_CTRL) = 0x38"); $fflush();
+    tile_mask = 1 << kernel.bs_tile
+    $display("calling wait_interrupt(GLB_PCFG_CTRL) = 0x38");
     glb_ctrl = GLB_PCFG_CTRL;    // 0x38
     Env_wait_interrupt();
+    Env_clear_interrupt();
 
     end_time = $realtime;
     $display("[%s] fast configuration end at %0t", kernel.name, end_time);  // 1710ns
@@ -288,7 +290,17 @@ task Env_kernel_test();
     // and then the one after that, and so on until the right number
     // have been found. i think.
 
+    tile_mask = 0;
+    foreach (kernel.inputs[i]) begin
+        foreach (kernel.inputs[i].io_tiles[j]) begin
+            tile_mask |= 1 << kernel.inputs[i].io_tiles[j].tile;
+        end
+    end
+    $display("\n[%0t] Built a INPUT tile mask %0x", $time, tile_mask);
+
     // TODO these two loops could be tasks e.g. glb_stream_g2f() and glb_stream_f2g()
+    glb_ctrl = GLB_STRM_G2F_CTRL;
+    /*
     foreach (kernel.inputs[i]) begin
         foreach (kernel.inputs[i].io_tiles[j]) begin
             automatic int ii = i;
@@ -300,29 +312,38 @@ task Env_kernel_test();
                     $display("\n[%0t] (i%0d,j%0d) Calling wait_interrupt(GLB_STRM_G2F_CTRL) @ 0x34", $time, ii, jj);  // 5954ns
                     $display("\n[%0t] (t%0d) Calling wait_interrupt(GLB_STRM_G2F_CTRL) @ 0x34",
                              $time, kernel.inputs[ii].io_tiles[jj].tile);  // 5954ns
-                    glb_ctrl = GLB_STRM_G2F_CTRL;
                     Env_wait_interrupt();
                 end
             join_none
         end
     end
     wait fork;
+     */
+    Env_wait_interrupt();
+    Env_clear_interrupt();
 
     g2f_end_time = $realtime;
     // 2909ns
     $display("[%s] GLB-to-CGRA streaming done at %0t", kernel.name, g2f_end_time);
 
+    tile_mask = 0;
+    foreach (kernel.outputs[i]) begin
+        foreach (kernel.outputs[i].io_tiles[j]) begin
+            tile_mask |= 1 << kernel.outputs[i].io_tiles[j].tile;
+        end
+    end
+    $display("\n[%0t] Built a OUTPUT tile mask %0x", $time, tile_mask);
+
+    glb_ctrl = GLB_STRM_F2G_CTRL;  // 0x30
+    /*
     foreach (kernel.outputs[i]) begin
         foreach (kernel.outputs[i].io_tiles[j]) begin
             automatic int ii = i;
             automatic int jj = j;
             $display("[%0t] (i%0d,j%0d) Processing interrupts for GLB_STRM_F2G_CTRL (0x30)", $time, i, j);
-            glb_ctrl = GLB_STRM_F2G_CTRL;  // 0x30
             fork
                 begin
                     one_cy_delay_if_vcs();  // FIXME why is this needed (e.g. for pointwise)
-                    //  wait_interrupt(GLB_STRM_F2G_CTRL, kernel.inputs[ii].io_tiles[jj].tile);
-                    // clear_interrupt(GLB_STRM_F2G_CTRL, kernel.inputs[ii].io_tiles[jj].tile);
                     Env_wait_interrupt();
                     $display("returned from wait_interrupt()");
                 end
@@ -330,6 +351,10 @@ task Env_kernel_test();
         end
     end
     wait fork;
+     */
+    Env_wait_interrupt();
+    Env_clear_interrupt();
+
 
     end_time = $realtime;
     $display("\n");  // Note this makes TWO blank lines
@@ -402,7 +427,7 @@ task Env_wait_interrupt();
                 one_cy_delay_if_verilator();  // Off-by-one before this wait
 
                 // Exclusion zone keeps everyone from clearing the same interrupt all at once maybe
-                interrupt_lock.get(1);
+                // interrupt_lock.get(1); // Maybe don't need this no more...
 
                 // Got an interrupt. Some tile has finished streaming.
                 // Read the indicated reg to see which one. Then clear it why not.
@@ -414,59 +439,31 @@ task Env_wait_interrupt();
                 AxilDriver_read_addr = addr;
                 AxilDriver_read();
                 data = AxilDriver_read_data;
-
-                // There maybe be multiple interrupts all at once e.g. if
-                // data = 0xfff that means we got interrupts on tiles 0-11/
-                // "Exclusion zone" see above prevents everyone from clearing the same tile
-
-                $display("Looking for interrupt on ANY TILE");
+                $display("%s interrupt tiles %0x; waiting for %0x", reg_name, data, tile_mask);
                 if (data == 0) begin
                     $display("WARNING got interrupt, but not from %s apparently", reg_name);
+                    $display("(this is probably a fatal error ackshully");
                     continue;  // Keep waiting for the RIGHT interrupt
                 end
-/*
-                else begin
-                    $display("%s interrupt tiles %0x", reg_name, data);
-                    for (tile_num=0; tile_num<NUM_GLB_TILES; tile_num++) begin
-                        // Clear (one of) the interrupting tile(s)
-                        tile_mask = (1 << tile_num);
-                        $display("Check tile_num %0d using mask %0x"
-                        if ((data[tile_num] & tile_mask) != 0) begin
-                            $display("%s clearing tile %0d using mask", reg_name, tile_num, tile_mask);
-                            break;
-                        end
-                    end
-                end
-*/
-                else begin
-                    // Find lowest-numbered interrupting tile
-                    $display("%s interrupt tiles %0x", reg_name, data);
-                    for (tile_num=0; tile_num<NUM_GLB_TILES; tile_num++) begin
-                        if (data[tile_num] == 1) break;
-                        else continue;
-                        $display("ERROR this should be impossible!!?");
-                        $finish(2);  // "2" gives time, location, and mem stats
-                    end
-                end
 
-                // Clear interrupt from the chosen tile 'tile_num'
-                tile_mask = (1 << tile_num);
+                if (data == tile_mask) break;
+                // interrupt_lock.put(1);  // End exclusion zone
+                break;  // Gotta break out of forever loop, duh
+            end
+        end
+        /*
                 $display("%s clearing tile %0d using mask", reg_name, tile_num, tile_mask);
 
                 // AxilDriver_write(addr, tile_mask);
                 // FIXME wait...AxilDriver_read() uses AxilDriver_read_addr but
                 // AxilDriver_write just uses "addr"? This is an unpleasant asymmetry :(
-                $display("%s clearing tile %0d using mask", reg_name, tile_num, tile_mask);
+                $display("%s clearing tile %0d using mask %0x", reg_name, tile_num, tile_mask);
                 $display("%s interrupt clear\n", reg_name);
                 data = tile_mask;
                 AxilDriver_write();  // Writes to interrupt reg addr from above
-                $display("%s interrupt CLEARED\n", reg_name);
+                $display("%s interrupt CLEARED\n", tile_num, reg_name);
+         */
 
-                interrupt_lock.put(1);  // End exclusion zone
-
-                break;  // Gotta break out of forever loop, duh
-            end
-        end
         begin
             $display("[%0t] FOO begin waiting on reg %s; MAX_WAIT=%0d", $time, reg_name, MAX_WAIT);
             
@@ -488,6 +485,36 @@ task Env_wait_interrupt();
     disable fork;
     $display("[%0t] FORK CANCELLED (right)?", $time);
 endtask
+
+task Env_clear_interrupt();
+
+    $display("Welcome to clear_interrupt...");
+    // which interrupt
+    if (glb_ctrl == GLB_PCFG_CTRL) begin
+        addr = `GLC_PAR_CFG_G2F_ISR_R;  // 0x38 - 673ns
+        reg_name = "PCFG";
+    end else if (glb_ctrl == GLB_STRM_G2F_CTRL) begin
+        addr = `GLC_STRM_G2F_ISR_R;     // 0x34 - 1839ns
+        reg_name = "STRM_G2F";
+    end else begin
+        addr = `GLC_STRM_F2G_ISR_R;     // 0x30 - 5962ns
+        reg_name = "STRM_F2G";
+    end
+
+    $display("%s clear ALL RELEVANT TILES(?) using mask", reg_name, tile_mask);
+
+    // AxilDriver_write(addr, tile_mask);
+    // FIXME wait...AxilDriver_read() uses AxilDriver_read_addr but
+    // AxilDriver_write just uses "addr"? This is an unpleasant asymmetry :(
+    // $display("%s clearing tile %0d using mask %0x", reg_name, tile_num, tile_mask);
+    // $display("%s interrupt clear\n", reg_name);
+    // data = tile_mask;
+    AxilDriver_write();  // Writes to interrupt reg addr from above
+    $display("%s interrupts CLEARED i hope\n", reg_name);
+endtask // Env_clear_interrupt
+
+
+
 
 // task Environment::clear_interrupt(e_glb_ctrl glb_ctrl, bit [$clog2(NUM_GLB_TILES)-1:0] tile_num);
 // Note clear_interrupt functionality is now embedded as part of wait_interrupt()
