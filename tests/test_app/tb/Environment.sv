@@ -478,7 +478,7 @@ task Env_wait_interrupt();
 
             // Oh boy it sure was dumb to try and use a global signal for the iterator :(
             // for (i_wait = 0; i_wait < MAX_WAIT; i_wait++) begin
-            for (int = 0; i < MAX_WAIT; i++) @(posedge axil_ifc.clk);
+            for (int i=0; i<MAX_WAIT; i++) @(posedge axil_ifc.clk);
 
             $display("[%0t] FOO timeout waiting on reg %s", reg_name);
             $error("@%0t: %m ERROR: Interrupt wait timeout, waited %0d cy for reg %s", $time, i_wait, reg_name);
