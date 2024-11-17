@@ -316,8 +316,6 @@ task Env_kernel_test();
             automatic int jj = j;
             $display("[%0t] (i%0d,j%0d) Processing interrupts for GLB_STRM_F2G_CTRL (0x30)", $time, i, j);
             glb_ctrl = GLB_STRM_F2G_CTRL;  // 0x30
-
-            // Why fork? omg. each wait() call has its own fork :( :( :(
             fork
                 begin
                     one_cy_delay_if_vcs();  // FIXME why is this needed (e.g. for pointwise)
@@ -359,7 +357,6 @@ endtask // Env_kernel_test
 
 // Must declare vars OUTSIDE fork b/c verilator is squirrely about declaraions inside.
 int i_wait;
-
 bit [NUM_GLB_TILES-1:0] tile_mask;
 
 semaphore interrupt_lock;
