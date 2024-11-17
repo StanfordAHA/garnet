@@ -10,6 +10,13 @@ int MAX_WAIT = 6000;
 // int MAX_WAIT = 80_000;
 // int MAX_WAIT = 6_000_000;
 
+// Must declare vars OUTSIDE fork b/c verilator is squirrely about declaraions inside.
+int i_wait;
+bit [NUM_GLB_TILES-1:0] tile_mask;
+
+semaphore interrupt_lock;
+initial interrupt_lock = new(1);
+
 typedef enum int {
     GLB_PCFG_CTRL,
     GLB_STRM_G2F_CTRL,
@@ -177,7 +184,7 @@ task Env_cgra_configure();
     AxilDriver_write();
     //  wait_interrupt(GLB_PCFG_CTRL, kernel.bs_tile);
     // clear_interrupt(GLB_PCFG_CTRL, kernel.bs_tile);
-    tile_mask = 1 << kernel.bs_tile
+    tile_mask = 1 << kernel.bs_tile;
     $display("calling wait_interrupt(GLB_PCFG_CTRL) = 0x38");
     glb_ctrl = GLB_PCFG_CTRL;    // 0x38
     Env_wait_interrupt();
@@ -381,13 +388,6 @@ endtask // Env_kernel_test
 // glc.svh:`define GLC_STRM_G2F_ISR_R 'h34
 // glc.svh:`define GLC_STRM_F2G_ISR_R 'h30
 // glc.svh:`define GLC_GLOBAL_ISR_R 'h3c
-
-// Must declare vars OUTSIDE fork b/c verilator is squirrely about declaraions inside.
-int i_wait;
-bit [NUM_GLB_TILES-1:0] tile_mask;
-
-semaphore interrupt_lock;
-initial interrupt_lock = new(1);
 
 string reg_name;
 // bit [CGRA_AXI_ADDR_WIDTH-1:0] addr;
