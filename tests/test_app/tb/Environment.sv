@@ -1,5 +1,5 @@
 // class Environment;
-`define DEBUG_Environment  // Uncomment this for debugging
+// `define DEBUG_Environment  // Uncomment this for debugging
 `ifdef DEBUG_Environment
     // int MAX_WAIT = 6000;  // 6000 is plenty for pointwise, config is just 124 words maybe.
     int MAX_WAIT = 80_000;  // 6000 is plenty for pointwise, config is just 124 words maybe.
