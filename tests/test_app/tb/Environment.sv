@@ -10,10 +10,6 @@
 // int MAX_WAIT = 80_000;
 int MAX_WAIT = 6_000_000;
 
-// Must declare vars OUTSIDE fork b/c verilator is squirrely about declaraions inside.
-int i_wait;
-bit [NUM_GLB_TILES-1:0] tile_mask;
-
 typedef enum int {
     GLB_PCFG_CTRL,
     GLB_STRM_G2F_CTRL,
@@ -21,7 +17,7 @@ typedef enum int {
 } e_glb_ctrl;
 e_glb_ctrl glb_ctrl;
 
-// int dpr;  // Already declared in garnet_test.sv...
+bit [NUM_GLB_TILES-1:0] tile_mask;
 
 realtime start_time, end_time, g2f_end_time, latency;
 Kernel kernel;
@@ -235,18 +231,18 @@ bit [CGRA_AXI_DATA_WIDTH-1:0] Env_cgra_unstall_wr_data;
 task Env_cgra_unstall();
     // Unstall CGRA
     Env_cgra_unstall_stall_mask = Env_cgra_stall_mask;
-    $display("Welcome to Env_cgra_unstall()"); $fflush();
+    $display("Welcome to Env_cgra_unstall()");
 
     // axil_drv.read(`GLC_CGRA_STALL_R, data);
-        AxilDriver_read_addr = `GLC_CGRA_STALL_R;
-        AxilDriver_read();  // 1850ns
-        Env_cgra_unstall_data = AxilDriver_read_data;
+    AxilDriver_read_addr = `GLC_CGRA_STALL_R;
+    AxilDriver_read();  // 1850ns
+    Env_cgra_unstall_data = AxilDriver_read_data;
     Env_cgra_unstall_wr_data 
       = (~Env_cgra_unstall_stall_mask)
         & Env_cgra_unstall_data;
 
     // axil_drv.write(`GLC_CGRA_STALL_R, wr_data);
-    addr = `GLC_CGRA_STALL_R;
+    addr = `GLC_CGRA_STALL_R;  // 0x8, defined in glv.svh maybe
     data = Env_cgra_unstall_wr_data;
     AxilDriver_write();
 
@@ -281,18 +277,10 @@ task Env_kernel_test();
     // A write of 0x10001 to address 0x18 starts data streaming to proc tiles.
     // axil_drv.write(cfg.addr, cfg.data);
     addr = Env_kernel_cfg.addr;  // 0x18
-    data = Env_kernel_cfg.data;  // 0x10001 ("begin streaming tile 1"?)
+    data = Env_kernel_cfg.data;  // 0x10001 (unstall mask)
     AxilDriver_write();          // This starts the (G2F) streaming
 
-// unstall_mask: addr=0x18, data=0x10001
-// stall_mask:   addr=0x1c, data=0x00001
-
-    // Wait for an interrupt to tell us when the streaming is done
-    // These two 'foreach' loops are here to tell us HOW MANY tiles need to stream
-
-    // wait_interrupt() will service whatever interrupt happens next,
-    // and then the one after that, and so on until the right number
-    // have been found. i think.
+    // Build a mask that shows which tiles are receiving data from GLB
 
     tile_mask = 0;
     foreach (kernel.inputs[i]) begin
@@ -302,33 +290,18 @@ task Env_kernel_test();
     end
     $display("\n[%0t] Built a INPUT tile mask %0x", $time, tile_mask);
 
-    // TODO these two loops could be tasks e.g. glb_stream_g2f() and glb_stream_f2g()
+    // Wait for an interrupt to tell us when input streaming is done
+    // Then wait until interrupt mask contains ALL TILES listed in tile_mask
+    // Then clear the interrupt(s)
+
     glb_ctrl = GLB_STRM_G2F_CTRL;
-    /*
-    foreach (kernel.inputs[i]) begin
-        foreach (kernel.inputs[i].io_tiles[j]) begin
-            automatic int ii = i;
-            automatic int jj = j;
-            fork
-                begin
-                    //  wait_interrupt(GLB_STRM_G2F_CTRL, kernel.inputs[ii].io_tiles[jj].tile);
-                    // clear_interrupt(GLB_STRM_G2F_CTRL, kernel.inputs[ii].io_tiles[jj].tile);
-                    $display("\n[%0t] (i%0d,j%0d) Calling wait_interrupt(GLB_STRM_G2F_CTRL) @ 0x34", $time, ii, jj);  // 5954ns
-                    $display("\n[%0t] (t%0d) Calling wait_interrupt(GLB_STRM_G2F_CTRL) @ 0x34",
-                             $time, kernel.inputs[ii].io_tiles[jj].tile);  // 5954ns
-                    Env_wait_interrupt();
-                end
-            join_none
-        end
-    end
-    wait fork;
-     */
     Env_wait_interrupt();
     Env_clear_interrupt();
 
-    g2f_end_time = $realtime;
-    // 2909ns
+    g2f_end_time = $realtime; // 2909ns
     $display("[%s] GLB-to-CGRA streaming done at %0t", kernel.name, g2f_end_time);
+
+    // Build a mask that shows which tiles are sending data to GLB
 
     tile_mask = 0;
     foreach (kernel.outputs[i]) begin
@@ -338,31 +311,18 @@ task Env_kernel_test();
     end
     $display("\n[%0t] Built a OUTPUT tile mask %0x", $time, tile_mask);
 
+    // Wait for an interrupt to tell us when input streaming is done
+    // Then wait until interrupt mask contains ALL TILES listed in tile_mask
+    // Then clear the interrupt(s)
+
     glb_ctrl = GLB_STRM_F2G_CTRL;  // 0x30
-    /*
-    foreach (kernel.outputs[i]) begin
-        foreach (kernel.outputs[i].io_tiles[j]) begin
-            automatic int ii = i;
-            automatic int jj = j;
-            $display("[%0t] (i%0d,j%0d) Processing interrupts for GLB_STRM_F2G_CTRL (0x30)", $time, i, j);
-            fork
-                begin
-                    one_cy_delay_if_vcs();  // FIXME why is this needed (e.g. for pointwise)
-                    Env_wait_interrupt();
-                    $display("returned from wait_interrupt()");
-                end
-            join_none
-        end
-    end
-    wait fork;
-     */
     Env_wait_interrupt();
     Env_clear_interrupt();
 
+    // Summary info for the log
 
     end_time = $realtime;
-    $display("\n");  // Note this makes TWO blank lines
-    $display("[%s] kernel end at %0t", kernel.name, end_time);  // 5971ns
+    $display("[%s] kernel end at %0t", kernel.name, end_time);  // 5971ns for pointwise maybe
     $display("[%s] It takes %0t total time to run kernel.", kernel.name, end_time - start_time);
 
     total_output_size = 0;
@@ -520,6 +480,7 @@ task Env_set_interrupt_on();
     addr = `GLC_STRM_G2F_IER_R;    data =   1'b1; AxilDriver_write();
 endtask
 
+// int dpr;  (declared in garnet_test.sv, which "include"s this file)
 task Env_run();
     // wait for reset
     $display("[%0t] wait for reset", $time);  // 100ps
