@@ -181,6 +181,7 @@ task Env_cgra_configure();
     $display("calling wait_interrupt(GLB_PCFG_CTRL) = 0x38");
     glb_ctrl = GLB_PCFG_CTRL;    // 0x38
     Env_wait_interrupt();
+    Env_clear_interrupt();
 
     end_time = $realtime;
     $display("[%s] fast configuration end at %0t", kernel.name, end_time);  // 1710ns
