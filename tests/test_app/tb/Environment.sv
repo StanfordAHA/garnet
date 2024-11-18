@@ -14,9 +14,6 @@ int MAX_WAIT = 6_000_000;
 int i_wait;
 bit [NUM_GLB_TILES-1:0] tile_mask;
 
-semaphore interrupt_lock;
-initial interrupt_lock = new(1);
-
 typedef enum int {
     GLB_PCFG_CTRL,
     GLB_STRM_G2F_CTRL,
@@ -426,9 +423,6 @@ task Env_wait_interrupt();
                 wait (top.interrupt);
                 one_cy_delay_if_verilator();  // Off-by-one before this wait
 
-                // Exclusion zone keeps everyone from clearing the same interrupt all at once maybe
-                // interrupt_lock.get(1); // Maybe don't need this no more...
-
                 // Got an interrupt. Some tile has finished streaming.
                 // Read the indicated reg to see which one. Then clear it why not.
 
@@ -447,7 +441,6 @@ task Env_wait_interrupt();
                 end
 
                 if (data == tile_mask) break;
-                // interrupt_lock.put(1);  // End exclusion zone
                 break;  // Gotta break out of forever loop, duh
             end
         end
@@ -473,12 +466,11 @@ task Env_wait_interrupt();
 
             // repeat (MAX_WAIT) @(posedge...);  // "repeat" confuses verilator:(
 
-            // Oh boy it sure was dumb to try and use a global signal for the iterator :(
-            // for (i_wait = 0; i_wait < MAX_WAIT; i_wait++) begin
             for (int i=0; i<MAX_WAIT; i++) @(posedge axil_ifc.clk);
 
             $display("[%0t] FOO timeout waiting on reg %s", $time, reg_name);
-            $error("@%0t: %m ERROR: Interrupt wait timeout, waited %0d cy for reg %s", $time, i_wait, reg_name);
+            $error("@%0t: %m ERROR: Interrupt wait timeout, waited %0d cy for reg %s", 
+                   $time, i, reg_name);
             $finish;
         end
     join_any
