@@ -177,6 +177,7 @@ task Env_cgra_configure();
     AxilDriver_write();
     //  wait_interrupt(GLB_PCFG_CTRL, kernel.bs_tile);
     // clear_interrupt(GLB_PCFG_CTRL, kernel.bs_tile);
+    tile_mask = 1 << kernel.bs_tile;
     $display("calling wait_interrupt(GLB_PCFG_CTRL) = 0x38");
     glb_ctrl = GLB_PCFG_CTRL;    // 0x38
     Env_wait_interrupt();
@@ -274,6 +275,15 @@ task Env_kernel_test();
     data = Env_kernel_cfg.data;  // (e.g. 0x10001 for pointwise)
     AxilDriver_write();          // This starts the (G2F) streaming
 
+    // Build a mask that shows which tiles are receiving data from GLB
+    tile_mask = 0;
+    foreach (kernel.inputs[i]) begin
+        foreach (kernel.inputs[i].io_tiles[j]) begin
+            tile_mask |= 1 << kernel.inputs[i].io_tiles[j].tile;
+        end
+    end
+    $display("\n[%0t] Built a INPUT tile mask %0x", $time, tile_mask);
+
     // Wait for an interrupt to tell us when input streaming is done
     // Then wait until interrupt mask contains ALL TILES listed in tile_mask
     // Then clear the interrupt(s)
@@ -297,6 +307,15 @@ task Env_kernel_test();
 
     g2f_end_time = $realtime; // 2909ns
     $display("[%s] GLB-to-CGRA streaming done at %0t", kernel.name, g2f_end_time);
+
+    // Build a mask that shows which tiles are sending data to GLB
+    tile_mask = 0;
+    foreach (kernel.outputs[i]) begin
+        foreach (kernel.outputs[i].io_tiles[j]) begin
+            tile_mask |= 1 << kernel.outputs[i].io_tiles[j].tile;
+        end
+    end
+    $display("\n[%0t] Built a OUTPUT tile mask %0x", $time, tile_mask);
 
     // Wait for an interrupt to tell us when output streaming is done
     // Then wait until interrupt mask contains ALL TILES listed in tile_mask
