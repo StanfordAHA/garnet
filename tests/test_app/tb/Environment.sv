@@ -17,6 +17,7 @@ typedef enum int {
 } e_glb_ctrl;
 e_glb_ctrl glb_ctrl;
 
+bit [NUM_GLB_TILES-1:0] tile_mask;
 
 realtime start_time, end_time, g2f_end_time, latency;
 Kernel kernel;
@@ -346,10 +347,6 @@ endtask // Env_kernel_test
 // glc.svh:`define GLC_STRM_F2G_ISR_R 'h30
 // glc.svh:`define GLC_GLOBAL_ISR_R 'h3c
 
-// Must declare vars OUTSIDE fork b/c verilator is squirrely about declaraions inside.
-int i_wait;
-bit [NUM_GLB_TILES-1:0] tile_mask;
-
 semaphore interrupt_lock;
 initial interrupt_lock = new(1);
 
@@ -425,12 +422,11 @@ task Env_wait_interrupt();
             // It can take 5M cycles or more for larger runs, see MAX_WAIT above.
             // When/if interrupt clears (above), this loop dies b/c 'join_any'
 
-            // repeat (MAX_WAIT) @(posedge...);  // "repeat" confuses verilator:(
-            for (i_wait = 0; i_wait < MAX_WAIT; i_wait++) begin
-                @(posedge axil_ifc.clk);
-            end
-            $error("@%0t: %m ERROR: Interrupt wait timeout ", $time);
-            $finish;
+             // repeat (MAX_WAIT) @(posedge...);  // "repeat" confuses verilator:(
+            for (int i=0; i<MAX_WAIT; i++) @(posedge axil_ifc.clk);
+            $error("@%0t: %m ERROR: Interrupt wait timeout, waited %0d cy for reg %s", 
+                   $time, i, reg_name);
+            $finish(2);  // The "2" prints more information about when/where/why
         end
     join_any
     disable fork;
