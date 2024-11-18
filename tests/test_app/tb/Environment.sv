@@ -396,7 +396,7 @@ task Env_wait_interrupt();
             forever begin
                 // level sensitive interrupt
                 wait (top.interrupt);         // Wait for interrupt, then start checking interrupt mask
-                one_cy_delay_if_verilator();  // Verilator is off by 1cy here vs. vcs
+                one_cy_delay_if_verilator();  // Vvverilator is off by 1cy here vs. vcs
 
                 // Got an interrupt. One or more tiles have finished streaming.
                 // Read the indicated reg to see which one(s) have finished so far.
@@ -444,7 +444,7 @@ task Env_wait_interrupt();
              // repeat (MAX_WAIT) @(posedge...);  // "repeat" confuses verilator:(
             for (int i=0; i<MAX_WAIT; i++) @(posedge axil_ifc.clk);
             $error("@%0t: %m ERROR: Interrupt wait timeout, waited %0d cy for reg %s", 
-                   $time, i, reg_name);
+                   $time, MAX_WAIT, reg_name);
             $finish(2);  // The "2" prints more information about when/where/why
         end
     join_any
