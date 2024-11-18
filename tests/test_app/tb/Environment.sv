@@ -289,22 +289,9 @@ task Env_kernel_test();
     // Then wait until interrupt mask contains ALL TILES listed in tile_mask
     // Then clear the interrupt(s)
 
-    foreach (kernel.inputs[i]) begin
-        foreach (kernel.inputs[i].io_tiles[j]) begin
-            automatic int ii = i;
-            automatic int jj = j;
-            fork
-                begin
-                    //  wait_interrupt(GLB_STRM_G2F_CTRL, kernel.inputs[ii].io_tiles[jj].tile);
-                    // clear_interrupt(GLB_STRM_G2F_CTRL, kernel.inputs[ii].io_tiles[jj].tile);
-                    $display("\n[%0t] (i%0d,j%0d) Calling wait_interrupt(GLB_STRM_G2F_CTRL) @ 0x34", $time, i, j);  // 5954ns
-                    glb_ctrl = GLB_STRM_G2F_CTRL;
-                    Env_wait_interrupt();
-                end
-            join_none
-        end
-    end
-    wait fork;
+    glb_ctrl = GLB_STRM_G2F_CTRL;
+    Env_wait_interrupt();
+    Env_clear_interrupt();
 
     g2f_end_time = $realtime; // 2909ns
     $display("[%s] GLB-to-CGRA streaming done at %0t", kernel.name, g2f_end_time);
@@ -322,24 +309,9 @@ task Env_kernel_test();
     // Then wait until interrupt mask contains ALL TILES listed in tile_mask
     // Then clear the interrupt(s)
 
-    foreach (kernel.outputs[i]) begin
-        foreach (kernel.outputs[i].io_tiles[j]) begin
-            automatic int ii = i;
-            automatic int jj = j;
-            $display("[%0t] (i%0d,j%0d) Processing interrupts for GLB_STRM_F2G_CTRL (0x30)", $time, i, j);
-            glb_ctrl = GLB_STRM_F2G_CTRL;  // 0x30
-            fork
-                begin
-                    one_cy_delay_if_vcs();  // FIXME why is this needed (e.g. for pointwise)
-                    //  wait_interrupt(GLB_STRM_F2G_CTRL, kernel.inputs[ii].io_tiles[jj].tile);
-                    // clear_interrupt(GLB_STRM_F2G_CTRL, kernel.inputs[ii].io_tiles[jj].tile);
-                    Env_wait_interrupt();
-                    $display("returned from wait_interrupt()");
-                end
-            join_none
-        end
-    end
-    wait fork;
+    glb_ctrl = GLB_STRM_F2G_CTRL;  // 0x30
+    Env_wait_interrupt();
+    Env_clear_interrupt();
 
     // Summary info for the log
 
@@ -416,18 +388,9 @@ task Env_wait_interrupt();
                     $display("(this is probably a fatal error ackshully");
                     continue;  // Keep waiting for the RIGHT interrupt
                 end
-                else for (tile_num=0; tile_num<NUM_GLB_TILES; tile_num++) begin
-                    // Clear (one of) the interrupting tile(s)
-                    tile_mask = (1 << tile_num);
-                    if ((data[tile_num] & tile_mask) != 0) begin
-                        $display("%s interrupt from tile %0d", reg_name, tile_num);
-                        break;
-                    end
-                end
-                
-                $display("%s interrupt clear\n", reg_name);
-                data = tile_mask;
-                AxilDriver_write();  // Writes to interrupt reg addr from above
+
+                // Don't stop until interrupt mask (data) contains ALL tiles in tile_mask
+                if (data == tile_mask) break;
 
                 interrupt_lock.put(1);
                 break;  // Gotta break out of forever loop, duh
@@ -442,7 +405,7 @@ task Env_wait_interrupt();
             // It can take 5M cycles or more for larger runs, see MAX_WAIT above.
             // When/if interrupt clears (above), this loop dies b/c 'join_any'
 
-             // repeat (MAX_WAIT) @(posedge...);  // "repeat" confuses verilator:(
+            // repeat (MAX_WAIT) @(posedge...);  // "repeat" confuses verilator:(
             for (int i=0; i<MAX_WAIT; i++) @(posedge axil_ifc.clk);
             $error("@%0t: %m ERROR: Interrupt wait timeout, waited %0d cy for reg %s", 
                    $time, MAX_WAIT, reg_name);
