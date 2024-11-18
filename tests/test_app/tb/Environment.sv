@@ -339,9 +339,6 @@ endtask // Env_kernel_test
 // glc.svh:`define GLC_STRM_F2G_ISR_R 'h30
 // glc.svh:`define GLC_GLOBAL_ISR_R 'h3c
 
-semaphore interrupt_lock;
-initial interrupt_lock = new(1);
-
 string reg_name;
 // bit [CGRA_AXI_ADDR_WIDTH-1:0] addr;
 // bit [CGRA_AXI_DATA_WIDTH-1:0] data;
@@ -374,9 +371,6 @@ task Env_wait_interrupt();
                 // Got an interrupt. One or more tiles have finished streaming.
                 // Read the indicated reg to see which one(s) have finished so far.
 
-                // Protection zone keeps everyone from clearing the same interrupt all at once maybe
-                interrupt_lock.get(1);
-
                 // FIXME wait...AxilDriver_read() uses AxilDriver_read_addr but
                 // AxilDriver_write just uses "addr"? This is an unpleasant asymmetry :(
                 AxilDriver_read_addr = addr;
@@ -391,8 +385,6 @@ task Env_wait_interrupt();
 
                 // Don't stop until interrupt mask (data) contains ALL tiles in tile_mask
                 if (data == tile_mask) break;
-
-                interrupt_lock.put(1);
                 break;  // Gotta break out of forever loop, duh
             end
         end
