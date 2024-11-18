@@ -250,15 +250,15 @@ task Env_cgra_unstall();
     $display("Unstall CGRA with stall mask %4h", Env_cgra_unstall_stall_mask);
 endtask // Env_cgra_unstall
 
-// FIXME/TODO What does this one do?
 // task Environment::kernel_test(Kernel kernel);
 Config Env_kernel_cfg;
 int total_output_size;
-// int group_start, num_groups;                 // re-use existing I guess :(
-// bit [NUM_GLB_TILES-1:0] glb_stall_mask;   // re-use existing I guess :(
-// bit [NUM_CGRA_COLS-1:0] cgra_stall_mask;  // re-use existing I guess :(
+// int group_start, num_groups;                // re-use existing I guess :(
+// bit [NUM_GLB_TILES-1:0] glb_stall_mask;     // re-use existing I guess :(
+// bit [NUM_CGRA_COLS-1:0] cgra_stall_mask;    // re-use existing I guess :(
 // realtime start_time, end_time, g2f_end_time, latency;  // globals :(
 
+// FIXME this could be three subtasks start_streaming(), wait_for_g2f(), wait_for_f2g()
 task Env_kernel_test();
     $timeformat(-9, 2, " ns", 0);
 
