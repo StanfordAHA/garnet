@@ -56,6 +56,10 @@ if test -f hw_output.txt; then
     rm hw_output.txt
 fi
 
+test -e vfiles/garnet.v || (cd vfiles; gunzip -c garnet.v.gz > garnet.v)
+test -d tb || ln -s ../tb
+test -e libcgra.so || ln -s vfiles/libcgra.so
+
 /bin/bash \
 vcs -sverilog -timescale=1ps/1ps -full64 -ldflags "-Wl,--no-as-needed" \
   -CFLAGS "-m64" -top top +vcs+lic+wait +vcs+initreg+random +overlap \
