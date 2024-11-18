@@ -62,15 +62,12 @@ steps:
       source /aha/bin/activate;
       source /cad/modules/tcl/init/sh;
       module load base incisive xcelium/19.03.003 vcs/Q-2020.03-SP2;
-      pwd;
-      aha regress full;
+      pwd; aha regress pr;
     "
-
-#       ls -l garnet/tmp.regress.py aha/util/regress.py;
-#       cp garnet/tmp.regress.py aha/util/regress.py;
-#       ls -l garnet/tmp.regress.py aha/util/regress.py;
-#       aha regress pr;
-
+    # Can build a tmp.regress.py for experiments, i.e. one that ignores 'pr' and has hardwired test app(s)
+    # ls -l garnet/tmp.regress.py aha/util/regress.py;
+    # cp garnet/tmp.regress.py aha/util/regress.py;
+    # aha regress pr;
 
 # ALWAYS clean up regardless of test success or failure
 - wait: { continue_on_failure: true }
