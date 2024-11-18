@@ -253,7 +253,8 @@ endtask // Env_cgra_unstall
 Config Env_kernel_cfg;
 int total_output_size;
 
-// FIXME this could be three subtasks start_streaming(), wait_for_g2f(), wait_for_f2g()
+// FIXME/TODO this could be three subtasks start_streaming(), wait_for_g2f(), wait_for_f2g()
+// or glb_stream_g2f() and glb_stream_f2g() or some such
 task Env_kernel_test();
     $timeformat(-9, 2, " ns", 0);
 
@@ -304,7 +305,7 @@ task Env_kernel_test();
     end
     $display("\n[%0t] Built a OUTPUT tile mask %0x", $time, tile_mask);
 
-    // Wait for an interrupt to tell us when input streaming is done
+    // Wait for an interrupt to tell us when output streaming is done
     // Then wait until interrupt mask contains ALL TILES listed in tile_mask
     // Then clear the interrupt(s)
 
@@ -315,7 +316,6 @@ task Env_kernel_test();
     // Summary info for the log
 
     end_time = $realtime;
-    $display("[%s] kernel end at %0t", kernel.name, end_time);  // 5971ns for pointwise maybe
     $display("[%s] It takes %0t total time to run kernel.", kernel.name, end_time - start_time);
 
     total_output_size = 0;
@@ -359,14 +359,14 @@ task Env_wait_interrupt();
 
     // Start two parallel threads
     // Return when/if first thread sees interrupts from all tiles in tile_mask
-    // If interrupts not all arrived within 6M clock cycles, error and die
+    // If interrupts not all serviced within MAX_WAIT (6M?) clock cycles, error and die
 
     fork
         begin
             forever begin
                 // level sensitive interrupt
                 wait (top.interrupt);         // Wait for interrupt, then start checking interrupt mask
-                one_cy_delay_if_verilator();  // Verilator is off by 1cy before this wait
+                one_cy_delay_if_verilator();  // Verilator is off by 1cy here vs. vcs
 
                 // Got an interrupt. One or more tiles have finished streaming.
                 // Read the indicated reg to see which one(s) have finished so far.
@@ -390,8 +390,9 @@ task Env_wait_interrupt();
         end
         begin
             // ERROR if we go MAX_WAIT cycles without finding the interrupts
-            $display("[%0t] FOO begin waiting on reg %s; MAX_WAIT=%0d", $time, reg_name, MAX_WAIT);
-            
+            $display("[%0t] Begin waiting for interrupt on reg %s; MAX_WAIT=%0d",
+                     $time, reg_name, MAX_WAIT);
+
             // Wait for streaming to finish, but don't wait forever.
             // It can take 5M cycles or more for larger runs, see MAX_WAIT above.
             // When/if interrupt clears (above), this loop dies b/c 'join_any'
