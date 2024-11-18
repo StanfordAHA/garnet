@@ -233,7 +233,6 @@ task Env_cgra_unstall();
     Env_cgra_unstall_stall_mask = Env_cgra_stall_mask;
     $display("Welcome to Env_cgra_unstall()");
 
-    // axil_drv.read(`GLC_CGRA_STALL_R, data);
     AxilDriver_read_addr = `GLC_CGRA_STALL_R;
     AxilDriver_read();  // 1850ns
     Env_cgra_unstall_data = AxilDriver_read_data;
@@ -253,10 +252,6 @@ endtask // Env_cgra_unstall
 // task Environment::kernel_test(Kernel kernel);
 Config Env_kernel_cfg;
 int total_output_size;
-// int group_start, num_groups;                // re-use existing I guess :(
-// bit [NUM_GLB_TILES-1:0] glb_stall_mask;     // re-use existing I guess :(
-// bit [NUM_CGRA_COLS-1:0] cgra_stall_mask;    // re-use existing I guess :(
-// realtime start_time, end_time, g2f_end_time, latency;  // globals :(
 
 // FIXME this could be three subtasks start_streaming(), wait_for_g2f(), wait_for_f2g()
 task Env_kernel_test();
@@ -277,11 +272,10 @@ task Env_kernel_test();
     // A write of 0x10001 to address 0x18 starts data streaming to proc tiles.
     // axil_drv.write(cfg.addr, cfg.data);
     addr = Env_kernel_cfg.addr;  // 0x18
-    data = Env_kernel_cfg.data;  // 0x10001 (unstall mask)
+    data = Env_kernel_cfg.data;  // (e.g. 0x10001 for pointwise)
     AxilDriver_write();          // This starts the (G2F) streaming
 
     // Build a mask that shows which tiles are receiving data from GLB
-
     tile_mask = 0;
     foreach (kernel.inputs[i]) begin
         foreach (kernel.inputs[i].io_tiles[j]) begin
@@ -302,7 +296,6 @@ task Env_kernel_test();
     $display("[%s] GLB-to-CGRA streaming done at %0t", kernel.name, g2f_end_time);
 
     // Build a mask that shows which tiles are sending data to GLB
-
     tile_mask = 0;
     foreach (kernel.outputs[i]) begin
         foreach (kernel.outputs[i].io_tiles[j]) begin
@@ -364,32 +357,22 @@ task Env_wait_interrupt();
         reg_name = "STRM_F2G";
     end
 
-    // So...this does what? Starts two parallel threads?
-    // When/if first thread gets and interrupt, we return?
-    // ANd ALSO if no interrupt (or finish) after 6M cycles, we error and die?
-    // Maybe...'join_any' means fork is complete when/if any subthread finishes??
-
-    // Wait for the next interrupt of the indicated type (e.g. GLB_PCFG_CTRL)
-    // regardless of which tile it comes from. What's important is that we get ALL
-    // the interrupts, not so much what order in which they arrive. I.e. the calling
-    // routine will loop until the right number of interrupts happen.Right?
+    // Start two parallel threads
+    // Return when/if first thread sees interrupts from all tiles in tile_mask
+    // If interrupts not all arrived within 6M clock cycles, error and die
 
     fork
         begin
             forever begin
                 // level sensitive interrupt
+                wait (top.interrupt);         // Wait for interrupt, then start checking interrupt mask
+                one_cy_delay_if_verilator();  // Verilator is off by 1cy before this wait
 
-                // First we gotta getta interrupt
-                wait (top.interrupt);
-                one_cy_delay_if_verilator();  // Off-by-one before this wait
-
-                // Got an interrupt. Some tile has finished streaming.
-                // Read the indicated reg to see which one. Then clear it why not.
+                // Got an interrupt. One or more tiles have finished streaming.
+                // Read the indicated reg to see which one(s) have finished so far.
 
                 // FIXME wait...AxilDriver_read() uses AxilDriver_read_addr but
                 // AxilDriver_write just uses "addr"? This is an unpleasant asymmetry :(
-
-                // axil_drv.read(addr, data);
                 AxilDriver_read_addr = addr;
                 AxilDriver_read();
                 data = AxilDriver_read_data;
@@ -400,24 +383,13 @@ task Env_wait_interrupt();
                     continue;  // Keep waiting for the RIGHT interrupt
                 end
 
+                // Don't stop until interrupt mask (data) contains ALL tiles in tile_mask
                 if (data == tile_mask) break;
                 break;  // Gotta break out of forever loop, duh
             end
         end
-        /*
-                $display("%s clearing tile %0d using mask", reg_name, tile_num, tile_mask);
-
-                // AxilDriver_write(addr, tile_mask);
-                // FIXME wait...AxilDriver_read() uses AxilDriver_read_addr but
-                // AxilDriver_write just uses "addr"? This is an unpleasant asymmetry :(
-                $display("%s clearing tile %0d using mask %0x", reg_name, tile_num, tile_mask);
-                $display("%s interrupt clear\n", reg_name);
-                data = tile_mask;
-                AxilDriver_write();  // Writes to interrupt reg addr from above
-                $display("%s interrupt CLEARED\n", tile_num, reg_name);
-         */
-
         begin
+            // ERROR if we go MAX_WAIT cycles without finding the interrupts
             $display("[%0t] FOO begin waiting on reg %s; MAX_WAIT=%0d", $time, reg_name, MAX_WAIT);
             
             // Wait for streaming to finish, but don't wait forever.
@@ -425,13 +397,10 @@ task Env_wait_interrupt();
             // When/if interrupt clears (above), this loop dies b/c 'join_any'
 
             // repeat (MAX_WAIT) @(posedge...);  // "repeat" confuses verilator:(
-
             for (int i=0; i<MAX_WAIT; i++) @(posedge axil_ifc.clk);
-
-            $display("[%0t] FOO timeout waiting on reg %s", $time, reg_name);
             $error("@%0t: %m ERROR: Interrupt wait timeout, waited %0d cy for reg %s", 
                    $time, i, reg_name);
-            $finish;
+            $finish(2);  // The "2" prints more information about when/where/why
         end
     join_any
     disable fork;
@@ -455,23 +424,15 @@ task Env_clear_interrupt();
 
     $display("%s clear ALL RELEVANT TILES(?) using mask", reg_name, tile_mask);
 
-    // AxilDriver_write(addr, tile_mask);
     // FIXME wait...AxilDriver_read() uses AxilDriver_read_addr but
     // AxilDriver_write just uses "addr"? This is an unpleasant asymmetry :(
-    // $display("%s clearing tile %0d using mask %0x", reg_name, tile_num, tile_mask);
-    // $display("%s interrupt clear\n", reg_name);
-    // data = tile_mask;
+
+    data = tile_mask;  // Yes this is redundant (or should be anyway)
     AxilDriver_write();  // Writes to interrupt reg addr from above
     $display("%s interrupts CLEARED i hope\n", reg_name);
 endtask // Env_clear_interrupt
 
 
-
-
-// task Environment::clear_interrupt(e_glb_ctrl glb_ctrl, bit [$clog2(NUM_GLB_TILES)-1:0] tile_num);
-// Note clear_interrupt functionality is now embedded as part of wait_interrupt()
-
-// task Environment::set_interrupt_on();
 task Env_set_interrupt_on();
     $display("Turn on interrupt enable registers");
     addr = `GLC_GLOBAL_IER_R;      data = 3'b111; AxilDriver_write();
@@ -480,8 +441,9 @@ task Env_set_interrupt_on();
     addr = `GLC_STRM_G2F_IER_R;    data =   1'b1; AxilDriver_write();
 endtask
 
-// int dpr;  (declared in garnet_test.sv, which "include"s this file)
+
 task Env_run();
+    // int dpr;  (declared in garnet_test.sv, which "include"s this file)
     // wait for reset
     $display("[%0t] wait for reset", $time);  // 100ps
     repeat (20) @(posedge p_ifc.clk);
