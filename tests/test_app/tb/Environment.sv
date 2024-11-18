@@ -452,6 +452,32 @@ task Env_wait_interrupt();
     $display("[%0t] FORK CANCELLED (right)?", $time);
 endtask
 
+task Env_clear_interrupt();
+
+    $display("Welcome to clear_interrupt...");
+    // which interrupt
+    if (glb_ctrl == GLB_PCFG_CTRL) begin
+        addr = `GLC_PAR_CFG_G2F_ISR_R;  // 0x38 - 673ns
+        reg_name = "PCFG";
+    end else if (glb_ctrl == GLB_STRM_G2F_CTRL) begin
+        addr = `GLC_STRM_G2F_ISR_R;     // 0x34 - 1839ns
+        reg_name = "STRM_G2F";
+    end else begin
+        addr = `GLC_STRM_F2G_ISR_R;     // 0x30 - 5962ns
+        reg_name = "STRM_F2G";
+    end
+
+    $display("%s clear ALL RELEVANT TILES(?) using mask", reg_name, tile_mask);
+
+    // FIXME wait...AxilDriver_read() uses AxilDriver_read_addr but
+    // AxilDriver_write just uses "addr"? This is an unpleasant asymmetry :(
+
+    data = tile_mask;  // Yes this is redundant (or should be anyway)
+    AxilDriver_write();  // Writes to interrupt reg addr from above
+    $display("%s interrupts CLEARED i hope\n", reg_name);
+endtask // Env_clear_interrupt
+
+
 task Env_set_interrupt_on();
     $display("Turn on interrupt enable registers");
     addr = `GLC_GLOBAL_IER_R;      data = 3'b111; AxilDriver_write();
