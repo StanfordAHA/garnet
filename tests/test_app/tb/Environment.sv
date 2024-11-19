@@ -8,17 +8,30 @@
 // 
 int MAX_WAIT = 6_000_000;
 
-typedef enum int {
-    GLB_PCFG_CTRL,
-    GLB_STRM_G2F_CTRL,
-    GLB_STRM_F2G_CTRL
-} e_glb_ctrl;
-e_glb_ctrl glb_ctrl;
+    typedef enum int {
+        GLB_PCFG_CTRL,
+        GLB_STRM_G2F_CTRL,
+        GLB_STRM_F2G_CTRL
+    } e_glb_ctrl;
 
-bit [NUM_GLB_TILES-1:0] tile_mask;
+Kernel kernel;
+
+/*
+    extern function new(Kernel kernels[], vAxilIfcDriver vifc_axil, vProcIfcDriver vifc_proc, int dpr);
+    extern function void build();
+    extern task write_bs(Kernel kernel);
+    extern task write_data(Kernel kernel);
+    ...
+*/
 
 realtime start_time, end_time, g2f_end_time, latency;
-Kernel kernel;
+
+// Can use same addr and data for everybody because there are only three forks:
+// - one in wait_interrupt has a mem read, but
+//   - addr is same for all forks, and
+//   - data keeps getting overwritten, but we only care about the last one
+// - one in Env_run() is disabled and throws an error if anyone ever tries to use it;
+// - one in ProcDriver_read_data() does not use addr/data for reads
 
 bit [CGRA_AXI_ADDR_WIDTH-1:0] addr;
 bit [CGRA_AXI_DATA_WIDTH-1:0] data;
@@ -26,7 +39,7 @@ bit [CGRA_AXI_DATA_WIDTH-1:0] data;
 bit [NUM_GLB_TILES-1:0] Env_glb_stall_mask;
 bit [NUM_CGRA_COLS-1:0] Env_cgra_stall_mask;
 
-
+e_glb_ctrl glb_ctrl;
 bit [$clog2(NUM_GLB_TILES)-1:0] tile_num;
 
 `include "tb/ProcDriver.sv"
@@ -53,14 +66,14 @@ bitstream_entry_t bet0;
 int unsigned betdata0;
 int unsigned betaddr0;
 
+/*
+task Environment::write_bs(Kernel kernel);
+*/
 task Env_write_bs();
     $timeformat(-9, 2, " ns", 0);
     repeat (10) @(p_ifc.clk);
     start_time = $realtime;
     $display("[%s] write bitstream to glb start at %0t", kernel.name, start_time);
-
-    // proc_drv  = new(p_ifc, proc_lock);
-    // proc_drv.write_bs(kernel.bs_start_addr, kernel.bitstream_data);
 
     // Debugging I hope
     bet0 = kernel.bitstream_data[0];
@@ -77,8 +90,6 @@ task Env_write_bs();
              kernel.name, end_time - start_time);
 endtask // Env_write_bs
 
-// TBD
-// task Environment::write_data(Kernel kernel);
 task Env_write_data();
     realtime start_time, end_time;
     $timeformat(-9, 2, " ns", 0);
@@ -91,17 +102,14 @@ task Env_write_data();
                 continue;
             end
             start_time = $realtime;
-            $display("[%s] write input_%0d_block_%0d to glb start at %0t", kernel.name, i, j,
-                     start_time);
-
-            // proc_drv.write_data(kernel.inputs[i].io_tiles[j].start_addr,
-            //                     kernel.inputs[i].io_tiles[j].io_block_data);
+            $display("[%s] write input_%0d_block_%0d to glb start at %0t",
+                     kernel.name, i, j, start_time);
             PD_wd_start_addr = kernel.inputs[i].io_tiles[j].start_addr;
             PD_wd_data_q = kernel.inputs[i].io_tiles[j].io_block_data;
             ProcDriver_write_data();
             end_time = $realtime;
-            $display("[%s] write input_%0d_block_%0d to glb end at %0t", kernel.name, i, j,
-                     end_time);
+            $display("[%s] write input_%0d_block_%0d to glb end at %0t",
+                     kernel.name, i, j, end_time);
             $display("[%s] It takes %0t time to write %0d Byte data to glb.\n", kernel.name,
                      end_time - start_time, kernel.inputs[i].io_tiles[j].num_data * 2);
         end
@@ -154,6 +162,7 @@ endtask
 // task Environment::cgra_configure(Kernel kernel);
 Config Env_cgra_configure_cfg;
 int group_start, num_groups;
+bit [NUM_GLB_TILES-1:0] tile_mask;
 
 task Env_cgra_configure();
     $timeformat(-9, 2, " ns", 0);
@@ -473,7 +482,7 @@ task Env_run();
         foreach (kernels[i]) begin
             automatic int j = i;
             begin
-                $display("[%0t] FOO process kernel %0d BEGIN", $time, j);
+                $display("[%0t] Processing kernel %0d BEGIN", $time, j);
                 kernel = kernels[j];
                 Env_write_bs();       // env.write_bs(kernels[j]);
                 Env_glb_configure();  // env.glb_configure(kernel);
@@ -482,7 +491,7 @@ task Env_run();
                 Env_kernel_test();    // env.kernel_test(kernel);
                 Env_read_data();      $display("[%0t] read_data DONE", $time);
                 kernel.compare();
-                $display("[%0t] FOO process kernel %0d END", $time, j);
+                $display("[%0t] Processing kernel %0d END", $time, j);
             end
         end
     end
