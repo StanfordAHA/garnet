@@ -1,26 +1,37 @@
-// class Environment;
+// This is a garnet_test.sv "include" file
 
-// MAX_WAIT is related to how long it takes to read/write data to/from tiles
+// MAX_WAIT is related to how long it takes to read/write data to/from tiles.
 // When debugging, it's good to limit MAX_WAIT so things don't run too long
 // - 6K is good enough for pointwise
 // - camera pipeline 2x2 needs more than 6K, I use 80K
 // - but 80K is not enough for mat_elemadd etc.
 // 
-// int MAX_WAIT = 6000;
-// int MAX_WAIT = 80_000;
 int MAX_WAIT = 6_000_000;
 
-typedef enum int {
-    GLB_PCFG_CTRL,
-    GLB_STRM_G2F_CTRL,
-    GLB_STRM_F2G_CTRL
-} e_glb_ctrl;
-e_glb_ctrl glb_ctrl;
+    typedef enum int {
+        GLB_PCFG_CTRL,
+        GLB_STRM_G2F_CTRL,
+        GLB_STRM_F2G_CTRL
+    } e_glb_ctrl;
 
-bit [NUM_GLB_TILES-1:0] tile_mask;
+Kernel kernel;
+
+/*
+    extern function new(Kernel kernels[], vAxilIfcDriver vifc_axil, vProcIfcDriver vifc_proc, int dpr);
+    extern function void build();
+    extern task write_bs(Kernel kernel);
+    extern task write_data(Kernel kernel);
+    ...
+*/
 
 realtime start_time, end_time, g2f_end_time, latency;
-Kernel kernel;
+
+// Can use same global addr and data for everybody because there are only three forks:
+// - one in wait_interrupt has a mem read, but
+//   - addr is same for all forks, and
+//   - data keeps getting overwritten, but we only care about the last one
+// - one in Env_run() is disabled and throws an error if anyone ever tries to use it;
+// - one in ProcDriver_read_data() does not use addr/data for reads
 
 bit [CGRA_AXI_ADDR_WIDTH-1:0] addr;
 bit [CGRA_AXI_DATA_WIDTH-1:0] data;
@@ -28,16 +39,11 @@ bit [CGRA_AXI_DATA_WIDTH-1:0] data;
 bit [NUM_GLB_TILES-1:0] Env_glb_stall_mask;
 bit [NUM_CGRA_COLS-1:0] Env_cgra_stall_mask;
 
-
+e_glb_ctrl glb_ctrl;
 bit [$clog2(NUM_GLB_TILES)-1:0] tile_num;
 
 `include "tb/ProcDriver.sv"
 `include "tb/AxilDriver.sv"
-
-// Non-array trace vars for waveform debugging
-bitstream_entry_t bet0;
-int unsigned betdata0;
-int unsigned betaddr0;
 
 // Convenience tasks to adjust vcs vs. verilator timing
 
@@ -46,7 +52,7 @@ task one_cy_delay_if_verilator();
     // $display("WARNING adding one extra cycle for verilator run");
     @(posedge axil_ifc.clk);
 `endif
-endtask // one_cy_delay_if_verliator
+endtask // one_cy_delay_if_verilator
     
 task one_cy_delay_if_vcs();
 `ifndef verilator
@@ -55,16 +61,19 @@ task one_cy_delay_if_vcs();
 `endif
 endtask // one_cy_delay_if_vcs
 
+// Non-array trace vars for waveform debugging
+bitstream_entry_t bet0;
+int unsigned betdata0;
+int unsigned betaddr0;
 
-// task Environment::write_bs(Kernel kernel);
+/*
+task Environment::write_bs(Kernel kernel);
+*/
 task Env_write_bs();
     $timeformat(-9, 2, " ns", 0);
     repeat (10) @(p_ifc.clk);
     start_time = $realtime;
     $display("[%s] write bitstream to glb start at %0t", kernel.name, start_time);
-
-    // proc_drv  = new(p_ifc, proc_lock);
-    // proc_drv.write_bs(kernel.bs_start_addr, kernel.bitstream_data);
 
     // Debugging I hope
     bet0 = kernel.bitstream_data[0];
@@ -81,8 +90,6 @@ task Env_write_bs();
              kernel.name, end_time - start_time);
 endtask // Env_write_bs
 
-// TBD
-// task Environment::write_data(Kernel kernel);
 task Env_write_data();
     realtime start_time, end_time;
     $timeformat(-9, 2, " ns", 0);
@@ -95,17 +102,14 @@ task Env_write_data();
                 continue;
             end
             start_time = $realtime;
-            $display("[%s] write input_%0d_block_%0d to glb start at %0t", kernel.name, i, j,
-                     start_time);
-
-            // proc_drv.write_data(kernel.inputs[i].io_tiles[j].start_addr,
-            //                     kernel.inputs[i].io_tiles[j].io_block_data);
+            $display("[%s] write input_%0d_block_%0d to glb start at %0t",
+                     kernel.name, i, j, start_time);
             PD_wd_start_addr = kernel.inputs[i].io_tiles[j].start_addr;
             PD_wd_data_q = kernel.inputs[i].io_tiles[j].io_block_data;
             ProcDriver_write_data();
             end_time = $realtime;
-            $display("[%s] write input_%0d_block_%0d to glb end at %0t", kernel.name, i, j,
-                     end_time);
+            $display("[%s] write input_%0d_block_%0d to glb end at %0t",
+                     kernel.name, i, j, end_time);
             $display("[%s] It takes %0t time to write %0d Byte data to glb.\n", kernel.name,
                      end_time - start_time, kernel.inputs[i].io_tiles[j].num_data * 2);
         end
@@ -158,6 +162,7 @@ endtask
 // task Environment::cgra_configure(Kernel kernel);
 Config Env_cgra_configure_cfg;
 int group_start, num_groups;
+bit [NUM_GLB_TILES-1:0] tile_mask;
 
 task Env_cgra_configure();
     $timeformat(-9, 2, " ns", 0);
@@ -211,16 +216,18 @@ bit [CGRA_AXI_DATA_WIDTH-1:0] Env_cgra_stall_wr_data;
 // bit [NUM_CGRA_COLS-1:0] Env_cgra_stall_mask;
 task Env_cgra_stall();
     // AxilDriver_read(`GLC_CGRA_STALL_R, Env_cgra_stall_data);  // TBD
-    AxilDriver_read_addr = `GLC_CGRA_STALL_R;  // 0x8 (glc.svh)
+    addr = `GLC_CGRA_STALL_R;  // 0x8 (glc.svh)
     AxilDriver_read();
-    Env_cgra_stall_data = AxilDriver_read_data;
+    Env_cgra_stall_data = data;
 
     Env_cgra_stall_wr_data = Env_cgra_stall_mask |
                                      Env_cgra_stall_data;
+
     // AxilDriver_write(`GLC_CGRA_STALL_R, Env_cgra_stall_wr_data);
     addr = `GLC_CGRA_STALL_R;
     data = Env_cgra_stall_wr_data;
     AxilDriver_write();
+
     $display("Stall CGRA with stall mask %8h\n", Env_cgra_stall_mask);
 endtask
 
@@ -233,9 +240,9 @@ task Env_cgra_unstall();
     Env_cgra_unstall_stall_mask = Env_cgra_stall_mask;
     $display("Welcome to Env_cgra_unstall()");
 
-    AxilDriver_read_addr = `GLC_CGRA_STALL_R;
+    addr = `GLC_CGRA_STALL_R;
     AxilDriver_read();  // 1850ns
-    Env_cgra_unstall_data = AxilDriver_read_data;
+    Env_cgra_unstall_data = data;
     Env_cgra_unstall_wr_data 
       = (~Env_cgra_unstall_stall_mask)
         & Env_cgra_unstall_data;
@@ -340,12 +347,10 @@ endtask // Env_kernel_test
 // glc.svh:`define GLC_GLOBAL_ISR_R 'h3c
 
 string reg_name;
-// bit [CGRA_AXI_ADDR_WIDTH-1:0] addr;
-// bit [CGRA_AXI_DATA_WIDTH-1:0] data;
 task Env_wait_interrupt();
 
-    $display("Welcome to wait_interrupt..."); $fflush();  // 1600ns, 2870ns
-    // which interrupt
+    $display("Welcome to wait_interrupt...");
+    // which interrupt  // TODO this happens at least twice, should it be a task
     if (glb_ctrl == GLB_PCFG_CTRL) begin
         addr = `GLC_PAR_CFG_G2F_ISR_R;  // 0x38 - 673ns
         reg_name = "PCFG";
@@ -371,18 +376,13 @@ task Env_wait_interrupt();
                 // Got an interrupt. One or more tiles have finished streaming.
                 // Read the indicated reg to see which one(s) have finished so far.
 
-                // FIXME wait...AxilDriver_read() uses AxilDriver_read_addr but
-                // AxilDriver_write just uses "addr"? This is an unpleasant asymmetry :(
-                AxilDriver_read_addr = addr;
                 AxilDriver_read();
-                data = AxilDriver_read_data;
                 $display("%s interrupt tiles %0x; waiting for %0x", reg_name, data, tile_mask);
                 if (data == 0) begin
                     $display("WARNING got interrupt, but not from %s apparently", reg_name);
                     $display("(this is probably a fatal error ackshully");
                     continue;  // Keep waiting for the RIGHT interrupt
                 end
-
                 // Don't stop until interrupt mask (data) contains ALL tiles in tile_mask
                 if (data == tile_mask) break;
                 break;  // Gotta break out of forever loop, duh
@@ -422,13 +422,9 @@ task Env_clear_interrupt();
         addr = `GLC_STRM_F2G_ISR_R;     // 0x30 - 5962ns
         reg_name = "STRM_F2G";
     end
-
     $display("%s clear ALL RELEVANT TILES(?) using mask", reg_name, tile_mask);
 
-    // FIXME wait...AxilDriver_read() uses AxilDriver_read_addr but
-    // AxilDriver_write just uses "addr"? This is an unpleasant asymmetry :(
-
-    data = tile_mask;  // Yes this is redundant (or should be anyway)
+    data = tile_mask;    // Yes this is redundant b/c clear_interrupt() always follows wait_interrupt()
     AxilDriver_write();  // Writes to interrupt reg addr from above
     $display("%s interrupts CLEARED i hope\n", reg_name);
 endtask // Env_clear_interrupt
@@ -477,7 +473,7 @@ task Env_run();
         foreach (kernels[i]) begin
             automatic int j = i;
             begin
-                $display("[%0t] FOO process kernel %0d BEGIN", $time, j);
+                $display("[%0t] Processing kernel %0d BEGIN", $time, j);
                 kernel = kernels[j];
                 Env_write_bs();       // env.write_bs(kernels[j]);
                 Env_glb_configure();  // env.glb_configure(kernel);
@@ -486,29 +482,9 @@ task Env_run();
                 Env_kernel_test();    // env.kernel_test(kernel);
                 Env_read_data();      $display("[%0t] read_data DONE", $time);
                 kernel.compare();
-                $display("[%0t] FOO process kernel %0d END", $time, j);
+                $display("[%0t] Processing kernel %0d END", $time, j);
             end
         end
     end
 
 endtask // Env_run
-
-
-// task Environment::compare();
-/*
-    local_bs_q = kernel.parse_bitstream;
-    bet0 = local_bs_q[0];
-    betdata0 = local_bs_q[0].data;
-    ProcDriver_write_bs_bs_q = local_bs_q;
-*/
-
-// glb_stall_mask = calculate_glb_stall_mask(group_start, num_groups); // unused???
-// $display("build stall mask"); $fflush();
-// $display("calling cgra_stall()"); $fflush();
-// cgra_stall(cgra_stall_mask);
-// $display("returned from wait_interrupt()"); $fflush();
-// $display("calling clear_interrupt()"); $fflush();
-// $display("returning from clear_interrupt()"); $fflush();
-// $display("returned from wait_interrupt()"); $fflush();
-// $display("gettum interruptum"); $fflush();
-// $display("gottum interruptum"); $fflush();

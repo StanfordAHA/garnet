@@ -43,17 +43,14 @@ echo ''
 echo VFILES= $VFILES | tr ' ' '\n'
 echo ''
 
-# Takes about a minute without --trace
-# Clsoer to 4 min if --trace is active
 set -x
 
-# Note: libcgra.so must be relative to ./obj_dir :(
-# TODO: find a better way to do this :(
-
-# //  --trace \
+test -e vfiles/garnet.v || (cd vfiles; gunzip -c garnet.v.gz > garnet.v)
+test -d tb || ln -s ../tb
+test -e libcgra.so || ln -s vfiles/libcgra.so
 
 d=`pwd`
-verilator $warn --timing --cc --exe vfiles/CGRA.cpp \
+verilator $warn --timing --cc --exe tb/CGRA.cpp \
   --timescale 1ps/1ps \
   --top-module top \
   $TRACE \
