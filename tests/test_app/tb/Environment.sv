@@ -124,32 +124,31 @@ task Env_read_data();
     end
 endtask
 
-// BOOKMARK
-// task Environment::glb_configure(Kernel kernel);
+/*
+task Environment::glb_configure(Kernel kernel);
+*/
 task Env_glb_configure();
     realtime start_time, end_time;
-
     $timeformat(-9, 2, " ns", 0);
     start_time = $realtime;
     $display("[%s] glb configuration start at %0t", kernel.name, start_time);
-
-    // axil_drv.config_write(kernel.bs_cfg);
-    // axil_drv.config_write(kernel.kernel_cfg);
     AxilDriver_cfg = kernel.bs_cfg;     AxilDriver_config_write();
     AxilDriver_cfg = kernel.kernel_cfg; AxilDriver_config_write();
-
     end_time = $realtime;
     $display("[%s] glb configuration end at %0t\n", kernel.name, end_time);  // 647.5ns
 endtask
 
-// task Environment::cgra_configure(Kernel kernel);
+// BOOKMARK bookmark
+/*
+task Environment::cgra_configure(Kernel kernel);
+*/
 Config Env_cgra_configure_cfg;
 int group_start, num_groups;
 bit [NUM_GLB_TILES-1:0] tile_mask;
 e_glb_ctrl glb_ctrl;
 
-bit [NUM_GLB_TILES-1:0] Env_glb_stall_mask;
-bit [NUM_CGRA_COLS-1:0] Env_cgra_stall_mask;
+bit [NUM_GLB_TILES-1:0] glb_stall_mask;
+bit [NUM_CGRA_COLS-1:0] cgra_stall_mask;
 
 task Env_cgra_configure();
     realtime start_time, end_time;
@@ -158,7 +157,7 @@ task Env_cgra_configure();
     group_start = kernel.group_start;
     num_groups = kernel.num_groups;
 
-    Env_cgra_stall_mask = calculate_cgra_stall_mask(group_start, num_groups);
+    cgra_stall_mask = calculate_cgra_stall_mask(group_start, num_groups);
     Env_cgra_stall();
     start_time = $realtime;
     $display("[%s] fast configuration start at %0t", kernel.name, start_time);  // 1560ns
@@ -206,14 +205,14 @@ endfunction
 // task Environment::cgra_stall(bit [NUM_CGRA_COLS-1:0] stall_mask);
 bit [CGRA_AXI_DATA_WIDTH-1:0] Env_cgra_stall_data;
 bit [CGRA_AXI_DATA_WIDTH-1:0] Env_cgra_stall_wr_data;
-// bit [NUM_CGRA_COLS-1:0] Env_cgra_stall_mask;
+// bit [NUM_CGRA_COLS-1:0] cgra_stall_mask;
 task Env_cgra_stall();
     // AxilDriver_read(`GLC_CGRA_STALL_R, Env_cgra_stall_data);  // TBD
     addr = `GLC_CGRA_STALL_R;  // 0x8 (glc.svh)
     AxilDriver_read();
     Env_cgra_stall_data = data;
 
-    Env_cgra_stall_wr_data = Env_cgra_stall_mask |
+    Env_cgra_stall_wr_data = cgra_stall_mask |
                                      Env_cgra_stall_data;
 
     // AxilDriver_write(`GLC_CGRA_STALL_R, Env_cgra_stall_wr_data);
@@ -221,23 +220,23 @@ task Env_cgra_stall();
     data = Env_cgra_stall_wr_data;
     AxilDriver_write();
 
-    $display("Stall CGRA with stall mask %8h\n", Env_cgra_stall_mask);
+    $display("Stall CGRA with stall mask %8h\n", cgra_stall_mask);
 endtask
 
 // task Environment::cgra_unstall(bit [NUM_CGRA_COLS-1:0] stall_mask);
-bit [NUM_CGRA_COLS-1:0] Env_cgra_unstall_stall_mask;
+bit [NUM_CGRA_COLS-1:0] cgra_unstall_stall_mask;
 bit [CGRA_AXI_DATA_WIDTH-1:0] Env_cgra_unstall_data;
 bit [CGRA_AXI_DATA_WIDTH-1:0] Env_cgra_unstall_wr_data;
 task Env_cgra_unstall();
     // Unstall CGRA
-    Env_cgra_unstall_stall_mask = Env_cgra_stall_mask;
+    cgra_unstall_stall_mask = cgra_stall_mask;
     $display("Welcome to Env_cgra_unstall()");
 
     addr = `GLC_CGRA_STALL_R;
     AxilDriver_read();  // 1850ns
     Env_cgra_unstall_data = data;
     Env_cgra_unstall_wr_data 
-      = (~Env_cgra_unstall_stall_mask)
+      = (~cgra_unstall_stall_mask)
         & Env_cgra_unstall_data;
 
     // axil_drv.write(`GLC_CGRA_STALL_R, wr_data);
@@ -246,7 +245,7 @@ task Env_cgra_unstall();
     AxilDriver_write();
 
     // 3970ns
-    $display("Unstall CGRA with stall mask %4h", Env_cgra_unstall_stall_mask);
+    $display("Unstall CGRA with stall mask %4h", cgra_unstall_stall_mask);
 endtask // Env_cgra_unstall
 
 // task Environment::kernel_test(Kernel kernel);
@@ -261,8 +260,8 @@ task Env_kernel_test();
     $timeformat(-9, 2, " ns", 0);
     group_start = kernel.group_start;
     num_groups = kernel.num_groups;
-    Env_glb_stall_mask = calculate_glb_stall_mask(group_start, num_groups);
-    Env_cgra_stall_mask = calculate_cgra_stall_mask(group_start, num_groups);
+    glb_stall_mask = calculate_glb_stall_mask(group_start, num_groups);
+    cgra_stall_mask = calculate_cgra_stall_mask(group_start, num_groups);
 
     // cgra_unstall(cgra_stall_mask);
     Env_cgra_unstall();
