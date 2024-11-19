@@ -26,7 +26,7 @@ Kernel kernel;
 
 realtime start_time, end_time, g2f_end_time, latency;
 
-// Can use same addr and data for everybody because there are only three forks:
+// Can use same global addr and data for everybody because there are only three forks:
 // - one in wait_interrupt has a mem read, but
 //   - addr is same for all forks, and
 //   - data keeps getting overwritten, but we only care about the last one
@@ -216,16 +216,18 @@ bit [CGRA_AXI_DATA_WIDTH-1:0] Env_cgra_stall_wr_data;
 // bit [NUM_CGRA_COLS-1:0] Env_cgra_stall_mask;
 task Env_cgra_stall();
     // AxilDriver_read(`GLC_CGRA_STALL_R, Env_cgra_stall_data);  // TBD
-    AxilDriver_read_addr = `GLC_CGRA_STALL_R;  // 0x8 (glc.svh)
+    addr = `GLC_CGRA_STALL_R;  // 0x8 (glc.svh)
     AxilDriver_read();
-    Env_cgra_stall_data = AxilDriver_read_data;
+    Env_cgra_stall_data = data;
 
     Env_cgra_stall_wr_data = Env_cgra_stall_mask |
                                      Env_cgra_stall_data;
+
     // AxilDriver_write(`GLC_CGRA_STALL_R, Env_cgra_stall_wr_data);
     addr = `GLC_CGRA_STALL_R;
     data = Env_cgra_stall_wr_data;
     AxilDriver_write();
+
     $display("Stall CGRA with stall mask %8h\n", Env_cgra_stall_mask);
 endtask
 
@@ -238,9 +240,9 @@ task Env_cgra_unstall();
     Env_cgra_unstall_stall_mask = Env_cgra_stall_mask;
     $display("Welcome to Env_cgra_unstall()");
 
-    AxilDriver_read_addr = `GLC_CGRA_STALL_R;
+    addr = `GLC_CGRA_STALL_R;
     AxilDriver_read();  // 1850ns
-    Env_cgra_unstall_data = AxilDriver_read_data;
+    Env_cgra_unstall_data = data;
     Env_cgra_unstall_wr_data 
       = (~Env_cgra_unstall_stall_mask)
         & Env_cgra_unstall_data;
@@ -345,12 +347,10 @@ endtask // Env_kernel_test
 // glc.svh:`define GLC_GLOBAL_ISR_R 'h3c
 
 string reg_name;
-// bit [CGRA_AXI_ADDR_WIDTH-1:0] addr;
-// bit [CGRA_AXI_DATA_WIDTH-1:0] data;
 task Env_wait_interrupt();
 
-    $display("Welcome to wait_interrupt..."); $fflush();  // 1600ns, 2870ns
-    // which interrupt
+    $display("Welcome to wait_interrupt...");
+    // which interrupt  // TODO this happens at least twice, should it be a task
     if (glb_ctrl == GLB_PCFG_CTRL) begin
         addr = `GLC_PAR_CFG_G2F_ISR_R;  // 0x38 - 673ns
         reg_name = "PCFG";
@@ -376,18 +376,13 @@ task Env_wait_interrupt();
                 // Got an interrupt. One or more tiles have finished streaming.
                 // Read the indicated reg to see which one(s) have finished so far.
 
-                // FIXME wait...AxilDriver_read() uses AxilDriver_read_addr but
-                // AxilDriver_write just uses "addr"? This is an unpleasant asymmetry :(
-                AxilDriver_read_addr = addr;
                 AxilDriver_read();
-                data = AxilDriver_read_data;
                 $display("%s interrupt tiles %0x; waiting for %0x", reg_name, data, tile_mask);
                 if (data == 0) begin
                     $display("WARNING got interrupt, but not from %s apparently", reg_name);
                     $display("(this is probably a fatal error ackshully");
                     continue;  // Keep waiting for the RIGHT interrupt
                 end
-
                 // Don't stop until interrupt mask (data) contains ALL tiles in tile_mask
                 if (data == tile_mask) break;
                 break;  // Gotta break out of forever loop, duh
@@ -427,13 +422,9 @@ task Env_clear_interrupt();
         addr = `GLC_STRM_F2G_ISR_R;     // 0x30 - 5962ns
         reg_name = "STRM_F2G";
     end
-
     $display("%s clear ALL RELEVANT TILES(?) using mask", reg_name, tile_mask);
 
-    // FIXME wait...AxilDriver_read() uses AxilDriver_read_addr but
-    // AxilDriver_write just uses "addr"? This is an unpleasant asymmetry :(
-
-    data = tile_mask;  // Yes this is redundant (or should be anyway)
+    data = tile_mask;    // Yes this is redundant b/c clear_interrupt() always follows wait_interrupt()
     AxilDriver_write();  // Writes to interrupt reg addr from above
     $display("%s interrupts CLEARED i hope\n", reg_name);
 endtask // Env_clear_interrupt
