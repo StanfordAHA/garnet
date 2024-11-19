@@ -138,50 +138,49 @@ task Env_glb_configure();
     $display("[%s] glb configuration end at %0t\n", kernel.name, end_time);  // 647.5ns
 endtask
 
-// BOOKMARK bookmark
+bit [NUM_GLB_TILES-1:0] tile_mask;
+e_glb_ctrl glb_ctrl;
 /*
 task Environment::cgra_configure(Kernel kernel);
 */
-Config Env_cgra_configure_cfg;
-int group_start, num_groups;
-bit [NUM_GLB_TILES-1:0] tile_mask;
-e_glb_ctrl glb_ctrl;
-
-bit [NUM_GLB_TILES-1:0] glb_stall_mask;
-bit [NUM_CGRA_COLS-1:0] cgra_stall_mask;
+    Config cfg;
+    int group_start, num_groups;
+    bit [NUM_GLB_TILES-1:0] glb_stall_mask;
+    bit [NUM_CGRA_COLS-1:0] cgra_stall_mask;
 
 task Env_cgra_configure();
-    realtime start_time, end_time;
 
+    realtime start_time, end_time;
     $timeformat(-9, 2, " ns", 0);
+
     group_start = kernel.group_start;
     num_groups = kernel.num_groups;
-
+    // glb_stall_mask = calculate_glb_stall_mask(group_start, num_groups);  // UNUSED!
     cgra_stall_mask = calculate_cgra_stall_mask(group_start, num_groups);
+
     Env_cgra_stall();
     start_time = $realtime;
-    $display("[%s] fast configuration start at %0t", kernel.name, start_time);  // 1560ns
-    // I think maybe this simply writes 1'b1 to address 0x1c
-    Env_cgra_configure_cfg = kernel.get_pcfg_start_config();
+    $display("[%s] fast configuration start at %0t", kernel.name, start_time);
+    cfg = kernel.get_pcfg_start_config();  // This just writes 1'b1 to address 0x1c maybe?
 
-    // axil_drv.write(cfg.addr, cfg.data);
-    addr = Env_cgra_configure_cfg.addr;  // 0x1c
-    data = Env_cgra_configure_cfg.data;  // 0x01
+    addr = cfg.addr;  // 0x1c
+    data = cfg.data;  // 0x01
     AxilDriver_write();
-    //  wait_interrupt(GLB_PCFG_CTRL, kernel.bs_tile);
-    // clear_interrupt(GLB_PCFG_CTRL, kernel.bs_tile);
-    tile_mask = 1 << kernel.bs_tile;
+
     $display("calling wait_interrupt(GLB_PCFG_CTRL) = 0x38");
+    tile_mask = 1 << kernel.bs_tile;
     glb_ctrl = GLB_PCFG_CTRL;    // 0x38
     Env_wait_interrupt();
     Env_clear_interrupt();
 
     end_time = $realtime;
-    $display("[%s] fast configuration end at %0t", kernel.name, end_time);  // 1710ns
-    $display("[%s] It takes %0t time to do parallel configuration.\n", kernel.name,
+    $display("[%s] fast configuration end at %0t", kernel.name, end_time);
+    $display("[%s] It takes %0t time to do parallel configuration.", kernel.name,
              end_time - start_time);
+
 endtask
 
+// BOOKMARK bookmark
 /*
 function bit [NUM_GLB_TILES-1:0] Environment::calculate_glb_stall_mask(int start, int num);
 */
