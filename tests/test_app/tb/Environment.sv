@@ -69,13 +69,11 @@ task Env_write_bs();
              end_time - start_time);
 endtask
 
-// BOOKMARK
 /*
 task Environment::write_data(Kernel kernel);
 */
 task Env_write_data();
     realtime start_time, end_time;
-
     $timeformat(-9, 2, " ns", 0);
     repeat (10) @(posedge p_ifc.clk);
     foreach (kernel.inputs[i]) begin
@@ -85,48 +83,48 @@ task Env_write_data();
                 continue;
             end
             start_time = $realtime;
-            $display("[%s] write input_%0d_block_%0d to glb start at %0t",
-                     kernel.name, i, j, start_time);
+            $display("[%s] write input_%0d_block_%0d to glb start at %0t", kernel.name, i, j,
+                     start_time);
             PD_wd_start_addr = kernel.inputs[i].io_tiles[j].start_addr;
             PD_wd_data_q = kernel.inputs[i].io_tiles[j].io_block_data;
             ProcDriver_write_data();
             end_time = $realtime;
-            $display("[%s] write input_%0d_block_%0d to glb end at %0t",
-                     kernel.name, i, j, end_time);
-            $display("[%s] It takes %0t time to write %0d Byte data to glb.\n", kernel.name,
+            $display("[%s] write input_%0d_block_%0d to glb end at %0t", kernel.name, i, j,
+                     end_time);
+            $display("[%s] It takes %0t time to write %0d Byte data to glb.", kernel.name,
                      end_time - start_time, kernel.inputs[i].io_tiles[j].num_data * 2);
         end
     end
 endtask
 
-// task Environment::read_data(Kernel kernel);
-data_array_t Env_read_data_data_q;
-
+/*
+task Environment::read_data(Kernel kernel);
+*/
 task Env_read_data();
     repeat (20) @(posedge p_ifc.clk);
 
     // Fill kernel.outputs() w data from CGRA
     foreach (kernel.outputs[i]) begin
         foreach (kernel.outputs[i].io_tiles[j]) begin
-            // 3002ns
-            $display("");
-            $display("[%s] read output_%0d_block_%0d from glb START", kernel.name, i, j);
+            $display("[%s] read output_%0d_block_%0d from glb start", kernel.name, i, j);
+            // FIXME: VCS Q-2020.03 Does not support this yet.
+            // "Hierarchical reference to a structure array member connected to task ref-port is not supported"
+            // proc_drv.read_data(kernel.outputs[i].io_tiles[j].start_addr,
+            //                    kernel.outputs[i].io_tiles[j].io_block_data);
 
-            // Creates empty array of indicated size maybe (4096)
-            Env_read_data_data_q = new[kernel.outputs[i].io_tiles[j].io_block_data.size()];   // size=4096
-
-            // proc_drv.read_data(kernel.outputs[i].io_tiles[j].start_addr, Env_read_data_data_q);
-                PD_rdata_start_addr = kernel.outputs[i].io_tiles[j].start_addr; // 0x1000 or some such
-                PD_rdata_data_q = Env_read_data_data_q;
-                $display("calling ProcDriver_read_data()");  // 3002ns
-                ProcDriver_read_data();
+            // Creates empty array of indicated size maybe (4096 maybe)
+            PD_rdata_data_q = new[kernel.outputs[i].io_tiles[j].io_block_data.size()];
+            PD_rdata_start_addr = kernel.outputs[i].io_tiles[j].start_addr; // 0x1000 or some such
+            // PD_rdata_data_q = Env_read_data_data_q;
+            ProcDriver_read_data();
 
             kernel.outputs[i].io_tiles[j].io_block_data = PD_rdata_data_q;
-            $display("[%s] read output_%0d_block_%0d from glb END", kernel.name, i, j);  // 3002ns
+            $display("[%s] read output_%0d_block_%0d from glb end", kernel.name, i, j);
         end
     end
 endtask
 
+// BOOKMARK
 // task Environment::glb_configure(Kernel kernel);
 task Env_glb_configure();
     realtime start_time, end_time;
