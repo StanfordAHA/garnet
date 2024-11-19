@@ -1,26 +1,22 @@
 // This is a garnet_test.sv "include" file
-// 
-// MAX_WAIT is related to how long it takes to read/write data to/from tiles.
-// When debugging, it's good to limit MAX_WAIT so things don't run too long
-// - 6K is good enough for pointwise
-// - camera pipeline 2x2 needs more than 6K, I use 80K
-// - but 80K is not enough for mat_elemadd etc.
-// 
+
+// How long to wait for streaming; can be as little as 6K for pointwise, 80K for camera pipeline etc.
 int MAX_WAIT = 6_000_000;
 
+/*
+class Environment;
+*/
 typedef enum int {
     GLB_PCFG_CTRL,
     GLB_STRM_G2F_CTRL,
     GLB_STRM_F2G_CTRL
 } e_glb_ctrl;
 
-// Kernel kernels[];  // Declared upstream in enclosing scope 'garnet_test.sv'
-Kernel kernel;
-
 `include "tb/ProcDriver.sv"
 `include "tb/AxilDriver.sv"
 
-// Convenience tasks to adjust vcs vs. verilator timing
+// Kernel kernels[];  // Declared upstream in enclosing scope 'garnet_test.sv'
+Kernel kernel;
 
 task one_cy_delay_if_verilator();
 `ifdef verilator
@@ -36,27 +32,29 @@ task one_cy_delay_if_vcs();
 `endif
 endtask // one_cy_delay_if_vcs
 
-/* temp pull-request registration block for PR file compare
-task Environment::write_bs(Kernel kernel);
-    realtime start_time, end_time;
-    $timeformat(-9, 2, " ns");
-    repeat (10) @(vifc_proc.cbd);
-*/
+/*
+function Environment::new(Kernel kernels[], vAxilIfcDriver vifc_axil, vProcIfcDriver vifc_proc, int dpr);
 
-// Non-array trace vars for waveform debugging
+ 
+ 
+function void Environment::build();
+
+ 
+*/ 
+// Non-array trace vars, global for waveform debugging
 bitstream_entry_t bet0;
-int unsigned betdata0;
-int unsigned betaddr0;
-
+int unsigned betdata0, betaddr0;
+/*
+task Environment::write_bs(Kernel kernel);
+*/
 task Env_write_bs();
     realtime start_time, end_time;
-
     $timeformat(-9, 2, " ns", 0);
     repeat (10) @(p_ifc.clk);
     start_time = $realtime;
     $display("[%s] write bitstream to glb start at %0t", kernel.name, start_time);
 
-    // Debugging I hope
+    // Debugging I hope--look for these signals in the waveform viewer
     bet0 = kernel.bitstream_data[0];
     betaddr0 = kernel.bitstream_data[0].addr;
     betdata0 = kernel.bitstream_data[0].data;
@@ -67,15 +65,14 @@ task Env_write_bs();
 
     end_time = $realtime;
     $display("[%s] write bitstream to glb end at %0t", kernel.name, end_time);
-    $display("[%s] It takes %0t time to write the bitstream to glb.\n",
-             kernel.name, end_time - start_time);
-endtask // Env_write_bs
+    $display("[%s] It takes %0t time to write the bitstream to glb.", kernel.name,
+             end_time - start_time);
+endtask
 
-
+// BOOKMARK
 /*
 task Environment::write_data(Kernel kernel);
 */
-
 task Env_write_data();
     realtime start_time, end_time;
 
