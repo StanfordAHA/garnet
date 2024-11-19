@@ -4,6 +4,16 @@
 // `define SLAVE_WAIT 10
 `define SLAVE_WAIT 100
 
+// Can use same global addr and data for everybody because there are only three forks:
+// - one in wait_interrupt has a mem read, but
+//   - addr is same for all forks, and
+//   - data keeps getting overwritten, but we only care about the last one
+// - one in Env_run() is disabled and throws an error if anyone ever tries to use it;
+// - one in ProcDriver_read_data() does not use addr/data for reads
+
+bit [CGRA_AXI_ADDR_WIDTH-1:0] addr;
+bit [CGRA_AXI_DATA_WIDTH-1:0] data;
+
 // task AxilDriver::config_write(Config cfg[]);
 Config AxilDriver_cfg[];
 task AxilDriver_config_write();
@@ -15,31 +25,21 @@ task AxilDriver_config_write();
     end
 endtask
 
-// task AxilDriver::write(bit [CGRA_AXI_ADDR_WIDTH-1:0] addr, data);
+/*
+task AxilDriver::write(bit [CGRA_AXI_ADDR_WIDTH-1:0] addr, data);
+*/
 semaphore axil_lock; initial axil_lock = new(1);
-bit [CGRA_AXI_ADDR_WIDTH-1:0] AxilDriver_write_addr;
-bit [CGRA_AXI_DATA_WIDTH-1:0] AxilDriver_write_data;
 task AxilDriver_write();
-   AxilDriver_write_addr = addr;
-   AxilDriver_write_data = data;
+   $display("[%0t] AXI-Lite Write. Addr: %08h, Data: %08h", $time, addr, data);
 
-   ////////////////////////////////////////////////////////////////////////
-   // $display("AXI-Lite Write. Addr: %08h, Data: %08h", addr, data);
-   // axil_lock.get(1);
-
-   $display("[%0t] AXI-Lite Write. Addr: %08h, Data: %08h",
-            $time, AxilDriver_write_addr, AxilDriver_write_data);
-
-   // semaphore axil_lock;
    axil_lock.get(1);
 
    // Note: "slave not ready" timout will occur b/c awready stays false until data is read (below)
    // awready advances controller state from WAIT(0) to WR_REQ_GLC(1)
 
-    // # 900;    // What if...?
    @(posedge axil_ifc.clk);  // added to match non-clocking timing...
    @(posedge axil_ifc.clk);
-   axil_ifc.awaddr  = AxilDriver_write_addr;
+   axil_ifc.awaddr  = addr;
    axil_ifc.awvalid = 1'b1;
    // for (int i = 0; i < 100; i++) begin
    // FIXME?? seems like this should happen BEFORE setting awvalid etc. above
@@ -63,7 +63,7 @@ task AxilDriver_write();
    // } WrState;
 
    // Axi controller should now be in state 1 (WR_REQ_GLC)  // 132ns
-   axil_ifc.wdata  = AxilDriver_write_data;
+   axil_ifc.wdata  = data;
    axil_ifc.wvalid = 1'b1;
    // Axi controller should now be in state 3 (WR_WAIT)  // 132ns
    // Then, after one cycle, on to state 4 (WR_RESP)     // 133ns

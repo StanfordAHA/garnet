@@ -1,5 +1,5 @@
 // This is a garnet_test.sv "include" file
-
+// 
 // MAX_WAIT is related to how long it takes to read/write data to/from tiles.
 // When debugging, it's good to limit MAX_WAIT so things don't run too long
 // - 6K is good enough for pointwise
@@ -8,37 +8,14 @@
 // 
 int MAX_WAIT = 6_000_000;
 
-    typedef enum int {
-        GLB_PCFG_CTRL,
-        GLB_STRM_G2F_CTRL,
-        GLB_STRM_F2G_CTRL
-    } e_glb_ctrl;
+typedef enum int {
+    GLB_PCFG_CTRL,
+    GLB_STRM_G2F_CTRL,
+    GLB_STRM_F2G_CTRL
+} e_glb_ctrl;
 
+// Kernel kernels[];  // Declared upstream in enclosing scope 'garnet_test.sv'
 Kernel kernel;
-
-/* temp registration lines for pull-request diffs
-    extern function new(Kernel kernels[], vAxilIfcDriver vifc_axil, vProcIfcDriver vifc_proc, int dpr);
-    extern function void build();
-    extern task write_bs(Kernel kernel);
-    extern task write_data(Kernel kernel);
-    ...
-*/
-
-// Can use same global addr and data for everybody because there are only three forks:
-// - one in wait_interrupt has a mem read, but
-//   - addr is same for all forks, and
-//   - data keeps getting overwritten, but we only care about the last one
-// - one in Env_run() is disabled and throws an error if anyone ever tries to use it;
-// - one in ProcDriver_read_data() does not use addr/data for reads
-
-bit [CGRA_AXI_ADDR_WIDTH-1:0] addr;
-bit [CGRA_AXI_DATA_WIDTH-1:0] data;
-
-bit [NUM_GLB_TILES-1:0] Env_glb_stall_mask;
-bit [NUM_CGRA_COLS-1:0] Env_cgra_stall_mask;
-
-e_glb_ctrl glb_ctrl;
-bit [$clog2(NUM_GLB_TILES)-1:0] tile_num;
 
 `include "tb/ProcDriver.sv"
 `include "tb/AxilDriver.sv"
@@ -59,14 +36,18 @@ task one_cy_delay_if_vcs();
 `endif
 endtask // one_cy_delay_if_vcs
 
+/* temp pull-request registration block for PR file compare
+task Environment::write_bs(Kernel kernel);
+    realtime start_time, end_time;
+    $timeformat(-9, 2, " ns");
+    repeat (10) @(vifc_proc.cbd);
+*/
+
 // Non-array trace vars for waveform debugging
 bitstream_entry_t bet0;
 int unsigned betdata0;
 int unsigned betaddr0;
 
-/* pull-request registration mark
-task Environment::write_bs(Kernel kernel);
-*/
 task Env_write_bs();
     realtime start_time, end_time;
 
@@ -89,6 +70,11 @@ task Env_write_bs();
     $display("[%s] It takes %0t time to write the bitstream to glb.\n",
              kernel.name, end_time - start_time);
 endtask // Env_write_bs
+
+
+/*
+task Environment::write_data(Kernel kernel);
+*/
 
 task Env_write_data();
     realtime start_time, end_time;
@@ -165,6 +151,10 @@ endtask
 Config Env_cgra_configure_cfg;
 int group_start, num_groups;
 bit [NUM_GLB_TILES-1:0] tile_mask;
+e_glb_ctrl glb_ctrl;
+
+bit [NUM_GLB_TILES-1:0] Env_glb_stall_mask;
+bit [NUM_CGRA_COLS-1:0] Env_cgra_stall_mask;
 
 task Env_cgra_configure();
     realtime start_time, end_time;
@@ -198,7 +188,9 @@ task Env_cgra_configure();
              end_time - start_time);
 endtask
 
-// function bit [NUM_GLB_TILES-1:0] Environment::calculate_glb_stall_mask(int start, int num);
+/*
+function bit [NUM_GLB_TILES-1:0] Environment::calculate_glb_stall_mask(int start, int num);
+*/
 function bit [NUM_GLB_TILES-1:0] calculate_glb_stall_mask(int start, int num);
     calculate_glb_stall_mask = '0;
     for (int i = 0; i < num; i++) begin
@@ -206,7 +198,9 @@ function bit [NUM_GLB_TILES-1:0] calculate_glb_stall_mask(int start, int num);
     end
 endfunction
 
-// function bit [NUM_CGRA_COLS-1:0] Environment::calculate_cgra_stall_mask(int start, int num);
+/*
+function bit [NUM_CGRA_COLS-1:0] Environment::calculate_cgra_stall_mask(int start, int num);
+*/
 function bit [NUM_CGRA_COLS-1:0] calculate_cgra_stall_mask(int start, int num);
     calculate_cgra_stall_mask = '0;
     for (int i = 0; i < num; i++) begin
@@ -352,6 +346,7 @@ endtask // Env_kernel_test
 // glc.svh:`define GLC_GLOBAL_ISR_R 'h3c
 
 string reg_name;
+bit [$clog2(NUM_GLB_TILES)-1:0] tile_num;
 task Env_wait_interrupt();
 
     $display("Welcome to wait_interrupt...");
@@ -493,3 +488,14 @@ task Env_run();
     end
 
 endtask // Env_run
+
+
+
+/* Unused?
+task Environment::compare();
+    repeat (20) @(vifc_axil.cbd);
+    foreach (kernels[i]) begin
+        kernels[i].compare();
+    end
+endtask
+*/
