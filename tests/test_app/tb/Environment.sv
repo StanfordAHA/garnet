@@ -1,13 +1,11 @@
-// class Environment;
+// This is a garnet_test.sv "include" file
 
-// MAX_WAIT is related to how long it takes to read/write data to/from tiles
+// MAX_WAIT is related to how long it takes to read/write data to/from tiles.
 // When debugging, it's good to limit MAX_WAIT so things don't run too long
 // - 6K is good enough for pointwise
 // - camera pipeline 2x2 needs more than 6K, I use 80K
 // - but 80K is not enough for mat_elemadd etc.
 // 
-// int MAX_WAIT = 6000;
-// int MAX_WAIT = 80_000;
 int MAX_WAIT = 6_000_000;
 
 typedef enum int {
@@ -34,11 +32,6 @@ bit [$clog2(NUM_GLB_TILES)-1:0] tile_num;
 `include "tb/ProcDriver.sv"
 `include "tb/AxilDriver.sv"
 
-// Non-array trace vars for waveform debugging
-bitstream_entry_t bet0;
-int unsigned betdata0;
-int unsigned betaddr0;
-
 // Convenience tasks to adjust vcs vs. verilator timing
 
 task one_cy_delay_if_verilator();
@@ -46,7 +39,7 @@ task one_cy_delay_if_verilator();
     // $display("WARNING adding one extra cycle for verilator run");
     @(posedge axil_ifc.clk);
 `endif
-endtask // one_cy_delay_if_verliator
+endtask // one_cy_delay_if_verilator
     
 task one_cy_delay_if_vcs();
 `ifndef verilator
@@ -55,8 +48,11 @@ task one_cy_delay_if_vcs();
 `endif
 endtask // one_cy_delay_if_vcs
 
+// Non-array trace vars for waveform debugging
+bitstream_entry_t bet0;
+int unsigned betdata0;
+int unsigned betaddr0;
 
-// task Environment::write_bs(Kernel kernel);
 task Env_write_bs();
     $timeformat(-9, 2, " ns", 0);
     repeat (10) @(p_ifc.clk);
@@ -492,23 +488,3 @@ task Env_run();
     end
 
 endtask // Env_run
-
-
-// task Environment::compare();
-/*
-    local_bs_q = kernel.parse_bitstream;
-    bet0 = local_bs_q[0];
-    betdata0 = local_bs_q[0].data;
-    ProcDriver_write_bs_bs_q = local_bs_q;
-*/
-
-// glb_stall_mask = calculate_glb_stall_mask(group_start, num_groups); // unused???
-// $display("build stall mask"); $fflush();
-// $display("calling cgra_stall()"); $fflush();
-// cgra_stall(cgra_stall_mask);
-// $display("returned from wait_interrupt()"); $fflush();
-// $display("calling clear_interrupt()"); $fflush();
-// $display("returning from clear_interrupt()"); $fflush();
-// $display("returned from wait_interrupt()"); $fflush();
-// $display("gettum interruptum"); $fflush();
-// $display("gottum interruptum"); $fflush();

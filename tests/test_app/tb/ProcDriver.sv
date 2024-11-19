@@ -165,10 +165,9 @@ task ProcDriver_read_data();
                 end
 
                 if (`DBG_PROCDRIVER) $display("");
-`ifndef verilator
+
                 // FIXME somebody needs to figure out why vcs and verilator are different here!!!
-                @(posedge p_ifc.clk);
-`endif
+                one_cy_delay_if_vcs();
             end
             $display("Offload %d data chunks END", PD_rdata_num_trans);  // 4027ns
             $display("First output word is maybe...0x%04x",  PD_rdata_data_q[0]);
