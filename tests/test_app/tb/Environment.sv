@@ -16,15 +16,13 @@ int MAX_WAIT = 6_000_000;
 
 Kernel kernel;
 
-/*
+/* temp registration lines for pull-request diffs
     extern function new(Kernel kernels[], vAxilIfcDriver vifc_axil, vProcIfcDriver vifc_proc, int dpr);
     extern function void build();
     extern task write_bs(Kernel kernel);
     extern task write_data(Kernel kernel);
     ...
 */
-
-realtime start_time, end_time, g2f_end_time, latency;
 
 // Can use same global addr and data for everybody because there are only three forks:
 // - one in wait_interrupt has a mem read, but
@@ -66,10 +64,12 @@ bitstream_entry_t bet0;
 int unsigned betdata0;
 int unsigned betaddr0;
 
-/*
+/* pull-request registration mark
 task Environment::write_bs(Kernel kernel);
 */
 task Env_write_bs();
+    realtime start_time, end_time;
+
     $timeformat(-9, 2, " ns", 0);
     repeat (10) @(p_ifc.clk);
     start_time = $realtime;
@@ -92,8 +92,8 @@ endtask // Env_write_bs
 
 task Env_write_data();
     realtime start_time, end_time;
-    $timeformat(-9, 2, " ns", 0);
 
+    $timeformat(-9, 2, " ns", 0);
     repeat (10) @(posedge p_ifc.clk);
     foreach (kernel.inputs[i]) begin
         foreach (kernel.inputs[i].io_tiles[j]) begin
@@ -146,6 +146,8 @@ endtask
 
 // task Environment::glb_configure(Kernel kernel);
 task Env_glb_configure();
+    realtime start_time, end_time;
+
     $timeformat(-9, 2, " ns", 0);
     start_time = $realtime;
     $display("[%s] glb configuration start at %0t", kernel.name, start_time);
@@ -165,6 +167,8 @@ int group_start, num_groups;
 bit [NUM_GLB_TILES-1:0] tile_mask;
 
 task Env_cgra_configure();
+    realtime start_time, end_time;
+
     $timeformat(-9, 2, " ns", 0);
     group_start = kernel.group_start;
     num_groups = kernel.num_groups;
@@ -263,8 +267,9 @@ int total_output_size;
 // FIXME/TODO this could be three subtasks start_streaming(), wait_for_g2f(), wait_for_f2g()
 // or glb_stream_g2f() and glb_stream_f2g() or some such
 task Env_kernel_test();
-    $timeformat(-9, 2, " ns", 0);
+    realtime start_time, end_time, g2f_end_time, latency;
 
+    $timeformat(-9, 2, " ns", 0);
     group_start = kernel.group_start;
     num_groups = kernel.num_groups;
     Env_glb_stall_mask = calculate_glb_stall_mask(group_start, num_groups);
