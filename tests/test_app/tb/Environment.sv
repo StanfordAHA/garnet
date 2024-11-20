@@ -242,60 +242,40 @@ int total_output_size;
 // or glb_stream_g2f() and glb_stream_f2g() or some such
 task Env_kernel_test();
     realtime start_time, end_time, g2f_end_time, latency;
-
     $timeformat(-9, 2, " ns", 0);
     group_start = kernel.group_start;
     num_groups = kernel.num_groups;
     // glb_stall_mask = calculate_glb_stall_mask(group_start, num_groups); // Unused???
     cgra_stall_mask = calculate_cgra_stall_mask(group_start, num_groups);
-
-    // cgra_unstall(cgra_stall_mask);
     Env_cgra_unstall();
 
     start_time = $realtime;
-    $display("[%s] kernel start at %0t", kernel.name, start_time);  // 1831ns (pointwise)
+    $display("[%s] kernel start at %0t", kernel.name, start_time);
     Env_kernel_cfg = kernel.get_strm_start_config();
 
     // A write of 0x10001 to address 0x18 starts data streaming to proc tiles.
-    // axil_drv.write(cfg.addr, cfg.data);
     addr = Env_kernel_cfg.addr;  // 0x18
     data = Env_kernel_cfg.data;  // (e.g. 0x10001 for pointwise)
     AxilDriver_write();          // This starts the (G2F) streaming
-
-    // Build a mask that shows which tiles are receiving data from GLB
-    tile_mask = 0;
-    foreach (kernel.inputs[i]) begin
-        foreach (kernel.inputs[i].io_tiles[j]) begin
-            tile_mask |= 1 << kernel.inputs[i].io_tiles[j].tile;
-        end
-    end
-    $display("\n[%0t] Built a INPUT tile mask %0x", $time, tile_mask);
 
     // Wait for an interrupt to tell us when input streaming is done
     // Then wait until interrupt mask contains ALL TILES listed in tile_mask
     // Then clear the interrupt(s)
 
     glb_ctrl = GLB_STRM_G2F_CTRL;
+    build_input_tile_mask();
     Env_wait_interrupt();
     Env_clear_interrupt();
 
-    g2f_end_time = $realtime; // 2909ns
+    g2f_end_time = $realtime;
     $display("[%s] GLB-to-CGRA streaming done at %0t", kernel.name, g2f_end_time);
-
-    // Build a mask that shows which tiles are sending data to GLB
-    tile_mask = 0;
-    foreach (kernel.outputs[i]) begin
-        foreach (kernel.outputs[i].io_tiles[j]) begin
-            tile_mask |= 1 << kernel.outputs[i].io_tiles[j].tile;
-        end
-    end
-    $display("\n[%0t] Built a OUTPUT tile mask %0x", $time, tile_mask);
 
     // Wait for an interrupt to tell us when output streaming is done
     // Then wait until interrupt mask contains ALL TILES listed in tile_mask
     // Then clear the interrupt(s)
 
     glb_ctrl = GLB_STRM_F2G_CTRL;  // 0x30
+    build_output_tile_mask();
     Env_wait_interrupt();
     Env_clear_interrupt();
 
@@ -469,6 +449,29 @@ task Env_run();
 
 endtask // Env_run
 
+task build_input_tile_mask();
+    // Build a mask that shows which tiles are receiving data from GLB
+    tile_mask = 0;
+    foreach (kernel.inputs[i]) begin
+        foreach (kernel.inputs[i].io_tiles[j]) begin
+            tile_mask |= 1 << kernel.inputs[i].io_tiles[j].tile;
+        end
+    end
+    $display("\n[%0t] Built a INPUT tile mask %0x", $time, tile_mask);
+endtask
+
+task build_output_tile_mask();
+    // Build a mask that shows which tiles are sending data to GLB
+    tile_mask = 0;
+    foreach (kernel.outputs[i]) begin
+        foreach (kernel.outputs[i].io_tiles[j]) begin
+            tile_mask |= 1 << kernel.outputs[i].io_tiles[j].tile;
+        end
+    end
+    $display("\n[%0t] Built a OUTPUT tile mask %0x", $time, tile_mask);
+endtask
+
+    
 
 
 /* Unused?
