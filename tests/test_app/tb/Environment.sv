@@ -409,20 +409,20 @@ task Env_run();
     Env_set_interrupt_on();
 
     if (dpr) begin
-        $display("ERROR this version of testbench does not support dpr TRUE");
-        $finish(2);  // The only choices are 0,1,2; note $finish() is more drastic than $exit()
+        $display("ERROR we no longer support dpr TRUE; we're not even sure when/if it was ever used");
+        $finish(2);
         foreach (kernels[i]) begin
             automatic int j = i;
             fork
                 begin
                     // env.write_bs(kernels[j]);
                     kernel = kernels[j];
-                    Env_write_bs();       // env.write_bs(kernels[j]);
-                    Env_glb_configure();  // env.glb_configure(kernel);
-                    Env_cgra_configure(); // env.cgra_configure(kernel);
-                    Env_write_data();     // env.write_data(kernel);
-                    Env_kernel_test();    // env.kernel_test(kernel);
-                    Env_read_data();      // env.read_data(kernel);
+                    Env_write_bs();
+                    Env_glb_configure();
+                    Env_cgra_configure();
+                    Env_write_data();
+                    Env_kernel_test();
+                    Env_read_data();
                 end
             join_none
         end
@@ -434,11 +434,11 @@ task Env_run();
             begin
                 $display("[%0t] Processing kernel %0d BEGIN", $time, j);
                 kernel = kernels[j];
-                Env_write_bs();       // env.write_bs(kernels[j]);
-                Env_glb_configure();  // env.glb_configure(kernel);
-                Env_cgra_configure(); // env.cgra_configure(kernel);
-                Env_write_data();     // env.write_data(kernel);
-                Env_kernel_test();    // env.kernel_test(kernel);
+                Env_write_bs();
+                Env_glb_configure();
+                Env_cgra_configure();
+                Env_write_data();
+                Env_kernel_test();
                 Env_read_data();      $display("[%0t] read_data DONE", $time);
                 kernel.compare();
                 $display("[%0t] Processing kernel %0d END", $time, j);
