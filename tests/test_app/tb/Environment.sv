@@ -233,7 +233,6 @@ task Env_cgra_unstall();
     $display("Unstall CGRA with stall mask %4h", stall_mask);
 endtask // Env_cgra_unstall
 
-// BOOKMARK bookmark
 // task Environment::kernel_test(Kernel kernel);
 Config Env_kernel_cfg;
 int total_output_size;
@@ -258,6 +257,10 @@ task Env_kernel_test();
     data = Env_kernel_cfg.data;  // (e.g. 0x10001 for pointwise)
     AxilDriver_write();          // This starts the (G2F) streaming
 
+    /* temp registration block for pr diff
+    axil_drv.write(cfg.addr, cfg.data);
+    */
+
     // Wait for an interrupt to tell us when input streaming is done
     // Then wait until interrupt mask contains ALL TILES listed in tile_mask
     // Then clear the interrupt(s)
@@ -266,7 +269,6 @@ task Env_kernel_test();
     build_input_tile_mask();
     Env_wait_interrupt();
     Env_clear_interrupt();
-
     g2f_end_time = $realtime;
     $display("[%s] GLB-to-CGRA streaming done at %0t", kernel.name, g2f_end_time);
 
@@ -278,9 +280,6 @@ task Env_kernel_test();
     build_output_tile_mask();
     Env_wait_interrupt();
     Env_clear_interrupt();
-
-    // Summary info for the log
-
     end_time = $realtime;
     $display("[%s] It takes %0t total time to run kernel.", kernel.name, end_time - start_time);
 
@@ -295,30 +294,29 @@ task Env_kernel_test();
     $display("[%s] The throughput is %.3f (GB/s).", kernel.name,
              total_output_size / (g2f_end_time - start_time));
 
-endtask // Env_kernel_test
+endtask
 
+// Register defs in glc.svh
+//  `define GLC_PAR_CFG_G2F_ISR_R 'h38
+//  `define GLC_STRM_G2F_ISR_R    'h34
+//  `define GLC_STRM_F2G_ISR_R    'h30
+//  `define GLC_GLOBAL_ISR_R      'h3c
 
-// task Environment::wait_interrupt(e_glb_ctrl glb_ctrl,
-//                                  bit [$clog2(NUM_GLB_TILES)-1:0] tile_num);
-// glc.svh:`define GLC_PAR_CFG_G2F_ISR_R 'h38
-// glc.svh:`define GLC_STRM_G2F_ISR_R 'h34
-// glc.svh:`define GLC_STRM_F2G_ISR_R 'h30
-// glc.svh:`define GLC_GLOBAL_ISR_R 'h3c
-
+/* temp registration block
+task Environment::wait_interrupt(e_glb_ctrl glb_ctrl, bit [$clog2(NUM_GLB_TILES)-1:0] tile_num);
+*/
 string reg_name;
-bit [$clog2(NUM_GLB_TILES)-1:0] tile_num;
 task Env_wait_interrupt();
 
-    $display("Welcome to wait_interrupt...");
-    // which interrupt  // TODO this happens at least twice, should it be a task
+    // which interrupt
     if (glb_ctrl == GLB_PCFG_CTRL) begin
-        addr = `GLC_PAR_CFG_G2F_ISR_R;  // 0x38 - 673ns
+        addr = `GLC_PAR_CFG_G2F_ISR_R;
         reg_name = "PCFG";
     end else if (glb_ctrl == GLB_STRM_G2F_CTRL) begin
-        addr = `GLC_STRM_G2F_ISR_R;     // 0x34 - 1839ns
+        addr = `GLC_STRM_G2F_ISR_R;
         reg_name = "STRM_G2F";
     end else begin
-        addr = `GLC_STRM_F2G_ISR_R;     // 0x30 - 5962ns
+        addr = `GLC_STRM_F2G_ISR_R;
         reg_name = "STRM_F2G";
     end
 
@@ -330,14 +328,14 @@ task Env_wait_interrupt();
         begin
             forever begin
                 // level sensitive interrupt
-                wait (top.interrupt);         // Wait for interrupt, then start checking interrupt mask
+                wait (top.interrupt);
                 one_cy_delay_if_verilator();  // Vvverilator is off by 1cy here vs. vcs
 
                 // Got an interrupt. One or more tiles have finished streaming.
-                // Read the indicated reg to see which one(s) have finished so far.
+                // Read the interrupt register to see which one(s) have finished so far.
 
                 AxilDriver_read();
-                $display("%s interrupt tiles %0x; waiting for %0x", reg_name, data, tile_mask);
+                $display("%s interrupt tiles %0x; waiting to see %0x", reg_name, data, tile_mask);
                 if (data == 0) begin
                     $display("WARNING got interrupt, but not from %s apparently", reg_name);
                     $display("(this is probably a fatal error ackshully");
@@ -368,6 +366,7 @@ task Env_wait_interrupt();
     $display("[%0t] FORK CANCELLED (right)?", $time);
 endtask
 
+// BOOKMARK bookmark
 task Env_clear_interrupt();
 
     $display("Welcome to clear_interrupt...");
