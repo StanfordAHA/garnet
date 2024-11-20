@@ -215,32 +215,25 @@ task Env_cgra_stall();
     $display("Stall CGRA with stall mask %8h", stall_mask);
 endtask
 
-// BOOKMARK bookmark
 /*
 task Environment::cgra_unstall(bit [NUM_CGRA_COLS-1:0] stall_mask);
 */
-bit [NUM_CGRA_COLS-1:0] cgra_unstall_stall_mask;
-bit [CGRA_AXI_DATA_WIDTH-1:0] Env_cgra_unstall_data;
-bit [CGRA_AXI_DATA_WIDTH-1:0] Env_cgra_unstall_wr_data;
+bit [CGRA_AXI_DATA_WIDTH-1:0] wr_data;
 task Env_cgra_unstall();
-    stall_mask = cgra_stall_mask;
-    // Unstall CGRA
     $display("Welcome to Env_cgra_unstall()");
-
+    // Unstall CGRA
     addr = `GLC_CGRA_STALL_R;
-    AxilDriver_read();  // 1850ns
-    Env_cgra_unstall_data = data;
-    Env_cgra_unstall_wr_data = (~stall_mask) & Env_cgra_unstall_data;
-
-    // axil_drv.write(`GLC_CGRA_STALL_R, wr_data);
+    AxilDriver_read();  // read() result gets stored in 'data'
+    stall_mask = cgra_stall_mask;
+    wr_data = (~stall_mask) & data;
     addr = `GLC_CGRA_STALL_R;  // 0x8, defined in glv.svh maybe
-    data = Env_cgra_unstall_wr_data;
+    data = wr_data;
     AxilDriver_write();
 
-    // 3970ns
     $display("Unstall CGRA with stall mask %4h", stall_mask);
 endtask // Env_cgra_unstall
 
+// BOOKMARK bookmark
 // task Environment::kernel_test(Kernel kernel);
 Config Env_kernel_cfg;
 int total_output_size;
