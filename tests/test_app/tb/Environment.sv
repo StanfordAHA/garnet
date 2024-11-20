@@ -366,19 +366,18 @@ task Env_wait_interrupt();
     $display("[%0t] FORK CANCELLED (right)?", $time);
 endtask
 
-// BOOKMARK bookmark
+
 task Env_clear_interrupt();
 
-    $display("Welcome to clear_interrupt...");
     // which interrupt
     if (glb_ctrl == GLB_PCFG_CTRL) begin
-        addr = `GLC_PAR_CFG_G2F_ISR_R;  // 0x38 - 673ns
+        addr = `GLC_PAR_CFG_G2F_ISR_R;
         reg_name = "PCFG";
     end else if (glb_ctrl == GLB_STRM_G2F_CTRL) begin
-        addr = `GLC_STRM_G2F_ISR_R;     // 0x34 - 1839ns
+        addr = `GLC_STRM_G2F_ISR_R;
         reg_name = "STRM_G2F";
     end else begin
-        addr = `GLC_STRM_F2G_ISR_R;     // 0x30 - 5962ns
+        addr = `GLC_STRM_F2G_ISR_R;
         reg_name = "STRM_F2G";
     end
     $display("%s clear ALL RELEVANT TILES(?) using mask", reg_name, tile_mask);
@@ -398,6 +397,7 @@ task Env_set_interrupt_on();
 endtask
 
 
+// BOOKMARK bookmark
 task Env_run();
     // int dpr;  (declared in garnet_test.sv, which "include"s this file)
     // wait for reset
