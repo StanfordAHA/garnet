@@ -24,8 +24,6 @@ task ProcDriver_write_bs();
 endtask
 
 data_array_t data_q;
-bit [GLB_ADDR_WIDTH-1:0] cur_addr;
-bit [BANK_DATA_WIDTH-1:0] data;
 int size;
 
 // TODO: Change it to const ref
