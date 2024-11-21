@@ -53,17 +53,11 @@ module top;
     // reset generation
     initial begin
         // Change reset to give a clear up-and-down pulse
-        reset = 0; $display("[%0t] reset = 0", $time);
-        @(posedge clk);
-        @(posedge clk);
-        @(posedge clk);
-
-        reset = 1; $display("[%0t] reset = 1", $time);
-        @(posedge clk);
-        @(posedge clk);
-        @(posedge clk);
-
-        reset = 0; $display("[%0t] reset = 0\n", $time);
+        reset = 0;
+        repeat (3) @(posedge clk);
+        reset = 1;
+        repeat (3) @(posedge clk);
+        reset = 0;
     end
 
     //============================================================================//
@@ -84,12 +78,8 @@ module top;
         .clk     (clk),
         .reset   (reset),
         .p_ifc   (p_ifc),
-        // .axil_ifc(axil_ifc.driver) // this did not help anything
         .axil_ifc(axil_ifc)
     );
-//   always @(posedge clk) begin
-//      $display("top.sv    137 i see  axil_ifc.wvalid = %d", axil_ifc.wvalid); $fflush();
-//   end
 
     //============================================================================//
     // instantiate dut
@@ -137,19 +127,5 @@ module top;
         .jtag_trst_n(  /*unused*/)
     );
 
-endmodule // top
 
-
-/*
-        reset = 1;
-        repeat (3) @(posedge clk);
-        reset = 0;
-
-    // reset generation
-    initial begin
-        reset = 1;
-        repeat (3) @(posedge clk);
-        reset = 0;
-    end
-
-*/
+endmodule

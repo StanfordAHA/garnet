@@ -246,8 +246,6 @@ function Kernel::new(string app_dir, int dpr);
     bitstream_filename = get_bitstream_filename(kernel_info);
     bs_info = get_bs_info(kernel_info);
     assert_(bs_info != null, $sformatf("Unable to find %s", bitstream_filename));
-    // $display("FOO found filename %s", bitstream_filename);
-    // /nobackup/steveri/github/garnet/tests/test_app/test_data/pointwise/bin/pointwise.bs
 
     num_inputs  = get_num_inputs(kernel_info);
     num_outputs = get_num_outputs(kernel_info);
@@ -286,7 +284,7 @@ function Kernel::new(string app_dir, int dpr);
         inputs[i].num_io_tiles = num_io_tiles;
         inputs[i].io_tiles = new[num_io_tiles];
 
-        $display("input_%0d has %0d input blocks\n", i, num_io_tiles);
+        $display("input_%0d has %0d input blocks", i, num_io_tiles);
 
         if (num_io_tiles == 1) begin
             inputs[i].io_tiles[0].num_data = input_data[i].size;
@@ -366,6 +364,7 @@ function bitstream_t Kernel::parse_bitstream();
 `else
         code = $fscanf(fp, "%08x %08x", entry.addr, entry.data);
 `endif
+        // Quick check to see if it's working at all, can compare to contents of file
         if (i<4) $display(" - got addr %08x, data %08x", entry.addr, entry.data);
         if (code == -1) continue;
         assert_(code == 2, $sformatf(

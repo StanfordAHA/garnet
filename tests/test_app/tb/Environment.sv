@@ -233,7 +233,6 @@ task Env_cgra_unstall();
     $display("Unstall CGRA with stall mask %4h", stall_mask);
 endtask // Env_cgra_unstall
 
-// BOOKMARK bookmark
 // task Environment::kernel_test(Kernel kernel);
 Config Env_kernel_cfg;
 int total_output_size;
@@ -242,65 +241,45 @@ int total_output_size;
 // or glb_stream_g2f() and glb_stream_f2g() or some such
 task Env_kernel_test();
     realtime start_time, end_time, g2f_end_time, latency;
-
     $timeformat(-9, 2, " ns", 0);
     group_start = kernel.group_start;
     num_groups = kernel.num_groups;
     // glb_stall_mask = calculate_glb_stall_mask(group_start, num_groups); // Unused???
     cgra_stall_mask = calculate_cgra_stall_mask(group_start, num_groups);
-
-    // cgra_unstall(cgra_stall_mask);
     Env_cgra_unstall();
 
     start_time = $realtime;
-    $display("[%s] kernel start at %0t", kernel.name, start_time);  // 1831ns (pointwise)
+    $display("[%s] kernel start at %0t", kernel.name, start_time);
     Env_kernel_cfg = kernel.get_strm_start_config();
 
     // A write of 0x10001 to address 0x18 starts data streaming to proc tiles.
-    // axil_drv.write(cfg.addr, cfg.data);
     addr = Env_kernel_cfg.addr;  // 0x18
     data = Env_kernel_cfg.data;  // (e.g. 0x10001 for pointwise)
     AxilDriver_write();          // This starts the (G2F) streaming
 
-    // Build a mask that shows which tiles are receiving data from GLB
-    tile_mask = 0;
-    foreach (kernel.inputs[i]) begin
-        foreach (kernel.inputs[i].io_tiles[j]) begin
-            tile_mask |= 1 << kernel.inputs[i].io_tiles[j].tile;
-        end
-    end
-    $display("\n[%0t] Built a INPUT tile mask %0x", $time, tile_mask);
+    /* temp registration block for pr diff
+    axil_drv.write(cfg.addr, cfg.data);
+    */
 
     // Wait for an interrupt to tell us when input streaming is done
     // Then wait until interrupt mask contains ALL TILES listed in tile_mask
     // Then clear the interrupt(s)
 
     glb_ctrl = GLB_STRM_G2F_CTRL;
+    build_input_tile_mask();
     Env_wait_interrupt();
     Env_clear_interrupt();
-
-    g2f_end_time = $realtime; // 2909ns
+    g2f_end_time = $realtime;
     $display("[%s] GLB-to-CGRA streaming done at %0t", kernel.name, g2f_end_time);
-
-    // Build a mask that shows which tiles are sending data to GLB
-    tile_mask = 0;
-    foreach (kernel.outputs[i]) begin
-        foreach (kernel.outputs[i].io_tiles[j]) begin
-            tile_mask |= 1 << kernel.outputs[i].io_tiles[j].tile;
-        end
-    end
-    $display("\n[%0t] Built a OUTPUT tile mask %0x", $time, tile_mask);
 
     // Wait for an interrupt to tell us when output streaming is done
     // Then wait until interrupt mask contains ALL TILES listed in tile_mask
     // Then clear the interrupt(s)
 
     glb_ctrl = GLB_STRM_F2G_CTRL;  // 0x30
+    build_output_tile_mask();
     Env_wait_interrupt();
     Env_clear_interrupt();
-
-    // Summary info for the log
-
     end_time = $realtime;
     $display("[%s] It takes %0t total time to run kernel.", kernel.name, end_time - start_time);
 
@@ -315,30 +294,29 @@ task Env_kernel_test();
     $display("[%s] The throughput is %.3f (GB/s).", kernel.name,
              total_output_size / (g2f_end_time - start_time));
 
-endtask // Env_kernel_test
+endtask
 
+// Register defs in glc.svh
+//  `define GLC_PAR_CFG_G2F_ISR_R 'h38
+//  `define GLC_STRM_G2F_ISR_R    'h34
+//  `define GLC_STRM_F2G_ISR_R    'h30
+//  `define GLC_GLOBAL_ISR_R      'h3c
 
-// task Environment::wait_interrupt(e_glb_ctrl glb_ctrl,
-//                                  bit [$clog2(NUM_GLB_TILES)-1:0] tile_num);
-// glc.svh:`define GLC_PAR_CFG_G2F_ISR_R 'h38
-// glc.svh:`define GLC_STRM_G2F_ISR_R 'h34
-// glc.svh:`define GLC_STRM_F2G_ISR_R 'h30
-// glc.svh:`define GLC_GLOBAL_ISR_R 'h3c
-
+/* temp registration block
+task Environment::wait_interrupt(e_glb_ctrl glb_ctrl, bit [$clog2(NUM_GLB_TILES)-1:0] tile_num);
+*/
 string reg_name;
-bit [$clog2(NUM_GLB_TILES)-1:0] tile_num;
 task Env_wait_interrupt();
 
-    $display("Welcome to wait_interrupt...");
-    // which interrupt  // TODO this happens at least twice, should it be a task
+    // which interrupt
     if (glb_ctrl == GLB_PCFG_CTRL) begin
-        addr = `GLC_PAR_CFG_G2F_ISR_R;  // 0x38 - 673ns
+        addr = `GLC_PAR_CFG_G2F_ISR_R;
         reg_name = "PCFG";
     end else if (glb_ctrl == GLB_STRM_G2F_CTRL) begin
-        addr = `GLC_STRM_G2F_ISR_R;     // 0x34 - 1839ns
+        addr = `GLC_STRM_G2F_ISR_R;
         reg_name = "STRM_G2F";
     end else begin
-        addr = `GLC_STRM_F2G_ISR_R;     // 0x30 - 5962ns
+        addr = `GLC_STRM_F2G_ISR_R;
         reg_name = "STRM_F2G";
     end
 
@@ -350,14 +328,14 @@ task Env_wait_interrupt();
         begin
             forever begin
                 // level sensitive interrupt
-                wait (top.interrupt);         // Wait for interrupt, then start checking interrupt mask
+                wait (top.interrupt);
                 one_cy_delay_if_verilator();  // Vvverilator is off by 1cy here vs. vcs
 
                 // Got an interrupt. One or more tiles have finished streaming.
-                // Read the indicated reg to see which one(s) have finished so far.
+                // Read the interrupt register to see which one(s) have finished so far.
 
                 AxilDriver_read();
-                $display("%s interrupt tiles %0x; waiting for %0x", reg_name, data, tile_mask);
+                $display("%s interrupt tiles %0x; waiting to see %0x", reg_name, data, tile_mask);
                 if (data == 0) begin
                     $display("WARNING got interrupt, but not from %s apparently", reg_name);
                     $display("(this is probably a fatal error ackshully");
@@ -388,18 +366,18 @@ task Env_wait_interrupt();
     $display("[%0t] FORK CANCELLED (right)?", $time);
 endtask
 
+
 task Env_clear_interrupt();
 
-    $display("Welcome to clear_interrupt...");
     // which interrupt
     if (glb_ctrl == GLB_PCFG_CTRL) begin
-        addr = `GLC_PAR_CFG_G2F_ISR_R;  // 0x38 - 673ns
+        addr = `GLC_PAR_CFG_G2F_ISR_R;
         reg_name = "PCFG";
     end else if (glb_ctrl == GLB_STRM_G2F_CTRL) begin
-        addr = `GLC_STRM_G2F_ISR_R;     // 0x34 - 1839ns
+        addr = `GLC_STRM_G2F_ISR_R;
         reg_name = "STRM_G2F";
     end else begin
-        addr = `GLC_STRM_F2G_ISR_R;     // 0x30 - 5962ns
+        addr = `GLC_STRM_F2G_ISR_R;
         reg_name = "STRM_F2G";
     end
     $display("%s clear ALL RELEVANT TILES(?) using mask", reg_name, tile_mask);
@@ -419,6 +397,7 @@ task Env_set_interrupt_on();
 endtask
 
 
+// BOOKMARK bookmark
 task Env_run();
     // int dpr;  (declared in garnet_test.sv, which "include"s this file)
     // wait for reset
@@ -430,20 +409,20 @@ task Env_run();
     Env_set_interrupt_on();
 
     if (dpr) begin
-        $display("ERROR this version of testbench does not support dpr TRUE");
-        $finish(2);  // The only choices are 0,1,2; note $finish() is more drastic than $exit()
+        $display("ERROR we no longer support dpr TRUE; we're not even sure when/if it was ever used");
+        $finish(2);
         foreach (kernels[i]) begin
             automatic int j = i;
             fork
                 begin
                     // env.write_bs(kernels[j]);
                     kernel = kernels[j];
-                    Env_write_bs();       // env.write_bs(kernels[j]);
-                    Env_glb_configure();  // env.glb_configure(kernel);
-                    Env_cgra_configure(); // env.cgra_configure(kernel);
-                    Env_write_data();     // env.write_data(kernel);
-                    Env_kernel_test();    // env.kernel_test(kernel);
-                    Env_read_data();      // env.read_data(kernel);
+                    Env_write_bs();
+                    Env_glb_configure();
+                    Env_cgra_configure();
+                    Env_write_data();
+                    Env_kernel_test();
+                    Env_read_data();
                 end
             join_none
         end
@@ -455,11 +434,11 @@ task Env_run();
             begin
                 $display("[%0t] Processing kernel %0d BEGIN", $time, j);
                 kernel = kernels[j];
-                Env_write_bs();       // env.write_bs(kernels[j]);
-                Env_glb_configure();  // env.glb_configure(kernel);
-                Env_cgra_configure(); // env.cgra_configure(kernel);
-                Env_write_data();     // env.write_data(kernel);
-                Env_kernel_test();    // env.kernel_test(kernel);
+                Env_write_bs();
+                Env_glb_configure();
+                Env_cgra_configure();
+                Env_write_data();
+                Env_kernel_test();
                 Env_read_data();      $display("[%0t] read_data DONE", $time);
                 kernel.compare();
                 $display("[%0t] Processing kernel %0d END", $time, j);
@@ -469,6 +448,29 @@ task Env_run();
 
 endtask // Env_run
 
+task build_input_tile_mask();
+    // Build a mask that shows which tiles are receiving data from GLB
+    tile_mask = 0;
+    foreach (kernel.inputs[i]) begin
+        foreach (kernel.inputs[i].io_tiles[j]) begin
+            tile_mask |= 1 << kernel.inputs[i].io_tiles[j].tile;
+        end
+    end
+    $display("\n[%0t] Built a INPUT tile mask %0x", $time, tile_mask);
+endtask
+
+task build_output_tile_mask();
+    // Build a mask that shows which tiles are sending data to GLB
+    tile_mask = 0;
+    foreach (kernel.outputs[i]) begin
+        foreach (kernel.outputs[i].io_tiles[j]) begin
+            tile_mask |= 1 << kernel.outputs[i].io_tiles[j].tile;
+        end
+    end
+    $display("\n[%0t] Built a OUTPUT tile mask %0x", $time, tile_mask);
+endtask
+
+    
 
 
 /* Unused?
