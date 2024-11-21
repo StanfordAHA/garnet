@@ -1,3 +1,9 @@
+the "dev" directory has cached versions of garnet-verilog and
+pointwise collateral, so that you can quickly run verilator testbench
+experiments locally on any machine, no garnet-docker-builds
+required...
+
+
 dev/README
 - how to debug locally (e.g. on kiwi)
 - verilator code was developed using verilator version 5.028
