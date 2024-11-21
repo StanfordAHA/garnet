@@ -23,7 +23,6 @@ program garnet_test #(
     // local variables
     //============================================================================//
     Kernel kernels[$]; // use dynamic array for potential glb tiling
-    //Environment env;
 
     // Incorrect timescale gave me no end of problems, so now I'm adding this to help future me.
     function static void time_check(bit cond);
@@ -55,19 +54,13 @@ program garnet_test #(
         $display("mapping...");
         map(kernels);
 
-        // No longer need "build()" b/c now using tasks instead of classes
-        // env = new(kernels, axil_ifc, p_ifc, dpr); env.build();
-        // env = new(kernels, axil_ifc, p_ifc, dpr);
-        // env.build();
-
         test_toggle = 1;
         Env_run();
         test_toggle = 0;
 
         // Dump out data between each test
         //env.compare();
-        $display("");
-        $display("done did all of garnet_test i guess");
+
         $display("Time: %0t", $time);
         $display("PASS PASS PASS PASS PASS PASS PASS PASS PASS PASS\n");
         $finish(0);
@@ -115,10 +108,8 @@ program garnet_test #(
         foreach (app_dirs[i]) begin
             $display("[%0t] Processing app #%0d\n", $time, i);
             temp_kernel = new(app_dirs[i], dpr);
-
             if (temp_kernel.num_glb_tiling > 0) begin
                 // Replicate kernels if glb_tiling is enabled
-                $display("// Replicate kernels if glb_tiling is enabled");
                 temp_kernel.glb_tiling_cnt = kernel_glb_tiling_cnt;
                 kernel_glb_tiling_cnt++;
                 kernels.push_back(temp_kernel);
@@ -131,12 +122,11 @@ program garnet_test #(
                 kernel_glb_tiling_cnt = 0;
             end else begin
                 // No glb tiling
-                $display("\n// No glb tiling");
                 kernels.push_back(temp_kernel);
             end
         end
         $display("End function 'initialize'\n");
-    endfunction // initialize
+    endfunction
 
     function void map(Kernel kernels[]);
         foreach (kernels[i]) begin
@@ -147,7 +137,7 @@ program garnet_test #(
             end
             $display("[%0t] Mapping kernel %0d Succeed\n", $time, i);
         end
-    endfunction // map
+    endfunction
 
    `include "tb/Environment.sv"
 endprogram
