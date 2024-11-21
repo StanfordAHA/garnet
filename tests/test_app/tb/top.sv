@@ -6,6 +6,8 @@
 ** Change history:
 **  10/14/2020 - Implement the first version
 **===========================================================================*/
+`define DBG_TBTOP 0  // Set to '1' for debugging
+
 `ifndef CLK_PERIOD
 `define CLK_PERIOD 1ns
 `endif
@@ -53,11 +55,11 @@ module top;
     // reset generation
     initial begin
         // Change reset to give a clear up-and-down pulse
-        reset = 0;
+        reset = 0; if (`DBG_TBTOP) $display("[%0t] reset = 0", $time);
         repeat (3) @(posedge clk);
-        reset = 1;
+        reset = 1; if (`DBG_TBTOP) $display("[%0t] reset = 1", $time);
         repeat (3) @(posedge clk);
-        reset = 0;
+        reset = 0; if (`DBG_TBTOP) $display("[%0t] reset = 0\n", $time);
     end
 
     //============================================================================//

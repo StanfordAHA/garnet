@@ -452,6 +452,7 @@ def dispatch(args, extra_args=None):
     else:
         imported_tests = Tests(args.config)
 
+    # Verilator test hack
     imported_tests = Tests("BLANK")
     imported_tests.glb_tests = ["apps/camera_pipeline_2x2"]
     imported_tests.sparse_tests = ["mat_elemadd"]
