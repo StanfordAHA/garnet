@@ -23,10 +23,8 @@ task ProcDriver_write_bs();
     proc_lock.put(1);
 endtask
 
-//bookmark
 data_array_t data_q;
 bit [GLB_ADDR_WIDTH-1:0] cur_addr;
-bit [BANK_DATA_WIDTH-1:0] wd_data;
 int size;
 
 // TODO: Change it to const ref
@@ -35,34 +33,29 @@ task ProcDriver_write_data();
     proc_lock.get(1);
     assert (BANK_DATA_WIDTH == 64);
     size = data_q.size();  // 0x1000 = 2^12 = 4K??
-
     for (int i = 0; i < size; i += 4) begin
         if ((i + 1) == size) begin
-            wd_data = data_q[i];
+            data = data_q[i];
         end else if ((i + 2) == size) begin
-            wd_data = {data_q[i+1], data_q[i]};
+            data = {data_q[i+1], data_q[i]};
         end else if ((i + 3) == size) begin
-            wd_data = {data_q[i+2], data_q[i+1], data_q[i]};
+            data = {data_q[i+2], data_q[i+1], data_q[i]};
         end else begin
-            wd_data = {data_q[i+3], data_q[i+2], data_q[i+1], data_q[i]};
+            data = {data_q[i+3], data_q[i+2], data_q[i+1], data_q[i]};
         end
-        // write(cur_addr, wd_data);
-            ProcDriver_write_waddr = cur_addr;
-            ProcDriver_write_wdata = wd_data;
-            ProcDriver_write();
+        ProcDriver_write_waddr = cur_addr;
+        ProcDriver_write_wdata = data;
+        ProcDriver_write();
         cur_addr += 8;  // Counts hex 8,10,18,20...(8x2^10 == 0x1000
     end
     repeat (10) @(posedge p_ifc.clk);
     proc_lock.put(1);
-    $display("ProcDriver_write_data() END");
-endtask // ProcDriver_write_data
+endtask
 
 
-////////////////////////////////////////////////////////////////////////
-// task ProcDriver::write(int addr, bit [BANK_DATA_WIDTH-1:0] data);
-// int                            ProcDriver_write_waddr;
-// bit [BANK_DATA_WIDTH-1:0]      ProcDriver_write_wdata;
-
+/* temp registration block
+task ProcDriver::write(int addr, bit [BANK_DATA_WIDTH-1:0] data);
+*/
 task ProcDriver_write();
     p_ifc.wr_en   = 1'b1;
     p_ifc.wr_strb = {(BANK_DATA_WIDTH / 8) {1'b1}};
@@ -75,7 +68,7 @@ task ProcDriver_write();
     p_ifc.wr_data = 0;
 endtask
 
-
+//bookmark
 ////////////////////////////////////////////////////////////////////////
 // task ProcDriver::read_data(int start_addr, ref data_array_t data_q);
 // start_addr and ProcDriver_read_data_num_data_q must be loaded by caller, see.
