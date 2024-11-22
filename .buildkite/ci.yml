@@ -74,4 +74,4 @@ steps:
   commands:
   - docker kill $CONTAINER || true
   - .buildkite/bin/docker-clean.sh || true
-  - docker image prune -a  --force --filter "until=24h" --filter=label='description=garnet' || true
+  - docker image prune -a  --force --filter "until=72h" --filter=label='description=garnet' || true
