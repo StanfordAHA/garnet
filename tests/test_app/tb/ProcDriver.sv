@@ -24,6 +24,7 @@ task ProcDriver_write_bs();
 endtask
 
 data_array_t data_q;
+bit [BANK_DATA_WIDTH-1:0] bdata;
 int size;
 
 // TODO: Change it to const ref
@@ -34,16 +35,16 @@ task ProcDriver_write_data();
     size = data_q.size();  // 0x1000 = 2^12 = 4K??
     for (int i = 0; i < size; i += 4) begin
         if ((i + 1) == size) begin
-            data = data_q[i];
+            bdata = data_q[i];
         end else if ((i + 2) == size) begin
-            data = {data_q[i+1], data_q[i]};
+            bdata = {data_q[i+1], data_q[i]};
         end else if ((i + 3) == size) begin
-            data = {data_q[i+2], data_q[i+1], data_q[i]};
+            bdata = {data_q[i+2], data_q[i+1], data_q[i]};
         end else begin
-            data = {data_q[i+3], data_q[i+2], data_q[i+1], data_q[i]};
+            bdata = {data_q[i+3], data_q[i+2], data_q[i+1], data_q[i]};
         end
         ProcDriver_write_waddr = cur_addr;
-        ProcDriver_write_wdata = data;
+        ProcDriver_write_wdata = bdata;
         ProcDriver_write();
         cur_addr += 8;  // Counts hex 8,10,18,20...(8x2^10 == 0x1000
     end

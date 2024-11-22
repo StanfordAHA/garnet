@@ -23,6 +23,9 @@ APP=+APP0=vfiles/pointwise
 ivcs=$i; (vcs.sh |& tee vcs.log$ivcs; echo -n run | simv -lca -l simv.log$ivcs +vcs+initmem+0 +vcs+initreg+0 -sv_lib libcgra -exitstatus -ucli $APP) |& less
 # simv.log* should end with "PASS PASS PASS"
 # Check output file hw_output.txt vs. gold copy
+pw=pointwise/bin
+diff -B <(od -An -x --endian=big $pw/hw_output.raw | sed 's/^ //') hw_output.txt | head
+(diff -B <(od -An -x --endian=big $pw/hw_output.raw | sed 's/^ //') hw_output.txt || echo FAIL) | head
 
 # TRACE
 simv -lca -l simv.log$ivcs +vcs+initmem+0 +vcs+initreg+0 -sv_lib libcgra -exitstatus -ucli $APP
