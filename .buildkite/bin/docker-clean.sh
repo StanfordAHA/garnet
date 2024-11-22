@@ -33,10 +33,12 @@ echo '+++ WEEKS'
 deldocks 'weeks ago'
 
 echo '+++ DAYS'
-deldocks 'days ago'
+# deldocks 'days ago'  # Maybe not enough to avoid 19-hour aha regressions that ran long...
+deldocks '[56789] days ago'
 
-echo '+++ HOURS'
-deldocks '[456789] hours ago'
+# NOT GOOD! This kills e.g. in-progress 19-hour aha regressions...
+# echo '+++ HOURS'
+# deldocks '[456789] hours ago'
 
 echo '+++ AFTER'; dps; printf '\n'
 

@@ -454,8 +454,9 @@ def dispatch(args, extra_args=None):
 
     # Verilator test hack
     imported_tests = Tests("BLANK")
-    imported_tests.glb_tests = ["apps/camera_pipeline_2x2"]
-    imported_tests.sparse_tests = ["mat_elemadd"]
+    imported_tests.glb_tests = ["apps/pointwise"]
+    # imported_tests.glb_tests = ["apps/camera_pipeline_2x2"]
+    # imported_tests.sparse_tests = ["mat_elemadd"]
 
 
     # Unpack imported_tests into convenient handles
