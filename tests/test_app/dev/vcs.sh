@@ -92,7 +92,7 @@ export SAIF=0
 # # +APP0=/aha/Halide-to-Hardware/apps/hardware_benchmarks/apps/pointwise
 
 APP=+APP0=/nobackup/steveri/github/garnet/tests/test_app/test_data/pointwise
-APP=+APP0=
+APP=+APP0=pointwise
 
 export WAVEFORM=1
 
