@@ -72,6 +72,6 @@ steps:
   agents:
     docker: "true"
   commands:
-  - docker kill $CONTAINER || true
-  - .buildkite/bin/docker-clean.sh || true
-  - docker image prune -a  --force --filter "until=24h" --filter=label='description=garnet' || true
+  - set -x; docker kill $CONTAINER || true
+  - set -x; .buildkite/bin/docker-clean.sh || true
+  - set -x; yes | docker image prune -a --filter "until=72h" --filter=label='description=garnet' || true
