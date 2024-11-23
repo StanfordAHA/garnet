@@ -39,7 +39,7 @@ echo '+++ DAYS'
 deldocks '[56789] days ago'
 
 # DO NOT kill containers less than one day old.
-# This can destory e.g. in-progress 19-hour aha regressions...
+# This can destroy e.g. in-progress 19-hour aha regressions...
 # deldocks '[456789] hours ago'
 
 echo '+++ AFTER'; dps; printf '\n'

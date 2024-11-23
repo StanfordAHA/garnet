@@ -68,6 +68,10 @@ steps:
 # ALWAYS clean up regardless of test success or failure
 - wait: { continue_on_failure: true }
 
+# 1. Delete our own docker container, which we are done with.
+# 2. Look for old/stale containers and delete them as well.
+# 3. Delete all unused docker images older than 72 hours.
+
 - label: "Delete container"
   agents:
     docker: "true"
