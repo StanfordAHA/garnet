@@ -78,4 +78,4 @@ steps:
   commands:
   - set -x; docker kill $CONTAINER || true
   - set -x; .buildkite/bin/docker-clean.sh || true
-  - set -x; yes | docker image prune -a --filter || true
+  - set -x; yes | docker image prune -a --filter=label='description=garnet' || true
