@@ -8,6 +8,14 @@ if test -e obj_dir; then
     [[ $REPLY =~ ^[Yy] ]] && echo yes || exit 13
 fi
 
+if test -f hw_output.txt; then
+    echo WARNING found existing hw_output.txt
+    echo Sending it to savedir and DELETING IT
+    test -d savedir || mkdir savedir
+    ~steveri/bin/save hw_output.txt
+    rm hw_output.txt
+fi
+
 TRACE=""
 [ "$1" == "--trace" ] && TRACE='--trace'
 # [ "$1" == "--trace" ] && TRACE='--trace --trace-params --trace-structs'
@@ -74,6 +82,10 @@ test -f make-vtop.log$i && printf "\nERROR $msg_bad" || printf "\nOKAY\n\n"
 make -C obj_dir/ -f Vtop.mk |& tee make-vtop.log$i; ((i++))
 
 exit
+##############################################################################
+##############################################################################
+##############################################################################
+# NOTES
 
 i=3
 rmo
@@ -81,6 +93,9 @@ verilator.sh |& tee vlog$i | less
 make -C obj_dir/ -f Vtop.mk |& tee make-vtop.log$i | cat -n | chop | less
 Vtop "$APP" |& tee vtop.log$i
 
+# CHECK THE RESULT!!!
+gold=pointwise/bin/hw_output.raw
+diff -B <(od -An -x --endian=big $gold | sed 's/^ //') hw_output.txt | head
 
 
 

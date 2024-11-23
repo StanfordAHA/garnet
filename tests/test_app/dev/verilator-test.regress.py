@@ -455,9 +455,9 @@ def dispatch(args, extra_args=None):
     # Verilator test hack
     imported_tests = Tests("BLANK")
     imported_tests.glb_tests = ["apps/pointwise"]
-    # imported_tests.glb_tests = ["apps/camera_pipeline_2x2"]
-    # imported_tests.sparse_tests = ["mat_elemadd"]
-    print(f"--- Running regression: custom (pointwise)", flush=True)
+    imported_tests.glb_tests = ["apps/camera_pipeline_2x2"]
+    imported_tests.sparse_tests = ["mat_elemadd"]
+    print(f"--- Running regression: custom (pointwise,camera,elemadd)", flush=True)
 
 
     # Unpack imported_tests into convenient handles

@@ -51,7 +51,6 @@ program garnet_test #(
 
         #100 initialize(dpr);  // So...I guess this supposed to happen at 100ps not 100ns...
 
-        $display("mapping...");
         map(kernels);
 
         test_toggle = 1;
@@ -86,7 +85,6 @@ program garnet_test #(
             $display("Monitor initialization failed");
         end
 
-        $display("[%0tps] garnet_test L75\n", $time);
         $display("Looking for app args e.g. '+APP0=app0'");
         num_app = 0;
         for (int i = 0; i < MAX_NUM_APPS; i++) begin

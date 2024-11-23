@@ -91,7 +91,9 @@ export SAIF=0
 
 # # +APP0=/aha/Halide-to-Hardware/apps/hardware_benchmarks/apps/pointwise
 
-APP=+APP0=/nobackup/steveri/github/garnet/tests/test_app/test_data/pointwise
+# APP=+APP0=/nobackup/steveri/github/garnet/tests/test_app/test_data/pointwise
+APP=+APP0=pointwise
+
 export WAVEFORM=1
 
 # +UVM_TIMEOUT=1000
@@ -102,6 +104,10 @@ simv -lca -l simv$ivcs.log +vcs+initmem+0 +vcs+initreg+0 -sv_lib libcgra -exitst
   dump -add top -fid VPD0 -depth 0
   dump -add top -fid VPD0 -depth 6
   run 5000ns
+
+# CHECK THE RESULT!!!
+gold=pointwise/bin/hw_output.raw
+diff -B <(od -An -x --endian=big $gold | sed 's/^ //') hw_output.txt | head
 
 ls -l simv$ivcs.vpd
 vpd2vcd -q simv$ivcs.vpd > simv$ivcs.vcd

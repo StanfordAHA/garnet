@@ -59,8 +59,8 @@ task Env_write_bs();
     betaddr0 = kernel.bitstream_data[0].addr;
     betdata0 = kernel.bitstream_data[0].data;
     
-    ProcDriver_write_bs_start_addr = kernel.bs_start_addr;
-    ProcDriver_write_bs_bs_q = kernel.bitstream_data;
+    start_addr = kernel.bs_start_addr;
+    bs_q = kernel.bitstream_data;
     ProcDriver_write_bs();
 
     end_time = $realtime;
@@ -85,8 +85,8 @@ task Env_write_data();
             start_time = $realtime;
             $display("[%s] write input_%0d_block_%0d to glb start at %0t", kernel.name, i, j,
                      start_time);
-            PD_wd_start_addr = kernel.inputs[i].io_tiles[j].start_addr;
-            PD_wd_data_q = kernel.inputs[i].io_tiles[j].io_block_data;
+            start_addr = kernel.inputs[i].io_tiles[j].start_addr;
+            data_q = kernel.inputs[i].io_tiles[j].io_block_data;
             ProcDriver_write_data();
             end_time = $realtime;
             $display("[%s] write input_%0d_block_%0d to glb end at %0t", kernel.name, i, j,
@@ -113,12 +113,11 @@ task Env_read_data();
             //                    kernel.outputs[i].io_tiles[j].io_block_data);
 
             // Creates empty array of indicated size maybe (4096 maybe)
-            PD_rdata_data_q = new[kernel.outputs[i].io_tiles[j].io_block_data.size()];
-            PD_rdata_start_addr = kernel.outputs[i].io_tiles[j].start_addr; // 0x1000 or some such
-            // PD_rdata_data_q = Env_read_data_data_q;
+            data_q = new[kernel.outputs[i].io_tiles[j].io_block_data.size()];
+            start_addr = kernel.outputs[i].io_tiles[j].start_addr; // 0x1000 or some such
             ProcDriver_read_data();
 
-            kernel.outputs[i].io_tiles[j].io_block_data = PD_rdata_data_q;
+            kernel.outputs[i].io_tiles[j].io_block_data = data_q;
             $display("[%s] read output_%0d_block_%0d from glb end", kernel.name, i, j);
         end
     end
