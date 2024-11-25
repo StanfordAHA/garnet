@@ -1,9 +1,6 @@
 // Global signals to replace/enhance class automatics
 `define DBG_PROCDRIVER 0  // Set to '1' for debugging
 
-semaphore proc_lock; 
-initial proc_lock = new(1);
-
 bit [GLB_ADDR_WIDTH-1:0] start_addr;
 bit [GLB_ADDR_WIDTH-1:0] cur_addr;
 bitstream_t              bs_q;
@@ -101,7 +98,6 @@ task ProcDriver::read_data(int start_addr, ref data_array_t data_q);
                 vif.cbd.rd_en   <= 1'b1;
                 // address increases by 8 every write
                 vif.cbd.rd_addr <= (start_addr + 8 * i);
-                if (`DBG_PROCDRIVER) $display("[%0t] Set addr = %08x", $time, p_ifc.rd_addr);
                 @(vif.cbd);
             end
             vif.cbd.rd_en   <= 0;
@@ -113,7 +109,6 @@ task ProcDriver::read_data(int start_addr, ref data_array_t data_q);
             for (int i = 0; i < num_trans; i++) begin
                 wait (vif.cbd.rd_data_valid);
 
-                if (`DBG_PROCDRIVER) $display("\n[%0t] FOO got data word %0x", $time, p_ifc.rd_data);
                 data_q[i*4] = vif.cbd.rd_data & 'hFFFF;
                 if (`DBG_PROCDRIVER) $display("[%0t] -- 0 data_q[%04d] <= %0x", $time, i*4, data_q[i*4]);
                 if ((i * 4 + 1) < num_words) begin

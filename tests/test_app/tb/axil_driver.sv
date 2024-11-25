@@ -33,8 +33,6 @@ endfunction
 Config AxilDriver_cfg[];
 task AxilDriver::config_write(Config cfg[]);
     foreach (cfg[i]) begin
-        addr = AxilDriver_cfg[i].addr;
-        data = AxilDriver_cfg[i].data;
         write(cfg[i].addr, cfg[i].data);
     end
 endtask
