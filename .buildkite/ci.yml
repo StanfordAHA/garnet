@@ -64,7 +64,7 @@ steps:
       source /aha/bin/activate;
       source /cad/modules/tcl/init/sh;
       module load base incisive xcelium/19.03.003 vcs/Q-2020.03-SP2;
-      echo if TEST cp garnet/tests/test_app/dev/verilator-test.regress.py aha/util/regress.py;
+      cp garnet/tests/test_app/dev/verilator-test.regress.py aha/util/regress.py;
       echo aha regress pr;
       pwd; aha regress pr;
     "
