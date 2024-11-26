@@ -11,6 +11,9 @@
 // - one in Env_run() is disabled and throws an error if anyone ever tries to use it;
 // - one in ProcDriver_read_data() does not use addr/data for reads
 
+bit [CGRA_AXI_ADDR_WIDTH-1:0] addr;
+bit [CGRA_AXI_DATA_WIDTH-1:0] data;
+
 class AxilDriver;
     vAxilIfcDriver vif;
     semaphore axil_lock;
@@ -27,6 +30,7 @@ function AxilDriver::new(vAxilIfcDriver vif, semaphore axil_lock);
     this.axil_lock = axil_lock;
 endfunction
 
+Config AxilDriver_cfg[];
 task AxilDriver::config_write(Config cfg[]);
     foreach (cfg[i]) begin
         write(cfg[i].addr, cfg[i].data);
