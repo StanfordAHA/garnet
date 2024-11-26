@@ -50,9 +50,9 @@ task AxilDriver::write(bit [CGRA_AXI_ADDR_WIDTH-1:0] addr, bit [CGRA_AXI_DATA_WI
 
     // FIXME?? seems like this should happen BEFORE setting awvalid etc. above? First ready, then valid?
     for (int i = 0; i < `SLAVE_WAIT; i++) begin
-        if (axil_ifc.awready == 1) break;
-        @(posedge axil_ifc.clk);
-        if (i == (`SLAVE_WAIT-1)) $display("axi slave is not ready 1");
+        if (vif.cbd.awready == 1) break;
+        @(vif.cbd);
+        if (i == 99) return;  // axi slave is not ready
     end
     @(vif.cbd);
     vif.cbd.awvalid <= 0;
@@ -64,17 +64,17 @@ task AxilDriver::write(bit [CGRA_AXI_ADDR_WIDTH-1:0] addr, bit [CGRA_AXI_DATA_WI
     // Then, after one cycle, on to state 4 (WR_RESP)     // 133ns
     // where it stays until wr_wait_cnt counts from clog2(14) down to zero
     for (int i = 0; i < `SLAVE_WAIT; i++) begin
-        if (axil_ifc.wready == 1) break;
-        @(posedge axil_ifc.clk);
-        if (i == (`SLAVE_WAIT-1)) $display("axi slave is not ready 2");  // ~152ns
+        if (this.vif.cbd.wready == 1) break;
+        @(vif.cbd);
+        if (i == 99) return;  // axi slave is not ready
     end
     @(vif.cbd);
     this.vif.cbd.wvalid <= 0;
     this.vif.cbd.bready <= 1'b1;
     for (int i = 0; i < `SLAVE_WAIT; i++) begin
-        if (axil_ifc.bvalid == 1) break;
-        @(posedge axil_ifc.clk);
-        if (i == (`SLAVE_WAIT-1)) $display("axi slave is not ready 3");
+        if (this.vif.cbd.bvalid == 1) break;
+        @(vif.cbd);
+        if (i == 99) return;  // axi slave is not ready
     end
     @(vif.cbd);
     this.vif.cbd.bready <= 0;
@@ -90,17 +90,17 @@ task AxilDriver::read(bit [CGRA_AXI_ADDR_WIDTH-1:0] addr,
     this.vif.cbd.arvalid <= 1'b1;
     this.vif.cbd.rready  <= 1;
     for (int i = 0; i < `SLAVE_WAIT; i++) begin
-        if (axil_ifc.arready == 1) break;
-        @(posedge axil_ifc.clk);
-        if (i == (`SLAVE_WAIT-1)) $display("axi slave is not ready 1");
+        if (this.vif.cbd.arready == 1) break;
+        @(vif.cbd);
+        if (i == 99) return;  // axi slave is not ready
     end
     @(vif.cbd);
     this.vif.cbd.arvalid <= 0;
     @(vif.cbd);
     for (int i = 0; i < `SLAVE_WAIT; i++) begin
-        if (axil_ifc.rvalid == 1) break;
-        @(posedge axil_ifc.clk);
-        if (i == (`SLAVE_WAIT-1)) $display("axi slave is not ready 2");
+        if (this.vif.cbd.rvalid == 1) break;
+        @(vif.cbd);
+        if (i == 99) return;  // axi slave is not ready
     end
     data = this.vif.cbd.rdata;
     @(vif.cbd);
