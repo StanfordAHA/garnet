@@ -361,6 +361,15 @@ void *parse_metadata(char *filename) {
         puts("Error, the placement property is not found.");
         exit(1);
     }
+
+    // parse the sparse app indicator field
+    json_t const *opal_dense_scanner_workaround_json = json_getProperty(testing_json, "opal_dense_scanner_workaround");
+    if (!opal_dense_scanner_workaround_json || JSON_INTEGER != json_getType(opal_dense_scanner_workaround_json)) {
+        info->opal_dense_scanner_workaround = 0;
+    } else {
+        info->opal_dense_scanner_workaround = json_getInteger(opal_dense_scanner_workaround_json);
+    }
+
     strncpy(info->placement_filename, dir, strnlen(dir, BUFFER_SIZE));
     strncat(info->placement_filename, json_getValue(place_json), BUFFER_SIZE);
 
@@ -545,6 +554,11 @@ int get_num_inputs(void *info) {
 int get_num_outputs(void *info) {
     GET_KERNEL_INFO(info);
     return kernel_info->num_outputs;
+}
+
+int get_opal_dense_scanner_workaround(void *info) {
+    GET_KERNEL_INFO(info);
+    return kernel_info->opal_dense_scanner_workaround;
 }
 
 void *get_io_tile_info(void *info, int index) {
