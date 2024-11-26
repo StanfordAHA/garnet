@@ -9,7 +9,13 @@
 **===========================================================================*/
 
 import "DPI-C" function chandle parse_metadata(string filename);
-import "DPI-C" function chandle get_place_info(chandle info);
+
+// (1) This (get_place_info()) does not appear to exist in libcgra.so
+// (2) Also, looks like it is never used
+// Also, as a conequence of (1), verilator will not compile (vcs is okay with it :( )
+// So let's get rid of it!?
+// import "DPI-C" function chandle get_place_info(chandle info);
+
 import "DPI-C" function chandle get_bs_info(chandle info);
 import "DPI-C" function chandle get_input_info(
     chandle info,
@@ -229,7 +235,7 @@ function Kernel::new(string app_dir, int dpr);
     // meta file name is design_meat.json
     meta_filename = {app_dir, "/bin/", "design_meta.json"};
     $sformat(name, "APP%0d-%0s", cnt++, app_name);
-    $display("[%s]Initilizing the APP Done", name);
+    $display("[%s] Initializing the APP Done", name);
 
     app_state   = IDLE;
 
@@ -339,6 +345,7 @@ function bitstream_t Kernel::parse_bitstream();
 
     int fp = $fopen(bitstream_filename, "r");
     assert_(fp != 0, "Unable to read bitstream file");
+    $display("[%0t] Reading bitstream from %s", $time, bitstream_filename);
     while (!$feof(
         fp
     )) begin
@@ -346,7 +353,19 @@ function bitstream_t Kernel::parse_bitstream();
         int unsigned data;
         int code;
         bitstream_entry_t entry;
+
+// OOOF FIXME/TODO can we not find a code sequence here that works for both verilator and vcs???
+// Both verilator (and verilog standard?) seem to object to %08x
+// HOWEVER vcs does not seem to work correctly with just %x
+`ifdef verilator
+        // addr = entry.addr; data = entry.data;
+        code = $fscanf(fp, "%x %x", addr, data);
+        entry.addr = addr; entry.data = data;
+`else
         code = $fscanf(fp, "%08x %08x", entry.addr, entry.data);
+`endif
+        // Quick check to see if it's working at all, can compare to contents of file
+        if (i<4) $display(" - got addr %08x, data %08x", entry.addr, entry.data);
         if (code == -1) continue;
         assert_(code == 2, $sformatf(
                 "Incorrect bs format. Expected 2 entries, got: %0d. Current entires: %0d",
