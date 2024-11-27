@@ -59,7 +59,7 @@ steps:
   - docker exec $CONTAINER /bin/bash -c "rm -rf /aha/garnet"
   - docker cp . $CONTAINER:/aha/garnet
 
-  # To test verilator, remove "echo if TEST" below
+  # For quick test of verilator-compatible code, remove "echo if TEST" below
   - docker exec $CONTAINER /bin/bash -c "
       source /aha/bin/activate;
       source /cad/modules/tcl/init/sh;
