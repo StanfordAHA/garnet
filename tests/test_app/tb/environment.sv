@@ -12,8 +12,8 @@ typedef enum int {
     GLB_STRM_F2G_CTRL
 } e_glb_ctrl;
 
-`include "tb/ProcDriver.sv"
-`include "tb/AxilDriver.sv"
+`include "tb/proc_driver.sv"
+`include "tb/axil_driver.sv"
 
 // Kernel kernels[];  // Declared upstream in enclosing scope 'garnet_test.sv'
 Kernel kernel;

@@ -137,5 +137,5 @@ program garnet_test #(
         end
     endfunction
 
-   `include "tb/Environment.sv"
+   `include "tb/environment.sv"
 endprogram
