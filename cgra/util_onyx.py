@@ -60,19 +60,29 @@ import magma as m
 from peak import family
 
 
-def get_actual_size(width: int, height: int, io_sides: IOSide):
-    if io_sides & IOSide.North:
+def get_actual_size(width: int, height: int, io_sides: List[IOSide]):
+    # if io_sides & IOSide.North:
+    #     height += 1
+    # if io_sides & IOSide.East:
+    #     width += 1
+    # if io_sides & IOSide.South:
+    #     height += 1
+
+
+    if IOSide.North in io_sides:
         height += 1
-    if io_sides & IOSide.East:
+    if IOSide.East in io_sides:
         width += 1
-    if io_sides & IOSide.South:
+    if IOSide.South in io_sides:
         height += 1
+    if IOSide.West in io_sides:
+        width += 1
 
     # MO: Temporary hack 
     # if io_sides & IOSide.West:
     #     width += 1  
     
-    width += 1
+    #width += 1
     return width, height
 
 
@@ -91,6 +101,7 @@ def get_cc_args(width, height, io_sides, garnet_args):
     args.width = width
     args.height = height
     args.io_sides = io_sides
+    
 
     # Derive cc_args from relevant garnet_args
     args.reg_addr_width = args.config_addr_reg_width
@@ -131,7 +142,7 @@ def get_cc_args(width, height, io_sides, garnet_args):
 #     return create_cgra(**cc_args.__dict__)
 
 
-def create_cgra(width: int, height: int, io_sides: IOSide,
+def create_cgra(width: int, height: int, io_sides: List[IOSide],
                 add_reg: bool = True,
                 mem_ratio: Tuple[int, int] = (1, 4),
                 reg_addr_width: int = 8,
@@ -140,6 +151,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 num_tracks: int = 5,
                 add_pd: bool = True,
                 use_sim_sram: bool = True,
+                using_matrix_unit: bool = False,
                 hi_lo_tile_id: bool = True,
                 pass_through_clk: bool = True,
                 tile_layout_option: int = 0,  # 0: column-based, 1: row-based
@@ -184,8 +196,12 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
 
     fifo_depth = 2
 
+
+    # Temporary assertion     
+    #assert using_matrix_unit
+
     # MO: Temporary hack
-    using_matrix_unit = True
+    #using_matrix_unit = True
     
     # if tech_map == 'intel':
     #     tm = Intel_Tech_Map(depth=mem_depth, width=macro_width)
@@ -389,7 +405,9 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
     # compute the actual size
     width, height = get_actual_size(width, height, io_sides)
     # these values are inclusive
+    #breakpoint()
     x_min, x_max, y_min, y_max = get_array_size(width, height, io_sides)
+    #breakpoint()
     # compute ratio
     tile_max = mem_ratio[-1]
     mem_tile_ratio = tile_max - mem_ratio[0]
@@ -469,8 +487,6 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
     for x in range(width):
         for y in range(height):
             print(f"Core at {x, y} is {cores[(x, y)]}")
-    
-    #breakpoint()
             
 
     def create_core(xx: int, yy: int):
@@ -595,7 +611,8 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
 
 
     for bit_width in bit_widths:
-        if io_sides & IOSide.None_:
+        #if io_sides & IOSide.None_:
+        if IOSide.None_ in io_sides:
             io_conn = None
         else:
             io_conn = {"in": io_in, "out": io_out}

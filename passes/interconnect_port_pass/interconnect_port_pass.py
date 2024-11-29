@@ -5,6 +5,8 @@ from gemstone.common.transform import FromMagma
 from gemstone.common.transform import pipeline_wire
 import magma
 import mantle
+from canal.util import IOSide
+from typing import Tuple, Dict, List
 
 
 def config_port_pass(interconnect: Interconnect, pipeline=False):
@@ -43,21 +45,20 @@ def config_port_pass(interconnect: Interconnect, pipeline=False):
             interconnect.wire(in_port, out_port)
 
 
-def stall_port_pass(interconnect: Interconnect, port_name: str, port_width=1, col_offset=1, pipeline=False, matrix_unit_stall_hack=False, matrix_unit_flush_hack=False):
+def stall_port_pass(interconnect: Interconnect, port_name: str, port_width=1, col_offset=1, pipeline=False, io_sides: List[IOSide] = [IOSide.None_]):
     # x coordinate of garnet
 
     # MO: Temporary hack 
-    if(matrix_unit_stall_hack):
-        x_min = interconnect.x_min + 1
-    else: 
-        x_min = interconnect.x_min
+    # if(matrix_unit_stall_hack):
+    #     x_min = interconnect.x_min + 1
+    # else: 
+    x_min = interconnect.x_min
     #breakpoint()
     x_max = interconnect.x_max
 
     width = x_max - x_min + 1
     #breakpoint()
 
-    #breakpoint()
 
     assert port_name in interconnect.ports
     #assert width % col_offset == 0
@@ -77,7 +78,8 @@ def stall_port_pass(interconnect: Interconnect, port_name: str, port_width=1, co
         #breakpoint()
         column = [entry for entry in column if port_name in entry.ports]
         # wire configuration ports to first tile in column every col_offset
-        dividend_index = max(0, i-1) if matrix_unit_flush_hack else i
+        # Shift everything right by 1 if have West IO tiles (only applies to flush)
+        dividend_index = max(0, i-1) if IOSide.West in io_sides else i
 
         in_port = interconnect.ports[port_name][(dividend_index // col_offset) 
                   * port_width:((dividend_index // col_offset) + 1) * port_width]
