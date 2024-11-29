@@ -72,8 +72,7 @@ class LakeCoreBase(ConfigurableCore):
                  data_width=16,
                  gate_flush=True,
                  ready_valid=False,
-                 name="LakeBase_inst",
-                 include_stall=True):
+                 name="LakeBase_inst"):
 
         self.__name = name
         self.__inputs = []
@@ -84,8 +83,6 @@ class LakeCoreBase(ConfigurableCore):
         self.__gate_flush = gate_flush
         self.__ready_valid = ready_valid
         self.__combinational_ports = set()
-
-        self._include_stall = include_stall
 
         super().__init__(config_addr_width=config_addr_width,
                          config_data_width=config_data_width)
@@ -192,10 +189,9 @@ class LakeCoreBase(ConfigurableCore):
         assert (len(self.__outputs) > 0)
 
         # We call clk_en stall at this level for legacy reasons????
-        if self._include_stall:
-            self.add_ports(
-                stall=magma.In(TBit),
-            )
+        self.add_ports(
+            stall=magma.In(TBit),
+        )
 
         # put a 1-bit register and a mux to select the control signals
   
@@ -259,10 +255,9 @@ class LakeCoreBase(ConfigurableCore):
         self.wire(self.ports.clk, self.underlying.ports.clk)
 
         # Mem core uses clk_en (essentially active low stall)
-        if self._include_stall:
-            self.stallInverter = FromMagma(mantle.DefineInvert(1))
-            self.wire(self.stallInverter.ports.I, self.ports.stall)
-            self.wire(self.stallInverter.ports.O[0], self.underlying.ports.clk_en[0])
+        self.stallInverter = FromMagma(mantle.DefineInvert(1))
+        self.wire(self.stallInverter.ports.I, self.ports.stall)
+        self.wire(self.stallInverter.ports.O[0], self.underlying.ports.clk_en[0])
 
         # we have six? features in total
         # 0:    TILE
@@ -508,7 +503,7 @@ class NetlistBuilder():
 
     def __init__(self, interconnect: Interconnect = None, cwd=None,
                  harden_flush=False,
-                 combined=False, pnr_only=False) -> None:
+                 combined=False, pnr_only=False, west_in_io_sides=False) -> None:
         # self._registered_cores = {}
         self._netlist = {}
         self._bus = {}
@@ -540,6 +535,7 @@ class NetlistBuilder():
         self.tag_to_port_remap = {}
         self.combined = combined
         self.pnr_only = pnr_only
+        self.west_in_io_sides = west_in_io_sides
 
     def reset(self):
         self._netlist = {}
@@ -783,7 +779,7 @@ class NetlistBuilder():
                                                 cwd=self._cwd,
                                                 harden_flush=self.harden_flush,
                                                 fixed_pos=fixed_io,
-                                                sparse=True)
+                                                sparse=True, west_in_io_sides=self.west_in_io_sides)
         self._placement_up_to_date = True
 
     def get_route_config(self):
