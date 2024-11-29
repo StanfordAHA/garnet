@@ -298,7 +298,6 @@ task Environment::wait_interrupt(e_glb_ctrl glb_ctrl, bit [$clog2(NUM_GLB_TILES)
             forever begin
                 // level sensitive interrupt
                 wait (top.interrupt);
-                $display("Interrupt RECEIVED!!!");
                 axil_drv.read(addr, data);
                 // $display("Data: ");
                 // for (int i = CGRA_AXI_DATA_WIDTH-1; i > 0; i--) begin
