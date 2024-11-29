@@ -484,9 +484,9 @@ def create_cgra(width: int, height: int, io_sides: List[IOSide],
 
             cores[(x, y)] = core
 
-    for x in range(width):
-        for y in range(height):
-            print(f"Core at {x, y} is {cores[(x, y)]}")
+    # for x in range(width):
+    #     for y in range(height):
+    #         print(f"Core at {x, y} is {cores[(x, y)]}")
             
 
     def create_core(xx: int, yy: int):
