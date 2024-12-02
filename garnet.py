@@ -61,13 +61,6 @@ class Garnet(Generator):
     
 
         self.io_sides = io_sides
-        # # only north side has IO
-        # from canal.util import IOSide
-        # if args.standalone:
-        #     io_sides = [IOSide.None_]
-        # else:
-        #     io_sides = [IOSide.North, IOSide.West]
-            #io_side = IOSide.West
 
         # Build GLB unless interconnect_only (CGRA-only) requested
 
@@ -80,9 +73,7 @@ class Garnet(Generator):
         from cgra.util import get_cc_args, create_cgra
         width = args.width
         height = args.height
-        #breakpoint()
         cc_args = get_cc_args(width, height, io_sides, args)
-        #cc_args = get_cc_args(width, height, args)
         self.interconnect = create_cgra(**cc_args.__dict__)
 
         # Add stall, flush, and configuration ports
@@ -980,7 +971,6 @@ def reschedule_pipelined_app(app):
 
 def main():
     args, io_sides = parse_args()
-    #breakpoint()
     GarnetDaemon.initial_check(args)
     # "launch" => ERROR if daemon exists already else continue
     # "force"  => kill existing daemon, then continue

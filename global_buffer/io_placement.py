@@ -75,7 +75,6 @@ def place_io_blk(id_to_name, app_dir, io_sides):
 
     else:
         # This is very hacky, if you change this sorting, the GLB scripts will break
-        #breakpoint()
         id_to_name_list = list(id_to_name.items())
 
         # Human sort thing from Kalhan used in GLB scripts
@@ -127,21 +126,16 @@ def place_io_blk(id_to_name, app_dir, io_sides):
     # input and outputs are placed on the same IO tiles
     group_index = 0
     for idx, input_blk in enumerate(inputs):
-        # Matrix unit hack 
-        #placement[input_blk] = (group_index * 2, 0)
         placement[input_blk] = (group_index * 2 + io_tile_shift_right_index, 0)
         group_index += 1
     for en_blk in en:
-        #placement[en_blk] = (group_index * 2, 0)
         placement[en_blk] = (group_index * 2 + io_tile_shift_right_index, 0)
         group_index += 1
 
     group_index = 0
     for idx, output_blk in enumerate(outputs):
-        #placement[output_blk] = (group_index * 2 + 1, 0)
         placement[output_blk] = (group_index * 2 + 1 + io_tile_shift_right_index, 0)
         if idx < len(valid):
-            # placement[valid[idx]] = (group_index * 2 + 1, 0)
             placement[valid[idx]] = (group_index * 2 + 1 + io_tile_shift_right_index, 0)
         group_index += 1
 

@@ -61,14 +61,6 @@ from peak import family
 
 
 def get_actual_size(width: int, height: int, io_sides: List[IOSide]):
-    # if io_sides & IOSide.North:
-    #     height += 1
-    # if io_sides & IOSide.East:
-    #     width += 1
-    # if io_sides & IOSide.South:
-    #     height += 1
-
-
     if IOSide.North in io_sides:
         height += 1
     if IOSide.East in io_sides:
@@ -78,11 +70,6 @@ def get_actual_size(width: int, height: int, io_sides: List[IOSide]):
     if IOSide.West in io_sides:
         width += 1
 
-    # MO: Temporary hack 
-    # if io_sides & IOSide.West:
-    #     width += 1  
-    
-    #width += 1
     return width, height
 
 
@@ -195,13 +182,6 @@ def create_cgra(width: int, height: int, io_sides: List[IOSide],
     track_length = 1
 
     fifo_depth = 2
-
-
-    # Temporary assertion     
-    #assert using_matrix_unit
-
-    # MO: Temporary hack
-    #using_matrix_unit = True
     
     # if tech_map == 'intel':
     #     tm = Intel_Tech_Map(depth=mem_depth, width=macro_width)
@@ -405,9 +385,7 @@ def create_cgra(width: int, height: int, io_sides: List[IOSide],
     # compute the actual size
     width, height = get_actual_size(width, height, io_sides)
     # these values are inclusive
-    #breakpoint()
     x_min, x_max, y_min, y_max = get_array_size(width, height, io_sides)
-    #breakpoint()
     # compute ratio
     tile_max = mem_ratio[-1]
     mem_tile_ratio = tile_max - mem_ratio[0]
@@ -482,12 +460,7 @@ def create_cgra(width: int, height: int, io_sides: List[IOSide],
                         if add_pond:
                             additional_core[(x, y)] = PondCore(gate_flush=not harden_flush, ready_valid=ready_valid)
 
-            cores[(x, y)] = core
-
-    # for x in range(width):
-    #     for y in range(height):
-    #         print(f"Core at {x, y} is {cores[(x, y)]}")
-            
+            cores[(x, y)] = core            
 
     def create_core(xx: int, yy: int):
         return cores[(xx, yy)]
@@ -601,9 +574,6 @@ def create_cgra(width: int, height: int, io_sides: List[IOSide],
     bit_width_str = 17 if ready_valid else 16
     track_list = list(range(num_tracks))
 
-    # MO: Temporary hack 
-    # io_in = {"f2io_1": [0], f"f2io_{bit_width_str}": [0]}
-    # io_out = {"io2f_1": track_list, f"io2f_{bit_width_str}": track_list}
 
     io_in = {"f2io_1": [0], f"f2io_{bit_width_str}": [0]}
     io_out = {"io2f_1": track_list, f"io2f_{bit_width_str}": track_list, f"io2f_{bit_width_str}_T0": [0], f"io2f_{bit_width_str}_T1": [1], 
@@ -611,7 +581,6 @@ def create_cgra(width: int, height: int, io_sides: List[IOSide],
 
 
     for bit_width in bit_widths:
-        #if io_sides & IOSide.None_:
         if IOSide.None_ in io_sides:
             io_conn = None
         else:
@@ -638,7 +607,6 @@ def create_cgra(width: int, height: int, io_sides: List[IOSide],
                                 stall_signal_width=1,
                                 ready_valid=ready_valid)
 
-    #interconnect.connect_matrix_unit_stall_port()
     if hi_lo_tile_id:
         tile_id_physical(interconnect)
     if add_pd:
