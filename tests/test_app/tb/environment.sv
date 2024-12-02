@@ -299,13 +299,6 @@ task Environment::wait_interrupt(e_glb_ctrl glb_ctrl, bit [$clog2(NUM_GLB_TILES)
                 // level sensitive interrupt
                 wait (top.interrupt);
                 axil_drv.read(addr, data);
-                // $display("Data: ");
-                // for (int i = CGRA_AXI_DATA_WIDTH-1; i > 0; i--) begin
-                //     $display("%d", data[i]);
-                // end
-               
-                // $display("\n");
-
                 if (data[tile_num] == 1) begin
                     $display("%s interrupt from tile %0d", reg_name, tile_num);
                     break;

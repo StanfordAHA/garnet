@@ -48,20 +48,15 @@ def config_port_pass(interconnect: Interconnect, pipeline=False):
 def stall_port_pass(interconnect: Interconnect, port_name: str, port_width=1, col_offset=1, pipeline=False, io_sides: List[IOSide] = [IOSide.None_]):
     # x coordinate of garnet
 
-    # MO: Temporary hack 
-    # if(matrix_unit_stall_hack):
-    #     x_min = interconnect.x_min + 1
-    # else: 
     x_min = interconnect.x_min
-    #breakpoint()
     x_max = interconnect.x_max
 
     width = x_max - x_min + 1
-    #breakpoint()
 
 
     assert port_name in interconnect.ports
-    #assert width % col_offset == 0
+    # MO: Got rid of this b/c it will not be true if I/O tiles are on West side, resulting in odd width
+    #assert width % col_offset == 0 
     num_ports = width // col_offset
 
     interconnect.disconnect(port_name)
@@ -71,11 +66,8 @@ def stall_port_pass(interconnect: Interconnect, port_name: str, port_width=1, co
     
     # looping through columns and wire port every col_offset
     for i, x_coor in enumerate(range(x_min, x_min + width)):
-        #breakpoint()
-        #print(f"x_coor: {x_coor}")
         column = interconnect.get_column(x_coor)
         # skip tiles with no port_name
-        #breakpoint()
         column = [entry for entry in column if port_name in entry.ports]
         # wire configuration ports to first tile in column every col_offset
         # Shift everything right by 1 if have West IO tiles (only applies to flush)
@@ -84,8 +76,6 @@ def stall_port_pass(interconnect: Interconnect, port_name: str, port_width=1, co
         in_port = interconnect.ports[port_name][(dividend_index // col_offset) 
                   * port_width:((dividend_index // col_offset) + 1) * port_width]
         out_port = column[0].ports[port_name]
-        # if(x_coor == 0):
-        #      breakpoint()
         if pipeline==True:
             pipeline_wire(interconnect,
                           in_port,
