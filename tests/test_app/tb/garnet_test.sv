@@ -44,6 +44,26 @@ program garnet_test #(
         time_check(irt == rrt);  //   pass    ERROR
     end
 
+    // Incorrect timescale gave me no end of problems, so now I'm adding this to help future me.
+    function static void time_check(bit cond);
+        automatic string ex1 = "vcs '--timescale=1ps/1ps'";
+        automatic string ex2 = "verilator '--timescale 1ps/1ps'";
+        if (!cond)
+          $fatal(13, {$sformatf("\nINCORRECT TIMESCALE: use %s or %s\n\n", ex1, ex2)});
+    endfunction // time_check
+
+    // Time check. For test to PASS, must have timescale == 1ps/1ps
+    //   First  check succeeds iff timeunit == 1ps
+    //   Second check succeeds iff timeprecision == 1ps
+    int irt; real rrt; 
+    initial begin
+        #1;  // Advance one timestep
+        irt = real'(int'($realtime)); rrt = real'($realtime);
+        // TESTING               // 1ps/1ps 1ps/1fs 1ns/1ps 1ns/1ns
+        time_check(1ps == 1.0);  //   pass    pass   ERROR   ERROR
+        time_check(irt == rrt);  //   pass    ERROR
+    end
+
     initial begin
         if ($value$plusargs("DPR=%d", value)) begin
             dpr = 1;
