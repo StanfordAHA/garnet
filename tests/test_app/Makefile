@@ -63,6 +63,7 @@ RUN_LOG ?= run.log
 
 ifeq ($(WAVEFORM), 1)
 WAVEFORM_ARGS = -debug_access+all -kdb +vpi +memcbk +vcsd
+VERILATOR_WAVEFORM_ARGS = --trace
 endif
 
 ifeq ($(WHICH_SOC), amber)
@@ -86,6 +87,13 @@ VCS = vcs \
 	  $(WAVEFORM_ARGS) \
 	  $(COMPILE_ARGS) \
 	  $(INPUT_ARGS)
+
+VERILATOR = verilator $(VERILATOR_WARN) --timing --cc --exe tb/CGRA.cpp \
+  --timescale 1ps/1ps \
+  --top-module top \
+  $(VERILATOR_WAVEFORM_ARGS) \
+  $(COMPILE_ARGS) \
+  -F tb/tb_cgra.f
 
 XRUN = xrun \
 	   -64bit \
@@ -125,6 +133,10 @@ else ifeq ($(TOOL), VCS)
     COMPILE = $(VCS)
     COMPILE_RTL_ARGS += +nospecify
     RUN = ./simv -lca -l $(RUN_LOG) +vcs+initmem+0 +vcs+initreg+0 -sv_lib libcgra -exitstatus
+else ifeq ($(TOOL), VERILATOR)
+    COMPILE = $(VERILATOR)
+    # COMPILE_RTL_ARGS += +nospecify
+    # RUN = ./simv -lca -l $(RUN_LOG) +vcs+initmem+0 +vcs+initreg+0 -sv_lib libcgra -exitstatus
 else
     @echo "TOOL must be either XCELIUM or VCS"
 endif
