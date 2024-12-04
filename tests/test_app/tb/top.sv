@@ -43,6 +43,7 @@
 **              top for garnet testbench
 ** Author: Taeyoung Kong, Michael Oduoza
 ** Change history:
+
 **  10/14/2020 - Taeyoung Kong: Implement the first version
 **  11/28/2024 - Michael Oduoza: add matrix unit support to testing environment
 **==============================================================================*/
@@ -57,6 +58,10 @@
 // mu_datawidth (_GENESIS2_CMD_LINE_PRIORITY_) = 16
 //
 
+**  10/14/2020 - Implement the first version
+**===========================================================================*/
+`define DBG_TBTOP 0  // Set to '1' for debugging
+
 
 `ifndef CLK_PERIOD
 `define CLK_PERIOD 1ns
@@ -65,6 +70,9 @@
 import global_buffer_param::*;
 
 module top;
+    // FIXME every other module assumes timescale == 1ps/1ps
+    // FIXME this one should do the same !!!
+    // (Also see time_check function in garnet_test.sv)
     timeunit 1ns; timeprecision 1ps;
 
     logic clk;
@@ -80,11 +88,21 @@ module top;
         forever #(`CLK_PERIOD / 2.0) clk = !clk;
     end
 
+    // Print a debug message every once in awhile
+    initial begin
+        $display("[%0t] Model running...\n", $time);
+        $display("[%0t]", $time);
+        forever #(`CLK_PERIOD * 1000) $display("[%0t]", $time);
+    end
+
     // reset generation
     initial begin
-        reset <= 1;
+        // Change reset to give a clear up-and-down pulse
+        reset = 0; if (`DBG_TBTOP) $display("[%0t] reset = 0", $time);
         repeat (3) @(posedge clk);
-        reset <= 0;
+        reset = 1; if (`DBG_TBTOP) $display("[%0t] reset = 1", $time);
+        repeat (3) @(posedge clk);
+        reset = 0; if (`DBG_TBTOP) $display("[%0t] reset = 0\n", $time);
     end
 
     //============================================================================//
