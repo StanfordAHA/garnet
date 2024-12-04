@@ -53,9 +53,6 @@ task ProcDriver_write_data();
 endtask
 
 
-/* temp registration block
-task ProcDriver::write(int addr, bit [BANK_DATA_WIDTH-1:0] data);
-*/
 task ProcDriver_write();
     p_ifc.wr_en   = 1'b1;
     p_ifc.wr_strb = {(BANK_DATA_WIDTH / 8) {1'b1}};
@@ -68,7 +65,6 @@ task ProcDriver_write();
     p_ifc.wr_data = 0;
 endtask
 
-//bookmark
 int num_words, num_trans;
 task ProcDriver_read_data();
     num_words = data_q.size();        // Should be 4K / 0x1000?

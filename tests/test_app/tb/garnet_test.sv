@@ -49,7 +49,7 @@ program garnet_test #(
             dpr = 1;
         end
 
-        #100 initialize(dpr);  // So...I guess this supposed to happen at 100ps not 100ns...
+        #100 initialize(dpr);  // So...I guess this is supposed to happen at 100ps not 100ns...
 
         map(kernels);
 
