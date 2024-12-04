@@ -5,6 +5,8 @@ from gemstone.common.transform import FromMagma
 from gemstone.common.transform import pipeline_wire
 import magma
 import mantle
+from canal.util import IOSide
+from typing import Tuple, Dict, List
 
 
 def config_port_pass(interconnect: Interconnect, pipeline=False):
@@ -43,14 +45,18 @@ def config_port_pass(interconnect: Interconnect, pipeline=False):
             interconnect.wire(in_port, out_port)
 
 
-def stall_port_pass(interconnect: Interconnect, port_name: str, port_width=1, col_offset=1, pipeline=False):
+def stall_port_pass(interconnect: Interconnect, port_name: str, port_width=1, col_offset=1, pipeline=False, io_sides: List[IOSide] = [IOSide.None_]):
     # x coordinate of garnet
+
     x_min = interconnect.x_min
     x_max = interconnect.x_max
+
     width = x_max - x_min + 1
 
+
     assert port_name in interconnect.ports
-    assert width % col_offset == 0
+    # MO: Got rid of this b/c it will not be true if I/O tiles are on West side, resulting in odd width
+    #assert width % col_offset == 0 
     num_ports = width // col_offset
 
     interconnect.disconnect(port_name)
@@ -64,8 +70,11 @@ def stall_port_pass(interconnect: Interconnect, port_name: str, port_width=1, co
         # skip tiles with no port_name
         column = [entry for entry in column if port_name in entry.ports]
         # wire configuration ports to first tile in column every col_offset
-        in_port = interconnect.ports[port_name][(i // col_offset) 
-                  * port_width:((i // col_offset) + 1) * port_width]
+        # Shift everything right by 1 if have West IO tiles (only applies to flush)
+        dividend_index = max(0, i-1) if IOSide.West in io_sides else i
+
+        in_port = interconnect.ports[port_name][(dividend_index // col_offset) 
+                  * port_width:((dividend_index // col_offset) + 1) * port_width]
         out_port = column[0].ports[port_name]
         if pipeline==True:
             pipeline_wire(interconnect,

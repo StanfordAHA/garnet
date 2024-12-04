@@ -1,6 +1,7 @@
 import re
 import os
 import json
+from canal.util import IOSide
 
 
 def atoi(text):
@@ -61,8 +62,13 @@ def parse_glb_bank_config(app_dir, id_to_name, inputs, outputs, valid, placement
                 placement[blk_id] = coord
     return placement
 
-def place_io_blk(id_to_name, app_dir):
+def place_io_blk(id_to_name, app_dir, io_sides):
     """Hacky function to place the IO blocks"""
+
+    if IOSide.West in io_sides:
+        io_tile_shift_right_index = 1
+    else:
+        io_tile_shift_right_index = 0
 
     if os.getenv('WHICH_SOC') == "amber":
         blks = [blk for blk, _ in sorted(id_to_name.items(), key=lambda item: item[1])]
@@ -120,25 +126,26 @@ def place_io_blk(id_to_name, app_dir):
     # input and outputs are placed on the same IO tiles
     group_index = 0
     for idx, input_blk in enumerate(inputs):
-        placement[input_blk] = (group_index * 2, 0)
+        placement[input_blk] = (group_index * 2 + io_tile_shift_right_index, 0)
         group_index += 1
     for en_blk in en:
-        placement[en_blk] = (group_index * 2, 0)
+        placement[en_blk] = (group_index * 2 + io_tile_shift_right_index, 0)
         group_index += 1
 
     group_index = 0
     for idx, output_blk in enumerate(outputs):
-        placement[output_blk] = (group_index * 2 + 1, 0)
+        placement[output_blk] = (group_index * 2 + 1 + io_tile_shift_right_index, 0)
         if idx < len(valid):
-            placement[valid[idx]] = (group_index * 2 + 1, 0)
+            placement[valid[idx]] = (group_index * 2 + 1 + io_tile_shift_right_index, 0)
         group_index += 1
 
     # place reset on the first one
     if reset is not None:
-        placement[reset] = (0, 0)
+        #placement[reset] = (0, 0)
+        placement[reset] = (1, 0)
 
     # manual placement of PE/MEM tiles if needed
-    if os.path.isfile(app_dir + "/manual.place"):
+    if "MANUAL_PLACER" in os.environ and os.environ.get("MANUAL_PLACER") == "1" and os.path.isfile(app_dir + "/manual.place"):
         with open(app_dir + "/manual.place", "r") as f:
             data = f.readlines()
             for dat in data:

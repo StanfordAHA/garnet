@@ -75,10 +75,12 @@ class Environment;
     extern task clear_interrupt(e_glb_ctrl glb_ctrl, bit [$clog2(NUM_GLB_TILES)-1:0] tile_num);
     extern task kernel_test(Kernel kernel);
     extern task read_data(Kernel kernel);
-    extern function bit [NUM_CGRA_COLS-1:0] calculate_cgra_stall_mask(int start, int num);
+  
+    extern function bit [NUM_CGRA_COLS_INCLUDING_IO-1:0] calculate_cgra_stall_mask(int start, int num);
     // extern function bit [NUM_GLB_TILES-1:0] calculate_glb_stall_mask(int start, int num);  // UNUSED?
-    extern task cgra_stall(bit [NUM_CGRA_COLS-1:0] stall_mask);
-    extern task cgra_unstall(bit [NUM_CGRA_COLS-1:0] stall_mask);
+    extern task cgra_stall(bit [NUM_CGRA_COLS_INCLUDING_IO-1:0] stall_mask);
+    extern task cgra_unstall(bit [NUM_CGRA_COLS_INCLUDING_IO-1:0] stall_mask);
+
     extern task run();
     extern task compare();
 endclass
@@ -183,10 +185,9 @@ bit [NUM_GLB_TILES-1:0] tile_mask;
 e_glb_ctrl glb_ctrl;
 Config cfg;
 int group_start, num_groups;
-bit [NUM_CGRA_COLS-1:0] cgra_stall_mask;
+bit [NUM_CGRA_COLS_INCLUDING_IO-1:0] cgra_stall_mask;
 
 task Environment::cgra_configure(Kernel kernel);
-
     realtime start_time, end_time;
     $timeformat(-9, 2, " ns", 0);
 
@@ -225,18 +226,23 @@ function bit [NUM_GLB_TILES-1:0] Environment::calculate_glb_stall_mask(int start
 endfunction
 */
 
-function bit [NUM_CGRA_COLS-1:0] Environment::calculate_cgra_stall_mask(int start, int num);
+function bit [NUM_CGRA_COLS_INCLUDING_IO-1:0] Environment::calculate_cgra_stall_mask(int start, int num);
     calculate_cgra_stall_mask = '0;
     for (int i = 0; i < num; i++) begin
         calculate_cgra_stall_mask |= ((4'b1111) << ((start + i) * 4));
     end
+
+    if (NUM_CGRA_COLS_INCLUDING_IO != NUM_CGRA_COLS) begin
+        calculate_cgra_stall_mask = (calculate_cgra_stall_mask << 1) | 1'b1;
+    end
 endfunction
 
-bit [NUM_CGRA_COLS-1:0] stall_mask;
+
+bit [NUM_CGRA_COLS_INCLUDING_IO-1:0] stall_mask;
 bit [CGRA_AXI_DATA_WIDTH-1:0] Env_cgra_stall_data;
 bit [CGRA_AXI_DATA_WIDTH-1:0] Env_cgra_stall_wr_data;
 
-task Environment::cgra_stall(bit [NUM_CGRA_COLS-1:0] stall_mask);
+  task Environment::cgra_stall(bit [NUM_CGRA_COLS_INCLUDING_IO-1:0] stall_mask);
     // Stall CGRA
     axil_drv.read(`GLC_CGRA_STALL_R, data);
     wr_data = stall_mask | data;
@@ -248,8 +254,9 @@ task Environment::cgra_stall(bit [NUM_CGRA_COLS-1:0] stall_mask);
     $display("Stall CGRA with stall mask %8h", stall_mask);
 endtask
 
+
 bit [CGRA_AXI_DATA_WIDTH-1:0] wr_data;
-task Environment::cgra_unstall(bit [NUM_CGRA_COLS-1:0] stall_mask);
+  task Environment::cgra_unstall(bit [NUM_CGRA_COLS_INCLUDING_IO-1:0] stall_mask);
     // Unstall CGRA
     axil_drv.read(`GLC_CGRA_STALL_R, data);
     wr_data = (~stall_mask) & data;
