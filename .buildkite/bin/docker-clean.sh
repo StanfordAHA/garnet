@@ -15,7 +15,7 @@ function dps() {
 }
 echo '+++ BEFORE'; dps; printf '\n'
 
-
+# Kill any container with 'deleteme' in its name AND whose ps matches the given pattern.
 function deldocks() {
   pat="$1"
   # echo '------------------------------------------------------------------------'
@@ -26,19 +26,20 @@ function deldocks() {
   printf '\n'
 }
 
+# Get rid of all 'deleteme' containers that are months old
 echo '+++ MONTHS'
 deldocks 'months ago'
 
+# Get rid of all 'deleteme' containers that are weeks old
 echo '+++ WEEKS'
 deldocks 'weeks ago'
 
+# Allow at least 5 days for very long-running tasks to clear (e.g. aha full regression)
 echo '+++ DAYS'
-deldocks 'days ago'
+deldocks '[56789] days ago'
 
-echo '+++ HOURS'
-deldocks '[456789] hours ago'
+# DO NOT kill containers less than one day old.
+# This can destroy e.g. in-progress 19-hour aha regressions...
+# deldocks '[456789] hours ago'
 
 echo '+++ AFTER'; dps; printf '\n'
-
-# docker ps | grep deleteme | grep 'months ago'
-# docker ps | grep deleteme | grep 'months ago' | awk '{print $1}' | xargs docker kill
