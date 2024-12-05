@@ -70,6 +70,7 @@ source /home/steveri/bin/setup_genesis.sh
 
 # Clean up previous build
 cd $GARNET/tests/test_app
+ls -l genesis_clean.cmd
 cat genesis_clean.cmd
 genesis_clean.cmd
 
