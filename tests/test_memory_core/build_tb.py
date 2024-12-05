@@ -2738,6 +2738,7 @@ if __name__ == "__main__":
     parser.add_argument('--opal-workaround', action="store_true")
     parser.add_argument('--mem_block_size', type=int, default=2048)
     parser.add_argument('--using-matrix-unit', action="store_true")
+    parser.add_argument('--give-north-io-sbs', action="store_true")
 
     args = parser.parse_args()
     bespoke = args.bespoke
@@ -2781,6 +2782,7 @@ if __name__ == "__main__":
     opal_workaround = args.opal_workaround
     mem_block_size = args.mem_block_size
     using_matrix_unit = args.using_matrix_unit
+    give_north_io_sbs = args.give_north_io_sbs
 
     if using_matrix_unit:
         io_sides = [IOSide.North, IOSide.West]
@@ -2921,7 +2923,8 @@ if __name__ == "__main__":
                                    altcore=None,
                                    add_pond=add_pond,
                                    scgra=True,
-                                   perf_debug=perf_debug)
+                                   perf_debug=perf_debug,
+                                   give_north_io_sbs=give_north_io_sbs)
 
         time_x = time.time()
         # print(f"TIME:\tcreate_cgra\t{time_x - time_0}")
