@@ -19,7 +19,9 @@ dev/README
 ------------------------------------------------------------------------
 VCS FULL GARNET RUN SEQUENCE (e.g. pointwise should finish within 8000ns)
 # Output to logs vcs.log<i>, simv.log<i>
-APP=+APP0=vfiles/pointwise
+# <generate top.sv, see below>
+head tb/top.sv
+APP=+APP0=pointwise; test -f pointwise/bin/design_meta.json || echo FAIL
 ivcs=$i; (vcs.sh |& tee vcs.log$ivcs; echo -n run | simv -lca -l simv.log$ivcs +vcs+initmem+0 +vcs+initreg+0 -sv_lib libcgra -exitstatus -ucli $APP) |& less
 # simv.log* should end with "PASS PASS PASS"
 # Check output file hw_output.txt vs. gold copy
@@ -38,14 +40,17 @@ gtkwave simv3.vcd
 
 ------------------------------------------------------------------------
 VERILATOR FULL GARNET RUN SEQUENCE (e.g. pointwise should finish within 8000ns)
+# <generate top.sv, see below>
 iver=$i; rmo; verilator.sh |& tee ver.log$iver
 make -C obj_dir/ -f Vtop.mk >& make-vtop.log$iver &
 tail -f make-vtop.log$iver | awk '{printf("%3d  %s %s\n", NR, $1, $NF)}' # Counts to 245 ish?
+APP=+APP0=pointwise; test -f pointwise/bin/design_meta.json || echo FAIL
 alias vtop='(echo Vtop 8000 "$APP"; obj_dir/Vtop 8000 "$APP")'
 vtop |& tee vtop.log$iver | less
 # vtop.log* should end with "PASS PASS PASS"
 
 # TRACE
+# <generate top.sv, see below>
 iver=$i; rmo; verilator.sh --trace |& tee ver.log$iver
 make -C obj_dir/ -f Vtop.mk >& make-vtop.log$iver &
 tail -f make-vtop.log$iver | awk '{printf("%3d  %s %s\n", NR, $1, $NF)}' # Counts to 1000 ish?
@@ -57,3 +62,25 @@ gtkwave obj_dir/logs/vlt_dump.vcd
 VERILATOR STUB RUN SEQUENCE
 # same as non-stub above except do this first:
 cp vfiles/garnet_stub.v vfiles/garnet.v
+
+------------------------------------------------------------------------
+GENERATE TOP.SV
+# Find or install Genesis2.pl
+source /home/steveri/bin/setup_genesis.sh
+
+# Clean up previous build
+cd $GARNET/tests/test_app
+cat genesis_clean.cmd
+genesis_clean.cmd
+
+# Generate top.sv from top.svp
+ls -l tb/top.*
+parms='-parameter top.using_matrix_unit=0 top.oc_0=0 top.mu_datawidth=0'
+Genesis2.pl -parse -generate -top top -input $gtb/top.svp $parms
+ls -l genesis_verif/top.sv
+ls -l tb/top.*
+mv genesis_verif/top.sv tb/top.sv
+ls -ld genesis*
+cat genesis_clean.cmd
+source genesis_clean.cmd
+ls -ld genesis*
