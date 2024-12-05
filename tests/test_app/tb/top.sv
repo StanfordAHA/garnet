@@ -2,25 +2,15 @@
 ** Module: top.sv
 ** Description:
 **              top for garnet testbench
-** Author: Taeyoung Kong, Michael Oduoza
+** Author: Taeyoung Kong
 ** Change history:
-**  10/14/2020 - Taeyoung Kong: Implement the first version
-**  11/28/2024 - Michael Oduoza: add matrix unit support to testing environment
-**==============================================================================*/
+**  10/14/2020 - Implement the first version
+**===========================================================================*/
+`define DBG_TBTOP 0  // Set to '1' for debugging
 
-//============================================================================//
-// Genesis parameter declaration
-//============================================================================//
-//; use POSIX;
-//; my $using_matrix_unit = parameter(NAME => 'using_matrix_unit', VAL => 0, DOC => 'Indicates if matrix unit ifc should be included');
-//; my $oc_0 = parameter(NAME => 'oc_0', VAL => 32, DOC => 'Matrix unit output channel unrolling');
-//; my $mu_datawidth = parameter(NAME => 'mu_datawidth', VAL => 16, DOC => 'Width of data coming from matrix unit');
-
-\`define DBG_TBTOP 0 // Set to '1' for debugging
-
-\`ifndef CLK_PERIOD
-\`define CLK_PERIOD 1ns
-\`endif
+`ifndef CLK_PERIOD
+`define CLK_PERIOD 1ns
+`endif
 
 import global_buffer_param::*;
 
@@ -40,37 +30,36 @@ module top;
     // clk generation
     initial begin
         clk = 0;
-        forever #(\`CLK_PERIOD / 2.0) clk = !clk;
+        forever #(`CLK_PERIOD / 2.0) clk = !clk;
     end
 
     // Print a debug message every once in awhile
     initial begin
-         $display("[%0t] Model running...\n", $time);
-         $display("[%0t]", $time);
-         forever #(\`CLK_PERIOD * 1000) $display("[%0t]", $time);
-     end
+        $display("[%0t] Model running...\n", $time);
+        $display("[%0t]", $time);
+        forever #(`CLK_PERIOD * 1000) $display("[%0t]", $time);
+    end
 
-
-     \`ifdef verilator
-        // Dump out the wave info
-        // FIXME think about moving this to verilator top-level CGRA.cpp or whatever
-        initial begin
-            if ($test$plusargs("trace") != 0) begin
-                $display("[%0t] Tracing to logs/vlt_dump.vcd...\n", $time);
-                $dumpfile("logs/vlt_dump.vcd");
-                $dumpvars();
-            end
-        end
-    \`endif
+`ifdef verilator
+    // Dump out the wave info
+    // FIXME think about moving this to verilator top-level CGRA.cpp or whatever
+    initial begin
+       if ($test$plusargs("trace") != 0) begin
+          $display("[%0t] Tracing to logs/vlt_dump.vcd...\n", $time);
+          $dumpfile("logs/vlt_dump.vcd");
+          $dumpvars();
+       end
+    end
+`endif
 
     // reset generation
     initial begin
         // Change reset to give a clear up-and-down pulse
-        reset = 0; if (\`DBG_TBTOP) $display("[%0t] reset = 0", $time);
+        reset = 0; if (`DBG_TBTOP) $display("[%0t] reset = 0", $time);
         repeat (3) @(posedge clk);
-        reset = 1; if (\`DBG_TBTOP) $display("[%0t] reset = 1", $time);
+        reset = 1; if (`DBG_TBTOP) $display("[%0t] reset = 1", $time);
         repeat (3) @(posedge clk);
-        reset = 0; if (\`DBG_TBTOP) $display("[%0t] reset = 0\n", $time);
+        reset = 0; if (`DBG_TBTOP) $display("[%0t] reset = 0\n", $time);
     end
 
     //============================================================================//
@@ -93,20 +82,6 @@ module top;
         .p_ifc   (p_ifc),
         .axil_ifc(axil_ifc)
     );
-
-//; if ($using_matrix_unit) {
-    //============================================================================//
-    // Matrix unit outputs 
-    //============================================================================//
-    wire [`$mu_datawidth-1`:0] mu2cgra [`$oc_0-1`:0];
-
-    //; for (my $i = 0; $i < $oc_0; $i++) {
-    assign mu2cgra[`$i`] = 16'b1;
-    //; } 
-
-//; }
-
-
 
     //============================================================================//
     // instantiate dut
@@ -151,18 +126,8 @@ module top;
         .jtag_tdi   (  /*unused*/),
         .jtag_tdo   (  /*unused*/),
         .jtag_tms   (  /*unused*/),
-
-    //; if ($using_matrix_unit) {
-        .jtag_trst_n(  /*unused*/),
-
-        // matrix unit ifc
-        .mu2cgra_valid (1'b1),
-        .cgra2mu_ready (),
-        .mu2cgra(mu2cgra)
-
-    //; } else {
         .jtag_trst_n(  /*unused*/)
+    );
 
-    //; }
-     );
+
 endmodule

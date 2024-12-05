@@ -1,15 +1,3 @@
-========================================================================
-========================================================================
-========================================================================
-
-TODO Ignore this file for now, it will be cleaned up in the next release.
-
-========================================================================
-========================================================================
-========================================================================
-
-
-
 the "dev" directory has cached versions of garnet-verilog and
 pointwise collateral, so you can quickly run verilator testbench
 experiments locally on any machine, no docker containers or
@@ -60,7 +48,7 @@ vtop |& tee vtop.log$iver | less
 # TRACE
 iver=$i; rmo; verilator.sh --trace |& tee ver.log$iver
 make -C obj_dir/ -f Vtop.mk >& make-vtop.log$iver &
-tail -f make-vtop.log$iver | awk '{printf("%3d  %s %s\n", NR, $1, $NF)}' # Counts to >> 245 ish?
+tail -f make-vtop.log$iver | awk '{printf("%3d  %s %s\n", NR, $1, $NF)}' # Counts to 1000 ish?
 alias vtop='(echo Vtop 8000 +trace "$APP"; obj_dir/Vtop 8000 +trace "$APP")'
 vtop |& tee vtop.log$iver | less
 gtkwave obj_dir/logs/vlt_dump.vcd
