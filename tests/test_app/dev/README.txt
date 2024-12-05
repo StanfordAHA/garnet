@@ -1,3 +1,15 @@
+========================================================================
+========================================================================
+========================================================================
+
+TODO Ignore this file for now, it will be cleaned up in the next release.
+
+========================================================================
+========================================================================
+========================================================================
+
+
+
 the "dev" directory has cached versions of garnet-verilog and
 pointwise collateral, so you can quickly run verilator testbench
 experiments locally on any machine, no docker containers or
