@@ -1,5 +1,3 @@
-#!/bin/bash
-
 # -------------------------------------------------------------------
 # Variables
 # -------------------------------------------------------------------
@@ -10,6 +8,10 @@ gemstone_dir := $(realpath $(garnet_dir))/../gemstone
 netlist_dir := $(mkfile_dir)/netlist
 glc_dir := $(garnet_dir)/global_controller
 APP_ARGS ?= +APP0=app0
+
+# I.e. if APP_ARGS="+APP0=/aha/Halide-to-Hardware/apps/hardware_benchmarks/apps/pointwise"
+# then APP0_NAME="/aha/Halide-to-Hardware/apps/hardware_benchmarks/apps/pointwise"
+APP0_NAME = $(shell echo $(APP_ARGS) | awk '{print $1}' | sed 's/.*=//')
 
 TOOL ?= VCS
 export WAVEFORM ?= 0
@@ -89,11 +91,11 @@ VCS = vcs \
 	  $(INPUT_ARGS)
 
 VERILATOR = verilator $(VERILATOR_WARN) --timing --cc --exe tb/CGRA.cpp \
-  --timescale 1ps/1ps \
-  --top-module top \
-  $(VERILATOR_WAVEFORM_ARGS) \
-  $(COMPILE_ARGS) \
-  -F tb/tb_cgra.f
+	  --timescale 1ps/1ps \
+	  --top-module top \
+	  $(VERILATOR_WAVEFORM_ARGS) \
+	  $(INPUT_ARGS) \
+	  -F tb/tb_cgra.f
 
 XRUN = xrun \
 	   -64bit \
@@ -112,11 +114,28 @@ XRUN = xrun \
 	   $(INPUT_ARGS)
 
 # -------------------------------------------------------------------
+# TOP_LEVEL DEPENDENCE: "MAKE" == "MAKE SIM"
+# -------------------------------------------------------------------
+.phony: all
+all: sim
+
+
+# -------------------------------------------------------------------
 # C API
 # -------------------------------------------------------------------
-.PHONY: libcgra.so
+$(garnet_dir)/global_buffer/header/global_buffer_param.h:
+	@echo 'ERROR Oops oh no cannot find e.g. "global_buffer_param.h"'
+	@echo
+	@echo You may need to build garnet verilog i.e. do something like
+	@echo '  % cd /aha'
+	@echo '  % aha garnet --width 28 --height 16 --verilog --use_sim_sram --glb_tile_mem_size 128 --dense-only'
+	@echo
+	@exit 13
+
+# .PHONY: libcgra.so -- why is this phony?
 libcgra.so: $(shell find lib -type f) $(garnet_dir)/global_buffer/header/global_buffer_param.h $(garnet_dir)/global_buffer/header/glb.h $(garnet_dir)/global_controller/header/glc.h
 	gcc -Wno-error -Wall lib/*.c -I$(garnet_dir)/global_buffer/header -I$(garnet_dir)/global_controller/header -shared -o libcgra.so -fPIC
+
 
 # -------------------------------------------------------------------
 # Compile & Run
@@ -136,7 +155,7 @@ else ifeq ($(TOOL), VCS)
 else ifeq ($(TOOL), VERILATOR)
     COMPILE = $(VERILATOR)
     # COMPILE_RTL_ARGS += +nospecify
-    # RUN = ./simv -lca -l $(RUN_LOG) +vcs+initmem+0 +vcs+initreg+0 -sv_lib libcgra -exitstatus
+    RUN = obj_dir/Vtop $(APP_ARGS)
 else
     @echo "TOOL must be either XCELIUM or VCS"
 endif
@@ -147,6 +166,15 @@ else ifeq ($(TOOL), VCS)
 	DUMP_ARGS = -ucli -i dump_fsdb.tcl
 endif
 
+$(APP0_NAME)/bin/design_meta.json:
+	@echo ERROR oops cannot find design_meta.json
+	@echo Suggest you do something like
+	@echo '  test=apps/pointwise'
+	@echo '  app_path=/aha/Halide-to-Hardware/apps/hardware_benchmarks/$test'
+	@echo '  (cd $app_path; make clean)'
+	@echo '  aha map $test --chain'
+	@echo '  aha pnr $test --width 28 --height 16 --dense-only'
+	@exit 13
 
 .PHONY: compile
 compile: COMPILE_ARGS = $(COMPILE_RTL_ARGS)
@@ -155,7 +183,7 @@ compile:
 	$(COMPILE)
 
 .PHONY: run
-run:
+run: $(APP0_NAME)/bin/design_meta.json
 	@rm -rf *.txt; rm -rf ../../SPARSE_TESTS/batch_*
 	$(RUN) $(DUMP_ARGS) $(RUN_ARGS) $(APP_ARGS)
 
