@@ -22,7 +22,8 @@ typedef enum int {
 // Kernel kernels[];  // Declared upstream in enclosing scope 'garnet_test.sv'
 Kernel kernel;
 
-task one_cy_delay_if_verilator();
+/*
+// Will restore this when/if corresponding verilator changes happen :(
 `ifdef verilator
     // $display("WARNING adding one extra cycle for verilator run");
     @(posedge axil_ifc.clk);
@@ -35,6 +36,7 @@ task one_cy_delay_if_vcs();
     @(posedge axil_ifc.clk);
 `endif
 endtask // one_cy_delay_if_vcs
+*/
 
 // Non-array trace vars, global for waveform debugging
 bitstream_entry_t bet0;
@@ -416,7 +418,7 @@ task Environment::wait_interrupt(e_glb_ctrl glb_ctrl, bit [$clog2(NUM_GLB_TILES)
             // When/if interrupt clears (above), this loop dies b/c 'join_any'
 
             // repeat (MAX_WAIT) @(posedge...);  // "repeat" confuses verilator:(
-            for (int i=0; i<MAX_WAIT; i++) @(posedge axil_ifc.clk);
+            for (int i=0; i<MAX_WAIT; i++) @(posedge vifc_axil.cbd);
             $error("@%0t: %m ERROR: Interrupt wait timeout, waited %0d cy for reg %s", 
                    $time, MAX_WAIT, reg_name);
             $finish(2);  // The "2" prints more information about when/where/why
