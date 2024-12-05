@@ -84,6 +84,7 @@ from lassen.float import *
 import networkx as nx
 import copy
 import json
+from typing import Tuple, Dict, List, Tuple
 
 class SparseTBBuilder(m.Generator2):
     def __init__(self, nlb: NetlistBuilder = None, graph: Graph = None, bespoke=False,
@@ -91,7 +92,7 @@ class SparseTBBuilder(m.Generator2):
                  collat_dir=None,
                  mode_map=None, real_pe=False, harden_flush=False, combined=False,
                  input_sizes=None, use_fa=False,
-                 verbose=False, pnr_only=False, width=16, height=16, give_tensor=False) -> None:
+                 verbose=False, pnr_only=False, width=16, height=16, give_tensor=False, west_in_io_sides=False) -> None:
         assert nlb is not None or bespoke is True, "NLB is none..."
         assert graph is not None, "Graph is none..."
 
@@ -131,8 +132,9 @@ class SparseTBBuilder(m.Generator2):
 
         self.height = height
         self.width = width
-        self.input_ctr = 0
-        self.output_ctr = 1
+
+        self.input_ctr = 1 if west_in_io_sides else 0
+        self.output_ctr = 2 if west_in_io_sides else 1
 
         self.glb_to_io_mapping = {}
         self.glb_cores = {}
@@ -156,7 +158,7 @@ class SparseTBBuilder(m.Generator2):
             # CGRA Path
             self.register_cores()
             self.connect_cores()
-
+        
             print("Balancing SAM Graph with FIFOs")
             # ### Balance SAM graph with interconnect FIFOs #####
             new_netlist = copy.deepcopy(self.nlb._netlist)
@@ -174,6 +176,7 @@ class SparseTBBuilder(m.Generator2):
                     G.add_edge(src, dest, name=edge)
                 if "buffer_passthrough" in src_name or "buffer_passthrough" in dest_name:
                     G.add_edge(src, dest, name=edge)
+
             
             # break cycles
             cycles = list(nx.simple_cycles(G))
@@ -2734,6 +2737,7 @@ if __name__ == "__main__":
     parser.add_argument('--kernel_name', type=str, default=None)
     parser.add_argument('--opal-workaround', action="store_true")
     parser.add_argument('--mem_block_size', type=int, default=2048)
+    parser.add_argument('--using-matrix-unit', action="store_true")
 
     args = parser.parse_args()
     bespoke = args.bespoke
@@ -2776,6 +2780,12 @@ if __name__ == "__main__":
     kernel_name = args.kernel_name
     opal_workaround = args.opal_workaround
     mem_block_size = args.mem_block_size
+    using_matrix_unit = args.using_matrix_unit
+
+    if using_matrix_unit:
+        io_sides = [IOSide.North, IOSide.West]
+    else:
+        io_sides = [IOSide.North]
 
     # Unreachable for ss regress flow
     if do_comparison:
@@ -2902,7 +2912,8 @@ if __name__ == "__main__":
         time_0 = time.time()
 
         interconnect = create_cgra(width=chip_width, height=chip_height,
-                                   io_sides=IOSide.North,
+                                   io_sides=io_sides,
+                                   using_matrix_unit=using_matrix_unit,
                                    num_tracks=num_tracks,
                                    add_pd=False,
                                    # Soften the flush...?
@@ -2921,9 +2932,10 @@ if __name__ == "__main__":
             magma.compile(f"{test_dump_dir}/SparseTBBuilder", circuit, coreir_libs={"float_CW"})
             exit()
 
+        west_in_io_sides = IOSide.West in io_sides
         nlb = NetlistBuilder(interconnect=interconnect, cwd=test_dump_dir,
                              harden_flush=harden_flush, combined=combined,
-                             pnr_only=pnr_only)
+                             pnr_only=pnr_only, west_in_io_sides=west_in_io_sides)
 
         time_1 = time.time()
         # print(f"TIME:\tnlb\t{time_1 - time_x}")
@@ -3129,7 +3141,7 @@ if __name__ == "__main__":
                                           input_sizes=tuple(input_dims.items()), use_fa=use_fiber_access,
                                           verbose=verbose, pnr_only=pnr_only,
                                           width=chip_w, height=chip_h,
-                                          collat_dir=collat_dir, give_tensor=give_tensor)
+                                          collat_dir=collat_dir, give_tensor=give_tensor, west_in_io_sides=west_in_io_sides)
                     stbs[sam_graph] = stb
                     add_bs_args = True
                 else:

@@ -1262,7 +1262,7 @@ def create_netlist_info(
         graph.get_in_ub_latency(app_dir=app_dir)
         graph.get_compute_kernel_latency(app_dir=app_dir)
 
-    if "MANUAL_PLACER" in os.environ:
+    if "MANUAL_PLACER" in os.environ and os.environ.get("MANUAL_PLACER") == "1":
         # remove mem reg in conn for manual placement
         graph.remove_mem_reg_tree()
         # graph.generate_tile_conn(app_dir = app_dir)
