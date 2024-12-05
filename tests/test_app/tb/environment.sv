@@ -3,9 +3,6 @@
 // How long to wait for streaming; can be as little as 6K for pointwise, 80K for camera pipeline etc.
 int MAX_WAIT = 6_000_000;
 
-/*
-class Environment;
-*/
 typedef enum int {
     GLB_PCFG_CTRL,
     GLB_STRM_G2F_CTRL,
@@ -32,21 +29,10 @@ task one_cy_delay_if_vcs();
 `endif
 endtask // one_cy_delay_if_vcs
 
-/*
-function Environment::new(Kernel kernels[], vAxilIfcDriver vifc_axil, vProcIfcDriver vifc_proc, int dpr);
 
- 
- 
-function void Environment::build();
-
- 
-*/ 
 // Non-array trace vars, global for waveform debugging
 bitstream_entry_t bet0;
 int unsigned betdata0, betaddr0;
-/*
-task Environment::write_bs(Kernel kernel);
-*/
 task Env_write_bs();
     realtime start_time, end_time;
     $timeformat(-9, 2, " ns", 0);
@@ -69,9 +55,6 @@ task Env_write_bs();
              end_time - start_time);
 endtask
 
-/*
-task Environment::write_data(Kernel kernel);
-*/
 task Env_write_data();
     realtime start_time, end_time;
     $timeformat(-9, 2, " ns", 0);
@@ -97,9 +80,6 @@ task Env_write_data();
     end
 endtask
 
-/*
-task Environment::read_data(Kernel kernel);
-*/
 task Env_read_data();
     repeat (20) @(posedge p_ifc.clk);
 
@@ -123,9 +103,7 @@ task Env_read_data();
     end
 endtask
 
-/*
-task Environment::glb_configure(Kernel kernel);
-*/
+
 task Env_glb_configure();
     realtime start_time, end_time;
     $timeformat(-9, 2, " ns", 0);
@@ -137,16 +115,12 @@ task Env_glb_configure();
     $display("[%s] glb configuration end at %0t\n", kernel.name, end_time);  // 647.5ns
 endtask
 
+
 bit [NUM_GLB_TILES-1:0] tile_mask;
 e_glb_ctrl glb_ctrl;
-/*
-task Environment::cgra_configure(Kernel kernel);
-*/
-    Config cfg;
-    int group_start, num_groups;
-    // bit [NUM_GLB_TILES-1:0] glb_stall_mask;  // Unused???
-    bit [NUM_CGRA_COLS-1:0] cgra_stall_mask;
-
+Config cfg;
+int group_start, num_groups;
+bit [NUM_CGRA_COLS_INCLUDING_IO-1:0] cgra_stall_mask;
 task Env_cgra_configure();
 
     realtime start_time, end_time;
@@ -154,7 +128,6 @@ task Env_cgra_configure();
 
     group_start = kernel.group_start;
     num_groups = kernel.num_groups;
-    // glb_stall_mask = calculate_glb_stall_mask(group_start, num_groups);  // UNUSED!
     cgra_stall_mask = calculate_cgra_stall_mask(group_start, num_groups);
 
     Env_cgra_stall();
@@ -176,31 +149,22 @@ task Env_cgra_configure();
     $display("[%s] fast configuration end at %0t", kernel.name, end_time);
     $display("[%s] It takes %0t time to do parallel configuration.", kernel.name,
              end_time - start_time);
-
 endtask
 
-/*
-// Unused???
-function bit [NUM_GLB_TILES-1:0] calculate_glb_stall_mask(int start, int num);
-    calculate_glb_stall_mask = '0;
-    for (int i = 0; i < num; i++) begin
-        calculate_glb_stall_mask |= ((2'b11) << ((start + i) * 2));
-    end
-endfunction
-*/
-
-function bit [NUM_CGRA_COLS-1:0] calculate_cgra_stall_mask(int start, int num);
+function bit [NUM_CGRA_COLS_INCLUDING_IO-1:0] calculate_cgra_stall_mask(int start, int num);
     calculate_cgra_stall_mask = '0;
     for (int i = 0; i < num; i++) begin
         calculate_cgra_stall_mask |= ((4'b1111) << ((start + i) * 4));
     end
+
+    if (NUM_CGRA_COLS_INCLUDING_IO != NUM_CGRA_COLS) begin
+        calculate_cgra_stall_mask = (calculate_cgra_stall_mask << 1) | 1'b1;
+    end
 endfunction
 
-// task Environment::cgra_stall(bit [NUM_CGRA_COLS-1:0] stall_mask);
-bit [NUM_CGRA_COLS-1:0] stall_mask;
+bit [NUM_CGRA_COLS_INCLUDING_IO-1:0] stall_mask;
 bit [CGRA_AXI_DATA_WIDTH-1:0] Env_cgra_stall_data;
 bit [CGRA_AXI_DATA_WIDTH-1:0] Env_cgra_stall_wr_data;
-
 task Env_cgra_stall();
     stall_mask = cgra_stall_mask;
     // Stall CGRA
@@ -214,9 +178,7 @@ task Env_cgra_stall();
     $display("Stall CGRA with stall mask %8h", stall_mask);
 endtask
 
-/*
-task Environment::cgra_unstall(bit [NUM_CGRA_COLS-1:0] stall_mask);
-*/
+
 bit [CGRA_AXI_DATA_WIDTH-1:0] wr_data;
 task Env_cgra_unstall();
     $display("Welcome to Env_cgra_unstall()");
@@ -232,10 +194,9 @@ task Env_cgra_unstall();
     $display("Unstall CGRA with stall mask %4h", stall_mask);
 endtask // Env_cgra_unstall
 
-// task Environment::kernel_test(Kernel kernel);
+
 Config Env_kernel_cfg;
 int total_output_size;
-
 // FIXME/TODO this could be three subtasks start_streaming(), wait_for_g2f(), wait_for_f2g()
 // or glb_stream_g2f() and glb_stream_f2g() or some such
 task Env_kernel_test();
@@ -295,15 +256,12 @@ task Env_kernel_test();
 
 endtask
 
-// Register defs in glc.svh
+// For reference: register defs copied from file glc.svh
 //  `define GLC_PAR_CFG_G2F_ISR_R 'h38
 //  `define GLC_STRM_G2F_ISR_R    'h34
 //  `define GLC_STRM_F2G_ISR_R    'h30
 //  `define GLC_GLOBAL_ISR_R      'h3c
 
-/* temp registration block
-task Environment::wait_interrupt(e_glb_ctrl glb_ctrl, bit [$clog2(NUM_GLB_TILES)-1:0] tile_num);
-*/
 string reg_name;
 task Env_wait_interrupt();
 
@@ -396,7 +354,6 @@ task Env_set_interrupt_on();
 endtask
 
 
-// BOOKMARK bookmark
 task Env_run();
     // int dpr;  (declared in garnet_test.sv, which "include"s this file)
     // wait for reset
@@ -410,22 +367,6 @@ task Env_run();
     if (dpr) begin
         $display("ERROR we no longer support dpr TRUE; we're not even sure when/if it was ever used");
         $finish(2);
-        foreach (kernels[i]) begin
-            automatic int j = i;
-            fork
-                begin
-                    // env.write_bs(kernels[j]);
-                    kernel = kernels[j];
-                    Env_write_bs();
-                    Env_glb_configure();
-                    Env_cgra_configure();
-                    Env_write_data();
-                    Env_kernel_test();
-                    Env_read_data();
-                end
-            join_none
-        end
-        wait fork;
     end else begin
         $display("\n[%0t] dpr FALSE\n", $time);
         foreach (kernels[i]) begin
@@ -468,8 +409,6 @@ task build_output_tile_mask();
     end
     $display("\n[%0t] Built a OUTPUT tile mask %0x", $time, tile_mask);
 endtask
-
-    
 
 
 /* Unused?
