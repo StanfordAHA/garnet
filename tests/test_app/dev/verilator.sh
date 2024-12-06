@@ -91,7 +91,7 @@ i=3
 rmo
 verilator.sh |& tee vlog$i | less
 make -C obj_dir/ -f Vtop.mk |& tee make-vtop.log$i | cat -n | chop | less
-APP='+APP0=vfiles/pointwise'
+APP='+APP0=pointwise'
 Vtop "$APP" |& tee vtop.log$i
 
 # CHECK THE RESULT!!!
