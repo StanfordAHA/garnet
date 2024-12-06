@@ -1,5 +1,7 @@
-// Global signals to replace/enhance class automatics
 `define DBG_PROCDRIVER 0  // Set to '1' for debugging
+
+semaphore proc_lock; 
+initial proc_lock = new(1);
 
 bit [GLB_ADDR_WIDTH-1:0] start_addr;
 bit [GLB_ADDR_WIDTH-1:0] cur_addr;
@@ -8,33 +10,16 @@ bitstream_t              bs_q;
 bit [GLB_ADDR_WIDTH-1:0]  ProcDriver_write_waddr;
 bit [BANK_DATA_WIDTH-1:0] ProcDriver_write_wdata;
 
-class ProcDriver;
-    vProcIfcDriver vif;
-    semaphore proc_lock;
-
-    extern function new(vProcIfcDriver vif, semaphore proc_lock);
-    extern task write_bs(int start_addr, bitstream_t bs_q);
-    extern task write_data(int start_addr, data_array_t data_q);
-    extern task write(int addr, bit [BANK_DATA_WIDTH-1:0] data);
-    extern task read_data(int start_addr, ref data_array_t data_q);
-endclass
-
-function ProcDriver::new(vProcIfcDriver vif, semaphore proc_lock);
-    this.vif = vif;
-    this.proc_lock = proc_lock;
-endfunction
-
-task ProcDriver::write_bs(int start_addr, bitstream_t bs_q);
-    bit [GLB_ADDR_WIDTH-1:0] cur_addr = start_addr;
+task ProcDriver_write_bs();
+    cur_addr = start_addr;
     proc_lock.get(1);
     foreach (bs_q[i]) begin
         ProcDriver_write_waddr = cur_addr;
         ProcDriver_write_wdata = bs_q[i];
-        write(cur_addr, bs_q[i]);
+        ProcDriver_write();
         cur_addr += 8;
     end
-
-    repeat (10) @(vif.cbd);
+    repeat (10) @(posedge p_ifc.clk);
     proc_lock.put(1);
 endtask
 
@@ -43,49 +28,47 @@ bit [BANK_DATA_WIDTH-1:0] bdata;
 int size;
 
 // TODO: Change it to const ref
-task ProcDriver::write_data(int start_addr, data_array_t data_q);
-    bit [GLB_ADDR_WIDTH-1:0] cur_addr = start_addr;
-    bit [BANK_DATA_WIDTH-1:0] data;
-    int size;
+task ProcDriver_write_data();
+    cur_addr = start_addr;
     proc_lock.get(1);
     assert (BANK_DATA_WIDTH == 64);
-    size = data_q.size();
+    size = data_q.size();  // 0x1000 = 2^12 = 4K??
     for (int i = 0; i < size; i += 4) begin
         if ((i + 1) == size) begin
-            data = data_q[i];
+            bdata = data_q[i];
         end else if ((i + 2) == size) begin
-            data = {data_q[i+1], data_q[i]};
+            bdata = {data_q[i+1], data_q[i]};
         end else if ((i + 3) == size) begin
-            data = {data_q[i+2], data_q[i+1], data_q[i]};
+            bdata = {data_q[i+2], data_q[i+1], data_q[i]};
         end else begin
-            data = {data_q[i+3], data_q[i+2], data_q[i+1], data_q[i]};
+            bdata = {data_q[i+3], data_q[i+2], data_q[i+1], data_q[i]};
         end
         ProcDriver_write_waddr = cur_addr;
-        ProcDriver_write_wdata = data;
-        write(cur_addr, data);
-        cur_addr += 8;
+        ProcDriver_write_wdata = bdata;
+        ProcDriver_write();
+        cur_addr += 8;  // Counts hex 8,10,18,20...(8x2^10 == 0x1000
     end
-
-    repeat (10) @(vif.cbd);
+    repeat (10) @(posedge p_ifc.clk);
     proc_lock.put(1);
 endtask
 
-task ProcDriver::write(int addr, bit [BANK_DATA_WIDTH-1:0] data);
-    vif.cbd.wr_en   <= 1'b1;
-    vif.cbd.wr_strb <= {(BANK_DATA_WIDTH / 8) {1'b1}};
-    vif.cbd.wr_addr <= addr;
-    vif.cbd.wr_data <= data;
-    @(vif.cbd);
-    vif.cbd.wr_en   <= 0;
-    vif.cbd.wr_strb <= 0;
-    vif.cbd.wr_addr <= 0;
-    vif.cbd.wr_data <= 0;
+
+task ProcDriver_write();
+    p_ifc.wr_en   = 1'b1;
+    p_ifc.wr_strb = {(BANK_DATA_WIDTH / 8) {1'b1}};
+    p_ifc.wr_addr = ProcDriver_write_waddr;
+    p_ifc.wr_data = ProcDriver_write_wdata;
+    @(posedge p_ifc.clk);
+    p_ifc.wr_en   = 0;
+    p_ifc.wr_strb = 0;
+    p_ifc.wr_addr = 0;
+    p_ifc.wr_data = 0;
 endtask
 
 int num_words, num_trans;
-task ProcDriver::read_data(int start_addr, ref data_array_t data_q);
-    int num_words = data_q.size();
-    int num_trans = (num_words + 3) / 4;
+task ProcDriver_read_data();
+    num_words = data_q.size();        // Should be 4K / 0x1000?
+    num_trans = (num_words + 3) / 4;  // Should be 1K
     proc_lock.get(1);
     fork
         // Process 1 initiates read by setting rd_en HIGH and feeding addresses one per cycle
@@ -93,44 +76,58 @@ task ProcDriver::read_data(int start_addr, ref data_array_t data_q);
         begin
             $display("Set     %0d consecutive addresses BEGIN", num_trans);
             if (`DBG_PROCDRIVER) $display("Start reading at address %08x\n", start_addr);
-            @(vif.cbd);
+            @(posedge p_ifc.clk);
             for (int i = 0; i < num_trans; i++) begin
-                vif.cbd.rd_en   <= 1'b1;
+                p_ifc.rd_en = 1'b1;
                 // address increases by 8 every write
-                vif.cbd.rd_addr <= (start_addr + 8 * i);
-                @(vif.cbd);
+                p_ifc.rd_addr = (start_addr + 8 * i);
+                if (`DBG_PROCDRIVER) $display("[%0t] Set addr = %08x", $time, p_ifc.rd_addr);
+                @(posedge p_ifc.clk);
             end
-            vif.cbd.rd_en   <= 0;
-            vif.cbd.rd_addr <= 0;
+            p_ifc.rd_en   = 0;
+            p_ifc.rd_addr = 0;
             $display("Set %d consecutive addresses END", num_trans);  // 4027ns
         end
         begin
             $display("Offload %0d data chunks BEGIN", num_trans);  // 3002ns
             for (int i = 0; i < num_trans; i++) begin
-                wait (vif.cbd.rd_data_valid);
+                wait (p_ifc.rd_data_valid);
 
-                data_q[i*4] = vif.cbd.rd_data & 'hFFFF;
+                // VCS data ready same cycle as valid sig arrives
+                // Vvverilator data not ready until one cycle AFTER valid signal
+                // FIXME this is a bug, somebody needs to figure out why timing is different!!!
+                one_cy_delay_if_verilator();
+
+                if (`DBG_PROCDRIVER) $display("\n[%0t] FOO got data word %0x", $time, p_ifc.rd_data);
+
+                data_q[i*4] = p_ifc.rd_data & 'hFFFF;
                 if (`DBG_PROCDRIVER) $display("[%0t] -- 0 data_q[%04d] <= %0x", $time, i*4, data_q[i*4]);
+
                 if ((i * 4 + 1) < num_words) begin
-                    data_q[i*4+1] = (vif.cbd.rd_data & (('hFFFF) << 16)) >> 16;
+                    data_q[i*4+1] = (p_ifc.rd_data & (('hFFFF) << 16)) >> 16;
                     if (`DBG_PROCDRIVER) $display("[%0t] -- 1 data_q[%04d] <= %0x", $time, i*4+1, data_q[i*4+1]);
                 end
+
                 if ((i * 4 + 2) < num_words) begin
-                    data_q[i*4+2] = (vif.cbd.rd_data & (('hFFFF) << 32)) >> 32;
+                    data_q[i*4+2] = (p_ifc.rd_data & (('hFFFF) << 32)) >> 32;
                     if (`DBG_PROCDRIVER) $display("[%0t] -- 2 data_q[%04d] <= %0x", $time, i*4+2, data_q[i*4+2]);
                 end
+
                 if ((i * 4 + 3) < num_words) begin
-                    data_q[i*4+3] = (vif.cbd.rd_data & (('hFFFF) << 48)) >> 48;
-                    if (`DBG_PROCDRIVER) $display("[%0t] -- 3 data_q[%04d] <= %0x", $time, i*4+3, data_q[i*4+3]);
+                    data_q[i*4+3] = (p_ifc.rd_data & (('hFFFF) << 48)) >> 48;
+                    if (`DBG_PROCDRIVER)
+                      $display("[%0t] -- 3 data_q[%04d] <= %0x", $time, i*4+3, data_q[i*4+3]);
                 end
 
-                @(vif.cbd);
+                if (`DBG_PROCDRIVER) $display("");
+
+                // FIXME somebody needs to figure out why vcs and verilator are different here!!!
+                one_cy_delay_if_vcs();
             end
             $display("Offload %d data chunks END", num_trans);  // 4027ns
             $display("First output word is maybe...0x%04x",  data_q[0]);
         end
     join
-
-    repeat (10) @(vif.cbd);
+    repeat (10) @(posedge p_ifc.clk);
     proc_lock.put(1);
 endtask

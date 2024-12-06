@@ -71,36 +71,34 @@ interface axil_ifc #(
         input awprot
     );
 
-    clocking cbd @(posedge clk);
-        input clk;
+    modport driver(
+        input clk,
 
-        output awaddr;
-        input awready;
-        output awvalid;
+        output awaddr,
+        input awready,
+        output awvalid,
 
-        output wdata;
-        input wready;
-        output wvalid;
-        output wstrb;
+        output wdata,
+        input wready,
+        output wvalid,
+        output wstrb,
 
-        output bready;
-        input bresp;
-        input bvalid;
+        output bready,
+        input bresp,
+        input bvalid,
 
-        output araddr;
-        input arready;
-        output arvalid;
+        output araddr,
+        input arready,
+        output arvalid,
 
-        input rdata;
-        output rready;
-        input rresp;
-        input rvalid;
+        input rdata,
+        output rready,
+        input rresp,
+        input rvalid,
 
-        output arprot;
-        output awprot;
-    endclocking : cbd
-    modport driver(clocking cbd);
-
+        output arprot,
+        output awprot
+    );
 endinterface
 
 typedef virtual axil_ifc vAxilIfc;
