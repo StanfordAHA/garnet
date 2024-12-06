@@ -6,6 +6,7 @@ mkfile_dir := $(dir $(mkfile_path))
 garnet_dir := $(mkfile_dir)/../..
 gemstone_dir := $(realpath $(garnet_dir))/../gemstone
 netlist_dir := $(mkfile_dir)/netlist
+genesis_tb_dir := $(mkfile_dir)/genesis_tb
 glc_dir := $(garnet_dir)/global_controller
 APP_ARGS ?= +APP0=app0
 
@@ -17,6 +18,10 @@ TOOL ?= VCS
 export WAVEFORM ?= 0
 export WAVEFORM_GLB_ONLY ?= 0
 export SAIF ?= 0
+
+export USING_MATRIX_UNIT ?= 0
+export MU_DATAWIDTH ?= 16
+export OC_0 ?= 32 
 
 # -------------------------------------------------------------------
 # Compile Parameters
@@ -182,13 +187,17 @@ compile: INPUT_ARGS = $(DESIGN_FILES) $(TB_FILES) $(IP_FILES)
 compile:
 	$(COMPILE)
 
+generate:
+	Genesis2.pl -parse -generate -top top -input $(genesis_tb_dir)/top.svp -parameter top.using_matrix_unit=$(USING_MATRIX_UNIT) top.oc_0=$(OC_0) top.mu_datawidth=$(MU_DATAWIDTH)
+	mv genesis_verif/top.sv tb/top.sv
+
 .PHONY: run
 run: $(APP0_NAME)/bin/design_meta.json
 	@rm -rf *.txt; rm -rf ../../SPARSE_TESTS/batch_*
 	$(RUN) $(DUMP_ARGS) $(RUN_ARGS) $(APP_ARGS)
 
 .PHONY: sim
-sim: libcgra.so compile run
+sim: libcgra.so generate compile run
 
 # -------------------------------------------------------------------
 # GLS Compile

@@ -16,6 +16,7 @@
 //; my $glb_addr_width = parameter(NAME => 'glb_addr_width', VAL => 22, DOC => 'Width of glb_addr');
 //; my $num_glb_tiles = parameter(NAME => 'num_glb_tiles', VAL => 16, DOC => 'number of global buffer tiles');
 //; my $cgra_width = parameter(NAME => 'cgra_width', VAL => 32, DOC => 'cgra array width');
+//; my $cgra_width_including_io = parameter(NAME => 'cgra_width_including_io', VAL => 32, DOC => 'cgra array width + num IO tile columns west and east');
 
 module `mname` (
     input  logic                                clk_in,
@@ -35,7 +36,7 @@ module `mname` (
     output logic [`$num_glb_tiles-1`:0]         jtag_glb_clk_en_master, 
     output logic [`$num_glb_tiles-1`:0]         jtag_glb_clk_en_bank_master, 
     output logic [`$num_glb_tiles-1`:0]         jtag_glb_pcfg_broadcast_stall, 
-    output logic [`$cgra_width-1`:0]            jtag_cgra_stall, 
+    output logic [`$cgra_width_including_io-1`:0]             jtag_cgra_stall, 
 
     // global buffer configuration
     output logic                                jtag_glb_cfg_wr_en,
@@ -80,7 +81,7 @@ module `mname` (
 // clk control signal
 logic clk;
 logic clk_domain;
-logic [`$cgra_width-1`:0] stall, stall_bak;
+logic [`$cgra_width_including_io-1`:0] stall, stall_bak;
 logic [`$num_glb_tiles-1`:0] glb_pcfg_broadcast_stall;
 logic [`$num_glb_tiles-1`:0] glb_clk_en_master;
 logic [`$num_glb_tiles-1`:0] glb_clk_en_bank_master;
@@ -745,7 +746,7 @@ always @ (posedge clk or posedge reset_in) begin
                 axi_rd_en <= 0;
             end
             write_stall: begin
-                stall <= config_data_jtag_out[`$cgra_width-1`:0];
+                stall <= config_data_jtag_out[`$cgra_width_including_io-1`:0];
                 read <= 0;
                 write <= 0;
                 glb_write <= 0;

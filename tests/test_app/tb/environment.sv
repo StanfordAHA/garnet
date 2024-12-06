@@ -120,7 +120,7 @@ bit [NUM_GLB_TILES-1:0] tile_mask;
 e_glb_ctrl glb_ctrl;
 Config cfg;
 int group_start, num_groups;
-bit [NUM_CGRA_COLS-1:0] cgra_stall_mask;
+bit [NUM_CGRA_COLS_INCLUDING_IO-1:0] cgra_stall_mask;
 task Env_cgra_configure();
 
     realtime start_time, end_time;
@@ -151,14 +151,18 @@ task Env_cgra_configure();
              end_time - start_time);
 endtask
 
-function bit [NUM_CGRA_COLS-1:0] calculate_cgra_stall_mask(int start, int num);
+function bit [NUM_CGRA_COLS_INCLUDING_IO-1:0] calculate_cgra_stall_mask(int start, int num);
     calculate_cgra_stall_mask = '0;
     for (int i = 0; i < num; i++) begin
         calculate_cgra_stall_mask |= ((4'b1111) << ((start + i) * 4));
     end
+
+    if (NUM_CGRA_COLS_INCLUDING_IO != NUM_CGRA_COLS) begin
+        calculate_cgra_stall_mask = (calculate_cgra_stall_mask << 1) | 1'b1;
+    end
 endfunction
 
-bit [NUM_CGRA_COLS-1:0] stall_mask;
+bit [NUM_CGRA_COLS_INCLUDING_IO-1:0] stall_mask;
 bit [CGRA_AXI_DATA_WIDTH-1:0] Env_cgra_stall_data;
 bit [CGRA_AXI_DATA_WIDTH-1:0] Env_cgra_stall_wr_data;
 task Env_cgra_stall();
