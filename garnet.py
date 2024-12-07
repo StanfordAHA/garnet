@@ -182,12 +182,19 @@ class Garnet(Generator):
                 io_num = i % 2
                 cgra_row_num = int(i/2 + 1)
                 # Tie MSB(s) not driven by MU to GND
+                # MO: HACK for coordinates 
                 if (width_difference > 0):
-                    self.wire(Const(0), self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X00_Y{cgra_row_num:02X}"][cgra_track_width-width_difference:cgra_track_width])
-                self.wire(self.ports.mu2cgra[i], self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X00_Y{cgra_row_num:02X}"][:cgra_track_width-width_difference])
-                self.wire(self.ports.mu2cgra_valid, self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X00_Y{cgra_row_num:02X}_valid"])
+                #     self.wire(Const(0), self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X00_Y{cgra_row_num:02X}"][cgra_track_width-width_difference:cgra_track_width])
+                # self.wire(self.ports.mu2cgra[i], self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X00_Y{cgra_row_num:02X}"][:cgra_track_width-width_difference])
+                # self.wire(self.ports.mu2cgra_valid, self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X00_Y{cgra_row_num:02X}_valid"])
 
-                self.wire(self.cgra2mu_ready_and.ports[f"I{i}"], self.convert(self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X00_Y{cgra_row_num:02X}_ready"], magma.Bits[1]))
+                # self.wire(self.cgra2mu_ready_and.ports[f"I{i}"], self.convert(self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X00_Y{cgra_row_num:02X}_ready"], magma.Bits[1]))
+
+                   self.wire(Const(0), self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X03_Y{cgra_row_num:02X}"][cgra_track_width-width_difference:cgra_track_width])
+                self.wire(self.ports.mu2cgra[i], self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X03_Y{cgra_row_num:02X}"][:cgra_track_width-width_difference])
+                self.wire(self.ports.mu2cgra_valid, self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X03_Y{cgra_row_num:02X}_valid"])
+
+                self.wire(self.cgra2mu_ready_and.ports[f"I{i}"], self.convert(self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X03_Y{cgra_row_num:02X}_ready"], magma.Bits[1]))
 
             self.wire(self.convert(self.cgra2mu_ready_and.ports.O, magma.bit), self.ports.cgra2mu_ready)
 
@@ -835,7 +842,9 @@ def parse_args():
     from global_buffer.design.global_buffer_parameter import gen_global_buffer_params
 
     num_cgra_cols_including_io = args.width
-    if IOSide.West in io_sides:
+    # MO: Hack 
+    # if IOSide.West in io_sides:
+    if False:
         num_cgra_cols_including_io += 1
 
     args.glb_params = gen_global_buffer_params(
