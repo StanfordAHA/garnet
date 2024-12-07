@@ -2784,6 +2784,7 @@ if __name__ == "__main__":
     using_matrix_unit = args.using_matrix_unit
     give_north_io_sbs = args.give_north_io_sbs
 
+    #FIXME!!! Get rid of west side if remove_fabric_cols is true 
     if using_matrix_unit:
         io_sides = [IOSide.North, IOSide.West]
     else:

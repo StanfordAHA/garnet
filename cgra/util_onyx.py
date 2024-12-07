@@ -67,10 +67,8 @@ def get_actual_size(width: int, height: int, io_sides: List[IOSide]):
         width += 1
     if IOSide.South in io_sides:
         height += 1
-
-    # MO Hack: temporarily commenting this out 
-    # if IOSide.West in io_sides:
-    #     width += 1
+    if IOSide.West in io_sides:
+        width += 1
 
     return width, height
 
@@ -439,7 +437,7 @@ def create_cgra(width: int, height: int, io_sides: List[IOSide],
                 core = MU2F_IOCoreReadyValid(matrix_unit_data_width=17, tile_array_data_width=17, num_ios=2, allow_bypass=False)
 
 
-              # MO: Hack: fabric columns that get removed 
+            # MO: Hack: fabric columns that get removed 
             elif remove_fabric_cols and x in range(num_fabric_cols_removed-1) and not(y in range(y_min)):
                  core = None 
 

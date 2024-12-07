@@ -835,16 +835,17 @@ def parse_args():
     if args.standalone:
         io_sides = [IOSide.None_]
     elif args.using_matrix_unit:
-        io_sides = [IOSide.North, IOSide.West]
+        # MO: Temporary HACK for now 
+        #io_sides = [IOSide.North, IOSide.West]
+        io_sides = [IOSide.North]
     else:
         io_sides = [IOSide.North] 
 
     from global_buffer.design.global_buffer_parameter import gen_global_buffer_params
 
     num_cgra_cols_including_io = args.width
-    # MO: Hack 
-    # if IOSide.West in io_sides:
-    if False:
+  
+    if IOSide.West in io_sides:
         num_cgra_cols_including_io += 1
 
     args.glb_params = gen_global_buffer_params(
