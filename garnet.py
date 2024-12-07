@@ -18,13 +18,20 @@ from lassen.sim import PE_fc as lassen_fc
 
 from daemon.daemon import GarnetDaemon
 
+from gemstone.common.configurable import ConfigurationType
+
+from gemstone.generator.from_magma import FromMagma
+import mantle 
+from gemstone.generator.const import Const
+from canal.util import IOSide
+
 # set the debug mode to false to speed up construction
 from gemstone.generator.generator import set_debug_mode
 set_debug_mode(False)
 
 
 class Garnet(Generator):
-    def __init__(self, args):
+    def __init__(self, args, io_sides):
         super().__init__()
 
         # Check consistency of @standalone and @interconnect_only parameters. If
@@ -51,12 +58,9 @@ class Garnet(Generator):
         self.harden_flush = args.harden_flush
         self.pipeline_config_interval = args.pipeline_config_interval
 
-        # only north side has IO
-        from canal.util import IOSide
-        if args.standalone:
-            io_side = IOSide.None_
-        else:
-            io_side = IOSide.North
+    
+
+        self.io_sides = io_sides
 
         # Build GLB unless interconnect_only (CGRA-only) requested
 
@@ -69,7 +73,7 @@ class Garnet(Generator):
         from cgra.util import get_cc_args, create_cgra
         width = args.width
         height = args.height
-        cc_args = get_cc_args(width, height, io_side, args)
+        cc_args = get_cc_args(width, height, io_sides, args)
         self.interconnect = create_cgra(**cc_args.__dict__)
 
         # Add stall, flush, and configuration ports
@@ -80,7 +84,7 @@ class Garnet(Generator):
         # make multiple flush ports
         if self.harden_flush:
             stall_port_pass(self.interconnect, port_name="flush", port_width=1,
-                            col_offset=args.glb_params.num_cols_per_group, pipeline=True)
+                            col_offset=args.glb_params.num_cols_per_group, pipeline=True, io_sides=io_sides)
         # make multiple configuration ports
         config_port_pass(self.interconnect, pipeline=args.config_port_pipeline)
 
@@ -93,7 +97,7 @@ class Garnet(Generator):
         # GLB ports (or not)
 
         if not args.interconnect_only:
-            self.build_glb_ports(args.glb_params)
+            self.build_glb_ports(args.glb_params, args.using_matrix_unit, args.mu_datawidth, args.dense_only)
         else:
             self.lift_ports(self.width, self.config_data_width, self.harden_flush)
 
@@ -118,6 +122,7 @@ class Garnet(Generator):
         glb_tile_mem_size = 2 ** ((glb_params.bank_addr_width - 10)
                                   + math.ceil(math.log(glb_params.banks_per_tile, 2)))
 
+       
         self.global_controller = GlobalController(
             addr_width=self.config_addr_width,
             data_width=self.config_data_width,
@@ -125,6 +130,7 @@ class Garnet(Generator):
             axi_data_width=axi_data_width,
             num_glb_tiles=glb_params.num_glb_tiles,
             cgra_width=glb_params.num_cgra_cols,
+            cgra_width_including_io=glb_params.num_cgra_cols_including_io,
             glb_addr_width=glb_params.glb_addr_width,
             glb_tile_mem_size=glb_tile_mem_size,
             block_axi_addr_width=glb_params.axi_addr_width,
@@ -132,7 +138,7 @@ class Garnet(Generator):
 
         self.global_buffer = GlobalBufferMagma(glb_params)
 
-    def build_glb_ports(self, glb_params):
+    def build_glb_ports(self, glb_params, using_matrix_unit, mu_datawidth, dense_only):
 
         # axi_data_width must be same as cgra config_data_width
         axi_addr_width = self.glb_params.cgra_axi_addr_width
@@ -149,8 +155,42 @@ class Garnet(Generator):
                 glb_params.glb_addr_width, glb_params.bank_data_width).slave,
             axi4_slave=AXI4LiteIfc(axi_addr_width, axi_data_width).slave,
             interrupt=magma.Out(magma.Bit),
-            cgra_running_clk_out=magma.Out(magma.Clock),
+            cgra_running_clk_out=magma.Out(magma.Clock)
         )
+
+        # Add MU interface, if necessary 
+        if using_matrix_unit:
+            num_output_channels = self.height * 2
+            self.add_ports(            
+                mu2cgra=magma.In(magma.Array[(num_output_channels, magma.Bits[mu_datawidth])]),
+                mu2cgra_valid=magma.In(magma.Bit),
+                cgra2mu_ready=magma.Out(magma.Bit)
+            )
+
+            # Matrix unit <-> interconnnect ports connection        
+            self.cgra2mu_ready_and = FromMagma(mantle.DefineAnd(height=num_output_channels, width=1))
+
+            if dense_only:
+                cgra_track_width = 16
+            else:
+                cgra_track_width = 17
+
+            assert mu_datawidth < cgra_track_width, "Matrix unit datawidth must be < CGRA track width" 
+            width_difference = cgra_track_width - mu_datawidth
+
+            for i in range(num_output_channels):
+                io_num = i % 2
+                cgra_row_num = int(i/2 + 1)
+                # Tie MSB(s) not driven by MU to GND
+                if (width_difference > 0):
+                    self.wire(Const(0), self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X00_Y{cgra_row_num:02X}"][cgra_track_width-width_difference:cgra_track_width])
+                self.wire(self.ports.mu2cgra[i], self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X00_Y{cgra_row_num:02X}"][:cgra_track_width-width_difference])
+                self.wire(self.ports.mu2cgra_valid, self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X00_Y{cgra_row_num:02X}_valid"])
+
+                self.wire(self.cgra2mu_ready_and.ports[f"I{i}"], self.convert(self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X00_Y{cgra_row_num:02X}_ready"], magma.Bits[1]))
+
+            self.wire(self.convert(self.cgra2mu_ready_and.ports.O, magma.bit), self.ports.cgra2mu_ready)
+
 
         # top <-> global controller ports connection
         self.wire(self.ports.clk_in, self.global_controller.ports.clk_in)
@@ -197,7 +237,7 @@ class Garnet(Generator):
             self.add_port(name, self.interconnect.ports[name].type())
             self.wire(self.ports[name], self.interconnect.ports[name])
 
-        from gemstone.common.configurable import ConfigurationType
+        #from gemstone.common.configurable import ConfigurationType
         self.add_ports(
             clk=magma.In(magma.Clock),
             reset=magma.In(magma.AsyncReset),
@@ -286,9 +326,6 @@ class Garnet(Generator):
             # bit_width = 16 if blk_id[0] == "I" else 1
             name = f"glb2io_{bit_width}_X{x:02X}_Y{y:02X}"
             input_interface.append(name)
-            print("WEIRD NAME ASSERTION")
-            print(name)
-            print(self.interconnect.interface())
             assert name in self.interconnect.interface()
             blk_name = id_to_name[blk_id]
             if "reset" in blk_name:
@@ -533,8 +570,9 @@ class Garnet(Generator):
             fixed_io = None
         else:
             from global_buffer.io_placement import place_io_blk
-            fixed_io = place_io_blk(id_to_name, app_dir)
+            fixed_io = place_io_blk(id_to_name, app_dir, self.io_sides)
 
+        west_in_io_sides = IOSide.West in self.io_sides
         placement, routing, id_to_name = \
             archipelago.pnr(self.interconnect, (netlist, bus),
                             load_only=load_only,
@@ -544,7 +582,8 @@ class Garnet(Generator):
                             compact=compact,
                             harden_flush=self.harden_flush,
                             pipeline_config_interval=self.pipeline_config_interval,
-                            pes_with_packed_ponds=self.pes_with_packed_ponds)
+                            pes_with_packed_ponds=self.pes_with_packed_ponds,
+                            west_in_io_sides=west_in_io_sides)
 
         return placement, routing, id_to_name, instance_to_instr, netlist, bus
 
@@ -761,6 +800,8 @@ def parse_args():
     parser.add_argument("--dual-port", action="store_true")
     parser.add_argument("--rf", action="store_true")
     parser.add_argument("--dac-exp", action="store_true")
+    parser.add_argument("--using-matrix-unit", action="store_true")
+    parser.add_argument("--mu-datawidth", type=int, default=16)
 
     # Daemon choices are maybe ['help', 'launch', 'use', 'kill', 'force', 'status', 'wait']
     parser.add_argument('--daemon', type=str, choices=GarnetDaemon.choices, default=None)
@@ -780,10 +821,29 @@ def parse_args():
         arch = read_arch(args.pe)
         args.pe_fc = wrapped_peak_class(arch, debug=True)
 
+
+    # If using MU, West and North have IO, else only north side has IO
+    from canal.util import IOSide
+    if args.standalone:
+        io_sides = [IOSide.None_]
+    elif args.using_matrix_unit:
+        io_sides = [IOSide.North, IOSide.West]
+    else:
+        io_sides = [IOSide.North] 
+
     from global_buffer.design.global_buffer_parameter import gen_global_buffer_params
+
+    num_cgra_cols_including_io = args.width
+    if IOSide.West in io_sides:
+        num_cgra_cols_including_io += 1
+
     args.glb_params = gen_global_buffer_params(
         num_glb_tiles=args.width // 2,
         num_cgra_cols=args.width,
+
+        # Matrix unit hack 
+        num_cgra_cols_including_io=num_cgra_cols_including_io,
+
         # NOTE: We assume num_prr is same as num_glb_tiles
         num_prr=args.width // 2,
         glb_tile_mem_size=args.glb_tile_mem_size,
@@ -795,7 +855,7 @@ def parse_args():
         config_port_pipeline=args.config_port_pipeline)
 
     # for a in vars(args).items(): print(f'arg {a} has type {type(a)}')
-    return args
+    return args, io_sides
 
 
 def build_verilog(args, garnet):
@@ -910,7 +970,7 @@ def reschedule_pipelined_app(app):
     )
 
 def main():
-    args = parse_args()
+    args, io_sides = parse_args()
     GarnetDaemon.initial_check(args)
     # "launch" => ERROR if daemon exists already else continue
     # "force"  => kill existing daemon, then continue
@@ -931,7 +991,7 @@ def main():
     print(f'--- GARNET-BUILD ({app_name(args.app)})')
 
     # BUILD GARNET
-    garnet = Garnet(args)
+    garnet = Garnet(args, io_sides)
 
     # VERILOG
     # FIXME verilog could be inside daemon loop (below). Right?

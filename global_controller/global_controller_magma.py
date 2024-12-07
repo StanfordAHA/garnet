@@ -17,7 +17,7 @@ class GlobalController(Generator):
 
     def __init__(self, addr_width=32, data_width=32,
                  axi_addr_width=12, axi_data_width=32,
-                 num_glb_tiles=16, cgra_width=32, glb_addr_width=22,
+                 num_glb_tiles=16, cgra_width=32, cgra_width_including_io = 32, glb_addr_width=22,
                  block_axi_addr_width=12, glb_tile_mem_size=256, group_size=4):
         super().__init__()
 
@@ -27,6 +27,7 @@ class GlobalController(Generator):
         self.axi_data_width = axi_data_width
         self.num_glb_tiles = num_glb_tiles
         self.cgra_width = cgra_width
+        self.cgra_width_including_io = cgra_width_including_io
         self.glb_addr_width = glb_addr_width
         self.glb_tile_mem_size = glb_tile_mem_size
         self.block_axi_addr_width = block_axi_addr_width
@@ -42,7 +43,7 @@ class GlobalController(Generator):
 
             clk_out=magma.Out(magma.Clock),
             reset_out=magma.Out(magma.AsyncReset),
-            cgra_stall=magma.Out(magma.Bits[self.cgra_width]),
+            cgra_stall=magma.Out(magma.Bits[self.cgra_width_including_io]),
             glb_clk_en_master=magma.Out(magma.Bits[self.num_glb_tiles]),
             glb_clk_en_bank_master=magma.Out(magma.Bits[self.num_glb_tiles]),
             glb_pcfg_broadcast_stall=magma.Out(magma.Bits[self.num_glb_tiles]),
@@ -77,6 +78,7 @@ class GlobalController(Generator):
                                         axi_data_width=self.axi_data_width,
                                         num_glb_tiles=self.num_glb_tiles,
                                         cgra_width=self.cgra_width,
+                                        cgra_width_including_io=self.cgra_width_including_io,
                                         glb_tile_mem_size=self.glb_tile_mem_size,
                                         block_axi_addr_width=self.block_axi_addr_width)
 

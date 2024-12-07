@@ -23,8 +23,8 @@ class GlobalBuffer(Generator):
         self.flush_crossbar_sel = self.input("flush_crossbar_sel", clog2(
             self._params.num_glb_tiles) * self._params.num_groups)
         self.reset = self.reset("reset")
-        self.cgra_stall_in = self.input("cgra_stall_in", self._params.num_cgra_cols)
-        self.cgra_stall = self.output("cgra_stall", self._params.num_cgra_cols)
+        self.cgra_stall_in = self.input("cgra_stall_in", self._params.num_cgra_cols_including_io)
+        self.cgra_stall = self.output("cgra_stall", self._params.num_cgra_cols_including_io)
 
         self.proc_wr_en = self.input("proc_wr_en", 1)
         self.proc_wr_strb = self.input("proc_wr_strb", self._params.bank_strb_width)

@@ -9,6 +9,7 @@ from memory_core.crddrop_core import CrdDropCore
 from memory_core.crdhold_core import CrdHoldCore
 from memory_core.fake_pe_core import FakePECore
 from memory_core.io_core_rv import IOCoreReadyValid
+from memory_core.mu2f_io_core_rv import MU2F_IOCoreReadyValid
 from memory_core.repeat_core import RepeatCore
 from memory_core.repeat_signal_generator_core import RepeatSignalGeneratorCore
 from memory_core.write_scanner_core import WriteScannerCore
@@ -59,15 +60,16 @@ import magma as m
 from peak import family
 
 
-def get_actual_size(width: int, height: int, io_sides: IOSide):
-    if io_sides & IOSide.North:
+def get_actual_size(width: int, height: int, io_sides: List[IOSide]):
+    if IOSide.North in io_sides:
         height += 1
-    if io_sides & IOSide.East:
+    if IOSide.East in io_sides:
         width += 1
-    if io_sides & IOSide.South:
+    if IOSide.South in io_sides:
         height += 1
-    if io_sides & IOSide.West:
+    if IOSide.West in io_sides:
         width += 1
+
     return width, height
 
 
@@ -86,6 +88,7 @@ def get_cc_args(width, height, io_sides, garnet_args):
     args.width = width
     args.height = height
     args.io_sides = io_sides
+    
 
     # Derive cc_args from relevant garnet_args
     args.reg_addr_width = args.config_addr_reg_width
@@ -126,7 +129,7 @@ def get_cc_args(width, height, io_sides, garnet_args):
 #     return create_cgra(**cc_args.__dict__)
 
 
-def create_cgra(width: int, height: int, io_sides: IOSide,
+def create_cgra(width: int, height: int, io_sides: List[IOSide],
                 add_reg: bool = True,
                 mem_ratio: Tuple[int, int] = (1, 4),
                 reg_addr_width: int = 8,
@@ -135,6 +138,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 num_tracks: int = 5,
                 add_pd: bool = True,
                 use_sim_sram: bool = True,
+                using_matrix_unit: bool = False,
                 hi_lo_tile_id: bool = True,
                 pass_through_clk: bool = True,
                 tile_layout_option: int = 0,  # 0: column-based, 1: row-based
@@ -178,7 +182,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
     track_length = 1
 
     fifo_depth = 2
-
+    
     # if tech_map == 'intel':
     #     tm = Intel_Tech_Map(depth=mem_depth, width=macro_width)
     # else:
@@ -415,6 +419,8 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 core = None
             elif x in range(x_max + 1, width) and y in range(y_max + 1, height):
                 core = None
+            elif using_matrix_unit and x in range(x_min):
+                core = MU2F_IOCoreReadyValid(matrix_unit_data_width=17, tile_array_data_width=17, num_ios=2, allow_bypass=False)
             elif x in range(x_min) \
                     or x in range(x_max + 1, width) \
                     or y in range(y_min) \
@@ -454,7 +460,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                         if add_pond:
                             additional_core[(x, y)] = PondCore(gate_flush=not harden_flush, ready_valid=ready_valid)
 
-            cores[(x, y)] = core
+            cores[(x, y)] = core            
 
     def create_core(xx: int, yy: int):
         return cores[(xx, yy)]
@@ -490,7 +496,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
     outputs = set()
     for core in cores.values():
         # Skip IO cores.
-        if core is None or isinstance(core, IOCoreValid) or isinstance(core, IOCoreReadyValid):
+        if core is None or isinstance(core, IOCoreValid) or isinstance(core, IOCoreReadyValid) or isinstance(core, MU2F_IOCoreReadyValid):
             continue
         inputs |= {i.qualified_name() for i in core.inputs()}
         outputs |= {o.qualified_name() for o in core.outputs()}
@@ -567,11 +573,15 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
 
     bit_width_str = 17 if ready_valid else 16
     track_list = list(range(num_tracks))
+
+
     io_in = {"f2io_1": [0], f"f2io_{bit_width_str}": [0]}
-    io_out = {"io2f_1": track_list, f"io2f_{bit_width_str}": track_list}
+    io_out = {"io2f_1": track_list, f"io2f_{bit_width_str}": track_list, f"io2f_{bit_width_str}_T0": [0], f"io2f_{bit_width_str}_T1": [1], 
+                                                    f"io2f_{bit_width_str}_T2": [2], f"io2f_{bit_width_str}_T3": [3], f"io2f_{bit_width_str}_T4": [4]}
+
 
     for bit_width in bit_widths:
-        if io_sides & IOSide.None_:
+        if IOSide.None_ in io_sides:
             io_conn = None
         else:
             io_conn = {"in": io_in, "out": io_out}
@@ -596,6 +606,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                                 lift_ports=standalone,
                                 stall_signal_width=1,
                                 ready_valid=ready_valid)
+
     if hi_lo_tile_id:
         tile_id_physical(interconnect)
     if add_pd:
