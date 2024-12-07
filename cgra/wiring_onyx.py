@@ -99,7 +99,9 @@ def glb_interconnect_wiring(garnet):
             cfg_rd_en_port_name = f"cgra_cfg_g2f_cfg_rd_en_{i}_{j}"
             cfg_wr_en_port_name = f"cgra_cfg_g2f_cfg_wr_en_{i}_{j}"
    
-            if IOSide.West in garnet.io_sides:
+            #if IOSide.West in garnet.io_sides:
+            # MO: hack 
+            if False:
                 # Also wire I/O tile column to leftmost glb tile
                 if i == 0 and j == 0:
                     garnet.wire(garnet.global_buffer.ports[cfg_data_port_name],
@@ -135,7 +137,9 @@ def glb_interconnect_wiring(garnet):
     for i in range(num_glb_tiles):
         data_bit_width = 17 if garnet.ready_valid else 16
         for j in range(col_per_glb): 
-            if IOSide.West in garnet.io_sides:
+            # MO: HACK 
+            #if IOSide.West in garnet.io_sides:
+            if False in garnet.io_sides:
                 x = i * col_per_glb + j + 1  
             else:
                 x = i * col_per_glb + j 

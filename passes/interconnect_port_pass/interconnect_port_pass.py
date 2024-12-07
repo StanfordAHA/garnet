@@ -71,7 +71,10 @@ def stall_port_pass(interconnect: Interconnect, port_name: str, port_width=1, co
         column = [entry for entry in column if port_name in entry.ports]
         # wire configuration ports to first tile in column every col_offset
         # Shift everything right by 1 if have West IO tiles (only applies to flush)
-        dividend_index = max(0, i-1) if IOSide.West in io_sides else i
+
+        # MO: hack
+        dividend_index = 0
+        #dividend_index = max(0, i-1) if IOSide.West in io_sides else i
 
         in_port = interconnect.ports[port_name][(dividend_index // col_offset) 
                   * port_width:((dividend_index // col_offset) + 1) * port_width]

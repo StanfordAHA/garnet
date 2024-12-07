@@ -62,13 +62,15 @@ from peak import family
 
 def get_actual_size(width: int, height: int, io_sides: List[IOSide]):
     if IOSide.North in io_sides:
-        height += 1
+        height += 1    
     if IOSide.East in io_sides:
         width += 1
     if IOSide.South in io_sides:
         height += 1
-    if IOSide.West in io_sides:
-        width += 1
+
+    # MO Hack: temporarily commenting this out 
+    # if IOSide.West in io_sides:
+    #     width += 1
 
     return width, height
 
@@ -402,6 +404,11 @@ def create_cgra(width: int, height: int, io_sides: List[IOSide],
 
     intercore_mapping = None
 
+
+    # MO: Temporary hack 
+    num_fabric_cols_removed = 4
+    remove_fabric_cols = True 
+
     for x in range(width):
         # Only update the altcore if it had been used actually.
         if altcore_used:
@@ -420,8 +427,22 @@ def create_cgra(width: int, height: int, io_sides: List[IOSide],
                 core = None
             elif x in range(x_max + 1, width) and y in range(y_max + 1, height):
                 core = None
-            elif using_matrix_unit and x in range(x_min):
+
+
+            elif not(remove_fabric_cols) and using_matrix_unit and x in range(x_min):
                 core = MU2F_IOCoreReadyValid(matrix_unit_data_width=17, tile_array_data_width=17, num_ios=2, allow_bypass=False)
+
+            # elif using_matrix_unit and x in range(x_min):
+            #     core = MU2F_IOCoreReadyValid(matrix_unit_data_width=17, tile_array_data_width=17, num_ios=2, allow_bypass=False)
+
+            elif remove_fabric_cols and using_matrix_unit and x == num_fabric_cols_removed-1 and not(y in range(y_min)):
+                core = MU2F_IOCoreReadyValid(matrix_unit_data_width=17, tile_array_data_width=17, num_ios=2, allow_bypass=False)
+
+
+              # MO: Hack: fabric columns that get removed 
+            elif remove_fabric_cols and x in range(num_fabric_cols_removed-1) and not(y in range(y_min)):
+                 core = None 
+
             elif x in range(x_min) \
                     or x in range(x_max + 1, width) \
                     or y in range(y_min) \
@@ -433,6 +454,8 @@ def create_cgra(width: int, height: int, io_sides: List[IOSide],
                                        config_data_width=config_data_width)
                 else:
                     core = IOCore()
+
+
             else:
                 # now override this...to just use the altcore list to not waste space
                 if altcore is not None:
@@ -462,6 +485,10 @@ def create_cgra(width: int, height: int, io_sides: List[IOSide],
                             additional_core[(x, y)] = PondCore(gate_flush=not harden_flush, ready_valid=ready_valid)
 
             cores[(x, y)] = core            
+
+    for x in range(width):
+        for y in range(height):
+            print(f"core at x: {x}, y: {y} is {cores[(x, y)]}")  
 
     def create_core(xx: int, yy: int):
         return cores[(xx, yy)]
