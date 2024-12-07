@@ -73,6 +73,7 @@ class GlobalBufferParams:
     # architecture parameters
     num_prr: int = 16
     num_cgra_cols: int = 32
+    num_cgra_cols_including_io: int = 32
     num_glb_tiles: int = 16
     num_cols_per_group: int = 4
     banks_per_tile: int = 2
@@ -190,6 +191,7 @@ def gen_global_buffer_params(**kwargs):
     num_prr = kwargs.pop('num_prr', 16)
     num_glb_tiles = kwargs.pop('num_glb_tiles', 16)
     num_cgra_cols = kwargs.pop('num_cgra_cols', 32)
+    num_cgra_cols_including_io = kwargs.pop('num_cgra_cols_including_io', 32)
     glb_tile_mem_size = kwargs.pop('glb_tile_mem_size', 256)
     bank_data_width = kwargs.pop('bank_data_width', 64)
     banks_per_tile = kwargs.pop('banks_per_tile', 2)
@@ -231,6 +233,7 @@ def gen_global_buffer_params(**kwargs):
     params = GlobalBufferParams(num_prr=num_prr,
                                 num_glb_tiles=num_glb_tiles,
                                 num_cgra_cols=num_cgra_cols,
+                                num_cgra_cols_including_io=num_cgra_cols_including_io,
                                 banks_per_tile=banks_per_tile,
                                 bank_data_width=bank_data_width,
                                 bank_addr_width=bank_addr_width,

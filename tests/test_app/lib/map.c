@@ -147,7 +147,15 @@ int glb_map(void *kernel_, int dpr_enabled) {
         int num_io_tiles = io_info->num_io_tiles;
         for (int j = 0; j < num_io_tiles; j++) {
             io_tile_info = get_io_tile_info(io_info, j);
-            tile = (group_start * GROUP_SIZE + io_tile_info->pos.x) / 2;
+            const char *west_io_env_var = "WEST_IN_IO_SIDES";
+            char *west_io_value = getenv(west_io_env_var);
+            if (west_io_value != NULL && strcmp(west_io_value, "1") == 0) {
+                printf("Input placement shifted right by one\n");
+                tile = (group_start * GROUP_SIZE + (io_tile_info->pos.x - 1)) / 2;
+            } else {
+                tile = (group_start * GROUP_SIZE + io_tile_info->pos.x) / 2;
+            }
+            printf("Group start: %d, pos x: %d\n", group_start, io_tile_info->pos.x);
             io_tile_info->tile = tile;
             io_tile_info->start_addr = (io_tile_info->start_addr << CGRA_BYTE_OFFSET) + ((tile * 2) << BANK_ADDR_WIDTH);
             printf("Mapping input_%0d_block_%0d to global buffer\n", i, j);
@@ -165,7 +173,16 @@ int glb_map(void *kernel_, int dpr_enabled) {
         int num_io_tiles = io_info->num_io_tiles;
         for (int j = 0; j < num_io_tiles; j++) {
             io_tile_info = get_io_tile_info(io_info, j);
-            tile = (group_start * GROUP_SIZE + io_tile_info->pos.x) / 2;
+
+            const char *west_io_env_var = "WEST_IN_IO_SIDES";
+            char *west_io_value = getenv(west_io_env_var);
+            if (west_io_value != NULL && strcmp(west_io_value, "1") == 0) {
+                printf("Output placement shifted right by one\n");
+                tile = (group_start * GROUP_SIZE + (io_tile_info->pos.x - 1)) / 2;
+            } else {
+                tile = (group_start * GROUP_SIZE + io_tile_info->pos.x) / 2;
+            }
+           
             io_tile_info->tile = tile;
             io_tile_info->start_addr =
                 (io_tile_info->start_addr << CGRA_BYTE_OFFSET) + ((tile * 2 + 1) << BANK_ADDR_WIDTH);
@@ -328,7 +345,17 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         data_stride[i] = data_stride[i] << CGRA_BYTE_OFFSET;
     }
 
-    if (io_tile_info->pos.x % 2 == 0)
+    int modulo_check;  
+    const char *west_io_env_var = "WEST_IN_IO_SIDES";
+    char *west_io_value = getenv(west_io_env_var);
+    if (west_io_value != NULL && strcmp(west_io_value, "1") == 0) {
+        printf("I/O bank select shifted right by one\n");
+        modulo_check = 1;
+    } else {
+        modulo_check = 0;
+    }
+
+    if (io_tile_info->pos.x % 2 == modulo_check)
         mux_sel = 0b01;
     else
         mux_sel = 0b10;

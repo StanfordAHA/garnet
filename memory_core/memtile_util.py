@@ -20,6 +20,7 @@ from gemstone.common.util import compress_config_data
 from lake.top.extract_tile_info import *
 from archipelago import pnr
 import time
+#from mu2f_io_core_rv import MU2F_IOCoreReadyValid
 
 
 ONYX_PORT_REMAP = {
@@ -92,7 +93,7 @@ class LakeCoreBase(ConfigurableCore):
         '''
         # pass (autoflake flags this as an error if uncommented)
 
-    def wrap_lake_core(self):
+    def wrap_lake_core(self, skip_control_signals=False):
         # Typedefs for ease
         if self.data_width:
             TData = magma.Bits[self.data_width]
@@ -193,32 +194,43 @@ class LakeCoreBase(ConfigurableCore):
         )
 
         # put a 1-bit register and a mux to select the control signals
+  
         for control_signal, width in control_signals:
             if control_signal == "flush" and not self.__gate_flush:
                 continue
+            
+            # Skip these steps for MU2F IO Core 
             if width == 1:
-                mux = MuxWrapper(2, 1, name=f"{control_signal}_sel")
-                reg_value_name = f"{control_signal}_reg_value"
-                reg_sel_name = f"{control_signal}_reg_sel"
-                self.add_config(reg_value_name, 1)
-                self.add_config(reg_sel_name, 1)
-                self.wire(mux.ports.I[0], self.ports[control_signal])
-                self.wire(mux.ports.I[1], self.registers[reg_value_name].ports.O)
-                self.wire(mux.ports.S, self.registers[reg_sel_name].ports.O)
-                # 0 is the default wire, which takes from the routing network
-                self.wire(mux.ports.O[0], self.underlying.ports[control_signal][0])
-            else:
-                for i in range(width):
-                    mux = MuxWrapper(2, 1, name=f"{control_signal}_{i}_sel")
-                    reg_value_name = f"{control_signal}_{i}_reg_value"
-                    reg_sel_name = f"{control_signal}_{i}_reg_sel"
+                if skip_control_signals:
+                    self.wire(self.convert(self.ports[control_signal], magma.Bits[1]), self.underlying.ports[control_signal])
+                else: 
+                    mux = MuxWrapper(2, 1, name=f"{control_signal}_sel")
+                    reg_value_name = f"{control_signal}_reg_value"
+                    reg_sel_name = f"{control_signal}_reg_sel"
                     self.add_config(reg_value_name, 1)
                     self.add_config(reg_sel_name, 1)
-                    self.wire(mux.ports.I[0], self.ports[f"{control_signal}_{i}"])
+                    self.wire(mux.ports.I[0], self.ports[control_signal])
                     self.wire(mux.ports.I[1], self.registers[reg_value_name].ports.O)
                     self.wire(mux.ports.S, self.registers[reg_sel_name].ports.O)
                     # 0 is the default wire, which takes from the routing network
-                    self.wire(mux.ports.O[0], self.underlying.ports[control_signal][i])
+                    self.wire(mux.ports.O[0], self.underlying.ports[control_signal][0])
+
+                
+            else: 
+                for i in range(width):
+                    if skip_control_signals:
+                        self.wire(self.underlying.ports[control_signal][i], self.convert(self.ports[f"{control_signal}_{i}"], magma.Bits[1]))
+                    else:
+                        mux = MuxWrapper(2, 1, name=f"{control_signal}_{i}_sel")
+                        reg_value_name = f"{control_signal}_{i}_reg_value"
+                        reg_sel_name = f"{control_signal}_{i}_reg_sel"
+                        self.add_config(reg_value_name, 1)
+                        self.add_config(reg_sel_name, 1)
+                        self.wire(mux.ports.I[0], self.ports[f"{control_signal}_{i}"])
+                        self.wire(mux.ports.I[1], self.registers[reg_value_name].ports.O)
+                        self.wire(mux.ports.S, self.registers[reg_sel_name].ports.O)
+                        # 0 is the default wire, which takes from the routing network
+                        self.wire(mux.ports.O[0], self.underlying.ports[control_signal][i])
 
         # Wire the other signals up...
         for pname, pdir, expl_arr, ind, uname, full_bus in other_signals:
@@ -491,7 +503,7 @@ class NetlistBuilder():
 
     def __init__(self, interconnect: Interconnect = None, cwd=None,
                  harden_flush=False,
-                 combined=False, pnr_only=False) -> None:
+                 combined=False, pnr_only=False, west_in_io_sides=False) -> None:
         # self._registered_cores = {}
         self._netlist = {}
         self._bus = {}
@@ -523,6 +535,7 @@ class NetlistBuilder():
         self.tag_to_port_remap = {}
         self.combined = combined
         self.pnr_only = pnr_only
+        self.west_in_io_sides = west_in_io_sides
 
     def reset(self):
         self._netlist = {}
@@ -583,7 +596,6 @@ class NetlistBuilder():
 
 
         core_remapping = None
-        print_diag = False
 
         # Choose the core combiner if the resource is in there...
         # if cc_core_supported is not None and core in cc_core_supported:
@@ -591,7 +603,6 @@ class NetlistBuilder():
             tag = self.core_to_tag[core]
             # tag = cc_core.pnr_info().get_tag_name()
             core_remapping = self.tag_to_port_remap[tag][core]
-            print_diag = True
             # cc_core.set_runtime_mode(core)
         elif core == "register":
             tag = "r"
@@ -636,8 +647,6 @@ class NetlistBuilder():
             tag = core.pnr_info().tag_name
 
         ret_str = f"{tag}{self._core_num}"
-        if print_diag:
-            print(f"Did this on: {ret_str}")
         if flushable:
             self._flushable.append(ret_str)
         self._cores.append(ret_str)
@@ -653,7 +662,7 @@ class NetlistBuilder():
 
     def add_connections_dict(self, connection_dict, defer_placement=False):
         for conn_block_name, connections_list in connection_dict.items():
-            print(f"Adding connection block: {conn_block_name}")
+            #print(f"Adding connection block: {conn_block_name}")
             assert isinstance(connections_list, list), f"Expecting list of connections at: {conn_block_name}"
             self.add_connections(connections_list, defer_placement=defer_placement)
 
@@ -738,10 +747,10 @@ class NetlistBuilder():
                         continue
                     # print(signal_name)
                     # print(self._core_remappings[mapped_core])
-                    print("Printing signal name")
-                    print(signal_name)
-                    print(mapped_core)
-                    print(self._core_remappings[mapped_core])
+                    # print("Printing signal name")
+                    # print(signal_name)
+                    # print(mapped_core)
+                    # print(self._core_remappings[mapped_core])
                     assert signal_name in self._core_remappings[mapped_core]
                     remapped_sig = self._core_remappings[mapped_core][signal_name]
                     self._netlist[conn_name][i] = (mapped_core, remapped_sig)
@@ -770,7 +779,7 @@ class NetlistBuilder():
                                                 cwd=self._cwd,
                                                 harden_flush=self.harden_flush,
                                                 fixed_pos=fixed_io,
-                                                sparse=True)
+                                                sparse=True, west_in_io_sides=self.west_in_io_sides)
         self._placement_up_to_date = True
 
     def get_route_config(self):
