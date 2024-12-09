@@ -140,6 +140,7 @@ def create_cgra(width: int, height: int, io_sides: List[IOSide],
                 use_sim_sram: bool = True,
                 using_matrix_unit: bool = False,
                 give_north_io_sbs: bool = False,
+                num_fabric_cols_removed: int = 0,
                 hi_lo_tile_id: bool = True,
                 pass_through_clk: bool = True,
                 tile_layout_option: int = 0,  # 0: column-based, 1: row-based
@@ -399,13 +400,9 @@ def create_cgra(width: int, height: int, io_sides: List[IOSide],
     altcore_ind = 0
     altcorelen = len(altcore) if altcore is not None else 0
     altcore_used = False
-
     intercore_mapping = None
 
-
-    # MO: Temporary hack 
-    num_fabric_cols_removed = 4
-    remove_fabric_cols = True 
+    remove_fabric_cols = num_fabric_cols_removed > 0
 
     for x in range(width):
         # Only update the altcore if it had been used actually.
@@ -436,8 +433,6 @@ def create_cgra(width: int, height: int, io_sides: List[IOSide],
             elif remove_fabric_cols and using_matrix_unit and x == num_fabric_cols_removed-1 and not(y in range(y_min)):
                 core = MU2F_IOCoreReadyValid(matrix_unit_data_width=17, tile_array_data_width=17, num_ios=2, allow_bypass=False)
 
-
-            # MO: Hack: fabric columns that get removed 
             elif remove_fabric_cols and x in range(num_fabric_cols_removed-1) and not(y in range(y_min)):
                  core = None 
 
@@ -484,9 +479,9 @@ def create_cgra(width: int, height: int, io_sides: List[IOSide],
 
             cores[(x, y)] = core            
 
-    for x in range(width):
-        for y in range(height):
-            print(f"core at x: {x}, y: {y} is {cores[(x, y)]}")  
+    # for x in range(width):
+    #     for y in range(height):
+    #         print(f"core at x: {x}, y: {y} is {cores[(x, y)]}")  
 
     def create_core(xx: int, yy: int):
         return cores[(xx, yy)]
@@ -639,6 +634,7 @@ def create_cgra(width: int, height: int, io_sides: List[IOSide],
                                          io_sides=io_sides,
                                          io_conn=io_conn,
                                          give_north_io_sbs=give_north_io_sbs,
+                                         num_fabric_cols_removed=num_fabric_cols_removed,
                                          additional_core_fn=create_additional_core,
                                          inter_core_connection=inter_core_connection)
         ics[bit_width] = ic
