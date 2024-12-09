@@ -2739,6 +2739,7 @@ if __name__ == "__main__":
     parser.add_argument('--mem_block_size', type=int, default=2048)
     parser.add_argument('--using-matrix-unit', action="store_true")
     parser.add_argument('--give-north-io-sbs', action="store_true")
+    parser.add_argument("--num-fabric-cols-removed", default=0, type=int)
 
     args = parser.parse_args()
     bespoke = args.bespoke
@@ -2783,10 +2784,13 @@ if __name__ == "__main__":
     mem_block_size = args.mem_block_size
     using_matrix_unit = args.using_matrix_unit
     give_north_io_sbs = args.give_north_io_sbs
+    num_fabric_cols_removed = args.num_fabric_cols_removed
 
-    #FIXME!!! Get rid of west side if remove_fabric_cols is true 
     if using_matrix_unit:
-        io_sides = [IOSide.North, IOSide.West]
+        if num_fabric_cols_removed == 0:
+            io_sides = [IOSide.North, IOSide.West]
+        else:
+            io_sides = [IOSide.North]
     else:
         io_sides = [IOSide.North]
 
