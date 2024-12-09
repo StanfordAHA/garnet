@@ -3,6 +3,7 @@
 package global_buffer_param;
 localparam int NUM_PRR = 4;
 localparam int NUM_CGRA_COLS = 8;
+localparam int NUM_CGRA_COLS_INCLUDING_IO = 8;
 localparam int NUM_GLB_TILES = 4;
 localparam int NUM_COLS_PER_GROUP = 4;
 localparam int BANKS_PER_TILE = 2;

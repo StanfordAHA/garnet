@@ -1,0 +1,90 @@
+{
+  "IOs": {
+    "inputs": [
+      {
+        "bitwidth": 16,
+        "datafile": "hw_input_stencil.raw",
+        "name": "hw_input_stencil",
+        "shape": [
+          64,
+          64
+        ],
+        "io_tiles": [
+          {
+            "name": "io16in_hw_input_stencil_op_hcompute_hw_input_global_wrapper_stencil_read_0",
+            "addr": {
+              "cycle_starting_addr": [
+                0
+              ],
+              "cycle_stride": [
+                1
+              ],
+              "dimensionality": 1,
+              "extent": [
+                4096
+              ],
+              "read_data_starting_addr": [
+                0
+              ],
+              "read_data_stride": [
+                1
+              ]
+            },
+            "mode": "STATIC",
+            "x_pos": 0,
+            "y_pos": 0
+          }
+        ]
+      }
+    ],
+    "outputs": [
+      {
+        "bitwidth": 16,
+        "datafile": "hw_output.raw",
+        "name": "hw_output_stencil",
+        "shape": [
+          64,
+          64
+        ],
+        "io_tiles": [
+          {
+            "name": "io16_hw_output_stencil_op_hcompute_hw_output_stencil_write_0",
+            "addr": {
+              "cycle_starting_addr": [
+                4
+              ],
+              "cycle_stride": [
+                1
+              ],
+              "dimensionality": 1,
+              "extent": [
+                4096
+              ],
+              "write_data_starting_addr": [
+                0
+              ],
+              "write_data_stride": [
+                1
+              ]
+            },
+            "mode": "VALID",
+            "x_pos": 1,
+            "y_pos": 0,
+            "valid_name": "hw_output_stencil"
+          }
+        ]
+      }
+    ]
+  },
+  "testing": {
+    "interleaved_input": [
+      "input.pgm"
+    ],
+    "interleaved_output": [
+      "gold.pgm"
+    ],
+    "bitstream": "pointwise.bs",
+    "coreir": "design_top.json",
+    "placement": "design.place"
+  }
+}
