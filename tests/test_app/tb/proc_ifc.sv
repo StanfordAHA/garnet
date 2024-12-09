@@ -27,17 +27,17 @@ interface proc_ifc (
         output rd_data, rd_data_valid
     );
 
-    clocking cbd @(posedge clk);
-        input clk;
-        output wr_en, wr_strb, wr_addr, wr_data, rd_en, rd_addr;
-        input rd_data, rd_data_valid;
-    endclocking : cbd
-    modport driver(clocking cbd);
+    // clocking cbd @(posedge clk);
+    modport driver(
+        input clk,
+        output wr_en, wr_strb, wr_addr, wr_data, rd_en, rd_addr,
+        input rd_data, rd_data_valid
+    );
 
-    clocking cbm @(posedge clk);
-        input clk, wr_en, wr_strb, wr_addr, wr_data, rd_en, rd_addr, rd_data, rd_data_valid;
-    endclocking : cbm
-    modport monitor(clocking cbm);
+    // clocking cbm @(posedge clk);
+    modport monitor(
+        input clk, wr_en, wr_strb, wr_addr, wr_data, rd_en, rd_addr, rd_data, rd_data_valid
+    );
 
 endinterface
 

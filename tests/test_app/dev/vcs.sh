@@ -50,7 +50,7 @@ WAVEFORM_ARGS="-debug_access+all -kdb +vpi +memcbk +vcsd"
 WAVEFORM_ARGS="-debug_access+all +vpi +memcbk +vcsd"
 
 
-/bin/rm -rf deleteme/{simv,csrc,simv.daidir}
+test -d deleteme && /bin/rm -rf deleteme/{simv,csrc,simv.daidir}
 mv simv csrc/ simv.daidir/ deleteme
 
 # //  $WAVEFORM_ARGS
@@ -70,6 +70,7 @@ test -e vfiles/garnet.v || (cd vfiles; gunzip -c garnet.v.gz > garnet.v)
 test -d tb || ln -s ../tb
 test -e libcgra.so || ln -s vfiles/libcgra.so
 
+set -x
 /bin/bash \
 vcs -sverilog -timescale=1ps/1ps -full64 -ldflags "-Wl,--no-as-needed" \
   -CFLAGS "-m64" -top top +vcs+lic+wait +vcs+initreg+random +overlap \
