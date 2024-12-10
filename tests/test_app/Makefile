@@ -96,11 +96,11 @@ VCS = vcs \
 	  $(INPUT_ARGS)
 
 VERILATOR = verilator $(VERILATOR_WARN) --timing --cc --exe tb/CGRA.cpp \
+	  -Wno-fatal -Wno-UNOPTFLAT \
 	  --timescale 1ps/1ps \
 	  --top-module top \
 	  $(VERILATOR_WAVEFORM_ARGS) \
-	  $(INPUT_ARGS) \
-	  -F tb/tb_cgra.f
+	  $(INPUT_ARGS)
 
 XRUN = xrun \
 	   -64bit \
@@ -177,8 +177,8 @@ $(APP0_NAME)/bin/design_meta.json:
 	@echo '  test=apps/pointwise'
 	@echo '  app_path=/aha/Halide-to-Hardware/apps/hardware_benchmarks/$test'
 	@echo '  (cd $app_path; make clean)'
-	@echo '  aha map $test --chain'
-	@echo '  aha pnr $test --width 28 --height 16 --dense-only'
+	@echo '  aha map $$test --chain'
+	@echo '  aha pnr $$test --width 28 --height 16 --dense-only'
 	@exit 13
 
 .PHONY: compile

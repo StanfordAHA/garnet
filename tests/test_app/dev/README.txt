@@ -122,3 +122,28 @@ ls -ld genesis*
 cat genesis_clean.cmd
 source genesis_clean.cmd
 ls -ld genesis*
+
+
+==============================================================================
+VERILATOR INSTALL v5.028
+
+cd /usr/share
+test -e verilator && mv verilator verilator-old
+git clone https://github.com/verilator/verilator   # Only first time
+unsetenv VERILATOR_ROOT  # For csh; ignore error if on bash
+unset VERILATOR_ROOT  # For bash
+cd verilator
+git pull         # Make sure git repository is up-to-date
+git tag          # See what versions exist
+git checkout stable  # 5.03
+
+apt-get install autoconf  # needed for aha
+apt-get install bison     # needed for aha
+autoconf         # Create ./configure script
+./configure      # Configure and create Makefile
+make -j `nproc` |& tee make.log # Build Verilator itself (if error, try just 'make')
+# make
+/usr/share/verilator/bin/verilator --version
+(cd /usr/bin; ln -s /usr/share/verilator/bin/verilator)
+which verilator
+verilator --version
