@@ -1774,7 +1774,8 @@ def generate_inputs(app_name):
         tile = subprocess.run(["g++", "-o", "main", "main.cpp", 
                                "src/data_parser.cpp", 
                                "src/mem_op.cpp", 
-                               "src/activation.cpp"],
+                               "src/activation.cpp",
+                               "src/bf16_op.cpp"],
                                 cwd="/aha/Lego_v0")   
         tile.check_returncode()
     except subprocess.CalledProcessError as e:
@@ -1835,7 +1836,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
     else:
         output_name = "X"
 
-    output_matrix = numpy.zeros(output_dims, dtype=numpy.uint16)
+    output_matrix = numpy.zeros(output_dims, dtype=numpy.float32)
 
     # Transpose since the gold matrix may be filled in column order if the 
     # tensor ordering is 10
@@ -1849,6 +1850,12 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
             output_matrix[idx] = float(f.readline().strip())
     # transpose it back to the original shape
     output_matrix = numpy.transpose(output_matrix, rearrng_axis)
+
+    #parse the data type of the input and the output
+    with open(f"{matrix_tmp_dir}/dtype", "r") as f:
+        dtype = f.readline().strip()
+    if dtype == "bf16":
+        use_fp = True
     
     # elif 'mat_elemadd_relu.gv' in app_name:
     #     b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
@@ -3182,7 +3189,8 @@ if __name__ == "__main__":
 
                 for i in range(1): # change unroll to const 1
                     out_mat = MatrixGenerator(name=output_names[i], shape=None, sparsity=0.5,
-                                              format=output_formats[i], dump_dir=gold_dir, tensor=output_matrices[i], clean=clean)
+                                              format=output_formats[i], dump_dir=gold_dir, 
+                                              tensor=output_matrices[i], clean=clean, use_fp=use_fp)
 
                     if clean:
                         clean = False
