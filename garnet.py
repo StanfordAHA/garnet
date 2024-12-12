@@ -97,7 +97,7 @@ class Garnet(Generator):
         # GLB ports (or not)
 
         if not args.interconnect_only:
-            self.build_glb_ports(args.glb_params, args.using_matrix_unit, args.mu_datawidth, args.dense_only)
+            self.build_glb_ports(args.glb_params, args.using_matrix_unit, args.mu_datawidth, args.dense_only, args.num_fabric_cols_removed)
         else:
             self.lift_ports(self.width, self.config_data_width, self.harden_flush)
 
@@ -138,7 +138,7 @@ class Garnet(Generator):
 
         self.global_buffer = GlobalBufferMagma(glb_params)
 
-    def build_glb_ports(self, glb_params, using_matrix_unit, mu_datawidth, dense_only):
+    def build_glb_ports(self, glb_params, using_matrix_unit, mu_datawidth, dense_only, num_fabric_cols_removed):
 
         # axi_data_width must be same as cgra config_data_width
         axi_addr_width = self.glb_params.cgra_axi_addr_width
@@ -178,16 +178,20 @@ class Garnet(Generator):
             assert mu_datawidth < cgra_track_width, "Matrix unit datawidth must be < CGRA track width" 
             width_difference = cgra_track_width - mu_datawidth
 
+            mu_io_tile_col = max(num_fabric_cols_removed - 1, 0)
+
             for i in range(num_output_channels):
                 io_num = i % 2
                 cgra_row_num = int(i/2 + 1)
+                
                 # Tie MSB(s) not driven by MU to GND
                 if (width_difference > 0):
-                    self.wire(Const(0), self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X00_Y{cgra_row_num:02X}"][cgra_track_width-width_difference:cgra_track_width])
-                self.wire(self.ports.mu2cgra[i], self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X00_Y{cgra_row_num:02X}"][:cgra_track_width-width_difference])
-                self.wire(self.ports.mu2cgra_valid, self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X00_Y{cgra_row_num:02X}_valid"])
+                   self.wire(Const(0), self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{mu_io_tile_col:02X}_Y{cgra_row_num:02X}"][cgra_track_width-width_difference:cgra_track_width])
 
-                self.wire(self.cgra2mu_ready_and.ports[f"I{i}"], self.convert(self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X00_Y{cgra_row_num:02X}_ready"], magma.Bits[1]))
+                self.wire(self.ports.mu2cgra[i], self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{mu_io_tile_col:02X}_Y{cgra_row_num:02X}"][:cgra_track_width-width_difference])
+                self.wire(self.ports.mu2cgra_valid, self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{mu_io_tile_col:02X}_Y{cgra_row_num:02X}_valid"])
+
+                self.wire(self.cgra2mu_ready_and.ports[f"I{i}"], self.convert(self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{mu_io_tile_col:02X}_Y{cgra_row_num:02X}_ready"], magma.Bits[1]))
 
             self.wire(self.convert(self.cgra2mu_ready_and.ports.O, magma.bit), self.ports.cgra2mu_ready)
 
@@ -807,6 +811,8 @@ def parse_args():
     parser.add_argument("--dac-exp", action="store_true")
     parser.add_argument("--using-matrix-unit", action="store_true")
     parser.add_argument("--mu-datawidth", type=int, default=16)
+    parser.add_argument("--give-north-io-sbs", action="store_true")
+    parser.add_argument("--num-fabric-cols-removed", type=int, default=0)
 
     # Daemon choices are maybe ['help', 'launch', 'use', 'kill', 'force', 'status', 'wait']
     parser.add_argument('--daemon', type=str, choices=GarnetDaemon.choices, default=None)
@@ -832,13 +838,17 @@ def parse_args():
     if args.standalone:
         io_sides = [IOSide.None_]
     elif args.using_matrix_unit:
-        io_sides = [IOSide.North, IOSide.West]
+        if args.num_fabric_cols_removed == 0:
+            io_sides = [IOSide.North, IOSide.West]
+        else:
+            io_sides = [IOSide.North]
     else:
         io_sides = [IOSide.North] 
 
     from global_buffer.design.global_buffer_parameter import gen_global_buffer_params
 
     num_cgra_cols_including_io = args.width
+  
     if IOSide.West in io_sides:
         num_cgra_cols_including_io += 1
 
