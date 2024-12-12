@@ -100,7 +100,8 @@ VERILATOR = verilator $(VERILATOR_WARN) --timing --cc --exe tb/CGRA.cpp \
 	  --timescale 1ps/1ps \
 	  --top-module top \
 	  $(VERILATOR_WAVEFORM_ARGS) \
-	  $(INPUT_ARGS)
+	  $(INPUT_ARGS) \
+	  $(shell pwd)/libcgra.so
 
 XRUN = xrun \
 	   -64bit \
@@ -181,11 +182,16 @@ $(APP0_NAME)/bin/design_meta.json:
 	@echo '  aha pnr $$test --width 28 --height 16 --dense-only'
 	@exit 13
 
+# E.g. 'verilator ... garnet.v ...' => obj_dir/Vtop.mk => Vtop
 .PHONY: compile
 compile: COMPILE_ARGS = $(COMPILE_RTL_ARGS)
 compile: INPUT_ARGS = $(DESIGN_FILES) $(TB_FILES) $(IP_FILES)
 compile:
 	$(COMPILE)
+ifeq ($(TOOL), VERILATOR)
+	make -C obj_dir/ -f Vtop.mk
+endif
+
 
 generate:
 	Genesis2.pl -parse -generate -top top -input $(genesis_tb_dir)/top.svp -parameter top.using_matrix_unit=$(USING_MATRIX_UNIT) top.oc_0=$(OC_0) top.mu_datawidth=$(MU_DATAWIDTH)
