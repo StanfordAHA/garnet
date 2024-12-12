@@ -261,7 +261,7 @@ pointwise:
 	echo '+++PNR' `date +%H:%M`
 	aha pnr $(TESTNAME) --width 28 --height 16 --dense-only  # 2 minutes
 	echo '+++TEST' `date +%H:%M`
-	aha test $(TESTNAME)                                     # 1.5 hours
+	TOOL=VERILATOR aha test $(TESTNAME)                      # 1.5 hours
 	date
 
 # -------------------------------------------------------------------
