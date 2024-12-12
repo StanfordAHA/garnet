@@ -136,6 +136,10 @@ VERILATOR_VERSION = $(shell verilator --version |& cut -d " " -f2 || echo 0)
 GPP_VERSION = $(shell gcc -dumpversion)
 NPROC = $(shell nproc)
 
+# Because *some people* are stoopid
+.PHONY: verilator-setup
+verilator-setup: setup-verilator
+
 .PHONY: setup-verilator
 setup-verilator:
 ifeq ($(VERILATOR_VERSION), 5.028)

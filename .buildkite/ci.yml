@@ -63,9 +63,9 @@ steps:
   - docker exec $VCONTAINER /bin/bash -c "
       source /aha/bin/activate;
       source /cad/modules/tcl/init/sh;
-      echo '+++SETUP';
-      make -f garnet/tests/test_app/Makefile verilator-setup;
-      echo '+++POINTWISE TEST';
+      echo '+++ SETUP';
+      make -f garnet/tests/test_app/Makefile setup-verilator;
+      echo '+++ POINTWISE TEST';
       make -f garnet/tests/test_app/Makefile pointwise
     "
 
