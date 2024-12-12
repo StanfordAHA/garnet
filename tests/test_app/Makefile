@@ -220,10 +220,10 @@ $(APP0_NAME)/bin/design_meta.json:
 compile: COMPILE_ARGS = $(COMPILE_RTL_ARGS)
 compile: INPUT_ARGS = $(DESIGN_FILES) $(TB_FILES) $(IP_FILES)
 compile:
-	echo '+++COMPILE'; date
+	echo '+++ COMPILE' `date +%H:%M`
 	$(COMPILE)
 ifeq ($(TOOL), VERILATOR)
-	echo '+++MAKE VTOP'; date
+	echo '+++ MAKE VTOP' `date +%H:%M`
 	make -C obj_dir/ -f Vtop.mk
 endif
 
@@ -234,7 +234,7 @@ generate:
 
 .PHONY: run
 run: $(APP0_NAME)/bin/design_meta.json
-	echo '+++RUN'; date
+	echo '+++ RUN' `date +%H:%M`
 	@rm -rf *.txt; rm -rf ../../SPARSE_TESTS/batch_*
 	$(RUN) $(DUMP_ARGS) $(RUN_ARGS) $(APP_ARGS)
 
@@ -253,14 +253,14 @@ pointwise: APP_PATH = /aha/Halide-to-Hardware/apps/hardware_benchmarks/apps/poin
 pointwise: APP_ARGS = +APP0=/aha/Halide-to-Hardware/apps/hardware_benchmarks/apps/pointwise
 pointwise: GARNET_BUILD_PARMS = --width 28 --height 16 --verilog --use_sim_sram --glb_tile_mem_size 128 --dense-only
 pointwise:
-	echo '+++GARNET BUILD' `date +%H:%M`
+	echo '+++ GARNET BUILD' `date +%H:%M`
 	aha garnet $(GARNET_BUILD_PARMS)                         # 5 minutes (kiwi)
 	cd $(APP_PATH); make clean
-	echo '+++MAP' `date +%H:%M`
+	echo '+++ MAP' `date +%H:%M`
 	aha map $(TESTNAME) --chain                              # 1 minutes
-	echo '+++PNR' `date +%H:%M`
+	echo '+++ PNR' `date +%H:%M`
 	aha pnr $(TESTNAME) --width 28 --height 16 --dense-only  # 2 minutes
-	echo '+++TEST' `date +%H:%M`
+	echo '+++ TEST' `date +%H:%M`
 	TOOL=VERILATOR aha test $(TESTNAME)                      # 1.5 hours
 	date
 
