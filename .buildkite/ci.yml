@@ -1,5 +1,6 @@
 env:
   CONTAINER: deleteme_garnet_ci${BUILDKITE_BUILD_NUMBER}
+  VCONTAINER: deleteme_garnet_ci${BUILDKITE_BUILD_NUMBER}-verilator
   IMAGE: stanfordaha/garnet:latest
 
 steps:
@@ -69,6 +70,32 @@ steps:
       pwd; aha regress pr;
     "
 
+- label: ":wrench: Verilator"
+  agents:
+    docker: "true"
+  commands:
+
+  # In case prior step failed to clean up correctly
+  - docker ps
+  - docker kill $VCONTAINER || true
+  # Sometimes it takes a second to die...
+  - sleep 10
+  - docker ps
+
+  - docker run -id --name $VCONTAINER --rm -v /cad:/cad $IMAGE bash
+  - docker exec $VCONTAINER /bin/bash -c "rm -rf /aha/garnet"
+  - docker cp . $VCONTAINER:/aha/garnet
+
+  # For quick test of verilator-compatible code, remove "echo if TEST" below
+  - docker exec $VCONTAINER /bin/bash -c "
+      source /aha/bin/activate;
+      source /cad/modules/tcl/init/sh;
+      echo '+++SETUP';
+      make -f garnet/tests/test_app/Makefile verilator-setup;
+      echo '+++POINTWISE TEST';
+      make -f garnet/tests/test_app/Makefile pointwise
+    "
+
 # ALWAYS clean up regardless of test success or failure
 - wait: { continue_on_failure: true }
 
@@ -81,5 +108,6 @@ steps:
     docker: "true"
   commands:
   - set -x; docker kill $CONTAINER || true
+  - set -x; docker kill $VCONTAINER || true
   - set -x; .buildkite/bin/docker-clean.sh || true
   - set -x; yes | docker image prune -a --filter=label='description=garnet' || true
