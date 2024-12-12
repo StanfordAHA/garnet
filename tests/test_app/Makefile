@@ -125,6 +125,38 @@ XRUN = xrun \
 .phony: all
 all: sim
 
+# -------------------------------------------------------------------
+# INSTALL VERILATOR 5.028
+# -------------------------------------------------------------------
+
+# Want to see VERILATOR_VERSION 5.028 and GPP_VERSION 10
+# E.g. "Verilator 5.028 2024-08-21 rev v5.028-44-g1d79f5c59"
+
+VERILATOR_VERSION = $(shell verilator --version | cut -d " " -f2)
+GPP_VERSION = $(shell gcc -dumpversion)
+NPROC = $(shell nproc)
+
+.PHONY: setup-verilator
+setup-verilator:
+ifeq ($(VERILATOR_VERSION), 5.028)
+	echo Hooray looks like we have verilator 5.028 in our path already
+else
+	echo Update g++ if necessary
+	apt update; apt upgrade; apt install g++-10
+	cd /usr/bin; test -e g++ && mv g++ g++.orig; ln -s g++-10 g++
+	echo -------------------------------
+	echo These are missing in docker ATM 
+	apt-get install autoconf  # needed for verilator install
+	apt-get install bison     # needed for verilator install
+	echo -------------------------------
+	echo  INSTALL VERILATOR 5.028
+	cd /usr/share; test -d verilator || git clone https://github.com/verilator/verilator
+	cd /usr/share/verilator; git checkout v5.028
+	cd /usr/share/verilator; autoconf; ./configure; make -j $(NPROC)
+	test -e /usr/local/bin/verilator
+	cd /usr/local/bin; ln -s /usr/share/verilator/bin/verilator
+	verilator --version
+endif
 
 # -------------------------------------------------------------------
 # C API
