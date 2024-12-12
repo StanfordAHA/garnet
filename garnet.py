@@ -666,7 +666,12 @@ class Garnet(Generator):
 
         bitstream = []
         if end_to_end: self.write_zero_to_config_regs(bitstream)
-        bitstream += self.interconnect.get_route_bitstream(routing)
+        
+        # MO: Temporary DRV HACK 
+        dense_ready_valid = False 
+        bitstream += self.interconnect.get_route_bitstream(routing, use_fifo=dense_ready_valid)
+
+
         bitstream += self.fix_pond_flush_bug(placement, routing)
         bitstream += self.get_placement_bitstream(placement, id_to_name,
                                                   instance_to_instr)
