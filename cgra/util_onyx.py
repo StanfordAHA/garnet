@@ -62,7 +62,7 @@ from peak import family
 
 def get_actual_size(width: int, height: int, io_sides: List[IOSide]):
     if IOSide.North in io_sides:
-        height += 1
+        height += 1    
     if IOSide.East in io_sides:
         width += 1
     if IOSide.South in io_sides:
@@ -139,6 +139,8 @@ def create_cgra(width: int, height: int, io_sides: List[IOSide],
                 add_pd: bool = True,
                 use_sim_sram: bool = True,
                 using_matrix_unit: bool = False,
+                give_north_io_sbs: bool = False,
+                num_fabric_cols_removed: int = 0,
                 hi_lo_tile_id: bool = True,
                 pass_through_clk: bool = True,
                 tile_layout_option: int = 0,  # 0: column-based, 1: row-based
@@ -398,8 +400,9 @@ def create_cgra(width: int, height: int, io_sides: List[IOSide],
     altcore_ind = 0
     altcorelen = len(altcore) if altcore is not None else 0
     altcore_used = False
-
     intercore_mapping = None
+
+    remove_fabric_cols = num_fabric_cols_removed > 0
 
     for x in range(width):
         # Only update the altcore if it had been used actually.
@@ -419,8 +422,20 @@ def create_cgra(width: int, height: int, io_sides: List[IOSide],
                 core = None
             elif x in range(x_max + 1, width) and y in range(y_max + 1, height):
                 core = None
-            elif using_matrix_unit and x in range(x_min):
+
+
+            elif not(remove_fabric_cols) and using_matrix_unit and x in range(x_min):
                 core = MU2F_IOCoreReadyValid(matrix_unit_data_width=17, tile_array_data_width=17, num_ios=2, allow_bypass=False)
+
+            # elif using_matrix_unit and x in range(x_min):
+            #     core = MU2F_IOCoreReadyValid(matrix_unit_data_width=17, tile_array_data_width=17, num_ios=2, allow_bypass=False)
+
+            elif remove_fabric_cols and using_matrix_unit and x == num_fabric_cols_removed-1 and not(y in range(y_min)):
+                core = MU2F_IOCoreReadyValid(matrix_unit_data_width=17, tile_array_data_width=17, num_ios=2, allow_bypass=False)
+
+            elif remove_fabric_cols and x in range(num_fabric_cols_removed-1) and not(y in range(y_min)):
+                 core = None 
+
             elif x in range(x_min) \
                     or x in range(x_max + 1, width) \
                     or y in range(y_min) \
@@ -432,6 +447,8 @@ def create_cgra(width: int, height: int, io_sides: List[IOSide],
                                        config_data_width=config_data_width)
                 else:
                     core = IOCore()
+
+
             else:
                 # now override this...to just use the altcore list to not waste space
                 if altcore is not None:
@@ -462,6 +479,10 @@ def create_cgra(width: int, height: int, io_sides: List[IOSide],
 
             cores[(x, y)] = core            
 
+    # for x in range(width):
+    #     for y in range(height):
+    #         print(f"core at x: {x}, y: {y} is {cores[(x, y)]}")  
+
     def create_core(xx: int, yy: int):
         return cores[(xx, yy)]
 
@@ -491,15 +512,30 @@ def create_cgra(width: int, height: int, io_sides: List[IOSide],
         inter_core_connection_1 = {}
         inter_core_connection_16 = {}
 
+    def skip_sbs_for_core(core, give_north_io_sbs):
+        if give_north_io_sbs:
+            return isinstance(core, IOCoreValid) or isinstance(core, MU2F_IOCoreReadyValid)
+        else:
+            return isinstance(core, IOCoreValid) or isinstance(core, IOCoreReadyValid) or isinstance(core, MU2F_IOCoreReadyValid)
+
     # Specify input and output port connections.
     inputs = set()
     outputs = set()
     for core in cores.values():
         # Skip IO cores.
-        if core is None or isinstance(core, IOCoreValid) or isinstance(core, IOCoreReadyValid) or isinstance(core, MU2F_IOCoreReadyValid):
+        if core is None or skip_sbs_for_core(core, give_north_io_sbs):
             continue
-        inputs |= {i.qualified_name() for i in core.inputs()}
-        outputs |= {o.qualified_name() for o in core.outputs()}
+
+        for i in core.inputs():
+            # If giving north I/O SBs, don't connect glb ifc to switch box (still a point-to-point connection)
+            if not(give_north_io_sbs) or not("glb2io" in i.qualified_name()):
+                inputs |= {i.qualified_name()}
+       
+        for o in core.outputs():
+            # If giving north I/O SBs, don't connect glb ifc to switch box (still a point-to-point connection)
+            if not(give_north_io_sbs) or not("io2glb" in o.qualified_name()):
+                outputs |= {o.qualified_name()}
+    
 
     # inputs.remove("glb2io_1")
     # inputs.remove("glb2io_16")
@@ -597,6 +633,8 @@ def create_cgra(width: int, height: int, io_sides: List[IOSide],
                                          pipeline_regs,
                                          io_sides=io_sides,
                                          io_conn=io_conn,
+                                         give_north_io_sbs=give_north_io_sbs,
+                                         num_fabric_cols_removed=num_fabric_cols_removed,
                                          additional_core_fn=create_additional_core,
                                          inter_core_connection=inter_core_connection)
         ics[bit_width] = ic
@@ -605,7 +643,8 @@ def create_cgra(width: int, height: int, io_sides: List[IOSide],
                                 tile_id_width,
                                 lift_ports=standalone,
                                 stall_signal_width=1,
-                                ready_valid=ready_valid)
+                                ready_valid=ready_valid,
+                                give_north_io_sbs=give_north_io_sbs)
 
     if hi_lo_tile_id:
         tile_id_physical(interconnect)
