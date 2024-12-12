@@ -365,10 +365,13 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         // Point to the other bank if the input is stored in GLB
         if (io_tile_info->is_glb_input == 1) start_addr = start_addr + (1 << BANK_ADDR_WIDTH);
 
-        if (strcmp(io_tile_info->mode, "RV") == 0)
+        if (strcmp(io_tile_info->mode, "RV") == 0) {
+            printf("\nIO tiles are in READY-VALID mode\n");
             mode = LD_DMA_VALID_MODE_READY_VALID;
-        else
+        } else {
+            printf("\nIO tiles are in STATIC mode\n");
             mode = LD_DMA_VALID_MODE_STATIC;
+        }
         add_config(config_info,
                    (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_LD_DMA_CTRL_R,
                    ((0b01 << GLB_LD_DMA_CTRL_MODE_F_LSB) | (mode << GLB_LD_DMA_CTRL_VALID_MODE_F_LSB) |
@@ -414,10 +417,13 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
                    cycle_stride[i], data_stride[i]);
         }
     } else {
-        if (strcmp(io_tile_info->mode, "RV") == 0)
+        if (strcmp(io_tile_info->mode, "RV") == 0) {
+            printf("\nIO tiles are in READY-VALID mode\n"); 
             mode = ST_DMA_VALID_MODE_READY_VALID;
-        else
+        } else {
+             printf("\nIO tiles are in STATIC mode\n"); 
             mode = ST_DMA_VALID_MODE_VALID;
+        }
 
         // If use hacky padding then switch to valid mode
         if (use_padding || use_glb_tiling) mode = ST_DMA_VALID_MODE_STATIC;
