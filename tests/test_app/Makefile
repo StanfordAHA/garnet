@@ -132,7 +132,7 @@ all: sim
 # Want to see VERILATOR_VERSION 5.028 and GPP_VERSION 10
 # E.g. "Verilator 5.028 2024-08-21 rev v5.028-44-g1d79f5c59"
 
-VERILATOR_VERSION = $(shell verilator --version | cut -d " " -f2)
+VERILATOR_VERSION = $(shell verilator --version |& cut -d " " -f2 || echo 0)
 GPP_VERSION = $(shell gcc -dumpversion)
 NPROC = $(shell nproc)
 
@@ -142,18 +142,19 @@ ifeq ($(VERILATOR_VERSION), 5.028)
 	echo Hooray looks like we have verilator 5.028 in our path already
 else
 	echo Update g++ if necessary
-	apt update; apt upgrade; apt install g++-10
+	yes | (apt update; apt upgrade; apt install g++-10)
 	cd /usr/bin; test -e g++ && mv g++ g++.orig; ln -s g++-10 g++
 	echo -------------------------------
 	echo These are missing in docker ATM 
-	apt-get install autoconf  # needed for verilator install
-	apt-get install bison     # needed for verilator install
+	yes | apt-get install autoconf  # needed for verilator install
+	yes | apt-get install bison     # needed for verilator install
 	echo -------------------------------
 	echo  INSTALL VERILATOR 5.028
 	cd /usr/share; test -d verilator || git clone https://github.com/verilator/verilator
 	cd /usr/share/verilator; git checkout v5.028
-	cd /usr/share/verilator; autoconf; ./configure; make -j $(NPROC)
-	test -e /usr/local/bin/verilator
+	cd /usr/share/verilator; autoconf; ./configure
+	make -j $(NPROC) || echo ERROR
+	test -e /usr/local/bin/verilator && mv /usr/local/bin/verilator /usr/local/bin/verilator.orig || echo NOT YET
 	cd /usr/local/bin; ln -s /usr/share/verilator/bin/verilator
 	verilator --version
 endif
@@ -236,6 +237,25 @@ run: $(APP0_NAME)/bin/design_meta.json
 
 .PHONY: sim
 sim: libcgra.so generate compile run
+
+
+==============================================================================
+==============================================================================
+==============================================================================
+GARNET_BUILD_PARMS = -width 28 --height 16 --verilog --use_sim_sram \
+                     --glb_tile_mem_size 128 --dense-only
+
+APP_PATH = $(APP0_NAME)
+TESTNAME = apps/pointwise
+
+.PHONY: pointwise
+pointwise:
+	date; aha garnet $(GARNET_BUILD_PARMS)  # 8 minutes?
+	cd $(APP_PATH); make clean
+	date; aha map $(TESTNAME) --chain  # 10 minutes?
+	date; aha pnr $(TESTNAME) --width 28 --height 16 --dense-only  # 3 minutes?
+	date; aha test $(TESTNAME)
+	date
 
 # -------------------------------------------------------------------
 # GLS Compile
