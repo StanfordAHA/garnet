@@ -1229,9 +1229,18 @@ def create_netlist_info(
             ][0] += pond_reg_skipped[node]
 
     nodes_to_instrs = CreateInstrs(node_info).doit(pdag)
-    info["id_to_instrs"] = {
-        id: nodes_to_instrs[node] for node, id in nodes_to_ids.items()
-    }
+    
+    #TODO: Make the hack here?
+    # MO: Temporary DRV HACK
+    dense_ready_valid = True  
+    info["id_to_instrs"] = {}
+    for node, id in nodes_to_ids.items():
+        if dense_ready_valid and ("I" in id or "i" in id):
+            node_config_kwargs = {}
+            node_config_kwargs['ready_valid_mode'] = 1 
+            info["id_to_instrs"][id] = (1, node_config_kwargs) 
+        else:
+            info["id_to_instrs"][id] = nodes_to_instrs[node]
 
     info["instance_to_instrs"] = {
         info["id_to_name"][id]: instr
