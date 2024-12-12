@@ -145,7 +145,7 @@ setup-verilator:
 ifeq ($(VERILATOR_VERSION), 5.028)
 	echo Hooray looks like we have verilator 5.028 in our path already
 else
-	echo Update g++ if necessary
+	echo "+++ SETUP: Install g++-10, autoconf, bison"
 	yes | (apt update; apt upgrade; apt install g++-10)
 	cd /usr/bin; test -e g++ && mv g++ g++.orig; ln -s g++-10 g++
 	echo -------------------------------
@@ -153,11 +153,11 @@ else
 	yes | apt-get install autoconf  # needed for verilator install
 	yes | apt-get install bison     # needed for verilator install
 	echo -------------------------------
-	echo  INSTALL VERILATOR 5.028
+	echo "+++ SETUP: Install verilator 5.028"
 	cd /usr/share; test -d verilator || git clone https://github.com/verilator/verilator
 	cd /usr/share/verilator; git checkout v5.028
-	cd /usr/share/verilator; autoconf; ./configure
-	make -j $(NPROC) || echo ERROR
+	cd /usr/share/verilator; unset VERILATOR_ROOT; autoconf; ./configure
+	cd /usr/share/verilator; unset VERILATOR_ROOT; make -j $(NPROC) || echo ERROR
 	test -e /usr/local/bin/verilator && mv /usr/local/bin/verilator /usr/local/bin/verilator.orig || echo NOT YET
 	cd /usr/local/bin; ln -s /usr/share/verilator/bin/verilator
 	verilator --version
