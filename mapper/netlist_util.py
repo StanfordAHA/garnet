@@ -1232,7 +1232,7 @@ def create_netlist_info(
     
     #TODO: Make the hack here?
     # MO: Temporary DRV HACK
-    dense_ready_valid = True  
+    dense_ready_valid = False  
     info["id_to_instrs"] = {}
     for node, id in nodes_to_ids.items():
         if dense_ready_valid and ("I" in id or "i" in id):
