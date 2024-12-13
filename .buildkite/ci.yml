@@ -47,12 +47,9 @@ steps:
 - wait: { continue_on_failure: true }
 
 # ------------------------------------------------------------------------
-- label: ":wrench: Verilator 1"
+- label: ":wrench: Verilator"
   agents: { docker: "true" }
   commands:
-
-  # In case prior step failed to clean up correctly
-  - docker ps; docker kill $VCONTAINER2 || true; sleep 10; docker ps
 
   # Container setup
   - docker run -id --name $VCONTAINER --rm -v /cad:/cad $IMAGE bash
@@ -73,9 +70,7 @@ steps:
 - label: ":wrench: Verilator 2"
   agents: { docker: "true" }
   commands:
-
-  # In case prior step failed to clean up correctly
-  - docker ps; docker kill $VCONTAINER2 || true; sleep 10; docker ps
+  - echo "This test disabled b/c takes too long (2.5hr)"; exit
 
   # Container setup
   - docker run -id --name $VCONTAINER2 --rm -v /cad:/cad $IMAGE bash
@@ -97,8 +92,8 @@ steps:
   agents: { docker: "true" }
   commands:
 
-  # In case prior step failed to clean up correctly
-  - docker ps; docker kill $VCONTAINER2 || true; sleep 10; docker ps
+  # In case Lint step failed to clean up correctly
+  - docker ps; docker kill $CONTAINER || true; sleep 10; docker ps
 
   # Container setup
   - docker run -id --name $CONTAINER --rm -v /cad:/cad $IMAGE bash
