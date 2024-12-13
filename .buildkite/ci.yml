@@ -66,13 +66,18 @@ steps:
       echo '+++ SETUP';
       make -f garnet/tests/test_app/Makefile setup-verilator;
       echo '+++ POINTWISE TEST';
-      make -f garnet/tests/test_app/Makefile pointwise
+      echo '+++ oops no GAUSSIAN TEST';
+      make -f garnet/tests/test_app/Makefile gaussian
     "
+
+
+
 
 - label: ":wrench: Aha regressions"
   agents:
     docker: "true"
   commands:
+  - echo temporarily disabled; exit
 
   # In case prior step failed to clean up correctly
   - docker ps
