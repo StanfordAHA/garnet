@@ -242,7 +242,7 @@ run: $(APP0_NAME)/bin/design_meta.json
 	echo '--- MAKE RUN (Vtop)' `date +%H:%M`
 	@rm -rf *.txt; rm -rf ../../SPARSE_TESTS/batch_*
 	$(RUN) $(DUMP_ARGS) $(RUN_ARGS) $(APP_ARGS)
-	echo '--- PASSED maybe' `date +%H:%M`
+	echo '+++ PASSED maybe' `date +%H:%M`
 
 .PHONY: sim
 sim: libcgra.so generate compile run
