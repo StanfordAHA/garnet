@@ -168,6 +168,15 @@ endif
 # -------------------------------------------------------------------
 # C API
 # -------------------------------------------------------------------
+libcgra.so: $(shell find lib -type f) \
+            $(garnet_dir)/global_buffer/header/global_buffer_param.h \
+            $(garnet_dir)/global_buffer/header/glb.h \
+            $(garnet_dir)/global_controller/header/glc.h
+	gcc -Wno-error -Wall lib/*.c -I$(garnet_dir)/global_buffer/header -I$(garnet_dir)/global_controller/header -shared -o libcgra.so -fPIC
+
+# -------------------------------------------------------------------
+# Compile & Run
+# -------------------------------------------------------------------
 $(garnet_dir)/global_buffer/header/global_buffer_param.h:
 	@echo 'ERROR Oops oh no cannot find e.g. "global_buffer_param.h"'
 	@echo
@@ -177,14 +186,6 @@ $(garnet_dir)/global_buffer/header/global_buffer_param.h:
 	@echo
 	@exit 13
 
-# .PHONY: libcgra.so -- why is this phony?
-libcgra.so: $(shell find lib -type f) $(garnet_dir)/global_buffer/header/global_buffer_param.h $(garnet_dir)/global_buffer/header/glb.h $(garnet_dir)/global_controller/header/glc.h
-	gcc -Wno-error -Wall lib/*.c -I$(garnet_dir)/global_buffer/header -I$(garnet_dir)/global_controller/header -shared -o libcgra.so -fPIC
-
-
-# -------------------------------------------------------------------
-# Compile & Run
-# -------------------------------------------------------------------
 COMPILE_RTL_ARGS += +define+CLK_PERIOD=$(CLK_PERIOD)
 COMPILE_GLS_ARGS += +define+CLK_PERIOD=$(CLK_PERIOD)
 ifeq ($(TOOL), XCELIUM)
@@ -221,12 +222,11 @@ $(APP0_NAME)/bin/design_meta.json:
 	@echo '  aha pnr $$test --width 28 --height 16 --dense-only'
 	@exit 13
 
-# E.g. 'verilator ... garnet.v ...' => obj_dir/Vtop.mk => Vtop
 .PHONY: compile
 compile: COMPILE_ARGS = $(COMPILE_RTL_ARGS)
 compile: INPUT_ARGS = $(DESIGN_FILES) $(TB_FILES) $(IP_FILES)
 compile:
-	echo '--- MAKE COMPILE (verilator => Vtop.mk)' `date +%H:%M`
+	echo '--- MAKE COMPILE (verilator => Vtop.mk) or (vcs => simv)' `date +%H:%M`
 	$(COMPILE)
 ifeq ($(TOOL), VERILATOR)
 	echo '--- MAKE VTOP (make -f Vtop.mk => Vtop)' `date +%H:%M`
@@ -239,7 +239,7 @@ generate:
 
 .PHONY: run
 run: $(APP0_NAME)/bin/design_meta.json
-	echo '--- MAKE RUN (Vtop)' `date +%H:%M`
+	echo '--- MAKE RUN (e.g. Vtop or simv)' `date +%H:%M`
 	@rm -rf *.txt; rm -rf ../../SPARSE_TESTS/batch_*
 	$(RUN) $(DUMP_ARGS) $(RUN_ARGS) $(APP_ARGS)
 	echo '+++ PASSED maybe' `date +%H:%M`
