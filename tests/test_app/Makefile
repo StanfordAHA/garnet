@@ -145,7 +145,7 @@ setup-verilator:
 ifeq ($(VERILATOR_VERSION), 5.028)
 	echo Hooray looks like we have verilator 5.028 in our path already
 else
-	echo "+++ MAKE SETUP: Install g++-10, autoconf, bison, help2man"
+	echo "--- MAKE SETUP: Install g++-10, autoconf, bison, help2man"
 	yes | (apt update; apt upgrade; apt install g++-10)
 	cd /usr/bin; test -e g++ && mv g++ g++.orig; ln -s g++-10 g++
 	echo -------------------------------
@@ -154,7 +154,7 @@ else
 	yes | apt-get install bison
 	yes | apt-get install help2man
 	echo -------------------------------
-	echo "+++ MAKE SETUP: Install verilator 5.028"
+	echo "--- MAKE SETUP: Install verilator 5.028"
 	cd /usr/share; test -d verilator || git clone https://github.com/verilator/verilator
 	cd /usr/share/verilator; git checkout v5.028
 	cd /usr/share/verilator; unset VERILATOR_ROOT; autoconf; ./configure
@@ -226,13 +226,12 @@ $(APP0_NAME)/bin/design_meta.json:
 compile: COMPILE_ARGS = $(COMPILE_RTL_ARGS)
 compile: INPUT_ARGS = $(DESIGN_FILES) $(TB_FILES) $(IP_FILES)
 compile:
-	echo '+++ MAKE COMPILE' `date +%H:%M`
+	echo '--- MAKE COMPILE (verilator => Vtop.mk)' `date +%H:%M`
 	$(COMPILE)
 ifeq ($(TOOL), VERILATOR)
-	echo '+++ MAKE VTOP' `date +%H:%M`
+	echo '--- MAKE VTOP (make -f Vtop.mk => Vtop)' `date +%H:%M`
 	make -C obj_dir/ -f Vtop.mk
 endif
-
 
 generate:
 	Genesis2.pl -parse -generate -top top -input $(genesis_tb_dir)/top.svp -parameter top.using_matrix_unit=$(USING_MATRIX_UNIT) top.oc_0=$(OC_0) top.mu_datawidth=$(MU_DATAWIDTH)
@@ -240,9 +239,10 @@ generate:
 
 .PHONY: run
 run: $(APP0_NAME)/bin/design_meta.json
-	echo '+++ MAKE RUN' `date +%H:%M`
+	echo '--- MAKE RUN (Vtop)' `date +%H:%M`
 	@rm -rf *.txt; rm -rf ../../SPARSE_TESTS/batch_*
 	$(RUN) $(DUMP_ARGS) $(RUN_ARGS) $(APP_ARGS)
+	echo '--- PASSED maybe' `date +%H:%M`
 
 .PHONY: sim
 sim: libcgra.so generate compile run
@@ -259,14 +259,14 @@ pointwise: APP_PATH = /aha/Halide-to-Hardware/apps/hardware_benchmarks/apps/poin
 # pointwise: APP_ARGS = +APP0=/aha/Halide-to-Hardware/apps/hardware_benchmarks/apps/pointwise
 pointwise: GARNET_BUILD_PARMS = --width 28 --height 16 --verilog --use_sim_sram --glb_tile_mem_size 128 --dense-only
 pointwise:
-	echo '+++ MAKE POINTWISE: aha garnet' `date +%H:%M`
+	echo '--- MAKE POINTWISE: aha garnet' `date +%H:%M`
 	aha garnet $(GARNET_BUILD_PARMS)                         # 5 minutes (kiwi)
 	cd $(APP_PATH); make clean
-	echo '+++ MAKE POINTWISE: aha map' `date +%H:%M`
+	echo '--- MAKE POINTWISE: aha map' `date +%H:%M`
 	aha map $(TESTNAME) --chain                              # 1 minutes
-	echo '+++ MAKE POINTWISE: aha pnr' `date +%H:%M`
+	echo '--- MAKE POINTWISE: aha pnr' `date +%H:%M`
 	aha pnr $(TESTNAME) --width 28 --height 16 --dense-only  # 2 minutes
-	echo '+++ MAKE POINTWISE: aha test' `date +%H:%M`
+	echo '--- MAKE POINTWISE: aha test' `date +%H:%M`
 	TOOL=VERILATOR stdbuf -oL -eL aha test $(TESTNAME)       # 1.5 hours
 	date
 
