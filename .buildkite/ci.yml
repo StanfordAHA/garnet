@@ -6,6 +6,7 @@ env:
 
 steps:
 
+# ------------------------------------------------------------------------
 - label: "Get latest docker"
   agents:
     docker: "true"
@@ -14,6 +15,7 @@ steps:
 
 - wait
 
+# ------------------------------------------------------------------------
 # Lint step: check all python files for syntax consistency.
 - label: "Lint"
 
@@ -44,22 +46,20 @@ steps:
 
 - wait: { continue_on_failure: true }
 
+# ------------------------------------------------------------------------
 - label: ":wrench: Verilator 1"
   agents: { docker: "true" }
   commands:
 
   # In case prior step failed to clean up correctly
-  - docker ps
-  - docker kill $VCONTAINER || true
-  # Sometimes it takes a second to die...
-  - sleep 10
-  - docker ps
+  - docker ps; docker kill $VCONTAINER2 || true; sleep 10; docker ps
 
+  # Container setup
   - docker run -id --name $VCONTAINER --rm -v /cad:/cad $IMAGE bash
   - docker exec $VCONTAINER /bin/bash -c "rm -rf /aha/garnet"
   - docker cp . $VCONTAINER:/aha/garnet
 
-  # For quick test of verilator-compatible code, remove "echo if TEST" below
+  # Run the test
   - docker exec $VCONTAINER /bin/bash -c "
       source /aha/bin/activate;
       source /cad/modules/tcl/init/sh;
@@ -69,22 +69,20 @@ steps:
       make -f garnet/tests/test_app/Makefile gaussian
     "
 
+# ------------------------------------------------------------------------
 - label: ":wrench: Verilator 2"
   agents: { docker: "true" }
   commands:
 
   # In case prior step failed to clean up correctly
-  - docker ps
-  - docker kill $VCONTAINER2 || true
-  # Sometimes it takes a second to die...
-  - sleep 10
-  - docker ps
+  - docker ps; docker kill $VCONTAINER2 || true; sleep 10; docker ps
 
+  # Container setup
   - docker run -id --name $VCONTAINER2 --rm -v /cad:/cad $IMAGE bash
   - docker exec $VCONTAINER2 /bin/bash -c "rm -rf /aha/garnet"
   - docker cp . $VCONTAINER2:/aha/garnet
 
-  # For quick test of verilator-compatible code, remove "echo if TEST" below
+  # Run the test
   - docker exec $VCONTAINER2 /bin/bash -c "
       source /aha/bin/activate;
       source /cad/modules/tcl/init/sh;
@@ -94,32 +92,28 @@ steps:
       make -f garnet/tests/test_app/Makefile pointwise
     "
 
+# ------------------------------------------------------------------------
 - label: ":wrench: Aha regressions"
   agents: { docker: "true" }
   commands:
-  - echo temporarily disabled; exit
 
   # In case prior step failed to clean up correctly
-  - docker ps
-  - docker kill $CONTAINER || true
-  # Sometimes it takes a second to die...
-  - sleep 10
-  - docker ps
+  - docker ps; docker kill $VCONTAINER2 || true; sleep 10; docker ps
 
+  # Container setup
   - docker run -id --name $CONTAINER --rm -v /cad:/cad $IMAGE bash
   - docker exec $CONTAINER /bin/bash -c "rm -rf /aha/garnet"
   - docker cp . $CONTAINER:/aha/garnet
 
-  # For quick test of verilator-compatible code, remove "echo if TEST" below
+  # Run the test(s)
   - docker exec $CONTAINER /bin/bash -c "
       source /aha/bin/activate;
       source /cad/modules/tcl/init/sh;
       module load base incisive xcelium/19.03.003 vcs/Q-2020.03-SP2;
-      echo if TEST cp garnet/tests/test_app/dev/verilator-test.regress.py aha/util/regress.py;
-      echo aha regress pr;
       pwd; aha regress pr;
     "
 
+# ------------------------------------------------------------------------
 # ALWAYS clean up regardless of test success or failure
 - wait: { continue_on_failure: true }
 
@@ -128,8 +122,7 @@ steps:
 # 3. Delete any and all unused docker images.
 
 - label: "Delete container"
-  agents:
-    docker: "true"
+  agents: { docker: "true" }
   commands:
   - set -x; docker kill $CONTAINER || true
   - set -x; docker kill $VCONTAINER || true
