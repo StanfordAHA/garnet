@@ -132,7 +132,7 @@ all: sim
 # Want to see VERILATOR_VERSION 5.028 and GPP_VERSION 10
 # E.g. "Verilator 5.028 2024-08-21 rev v5.028-44-g1d79f5c59"
 
-VERILATOR_VERSION = $(shell verilator --version |& cut -d " " -f2 || echo 0)
+VERILATOR_VERSION ?= $(shell verilator --version |& cut -d " " -f2 || echo 0)
 GPP_VERSION = $(shell gcc -dumpversion)
 NPROC = $(shell nproc)
 
@@ -252,23 +252,51 @@ sim: libcgra.so generate compile run
 # Pointwise
 # -------------------------------------------------------------------
 
+CGRA_SIZE ?= --width 28 --height 16 --dense-only
+GARNET_BUILD_PARMS ?= $(CGRA_SIZE) --verilog --use_sim_sram --glb_tile_mem_size 128
+
+.PHONY: gaussian
+gaussian: CGRA_SIZE = --width 4 --height 16
+gaussian: GARNET_BUILD_PARMS = $(CGRA_SIZE) --verilog --use_sim_sram --glb_tile_mem_size 128
+gaussian: TESTNAME = apps/gaussian
+gaussian: APP_PATH = /aha/Halide-to-Hardware/apps/hardware_benchmarks/$(TESTNAME)
+gaussian:
+	make test
+
+.PHONY: test
+test:
+	echo '--- MAKE TEST $(TESTNAME): aha garnet' `date +%H:%M`
+	aha garnet $(GARNET_BUILD_PARMS)                         # 5 minutes (kiwi)
+	cd $(APP_PATH); make clean
+	echo '--- MAKE $(TESTNAME): aha map' `date +%H:%M`
+	aha map $(TESTNAME) --chain                              # 1 minutes
+	echo '--- MAKE $(TESTNAME): aha pnr' `date +%H:%M`
+	aha pnr $(TESTNAME) $(CGRA_SIZE)  # 2 minutes
+	echo '--- MAKE $(TESTNAME): aha test' `date +%H:%M`
+	TOOL=VERILATOR stdbuf -oL -eL aha test $(TESTNAME)       # 1.5 hours
+	date
+
+
+
 .PHONY: pointwise
 # pointwise: APP_PATH = $(APP0_NAME)
 pointwise: TESTNAME = apps/pointwise
 pointwise: APP_PATH = /aha/Halide-to-Hardware/apps/hardware_benchmarks/apps/pointwise
 # pointwise: APP_ARGS = +APP0=/aha/Halide-to-Hardware/apps/hardware_benchmarks/apps/pointwise
-pointwise: GARNET_BUILD_PARMS = --width 28 --height 16 --verilog --use_sim_sram --glb_tile_mem_size 128 --dense-only
 pointwise:
-	echo '--- MAKE POINTWISE: aha garnet' `date +%H:%M`
-	aha garnet $(GARNET_BUILD_PARMS)                         # 5 minutes (kiwi)
-	cd $(APP_PATH); make clean
-	echo '--- MAKE POINTWISE: aha map' `date +%H:%M`
-	aha map $(TESTNAME) --chain                              # 1 minutes
-	echo '--- MAKE POINTWISE: aha pnr' `date +%H:%M`
-	aha pnr $(TESTNAME) --width 28 --height 16 --dense-only  # 2 minutes
-	echo '--- MAKE POINTWISE: aha test' `date +%H:%M`
-	TOOL=VERILATOR stdbuf -oL -eL aha test $(TESTNAME)       # 1.5 hours
-	date
+	make test
+
+# 	echo '--- MAKE POINTWISE: aha garnet' `date +%H:%M`
+# 	aha garnet $(GARNET_BUILD_PARMS)                         # 5 minutes (kiwi)
+# 	cd $(APP_PATH); make clean
+# 	echo '--- MAKE POINTWISE: aha map' `date +%H:%M`
+# 	aha map $(TESTNAME) --chain                              # 1 minutes
+# 	echo '--- MAKE POINTWISE: aha pnr' `date +%H:%M`
+# 	aha pnr $(TESTNAME) --width 28 --height 16 --dense-only  # 2 minutes
+# 	echo '--- MAKE POINTWISE: aha test' `date +%H:%M`
+# 	TOOL=VERILATOR stdbuf -oL -eL aha test $(TESTNAME)       # 1.5 hours
+# 	date
+
 
 # -------------------------------------------------------------------
 # GLS Compile
