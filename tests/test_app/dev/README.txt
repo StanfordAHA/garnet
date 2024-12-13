@@ -1,15 +1,13 @@
 As of December 2024, we can now use verilator to simulate aha/garnet
-verilog. For the backstory, see
-garnet issue 1087 <https://github.com/StanfordAHA/garnet/issues/1087>
-and garnet pull request 1091 <https://github.com/StanfordAHA/garnet/pull/1091>
-
-We used Verilator version 5.028 for initial development.
+verilog. For the backstory, see issue 1087 and pull request 1091 in
+the garnet repo (github.com/StanfordAHA/garnet).
 
 This directory has cached versions of garnet verilog and `pointwise`
 collateral, so you can quickly run verilator testbench experiments
 locally on any machine, no docker containers or garnet-docker-builds
 required...
 
+We used Verilator version 5.028 for initial development.
 
 ==============================================================================
 NOTES
@@ -122,7 +120,6 @@ ls -ld genesis*
 cat genesis_clean.cmd
 source genesis_clean.cmd
 ls -ld genesis*
-
 
 ==============================================================================
 VERILATOR INSTALL v5.028
