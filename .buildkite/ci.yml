@@ -1,6 +1,7 @@
 env:
   CONTAINER: deleteme_garnet_ci${BUILDKITE_BUILD_NUMBER}
   VCONTAINER: deleteme_garnet_ci${BUILDKITE_BUILD_NUMBER}-verilator
+  VCONTAINER2: deleteme_garnet_ci${BUILDKITE_BUILD_NUMBER}-verilator2
   IMAGE: stanfordaha/garnet:latest
 
 steps:
@@ -43,9 +44,8 @@ steps:
 
 - wait: { continue_on_failure: true }
 
-- label: ":wrench: Verilator"
-  agents:
-    docker: "true"
+- label: ":wrench: Verilator 1"
+  agents: { docker: "true" }
   commands:
 
   # In case prior step failed to clean up correctly
@@ -65,17 +65,37 @@ steps:
       source /cad/modules/tcl/init/sh;
       echo '+++ SETUP';
       make -f garnet/tests/test_app/Makefile setup-verilator;
-      echo '+++ POINTWISE TEST';
-      echo '+++ oops no GAUSSIAN TEST';
+      echo '+++ GAUSSIAN TEST 4x16';
       make -f garnet/tests/test_app/Makefile gaussian
     "
 
+- label: ":wrench: Verilator 2"
+  agents: { docker: "true" }
+  commands:
 
+  # In case prior step failed to clean up correctly
+  - docker ps
+  - docker kill $VCONTAINER2 || true
+  # Sometimes it takes a second to die...
+  - sleep 10
+  - docker ps
 
+  - docker run -id --name $VCONTAINER2 --rm -v /cad:/cad $IMAGE bash
+  - docker exec $VCONTAINER2 /bin/bash -c "rm -rf /aha/garnet"
+  - docker cp . $VCONTAINER2:/aha/garnet
+
+  # For quick test of verilator-compatible code, remove "echo if TEST" below
+  - docker exec $VCONTAINER2 /bin/bash -c "
+      source /aha/bin/activate;
+      source /cad/modules/tcl/init/sh;
+      echo '+++ SETUP';
+      make -f garnet/tests/test_app/Makefile setup-verilator;
+      echo '+++ POINTWISE TEST 28x16';
+      make -f garnet/tests/test_app/Makefile pointwise
+    "
 
 - label: ":wrench: Aha regressions"
-  agents:
-    docker: "true"
+  agents: { docker: "true" }
   commands:
   - echo temporarily disabled; exit
 

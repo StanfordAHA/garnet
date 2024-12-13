@@ -249,19 +249,26 @@ sim: libcgra.so generate compile run
 
 
 # -------------------------------------------------------------------
-# Pointwise
+# Test(s)
 # -------------------------------------------------------------------
 
-CGRA_SIZE ?= --width 28 --height 16 --dense-only
+# Use little gaussian as default
+TESTNAME  ?= apps/gaussian
+CGRA_SIZE ?= --width 4 --height 16
 GARNET_BUILD_PARMS ?= $(CGRA_SIZE) --verilog --use_sim_sram --glb_tile_mem_size 128
+APP_PATH ?= /aha/Halide-to-Hardware/apps/hardware_benchmarks/$(TESTNAME)
 
 .PHONY: gaussian
 gaussian: CGRA_SIZE = --width 4 --height 16
-gaussian: GARNET_BUILD_PARMS = $(CGRA_SIZE) --verilog --use_sim_sram --glb_tile_mem_size 128
 gaussian: TESTNAME = apps/gaussian
-gaussian: APP_PATH = /aha/Halide-to-Hardware/apps/hardware_benchmarks/$(TESTNAME)
 gaussian: test
 
+.PHONY: pointwise
+pointwise: CGRA_SIZE = --width 28 --height 16 --dense-only
+pointwise: TESTNAME = apps/pointwise
+pointwise: test
+
+# FIXME for now "make test" is hardwired to VERILATOR but it really doesn't have to be that way
 .PHONY: test
 test:
 	echo '--- MAKE TEST $(TESTNAME): aha garnet' `date +%H:%M`
@@ -274,27 +281,6 @@ test:
 	echo '--- MAKE $(TESTNAME): aha test' `date +%H:%M`
 	TOOL=VERILATOR stdbuf -oL -eL aha test $(TESTNAME)       # 1.5 hours
 	date
-
-
-
-.PHONY: pointwise
-# pointwise: APP_PATH = $(APP0_NAME)
-pointwise: TESTNAME = apps/pointwise
-pointwise: APP_PATH = /aha/Halide-to-Hardware/apps/hardware_benchmarks/apps/pointwise
-# pointwise: APP_ARGS = +APP0=/aha/Halide-to-Hardware/apps/hardware_benchmarks/apps/pointwise
-pointwise: test
-
-# 	echo '--- MAKE POINTWISE: aha garnet' `date +%H:%M`
-# 	aha garnet $(GARNET_BUILD_PARMS)                         # 5 minutes (kiwi)
-# 	cd $(APP_PATH); make clean
-# 	echo '--- MAKE POINTWISE: aha map' `date +%H:%M`
-# 	aha map $(TESTNAME) --chain                              # 1 minutes
-# 	echo '--- MAKE POINTWISE: aha pnr' `date +%H:%M`
-# 	aha pnr $(TESTNAME) --width 28 --height 16 --dense-only  # 2 minutes
-# 	echo '--- MAKE POINTWISE: aha test' `date +%H:%M`
-# 	TOOL=VERILATOR stdbuf -oL -eL aha test $(TESTNAME)       # 1.5 hours
-# 	date
-
 
 # -------------------------------------------------------------------
 # GLS Compile
