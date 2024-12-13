@@ -200,7 +200,6 @@ else ifeq ($(TOOL), VCS)
     RUN = ./simv -lca -l $(RUN_LOG) +vcs+initmem+0 +vcs+initreg+0 -sv_lib libcgra -exitstatus
 else ifeq ($(TOOL), VERILATOR)
     COMPILE = $(VERILATOR)
-    # COMPILE_RTL_ARGS += +nospecify
     RUN = obj_dir/Vtop $(APP_ARGS)
 else
     @echo "TOOL must be either XCELIUM or VCS"
