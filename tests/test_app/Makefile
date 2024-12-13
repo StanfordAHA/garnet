@@ -260,8 +260,7 @@ gaussian: CGRA_SIZE = --width 4 --height 16
 gaussian: GARNET_BUILD_PARMS = $(CGRA_SIZE) --verilog --use_sim_sram --glb_tile_mem_size 128
 gaussian: TESTNAME = apps/gaussian
 gaussian: APP_PATH = /aha/Halide-to-Hardware/apps/hardware_benchmarks/$(TESTNAME)
-gaussian:
-	make test
+gaussian: test
 
 .PHONY: test
 test:
@@ -283,8 +282,7 @@ test:
 pointwise: TESTNAME = apps/pointwise
 pointwise: APP_PATH = /aha/Halide-to-Hardware/apps/hardware_benchmarks/apps/pointwise
 # pointwise: APP_ARGS = +APP0=/aha/Halide-to-Hardware/apps/hardware_benchmarks/apps/pointwise
-pointwise:
-	make test
+pointwise: test
 
 # 	echo '--- MAKE POINTWISE: aha garnet' `date +%H:%M`
 # 	aha garnet $(GARNET_BUILD_PARMS)                         # 5 minutes (kiwi)
