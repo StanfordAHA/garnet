@@ -1,5 +1,5 @@
-To run a pointwise test using verilator, in the approved docker
-container, you can do the following:
+To run a quick test using verilator, you can do the following
+(assuming you are in the context of an approved docker container).
 
 ------------------------------------------------------------------------
 ### Install g++ version 10 and verilator version 5.028.
@@ -27,4 +27,16 @@ You can do this by simply running "make setup-verilator" in this directory.
 
 ------------------------------------------------------------------------
 ### Run the test.
-You can do this by simply running "make pointwise" in this directory.
+
+You can run the test by simply doing "make gaussian."  Gaussian builds
+a 4x16 CGRA grid and takes about 35 minutes in the docker container.
+
+For a longer test, you can run "make pointwise", which builds a 28x16
+grid and takes more like 2.5 hours.
+
+% make -n gaussian
+    aha garnet --width 4 --height 16 --verilog --use_sim_sram --glb_tile_mem_size 128
+    cd /aha/Halide-to-Hardware/apps/hardware_benchmarks/apps/gaussian; make clean
+    aha map apps/gaussian --chain
+    aha pnr apps/gaussian --width 4 --height 16
+    TOOL=VERILATOR stdbuf -oL -eL aha test apps/gaussian
