@@ -121,5 +121,6 @@ steps:
   commands:
   - set -x; docker kill $CONTAINER || true
   - set -x; docker kill $VCONTAINER || true
+  - set -x; docker kill $VCONTAINER2 || true
   - set -x; .buildkite/bin/docker-clean.sh || true
   - set -x; yes | docker image prune -a --filter=label='description=garnet' || true
