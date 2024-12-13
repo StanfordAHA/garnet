@@ -1844,12 +1844,16 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
     output_mode_map = tensor_orderings[output_name]
     for reorder_tup in output_mode_map:
         rearrng_axis.append(reorder_tup[0])
-    output_matrix = numpy.transpose(output_matrix, rearrng_axis)
+
+    is_scalar = (rearrng_axis == [])
+    if not is_scalar:
+        output_matrix = numpy.transpose(output_matrix, rearrng_axis)
     with open(f"{matrix_tmp_dir}/output_gold.h", "r") as f:
         for idx, _ in numpy.ndenumerate(output_matrix):
             output_matrix[idx] = float(f.readline().strip())
     # transpose it back to the original shape
-    output_matrix = numpy.transpose(output_matrix, rearrng_axis)
+    if not is_scalar:
+        output_matrix = numpy.transpose(output_matrix, rearrng_axis)
 
     #parse the data type of the input and the output
     with open(f"{matrix_tmp_dir}/dtype", "r") as f:
