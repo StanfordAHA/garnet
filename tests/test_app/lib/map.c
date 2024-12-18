@@ -419,7 +419,8 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
     } else {
         if (strcmp(io_tile_info->mode, "RV") == 0) {
             printf("\nIO tiles are in READY-VALID mode\n"); 
-            mode = ST_DMA_VALID_MODE_READY_VALID;
+            //mode = ST_DMA_VALID_MODE_SPARSE_READY_VALID;
+            mode = ST_DMA_VALID_MODE_DENSE_READY_VALID;
         } else {
              printf("\nIO tiles are in STATIC mode\n"); 
             mode = ST_DMA_VALID_MODE_VALID;
