@@ -558,7 +558,10 @@ class Garnet(Generator):
         halide_src = args.app
         compact = args.compact
         unconstrained_io = load_only or args.unconstrained_io
+
+        # MO: DRV HACK
         pipeline_input_broadcasts = not args.no_input_broadcast_pipelining
+        #pipeline_input_broadcasts = False
         input_broadcast_branch_factor = args.input_broadcast_branch_factor
         input_broadcast_max_leaves    = args.input_broadcast_max_leaves
 
@@ -672,7 +675,7 @@ class Garnet(Generator):
         if end_to_end: self.write_zero_to_config_regs(bitstream)
         
         # MO: Temporary DRV HACK 
-        dense_ready_valid = False 
+        dense_ready_valid = True 
         bitstream += self.interconnect.get_route_bitstream(routing, use_fifo=dense_ready_valid)
 
 

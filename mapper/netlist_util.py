@@ -143,6 +143,7 @@ class CreateInstrs(Visitor):
         self.run(dag)
         for src, sink in zip(dag.non_input_sources, dag.non_output_sinks):
             self.node_to_instr[src.iname] = self.node_to_instr[sink.iname]
+       
         return self.node_to_instr
 
     def visit_Input(self, node):
@@ -179,7 +180,6 @@ class CreateInstrs(Visitor):
         for instr_child in node.children():
             if isinstance(instr_child, Constant):
                 break
-
         assert isinstance(
             instr_child, Constant
         ), f"{node.node_name} {node.iname} {instr_child.node_name}"
@@ -566,6 +566,7 @@ class FixInputsOutputAndPipeline(Visitor):
         bit,
         min_stages=1,
     ):
+        breakpoint()
         if bit:
             register_source = BitRegisterSource
             register_sink = BitRegisterSink
@@ -652,6 +653,7 @@ class FixInputsOutputAndPipeline(Visitor):
         min_stages=2,
         chain_branch_factor=2,
     ):
+        breakpoint()
         if bit:
             register_source = BitRegisterSource
             register_sink = BitRegisterSink
@@ -769,6 +771,7 @@ class FixInputsOutputAndPipeline(Visitor):
         bit,
         chain_branch_factor=2,
     ):
+        breakpoint()
         if bit:
             register_source = BitRegisterSource
             register_sink = BitRegisterSink
@@ -908,10 +911,11 @@ class FixInputsOutputAndPipeline(Visitor):
     def generic_visit(self, node: DagNode):
         Visitor.generic_visit(self, node)
         if node.node_name == "global.IO" or node.node_name == "global.BitIO":
+            # MO: DRV HACK 
+            dense_ready_valid = True  
             if "write" in node.iname:
                 new_node = Output(type=IO_Output_t, iname=node.iname)
                 new_children = []
-
                 for child in node.children():
                     if node.node_name == "global.IO":
                         new_reg_sink = RegisterSink(
@@ -934,17 +938,44 @@ class FixInputsOutputAndPipeline(Visitor):
                     self.node_map[new_reg_source] = new_reg_source
                     self.node_map[new_reg_sink] = new_reg_sink
                     self.added_regs += 1
-                    new_children.append(new_reg_source)
+
+                    if not(dense_ready_valid):
+                        new_children.append(new_reg_source)
+
+                    # MO: DRV HACK: Insert another register to make even number of regs (b/c of FIFOs) 
+                    if (dense_ready_valid):
+                        if node.node_name == "global.IO":
+                            new_reg_sink_1 = RegisterSink(
+                                self.node_map[new_reg_source],
+                                iname=node.iname + "$reg" + str(self.added_regs),
+                            )
+                            new_reg_source_1 = RegisterSource(
+                                iname=node.iname + "$reg" + str(self.added_regs)
+                            )
+                        else:
+                            new_reg_sink_1 = BitRegisterSink(
+                                self.node_map[new_reg_source],
+                                iname=node.iname + "$reg" + str(self.added_regs),
+                            )
+                            new_reg_source_1 = BitRegisterSource(
+                                iname=node.iname + "$reg" + str(self.added_regs)
+                            )
+                        self.dag_sources.append(new_reg_source_1)
+                        self.dag_sinks.append(new_reg_sink_1)
+                        self.node_map[new_reg_source_1] = new_reg_source_1
+                        self.node_map[new_reg_sink_1] = new_reg_sink_1
+                        self.added_regs += 1
+                        new_children.append(new_reg_source_1)
 
                 new_node.set_children(*new_children)
                 self.outputs.append(new_node)
+                
             else:
                 if self.ready_valid:
                     new_node = Input(type=IO_Input_t_rv, iname=node.iname)
                 else:
                     new_node = Input(type=IO_Input_t, iname=node.iname)
                 self.inputs.append(new_node)
-
             self.node_map[node] = new_node
         else:
             if not (
@@ -1160,6 +1191,7 @@ def create_netlist_info(
         id_to_name = pythunder.io.load_id_to_name(packed_file)
 
     sinks = PipelineBroadcastHelper().doit(dag)
+    #breakpoint()
     fdag = FixInputsOutputAndPipeline(
         sinks,
         pipeline_input_broadcasts,
@@ -1229,10 +1261,11 @@ def create_netlist_info(
             ][0] += pond_reg_skipped[node]
 
     nodes_to_instrs = CreateInstrs(node_info).doit(pdag)
+    #breakpoint()
     
     #TODO: Make the hack here?
     # MO: Temporary DRV HACK
-    dense_ready_valid = False  
+    dense_ready_valid = True  
     info["id_to_instrs"] = {}
     for node, id in nodes_to_ids.items():
         if dense_ready_valid and ("I" in id or "i" in id):
@@ -1270,6 +1303,10 @@ def create_netlist_info(
     if "IO2MEM_REG_CHAIN" in os.environ or "MEM2PE_REG_CHAIN" in os.environ:
         graph.get_in_ub_latency(app_dir=app_dir)
         graph.get_compute_kernel_latency(app_dir=app_dir)
+
+    # MO: Temporary DRV HACK
+    # breakpoint()
+    # graph.remove_entire_reg_tree()
 
     if "MANUAL_PLACER" in os.environ and os.environ.get("MANUAL_PLACER") == "1":
         # remove mem reg in conn for manual placement
