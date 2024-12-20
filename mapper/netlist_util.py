@@ -1315,6 +1315,12 @@ def create_netlist_info(
         # manual placement
         graph.manualy_place_resnet(app_dir=app_dir)
 
+    # MO: Temporary DRV HACK 
+    dense_two_input_manual_place = True
+    if dense_two_input_manual_place:
+        manual_place_filepath = os.path.join(app_dir, "../hardcoded_bin/manual.place")
+        os.system(f"cp {manual_place_filepath} {app_dir}")
+
     CountTiles().doit(pdag)
 
     return info

@@ -224,7 +224,8 @@ class CoreCombinerCore(LakeCoreBase):
                     'mode': 'alu',
                     #'use_dense': True,
                     'use_dense': not(dense_ready_valid),
-                    'num_sparse_inputs': 1,
+                    #TODO: Rename this to active_inputs_encoding or something (001 -> I0, 011 -> I1 and I0, 101 -> I2 and I0, 111 -> all 3, etc.)
+                    'num_sparse_inputs': 5,
                     'op': int(config_tuple),
                     # pe in dense mode always accept inputs that are external 
                     # to the cluster
