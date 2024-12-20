@@ -101,7 +101,11 @@ module top;
     wire [`$mu_datawidth-1`:0] mu2cgra [`$oc_0-1`:0];
 
     //; for (my $i = 0; $i < $oc_0; $i++) {
-    assign mu2cgra[`$i`] = 16'b1;
+    //; if ($i == 1){
+        assign mu2cgra[`$i`] = 16'd60;
+    //;} else {
+        assign mu2cgra[`$i`] = 16'b1;
+    //;}
     //; } 
 
 //; }
