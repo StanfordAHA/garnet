@@ -21,7 +21,7 @@ from daemon.daemon import GarnetDaemon
 from gemstone.common.configurable import ConfigurationType
 
 from gemstone.generator.from_magma import FromMagma
-import mantle 
+import mantle
 from gemstone.generator.const import Const
 from canal.util import IOSide
 
@@ -58,7 +58,7 @@ class Garnet(Generator):
         self.harden_flush = args.harden_flush
         self.pipeline_config_interval = args.pipeline_config_interval
 
-    
+
 
         self.io_sides = io_sides
 
@@ -122,7 +122,7 @@ class Garnet(Generator):
         glb_tile_mem_size = 2 ** ((glb_params.bank_addr_width - 10)
                                   + math.ceil(math.log(glb_params.banks_per_tile, 2)))
 
-       
+
         self.global_controller = GlobalController(
             addr_width=self.config_addr_width,
             data_width=self.config_data_width,
@@ -158,16 +158,16 @@ class Garnet(Generator):
             cgra_running_clk_out=magma.Out(magma.Clock)
         )
 
-        # Add MU interface, if necessary 
+        # Add MU interface, if necessary
         if using_matrix_unit:
             num_output_channels = self.height * 2
-            self.add_ports(            
+            self.add_ports(
                 mu2cgra=magma.In(magma.Array[(num_output_channels, magma.Bits[mu_datawidth])]),
                 mu2cgra_valid=magma.In(magma.Bit),
                 cgra2mu_ready=magma.Out(magma.Bit)
             )
 
-            # Matrix unit <-> interconnnect ports connection        
+            # Matrix unit <-> interconnnect ports connection
             self.cgra2mu_ready_and = FromMagma(mantle.DefineAnd(height=num_output_channels, width=1))
 
             if dense_only:
@@ -175,7 +175,7 @@ class Garnet(Generator):
             else:
                 cgra_track_width = 17
 
-            assert mu_datawidth < cgra_track_width, "Matrix unit datawidth must be < CGRA track width" 
+            assert mu_datawidth < cgra_track_width, "Matrix unit datawidth must be < CGRA track width"
             width_difference = cgra_track_width - mu_datawidth
 
             mu_io_tile_col = max(num_fabric_cols_removed - 1, 0)
@@ -183,7 +183,7 @@ class Garnet(Generator):
             for i in range(num_output_channels):
                 io_num = i % 2
                 cgra_row_num = int(i/2 + 1)
-                
+
                 # Tie MSB(s) not driven by MU to GND
                 if (width_difference > 0):
                    self.wire(Const(0), self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{mu_io_tile_col:02X}_Y{cgra_row_num:02X}"][cgra_track_width-width_difference:cgra_track_width])
@@ -486,6 +486,13 @@ class Garnet(Generator):
             elif mem_remap is not None and pe_remap is not None:
                 break
 
+        lakespec_pin_remap = {
+            'data_in_0': 'port_0',
+            'data_in_1': 'port_1',
+            'data_out_0': 'port_2',
+            'data_out_1': 'port_3'
+        }
+
         for netlist_id, connections_list in netlist_info['netlist'].items():
             for idx, connection in enumerate(connections_list):
                 tag_, pin_ = connection
@@ -505,7 +512,19 @@ class Garnet(Generator):
                         }
                         assert pin_ in hack_remap
                         pin_ = hack_remap[pin_]
-                    pin_remap = mem_remap[mode][pin_]
+                    print(mem_remap)
+                    # Hack - put the remap for lakespec here???
+                    if mode == "UB" and "UB" not in mem_remap:
+                        if 'lakespec' in mem_remap:
+                            print("Hello - here")
+                            pin_remap = mem_remap['lakespec'][lakespec_pin_remap[pin_]]
+                            print(pin_remap)
+                            # exit()
+                        else:
+                            raise NotImplementedError
+                    # exit()
+                    else:
+                        pin_remap = mem_remap[mode][pin_]
 
                     connections_list[idx] = (tag_, pin_remap)
                 elif tag_[0] == 'p':
@@ -549,7 +568,7 @@ class Garnet(Generator):
         return (netlist_info["id_to_name"], netlist_info["instance_to_instrs"], netlist_info["netlist"],
                 netlist_info["buses"])
 
-    def place_and_route(self, args, load_only=False): 
+    def place_and_route(self, args, load_only=False):
 
         # place_and_route() used to have a bunch of parameters with defaults
         # that were in conflict with and overridden by existing higher level
@@ -838,12 +857,12 @@ def parse_args():
         else:
             io_sides = [IOSide.North]
     else:
-        io_sides = [IOSide.North] 
+        io_sides = [IOSide.North]
 
     from global_buffer.design.global_buffer_parameter import gen_global_buffer_params
 
     num_cgra_cols_including_io = args.width
-  
+
     if IOSide.West in io_sides:
         num_cgra_cols_including_io += 1
 
@@ -851,7 +870,7 @@ def parse_args():
         num_glb_tiles=args.width // 2,
         num_cgra_cols=args.width,
 
-        # Matrix unit hack 
+        # Matrix unit hack
         num_cgra_cols_including_io=num_cgra_cols_including_io,
 
         # NOTE: We assume num_prr is same as num_glb_tiles
