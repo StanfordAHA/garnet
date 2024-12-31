@@ -13,7 +13,7 @@ glc_dir := $(garnet_dir)/global_controller
 APP_ARGS ?= +APP0=app0
 
 TOOL ?= VCS
-export WAVEFORM ?= 0
+export WAVEFORM ?= 1
 export WAVEFORM_GLB_ONLY ?= 0
 export SAIF ?= 0
 
@@ -151,13 +151,18 @@ generate:
 	Genesis2.pl -parse -generate -top top -input $(genesis_tb_dir)/top.svp -parameter top.using_matrix_unit=$(USING_MATRIX_UNIT) top.oc_0=$(OC_0) top.mu_datawidth=$(MU_DATAWIDTH)
 	mv genesis_verif/top.sv tb/top.sv
 
+prep-data:
+ifeq ($(USING_MATRIX_UNIT), 1)
+	python /aha/garnet/tests/test_app/gen_mu2cgra_data.py
+endif
+
 .PHONY: run
 run:
 	@rm -rf *.txt; rm -rf ../../SPARSE_TESTS/batch_*
 	$(RUN) $(DUMP_ARGS) $(RUN_ARGS) $(APP_ARGS)
 
 .PHONY: sim
-sim: libcgra.so generate compile run
+sim: libcgra.so generate prep-data compile run
 
 # -------------------------------------------------------------------
 # GLS Compile
