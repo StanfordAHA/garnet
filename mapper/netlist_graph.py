@@ -249,18 +249,6 @@ class NetlistGraph:
             fout = open(f"{app_dir}/updated_kernel_latencies.json", "w")
             fout.write(json.dumps(kernel_latencies, indent=4))
 
-    # MO: DRV HACK 
-    def remove_entire_reg_tree(self):
-        removed_reg_nodes = []
-        for node in self.nodes:
-            for sink_node in node.sinks[:]:
-                if sink_node.node_type == 'r':
-                    self._remove_reg_node(sink_node, node)
-                    removed_reg_nodes.append(sink_node)
-        
-        for node in removed_reg_nodes:
-            self.nodes.remove(node)
-
     def remove_mem_reg_tree(self):
         for mem_node in self.mem_nodes:
             for sink_node in mem_node.sinks[:]:

@@ -200,8 +200,8 @@ class Garnet(Generator):
 
             # MO: Temporary HACK
             self.cgra2mu_row0_ready_and = FromMagma(mantle.DefineAnd(height=2, width=1))
-            self.wire(self.cgra2mu_row0_ready_and.ports.I0, self.convert(self.interconnect.ports.mu2io_17_0_X03_Y01_ready, magma.Bits[1]))
-            self.wire(self.cgra2mu_row0_ready_and.ports.I1, self.convert(self.interconnect.ports.mu2io_17_1_X03_Y01_ready, magma.Bits[1]))
+            self.wire(self.cgra2mu_row0_ready_and.ports.I0, self.convert(self.interconnect.ports.mu2io_17_0_X07_Y01_ready, magma.Bits[1]))
+            self.wire(self.cgra2mu_row0_ready_and.ports.I1, self.convert(self.interconnect.ports.mu2io_17_1_X07_Y01_ready, magma.Bits[1]))
             self.wire(self.convert(self.cgra2mu_row0_ready_and.ports.O, magma.bit), self.ports.cgra2mu_ready_row0)
 
 
@@ -567,10 +567,7 @@ class Garnet(Generator):
         halide_src = args.app
         compact = args.compact
         unconstrained_io = load_only or args.unconstrained_io
-
-        # MO: DRV HACK
         pipeline_input_broadcasts = not args.no_input_broadcast_pipelining
-        #pipeline_input_broadcasts = False
         input_broadcast_branch_factor = args.input_broadcast_branch_factor
         input_broadcast_max_leaves    = args.input_broadcast_max_leaves
 
@@ -683,8 +680,7 @@ class Garnet(Generator):
         bitstream = []
         if end_to_end: self.write_zero_to_config_regs(bitstream)
         
-        # MO: Temporary DRV HACK 
-        dense_ready_valid = True 
+        dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1" 
         bitstream += self.interconnect.get_route_bitstream(routing, use_fifo=dense_ready_valid)
 
 

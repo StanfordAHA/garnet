@@ -216,8 +216,8 @@ class CoreCombinerCore(LakeCoreBase):
                 return configs
         elif not isinstance(config_tuple, tuple):
             # MO: DRV HACK
-            #breakpoint()
-            dense_ready_valid = True
+            dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1"  
+            num_sparse_inputs = 5 if dense_ready_valid else 0 
             # It's a PE then...
             if self.ready_valid:
                 config_kwargs = {
@@ -225,7 +225,7 @@ class CoreCombinerCore(LakeCoreBase):
                     #'use_dense': True,
                     'use_dense': not(dense_ready_valid),
                     #TODO: Rename this to active_inputs_encoding or something (001 -> I0, 011 -> I1 and I0, 101 -> I2 and I0, 111 -> all 3, etc.)
-                    'num_sparse_inputs': 5,
+                    'num_sparse_inputs': num_sparse_inputs,
                     'op': int(config_tuple),
                     # pe in dense mode always accept inputs that are external 
                     # to the cluster
