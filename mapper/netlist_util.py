@@ -34,7 +34,6 @@ class CreateBuses(Visitor):
         self.bid_to_width = {}
         self.node_to_bid = {}
         self.netlist = defaultdict(lambda: [])
-        #breakpoint()
         self.run(dag)
         # Filter bid_to_width to contain only whats in self.netlist
         buses = {bid: w for bid, w in self.bid_to_width.items() if bid in self.netlist}
@@ -47,7 +46,6 @@ class CreateBuses(Visitor):
             self.i += 1
             return bid
         elif adt == BitVector[16]:
-            #breakpoint()
             bid = f"e{self.i}"
             self.bid_to_width[bid] = 17 if self.ready_valid else 16
             self.i += 1
@@ -67,7 +65,6 @@ class CreateBuses(Visitor):
             raise NotImplementedError(f"{adt}")
 
     def visit_Source(self, node):
-        #breakpoint()
         bid = self.create_buses(node.type)
         self.node_to_bid[node] = bid
 
@@ -85,7 +82,6 @@ class CreateBuses(Visitor):
         self.netlist[bid].append((child, node.field))
 
     def visit_RegisterSource(self, node):
-        #breakpoint()
         bid = self.create_buses(node.type)
         self.node_to_bid[node] = bid
         self.netlist[bid].append((node, "reg"))
@@ -108,7 +104,6 @@ class CreateBuses(Visitor):
             assert child_bid in self.netlist
             self.netlist[child_bid].append((node, field))
         if not isinstance(node, Sink):
-            #breakpoint()
             bid = self.create_buses(node.type)
             self.node_to_bid[node] = bid
 
@@ -124,7 +119,6 @@ class CreateBuses(Visitor):
         self.node_to_bid[node] = bids
 
     def visit_Output(self, node: Output):
-        ##breakpoint()
         Visitor.generic_visit(self, node)
         child_bid = self.node_to_bid[node.child]
         if node.child.type == Bit:
@@ -566,7 +560,6 @@ class FixInputsOutputAndPipeline(Visitor):
         bit,
         min_stages=1,
     ):
-        breakpoint()
         if bit:
             register_source = BitRegisterSource
             register_sink = BitRegisterSink
@@ -653,7 +646,6 @@ class FixInputsOutputAndPipeline(Visitor):
         min_stages=2,
         chain_branch_factor=2,
     ):
-        breakpoint()
         if bit:
             register_source = BitRegisterSource
             register_sink = BitRegisterSink
@@ -771,7 +763,6 @@ class FixInputsOutputAndPipeline(Visitor):
         bit,
         chain_branch_factor=2,
     ):
-        breakpoint()
         if bit:
             register_source = BitRegisterSource
             register_sink = BitRegisterSink
@@ -911,8 +902,7 @@ class FixInputsOutputAndPipeline(Visitor):
     def generic_visit(self, node: DagNode):
         Visitor.generic_visit(self, node)
         if node.node_name == "global.IO" or node.node_name == "global.BitIO":
-            # MO: DRV HACK 
-            dense_ready_valid = True  
+            dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1"   
             if "write" in node.iname:
                 new_node = Output(type=IO_Output_t, iname=node.iname)
                 new_children = []
@@ -938,7 +928,7 @@ class FixInputsOutputAndPipeline(Visitor):
                     self.node_map[new_reg_source] = new_reg_source
                     self.node_map[new_reg_sink] = new_reg_sink
                     self.added_regs += 1
-
+                   
                     if not(dense_ready_valid):
                         new_children.append(new_reg_source)
 
@@ -1191,7 +1181,6 @@ def create_netlist_info(
         id_to_name = pythunder.io.load_id_to_name(packed_file)
 
     sinks = PipelineBroadcastHelper().doit(dag)
-    #breakpoint()
     fdag = FixInputsOutputAndPipeline(
         sinks,
         pipeline_input_broadcasts,
@@ -1261,11 +1250,8 @@ def create_netlist_info(
             ][0] += pond_reg_skipped[node]
 
     nodes_to_instrs = CreateInstrs(node_info).doit(pdag)
-    #breakpoint()
-    
-    #TODO: Make the hack here?
-    # MO: Temporary DRV HACK
-    dense_ready_valid = True  
+
+    dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1"  
     info["id_to_instrs"] = {}
     for node, id in nodes_to_ids.items():
         if dense_ready_valid and ("I" in id or "i" in id):
@@ -1304,10 +1290,6 @@ def create_netlist_info(
         graph.get_in_ub_latency(app_dir=app_dir)
         graph.get_compute_kernel_latency(app_dir=app_dir)
 
-    # MO: Temporary DRV HACK
-    # breakpoint()
-    # graph.remove_entire_reg_tree()
-
     if "MANUAL_PLACER" in os.environ and os.environ.get("MANUAL_PLACER") == "1":
         # remove mem reg in conn for manual placement
         graph.remove_mem_reg_tree()
@@ -1315,11 +1297,11 @@ def create_netlist_info(
         # manual placement
         graph.manualy_place_resnet(app_dir=app_dir)
 
-    # MO: Temporary DRV HACK 
-    dense_two_input_manual_place = True
-    if dense_two_input_manual_place:
-        manual_place_filepath = os.path.join(app_dir, "../hardcoded_bin/manual.place")
-        os.system(f"cp {manual_place_filepath} {app_dir}")
+    # # MO: Matrix unit HACK 
+    # if "MU_APP_MANUAL_PLACER" in os.environ and os.environ.get("MU_APP_MANUAL_PLACER") == "1":
+    #     breakpoint()
+    #     manual_place_filepath = os.path.join(app_dir, "../hardcoded_bin/manual.place")
+    #     os.system(f"cp {manual_place_filepath} {app_dir}")
 
     CountTiles().doit(pdag)
 
