@@ -164,6 +164,9 @@ class Garnet(Generator):
             self.add_ports(
                 mu2cgra=magma.In(magma.Array[(num_output_channels, magma.Bits[mu_datawidth])]),
                 mu2cgra_valid=magma.In(magma.Bit),
+                
+                # MO: Temporary HACK 
+                cgra2mu_ready_row0 = magma.Out(magma.Bit),
                 cgra2mu_ready=magma.Out(magma.Bit)
             )
 
@@ -194,6 +197,12 @@ class Garnet(Generator):
                 self.wire(self.cgra2mu_ready_and.ports[f"I{i}"], self.convert(self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{mu_io_tile_col:02X}_Y{cgra_row_num:02X}_ready"], magma.Bits[1]))
 
             self.wire(self.convert(self.cgra2mu_ready_and.ports.O, magma.bit), self.ports.cgra2mu_ready)
+
+            # MO: Temporary HACK
+            self.cgra2mu_row0_ready_and = FromMagma(mantle.DefineAnd(height=2, width=1))
+            self.wire(self.cgra2mu_row0_ready_and.ports.I0, self.convert(self.interconnect.ports.mu2io_17_0_X07_Y01_ready, magma.Bits[1]))
+            self.wire(self.cgra2mu_row0_ready_and.ports.I1, self.convert(self.interconnect.ports.mu2io_17_1_X07_Y01_ready, magma.Bits[1]))
+            self.wire(self.convert(self.cgra2mu_row0_ready_and.ports.O, magma.bit), self.ports.cgra2mu_ready_row0)
 
 
         # top <-> global controller ports connection
@@ -689,7 +698,11 @@ class Garnet(Generator):
 
         bitstream = []
         if end_to_end: self.write_zero_to_config_regs(bitstream)
-        bitstream += self.interconnect.get_route_bitstream(routing)
+        
+        dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1" 
+        bitstream += self.interconnect.get_route_bitstream(routing, use_fifo=dense_ready_valid)
+
+
         bitstream += self.fix_pond_flush_bug(placement, routing)
         bitstream += self.get_placement_bitstream(placement, id_to_name,
                                                   instance_to_instr)

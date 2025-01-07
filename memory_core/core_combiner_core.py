@@ -147,6 +147,7 @@ class CoreCombinerCore(LakeCoreBase):
         self.runtime_mode = runtime_mode
 
     def get_config_bitstream(self, config_tuple):
+        #breakpoint()
         # print(self.runtime_mode)
         # assert self.runtime_mode is not None
         configs = []
@@ -214,11 +215,17 @@ class CoreCombinerCore(LakeCoreBase):
                 #print(configs)
                 return configs
         elif not isinstance(config_tuple, tuple):
+            # MO: DRV HACK
+            dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1"  
+            num_sparse_inputs = 5 if dense_ready_valid else 0 
             # It's a PE then...
             if self.ready_valid:
                 config_kwargs = {
                     'mode': 'alu',
-                    'use_dense': True,
+                    #'use_dense': True,
+                    'use_dense': not(dense_ready_valid),
+                    #TODO: Rename this to active_inputs_encoding or something (001 -> I0, 011 -> I1 and I0, 101 -> I2 and I0, 111 -> all 3, etc.)
+                    'num_sparse_inputs': num_sparse_inputs,
                     'op': int(config_tuple),
                     # pe in dense mode always accept inputs that are external 
                     # to the cluster
@@ -237,11 +244,14 @@ class CoreCombinerCore(LakeCoreBase):
                 configs = [self.get_config_data(name, v)] + configs
             
             # BEGIN BLOCK COMMENT
+            #TODO: Fix this and name it better. ready_valid really means include RV interconnect in this context 
+            #TODO: Rename all this stuff: rename dense_bypass to ready-valid bypass
             if self.ready_valid:
-                config_dense_bypass = [(f"{self.get_port_remap()['alu']['data0']}_dense", 1),
-                                       (f"{self.get_port_remap()['alu']['data1']}_dense", 1),
-                                       (f"{self.get_port_remap()['alu']['data2']}_dense", 1),
-                                       (f"{self.get_port_remap()['alu']['res']}_dense", 1)]
+                dense_bypass_value = 0 if dense_ready_valid else 1 
+                config_dense_bypass = [(f"{self.get_port_remap()['alu']['data0']}_dense", dense_bypass_value),
+                                       (f"{self.get_port_remap()['alu']['data1']}_dense", dense_bypass_value),
+                                       (f"{self.get_port_remap()['alu']['data2']}_dense", dense_bypass_value),
+                                       (f"{self.get_port_remap()['alu']['res']}_dense", dense_bypass_value)]
                 for name, v in config_dense_bypass:
                     configs = [self.get_config_data(name, v)] + configs
             # END BLOCK COMMENT 
