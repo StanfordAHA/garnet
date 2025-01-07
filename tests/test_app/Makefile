@@ -15,7 +15,7 @@ APP_ARGS ?= +APP0=app0
 APP0_NAME = $(shell echo $(APP_ARGS) | awk '{print $1}' | sed 's/.*=//')
 
 TOOL ?= VCS
-export WAVEFORM ?= 0
+export WAVEFORM ?= 1
 export WAVEFORM_GLB_ONLY ?= 0
 export SAIF ?= 0
 
@@ -236,6 +236,11 @@ generate:
 	Genesis2.pl -parse -generate -top top -input $(genesis_tb_dir)/top.svp -parameter top.using_matrix_unit=$(USING_MATRIX_UNIT) top.oc_0=$(OC_0) top.mu_datawidth=$(MU_DATAWIDTH)
 	mv genesis_verif/top.sv tb/top.sv
 
+prep-data:
+ifeq ($(USING_MATRIX_UNIT), 1)
+	python /aha/garnet/tests/test_app/gen_mu2cgra_data.py
+endif
+
 .PHONY: run
 run: $(APP0_NAME)/bin/design_meta.json
 	echo '--- MAKE RUN (e.g. Vtop or simv)' `date +%H:%M`
@@ -244,7 +249,7 @@ run: $(APP0_NAME)/bin/design_meta.json
 	echo '+++ PASSED maybe' `date +%H:%M`
 
 .PHONY: sim
-sim: libcgra.so generate compile run
+sim: libcgra.so generate prep-data compile run
 
 
 # -------------------------------------------------------------------
