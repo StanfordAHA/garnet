@@ -542,7 +542,56 @@ label_IO2POND = {
     'kernel_cgra_stencil$ub_kernel_cgra_stencil_BANK_80_garnet': 63, #M234
 }
 
-
+critical_pe_nodes = [
+    "op_hcompute_output_cgra_stencil_21$inner_compute$muladd_s0_pipelined_i4517_i1217", #p108, 26,  2
+    "op_hcompute_output_cgra_stencil_21$inner_compute$muladd_s0_pipelined_i4519_i1217", #p109, 26,  1
+    "op_hcompute_output_cgra_stencil_22$inner_compute$add_pipelined_i4860_i133",        #p111,  5,  5
+    "op_hcompute_output_cgra_stencil_22$inner_compute$muladd_s0_pipelined_i4859_i1217", #p125,  6,  2
+    "op_hcompute_output_cgra_stencil_22$inner_compute$muladd_s0_pipelined_i4861_i1217", #p126,  6,  1
+    "op_hcompute_output_cgra_stencil_23$inner_compute$add_pipelined_i5202_i133",        #p128, 10,  1
+    "op_hcompute_output_cgra_stencil_23$inner_compute$muladd_s0_pipelined_i5201_i1217", #p142, 13,  2
+    "op_hcompute_output_cgra_stencil_23$inner_compute$muladd_s0_pipelined_i5203_i1217", #p143, 13,  1
+    "op_hcompute_output_cgra_stencil_24$inner_compute$add_pipelined_i5544_i133",        #p145, 20,  1
+    "op_hcompute_output_cgra_stencil_24$inner_compute$muladd_s0_pipelined_i5543_i1217", #p159, 14,  2
+    "op_hcompute_output_cgra_stencil_24$inner_compute$muladd_s0_pipelined_i5545_i1217", #p160, 14,  1
+    "op_hcompute_output_cgra_stencil_25$inner_compute$add_pipelined_i5886_i133",        #p162, 25,  3
+    "op_hcompute_output_cgra_stencil_25$inner_compute$muladd_s0_pipelined_i5885_i1217", #p176, 21,  2
+    "op_hcompute_output_cgra_stencil_25$inner_compute$muladd_s0_pipelined_i5887_i1217", #p177, 21,  1
+    "op_hcompute_output_cgra_stencil_26$inner_compute$add_pipelined_i6228_i133",        #p179,  1,  3
+    "op_hcompute_output_cgra_stencil_26$inner_compute$muladd_s0_pipelined_i6227_i1217", #p193,  0,  2
+    "op_hcompute_output_cgra_stencil_26$inner_compute$muladd_s0_pipelined_i6229_i1217", #p194,  0,  1
+    "op_hcompute_output_cgra_stencil_27$inner_compute$add_pipelined_i6570_i133",        #p196, 10,  3
+    "op_hcompute_output_cgra_stencil_27$inner_compute$muladd_s0_pipelined_i6569_i1217", #p210,  8,  2
+    "op_hcompute_output_cgra_stencil_27$inner_compute$muladd_s0_pipelined_i6571_i1217", #p211,  8,  1
+    "op_hcompute_output_cgra_stencil_28$inner_compute$add_pipelined_i6912_i133",        #p213, 20,  3
+    "op_hcompute_output_cgra_stencil_16$inner_compute$muladd_s0_pipelined_i2802_i1217", #p22 , 16,  2
+    "op_hcompute_output_cgra_stencil_28$inner_compute$muladd_s0_pipelined_i6911_i1217", #p227, 17,  2
+    "op_hcompute_output_cgra_stencil_28$inner_compute$muladd_s0_pipelined_i6913_i1217", #p228, 17,  1
+    "op_hcompute_output_cgra_stencil_16$inner_compute$muladd_s0_pipelined_i2804_i1217", #p23 , 16,  1
+    "op_hcompute_output_cgra_stencil_29$inner_compute$add_pipelined_i7254_i133",        #p230, 25,  6
+    "op_hcompute_output_cgra_stencil_29$inner_compute$muladd_s0_pipelined_i7253_i1217", #p244, 24,  2
+    "op_hcompute_output_cgra_stencil_29$inner_compute$muladd_s0_pipelined_i7255_i1217", #p245, 24,  1
+    "op_hcompute_output_cgra_stencil_30$inner_compute$add_pipelined_i7601_i133",        #p248,  5,  6
+    "op_hcompute_output_cgra_stencil_17$inner_compute$add_pipelined_i3145_i133",        #p25 , 25,  2
+    "op_hcompute_output_cgra_stencil_30$inner_compute$muladd_s0_pipelined_i7600_i1217", #p262,  4,  2
+    "op_hcompute_output_cgra_stencil_30$inner_compute$muladd_s0_pipelined_i7602_i1217", #p263,  4,  1
+    "op_hcompute_output_cgra_stencil_31$inner_compute$add_pipelined_i7943_i133",        #p265, 10,  2
+    "op_hcompute_output_cgra_stencil_31$inner_compute$muladd_s0_pipelined_i7942_i1217", #p279, 12,  2
+    "op_hcompute_output_cgra_stencil_31$inner_compute$muladd_s0_pipelined_i7944_i1217", #p280, 12,  1
+    "op_hcompute_output_cgra_stencil_17$inner_compute$muladd_s0_pipelined_i3144_i1217", #p39 , 22,  2
+    "op_hcompute_output_cgra_stencil_17$inner_compute$muladd_s0_pipelined_i3146_i1217", #p40 , 22,  1
+    "op_hcompute_output_cgra_stencil_18$inner_compute$add_pipelined_i3487_i133",        #p42 ,  1,  2
+    "op_hcompute_output_cgra_stencil_18$inner_compute$muladd_s0_pipelined_i3486_i1217", #p56 ,  2,  2
+    "op_hcompute_output_cgra_stencil_18$inner_compute$muladd_s0_pipelined_i3488_i1217", #p57 ,  2,  1
+    "op_hcompute_output_cgra_stencil_19$inner_compute$add_pipelined_i3829_i133",        #p59 , 10,  4
+    "op_hcompute_output_cgra_stencil_19$inner_compute$muladd_s0_pipelined_i3828_i1217", #p73 ,  9,  2
+    "op_hcompute_output_cgra_stencil_19$inner_compute$muladd_s0_pipelined_i3830_i1217", #p74 ,  9,  1
+    "op_hcompute_output_cgra_stencil_20$inner_compute$add_pipelined_i4176_i133",        #p77 , 20,  4
+    "op_hcompute_output_cgra_stencil_16$inner_compute$add_pipelined_i2803_i133",        #p8  , 20,  2
+    "op_hcompute_output_cgra_stencil_20$inner_compute$muladd_s0_pipelined_i4175_i1217", #p91 , 18,  2
+    "op_hcompute_output_cgra_stencil_20$inner_compute$muladd_s0_pipelined_i4177_i1217", #p92 , 18,  1
+    "op_hcompute_output_cgra_stencil_21$inner_compute$add_pipelined_i4518_i133"         #p94 , 25,  5
+]
 
 class CreateBuses(Visitor):
     def __init__(self, inst_info):
@@ -1371,6 +1420,33 @@ class FixInputsOutputAndPipeline(Visitor):
                         new_source=prev_reg_source
                     )
 
+    def create_register_critical(
+        self,
+        child_node,
+        new_select_node,
+        old_select_node,
+        sinks
+    ):
+        print(
+            "Creating CRITICAL registers for:",
+            child_node.iname,
+            "with",
+            len(sinks),
+            "sinks",
+        )
+
+        assert len(sinks) == 1, f"CRITICAL node should have only one sink, but got {len(sinks)} sinks in {child_node.iname}"
+
+        new_reg_source = self._add_new_16b_reg_node(
+            prev_src=new_select_node,
+            reg_base_name=child_node.iname
+        )
+        self._update_source_node(
+            sink=sinks[0],
+            old_source=old_select_node,
+            new_source=new_reg_source
+        )
+
     def visit_Select(self, node: DagNode):
         Visitor.generic_visit(self, node)
         if not (
@@ -1448,6 +1524,16 @@ class FixInputsOutputAndPipeline(Visitor):
                     )
             else:
                 new_node = node.copy()
+            
+            # -----------------Critical PE Pipelining-------------------- #
+            my_child = new_node.children()[0]
+            if my_child.iname in critical_pe_nodes:
+                self.create_register_critical(
+                    child_node=my_child,
+                    new_select_node=new_node,
+                    old_select_node=node,
+                    sinks=self.sinks[node]
+                )
 
             if node not in self.node_map:
                 new_node.set_children(*new_children)

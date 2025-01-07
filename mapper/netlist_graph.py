@@ -270,6 +270,8 @@ class NetlistGraph:
                 while current_node.node_type == "p":
                     new_pe_chain["pe_chain"].append(current_node.node_name)
                     current_node = current_node.sinks[0]
+                    while current_node.node_type == "r":
+                        current_node = current_node.sinks[0]
                 # ---- [output_mem] node name for the accumulation output mem node
                 output_mem_node = current_node
                 new_pe_chain["output_mem"] = output_mem_node.node_name
