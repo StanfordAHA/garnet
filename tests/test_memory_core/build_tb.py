@@ -1801,8 +1801,8 @@ def generate_inputs(app_name):
     return matrix_tmp_dir
 
 
-def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None,
-                  zero_input=False, tensor_orderings=None, clean=True, suffix=""):
+def generate_inputs_and_gold(app_name, give_tensor=False, print_inputs=None,
+                             tensor_orderings=None, clean=True, suffix=""):
 
     MAXIMUM_SIZES = 16
 
@@ -1821,45 +1821,87 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
     input_dims = {}
     use_fp = False
 
-    output_dims = []
-    with open(f"{matrix_tmp_dir}/tensor_out_mode_shape", "r") as f:
-        lines = f.readlines()
-        for line in lines:
-            output_dims.append(int(line.strip()))
+    # generate the input matrices
+    if give_tensor:
+        matrix_tmp_dir = os.path.join(tensor_locs, kernel_name, seed)
+    elif app_name in ["masked_broadcast", "trans_masked_broadcast"]:
+        # these application does not have an einsum expression, falling back to the old flow to 
+        # generate inputs and gold
+        matrix_tmp_dir = os.path.join("/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR", app_name, "tile_0")
+        os.makedirs(matrix_tmp_dir, exist_ok=True)
+        if app_name == "trans_masked_broadcast":
+            B_mat = get_tensor(input_name='B', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                            dump= matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+                            sparsity=0.5)
+            c_mat = get_tensor(input_name='c', shapes=[10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['c'], 
+                            sparsity=0.0)
+            assert c_mat.shape[0] == B_mat.shape[0]
 
-    output_format = "CSF"
-    output_name = None
-    # vector outputs have the name 'x'
-    # tensors of 2 or higher dimensions have the name 'X'
-    if len(output_dims) == 1: 
-        output_name = "x"
+            output_matrix = numpy.zeros((10, 10), dtype=numpy.uint16)
+            for i in range(0, output_matrix.shape[0]):
+                for j in range(0, output_matrix.shape[1]):
+                    if B_mat[i][j] != 0:   
+                        output_matrix[i][j] = c_mat[i]
+            output_format = "CSF"
+            output_name = "X"
+        elif app_name == "masked_broadcast":
+            B_mat = get_tensor(input_name='B', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                            dump= matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+                            sparsity=0.5)
+            c_mat = get_tensor(input_name='c', shapes=[10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['c'], 
+                            sparsity=0.0)
+            assert c_mat.shape[0] == B_mat.shape[0]
+
+            output_matrix = numpy.zeros((10, 10), dtype=numpy.uint16)
+            for i in range(0, output_matrix.shape[0]):
+                for j in range(0, output_matrix.shape[1]):
+                    if B_mat[i][j] != 0:   
+                        output_matrix[i][j] = c_mat[j]
+            output_format = "CSF"
+            output_name = "X"
     else:
-        output_name = "X"
+        matrix_tmp_dir = generate_inputs(sam_graph_name)
+        output_dims = []
+        with open(f"{matrix_tmp_dir}/tensor_out_mode_shape", "r") as f:
+            lines = f.readlines()
+            for line in lines:
+                output_dims.append(int(line.strip()))
 
-    output_matrix = numpy.zeros(output_dims, dtype=numpy.float32)
+        output_format = "CSF"
+        output_name = None
+        # vector outputs have the name 'x'
+        # tensors of 2 or higher dimensions have the name 'X'
+        if len(output_dims) == 1: 
+            output_name = "x"
+        else:
+            output_name = "X"
 
-    # Transpose since the gold matrix may be filled in column order if the 
-    # tensor ordering is 10
-    rearrng_axis = []
-    output_mode_map = tensor_orderings[output_name]
-    for reorder_tup in output_mode_map:
-        rearrng_axis.append(reorder_tup[0])
+        output_matrix = numpy.zeros(output_dims, dtype=numpy.float32)
 
-    is_scalar = (rearrng_axis == [])
-    if not is_scalar:
-        output_matrix = numpy.transpose(output_matrix, rearrng_axis)
-    with open(f"{matrix_tmp_dir}/output_gold.h", "r") as f:
-        for idx, _ in numpy.ndenumerate(output_matrix):
-            output_matrix[idx] = float(f.readline().strip())
-    # transpose it back to the original shape
-    if not is_scalar:
-        output_matrix = numpy.transpose(output_matrix, rearrng_axis)
+        # Transpose since the gold matrix may be filled in column order if the 
+        # tensor ordering is 10
+        rearrng_axis = []
+        output_mode_map = tensor_orderings[output_name]
+        for reorder_tup in output_mode_map:
+            rearrng_axis.append(reorder_tup[0])
 
-    #parse the data type of the input and the output
-    with open(f"{matrix_tmp_dir}/dtype", "r") as f:
-        dtype = f.readline().strip()
-    if dtype == "bf16":
-        use_fp = True
+        is_scalar = (rearrng_axis == [])
+        if not is_scalar:
+            output_matrix = numpy.transpose(output_matrix, rearrng_axis)
+        with open(f"{matrix_tmp_dir}/output_gold.h", "r") as f:
+            for idx, _ in numpy.ndenumerate(output_matrix):
+                output_matrix[idx] = float(f.readline().strip())
+        # transpose it back to the original shape
+        if not is_scalar:
+            output_matrix = numpy.transpose(output_matrix, rearrng_axis)
+
+        #parse the data type of the input and the output
+        with open(f"{matrix_tmp_dir}/dtype", "r") as f:
+            dtype = f.readline().strip()
+        if dtype == "bf16":
+            use_fp = True
     
     # elif 'mat_elemadd_relu.gv' in app_name:
     #     b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
@@ -2728,7 +2770,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
                 print(vals)
             sys.stdout = original_stdout
 
-    return output_matrix, output_format, output_name, input_dims, use_fp
+    return output_matrix, output_format, output_name, input_dims, use_fp, matrix_tmp_dir
 
 
 def create_or_clean(dir_path):
@@ -3070,19 +3112,12 @@ if __name__ == "__main__":
 
                 output_dir = prep_test_dir(f"{base_dir}/{sam_graph_name}_{seed_id}", args.output_dir, "OUTPUT_DIR")
                 input_dir = prep_test_dir(f"{base_dir}/{sam_graph_name}_{seed_id}", args.input_dir, "INPUT_DIR")
-                if give_tensor:
-                    matrix_tmp_dir = os.path.join(tensor_locs, kernel_name, seed)
-                elif mtx_tmp_dir is not None:
-                    matrix_tmp_dir = mtx_tmp_dir
-                else:
-                    matrix_tmp_dir = generate_inputs(sam_graph_name)
                         
                 gold_dir = prep_test_dir(f"{base_dir}/{sam_graph_name}_{seed_id}", args.gold_dir, "GOLD_DIR")
                 glb_dir = prep_test_dir(f"{base_dir}/{sam_graph_name}_{seed_id}", args.glb_dir, "GLB_DIR")
                 collat_dir = prep_test_dir(f"{base_dir}/{sam_graph_name}_{seed_id}", args.glb_dir, "COLLAT_DIR")
                 output_dirs.append(output_dir)
                 input_dirs.append(input_dir)
-                matrix_tmp_dirs.append(matrix_tmp_dir)
                 gold_dirs.append(gold_dir)
                 glb_dirs.append(glb_dir)
                 collat_dirs.append(collat_dir)
@@ -3176,12 +3211,12 @@ if __name__ == "__main__":
                 # Assume we are unrolling 'B' for now... Update, change it to const 1
                 for i in range(1):
                     ##### Handling app level file stuff #####
-                    output_matrix, output_format, output_name, input_dims, use_fp = software_gold(sam_graph, matrix_tmp_dir,
-                                                                                                       give_tensor, print_inputs,
-                                                                                                       zero_input=zero_input,
-                                                                                                       tensor_orderings=mode_map,
-                                                                                                       clean=clean,
-                                                                                                       suffix=f"")
+                    output_matrix, output_format, output_name, input_dims, use_fp, matrix_tmp_dir = generate_inputs_and_gold(sam_graph_name, 
+                                                                                                             give_tensor, 
+                                                                                                             print_inputs,
+                                                                                                             tensor_orderings=mode_map,
+                                                                                                             clean=clean,
+                                                                                                             suffix=f"")
                     if clean:
                         clean = False
 
