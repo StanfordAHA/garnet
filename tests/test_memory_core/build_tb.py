@@ -1775,7 +1775,8 @@ def generate_inputs(app_name):
                                "src/data_parser.cpp", 
                                "src/mem_op.cpp", 
                                "src/activation.cpp",
-                               "src/bf16_op.cpp"],
+                               "src/bf16_op.cpp", 
+                               "src/gen_lut.cpp"],
                                 cwd="/aha/Lego_v0")   
         tile.check_returncode()
     except subprocess.CalledProcessError as e:
