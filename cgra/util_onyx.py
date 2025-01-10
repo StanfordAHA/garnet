@@ -441,7 +441,8 @@ def create_cgra(width: int, height: int, io_sides: List[IOSide],
                     or y in range(y_min) \
                     or y in range(y_max + 1, height):
                 if ready_valid:
-                    core = IOCoreReadyValid(allow_bypass=False)
+                    #core = IOCoreReadyValid(allow_bypass=False)
+                    core = IOCoreReadyValid(allow_bypass=False, exchange_64=using_matrix_unit)
                 elif use_io_valid:
                     core = IOCoreValid(config_addr_width=reg_addr_width,
                                        config_data_width=config_data_width)
@@ -611,6 +612,7 @@ def create_cgra(width: int, height: int, io_sides: List[IOSide],
     track_list = list(range(num_tracks))
 
 
+    # MO: GLB CONN HACK 
     io_in = {"f2io_1": [0], f"f2io_{bit_width_str}": [0]}
     io_out = {"io2f_1": track_list, f"io2f_{bit_width_str}": track_list, f"io2f_{bit_width_str}_T0": [0], f"io2f_{bit_width_str}_T1": [1], 
                                                     f"io2f_{bit_width_str}_T2": [2], f"io2f_{bit_width_str}_T3": [3], f"io2f_{bit_width_str}_T4": [4]}

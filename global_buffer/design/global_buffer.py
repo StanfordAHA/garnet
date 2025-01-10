@@ -58,21 +58,28 @@ class GlobalBuffer(Generator):
         self.cgra_cfg_jtag_gc2glb_addr = self.input("cgra_cfg_jtag_gc2glb_addr", self._params.cgra_cfg_addr_width)
         self.cgra_cfg_jtag_gc2glb_data = self.input("cgra_cfg_jtag_gc2glb_data", self._params.cgra_cfg_data_width)
 
+
+        # MO: GLB WRITE HACK 
         self.strm_data_f2g = self.input("strm_data_f2g", self._params.cgra_data_width, size=[
-            self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
+            self._params.num_glb_tiles, self._params.cgra_per_glb, 4], packed=True)  
         self.strm_data_f2g_vld = self.input("strm_data_f2g_vld", 1, size=[
-            self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
+            self._params.num_glb_tiles, self._params.cgra_per_glb, 4], packed=True)
         self.strm_data_f2g_rdy = self.output("strm_data_f2g_rdy", 1, size=[
-            self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
+            self._params.num_glb_tiles, self._params.cgra_per_glb, 4], packed=True)
+        
+
         self.strm_ctrl_f2g = self.input("strm_ctrl_f2g", 1, size=[
             self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
 
+        # MO: GLB READ HACK 
         self.strm_data_g2f = self.output("strm_data_g2f", self._params.cgra_data_width, size=[
-            self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
+            self._params.num_glb_tiles, self._params.cgra_per_glb, 4], packed=True)
         self.strm_data_g2f_vld = self.output("strm_data_g2f_vld", 1, size=[
-            self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
+            self._params.num_glb_tiles, self._params.cgra_per_glb, 4], packed=True)
         self.strm_data_g2f_rdy = self.input("strm_data_g2f_rdy", 1, size=[
-            self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
+            self._params.num_glb_tiles, self._params.cgra_per_glb, 4], packed=True)
+        
+
         self.strm_ctrl_g2f = self.output("strm_ctrl_g2f", 1, size=[
             self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
         self.strm_data_flush_g2f = self.output("strm_data_flush_g2f", 1, size=self._params.num_groups, packed=True)

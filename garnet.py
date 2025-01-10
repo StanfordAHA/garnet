@@ -200,8 +200,8 @@ class Garnet(Generator):
 
             # MO: Temporary HACK
             self.cgra2mu_row0_ready_and = FromMagma(mantle.DefineAnd(height=2, width=1))
-            self.wire(self.cgra2mu_row0_ready_and.ports.I0, self.convert(self.interconnect.ports.mu2io_17_0_X07_Y01_ready, magma.Bits[1]))
-            self.wire(self.cgra2mu_row0_ready_and.ports.I1, self.convert(self.interconnect.ports.mu2io_17_1_X07_Y01_ready, magma.Bits[1]))
+            self.wire(self.cgra2mu_row0_ready_and.ports.I0, self.convert(self.interconnect.ports.mu2io_17_0_X03_Y01_ready, magma.Bits[1]))
+            self.wire(self.cgra2mu_row0_ready_and.ports.I1, self.convert(self.interconnect.ports.mu2io_17_1_X03_Y01_ready, magma.Bits[1]))
             self.wire(self.convert(self.cgra2mu_row0_ready_and.ports.O, magma.bit), self.ports.cgra2mu_ready_row0)
 
 

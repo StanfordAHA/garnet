@@ -211,6 +211,14 @@ def gen_global_buffer_rdl(name, params: GlobalBufferParams):
         st_dma_rv_seg_mode_r.add_child(st_dma_rv_seg_mode_f)
         addr_map.add_child(st_dma_rv_seg_mode_r)
 
+
+    # MU Active
+    # TODO: Wrap in if-statemnt. Figure out how to configure it  
+    st_dma_mu_active_r = Reg("st_dma_mu_active")
+    st_dma_mu_active_f = Field("value", 1)
+    st_dma_mu_active_r.add_child(st_dma_mu_active_f)
+    addr_map.add_child(st_dma_mu_active_r)
+
     # Store DMA Header
     if params.queue_depth == 1:
         st_dma_header_rf = RegFile("st_dma_header_0", size=params.queue_depth)

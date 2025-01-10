@@ -1,6 +1,7 @@
 from gemstone.generator.from_magma import FromMagma
 from gemstone.common.core import PnRTag
 from lake.modules.io_core import IOCore
+from lake.modules.io_core_64 import IOCore_64
 import kratos as kts
 
 if __name__ == "__main__":
@@ -18,7 +19,8 @@ class IOCoreReadyValid(LakeCoreBase):
                  tracks_supported=[1, 17],
                  fifo_depth=2,
                  allow_bypass=False,
-                 use_almost_full=False):
+                 use_almost_full=False,
+                 exchange_64=False):
 
         buffet_name = "IOCoreReadyValid"  # noqa "assigned but never used"
         super().__init__(config_data_width=config_data_width,
@@ -47,7 +49,17 @@ class IOCoreReadyValid(LakeCoreBase):
             # Instantiate core object here - will only use the object representation to
             # query for information. The circuit representation will be cached and retrieved
             # in the following steps.
-            self.dut = IOCore(data_width=data_width,
+
+            if exchange_64:
+                self.dut = IOCore_64(data_width=data_width,
+                              tracks_supported=self.tracks_supported,
+                              fifo_depth=fifo_depth,
+                              use_17_to_16_hack=False,
+                              allow_bypass=self.allow_bypass,
+                              use_almost_full=self.use_almost_full,
+                              add_flush=True)
+            else:
+                self.dut = IOCore(data_width=data_width,
                               tracks_supported=self.tracks_supported,
                               fifo_depth=fifo_depth,
                               use_17_to_16_hack=False,
