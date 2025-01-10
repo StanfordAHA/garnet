@@ -144,17 +144,19 @@ class GlbTile(Generator):
         self.cgra_cfg_pcfg_addr_e2w_wsto = self.output("cgra_cfg_pcfg_addr_e2w_wsto", self._params.cgra_cfg_addr_width)
         self.cgra_cfg_pcfg_data_e2w_wsto = self.output("cgra_cfg_pcfg_data_e2w_wsto", self._params.cgra_cfg_data_width)
 
+        # MO: GLB WRITE HACK 
         self.strm_data_f2g = self.input("strm_data_f2g", self._params.cgra_data_width,
-                                        size=self._params.cgra_per_glb, packed=True)
-        self.strm_data_f2g_vld = self.input("strm_data_f2g_vld", 1, size=self._params.cgra_per_glb, packed=True)
-        self.strm_data_f2g_rdy = self.output("strm_data_f2g_rdy", 1, size=self._params.cgra_per_glb, packed=True)
+                                        size=[self._params.cgra_per_glb, 4], packed=True)
+        self.strm_data_f2g_vld = self.input("strm_data_f2g_vld", 1, size=[self._params.cgra_per_glb, 4], packed=True)
+        self.strm_data_f2g_rdy = self.output("strm_data_f2g_rdy", 1, size=[self._params.cgra_per_glb, 4], packed=True)
 
         self.strm_ctrl_f2g = self.input("strm_ctrl_f2g", 1, size=self._params.cgra_per_glb, packed=True)
 
+        # MO: GLB READ HACK 
         self.strm_data_g2f = self.output("strm_data_g2f", self._params.cgra_data_width,
-                                         size=self._params.cgra_per_glb, packed=True)
-        self.strm_data_g2f_vld = self.output("strm_data_g2f_vld", 1, size=self._params.cgra_per_glb, packed=True)
-        self.strm_data_g2f_rdy = self.input("strm_data_g2f_rdy", 1, size=self._params.cgra_per_glb, packed=True)
+                                         size=[self._params.cgra_per_glb, 4], packed=True)
+        self.strm_data_g2f_vld = self.output("strm_data_g2f_vld", 1, size=[self._params.cgra_per_glb, 4], packed=True)
+        self.strm_data_g2f_rdy = self.input("strm_data_g2f_rdy", 1, size=[self._params.cgra_per_glb, 4], packed=True)
 
         self.strm_ctrl_g2f = self.output("strm_ctrl_g2f", 1, size=self._params.cgra_per_glb, packed=True)
 
@@ -192,6 +194,7 @@ class GlbTile(Generator):
                                           size=self._params.queue_depth)
         self.cfg_st_dma_num_blocks = self.var("cfg_st_dma_num_blocks", self._params.axi_data_width)
         self.cfg_st_dma_rv_seg_mode = self.var("cfg_st_dma_rv_seg_mode", 1)
+        self.cfg_st_dma_mu_active = self.var("cfg_st_dma_mu_active", 1)
 
         # ld dma
         self.cfg_ld_dma_ctrl = self.var("cfg_ld_dma_ctrl", self.header.cfg_load_dma_ctrl_t)
@@ -328,6 +331,10 @@ class GlbTile(Generator):
         self.wire(self.cfg_st_dma_num_blocks, self.glb_cfg.cfg_st_dma_num_blocks)
         self.wire(self.cfg_st_dma_rv_seg_mode, self.glb_cfg.cfg_st_dma_rv_seg_mode)
 
+        # TODO: Wrap this in if-statements with --using-matrix-unit flag as condition 
+        # MATRIX UNIT ACTIVE (configuration)
+        self.wire(self.cfg_st_dma_mu_active, self.glb_cfg.cfg_st_dma_mu_active)
+
         self.glb_pcfg_broadcast = GlbPcfgBroadcast(_params=self._params)
         self.add_child("glb_pcfg_broadcast",
                        self.glb_pcfg_broadcast,
@@ -360,7 +367,8 @@ class GlbTile(Generator):
                        st_dma_done_interrupt=self.strm_f2g_interrupt_pulse,
                        cfg_data_network_f2g_mux=self.cfg_st_dma_ctrl['data_mux'],
                        cfg_st_dma_num_blocks=self.cfg_st_dma_num_blocks,
-                       cfg_st_dma_rv_seg_mode=self.cfg_st_dma_rv_seg_mode)
+                       cfg_st_dma_rv_seg_mode=self.cfg_st_dma_rv_seg_mode,
+                       cfg_mu_active=self.cfg_st_dma_mu_active)
 
         self.add_child("glb_load_dma",
                        GlbLoadDma(_params=self._params),
