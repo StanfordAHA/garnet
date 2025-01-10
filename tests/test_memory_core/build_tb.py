@@ -1747,8 +1747,11 @@ def coalesce_files(in_dir, out_dir, hack_files=None, unroll=1, give_tensor=None,
                                 out_dir=out_dir, out_name=f'tensor_{tname}_mode_vals', 
                                 use_fp=use_fp)
                 else:
+                    # the luts are dumped in bfloat16, transform it to hex for the sim by
+                    # setting use_fp to True
                     write_glb_file([f'{in_dir}/tensor_{tname}_mode_vals'],
-                                out_dir=out_dir, out_name=f'tensor_{tname}_mode_vals')
+                                out_dir=out_dir, out_name=f'tensor_{tname}_mode_vals',
+                                use_fp=True)
 
 
 def generate_inputs(app_name):
