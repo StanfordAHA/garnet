@@ -277,7 +277,8 @@ class GlbStoreDma(Generator):
                        reset=self.reset,
                        restart=self.st_dma_start_pulse_r | self.rv_is_addrdata, #DRV: may need to change this in DRV mode TODO: double-check all rv_ismeta/addrdata uses (resolution: should be low in non-sparse rv mode)
                     #    start_addr=self.data_base_addr,
-                       step=self.iter_step_valid,
+                       #step=self.iter_step_valid,
+                       step=kts.ternary(self.dense_rv_mode_on, self.cycle_valid, self.iter_step_valid),
                        mux_sel=self.loop_mux_sel,
                        addr_out=self.data_current_addr)
         # In sparse RV mode, the start address is given by the header of each block
