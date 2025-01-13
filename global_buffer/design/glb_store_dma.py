@@ -1,4 +1,5 @@
 from kratos import Generator, always_ff, always_comb, posedge, const, resize, ext, clog2, clock_en
+import kratos as kts
 from global_buffer.design.glb_loop_iter import GlbLoopIter
 from global_buffer.design.glb_sched_gen import GlbSchedGen
 from global_buffer.design.glb_addr_gen import GlbAddrGen
@@ -90,6 +91,7 @@ class GlbStoreDma(Generator):
         self.data_current_addr_pre = self.var("data_current_addr_pre", self._params.glb_addr_width + 1)
         self.loop_mux_sel = self.var("loop_mux_sel", clog2(self._params.store_dma_loop_level))
         self.repeat_cnt = self.var("repeat_cnt", clog2(self._params.queue_depth) + 1)
+        
 
         # ready_valid controller
         self.block_done = self.var("block_done", 1)
@@ -97,6 +99,7 @@ class GlbStoreDma(Generator):
         self.is_last_block = self.var("is_last_block", 1)
         self.data_ready_g2f_w = self.var("data_ready_g2f_w", 1)
         self.cycle_counter_en = self.var("cycle_counter_en", 1)
+        self.cycle_counter_increment = self.var("cycle_counter_increment", 1)
         self.dense_rv_mode_on = self.var("dense_rv_mode_on", 1)
         self.sparse_rv_mode_on = self.var("sparse_rv_mode_on", 1)
         self.fifo_almost_full_diff = self.var("fifo_almost_full_diff", clog2(self._params.store_dma_fifo_depth))
@@ -207,7 +210,11 @@ class GlbStoreDma(Generator):
                        clk=self.clk,
                        clk_en=const(1, 1),
                        reset=self.reset,
-                       step=self.iter_step_valid,
+                       # MO: STENCIL VALID HACK
+                       #step=self.iter_step_valid,
+                       #step=kts.ternary(self.dense_rv_mode_on, self.iter_step_valid & self.cycle_valid, self.iter_step_valid),
+                       step=kts.ternary(self.dense_rv_mode_on, self.cycle_valid, self.iter_step_valid),
+                       #step=self.cycle_valid,
                        mux_sel_out=self.loop_mux_sel,
                        restart=self.loop_done)
         self.wire(self.loop_iter.dim, self.current_dma_header["dim"])
@@ -218,17 +225,24 @@ class GlbStoreDma(Generator):
         # Shouldn't need to use these for dense ready-valid mode 
         # Cycle stride
         self.wire(self.cycle_counter_en, self.cfg_st_dma_ctrl_valid_mode == self._params.st_dma_valid_mode_static)
+
+        self.cycle_valid_pre = self.var("cycle_valid_pre", 1)
+
         self.cycle_stride_sched_gen = GlbSchedGen(self._params)
         self.add_child("cycle_stride_sched_gen",
                        self.cycle_stride_sched_gen,
                        clk=self.clk,
-                       clk_en=clock_en(self.cycle_counter_en),
+                       # MO: STENCIL VALID HACK
+                       clk_en=clock_en(self.cycle_counter_en | self.dense_rv_mode_on),
                        reset=self.reset,
                        restart=self.st_dma_start_pulse_r,
                        cycle_count=self.cycle_count,
                        current_addr=self.cycle_current_addr,
                        finished=self.loop_done_muxed,
-                       valid_output=self.cycle_valid)
+                       #valid_output=self.cycle_valid)
+                       valid_output=self.cycle_valid_pre)
+        
+        self.wire(self.cycle_valid, self.cycle_valid_pre & self.iter_step_valid)
 
         self.cycle_stride_addr_gen = GlbAddrGen(self._params, loop_level=self._params.store_dma_loop_level)
         self.cycle_stride_addr_gen.p_addr_width.value = self._params.cycle_count_width
@@ -236,10 +250,15 @@ class GlbStoreDma(Generator):
         self.add_child("cycle_stride_addr_gen",
                        self.cycle_stride_addr_gen,
                        clk=self.clk,
-                       clk_en=clock_en(self.cycle_counter_en),
+                       # MO: STENCIL VALID HACK
+                       clk_en=clock_en(self.cycle_counter_en | self.dense_rv_mode_on),
                        reset=self.reset,
                        restart=self.st_dma_start_pulse_r,
-                       step=self.iter_step_valid,
+                       # MO: STENCIL VALID HACK 
+                       #step=self.iter_step_valid,
+                    #    step=kts.ternary(self.dense_rv_mode_on, self.iter_step_valid & self.cycle_valid, self.iter_step_valid),
+                       step=kts.ternary(self.dense_rv_mode_on, self.cycle_valid, self.iter_step_valid),
+                       #step=self.cycle_valid,
                        mux_sel=self.loop_mux_sel)
         self.wire(self.cycle_stride_addr_gen.addr_out, self.cycle_current_addr)
         self.wire(self.cycle_stride_addr_gen.start_addr, self.current_dma_header["cycle_start_addr"])
@@ -267,6 +286,11 @@ class GlbStoreDma(Generator):
         self.wire(self.data_stride_addr_gen.start_addr, self.data_base_addr)
         for i in range(self._params.store_dma_loop_level):
             self.wire(self.data_stride_addr_gen.strides[i], self.current_dma_header[f"stride_{i}"])
+
+
+        
+        # Need to rename cycle_counter_en to static_mode_en
+        self.wire(self.cycle_counter_increment, kts.ternary(self.cycle_counter_en, self.strm_run, self.strm_run & self.iter_step_valid))
 
 
     # DRV: Choose else code. Need not worry about block_done 
@@ -436,7 +460,11 @@ class GlbStoreDma(Generator):
                 self.cycle_count = 0
             elif self.loop_done_muxed:
                 self.cycle_count = 0
-            elif self.cycle_counter_en & self.strm_run:
+            # MO: STENCIL VALID HACK
+            # elif self.cycle_counter_en & self.strm_run:
+            # Last & with iter_step_valid is a hack to ensure that the cycle counter is tokenized on RV transactions 
+            # elif (self.cycle_counter_en | self.dense_rv_mode_on) & self.strm_run & self.iter_step_valid:
+            elif(self.cycle_counter_increment):
                 self.cycle_count = self.cycle_count + 1
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
@@ -501,7 +529,10 @@ class GlbStoreDma(Generator):
     # DRV: Take IF block so data goes through FIFO, as desired
     @always_comb
     def strm_wr_packet_comb(self):
-        self.strm_wr_en_w = self.iter_step_valid
+
+        # MO: STENCIL VALID HACK - qualify incoming valids with RV tokenized stencil valid 
+        # self.strm_wr_en_w = self.iter_step_valid
+        self.strm_wr_en_w = kts.ternary(self.dense_rv_mode_on, self.iter_step_valid & self.cycle_valid, self.iter_step_valid)
         if self.sparse_rv_mode_on | self.dense_rv_mode_on:
             self.strm_wr_addr_w = resize(self.data_current_addr, self._params.glb_addr_width)
             self.strm_wr_data_w = self.data_fifo2dma
