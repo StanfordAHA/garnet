@@ -282,15 +282,17 @@ class Garnet(Generator):
     def map(self, halide_src):
         return map_app(halide_src, retiming=True)
 
-    def get_placement_bitstream(self, placement, id_to_name, instrs):
+    def get_placement_bitstream(self, placement, id_to_name, instrs, active_core_ports=None):
         result = []
         for node, (x, y) in placement.items():
             instance = id_to_name[node]
             if instance not in instrs:
                 continue
             instr = instrs[instance]
+            #TODO: Pass netlist in here, get the instance, search the netlist for the instance, and get the ports being used
+            # If it's a PE, pass this info on to configure sparse_num_inputs appropriately
             result += self.interconnect.configure_placement(x, y, instr,
-                                                            node[0])
+                                                            node[0], node[1], active_core_ports)
             if node in self.pes_with_packed_ponds:
                 print(f"pond {self.pes_with_packed_ponds[node]} being packed with {node} in {x},{y}")
                 node = self.pes_with_packed_ponds[node]
@@ -299,7 +301,7 @@ class Garnet(Generator):
                     continue
                 instr = instrs[instance]
                 result += self.interconnect.configure_placement(x, y, instr,
-                                                                node[0])
+                                                                node[0], node[1], active_core_ports)
         return result
 
     def convert_mapped_to_netlist(self, mapped):
@@ -535,10 +537,22 @@ class Garnet(Generator):
                     else:
                         pin_remap = mem_remap[mode][pin_]
 
+                    if tag_ in netlist_info["active_core_ports"]:
+                        netlist_info["active_core_ports"][tag_].append(pin_remap)
+                    else:
+                        netlist_info["active_core_ports"][tag_] = [pin_remap]
+
                     connections_list[idx] = (tag_, pin_remap)
                 elif tag_[0] == 'p':
                     pin_remap = pe_remap['alu'][pin_]
                     connections_list[idx] = (tag_, pin_remap)
+
+                    if tag_ in netlist_info["active_core_ports"]:
+                        netlist_info["active_core_ports"][tag_].append(pin_remap)
+                    else:
+                        netlist_info["active_core_ports"][tag_] = [pin_remap]
+
+
             netlist_info['netlist'][netlist_id] = connections_list
 
         pond_remap = {}
@@ -575,7 +589,7 @@ class Garnet(Generator):
         print_netlist_info(netlist_info, self.pes_with_packed_ponds, app_dir + "/netlist_info.txt")
 
         return (netlist_info["id_to_name"], netlist_info["instance_to_instrs"], netlist_info["netlist"],
-                netlist_info["buses"])
+                netlist_info["buses"], netlist_info["active_core_ports"])
 
     def place_and_route(self, args, load_only=False):
 
@@ -590,13 +604,13 @@ class Garnet(Generator):
         input_broadcast_branch_factor = args.input_broadcast_branch_factor
         input_broadcast_max_leaves    = args.input_broadcast_max_leaves
 
-        id_to_name, instance_to_instr, netlist, bus = \
+        id_to_name, instance_to_instr, netlist, bus, active_core_ports = \
             self.load_netlist(halide_src,
                               load_only,
                               pipeline_input_broadcasts,
                               input_broadcast_branch_factor,
                               input_broadcast_max_leaves)
-
+        
         app_dir = os.path.dirname(halide_src)
         if unconstrained_io:
             fixed_io = None
@@ -617,7 +631,7 @@ class Garnet(Generator):
                             pes_with_packed_ponds=self.pes_with_packed_ponds,
                             west_in_io_sides=west_in_io_sides)
 
-        return placement, routing, id_to_name, instance_to_instr, netlist, bus
+        return placement, routing, id_to_name, instance_to_instr, netlist, bus, active_core_ports
 
     def fix_pond_flush_bug(self, placement, routing):
         from collections import defaultdict
@@ -691,7 +705,7 @@ class Garnet(Generator):
 
 
     def generate_bitstream(self, halide_src, placement, routing, id_to_name, instance_to_instr, netlist, bus,
-                           compact=False, end_to_end=False):
+                           compact=False, end_to_end=False, active_core_ports=None):
         routing_fix = archipelago.power.reduce_switching(routing, self.interconnect,
                                                          compact=compact)
         routing.update(routing_fix)
@@ -705,7 +719,7 @@ class Garnet(Generator):
 
         bitstream += self.fix_pond_flush_bug(placement, routing)
         bitstream += self.get_placement_bitstream(placement, id_to_name,
-                                                  instance_to_instr)
+                                                  instance_to_instr, active_core_ports)
 
         skip_addr = self.interconnect.get_skip_addr()
         bitstream = compress_config_data(bitstream, skip_compression=skip_addr)
@@ -947,7 +961,7 @@ def build_verilog(args, garnet):
 
 def pnr(garnet, args, app):
 
-    placement, routing, id_to_name, instance_to_instr, netlist, bus = \
+    placement, routing, id_to_name, instance_to_instr, netlist, bus, active_core_ports = \
         garnet.place_and_route(args, load_only=args.generate_bitstream_only)
 
     # When 'generate_bitstream_only' is set, we do not actually do any NEW pnr;
@@ -956,14 +970,15 @@ def pnr(garnet, args, app):
     if args.pipeline_pnr and not args.generate_bitstream_only:
         reschedule_pipelined_app(app)
 
-        placement, routing, id_to_name, instance_to_instr, netlist, bus = \
+        placement, routing, id_to_name, instance_to_instr, netlist, bus, active_core_ports = \
             garnet.place_and_route(args, load_only=True)
 
     bitstream, iorved_tuple = garnet.generate_bitstream(
         args.app,
         placement, routing, id_to_name, instance_to_instr, netlist, bus,
         compact=args.compact,
-        end_to_end=args.end_to_end
+        end_to_end=args.end_to_end,
+        active_core_ports=active_core_ports
     )
     (inputs, outputs, reset, valid, en, delay) = iorved_tuple
 
