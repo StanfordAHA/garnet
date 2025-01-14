@@ -223,16 +223,16 @@ def create_cgra(width: int, height: int, io_sides: List[IOSide],
 
         wscan = WriteScanner(fifo_depth=fifo_depth, perf_debug=perf_debug)
 
-        # strg_ub = StrgUBVec(mem_width=mem_width, mem_depth=mem_depth, comply_with_17=True)
+        strg_ub = StrgUBVec(mem_width=mem_width, mem_depth=mem_depth, comply_with_17=True)
 
-        strg_cap = 4096
-        fw = 4
-        data_width = 16
+        #strg_cap = 4096
+        #fw = 4
+        #data_width = 16
 
         # get the spec
-        spec = build_four_port_wide_fetch_rv(storage_capacity=strg_cap, data_width=data_width, vec_width=fw)
+        #spec = build_four_port_wide_fetch_rv(storage_capacity=strg_cap, data_width=data_width, vec_width=fw)
         # Instantiate the core
-        strg_ub = SpecMemoryController(spec=spec)
+        #strg_ub = SpecMemoryController(spec=spec)
 
         fiber_access = FiberAccess(local_memory=False,
                                    use_pipelined_scanner=pipeline_scanner,
