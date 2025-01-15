@@ -21,7 +21,7 @@ from daemon.daemon import GarnetDaemon
 from gemstone.common.configurable import ConfigurationType
 
 from gemstone.generator.from_magma import FromMagma
-import mantle 
+import mantle
 from gemstone.generator.const import Const
 from canal.util import IOSide
 
@@ -58,7 +58,7 @@ class Garnet(Generator):
         self.harden_flush = args.harden_flush
         self.pipeline_config_interval = args.pipeline_config_interval
 
-    
+
 
         self.io_sides = io_sides
 
@@ -122,7 +122,7 @@ class Garnet(Generator):
         glb_tile_mem_size = 2 ** ((glb_params.bank_addr_width - 10)
                                   + math.ceil(math.log(glb_params.banks_per_tile, 2)))
 
-       
+
         self.global_controller = GlobalController(
             addr_width=self.config_addr_width,
             data_width=self.config_data_width,
@@ -158,10 +158,10 @@ class Garnet(Generator):
             cgra_running_clk_out=magma.Out(magma.Clock)
         )
 
-        # Add MU interface, if necessary 
+        # Add MU interface, if necessary
         if using_matrix_unit:
             num_output_channels = self.height * 2
-            self.add_ports(            
+            self.add_ports(
                 mu2cgra=magma.In(magma.Array[(num_output_channels, magma.Bits[mu_datawidth])]),
                 mu2cgra_valid=magma.In(magma.Bit),
                 
@@ -170,7 +170,7 @@ class Garnet(Generator):
                 cgra2mu_ready=magma.Out(magma.Bit)
             )
 
-            # Matrix unit <-> interconnnect ports connection        
+            # Matrix unit <-> interconnnect ports connection
             self.cgra2mu_ready_and = FromMagma(mantle.DefineAnd(height=num_output_channels, width=1))
 
             if dense_only:
@@ -178,7 +178,7 @@ class Garnet(Generator):
             else:
                 cgra_track_width = 17
 
-            assert mu_datawidth < cgra_track_width, "Matrix unit datawidth must be < CGRA track width" 
+            assert mu_datawidth < cgra_track_width, "Matrix unit datawidth must be < CGRA track width"
             width_difference = cgra_track_width - mu_datawidth
 
             mu_io_tile_col = max(num_fabric_cols_removed - 1, 0)
@@ -186,7 +186,7 @@ class Garnet(Generator):
             for i in range(num_output_channels):
                 io_num = i % 2
                 cgra_row_num = int(i/2 + 1)
-                
+
                 # Tie MSB(s) not driven by MU to GND
                 if (width_difference > 0):
                    self.wire(Const(0), self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{mu_io_tile_col:02X}_Y{cgra_row_num:02X}"][cgra_track_width-width_difference:cgra_track_width])
@@ -282,15 +282,17 @@ class Garnet(Generator):
     def map(self, halide_src):
         return map_app(halide_src, retiming=True)
 
-    def get_placement_bitstream(self, placement, id_to_name, instrs):
+    def get_placement_bitstream(self, placement, id_to_name, instrs, active_core_ports=None):
         result = []
         for node, (x, y) in placement.items():
             instance = id_to_name[node]
             if instance not in instrs:
                 continue
             instr = instrs[instance]
+            #TODO: Pass netlist in here, get the instance, search the netlist for the instance, and get the ports being used
+            # If it's a PE, pass this info on to configure sparse_num_inputs appropriately
             result += self.interconnect.configure_placement(x, y, instr,
-                                                            node[0])
+                                                            node[0], node[1], active_core_ports)
             if node in self.pes_with_packed_ponds:
                 print(f"pond {self.pes_with_packed_ponds[node]} being packed with {node} in {x},{y}")
                 node = self.pes_with_packed_ponds[node]
@@ -299,7 +301,7 @@ class Garnet(Generator):
                     continue
                 instr = instrs[instance]
                 result += self.interconnect.configure_placement(x, y, instr,
-                                                                node[0])
+                                                                node[0], node[1], active_core_ports)
         return result
 
     def convert_mapped_to_netlist(self, mapped):
@@ -495,6 +497,13 @@ class Garnet(Generator):
             elif mem_remap is not None and pe_remap is not None:
                 break
 
+        lakespec_pin_remap = {
+            'data_in_0': 'port_0',
+            'data_in_1': 'port_1',
+            'data_out_0': 'port_2',
+            'data_out_1': 'port_3'
+        }
+
         for netlist_id, connections_list in netlist_info['netlist'].items():
             for idx, connection in enumerate(connections_list):
                 tag_, pin_ = connection
@@ -514,12 +523,36 @@ class Garnet(Generator):
                         }
                         assert pin_ in hack_remap
                         pin_ = hack_remap[pin_]
-                    pin_remap = mem_remap[mode][pin_]
+                    print(mem_remap)
+                    # Hack - put the remap for lakespec here???
+                    if mode == "UB" and "UB" not in mem_remap:
+                        if 'lakespec' in mem_remap:
+                            print("Hello - here")
+                            pin_remap = mem_remap['lakespec'][lakespec_pin_remap[pin_]]
+                            print(pin_remap)
+                            # exit()
+                        else:
+                            raise NotImplementedError
+                    # exit()
+                    else:
+                        pin_remap = mem_remap[mode][pin_]
+
+                    if tag_ in netlist_info["active_core_ports"]:
+                        netlist_info["active_core_ports"][tag_].append(pin_remap)
+                    else:
+                        netlist_info["active_core_ports"][tag_] = [pin_remap]
 
                     connections_list[idx] = (tag_, pin_remap)
                 elif tag_[0] == 'p':
                     pin_remap = pe_remap['alu'][pin_]
                     connections_list[idx] = (tag_, pin_remap)
+
+                    if tag_ in netlist_info["active_core_ports"]:
+                        netlist_info["active_core_ports"][tag_].append(pin_remap)
+                    else:
+                        netlist_info["active_core_ports"][tag_] = [pin_remap]
+
+
             netlist_info['netlist'][netlist_id] = connections_list
 
         pond_remap = {}
@@ -556,9 +589,9 @@ class Garnet(Generator):
         print_netlist_info(netlist_info, self.pes_with_packed_ponds, app_dir + "/netlist_info.txt")
 
         return (netlist_info["id_to_name"], netlist_info["instance_to_instrs"], netlist_info["netlist"],
-                netlist_info["buses"])
+                netlist_info["buses"], netlist_info["active_core_ports"])
 
-    def place_and_route(self, args, load_only=False): 
+    def place_and_route(self, args, load_only=False):
 
         # place_and_route() used to have a bunch of parameters with defaults
         # that were in conflict with and overridden by existing higher level
@@ -571,13 +604,13 @@ class Garnet(Generator):
         input_broadcast_branch_factor = args.input_broadcast_branch_factor
         input_broadcast_max_leaves    = args.input_broadcast_max_leaves
 
-        id_to_name, instance_to_instr, netlist, bus = \
+        id_to_name, instance_to_instr, netlist, bus, active_core_ports = \
             self.load_netlist(halide_src,
                               load_only,
                               pipeline_input_broadcasts,
                               input_broadcast_branch_factor,
                               input_broadcast_max_leaves)
-
+        
         app_dir = os.path.dirname(halide_src)
         if unconstrained_io:
             fixed_io = None
@@ -598,7 +631,7 @@ class Garnet(Generator):
                             pes_with_packed_ponds=self.pes_with_packed_ponds,
                             west_in_io_sides=west_in_io_sides)
 
-        return placement, routing, id_to_name, instance_to_instr, netlist, bus
+        return placement, routing, id_to_name, instance_to_instr, netlist, bus, active_core_ports
 
     def fix_pond_flush_bug(self, placement, routing):
         from collections import defaultdict
@@ -672,7 +705,7 @@ class Garnet(Generator):
 
 
     def generate_bitstream(self, halide_src, placement, routing, id_to_name, instance_to_instr, netlist, bus,
-                           compact=False, end_to_end=False):
+                           compact=False, end_to_end=False, active_core_ports=None):
         routing_fix = archipelago.power.reduce_switching(routing, self.interconnect,
                                                          compact=compact)
         routing.update(routing_fix)
@@ -686,7 +719,7 @@ class Garnet(Generator):
 
         bitstream += self.fix_pond_flush_bug(placement, routing)
         bitstream += self.get_placement_bitstream(placement, id_to_name,
-                                                  instance_to_instr)
+                                                  instance_to_instr, active_core_ports)
 
         skip_addr = self.interconnect.get_skip_addr()
         bitstream = compress_config_data(bitstream, skip_compression=skip_addr)
@@ -851,12 +884,12 @@ def parse_args():
         else:
             io_sides = [IOSide.North]
     else:
-        io_sides = [IOSide.North] 
+        io_sides = [IOSide.North]
 
     from global_buffer.design.global_buffer_parameter import gen_global_buffer_params
 
     num_cgra_cols_including_io = args.width
-  
+
     if IOSide.West in io_sides:
         num_cgra_cols_including_io += 1
 
@@ -864,7 +897,7 @@ def parse_args():
         num_glb_tiles=args.width // 2,
         num_cgra_cols=args.width,
 
-        # Matrix unit hack 
+        # Matrix unit hack
         num_cgra_cols_including_io=num_cgra_cols_including_io,
 
         # NOTE: We assume num_prr is same as num_glb_tiles
@@ -928,7 +961,7 @@ def build_verilog(args, garnet):
 
 def pnr(garnet, args, app):
 
-    placement, routing, id_to_name, instance_to_instr, netlist, bus = \
+    placement, routing, id_to_name, instance_to_instr, netlist, bus, active_core_ports = \
         garnet.place_and_route(args, load_only=args.generate_bitstream_only)
 
     # When 'generate_bitstream_only' is set, we do not actually do any NEW pnr;
@@ -937,14 +970,15 @@ def pnr(garnet, args, app):
     if args.pipeline_pnr and not args.generate_bitstream_only:
         reschedule_pipelined_app(app)
 
-        placement, routing, id_to_name, instance_to_instr, netlist, bus = \
+        placement, routing, id_to_name, instance_to_instr, netlist, bus, active_core_ports = \
             garnet.place_and_route(args, load_only=True)
 
     bitstream, iorved_tuple = garnet.generate_bitstream(
         args.app,
         placement, routing, id_to_name, instance_to_instr, netlist, bus,
         compact=args.compact,
-        end_to_end=args.end_to_end
+        end_to_end=args.end_to_end,
+        active_core_ports=active_core_ports
     )
     (inputs, outputs, reset, valid, en, delay) = iorved_tuple
 

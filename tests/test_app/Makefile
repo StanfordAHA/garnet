@@ -1,5 +1,3 @@
-#!/bin/bash
-
 # -------------------------------------------------------------------
 # Variables
 # -------------------------------------------------------------------
@@ -11,6 +9,10 @@ netlist_dir := $(mkfile_dir)/netlist
 genesis_tb_dir := $(mkfile_dir)/genesis_tb
 glc_dir := $(garnet_dir)/global_controller
 APP_ARGS ?= +APP0=app0
+
+# I.e. if APP_ARGS="+APP0=/aha/Halide-to-Hardware/apps/hardware_benchmarks/apps/pointwise"
+# then APP0_NAME="/aha/Halide-to-Hardware/apps/hardware_benchmarks/apps/pointwise"
+APP0_NAME = $(shell echo $(APP_ARGS) | awk '{print $1}' | sed 's/.*=//')
 
 TOOL ?= VCS
 export WAVEFORM ?= 1
@@ -68,6 +70,7 @@ RUN_LOG ?= run.log
 
 ifeq ($(WAVEFORM), 1)
 WAVEFORM_ARGS = -debug_access+all -kdb +vpi +memcbk +vcsd
+VERILATOR_WAVEFORM_ARGS = --trace
 endif
 
 ifeq ($(WHICH_SOC), amber)
@@ -92,6 +95,14 @@ VCS = vcs \
 	  $(COMPILE_ARGS) \
 	  $(INPUT_ARGS)
 
+VERILATOR = verilator $(VERILATOR_WARN) --timing --cc --exe tb/CGRA.cpp \
+	  -Wno-fatal -Wno-UNOPTFLAT \
+	  --timescale 1ps/1ps \
+	  --top-module top \
+	  $(VERILATOR_WAVEFORM_ARGS) \
+	  $(INPUT_ARGS) \
+	  $(shell pwd)/libcgra.so
+
 XRUN = xrun \
 	   -64bit \
 	   -sv \
@@ -109,15 +120,72 @@ XRUN = xrun \
 	   $(INPUT_ARGS)
 
 # -------------------------------------------------------------------
+# TOP_LEVEL DEPENDENCE: "MAKE" == "MAKE SIM"
+# -------------------------------------------------------------------
+.phony: all
+all: sim
+
+# -------------------------------------------------------------------
+# INSTALL VERILATOR 5.028
+# -------------------------------------------------------------------
+
+# Want to see VERILATOR_VERSION 5.028 and GPP_VERSION 10
+# E.g. "Verilator 5.028 2024-08-21 rev v5.028-44-g1d79f5c59"
+
+VERILATOR_VERSION ?= $(shell verilator --version |& cut -d " " -f2 || echo 0)
+GPP_VERSION = $(shell gcc -dumpversion)
+NPROC = $(shell nproc)
+
+# Because *some people* are stoopid
+.PHONY: verilator-setup
+verilator-setup: setup-verilator
+
+.PHONY: setup-verilator
+setup-verilator:
+ifeq ($(VERILATOR_VERSION), 5.028)
+	echo Hooray looks like we have verilator 5.028 in our path already
+else
+	echo "--- MAKE SETUP: Install g++-10, autoconf, bison, help2man"
+	yes | (apt update; apt upgrade; apt install g++-10)
+	cd /usr/bin; test -e g++ && mv g++ g++.orig; ln -s g++-10 g++
+	echo -------------------------------
+	echo These are missing in docker ATM 
+	yes | apt-get install autoconf
+	yes | apt-get install bison
+	yes | apt-get install help2man
+	echo -------------------------------
+	echo "--- MAKE SETUP: Install verilator 5.028"
+	cd /usr/share; test -d verilator || git clone https://github.com/verilator/verilator
+	cd /usr/share/verilator; git checkout v5.028
+	cd /usr/share/verilator; unset VERILATOR_ROOT; autoconf; ./configure
+	cd /usr/share/verilator; unset VERILATOR_ROOT; make -j $(NPROC) || echo ERROR
+	cd /usr/share/verilator; make clean || echo ERROR cannot clean for some reason i guess
+	test -e /usr/local/bin/verilator && mv /usr/local/bin/verilator /usr/local/bin/verilator.orig || echo NOT YET
+	cd /usr/local/bin; ln -s /usr/share/verilator/bin/verilator
+	verilator --version
+endif
+
+# -------------------------------------------------------------------
 # C API
 # -------------------------------------------------------------------
-.PHONY: libcgra.so
-libcgra.so: $(shell find lib -type f) $(garnet_dir)/global_buffer/header/global_buffer_param.h $(garnet_dir)/global_buffer/header/glb.h $(garnet_dir)/global_controller/header/glc.h
+libcgra.so: $(shell find lib -type f) \
+            $(garnet_dir)/global_buffer/header/global_buffer_param.h \
+            $(garnet_dir)/global_buffer/header/glb.h \
+            $(garnet_dir)/global_controller/header/glc.h
 	gcc -Wno-error -Wall lib/*.c -I$(garnet_dir)/global_buffer/header -I$(garnet_dir)/global_controller/header -shared -o libcgra.so -fPIC
 
 # -------------------------------------------------------------------
 # Compile & Run
 # -------------------------------------------------------------------
+$(garnet_dir)/global_buffer/header/global_buffer_param.h:
+	@echo 'ERROR Oops oh no cannot find e.g. "global_buffer_param.h"'
+	@echo
+	@echo You may need to build garnet verilog i.e. do something like
+	@echo '  % cd /aha'
+	@echo '  % aha garnet --width 28 --height 16 --verilog --use_sim_sram --glb_tile_mem_size 128 --dense-only'
+	@echo
+	@exit 13
+
 COMPILE_RTL_ARGS += +define+CLK_PERIOD=$(CLK_PERIOD)
 COMPILE_GLS_ARGS += +define+CLK_PERIOD=$(CLK_PERIOD)
 ifeq ($(TOOL), XCELIUM)
@@ -130,6 +198,9 @@ else ifeq ($(TOOL), VCS)
     COMPILE = $(VCS)
     COMPILE_RTL_ARGS += +nospecify
     RUN = ./simv -lca -l $(RUN_LOG) +vcs+initmem+0 +vcs+initreg+0 -sv_lib libcgra -exitstatus
+else ifeq ($(TOOL), VERILATOR)
+    COMPILE = $(VERILATOR)
+    RUN = obj_dir/Vtop $(APP_ARGS)
 else
     @echo "TOOL must be either XCELIUM or VCS"
 endif
@@ -140,12 +211,26 @@ else ifeq ($(TOOL), VCS)
 	DUMP_ARGS = -ucli -i dump_fsdb.tcl
 endif
 
+$(APP0_NAME)/bin/design_meta.json:
+	@echo ERROR oops cannot find design_meta.json
+	@echo Suggest you do something like
+	@echo '  test=apps/pointwise'
+	@echo '  app_path=/aha/Halide-to-Hardware/apps/hardware_benchmarks/$test'
+	@echo '  (cd $app_path; make clean)'
+	@echo '  aha map $$test --chain'
+	@echo '  aha pnr $$test --width 28 --height 16 --dense-only'
+	@exit 13
 
 .PHONY: compile
 compile: COMPILE_ARGS = $(COMPILE_RTL_ARGS)
 compile: INPUT_ARGS = $(DESIGN_FILES) $(TB_FILES) $(IP_FILES)
 compile:
+	echo '--- MAKE COMPILE (verilator => Vtop.mk) or (vcs => simv)' `date +%H:%M`
 	$(COMPILE)
+ifeq ($(TOOL), VERILATOR)
+	echo '--- MAKE VTOP (make -f Vtop.mk => Vtop)' `date +%H:%M`
+	make -C obj_dir/ -f Vtop.mk
+endif
 
 generate:
 	Genesis2.pl -parse -generate -top top -input $(genesis_tb_dir)/top.svp -parameter top.using_matrix_unit=$(USING_MATRIX_UNIT) top.oc_0=$(OC_0) top.mu_datawidth=$(MU_DATAWIDTH)
@@ -157,12 +242,49 @@ ifeq ($(USING_MATRIX_UNIT), 1)
 endif
 
 .PHONY: run
-run:
+run: $(APP0_NAME)/bin/design_meta.json
+	echo '--- MAKE RUN (e.g. Vtop or simv)' `date +%H:%M`
 	@rm -rf *.txt; rm -rf ../../SPARSE_TESTS/batch_*
 	$(RUN) $(DUMP_ARGS) $(RUN_ARGS) $(APP_ARGS)
+	echo '+++ PASSED maybe' `date +%H:%M`
 
 .PHONY: sim
 sim: libcgra.so generate prep-data compile run
+
+
+# -------------------------------------------------------------------
+# Test(s)
+# -------------------------------------------------------------------
+
+# Use little gaussian as default
+TESTNAME  ?= apps/gaussian
+CGRA_SIZE ?= --width 4 --height 16
+GARNET_BUILD_PARMS ?= $(CGRA_SIZE) --verilog --use_sim_sram --glb_tile_mem_size 128
+APP_PATH ?= /aha/Halide-to-Hardware/apps/hardware_benchmarks/$(TESTNAME)
+
+.PHONY: gaussian
+gaussian: CGRA_SIZE = --width 4 --height 16
+gaussian: TESTNAME = apps/gaussian
+gaussian: test
+
+.PHONY: pointwise
+pointwise: CGRA_SIZE = --width 28 --height 16 --dense-only
+pointwise: TESTNAME = apps/pointwise
+pointwise: test
+
+# FIXME for now "make test" is hardwired to VERILATOR but it really doesn't have to be that way
+.PHONY: test
+test:
+	echo '--- MAKE TEST $(TESTNAME): aha garnet' `date +%H:%M`
+	aha garnet $(GARNET_BUILD_PARMS)                         # 5 minutes (kiwi)
+	cd $(APP_PATH); make clean
+	echo '--- MAKE $(TESTNAME): aha map' `date +%H:%M`
+	aha map $(TESTNAME) --chain                              # 1 minutes
+	echo '--- MAKE $(TESTNAME): aha pnr' `date +%H:%M`
+	aha pnr $(TESTNAME) $(CGRA_SIZE)  # 2 minutes
+	echo '--- MAKE $(TESTNAME): aha test' `date +%H:%M`
+	TOOL=VERILATOR stdbuf -oL -eL aha test $(TESTNAME)       # 1.5 hours
+	date
 
 # -------------------------------------------------------------------
 # GLS Compile

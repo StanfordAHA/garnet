@@ -56,13 +56,14 @@ from lake.modules.onyx_pe import OnyxPE
 from lake.modules.onyx_dense_pe import OnyxDensePE
 from lake.top.reduce_pe_cluster import ReducePECluster
 from lassen.sim import PE_fc
+#from lake.spec.spec_memory_controller import SpecMemoryController, build_four_port_wide_fetch_rv
 import magma as m
 from peak import family
 
 
 def get_actual_size(width: int, height: int, io_sides: List[IOSide]):
     if IOSide.North in io_sides:
-        height += 1    
+        height += 1
     if IOSide.East in io_sides:
         width += 1
     if IOSide.South in io_sides:
@@ -88,7 +89,7 @@ def get_cc_args(width, height, io_sides, garnet_args):
     args.width = width
     args.height = height
     args.io_sides = io_sides
-    
+
 
     # Derive cc_args from relevant garnet_args
     args.reg_addr_width = args.config_addr_reg_width
@@ -184,7 +185,7 @@ def create_cgra(width: int, height: int, io_sides: List[IOSide],
     track_length = 1
 
     fifo_depth = 2
-    
+
     # if tech_map == 'intel':
     #     tm = Intel_Tech_Map(depth=mem_depth, width=macro_width)
     # else:
@@ -223,6 +224,15 @@ def create_cgra(width: int, height: int, io_sides: List[IOSide],
         wscan = WriteScanner(fifo_depth=fifo_depth, perf_debug=perf_debug)
 
         strg_ub = StrgUBVec(mem_width=mem_width, mem_depth=mem_depth, comply_with_17=True)
+
+        #strg_cap = 4096
+        #fw = 4
+        #data_width = 16
+
+        # get the spec
+        #spec = build_four_port_wide_fetch_rv(storage_capacity=strg_cap, data_width=data_width, vec_width=fw)
+        # Instantiate the core
+        #strg_ub = SpecMemoryController(spec=spec)
 
         fiber_access = FiberAccess(local_memory=False,
                                    use_pipelined_scanner=pipeline_scanner,
@@ -434,7 +444,7 @@ def create_cgra(width: int, height: int, io_sides: List[IOSide],
                 core = MU2F_IOCoreReadyValid(matrix_unit_data_width=17, tile_array_data_width=17, num_ios=2, allow_bypass=False)
 
             elif remove_fabric_cols and x in range(num_fabric_cols_removed-1) and not(y in range(y_min)):
-                 core = None 
+                 core = None
 
             elif x in range(x_min) \
                     or x in range(x_max + 1, width) \
@@ -478,11 +488,11 @@ def create_cgra(width: int, height: int, io_sides: List[IOSide],
                         if add_pond:
                             additional_core[(x, y)] = PondCore(gate_flush=not harden_flush, ready_valid=ready_valid)
 
-            cores[(x, y)] = core            
+            cores[(x, y)] = core
 
     # for x in range(width):
     #     for y in range(height):
-    #         print(f"core at x: {x}, y: {y} is {cores[(x, y)]}")  
+    #         print(f"core at x: {x}, y: {y} is {cores[(x, y)]}")
 
     def create_core(xx: int, yy: int):
         return cores[(xx, yy)]
@@ -531,12 +541,12 @@ def create_cgra(width: int, height: int, io_sides: List[IOSide],
             # If giving north I/O SBs, don't connect glb ifc to switch box (still a point-to-point connection)
             if not(give_north_io_sbs) or not("glb2io" in i.qualified_name()):
                 inputs |= {i.qualified_name()}
-       
+
         for o in core.outputs():
             # If giving north I/O SBs, don't connect glb ifc to switch box (still a point-to-point connection)
             if not(give_north_io_sbs) or not("io2glb" in o.qualified_name()):
                 outputs |= {o.qualified_name()}
-    
+
 
     # inputs.remove("glb2io_1")
     # inputs.remove("glb2io_16")
@@ -614,7 +624,7 @@ def create_cgra(width: int, height: int, io_sides: List[IOSide],
 
     # MO: GLB CONN HACK 
     io_in = {"f2io_1": [0], f"f2io_{bit_width_str}": [0]}
-    io_out = {"io2f_1": track_list, f"io2f_{bit_width_str}": track_list, f"io2f_{bit_width_str}_T0": [0], f"io2f_{bit_width_str}_T1": [1], 
+    io_out = {"io2f_1": track_list, f"io2f_{bit_width_str}": track_list, f"io2f_{bit_width_str}_T0": [0], f"io2f_{bit_width_str}_T1": [1],
                                                     f"io2f_{bit_width_str}_T2": [2], f"io2f_{bit_width_str}_T3": [3], f"io2f_{bit_width_str}_T4": [4]}
 
 

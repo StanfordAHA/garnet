@@ -192,7 +192,7 @@ class CoreCombinerCore(LakeCoreBase):
                     for addr, data in enumerate(content):
                         if (not isinstance(data, int)) and len(data) == 2:
                             addr, data = data
-                            
+
                         if os.getenv('WHICH_SOC') == "amber":
                             addr = addr >> 2
                         else:
@@ -216,45 +216,67 @@ class CoreCombinerCore(LakeCoreBase):
                 return configs
         elif not isinstance(config_tuple, tuple):
             # MO: DRV HACK
-            dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1"  
-            num_sparse_inputs = 5 if dense_ready_valid else 0 
+            dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1"
+            #active_inputs = 5 if dense_ready_valid else 0
             # It's a PE then...
+            active_core_ports = config_tuple[1]
+            active_inputs = list("000")
+            is_constant_pe = 0
+
+            input_count = 0
+            output_count = 0
+
+            #breakpoint()
+            for port_name in active_core_ports:
+                if 'input' in port_name:
+                    input_count += 1
+                    input_num = port_name.split('num_')[1]
+                    active_inputs[2 - int(input_num)] = '1'
+                if 'output' in port_name:
+                    output_count += 1
+            active_inputs = int("".join(active_inputs), 2)
+
+            if not(dense_ready_valid):
+                active_inputs = 0
+
+            if input_count == 0 and output_count > 0:
+                is_constant_pe = 1
+                            
             if self.ready_valid:
                 config_kwargs = {
                     'mode': 'alu',
-                    #'use_dense': True,
                     'use_dense': not(dense_ready_valid),
-                    #TODO: Rename this to active_inputs_encoding or something (001 -> I0, 011 -> I1 and I0, 101 -> I2 and I0, 111 -> all 3, etc.)
-                    'num_sparse_inputs': num_sparse_inputs,
-                    'op': int(config_tuple),
-                    # pe in dense mode always accept inputs that are external 
+                    'active_inputs': active_inputs,
+                    'op': int(config_tuple[0]),
+                    # pe in dense mode always accept inputs that are external
                     # to the cluster
                     'pe_in_external': 1,
+                    'is_constant_pe': is_constant_pe, 
                     # only configure pe within the cluster
                     'pe_only': True
                 }
             else:
                 config_kwargs = {
                     'mode': 'alu',
-                    'op': int(config_tuple)
+                    'op': int(config_tuple[0])
                 }
             instr = config_kwargs
             config_pre = self.dut.get_bitstream(instr)
             for name, v in config_pre:
                 configs = [self.get_config_data(name, v)] + configs
-            
+
             # BEGIN BLOCK COMMENT
-            #TODO: Fix this and name it better. ready_valid really means include RV interconnect in this context 
+            #TODO: Fix this and name it better. ready_valid really means include RV interconnect in this context
             #TODO: Rename all this stuff: rename dense_bypass to ready-valid bypass
             if self.ready_valid:
-                dense_bypass_value = 0 if dense_ready_valid else 1 
+                dense_bypass_value = 0 if dense_ready_valid else 1
                 config_dense_bypass = [(f"{self.get_port_remap()['alu']['data0']}_dense", dense_bypass_value),
                                        (f"{self.get_port_remap()['alu']['data1']}_dense", dense_bypass_value),
                                        (f"{self.get_port_remap()['alu']['data2']}_dense", dense_bypass_value),
                                        (f"{self.get_port_remap()['alu']['res']}_dense", dense_bypass_value)]
                 for name, v in config_dense_bypass:
                     configs = [self.get_config_data(name, v)] + configs
-            # END BLOCK COMMENT 
+            # END BLOCK COMMENT
             #print(configs)
             return configs
         else:
