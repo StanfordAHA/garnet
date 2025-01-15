@@ -538,7 +538,7 @@ class GlbStoreDma(Generator):
         elif self.cfg_mu_active & (self.sparse_rv_mode_on | self.dense_rv_mode_on):
             self.iter_step_valid = self.strm_run & self.fifo_pop_ready[0] & self.fifo_pop_ready[1] & self.fifo_pop_ready[2] & self.fifo_pop_ready[3] & ~self.rv_is_addrdata
 
-        elif self.sparse_rv_mode_on & self.dense_rv_mode_on:
+        elif self.sparse_rv_mode_on | self.dense_rv_mode_on:
             self.iter_step_valid = self.strm_run & self.fifo_pop_ready[0] & ~self.rv_is_addrdata
 
         # VALID MODE 
