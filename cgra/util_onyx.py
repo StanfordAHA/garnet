@@ -56,7 +56,7 @@ from lake.modules.onyx_pe import OnyxPE
 from lake.modules.onyx_dense_pe import OnyxDensePE
 from lake.top.reduce_pe_cluster import ReducePECluster
 from lassen.sim import PE_fc
-from lake.spec.spec_memory_controller import SpecMemoryController, build_four_port_wide_fetch_rv
+#from lake.spec.spec_memory_controller import SpecMemoryController, build_four_port_wide_fetch_rv
 import magma as m
 from peak import family
 
