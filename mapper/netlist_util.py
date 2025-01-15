@@ -1274,6 +1274,8 @@ def create_netlist_info(
     info["buses"] = bus_info
     info["netlist"] = {}
 
+    info["active_core_ports"] = {}
+
     for bid, ports in netlist.items():
         info["netlist"][bid] = [
             (nodes_to_ids[node.iname], field) for node, field in ports
