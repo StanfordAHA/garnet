@@ -10,4 +10,6 @@ setup(
         'mflowgen'
     ],
 
+    packages=['soc', 'icovl', 'common', 'Tile_PE', 'glb_top', 'glb_tile', 'full_chip', 'pad_frame', 'tile_array', 'regressions', 'Tile_MemCore', 'global_controller']
+
 )
