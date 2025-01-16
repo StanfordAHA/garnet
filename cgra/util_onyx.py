@@ -47,6 +47,7 @@ from lake.modules.strg_ub_thin import StrgUBThin
 from lake.modules.crddrop import CrdDrop
 from lake.modules.crdhold import CrdHold
 from lake.modules.strg_RAM import StrgRAM
+from lake.modules.strg_RAM_rv import StrgRAMRV
 from lake.modules.stencil_valid import StencilValid
 from lake.modules.buffet_like import BuffetLike
 from lake.modules.stream_arbiter import StreamArbiter
@@ -242,7 +243,8 @@ def create_cgra(width: int, height: int, io_sides: List[IOSide],
 
         buffet = BuffetLike(mem_depth=mem_depth, local_memory=False, optimize_wide=True, fifo_depth=fifo_depth)
 
-        strg_ram = StrgRAM(memory_width=mem_width, memory_depth=mem_depth, comply_with_17=True)
+        # strg_ram = StrgRAM(memory_width=mem_width, memory_depth=mem_depth, comply_with_17=True)
+        strg_ram = StrgRAMRV(memory_width=mem_width, memory_depth=mem_depth, comply_with_17=True)
 
         stencil_valid = StencilValid()
 
