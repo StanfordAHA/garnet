@@ -164,8 +164,8 @@ class Garnet(Generator):
             self.add_ports(
                 mu2cgra=magma.In(magma.Array[(num_output_channels, magma.Bits[mu_datawidth])]),
                 mu2cgra_valid=magma.In(magma.Bit),
-                
-                # MO: Temporary HACK 
+
+                # MO: Temporary HACK
                 cgra2mu_ready_row0 = magma.Out(magma.Bit),
                 cgra2mu_ready=magma.Out(magma.Bit)
             )
@@ -517,7 +517,8 @@ class Garnet(Generator):
                         mode = 'ROM'
                         # Actually use wr addr for rom mode...
                         hack_remap = {
-                            'addr_in_0': 'wr_addr_in',
+                            # 'addr_in_0': 'wr_addr_in',
+                            'addr_in_0': 'rd_addr_in',
                             'ren_in_0': 'ren',
                             'data_out_0': 'data_out'
                         }
@@ -551,7 +552,6 @@ class Garnet(Generator):
                         netlist_info["active_core_ports"][tag_].append(pin_remap)
                     else:
                         netlist_info["active_core_ports"][tag_] = [pin_remap]
-
 
             netlist_info['netlist'][netlist_id] = connections_list
 
@@ -610,7 +610,7 @@ class Garnet(Generator):
                               pipeline_input_broadcasts,
                               input_broadcast_branch_factor,
                               input_broadcast_max_leaves)
-        
+
         app_dir = os.path.dirname(halide_src)
         if unconstrained_io:
             fixed_io = None
@@ -712,8 +712,8 @@ class Garnet(Generator):
 
         bitstream = []
         if end_to_end: self.write_zero_to_config_regs(bitstream)
-        
-        dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1" 
+
+        dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1"
         bitstream += self.interconnect.get_route_bitstream(routing, use_fifo=dense_ready_valid)
 
 

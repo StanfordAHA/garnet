@@ -170,7 +170,8 @@ class CoreCombinerCore(LakeCoreBase):
                         instr['mode'] = 'stencil_valid'
                 elif 'mode' in instr and instr['mode'] == 'sram':
                     instr['mode'] = 'ROM'
-                    config_extra_rom = [(f"{self.get_port_remap()['ROM']['wen']}_reg_sel", 1)]
+                    # config_extra_rom = [(f"{self.get_port_remap()['ROM']['wen']}_reg_sel", 1)]
+                    config_extra_rom = []
                     for name, v in config_extra_rom:
                         configs = [self.get_config_data(name, v)] + configs
                 elif 'mode' not in instr and 'stencil_valid' in instr:
@@ -241,7 +242,7 @@ class CoreCombinerCore(LakeCoreBase):
 
             if input_count == 0 and output_count > 0:
                 is_constant_pe = 1
-                            
+
             if self.ready_valid:
                 config_kwargs = {
                     'mode': 'alu',
@@ -251,7 +252,7 @@ class CoreCombinerCore(LakeCoreBase):
                     # pe in dense mode always accept inputs that are external
                     # to the cluster
                     'pe_in_external': 1,
-                    'is_constant_pe': is_constant_pe, 
+                    'is_constant_pe': is_constant_pe,
                     # only configure pe within the cluster
                     'pe_only': True
                 }
