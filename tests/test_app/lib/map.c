@@ -436,6 +436,12 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         // If use hacky padding then switch to valid mode
         if (use_padding || use_glb_tiling) mode = ST_DMA_VALID_MODE_STATIC;
 
+        // MO: MU active HACK for now
+        int mu_active = 1;
+        add_config(config_info,
+                   (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_ST_DMA_MU_ACTIVE_R,
+                 mu_active << GLB_ST_DMA_MU_ACTIVE_VALUE_F_LSB);
+
         add_config(config_info,
                    (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_ST_DMA_CTRL_R,
                    ((0b01 << GLB_ST_DMA_CTRL_MODE_F_LSB) | (mode << GLB_ST_DMA_CTRL_VALID_MODE_F_LSB) |
@@ -449,6 +455,12 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         add_config(config_info,
                    (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_ST_DMA_HEADER_0_DIM_R,
                    loop_dim);
+        
+        // Writing 8 bytes at once in mu_active mode. TODO: instead of MU active, maybe call this exchange_64 mode
+        if (mu_active) {
+            start_addr += 6; 
+        }
+
         add_config(
             config_info,
             (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_ST_DMA_HEADER_0_START_ADDR_R,
@@ -462,6 +474,12 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         printf("Output block cycle start addr: %0d\n", cycle_start_addr);
         printf("Output block dimensionality: %0d\n", loop_dim);
         for (int i = 0; i < loop_dim; i++) {
+
+            // Count 4x faster b/c writing 8 bytes at once instead of 2 bytes 
+            if (mu_active) {
+                data_stride[i] = data_stride[i] * 4; 
+            }
+            
             add_config(config_info,
                        (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) +
                            (GLB_ST_DMA_HEADER_0_RANGE_0_R + 0x0c * i),
