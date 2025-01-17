@@ -211,6 +211,10 @@ class GlbLoadDma(Generator):
                        clk_en=clock_en(self.cycle_counter_en),
                        reset=self.reset,
                        restart=self.ld_dma_start_pulse_r,
+
+                       # MO: GLB CONN HACK
+                       #quad=const(0, 1),
+
                        step=self.iter_step_valid,
                        mux_sel=self.loop_mux_sel,
                        addr_out=self.cycle_current_addr)
@@ -230,6 +234,10 @@ class GlbLoadDma(Generator):
                        reset=self.reset,
                        restart=self.ld_dma_start_pulse_r,
                        step=self.iter_step_valid,
+
+                       # MO: GLB CONN HACK
+                       #quad=const(0, 1),
+
                        mux_sel=self.loop_mux_sel,
                        addr_out=self.data_current_addr)
         self.wire(self.data_stride_addr_gen.start_addr, ext(self.current_dma_header["start_addr"],

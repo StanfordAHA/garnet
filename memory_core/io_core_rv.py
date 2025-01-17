@@ -36,6 +36,7 @@ class IOCoreReadyValid(LakeCoreBase):
         self.tracks_supported = tracks_supported
         self.allow_bypass = allow_bypass
         self.use_almost_full = use_almost_full
+        self.exchange_64 = exchange_64
 
         cache_key = (self.data_width,
                      self.config_data_width,
@@ -107,6 +108,40 @@ class IOCoreReadyValid(LakeCoreBase):
         #TODO: Rename this from sparse mode to ready-valid mode 
         if 'ready_valid_mode' in config_kwargs:
             configs_pre = []
+
+        elif self.exchange_64: 
+             configs_pre = [
+                ('glb2io_17_0_valid_reg_sel', 1),
+                ('glb2io_17_0_valid_reg_value', 1),
+
+                ('glb2io_17_1_valid_reg_sel', 1),
+                ('glb2io_17_1_valid_reg_value', 1),
+
+                ('glb2io_17_2_valid_reg_sel', 1),
+                ('glb2io_17_2_valid_reg_value', 1),
+
+                ('glb2io_17_3_valid_reg_sel', 1),
+                ('glb2io_17_3_valid_reg_value', 1),
+
+                ('glb2io_1_0_valid_reg_sel', 1),
+                ('glb2io_1_0_valid_reg_value', 1),
+
+                ('io2glb_17_0_ready_reg_sel', 1),
+                ('io2glb_17_0_ready_reg_value', 1),
+
+                ('io2glb_17_1_ready_reg_sel', 1),
+                ('io2glb_17_1_ready_reg_value', 1),
+
+                ('io2glb_17_2_ready_reg_sel', 1),
+                ('io2glb_17_2_ready_reg_value', 1),
+
+                ('io2glb_17_3_ready_reg_sel', 1),
+                ('io2glb_17_3_ready_reg_value', 1),
+
+
+                ('io2glb_1_0_ready_reg_sel', 1),
+                ('io2glb_1_0_ready_reg_value', 1),
+            ]
         else:
             configs_pre = [
                 ('glb2io_17_valid_reg_sel', 1),
