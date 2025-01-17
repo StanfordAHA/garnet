@@ -1,5 +1,6 @@
 import os
-from kratos import always_ff, posedge, Generator, clog2
+import kratos as kts
+from kratos import always_ff, posedge, Generator, clog2, resize, always_comb
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 
 
@@ -30,10 +31,33 @@ class GlbAddrGen(Generator):
         self.start_addr = self.input("start_addr", self.p_addr_width)
         self.step = self.input("step", 1)
         self.mux_sel = self.input("mux_sel", max(clog2(self.loop_level), 1))
+
+        # TODO: Make this generator-compatible
+        #self.quad = self.input("quad", 1)
+
         self.addr_out = self.output("addr_out", self.p_addr_width)
 
         # local variables
         self.current_addr = self.var("current_addr", self.p_addr_width)
+
+        # TODO: Think about bit width of this. What if it overflows? \
+
+        # self.stride = self.var("stride", self.p_addr_width)
+        # self.wire(self.stride, self.strides[self.mux_sel])
+        # self.stride_4x = self.var("stride_4x", self.p_addr_width)
+        # #self.wire(self.stride_4x, resize((self.stride << 2), self.p_addr_width))
+        # #self.wire(self.stride_4x, (self.stride << 2))
+        # self.wire(self.stride_4x, self.stride + self.stride + self.stride + self.stride)
+
+        # @always_comb
+        # def shift(self):
+        #     self.stride_4x= self.strides[self.mux_sel] << 2
+
+        # self.add_always(shift)
+
+
+        # self.stride_to_add = self.var("stride_to_add", self.p_addr_width)
+        # self.wire(self.stride_to_add, kts.ternary(self.quad, self.stride_4x, self.strides[self.mux_sel]))
 
         # output address
         self.wire(self.addr_out, self.start_addr + self.current_addr)
@@ -48,3 +72,4 @@ class GlbAddrGen(Generator):
                 self.current_addr = 0
             elif self.step:
                 self.current_addr = self.current_addr + self.strides[self.mux_sel]
+                #self.current_addr = self.current_addr + self.stride_to_add

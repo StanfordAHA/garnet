@@ -267,6 +267,11 @@ class GlbStoreDma(Generator):
                     #    step=kts.ternary(self.dense_rv_mode_on, self.iter_step_valid & self.qualified_iter_step_valid, self.iter_step_valid),
                        step=kts.ternary(self.dense_rv_mode_on, self.qualified_iter_step_valid, self.iter_step_valid),
                        #step=self.qualified_iter_step_valid,
+
+                       # MO: GLB CONN HACK
+                       #quad=kts.const(0, 1),
+         
+
                        mux_sel=self.loop_mux_sel)
         self.wire(self.cycle_stride_addr_gen.addr_out, self.cycle_current_addr)
         self.wire(self.cycle_stride_addr_gen.start_addr, self.current_dma_header["cycle_start_addr"])
@@ -287,6 +292,10 @@ class GlbStoreDma(Generator):
                     #    start_addr=self.data_base_addr,
                        #step=self.iter_step_valid,
                        step=kts.ternary(self.dense_rv_mode_on, self.qualified_iter_step_valid, self.iter_step_valid),
+
+                        # MO: GLB CONN HACK
+                       #quad=self.cfg_mu_active,
+
                        mux_sel=self.loop_mux_sel,
                        addr_out=self.data_current_addr)
         # In sparse RV mode, the start address is given by the header of each block
@@ -295,7 +304,6 @@ class GlbStoreDma(Generator):
         self.wire(self.data_stride_addr_gen.start_addr, self.data_base_addr)
         for i in range(self._params.store_dma_loop_level):
             self.wire(self.data_stride_addr_gen.strides[i], self.current_dma_header[f"stride_{i}"])
-
 
         # Last & with iter_step_valid is a hack to ensure that the cycle counter is tokenized on RV transactions 
         self.wire(self.cycle_counter_en, kts.ternary(self.static_mode_on, self.strm_run, self.strm_run & self.iter_step_valid))
@@ -584,7 +592,19 @@ class GlbStoreDma(Generator):
 
         if self.cfg_mu_active:
             if self.strm_wr_en_w:
-                self.bank_wr_strb_cache_w = const(self.cgra_strb_value, self.cgra_strb_width * 4)
+                self.bank_wr_strb_cache_w[self.cgra_strb_width - 1,
+                                            0] = const(self.cgra_strb_value, self.cgra_strb_width)
+                self.bank_wr_strb_cache_w[self.cgra_strb_width * 2 - 1,
+                                            self.cgra_strb_width] = const(self.cgra_strb_value,
+                                                                            self.cgra_strb_width)
+                self.bank_wr_strb_cache_w[self.cgra_strb_width * 3 - 1,
+                                            self.cgra_strb_width * 2] = const(self.cgra_strb_value,
+                                                                                self.cgra_strb_width)
+                self.bank_wr_strb_cache_w[self.cgra_strb_width * 4 - 1,
+                                            self.cgra_strb_width * 3] = const(self.cgra_strb_value,
+                                                                                self.cgra_strb_width)
+                
+                
 
                 # for packet_16 in range(self.num_packets):
                 #     self.bank_wr_data_cache_w[(packet_16 * self._params.cgra_data_width + self._params.cgra_data_width - 1,

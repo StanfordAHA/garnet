@@ -28,6 +28,9 @@ class CreateBuses(Visitor):
     def __init__(self, inst_info, ready_valid=True):
         self.inst_info = inst_info
         self.ready_valid=ready_valid
+        
+        #MO: GLB CONN HACK
+        self.outputCount = 0
 
     def doit(self, dag):
         self.i = 1
@@ -119,12 +122,28 @@ class CreateBuses(Visitor):
         self.node_to_bid[node] = bids
 
     def visit_Output(self, node: Output):
+        # Have somethinng like self.outputCount. Increment everytime this func is called. Wrap around at 3.
         Visitor.generic_visit(self, node)
         child_bid = self.node_to_bid[node.child]
         if node.child.type == Bit:
-            port = "f2io_1"
+            # port = "f2io_1"
+
+            # MO: GLB conn HACK 
+            port = "f2io_1_0"
         else:
-            port = "f2io_17" if self.ready_valid else "f2io_16"
+            #breakpoint()
+            #port = "f2io_17" if self.ready_valid else "f2io_16"
+            # port = "f2io_17_0" if self.ready_valid else "f2io_16"
+            node_name_parse_list = node.iname.split("stencil_")[2].split("_write")
+
+            packet_num = 0
+            if len(node_name_parse_list) > 1:
+                packet_num = int(node_name_parse_list[0])
+            else:
+                packet_num = 0
+
+            port = f"f2io_17_{packet_num}" if self.ready_valid else "f2io_16"
+            self.outputCount = (self.outputCount + 1) % 4
         self.netlist[child_bid].append((node, port))
 
 
@@ -300,7 +319,10 @@ class IO_Input_t(Product):
     io2f_1 = Bit
 
 class IO_Input_t_rv(Product):
-    io2f_17 = BitVector[16]
+    #io2f_17 = BitVector[16]
+
+    # MO: GLB CONN HACK 
+    io2f_17_0 = BitVector[16]
     io2f_1 = Bit
 
 
@@ -327,7 +349,9 @@ class FlattenIO(Visitor):
             if t == Bit:
                 return "io2f_1"
             elif ready_valid:
-                return "io2f_17"
+                # MO: GLB CONN HACK 
+                #return "io2f_17"
+                return "io2f_17_0"
             else:
                 return "io2f_16"
         #isel = lambda t: "io2f_1" if t == Bit else "io2f_16"
@@ -834,7 +858,9 @@ class FixInputsOutputAndPipeline(Visitor):
 
             # -----------------IO-to-MEM/Pond Paths Pipelining-------------------- #
             if "io16in" in io_child.iname:
-                new_node = new_children[0].select("io2f_17") if self.ready_valid else new_children[0].select("io2f_16")
+                # MO: GLB CONN HACK 
+                #new_node = new_children[0].select("io2f_17") if self.ready_valid else new_children[0].select("io2f_16")
+                new_node = new_children[0].select("io2f_17_0") if self.ready_valid else new_children[0].select("io2f_16")
                 if self.pipeline_inputs:
                     if "IO2MEM_REG_CHAIN" not in os.environ:
                         self.create_register_tree(
@@ -1300,10 +1326,11 @@ def create_netlist_info(
         graph.manualy_place_resnet(app_dir=app_dir)
 
     # # MO: Matrix unit HACK 
-    # if "MU_APP_MANUAL_PLACER" in os.environ and os.environ.get("MU_APP_MANUAL_PLACER") == "1":
-    #     breakpoint()
-    #     manual_place_filepath = os.path.join(app_dir, "../hardcoded_bin/manual.place")
-    #     os.system(f"cp {manual_place_filepath} {app_dir}")
+    #breakpoint()
+    if "MU_APP_MANUAL_PLACER" in os.environ and os.environ.get("MU_APP_MANUAL_PLACER") == "1":
+        #breakpoint()
+        manual_place_filepath = os.path.join(app_dir, "../hardcoded_bin/manual.place")
+        os.system(f"cp {manual_place_filepath} {app_dir}")
 
     CountTiles().doit(pdag)
 
