@@ -92,7 +92,6 @@ class IOCoreReadyValid(LakeCoreBase):
         else:
             config_kwargs = config_tuple
 
-        #TODO: Rename this from sparse mode to ready-valid mode 
         if 'ready_valid_mode' in config_kwargs:
             configs_pre = []
         else:

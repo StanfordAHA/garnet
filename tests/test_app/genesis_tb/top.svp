@@ -109,7 +109,8 @@ module top;
     ) mu_ifc (
         .clk(clk),
         .reset(reset),
-        .cgra2mu_ready(cgra2mu_ready_row0),
+        //.cgra2mu_ready(cgra2mu_ready_row0),
+        .cgra2mu_ready(cgra2mu_ready),
         .mu2cgra_valid(mu2cgra_valid),
         .mu2cgra(mu2cgra)
     );
@@ -169,7 +170,7 @@ module top;
         .cgra2mu_ready (cgra2mu_ready),
 
         // MO: Temporary HACK
-        .cgra2mu_ready_row0(cgra2mu_ready_row0),
+        //.cgra2mu_ready_row0(cgra2mu_ready_row0),
         .mu2cgra(mu2cgra)
 
     //; } else {

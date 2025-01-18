@@ -145,9 +145,9 @@ def place_io_blk(id_to_name, app_dir, io_sides):
         placement[reset] = (1, 0)
 
     # manual placement of PE/MEM tiles if needed
-    # # MO: Matrix unit HACK 
-    # if "MANUAL_PLACER" in os.environ and os.environ.get("MANUAL_PLACER") == "1" and os.path.isfile(app_dir + "/manual.place"):
-    if (("MANUAL_PLACER" in os.environ and os.environ.get("MANUAL_PLACER") == "1") or ("MU_APP_MANUAL_PLACER" in os.environ and os.environ.get("MU_APP_MANUAL_PLACER") == "1")) and os.path.isfile(app_dir + "/manual.place"):
+    if "MANUAL_PLACER" in os.environ and os.environ.get("MANUAL_PLACER") == "1" and os.path.isfile(app_dir + "/manual.place"):
+    # MO: Matrix unit HACK for manual placement
+    #if (("MANUAL_PLACER" in os.environ and os.environ.get("MANUAL_PLACER") == "1") or ("MU_APP_MANUAL_PLACER" in os.environ and os.environ.get("MU_APP_MANUAL_PLACER") == "1")) and os.path.isfile(app_dir + "/manual.place"):
         with open(app_dir + "/manual.place", "r") as f:
             data = f.readlines()
             for dat in data:

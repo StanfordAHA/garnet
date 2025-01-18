@@ -657,7 +657,6 @@ class GlbLoadDma(Generator):
     def done_pulse_anded_comb(self):
         self.ld_dma_done_pulse_anded = self.ld_dma_done_pulse_latch & self.all_skid_empty
 
-    # TODO: Double-check this for DRV mode 
     @ always_comb
     def done_pulse_muxed(self):
         if self.cfg_ld_dma_ctrl_valid_mode != self._params.ld_dma_valid_mode_ready_valid:
