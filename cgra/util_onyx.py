@@ -56,7 +56,6 @@ from lake.modules.onyx_pe import OnyxPE
 from lake.modules.onyx_dense_pe import OnyxDensePE
 from lake.top.reduce_pe_cluster import ReducePECluster
 from lassen.sim import PE_fc
-#from lake.spec.spec_memory_controller import SpecMemoryController, build_four_port_wide_fetch_rv
 import magma as m
 from peak import family
 
@@ -224,15 +223,6 @@ def create_cgra(width: int, height: int, io_sides: List[IOSide],
         wscan = WriteScanner(fifo_depth=fifo_depth, perf_debug=perf_debug)
 
         strg_ub = StrgUBVec(mem_width=mem_width, mem_depth=mem_depth, comply_with_17=True)
-
-        #strg_cap = 4096
-        #fw = 4
-        #data_width = 16
-
-        # get the spec
-        #spec = build_four_port_wide_fetch_rv(storage_capacity=strg_cap, data_width=data_width, vec_width=fw)
-        # Instantiate the core
-        #strg_ub = SpecMemoryController(spec=spec)
 
         fiber_access = FiberAccess(local_memory=False,
                                    use_pipelined_scanner=pipeline_scanner,
