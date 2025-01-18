@@ -26,7 +26,7 @@ parameters:
   use_container: True
 
   # If true, clone garnet locally and copy into the container
-  use_local_garnet: True
+  use_local_garnet: False
 
   # If true, copies final verilog to /tmp
   save_verilog_to_tmpdir: False

@@ -19,7 +19,7 @@ parameters:
   soc_only: False
   PWR_AWARE: False
   use_container: True
-  use_local_garnet: True
+  use_local_garnet: False
   app_to_run: "tests/conv_3_3"
   waves: False
   clock_period: 1.1

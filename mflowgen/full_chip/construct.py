@@ -429,6 +429,8 @@ def construct():
 
   cgra_rtl_sim_run.update_params({'cgra_apps': parameters['cgra_apps']}, True)
 
+  postroute_hold.update_params({'full_chip_build': True}, True)
+
   # Power node order manipulation
   order = power.get_param('order')
   # Move endcap/welltap insertion to end of power step to improve runtime

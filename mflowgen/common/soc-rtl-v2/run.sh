@@ -7,7 +7,7 @@ CUR_DIR=$(pwd)
 # TODO: During development, we are using a local copy of the repo
 #       After development, we will use the remote repo
 # git clone https://github.com/StanfordAHA/AhaM3SoC.git aham3soc
-cp -r /sim/$(whoami)/aham3soc .
+cp -r /sim/$(whoami)/zircon/aham3soc .
 
 if [ "$WHICH_SOC" == "amber" ]; then
 # NOW: to make this branch (master-tsmc) work, must use amber soc
@@ -23,7 +23,7 @@ else
 # TODO: During development, we are using a local copy of the repo
 #       After development, we will use the remote repo
 # git clone /sim/repos/aham3soc_armip aham3soc_armip
-cp -r /sim/$(whoami)/aham3soc_armip .
+cp -r /sim/$(whoami)/zircon/aham3soc_armip .
 fi
 
 
