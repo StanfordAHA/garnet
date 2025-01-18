@@ -1828,7 +1828,7 @@ def generate_inputs_and_gold(app_name, give_tensor=False, print_inputs=None,
     # generate the input matrices
     if give_tensor:
         matrix_tmp_dir = os.path.join(tensor_locs, kernel_name, seed)
-    elif app_name in ["masked_broadcast", "trans_masked_broadcast"]:
+    elif app_name in ["masked_broadcast", "trans_masked_broadcast", "mat_mattransmul"]:
         # these application does not have an einsum expression, falling back to the old flow to 
         # generate inputs and gold
         matrix_tmp_dir = os.path.join("/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR", app_name, "tile_0")
@@ -1865,6 +1865,35 @@ def generate_inputs_and_gold(app_name, give_tensor=False, print_inputs=None,
                         output_matrix[i][j] = c_mat[j]
             output_format = "CSF"
             output_name = "X"
+        elif app_name == "mat_mattransmul": # remove this special case once lego is fixed
+            vec_ordering = ((1, (0, 's')),)
+            b_mat = get_tensor(input_name='b', shapes=[1], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                               dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['b'],
+                               sparsity=0)
+            C_mat = get_tensor(input_name='C', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                               dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+                               sparsity=0.8)
+            d_mat = get_tensor(input_name='d', shapes=[10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                               dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['d'],
+                               sparsity=0.9)
+            e_mat = get_tensor(input_name='e', shapes=[1], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                               dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['e'],
+                               sparsity=0)
+            f_mat = get_tensor(input_name='f', shapes=[10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                               dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['f'],
+                               sparsity=0.8)
+
+            output_matrix = numpy.add(numpy.multiply(e_mat, f_mat, dtype=numpy.uint16, casting='unsafe'),
+                                      numpy.multiply(b_mat,
+                                                     numpy.matmul(C_mat, d_mat,
+                                                                  dtype=numpy.uint16,
+                                                                  casting='unsafe'),
+                                                     dtype=numpy.uint16,
+                                                     casting='unsafe'),
+                                      dtype=numpy.uint16, casting='unsafe')
+            output_format = "CSF"
+            output_name = "x"
+
     else:
         matrix_tmp_dir = generate_inputs(sam_graph_name)
         output_dims = []
