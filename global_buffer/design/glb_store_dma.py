@@ -110,6 +110,8 @@ class GlbStoreDma(Generator):
         self.sparse_rv_mode_on = self.var("sparse_rv_mode_on", 1)
         self.fifo_almost_full_diff = self.var("fifo_almost_full_diff", clog2(self._params.store_dma_fifo_depth))
         self.iter_step_valid = self.var("iter_step_valid", 1)
+        self.packet_64_pop = self.var("packet_64_pop", 1)
+        self.packet_64_pop_ready = self.var("packet_64_pop_ready", 1) 
         self.fifo_pop_ready = self.var("fifo_pop_ready", 1, size=[self.num_packets], packed=True)
         self.data_cgra2fifo = self.var("data_cgra2fifo", self._params.cgra_data_width, size=[self.num_packets], packed=True)
         self.data_fifo2dma = self.var("data_fifo2dma", self._params.cgra_data_width, size=[self.num_packets], packed=True)
@@ -202,12 +204,33 @@ class GlbStoreDma(Generator):
                         almost_full=self.fifo_almost_full[packet_16],
                         almost_full_diff=const(2, clog2(self._params.store_dma_fifo_depth)),
                         almost_empty_diff=const(2, clog2(self._params.store_dma_fifo_depth)))
+            
+
+            
 
             self.wire(self.data_cgra2fifo[packet_16], self.strm_data[packet_16])
+
             self.wire(self.fifo_pop_ready[packet_16], ~self.fifo_empty[packet_16])
-            self.wire(self.fifo_pop[packet_16], ~self.fifo_empty[packet_16] & self.strm_run)
+            
+            if packet_16 == 0:
+                self.wire(self.fifo_pop[packet_16], kts.ternary(self.cfg_exchange_64_mode, self.packet_64_pop, ~self.fifo_empty[packet_16] & self.strm_run))
+                # self.wire(self.fifo_pop[packet_16], kts.ternary(self.cfg_exchange_64_mode, self.dense_rv_mode_on, ~self.fifo_empty[packet_16] & self.strm_run))
+            else:
+                self.wire(self.fifo_pop[packet_16], self.packet_64_pop)
+                # self.wire(self.fifo_pop[packet_16], self.dense_rv_mode_on)
+
+            #self.wire(self.fifo_pop[packet_16], ~self.fifo_empty[packet_16] & self.strm_run)
+
+
             self.wire(self.fifo_push[packet_16], ~self.fifo_full[packet_16] & self.strm_data_valid[packet_16])
             self.wire(self.fifo2cgra_ready[packet_16], ~self.fifo_almost_full[packet_16])
+
+
+        # Write packet synchronization for E64 write 
+        self.wire(self.packet_64_pop, ~self.fifo_empty[0] & ~self.fifo_empty[1] & ~self.fifo_empty[2] & ~self.fifo_empty[3] & self.strm_run)
+        
+        self.wire(self.packet_64_pop_ready, self.fifo_pop_ready[0] & self.fifo_pop_ready[1] & self.fifo_pop_ready[2] & self.fifo_pop_ready[3])
+
 
         #TODO: What is this??? What is GlbLoopIter for? 
         # INFO: This is what actually counts the range apparently 
@@ -542,9 +565,13 @@ class GlbStoreDma(Generator):
         # rv_is_addrdata should always be low in non sparse-rv-mode
         #TODO Figure out if the readys should be ANDED here. I think they should  
         elif self.cfg_exchange_64_mode & (self.sparse_rv_mode_on | self.dense_rv_mode_on):
-            self.iter_step_valid = self.strm_run & self.fifo_pop_ready[0] & self.fifo_pop_ready[1] & self.fifo_pop_ready[2] & self.fifo_pop_ready[3] & ~self.rv_is_addrdata
+
+            # TODO: Think about changing this to self.packet_64_pop & ~self.rv_is_addrdata
+            self.iter_step_valid = self.strm_run & self.packet_64_pop_ready & ~self.rv_is_addrdata
+            # self.iter_step_valid = self.strm_run & self.fifo_pop_ready[0] & self.fifo_pop_ready[1] & self.fifo_pop_ready[2] & self.fifo_pop_ready[3] & ~self.rv_is_addrdata
 
         elif self.sparse_rv_mode_on | self.dense_rv_mode_on:
+             # TODO: Think about changing this to self.fifo_pop[0] & ~self.rv_is_addrdata
             self.iter_step_valid = self.strm_run & self.fifo_pop_ready[0] & ~self.rv_is_addrdata
 
         # VALID MODE 
