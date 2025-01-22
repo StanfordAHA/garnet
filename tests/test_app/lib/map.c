@@ -436,11 +436,18 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         // If use hacky padding then switch to valid mode
         if (use_padding || use_glb_tiling) mode = ST_DMA_VALID_MODE_STATIC;
 
-        // MO: MU active HACK for now
-        int mu_active = 1;
+        // Check if we are in exchange_64 mode
+        int exchange_64_mode = 0;
+        const char *exchange_64_env_var = "EXCHANGE_64";
+        char *exchange_64_value = getenv(exchange_64_env_var);
+        if (exchange_64_value != NULL && strcmp(exchange_64_value, "1") == 0) {
+            exchange_64_mode = 1;
+            printf("INFO: Using exchange_64 mode\n");
+        }
+
         add_config(config_info,
-                   (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_ST_DMA_MU_ACTIVE_R,
-                 mu_active << GLB_ST_DMA_MU_ACTIVE_VALUE_F_LSB);
+                   (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_ST_DMA_EXCHANGE_64_MODE_R,
+                   exchange_64_mode << GLB_ST_DMA_EXCHANGE_64_MODE_VALUE_F_LSB);
 
         add_config(config_info,
                    (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_ST_DMA_CTRL_R,
@@ -456,8 +463,8 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
                    (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_ST_DMA_HEADER_0_DIM_R,
                    loop_dim);
         
-        // Writing 8 bytes at once in mu_active mode. TODO: instead of MU active, maybe call this exchange_64 mode
-        if (mu_active) {
+        // Writing 8 bytes at once in EXCHANGE_64_MODE mode. TODO: instead of MU active, maybe call this exchange_64 mode
+        if (exchange_64_mode) {
             start_addr += 6; 
         }
 
@@ -476,7 +483,7 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         for (int i = 0; i < loop_dim; i++) {
 
             // Count 4x faster b/c writing 8 bytes at once instead of 2 bytes 
-            if (mu_active) {
+            if (exchange_64_mode) {
                 data_stride[i] = data_stride[i] * 4; 
             }
             

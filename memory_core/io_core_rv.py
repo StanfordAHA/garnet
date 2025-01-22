@@ -20,7 +20,7 @@ class IOCoreReadyValid(LakeCoreBase):
                  fifo_depth=2,
                  allow_bypass=False,
                  use_almost_full=False,
-                 exchange_64=False):
+                 include_E64_HW=False):
 
         buffet_name = "IOCoreReadyValid"  # noqa "assigned but never used"
         super().__init__(config_data_width=config_data_width,
@@ -36,7 +36,7 @@ class IOCoreReadyValid(LakeCoreBase):
         self.tracks_supported = tracks_supported
         self.allow_bypass = allow_bypass
         self.use_almost_full = use_almost_full
-        self.exchange_64 = exchange_64
+        self.include_E64_HW = include_E64_HW
 
         cache_key = (self.data_width,
                      self.config_data_width,
@@ -51,7 +51,7 @@ class IOCoreReadyValid(LakeCoreBase):
             # query for information. The circuit representation will be cached and retrieved
             # in the following steps.
 
-            if exchange_64:
+            if include_E64_HW:
                 self.dut = IOCore_64(data_width=data_width,
                               tracks_supported=self.tracks_supported,
                               fifo_depth=fifo_depth,
@@ -109,7 +109,7 @@ class IOCoreReadyValid(LakeCoreBase):
         if 'ready_valid_mode' in config_kwargs:
             configs_pre = []
 
-        elif self.exchange_64: 
+        elif self.include_E64_HW: 
              configs_pre = [
                 ('glb2io_17_0_valid_reg_sel', 1),
                 ('glb2io_17_0_valid_reg_value', 1),
@@ -157,7 +157,11 @@ class IOCoreReadyValid(LakeCoreBase):
         configs = []
         # add valid high reg sel
 
-        sub_dict = {'dense_bypass': dense_bypass}
+        exchange_64_mode = 0
+        if 'exchange_64_mode' in config_kwargs:
+            exchange_64_mode = config_kwargs['exchange_64_mode']
+
+        sub_dict = {'dense_bypass': dense_bypass, 'exchange_64_mode': exchange_64_mode}
         tile_config = self.dut.get_bitstream(sub_dict)
         for name, v in configs_pre:
             configs = [self.get_config_data(name, v)] + configs

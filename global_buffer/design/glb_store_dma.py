@@ -45,10 +45,8 @@ class GlbStoreDma(Generator):
         self.cfg_st_dma_num_blocks = self.input("cfg_st_dma_num_blocks", self._params.axi_data_width)
         self.cfg_st_dma_rv_seg_mode = self.input("cfg_st_dma_rv_seg_mode", 1)
 
-        #TODO Set this appropriately from upstream
-        # MATRIX UNIT ACTIVE (configuration)
-        self.cfg_mu_active = self.input("cfg_mu_active", 1)
-        # self.cfg_mu_active = True
+        # Exchange 64 (configuration)
+        self.cfg_exchange_64_mode = self.input("cfg_exchange_64_mode", 1)
 
         self.st_dma_start_pulse = self.input("st_dma_start_pulse", 1)
         self.st_dma_done_interrupt = self.output("st_dma_done_interrupt", 1)
@@ -294,7 +292,7 @@ class GlbStoreDma(Generator):
                        step=kts.ternary(self.dense_rv_mode_on, self.qualified_iter_step_valid, self.iter_step_valid),
 
                         # MO: GLB CONN HACK
-                       #quad=self.cfg_mu_active,
+                       #quad=self.cfg_exchange_64_mode,
 
                        mux_sel=self.loop_mux_sel,
                        addr_out=self.data_current_addr)
@@ -543,7 +541,7 @@ class GlbStoreDma(Generator):
         # So in RV mode, iter_step everytime new (non-addr) data is popped from FIFO
         # rv_is_addrdata should always be low in non sparse-rv-mode
         #TODO Figure out if the readys should be ANDED here. I think they should  
-        elif self.cfg_mu_active & (self.sparse_rv_mode_on | self.dense_rv_mode_on):
+        elif self.cfg_exchange_64_mode & (self.sparse_rv_mode_on | self.dense_rv_mode_on):
             self.iter_step_valid = self.strm_run & self.fifo_pop_ready[0] & self.fifo_pop_ready[1] & self.fifo_pop_ready[2] & self.fifo_pop_ready[3] & ~self.rv_is_addrdata
 
         elif self.sparse_rv_mode_on | self.dense_rv_mode_on:
@@ -590,7 +588,7 @@ class GlbStoreDma(Generator):
         self.bank_wr_strb_cache_w = self.bank_wr_strb_cache_r
         self.bank_wr_data_cache_w = self.bank_wr_data_cache_r
 
-        if self.cfg_mu_active:
+        if self.cfg_exchange_64_mode:
             if self.strm_wr_en_w:
                 self.bank_wr_strb_cache_w[self.cgra_strb_width - 1,
                                             0] = const(self.cgra_strb_value, self.cgra_strb_width)

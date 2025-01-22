@@ -194,7 +194,7 @@ class GlbTile(Generator):
                                           size=self._params.queue_depth)
         self.cfg_st_dma_num_blocks = self.var("cfg_st_dma_num_blocks", self._params.axi_data_width)
         self.cfg_st_dma_rv_seg_mode = self.var("cfg_st_dma_rv_seg_mode", 1)
-        self.cfg_st_dma_mu_active = self.var("cfg_st_dma_mu_active", 1)
+        self.cfg_st_dma_exchange_64_mode = self.var("cfg_st_dma_exchange_64_mode", 1)
 
         # ld dma
         self.cfg_ld_dma_ctrl = self.var("cfg_ld_dma_ctrl", self.header.cfg_load_dma_ctrl_t)
@@ -333,7 +333,7 @@ class GlbTile(Generator):
 
         # TODO: Wrap this in if-statements with --using-matrix-unit flag as condition 
         # MATRIX UNIT ACTIVE (configuration)
-        self.wire(self.cfg_st_dma_mu_active, self.glb_cfg.cfg_st_dma_mu_active)
+        self.wire(self.cfg_st_dma_exchange_64_mode, self.glb_cfg.cfg_st_dma_exchange_64_mode)
 
         self.glb_pcfg_broadcast = GlbPcfgBroadcast(_params=self._params)
         self.add_child("glb_pcfg_broadcast",
@@ -368,7 +368,7 @@ class GlbTile(Generator):
                        cfg_data_network_f2g_mux=self.cfg_st_dma_ctrl['data_mux'],
                        cfg_st_dma_num_blocks=self.cfg_st_dma_num_blocks,
                        cfg_st_dma_rv_seg_mode=self.cfg_st_dma_rv_seg_mode,
-                       cfg_mu_active=self.cfg_st_dma_mu_active)
+                       cfg_exchange_64_mode=self.cfg_st_dma_exchange_64_mode)
 
         self.add_child("glb_load_dma",
                        GlbLoadDma(_params=self._params),

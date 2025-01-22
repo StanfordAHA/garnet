@@ -124,6 +124,9 @@ def place_io_blk(id_to_name, app_dir, io_sides):
 
     # place it on the interconnect
     # input and outputs are placed on the same IO tiles
+
+    # If operating in exchange_64 mode, place IOs in a denser way (4x denser)
+    exchange_64_mode = "EXCHANGE_64" in os.environ and os.environ.get("EXCHANGE_64") == "1"
     group_index = 0
     for idx, input_blk in enumerate(inputs):
         placement[input_blk] = (group_index * 2 + io_tile_shift_right_index, 0)
@@ -134,8 +137,11 @@ def place_io_blk(id_to_name, app_dir, io_sides):
 
     group_index = 0
     for idx, output_blk in enumerate(outputs):
-        # placement[output_blk] = (group_index * 2 + 1 + io_tile_shift_right_index, 0)
-        placement[output_blk] = (1, 0)
+        if exchange_64_mode:
+              placement[output_blk] = ((group_index * 2 + io_tile_shift_right_index) / 8 + 1, 0) 
+        else:
+            placement[output_blk] = (group_index * 2 + 1 + io_tile_shift_right_index, 0)
+      
         if idx < len(valid):
             placement[valid[idx]] = (group_index * 2 + 1 + io_tile_shift_right_index, 0)
         group_index += 1
