@@ -30,6 +30,8 @@ class CreateBuses(Visitor):
         self.ready_valid=ready_valid
         
         #MO: GLB CONN HACK
+        self.include_E64_HW = True
+        self.exchange_64_mode = "EXCHANGE_64" in os.environ and os.environ.get("EXCHANGE_64") == "1"
         self.outputCount = 0
 
     def doit(self, dag):
@@ -134,15 +136,26 @@ class CreateBuses(Visitor):
             #breakpoint()
             #port = "f2io_17" if self.ready_valid else "f2io_16"
             # port = "f2io_17_0" if self.ready_valid else "f2io_16"
-            node_name_parse_list = node.iname.split("stencil_")[2].split("_write")
 
-            packet_num = 0
-            if len(node_name_parse_list) > 1:
-                packet_num = int(node_name_parse_list[0])
-            else:
+            if self.exchange_64_mode:
+                node_name_parse_list = node.iname.split("stencil_")[2].split("_write")
+
                 packet_num = 0
+                if len(node_name_parse_list) > 1:
+                    packet_num = int(node_name_parse_list[0])
+                else:
+                    packet_num = 0
+    
+            if self.include_E64_HW:
+                if self.exchange_64_mode:
+                    port = f"f2io_17_{packet_num}"
+                else:
+                    port = f"f2io_17_0"
+            elif self.ready_valid:
+                port = f"f2io_17"
+            else:
+                port = "f2io_16"
 
-            port = f"f2io_17_{packet_num}" if self.ready_valid else "f2io_16"
             self.outputCount = (self.outputCount + 1) % 4
         self.netlist[child_bid].append((node, port))
 
@@ -1278,11 +1291,18 @@ def create_netlist_info(
     nodes_to_instrs = CreateInstrs(node_info).doit(pdag)
 
     dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1"  
+    exchange_64_mode = "EXCHANGE_64" in os.environ and os.environ.get("EXCHANGE_64") == "1"
+
     info["id_to_instrs"] = {}
     for node, id in nodes_to_ids.items():
+        node_config_kwargs = {}
         if dense_ready_valid and ("I" in id or "i" in id):
-            node_config_kwargs = {}
             node_config_kwargs['ready_valid_mode'] = 1 
+
+        if exchange_64_mode and ("I" in id or "i" in id):
+            node_config_kwargs['exchange_64_mode'] = 1
+
+        if (dense_ready_valid or exchange_64_mode) and ("I" in id or "i" in id):
             info["id_to_instrs"][id] = (1, node_config_kwargs) 
         else:
             info["id_to_instrs"][id] = nodes_to_instrs[node]

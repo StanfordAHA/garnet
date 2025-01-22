@@ -59,6 +59,7 @@ from lassen.sim import PE_fc
 #from lake.spec.spec_memory_controller import SpecMemoryController, build_four_port_wide_fetch_rv
 import magma as m
 from peak import family
+import os
 
 
 def get_actual_size(width: int, height: int, io_sides: List[IOSide]):
@@ -452,7 +453,8 @@ def create_cgra(width: int, height: int, io_sides: List[IOSide],
                     or y in range(y_max + 1, height):
                 if ready_valid:
                     #core = IOCoreReadyValid(allow_bypass=False)
-                    core = IOCoreReadyValid(allow_bypass=False, exchange_64=using_matrix_unit)
+                    #TODO: Fix include_E64_HW to be a HW generation flag (garnet flag)
+                    core = IOCoreReadyValid(allow_bypass=False, include_E64_HW=using_matrix_unit)
                 elif use_io_valid:
                     core = IOCoreValid(config_addr_width=reg_addr_width,
                                        config_data_width=config_data_width)
