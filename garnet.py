@@ -619,6 +619,9 @@ class Garnet(Generator):
             fixed_io = place_io_blk(id_to_name, app_dir, self.io_sides)
 
         west_in_io_sides = IOSide.West in self.io_sides
+        dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1" 
+    
+        #TODO: Rename the sparse to ready_valid 
         placement, routing, id_to_name = \
             archipelago.pnr(self.interconnect, (netlist, bus),
                             load_only=load_only,
@@ -629,7 +632,8 @@ class Garnet(Generator):
                             harden_flush=self.harden_flush,
                             pipeline_config_interval=self.pipeline_config_interval,
                             pes_with_packed_ponds=self.pes_with_packed_ponds,
-                            west_in_io_sides=west_in_io_sides)
+                            west_in_io_sides=west_in_io_sides,
+                            sparse=dense_ready_valid)
 
         return placement, routing, id_to_name, instance_to_instr, netlist, bus, active_core_ports
 
