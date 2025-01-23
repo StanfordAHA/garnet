@@ -322,6 +322,21 @@ function Kernel::new(string app_dir, int dpr);
                     num_pixels = num_pixels * get_io_tile_extent(io_info, j, k);
                 end
             end
+
+            // MO: E64 HACK
+            // num_pixels *= 4;
+
+
+            // byte exchange_64_mode[$];
+            // exchange_64_mode = $getenv("EXCHANGE_64");
+
+            // if (exchange_64_mode.size() == 0) begin
+            //     $display("INFO: Exchange 64 mode variable not set\n");
+            // end else if (string'(exchange_64_mode) == "1") begin
+            //     $display("INFO: Exchange 64 mode ON\n");
+                
+            // end 
+
             // For GLB tiling read memory region of entire feature map
             if (num_glb_tiling > 0) begin
                 num_pixels = num_pixels * num_glb_tiling;
@@ -376,6 +391,8 @@ function bitstream_t Kernel::parse_bitstream();
     end
     return result;
 endfunction
+
+
 
 function data_array_t Kernel::parse_input_data(int idx);
     int num_pixel = (input_size[idx] >> 1);  // Pixel is 2byte (16bit) size
@@ -507,6 +524,23 @@ function int Kernel::kernel_map();
 
     for (int i = 0; i < num_outputs; i++) begin
         io_info = get_output_info(kernel_info, i);
+        
+
+        // MO: E64 HACK
+        // outputs[i].num_io_tiles = outputs[i].num_io_tiles / 4;
+
+
+        // byte exchange_64_mode[$];
+        // exchange_64_mode = $getenv("EXCHANGE_64");
+
+        // if (exchange_64_mode.size() == 0) begin
+        //     $display("INFO: Exchange 64 mode variable not set\n");
+        // end else if (string'(exchange_64_mode) == "1") begin
+        //     $display("INFO: Exchange 64 mode ON\n");
+             
+        // end 
+    
+
         for (int j = 0; j < outputs[i].num_io_tiles; j++) begin
             outputs[i].io_tiles[j].tile = get_io_tile_map_tile(io_info, j);
             outputs[i].io_tiles[j].start_addr = get_io_tile_start_addr(io_info, j);
@@ -588,6 +622,7 @@ function void Kernel::compare();
     // TODO: Make interleave and uninterleave as a function
     for (int i = 0; i < num_outputs; i++) begin
         num_io_tiles = outputs[i].num_io_tiles;
+        $display("Number of I/O tiles: %d", num_io_tiles);
         if (num_io_tiles == 1) begin
             output_data[i] = outputs[i].io_tiles[0].io_block_data;
         end else begin
