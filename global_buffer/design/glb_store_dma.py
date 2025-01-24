@@ -223,7 +223,11 @@ class GlbStoreDma(Generator):
 
 
             self.wire(self.fifo_push[packet_16], ~self.fifo_full[packet_16] & self.strm_data_valid[packet_16])
-            self.wire(self.fifo2cgra_ready[packet_16], ~self.fifo_almost_full[packet_16])
+            
+            # MO: Why is this using almost full? 
+            # self.wire(self.fifo2cgra_ready[packet_16], ~self.fifo_almost_full[packet_16])
+
+            self.wire(self.fifo2cgra_ready[packet_16], ~self.fifo_full[packet_16])
 
 
         # Write packet synchronization for E64 write 
@@ -535,15 +539,23 @@ class GlbStoreDma(Generator):
             self.strm_data_valid[packet_16] = 0
             for i in range(self._params.cgra_per_glb):
                 if self.cfg_data_network_f2g_mux[i] == 1:
-                    self.strm_data[packet_16] = self.data_f2g_r[i][packet_16]
+
+                    # MO: Why does this need to be registered? 
+                    # self.strm_data[packet_16] = self.data_f2g_r[i][packet_16]
+                    self.strm_data[packet_16] = self.data_f2g[i][packet_16]
 
                     # MO: GLB WRITE HACK
                     # self.data_f2g_rdy[i] = self.data_ready_g2f_w
                     self.data_f2g_rdy[i][packet_16] = self.data_ready_g2f_w[packet_16]
                     if self.sparse_rv_mode_on | self.dense_rv_mode_on:
-                        self.strm_data_valid[packet_16] = self.data_f2g_vld_r[i][packet_16]
+
+                        # MO: Why does this need to be registered? 
+                        #self.strm_data_valid[packet_16] = self.data_f2g_vld_r[i][packet_16]
+                        self.strm_data_valid[packet_16] = self.data_f2g_vld[i][packet_16]
                     else:
-                        self.strm_data_valid[packet_16] = self.ctrl_f2g_r[i]
+                        # MO: Why does this need to be registered? 
+                        # self.strm_data_valid[packet_16] = self.ctrl_f2g_r[i]
+                        self.strm_data_valid[packet_16] = self.ctrl_f2g[i]
                 else:
                     self.strm_data[packet_16] = self.strm_data[packet_16]
                     self.strm_data_valid[packet_16] = self.strm_data_valid[packet_16]
