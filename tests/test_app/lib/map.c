@@ -318,6 +318,18 @@ bool glb_tiling_config(struct KernelInfo *kernel_info, struct IOTileInfo *io_til
     return true;
 }
 
+
+int get_exchange_64_config() {
+    int exchange_64_mode = 0;
+    const char *exchange_64_env_var = "EXCHANGE_64";
+    char *exchange_64_value = getenv(exchange_64_env_var);
+    if (exchange_64_value != NULL && strcmp(exchange_64_value, "1") == 0) {
+        exchange_64_mode = 1;
+        printf("INFO: Using exchange_64 mode\n");
+    }
+    return exchange_64_mode; 
+}
+
 int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigInfo *config_info, struct KernelInfo *kernel_info) {
     int tile = io_tile_info->tile;
     int start_addr = io_tile_info->start_addr;
