@@ -26,6 +26,7 @@ import "DPI-C" function chandle get_output_info(
     int index
 );
 import "DPI-C" function int glb_map(chandle kernel, int dpr_enabled);
+import "DPI-C" function int get_exchange_64_config();
 import "DPI-C" function int get_num_groups(chandle info);
 import "DPI-C" function int get_group_start(chandle info);
 import "DPI-C" function int get_num_inputs(chandle info);
@@ -324,18 +325,9 @@ function Kernel::new(string app_dir, int dpr);
             end
 
             // MO: E64 HACK
-            // num_pixels *= 4;
-
-
-            // byte exchange_64_mode[$];
-            // exchange_64_mode = $getenv("EXCHANGE_64");
-
-            // if (exchange_64_mode.size() == 0) begin
-            //     $display("INFO: Exchange 64 mode variable not set\n");
-            // end else if (string'(exchange_64_mode) == "1") begin
-            //     $display("INFO: Exchange 64 mode ON\n");
-                
-            // end 
+            if (get_exchange_64_config()) begin
+                num_pixels *= 4;
+            end
 
             // For GLB tiling read memory region of entire feature map
             if (num_glb_tiling > 0) begin
@@ -525,21 +517,10 @@ function int Kernel::kernel_map();
     for (int i = 0; i < num_outputs; i++) begin
         io_info = get_output_info(kernel_info, i);
         
-
         // MO: E64 HACK
-        // outputs[i].num_io_tiles = outputs[i].num_io_tiles / 4;
-
-
-        // byte exchange_64_mode[$];
-        // exchange_64_mode = $getenv("EXCHANGE_64");
-
-        // if (exchange_64_mode.size() == 0) begin
-        //     $display("INFO: Exchange 64 mode variable not set\n");
-        // end else if (string'(exchange_64_mode) == "1") begin
-        //     $display("INFO: Exchange 64 mode ON\n");
-             
-        // end 
-    
+        if (get_exchange_64_config()) begin
+            outputs[i].num_io_tiles = outputs[i].num_io_tiles / 4;
+        end
 
         for (int j = 0; j < outputs[i].num_io_tiles; j++) begin
             outputs[i].io_tiles[j].tile = get_io_tile_map_tile(io_info, j);
