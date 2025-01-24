@@ -22,10 +22,11 @@ class GlbLoadDma(Generator):
         self.glb_tile_id = self.input("glb_tile_id", self._params.tile_sel_addr_width)
 
         # MO: GLB READ HACK 
+        self.num_packets = 4
         self.data_g2f = self.output("data_g2f", width=self._params.cgra_data_width,
-                                    size=[self._params.cgra_per_glb, 4], packed=True)
-        self.data_g2f_vld = self.output("data_g2f_vld", 1, size=[self._params.cgra_per_glb, 4], packed=True)
-        self.data_g2f_rdy = self.input("data_g2f_rdy", 1, size=[self._params.cgra_per_glb, 4], packed=True)
+                                    size=[self._params.cgra_per_glb, self.num_packets], packed=True)
+        self.data_g2f_vld = self.output("data_g2f_vld", 1, size=[self._params.cgra_per_glb, self.num_packets], packed=True)
+        self.data_g2f_rdy = self.input("data_g2f_rdy", 1, size=[self._params.cgra_per_glb, self.num_packets], packed=True)
 
         self.ctrl_g2f = self.output("ctrl_g2f", 1, size=self._params.cgra_per_glb, packed=True)
 
