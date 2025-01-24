@@ -92,7 +92,7 @@ class IOCoreReadyValid(LakeCoreBase):
         else:
             config_kwargs = config_tuple
 
-        if 'sparse_mode' in config_kwargs:
+        if 'ready_valid_mode' in config_kwargs:
             configs_pre = []
         else:
             configs_pre = [
