@@ -30,7 +30,7 @@ class CreateBuses(Visitor):
         self.ready_valid=ready_valid
         
         #MO: GLB CONN HACK
-        self.include_E64_HW = True
+        self.include_E64_HW = "INCLUDE_E64_HW" in os.environ and os.environ.get("INCLUDE_E64_HW") == "1"
         self.exchange_64_mode = "EXCHANGE_64" in os.environ and os.environ.get("EXCHANGE_64") == "1"
         self.outputCount = 0
 

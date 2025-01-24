@@ -477,7 +477,7 @@ class Garnet(Generator):
                                            self.ready_valid)
 
         # Remapping all of the ports in the application to generic ports that exist in the hardware
-        # Seems really brittle, we should probabchyfgrtu234;chyfr234;chifr234cl234l23chjl2hjl23chl23cybhl23cybil23cyblu23cybflu23ybflu23hybfilu2yfilu2flcylchyilbciyl;oubcyilou23;cyhou23;chiou23fbfhioblfio'blyo'bhlyuO@"#bchiluy@#"cilF@#"cilFHR@#"clFHR@"lFHR"l23hb do this in a better way
+        # Seems really brittle, we should probably do this in a better way
         mem_remap = None
         pe_remap = None
 
