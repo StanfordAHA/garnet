@@ -179,12 +179,10 @@ class GlbStoreDma(Generator):
         self.add_always(self.rv_num_seg_cnt_ff)
         self.add_always(self.rv_num_seg_cnt_total_comb)
 
-        # DRV: Add extra mode here 
         # ready/valid control
         self.wire(self.sparse_rv_mode_on, (self.cfg_st_dma_ctrl_valid_mode == self._params.st_dma_valid_mode_sparse_ready_valid))
         self.wire(self.dense_rv_mode_on, (self.cfg_st_dma_ctrl_valid_mode == self._params.st_dma_valid_mode_dense_ready_valid))
 
-        # DRV: Keep clock_en high 
         # FIFO for ready/valid
         # MO: GLB WRITE HACK (add more FIFOs)
         for packet_16 in range(self.num_packets):
@@ -236,8 +234,6 @@ class GlbStoreDma(Generator):
         self.wire(self.packet_64_pop_ready, self.fifo_pop_ready[0] & self.fifo_pop_ready[1] & self.fifo_pop_ready[2] & self.fifo_pop_ready[3])
 
 
-        #TODO: What is this??? What is GlbLoopIter for? 
-        # INFO: This is what actually counts the range apparently 
         # Loop iteration shared for cycle and data
         self.loop_iter = GlbLoopIter(self._params, loop_level=self._params.store_dma_loop_level)
         self.add_child("loop_iter",
@@ -245,19 +241,15 @@ class GlbStoreDma(Generator):
                        clk=self.clk,
                        clk_en=const(1, 1),
                        reset=self.reset,
-                       # MO: STENCIL VALID HACK
-                       #step=self.iter_step_valid,
-                       #step=kts.ternary(self.dense_rv_mode_on, self.iter_step_valid & self.qualified_iter_step_valid, self.iter_step_valid),
+                       # MO: STENCIL VALID CHANGE
                        step=kts.ternary(self.dense_rv_mode_on, self.qualified_iter_step_valid, self.iter_step_valid),
-                       #step=self.qualified_iter_step_valid,
                        mux_sel_out=self.loop_mux_sel,
                        restart=self.loop_done)
         self.wire(self.loop_iter.dim, self.current_dma_header["dim"])
         for i in range(self._params.store_dma_loop_level):
             self.wire(self.loop_iter.ranges[i], self.current_dma_header[f"range_{i}"])
 
-        # INFO: The purpose of these two below is to output valid on cycles when writes should occur (static mode)
-        # Shouldn't need to use these for dense ready-valid mode 
+        # INFO: The purpose of these two below is to output valid on cycles when writes should occur 
         # Cycle stride
         self.wire(self.static_mode_on, self.cfg_st_dma_ctrl_valid_mode == self._params.st_dma_valid_mode_static)
 
@@ -265,14 +257,13 @@ class GlbStoreDma(Generator):
         self.add_child("cycle_stride_sched_gen",
                        self.cycle_stride_sched_gen,
                        clk=self.clk,
-                       # MO: STENCIL VALID HACK
+                       # MO: STENCIL VALID CHANGE 
                        clk_en=clock_en(self.static_mode_on | self.dense_rv_mode_on),
                        reset=self.reset,
                        restart=self.st_dma_start_pulse_r,
                        cycle_count=self.cycle_count,
                        current_addr=self.cycle_current_addr,
                        finished=self.loop_done_muxed,
-                       #valid_output=self.qualified_iter_step_valid)
                        valid_output=self.stencil_valid)
         
         self.wire(self.qualified_iter_step_valid, self.stencil_valid & self.iter_step_valid)
@@ -283,20 +274,12 @@ class GlbStoreDma(Generator):
         self.add_child("cycle_stride_addr_gen",
                        self.cycle_stride_addr_gen,
                        clk=self.clk,
-                       # MO: STENCIL VALID HACK
+                       # MO: STENCIL VALID CHANGE
                        clk_en=clock_en(self.static_mode_on | self.dense_rv_mode_on),
                        reset=self.reset,
                        restart=self.st_dma_start_pulse_r,
-                       # MO: STENCIL VALID HACK 
-                       #step=self.iter_step_valid,
-                    #    step=kts.ternary(self.dense_rv_mode_on, self.iter_step_valid & self.qualified_iter_step_valid, self.iter_step_valid),
+                       # MO: STENCIL VALID CHANGE
                        step=kts.ternary(self.dense_rv_mode_on, self.qualified_iter_step_valid, self.iter_step_valid),
-                       #step=self.qualified_iter_step_valid,
-
-                       # MO: GLB CONN HACK
-                       #quad=kts.const(0, 1),
-         
-
                        mux_sel=self.loop_mux_sel)
         self.wire(self.cycle_stride_addr_gen.addr_out, self.cycle_current_addr)
         self.wire(self.cycle_stride_addr_gen.start_addr, self.current_dma_header["cycle_start_addr"])
@@ -313,9 +296,7 @@ class GlbStoreDma(Generator):
                        clk=self.clk,
                        clk_en=const(1, 1),
                        reset=self.reset,
-                       restart=self.st_dma_start_pulse_r | self.rv_is_addrdata, #DRV: may need to change this in DRV mode TODO: double-check all rv_ismeta/addrdata uses (resolution: should be low in non-sparse rv mode)
-                    #    start_addr=self.data_base_addr,
-                       #step=self.iter_step_valid,
+                       restart=self.st_dma_start_pulse_r | self.rv_is_addrdata, 
                        step=kts.ternary(self.dense_rv_mode_on, self.qualified_iter_step_valid, self.iter_step_valid),
 
                         # MO: GLB CONN HACK
@@ -330,11 +311,11 @@ class GlbStoreDma(Generator):
         for i in range(self._params.store_dma_loop_level):
             self.wire(self.data_stride_addr_gen.strides[i], self.current_dma_header[f"stride_{i}"])
 
-        # Last & with iter_step_valid is a hack to ensure that the cycle counter is tokenized on RV transactions 
+
+        # Last & with iter_step_valid is a to ensure that the cycle counter is tokenized on RV transactions 
         self.wire(self.cycle_counter_en, kts.ternary(self.static_mode_on, self.strm_run, self.strm_run & self.iter_step_valid))
 
 
-    # DRV: Choose else code. Need not worry about block_done 
     @always_comb
     def block_done_logic(self):
         if self.sparse_rv_mode_on:
@@ -343,7 +324,6 @@ class GlbStoreDma(Generator):
         else:
             self.block_done = 0
 
-    # DRV: Choose else code. Need not worry about seg_done 
     @always_comb
     def seg_done_logic(self):
         if self.sparse_rv_mode_on:
@@ -352,8 +332,6 @@ class GlbStoreDma(Generator):
         else:
             self.seg_done = 0
 
-    # DRV: Choose else code? TODO: Figure this out 
-    # Downstream, this will ultimately determine when the interrupt gets produced 
     # This is the key difference between dense and sparse RV modes 
     @always_comb
     def loop_done_muxed_logic(self):
@@ -362,7 +340,6 @@ class GlbStoreDma(Generator):
         else:
             self.loop_done_muxed = self.loop_done
 
-    # DRV: No change needed here; need not worry about num_blocks_cnt 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def rv_num_blocks_cnt_ff(self):
         if self.reset:
@@ -377,8 +354,7 @@ class GlbStoreDma(Generator):
     def rv_is_last_block_comb(self):
         self.is_last_block = self.rv_num_blocks_cnt == 1
 
-    # DRV: No change needed here; dense ready valid apps won't provide base address as part of header. 
-    # Therefore, we shouldn't need the rv_is_addrdata anmd rv_ismetadata signals 
+
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def rv_metadata_ff(self):
         if self.reset:
@@ -501,7 +477,7 @@ class GlbStoreDma(Generator):
                 self.cycle_count = 0
             elif self.loop_done_muxed:
                 self.cycle_count = 0
-            # MO: STENCIL VALID HACK
+            # MO: STENCIL VALID CHANGE
             # In dense RV mode, cycle counter is tokenized on every ready/valid data transaction
             elif(self.cycle_counter_en):
                 self.cycle_count = self.cycle_count + 1
@@ -522,7 +498,6 @@ class GlbStoreDma(Generator):
                     self.data_f2g_vld_r[i][j] = self.data_f2g_vld[i][j]
                 self.ctrl_f2g_r[i] = self.ctrl_f2g[i]
 
-    # DRV: Use if block, add extra section of code for dense ready valid 
     @always_comb
     def data_ready_g2f_comb(self):
         if self.sparse_rv_mode_on | self.dense_rv_mode_on:
@@ -531,7 +506,6 @@ class GlbStoreDma(Generator):
         else:
             self.data_ready_g2f_w = 0
 
-    # DRV: Use if block; take valid from SB FIFO
     @always_comb
     def data_f2g_logic(self):
         for packet_16 in range(self.num_packets):
@@ -561,17 +535,14 @@ class GlbStoreDma(Generator):
                     self.strm_data_valid[packet_16] = self.strm_data_valid[packet_16]
                     self.data_f2g_rdy[i][packet_16] = 0
 
-    # DRV: TODO Figure out what to do here 
-    # DRV: Maybe take sparse_rv_mode_on clause without the rv_is_addrdata check?
-    # TODO: static_mode_on here is being used as a proxy for STATIC mode. If static_mode_on 
-    # is on in RV mode, may need to change that (resolution: it isn't...)
+
     @always_comb
     def qualified_iter_step_valid_comb(self):
         # STATIC MODE 
         if self.static_mode_on:
             self.iter_step_valid = self.stencil_valid
 
-        # RV (SPARSE/DENSE) MODE AND USING MATRIX UNIT 
+        # RV (SPARSE/DENSE) MODE AND E64 ENABLED
         # This is really self.fifo_pop & ~self.rv_is_addrdata
         # So in RV mode, iter_step everytime new (non-addr) data is popped from FIFO
         # rv_is_addrdata should always be low in non sparse-rv-mode
@@ -596,12 +567,9 @@ class GlbStoreDma(Generator):
             else:
                 self.iter_step_valid = self.strm_data_valid[0] & self.strm_data_valid[1] & self.strm_data_valid[2] & self.strm_data_valid[3]
 
-    # DRV: Take IF block so data goes through FIFO, as desired
     @always_comb
     def strm_wr_packet_comb(self):
-
-        # MO: STENCIL VALID HACK - qualify incoming valids with RV tokenized stencil valid 
-        # self.strm_wr_en_w = self.iter_step_valid
+        # MO: STENCIL VALID CHANGE - qualify incoming valids with RV tokenized stencil valid 
         self.strm_wr_en_w = kts.ternary(self.dense_rv_mode_on, self.qualified_iter_step_valid, self.iter_step_valid)
         if self.sparse_rv_mode_on | self.dense_rv_mode_on:
             self.strm_wr_addr_w = resize(self.data_current_addr, self._params.glb_addr_width)
@@ -788,7 +756,6 @@ class GlbStoreDma(Generator):
             elif self.st_dma_done_pulse_last:
                 self.st_dma_done_interrupt = 0
 
-    # DRV: No change needed here? Again, can maybe ignore rv_is_addrdata
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def rv_addrdata_ff(self):
         if self.reset:
@@ -808,8 +775,6 @@ class GlbStoreDma(Generator):
         elif self.rv_is_addrdata:
             self.rv_base_addr = self.current_dma_header["start_addr"] + self.data_fifo2dma[0]
 
-    # DRV: Take else clause? Because dense apps won't configure 
-    # base address through else clause  
     @always_comb
     def data_addr_gen_start_addr_comb(self):
         if self.sparse_rv_mode_on:
