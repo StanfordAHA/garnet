@@ -319,6 +319,7 @@ class GlbLoadDma(Generator):
 
     @ always_comb
     def iter_step_logic(self):
+        # Cycle_counter_en is a proxy for NOT in RV mode 
         if self.cycle_counter_en:
             self.iter_step_valid = self.cycle_valid
         else:

@@ -1490,7 +1490,7 @@ class SparseTBBuilder(m.Generator2):
                     self.nlb.configure_tile(core_node.get_name(), pass_config_kwargs_tuple)
                 else:
                     if "glb" in node.get_name():
-                        node_config_kwargs['sparse_mode'] = 1  # maybe to add?
+                        node_config_kwargs['ready_valid_mode'] = 1  # maybe to add?
                     self.nlb.configure_tile(core_node.get_name(), (1, node_config_kwargs))
 
     def display_names(self):
