@@ -249,7 +249,6 @@ class NetlistGraph:
             fout = open(f"{app_dir}/updated_kernel_latencies.json", "w")
             fout.write(json.dumps(kernel_latencies, indent=4))
 
-
     def remove_mem_reg_tree(self):
         for mem_node in self.mem_nodes:
             for sink_node in mem_node.sinks[:]:

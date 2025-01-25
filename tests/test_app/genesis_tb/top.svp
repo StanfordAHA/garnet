@@ -96,14 +96,24 @@ module top;
 
 //; if ($using_matrix_unit) {
     //============================================================================//
-    // Matrix unit outputs 
+    // Matrix unit ifc 
     //============================================================================//
-    wire [`$mu_datawidth-1`:0] mu2cgra [`$oc_0-1`:0];
+    logic [`$mu_datawidth-1`:0] mu2cgra [`$oc_0-1`:0];
+    logic mu2cgra_valid;
+    logic cgra2mu_ready; 
 
-    //; for (my $i = 0; $i < $oc_0; $i++) {
-    assign mu2cgra[`$i`] = 16'b1;
-    //; } 
-
+    behavioral_matrix_unit #(
+        .NUM_TX(16384),
+        .MU_DATAWIDTH(`$mu_datawidth`),
+        .OC_0(`$oc_0`)
+    ) mu_ifc (
+        .clk(clk),
+        .reset(reset),
+        //.cgra2mu_ready(cgra2mu_ready_row0),
+        .cgra2mu_ready(cgra2mu_ready),
+        .mu2cgra_valid(mu2cgra_valid),
+        .mu2cgra(mu2cgra)
+    );
 //; }
 
 
@@ -156,8 +166,11 @@ module top;
         .jtag_trst_n(  /*unused*/),
 
         // matrix unit ifc
-        .mu2cgra_valid (1'b1),
-        .cgra2mu_ready (),
+        .mu2cgra_valid (mu2cgra_valid),
+        .cgra2mu_ready (cgra2mu_ready),
+
+        // MO: Temporary HACK
+        //.cgra2mu_ready_row0(cgra2mu_ready_row0),
         .mu2cgra(mu2cgra)
 
     //; } else {

@@ -100,8 +100,10 @@ class GlobalBufferParams:
 
     # constant variables: not used by TSMC (yet)
     st_dma_valid_mode_valid: int = 0
-    st_dma_valid_mode_ready_valid: int = 1
+    st_dma_valid_mode_sparse_ready_valid: int = 1
     st_dma_valid_mode_static: int = 2
+    st_dma_valid_mode_dense_ready_valid: int = 3
+
 
     ld_dma_valid_mode_static: int = 0
     ld_dma_valid_mode_valid: int = 1
