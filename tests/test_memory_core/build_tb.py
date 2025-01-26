@@ -2932,7 +2932,8 @@ if __name__ == "__main__":
                                    scgra=True,
                                    perf_debug=perf_debug,
                                    give_north_io_sbs=give_north_io_sbs,
-                                   num_fabric_cols_removed=num_fabric_cols_removed)
+                                   num_fabric_cols_removed=num_fabric_cols_removed,
+                                   include_E64_hw=include_E64_hw)
 
         time_x = time.time()
         # print(f"TIME:\tcreate_cgra\t{time_x - time_0}")

@@ -9,7 +9,7 @@ if os.getenv('WHICH_SOC') == "amber":
 import argparse
 import magma
 from systemRDL.util import gen_rdl_header  # If I move this it breaks. Dunno why.
-from cgra import compress_config_data
+# from cgra import compress_config_data
 import json
 import archipelago
 import archipelago.power
@@ -61,6 +61,7 @@ class Garnet(Generator):
 
 
         self.io_sides = io_sides
+        self.include_E64_hw = args.include_E64_hw
 
         # Build GLB unless interconnect_only (CGRA-only) requested
 
@@ -707,6 +708,7 @@ class Garnet(Generator):
 
     def generate_bitstream(self, halide_src, placement, routing, id_to_name, instance_to_instr, netlist, bus,
                            compact=False, end_to_end=False, active_core_ports=None):
+        from cgra import compress_config_data
         routing_fix = archipelago.power.reduce_switching(routing, self.interconnect,
                                                          compact=compact)
         routing.update(routing_fix)
@@ -855,6 +857,7 @@ def parse_args():
     parser.add_argument("--mu-datawidth", type=int, default=16)
     parser.add_argument("--give-north-io-sbs", action="store_true")
     parser.add_argument("--num-fabric-cols-removed", type=int, default=0)
+    parser.add_argument('--include-E64-hw', action="store_true")
 
     # Daemon choices are maybe ['help', 'launch', 'use', 'kill', 'force', 'status', 'wait']
     parser.add_argument('--daemon', type=str, choices=GarnetDaemon.choices, default=None)
@@ -874,6 +877,9 @@ def parse_args():
         arch = read_arch(args.pe)
         args.pe_fc = wrapped_peak_class(arch, debug=True)
 
+
+    if args.include_E64_hw:
+        os.environ["INCLUDE_E64_HW"] = "1"
 
     # If using MU, West and North have IO, else only north side has IO
     from canal.util import IOSide
