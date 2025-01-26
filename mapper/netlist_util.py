@@ -131,7 +131,7 @@ class CreateBuses(Visitor):
             # port = "f2io_1"
 
             # MO: GLB conn HACK 
-            port = "f2io_1_0"
+            port = "f2io_1_0" if self.include_E64_HW else "f2io_1"
         else:
             #breakpoint()
             #port = "f2io_17" if self.ready_valid else "f2io_16"

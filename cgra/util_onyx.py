@@ -140,6 +140,7 @@ def create_cgra(width: int, height: int, io_sides: List[IOSide],
                 add_pd: bool = True,
                 use_sim_sram: bool = True,
                 using_matrix_unit: bool = False,
+                include_E64_hw: bool = False,
                 give_north_io_sbs: bool = False,
                 num_fabric_cols_removed: int = 0,
                 hi_lo_tile_id: bool = True,
@@ -444,7 +445,7 @@ def create_cgra(width: int, height: int, io_sides: List[IOSide],
                 if ready_valid:
                     #core = IOCoreReadyValid(allow_bypass=False)
                     #TODO: Fix include_E64_HW to be a HW generation flag (garnet flag)
-                    core = IOCoreReadyValid(allow_bypass=False, include_E64_HW=using_matrix_unit)
+                    core = IOCoreReadyValid(allow_bypass=False, include_E64_HW=include_E64_hw)
                 elif use_io_valid:
                     core = IOCoreValid(config_addr_width=reg_addr_width,
                                        config_data_width=config_data_width)
