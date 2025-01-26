@@ -212,12 +212,11 @@ def gen_global_buffer_rdl(name, params: GlobalBufferParams):
         addr_map.add_child(st_dma_rv_seg_mode_r)
 
 
-    # MU Active
-    # TODO: Wrap in if-statemnt. Figure out how to configure it  
-    st_dma_exchange_64_mode_r = Reg("st_dma_exchange_64_mode")
-    st_dma_exchange_64_mode_f = Field("value", 1)
-    st_dma_exchange_64_mode_r.add_child(st_dma_exchange_64_mode_f)
-    addr_map.add_child(st_dma_exchange_64_mode_r)
+    if "INCLUDE_E64_HW" in os.environ and os.environ.get("INCLUDE_E64_HW") == "1":
+        st_dma_exchange_64_mode_r = Reg("st_dma_exchange_64_mode")
+        st_dma_exchange_64_mode_f = Field("value", 1)
+        st_dma_exchange_64_mode_r.add_child(st_dma_exchange_64_mode_f)
+        addr_map.add_child(st_dma_exchange_64_mode_r)
 
     # Store DMA Header
     if params.queue_depth == 1:
