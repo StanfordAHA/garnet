@@ -9,7 +9,7 @@ from global_buffer.design.glb_clk_en_gen import GlbClkEnGen
 from global_buffer.design.fifo import FIFO
 
 
-class GlbLoadDma(Generator):
+class GlbLoadDma_E64(Generator):
     def __init__(self, _params: GlobalBufferParams):
         super().__init__("glb_load_dma")
         self._params = _params
@@ -21,10 +21,12 @@ class GlbLoadDma(Generator):
         self.reset = self.reset("reset")
         self.glb_tile_id = self.input("glb_tile_id", self._params.tile_sel_addr_width)
 
+        # MO: GLB READ HACK 
+        self.num_packets = 4
         self.data_g2f = self.output("data_g2f", width=self._params.cgra_data_width,
-                                    size=self._params.cgra_per_glb, packed=True)
-        self.data_g2f_vld = self.output("data_g2f_vld", 1, size=self._params.cgra_per_glb, packed=True)
-        self.data_g2f_rdy = self.input("data_g2f_rdy", 1, size=self._params.cgra_per_glb, packed=True)
+                                    size=[self._params.cgra_per_glb, self.num_packets], packed=True)
+        self.data_g2f_vld = self.output("data_g2f_vld", 1, size=[self._params.cgra_per_glb, self.num_packets], packed=True)
+        self.data_g2f_rdy = self.input("data_g2f_rdy", 1, size=[self._params.cgra_per_glb, self.num_packets], packed=True)
 
         self.ctrl_g2f = self.output("ctrl_g2f", 1, size=self._params.cgra_per_glb, packed=True)
 
@@ -45,6 +47,9 @@ class GlbLoadDma(Generator):
         self.cfg_ld_dma_header = self.input(
             "cfg_ld_dma_header", self.header.cfg_load_dma_header_t, size=self._params.queue_depth)
         self.cfg_data_network_g2f_mux = self.input("cfg_data_network_g2f_mux", self._params.cgra_per_glb)
+
+        # # Exchange 64 (configuration)
+        # self.cfg_exchange_64_mode = self.input("cfg_exchange_64_mode", 1)
 
         self.clk_en_dma2bank = self.output("clk_en_dma2bank", 1)
         self.ld_dma_start_pulse = self.input("ld_dma_start_pulse", 1)
@@ -210,6 +215,10 @@ class GlbLoadDma(Generator):
                        clk_en=clock_en(self.cycle_counter_en),
                        reset=self.reset,
                        restart=self.ld_dma_start_pulse_r,
+
+                       # MO: GLB CONN HACK
+                       #quad=const(0, 1),
+
                        step=self.iter_step_valid,
                        mux_sel=self.loop_mux_sel,
                        addr_out=self.cycle_current_addr)
@@ -229,6 +238,10 @@ class GlbLoadDma(Generator):
                        reset=self.reset,
                        restart=self.ld_dma_start_pulse_r,
                        step=self.iter_step_valid,
+
+                       # MO: GLB CONN HACK
+                       #quad=const(0, 1),
+
                        mux_sel=self.loop_mux_sel,
                        addr_out=self.data_current_addr)
         self.wire(self.data_stride_addr_gen.start_addr, ext(self.current_dma_header["start_addr"],
@@ -280,7 +293,9 @@ class GlbLoadDma(Generator):
     def data_g2f_rdy_muxed_logic(self):
         for i in range(self._params.cgra_per_glb):
             if self.cfg_ld_dma_ctrl_valid_mode == self._params.ld_dma_valid_mode_ready_valid:
-                self.data_g2f_rdy_muxed[i] = self.data_g2f_rdy[i]
+                # MO: GLB READ HACK 
+                # self.data_g2f_rdy_muxed[i] = self.data_g2f_rdy[i]
+                self.data_g2f_rdy_muxed[i] = self.data_g2f_rdy[i][0]
             else:
                 self.data_g2f_rdy_muxed[i] = const(1, 1)
 
@@ -304,11 +319,23 @@ class GlbLoadDma(Generator):
                            almost_full_diff=const(0, 1),
                            almost_empty_diff=const(0, 1))
 
-            self.wire(self.skid_out[i], self.data_g2f[i])
+            # MO: GLB READ HACK
+            # self.wire(self.skid_out[i], self.data_g2f[i])
+            self.wire(self.skid_out[i], self.data_g2f[i][0])
+            self.wire(self.skid_out[i], self.data_g2f[i][1])
+            self.wire(self.skid_out[i], self.data_g2f[i][2])
+            self.wire(self.skid_out[i], self.data_g2f[i][3])
+
             self.wire(self.fifo2skid_rdy[i], ~self.skid_full[i])
             self.wire(self.skid_push[i], self.fifo2skid_rdy[i] & self.fifo2skid_vld[i])
 
-            self.wire(~self.skid_empty[i], self.data_g2f_vld[i])
+            # MO: GLB READ HACK 
+            #self.wire(~self.skid_empty[i], self.data_g2f_vld[i])
+            self.wire(~self.skid_empty[i], self.data_g2f_vld[i][0])
+            self.wire(0, self.data_g2f_vld[i][1])
+            self.wire(0, self.data_g2f_vld[i][2])
+            self.wire(0, self.data_g2f_vld[i][3])
+
             self.wire(self.skid_pop[i], ~self.skid_empty[i] & self.data_g2f_rdy_muxed[i])
 
     @always_comb
