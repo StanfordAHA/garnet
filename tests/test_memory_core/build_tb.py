@@ -1754,7 +1754,7 @@ def coalesce_files(in_dir, out_dir, hack_files=None, unroll=1, give_tensor=None,
                                 use_fp=True)
 
 
-def generate_inputs(app_name):
+def lego_generate_inputs(app_name):
     # Use lego to generate input matrices
     input_file_dir = os.path.join("input/aha_regress", app_name)
     program_file = os.path.join(input_file_dir, "program.txt")
@@ -1804,6 +1804,118 @@ def generate_inputs(app_name):
 
     return matrix_tmp_dir
 
+def hardcode_generate_intpus(app_name, matrix_tmp_dir, give_tensor=False, tensor_orderings=None, clean=True, suffix=""):
+    # these application does not have an einsum expression, falling back to the old flow to 
+    os.makedirs(matrix_tmp_dir, exist_ok=True)
+    use_fp = False
+
+    if app_name == "trans_masked_broadcast":
+        B_mat = get_tensor(input_name='B', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                        dump= matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+                        sparsity=0.5)
+        c_mat = get_tensor(input_name='c', shapes=[10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                        dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['c'], 
+                        sparsity=0.0)
+        assert c_mat.shape[0] == B_mat.shape[0]
+
+        output_matrix = numpy.zeros((10, 10), dtype=numpy.uint16)
+        for i in range(0, output_matrix.shape[0]):
+            for j in range(0, output_matrix.shape[1]):
+                if B_mat[i][j] != 0:   
+                    output_matrix[i][j] = c_mat[i]
+        output_format = "CSF"
+        output_name = "X"
+    elif app_name == "masked_broadcast":
+        B_mat = get_tensor(input_name='B', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                        dump= matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+                        sparsity=0.5)
+        c_mat = get_tensor(input_name='c', shapes=[10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                        dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['c'], 
+                        sparsity=0.0)
+        assert c_mat.shape[0] == B_mat.shape[0]
+
+        output_matrix = numpy.zeros((10, 10), dtype=numpy.uint16)
+        for i in range(0, output_matrix.shape[0]):
+            for j in range(0, output_matrix.shape[1]):
+                if B_mat[i][j] != 0:   
+                    output_matrix[i][j] = c_mat[j]
+        output_format = "CSF"
+        output_name = "X"
+    elif app_name == "mat_mattransmul": # remove this special case once lego is fixed
+        vec_ordering = ((1, (0, 's')),)
+        b_mat = get_tensor(input_name='b', shapes=[1], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                            dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['b'],
+                            sparsity=0)
+        C_mat = get_tensor(input_name='C', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+                            sparsity=0.8)
+        d_mat = get_tensor(input_name='d', shapes=[10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['d'],
+                            sparsity=0.9)
+        e_mat = get_tensor(input_name='e', shapes=[1], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['e'],
+                            sparsity=0)
+        f_mat = get_tensor(input_name='f', shapes=[10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['f'],
+                            sparsity=0.8)
+
+        output_matrix = numpy.add(numpy.multiply(e_mat, f_mat, dtype=numpy.uint16, casting='unsafe'),
+                                    numpy.multiply(b_mat,
+                                                    numpy.matmul(C_mat, d_mat,
+                                                                dtype=numpy.uint16,
+                                                                casting='unsafe'),
+                                                    dtype=numpy.uint16,
+                                                    casting='unsafe'),
+                                    dtype=numpy.uint16, casting='unsafe')
+        output_format = "CSF"
+        output_name = "x"
+
+    return output_matrix, output_format, output_name, use_fp
+
+def read_lego_gold(matrix_tmp_dir, tensor_orderings):
+    # Read the gold matrix
+    output_dims = []
+    use_fp = False
+    with open(f"{matrix_tmp_dir}/tensor_out_mode_shape", "r") as f:
+        lines = f.readlines()
+        for line in lines:
+            output_dims.append(int(line.strip()))
+
+    output_format = "CSF"
+    output_name = None
+    # vector outputs have the name 'x'
+    # tensors of 2 or higher dimensions have the name 'X'
+    if len(output_dims) == 1: 
+        output_name = "x"
+    else:
+        output_name = "X"
+
+    output_matrix = numpy.zeros(output_dims, dtype=numpy.float32)
+
+    # Transpose since the gold matrix may be filled in column order if the 
+    # tensor ordering is 10
+    rearrng_axis = []
+    output_mode_map = tensor_orderings[output_name]
+    for reorder_tup in output_mode_map:
+        rearrng_axis.append(reorder_tup[0])
+
+    is_scalar = (rearrng_axis == [])
+    if not is_scalar:
+        output_matrix = numpy.transpose(output_matrix, rearrng_axis)
+    with open(f"{matrix_tmp_dir}/output_gold.h", "r") as f:
+        for idx, _ in numpy.ndenumerate(output_matrix):
+            output_matrix[idx] = float(f.readline().strip())
+    # transpose it back to the original shape
+    if not is_scalar:
+        output_matrix = numpy.transpose(output_matrix, rearrng_axis)
+
+    #parse the data type of the input and the output
+    with open(f"{matrix_tmp_dir}/dtype", "r") as f:
+        dtype = f.readline().strip()
+    if dtype == "bf16":
+        use_fp = True
+    
+    return output_matrix, output_format, output_name, use_fp
 
 def generate_inputs_and_gold(app_name, give_tensor=False, print_inputs=None,
                              tensor_orderings=None, clean=True, suffix=""):
@@ -1825,117 +1937,25 @@ def generate_inputs_and_gold(app_name, give_tensor=False, print_inputs=None,
     input_dims = {}
     use_fp = False
 
-    # generate the input matrices
-    if give_tensor:
-        matrix_tmp_dir = os.path.join(tensor_locs, kernel_name, seed)
-    elif app_name in ["masked_broadcast", "trans_masked_broadcast", "mat_mattransmul"]:
-        # these application does not have an einsum expression, falling back to the old flow to 
-        # generate inputs and gold
-        matrix_tmp_dir = os.path.join("/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR", app_name, "tile_0")
-        os.makedirs(matrix_tmp_dir, exist_ok=True)
-        if app_name == "trans_masked_broadcast":
-            B_mat = get_tensor(input_name='B', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                            dump= matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                            sparsity=0.5)
-            c_mat = get_tensor(input_name='c', shapes=[10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['c'], 
-                            sparsity=0.0)
-            assert c_mat.shape[0] == B_mat.shape[0]
+    lego_unsupported_apps = ["masked_broadcast", "trans_masked_broadcast", "mat_mattransmul"]
 
-            output_matrix = numpy.zeros((10, 10), dtype=numpy.uint16)
-            for i in range(0, output_matrix.shape[0]):
-                for j in range(0, output_matrix.shape[1]):
-                    if B_mat[i][j] != 0:   
-                        output_matrix[i][j] = c_mat[i]
-            output_format = "CSF"
-            output_name = "X"
-        elif app_name == "masked_broadcast":
-            B_mat = get_tensor(input_name='B', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                            dump= matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                            sparsity=0.5)
-            c_mat = get_tensor(input_name='c', shapes=[10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['c'], 
-                            sparsity=0.0)
-            assert c_mat.shape[0] == B_mat.shape[0]
-
-            output_matrix = numpy.zeros((10, 10), dtype=numpy.uint16)
-            for i in range(0, output_matrix.shape[0]):
-                for j in range(0, output_matrix.shape[1]):
-                    if B_mat[i][j] != 0:   
-                        output_matrix[i][j] = c_mat[j]
-            output_format = "CSF"
-            output_name = "X"
-        elif app_name == "mat_mattransmul": # remove this special case once lego is fixed
-            vec_ordering = ((1, (0, 's')),)
-            b_mat = get_tensor(input_name='b', shapes=[1], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                               dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['b'],
-                               sparsity=0)
-            C_mat = get_tensor(input_name='C', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                               dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
-                               sparsity=0.8)
-            d_mat = get_tensor(input_name='d', shapes=[10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                               dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['d'],
-                               sparsity=0.9)
-            e_mat = get_tensor(input_name='e', shapes=[1], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                               dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['e'],
-                               sparsity=0)
-            f_mat = get_tensor(input_name='f', shapes=[10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                               dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['f'],
-                               sparsity=0.8)
-
-            output_matrix = numpy.add(numpy.multiply(e_mat, f_mat, dtype=numpy.uint16, casting='unsafe'),
-                                      numpy.multiply(b_mat,
-                                                     numpy.matmul(C_mat, d_mat,
-                                                                  dtype=numpy.uint16,
-                                                                  casting='unsafe'),
-                                                     dtype=numpy.uint16,
-                                                     casting='unsafe'),
-                                      dtype=numpy.uint16, casting='unsafe')
-            output_format = "CSF"
-            output_name = "x"
-
+    # generate inputs and read gold matrix
+    if app_name in lego_unsupported_apps:
+        if give_tensor:
+            matrix_tmp_dir = os.path.join(tensor_locs, kernel_name, seed)
+        else: 
+            matrix_tmp_dir = os.path.join("/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR", app_name, "tile_0")
+        output_matrix, output_format, output_name, use_fp = hardcode_generate_intpus(app_name,
+                                                                                     matrix_tmp_dir,
+                                                                                     give_tensor=give_tensor, 
+                                                                                     tensor_orderings=tensor_orderings, 
+                                                                                     clean=clean, suffix=suffix)
     else:
-        matrix_tmp_dir = generate_inputs(sam_graph_name)
-        output_dims = []
-        with open(f"{matrix_tmp_dir}/tensor_out_mode_shape", "r") as f:
-            lines = f.readlines()
-            for line in lines:
-                output_dims.append(int(line.strip()))
-
-        output_format = "CSF"
-        output_name = None
-        # vector outputs have the name 'x'
-        # tensors of 2 or higher dimensions have the name 'X'
-        if len(output_dims) == 1: 
-            output_name = "x"
+        if give_tensor:
+            matrix_tmp_dir = os.path.join(tensor_locs, kernel_name, seed)
         else:
-            output_name = "X"
-
-        output_matrix = numpy.zeros(output_dims, dtype=numpy.float32)
-
-        # Transpose since the gold matrix may be filled in column order if the 
-        # tensor ordering is 10
-        rearrng_axis = []
-        output_mode_map = tensor_orderings[output_name]
-        for reorder_tup in output_mode_map:
-            rearrng_axis.append(reorder_tup[0])
-
-        is_scalar = (rearrng_axis == [])
-        if not is_scalar:
-            output_matrix = numpy.transpose(output_matrix, rearrng_axis)
-        with open(f"{matrix_tmp_dir}/output_gold.h", "r") as f:
-            for idx, _ in numpy.ndenumerate(output_matrix):
-                output_matrix[idx] = float(f.readline().strip())
-        # transpose it back to the original shape
-        if not is_scalar:
-            output_matrix = numpy.transpose(output_matrix, rearrng_axis)
-
-        #parse the data type of the input and the output
-        with open(f"{matrix_tmp_dir}/dtype", "r") as f:
-            dtype = f.readline().strip()
-        if dtype == "bf16":
-            use_fp = True
-
+            matrix_tmp_dir = lego_generate_inputs(app_name) 
+        output_matrix, output_format, output_name, use_fp = read_lego_gold(matrix_tmp_dir, tensor_orderings)
     if print_inputs is not None:
         if b_mat is not None:
             input_tensors["B"] = b_mat
