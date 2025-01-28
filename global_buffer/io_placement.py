@@ -129,7 +129,11 @@ def place_io_blk(id_to_name, app_dir, io_sides):
     exchange_64_mode = "EXCHANGE_64" in os.environ and os.environ.get("EXCHANGE_64") == "1"
     group_index = 0
     for idx, input_blk in enumerate(inputs):
-        placement[input_blk] = (group_index * 2 + io_tile_shift_right_index, 0)
+        if exchange_64_mode:
+            x_coord = int((group_index * 2 + io_tile_shift_right_index) / 8) * 2
+            placement[input_blk] = (x_coord, 0) 
+        else:
+            placement[input_blk] = (group_index * 2 + io_tile_shift_right_index, 0)
         group_index += 1
     for en_blk in en:
         placement[en_blk] = (group_index * 2 + io_tile_shift_right_index, 0)
@@ -138,7 +142,8 @@ def place_io_blk(id_to_name, app_dir, io_sides):
     group_index = 0
     for idx, output_blk in enumerate(outputs):
         if exchange_64_mode:
-              placement[output_blk] = ((group_index * 2 + io_tile_shift_right_index) / 8 + 1, 0) 
+              x_coord = int((group_index * 2 + io_tile_shift_right_index) / 8) * 2 + 1
+              placement[output_blk] = (x_coord, 0) 
         else:
             placement[output_blk] = (group_index * 2 + 1 + io_tile_shift_right_index, 0)
       

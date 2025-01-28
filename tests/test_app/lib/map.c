@@ -372,6 +372,9 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
     else
         mux_sel = 0b10;
 
+    // Check if we are in exchange_64 mode
+    int exchange_64_mode = get_exchange_64_config();
+    
     if (io_tile_info->io == Input) {
 
         // Point to the other bank if the input is stored in GLB
@@ -384,6 +387,10 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
             printf("\nIO tiles are in STATIC mode\n");
             mode = LD_DMA_VALID_MODE_STATIC;
         }
+
+        add_config(config_info,
+                   (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_LD_DMA_EXCHANGE_64_MODE_R,
+                   exchange_64_mode << GLB_LD_DMA_EXCHANGE_64_MODE_VALUE_F_LSB);
         add_config(config_info,
                    (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_LD_DMA_CTRL_R,
                    ((0b01 << GLB_LD_DMA_CTRL_MODE_F_LSB) | (mode << GLB_LD_DMA_CTRL_VALID_MODE_F_LSB) |
@@ -403,7 +410,14 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         printf("Input block start addr: 0x%0x\n", start_addr);
         printf("Input block cycle start addr: %0d\n", cycle_start_addr);
         printf("Input block dimensionality: %0d\n", loop_dim);
+        
         for (int i = 0; i < loop_dim; i++) {
+            
+            // Count 4x faster b/c writing 8 bytes at once instead of 2 bytes 
+            if (exchange_64_mode) {
+                data_stride[i] = data_stride[i] * 4; 
+            }
+
             add_config(config_info,
                        (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) +
                            (GLB_LD_DMA_HEADER_0_RANGE_0_R + 0x0c * i),
@@ -448,15 +462,6 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         // If use hacky padding then switch to valid mode
         if (use_padding || use_glb_tiling) mode = ST_DMA_VALID_MODE_STATIC;
 
-        // Check if we are in exchange_64 mode
-        int exchange_64_mode = 0;
-        const char *exchange_64_env_var = "EXCHANGE_64";
-        char *exchange_64_value = getenv(exchange_64_env_var);
-        if (exchange_64_value != NULL && strcmp(exchange_64_value, "1") == 0) {
-            exchange_64_mode = 1;
-            printf("INFO: Using exchange_64 mode\n");
-        }
-
         add_config(config_info,
                    (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_ST_DMA_EXCHANGE_64_MODE_R,
                    exchange_64_mode << GLB_ST_DMA_EXCHANGE_64_MODE_VALUE_F_LSB);
@@ -493,7 +498,6 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         printf("Output block cycle start addr: %0d\n", cycle_start_addr);
         printf("Output block dimensionality: %0d\n", loop_dim);
         for (int i = 0; i < loop_dim; i++) {
-
             // Count 4x faster b/c writing 8 bytes at once instead of 2 bytes 
             if (exchange_64_mode) {
                 data_stride[i] = data_stride[i] * 4; 

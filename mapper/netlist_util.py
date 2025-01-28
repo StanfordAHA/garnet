@@ -142,6 +142,7 @@ class CreateBuses(Visitor):
 
                 packet_num = 0
                 if len(node_name_parse_list) > 1:
+                    # FIXME: Need to mod this with 4 or something like that. E.g., what if unroll is > 4 
                     packet_num = int(node_name_parse_list[0])
                 else:
                     packet_num = 0
@@ -332,10 +333,11 @@ class IO_Input_t(Product):
     io2f_1 = Bit
 
 class IO_Input_t_rv(Product):
-    #io2f_17 = BitVector[16]
-
-    # MO: GLB CONN HACK 
+    io2f_17 = BitVector[16]
     io2f_17_0 = BitVector[16]
+    io2f_17_1 = BitVector[16]
+    io2f_17_2 = BitVector[16]
+    io2f_17_3 = BitVector[16]
     io2f_1 = Bit
 
 
@@ -362,9 +364,9 @@ class FlattenIO(Visitor):
             if t == Bit:
                 return "io2f_1"
             elif ready_valid:
-                # MO: GLB CONN HACK 
-                #return "io2f_17"
-                return "io2f_17_0"
+                # MO: FIXME for E64 conns if FlattenIO is ever used  
+                return "io2f_17"
+                #return "io2f_17_0"
             else:
                 return "io2f_16"
         #isel = lambda t: "io2f_1" if t == Bit else "io2f_16"
@@ -552,6 +554,11 @@ class FixInputsOutputAndPipeline(Visitor):
     ):
         self.sinks = sinks
         self.ready_valid = ready_valid
+
+        self.include_E64_HW = "INCLUDE_E64_HW" in os.environ and os.environ.get("INCLUDE_E64_HW") == "1"
+        self.exchange_64_mode = "EXCHANGE_64" in os.environ and os.environ.get("EXCHANGE_64") == "1"
+
+        self.inputCount = 0
 
         self.pipeline_inputs = pipeline_inputs
 
@@ -873,7 +880,32 @@ class FixInputsOutputAndPipeline(Visitor):
             if "io16in" in io_child.iname:
                 # MO: GLB CONN HACK 
                 #new_node = new_children[0].select("io2f_17") if self.ready_valid else new_children[0].select("io2f_16")
-                new_node = new_children[0].select("io2f_17_0") if self.ready_valid else new_children[0].select("io2f_16")
+                # breakpoint()
+                if self.ready_valid:
+                    if self.include_E64_HW:
+                        if self.exchange_64_mode:
+                            #FIXME
+                            breakpoint()
+                            node_name_parse_list = io_child.iname.split("stencil_")[2].split("_read")
+                            packet_num = 0
+                            if len(node_name_parse_list) > 1:
+                                # FIXME: Need to mod this with 4 or something like that. E.g., what if unroll is > 4 
+                                packet_num = int(node_name_parse_list[0])
+                            else:
+                                packet_num = 0
+                            new_node = new_children[0].select(f"io2f_17_{packet_num}")
+                            self.inputCount = (self.inputCount + 1) % 4
+
+                        else:
+                            new_node = new_children[0].select("io2f_17_0") 
+                    else:
+                        new_node = new_children[0].select("io2f_17") 
+
+
+
+                else:
+                    new_node = new_children[0].select("io2f_16") 
+
                 if self.pipeline_inputs:
                     if "IO2MEM_REG_CHAIN" not in os.environ:
                         self.create_register_tree(
