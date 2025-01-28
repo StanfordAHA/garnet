@@ -218,6 +218,11 @@ def gen_global_buffer_rdl(name, params: GlobalBufferParams):
         st_dma_exchange_64_mode_r.add_child(st_dma_exchange_64_mode_f)
         addr_map.add_child(st_dma_exchange_64_mode_r)
 
+        ld_dma_exchange_64_mode_r = Reg("ld_dma_exchange_64_mode")
+        ld_dma_exchange_64_mode_f = Field("value", 1)
+        ld_dma_exchange_64_mode_r.add_child(ld_dma_exchange_64_mode_f)
+        addr_map.add_child(ld_dma_exchange_64_mode_r)
+
     # Store DMA Header
     if params.queue_depth == 1:
         st_dma_header_rf = RegFile("st_dma_header_0", size=params.queue_depth)

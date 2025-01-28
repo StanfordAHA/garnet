@@ -282,6 +282,12 @@ function Kernel::new(string app_dir, int dpr);
         io_info = get_input_info(kernel_info, i);
 
         num_io_tiles = get_num_io_tiles(io_info, i);
+
+        // MO: E64 HACK
+        if (get_exchange_64_config()) begin
+            num_io_tiles = (num_io_tiles / 4 < 1) ? 1 : (num_io_tiles / 4);
+        end
+
         inputs[i].num_io_tiles = num_io_tiles;
         inputs[i].io_tiles = new[num_io_tiles];
 
@@ -293,6 +299,8 @@ function Kernel::new(string app_dir, int dpr);
         end else begin
             for (int j = 0; j < num_io_tiles; j++) begin
                 num_pixels = input_data[i].size / num_io_tiles;
+                $display("Num input io tiles: %d\n", num_io_tiles);
+                $display("Num input pixels: %d\n", num_pixels);
                 inputs[i].io_tiles[j].num_data = num_pixels;
                 inputs[i].io_tiles[j].io_block_data = new[num_pixels];
                 // NOTE: We assume only innermost loop is unrolled.
@@ -311,6 +319,10 @@ function Kernel::new(string app_dir, int dpr);
 
         io_info = get_output_info(kernel_info, i);
         num_io_tiles = get_num_io_tiles(io_info, i);
+        // MO: E64 HACK
+        if (get_exchange_64_config()) begin
+            num_io_tiles = (num_io_tiles / 4 < 1) ? 1 : (num_io_tiles / 4);
+        end
         outputs[i].num_io_tiles = num_io_tiles;
         outputs[i].io_tiles = new[num_io_tiles];
 
@@ -518,9 +530,10 @@ function int Kernel::kernel_map();
         io_info = get_output_info(kernel_info, i);
         
         // MO: E64 HACK
-        if (get_exchange_64_config()) begin
-            outputs[i].num_io_tiles = outputs[i].num_io_tiles / 4;
-        end
+        // if (get_exchange_64_config()) begin
+        //     outputs[i].num_io_tiles = (outputs[i].num_io_tiles / 4);
+        //     //outputs[i].num_io_tiles = (outputs[i].num_io_tiles / 4 < 1) ? 1 : (outputs[i].num_io_tiles / 4);
+        // end
 
         for (int j = 0; j < outputs[i].num_io_tiles; j++) begin
             outputs[i].io_tiles[j].tile = get_io_tile_map_tile(io_info, j);
