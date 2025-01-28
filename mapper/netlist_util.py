@@ -885,7 +885,6 @@ class FixInputsOutputAndPipeline(Visitor):
                     if self.include_E64_HW:
                         if self.exchange_64_mode:
                             #FIXME
-                            breakpoint()
                             node_name_parse_list = io_child.iname.split("stencil_")[2].split("_read")
                             packet_num = 0
                             if len(node_name_parse_list) > 1:
