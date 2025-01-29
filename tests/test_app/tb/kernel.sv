@@ -528,13 +528,6 @@ function int Kernel::kernel_map();
 
     for (int i = 0; i < num_outputs; i++) begin
         io_info = get_output_info(kernel_info, i);
-        
-        // MO: E64 HACK
-        // if (get_exchange_64_config()) begin
-        //     outputs[i].num_io_tiles = (outputs[i].num_io_tiles / 4);
-        //     //outputs[i].num_io_tiles = (outputs[i].num_io_tiles / 4 < 1) ? 1 : (outputs[i].num_io_tiles / 4);
-        // end
-
         for (int j = 0; j < outputs[i].num_io_tiles; j++) begin
             outputs[i].io_tiles[j].tile = get_io_tile_map_tile(io_info, j);
             outputs[i].io_tiles[j].start_addr = get_io_tile_start_addr(io_info, j);

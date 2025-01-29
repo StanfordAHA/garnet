@@ -413,7 +413,7 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         
         for (int i = 0; i < loop_dim; i++) {
             
-            // Count 4x faster b/c writing 8 bytes at once instead of 2 bytes 
+            // Count 4x faster b/c reading 8 bytes at once instead of 2 bytes 
             if (exchange_64_mode) {
                 data_stride[i] = data_stride[i] * 4; 
             }
