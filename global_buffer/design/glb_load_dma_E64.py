@@ -271,7 +271,8 @@ class GlbLoadDma_E64(Generator):
                         almost_full_diff=self.fifo_almost_full_diff,
                         almost_empty_diff=const(2, clog2(self.fifo_depth)))
 
-            # TODO: Using almost full here will likely lead to issues 
+            # TODO: Using almost full here may cause issues 
+            # TODO: Maybe revisit this and make sure it isn't causing any unnecessary bubbles 
             self.wire(self.fifo_push_ready[packet_16], ~self.fifo_almost_full[packet_16])
             self.wire(self.data_dma2fifo[packet_16], self.strm_data[packet_16])
 
@@ -343,7 +344,10 @@ class GlbLoadDma_E64(Generator):
                 self.wire(self.skid_out[i][packet_16], self.data_g2f[i][packet_16])
 
                 self.wire(self.fifo2skid_rdy[i][packet_16], ~self.skid_full[i][packet_16])
-                self.wire(self.skid_push[i][packet_16], self.fifo2skid_rdy[i][packet_16] & self.fifo2skid_vld[i][packet_16])
+
+                # MO: GLB READ BUG FIX: ONLY PUSH TO SKID IF POP FROM FIFO
+                # self.wire(self.skid_push[i][packet_16], self.fifo2skid_rdy[i][packet_16] & self.fifo2skid_vld[i][packet_16])
+                self.wire(self.skid_push[i][packet_16], kts.ternary(self.cfg_data_network_g2f_mux[i] == 1, self.fifo_pop[packet_16], 0))
 
                 # MO: GLB READ HACK 
                 #self.wire(~self.skid_empty[i], self.data_g2f_vld[i])
