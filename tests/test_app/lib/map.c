@@ -321,7 +321,7 @@ bool glb_tiling_config(struct KernelInfo *kernel_info, struct IOTileInfo *io_til
 
 int get_exchange_64_config() {
     int exchange_64_mode = 0;
-    const char *exchange_64_env_var = "EXCHANGE_64";
+    const char *exchange_64_env_var = "E64_MODE_ON";
     char *exchange_64_value = getenv(exchange_64_env_var);
     if (exchange_64_value != NULL && strcmp(exchange_64_value, "1") == 0) {
         exchange_64_mode = 1;

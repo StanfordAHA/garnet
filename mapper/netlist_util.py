@@ -31,7 +31,7 @@ class CreateBuses(Visitor):
         
         #MO: GLB CONN HACK
         self.include_E64_HW = "INCLUDE_E64_HW" in os.environ and os.environ.get("INCLUDE_E64_HW") == "1"
-        self.exchange_64_mode = "EXCHANGE_64" in os.environ and os.environ.get("EXCHANGE_64") == "1"
+        self.exchange_64_mode = "E64_MODE_ON" in os.environ and os.environ.get("E64_MODE_ON") == "1"
         self.outputCount = 0
 
     def doit(self, dag):
@@ -143,7 +143,7 @@ class CreateBuses(Visitor):
                 packet_num = 0
                 if len(node_name_parse_list) > 1:
                     # FIXME: Need to mod this with 4 or something like that. E.g., what if unroll is > 4 
-                    packet_num = int(node_name_parse_list[0])
+                    packet_num = int(node_name_parse_list[0]) % 4
                 else:
                     packet_num = 0
     
@@ -556,7 +556,7 @@ class FixInputsOutputAndPipeline(Visitor):
         self.ready_valid = ready_valid
 
         self.include_E64_HW = "INCLUDE_E64_HW" in os.environ and os.environ.get("INCLUDE_E64_HW") == "1"
-        self.exchange_64_mode = "EXCHANGE_64" in os.environ and os.environ.get("EXCHANGE_64") == "1"
+        self.exchange_64_mode = "E64_MODE_ON" in os.environ and os.environ.get("E64_MODE_ON") == "1"
 
         self.inputCount = 0
 
@@ -880,16 +880,14 @@ class FixInputsOutputAndPipeline(Visitor):
             if "io16in" in io_child.iname:
                 # MO: GLB CONN HACK 
                 #new_node = new_children[0].select("io2f_17") if self.ready_valid else new_children[0].select("io2f_16")
-                # breakpoint()
                 if self.ready_valid:
                     if self.include_E64_HW:
                         if self.exchange_64_mode:
-                            #FIXME
                             node_name_parse_list = io_child.iname.split("stencil_")[2].split("_read")
                             packet_num = 0
                             if len(node_name_parse_list) > 1:
                                 # FIXME: Need to mod this with 4 or something like that. E.g., what if unroll is > 4 
-                                packet_num = int(node_name_parse_list[0])
+                                packet_num = int(node_name_parse_list[0]) % 4
                             else:
                                 packet_num = 0
                             new_node = new_children[0].select(f"io2f_17_{packet_num}")
@@ -1322,7 +1320,7 @@ def create_netlist_info(
     nodes_to_instrs = CreateInstrs(node_info).doit(pdag)
 
     dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1"  
-    exchange_64_mode = "EXCHANGE_64" in os.environ and os.environ.get("EXCHANGE_64") == "1"
+    exchange_64_mode = "E64_MODE_ON" in os.environ and os.environ.get("E64_MODE_ON") == "1"
 
     info["id_to_instrs"] = {}
     for node, id in nodes_to_ids.items():
