@@ -619,7 +619,6 @@ class Garnet(Generator):
         west_in_io_sides = IOSide.West in self.io_sides
         dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1" 
     
-        #TODO: Rename the sparse to ready_valid 
         placement, routing, id_to_name = \
             archipelago.pnr(self.interconnect, (netlist, bus),
                             load_only=load_only,

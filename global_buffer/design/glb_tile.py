@@ -148,13 +148,11 @@ class GlbTile(Generator):
         self.cgra_cfg_pcfg_data_e2w_wsto = self.output("cgra_cfg_pcfg_data_e2w_wsto", self._params.cgra_cfg_data_width)
 
         if "INCLUDE_E64_HW" in os.environ and os.environ.get("INCLUDE_E64_HW") == "1":
-            # MO: GLB WRITE HACK 
             self.strm_data_f2g = self.input("strm_data_f2g", self._params.cgra_data_width,
                                             size=[self._params.cgra_per_glb, 4], packed=True)
             self.strm_data_f2g_vld = self.input("strm_data_f2g_vld", 1, size=[self._params.cgra_per_glb, 4], packed=True)
             self.strm_data_f2g_rdy = self.output("strm_data_f2g_rdy", 1, size=[self._params.cgra_per_glb, 4], packed=True)
 
-            # MO: GLB READ HACK 
             self.strm_data_g2f = self.output("strm_data_g2f", self._params.cgra_data_width,
                                             size=[self._params.cgra_per_glb, 4], packed=True)
             self.strm_data_g2f_vld = self.output("strm_data_g2f_vld", 1, size=[self._params.cgra_per_glb, 4], packed=True)
