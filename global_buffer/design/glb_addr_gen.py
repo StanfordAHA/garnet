@@ -31,10 +31,6 @@ class GlbAddrGen(Generator):
         self.start_addr = self.input("start_addr", self.p_addr_width)
         self.step = self.input("step", 1)
         self.mux_sel = self.input("mux_sel", max(clog2(self.loop_level), 1))
-
-        # TODO: Make this generator-compatible
-        #self.quad = self.input("quad", 1)
-
         self.addr_out = self.output("addr_out", self.p_addr_width)
 
         # local variables

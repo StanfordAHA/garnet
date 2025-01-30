@@ -28,8 +28,7 @@ class CreateBuses(Visitor):
     def __init__(self, inst_info, ready_valid=True):
         self.inst_info = inst_info
         self.ready_valid=ready_valid
-        
-        #MO: GLB CONN HACK
+  
         self.include_E64_HW = "INCLUDE_E64_HW" in os.environ and os.environ.get("INCLUDE_E64_HW") == "1"
         self.exchange_64_mode = "E64_MODE_ON" in os.environ and os.environ.get("E64_MODE_ON") == "1"
         self.outputCount = 0
@@ -124,25 +123,16 @@ class CreateBuses(Visitor):
         self.node_to_bid[node] = bids
 
     def visit_Output(self, node: Output):
-        # Have somethinng like self.outputCount. Increment everytime this func is called. Wrap around at 3.
         Visitor.generic_visit(self, node)
         child_bid = self.node_to_bid[node.child]
         if node.child.type == Bit:
-            # port = "f2io_1"
-
-            # MO: GLB conn HACK 
             port = "f2io_1_0" if self.include_E64_HW else "f2io_1"
         else:
-            #breakpoint()
-            #port = "f2io_17" if self.ready_valid else "f2io_16"
-            # port = "f2io_17_0" if self.ready_valid else "f2io_16"
-
             if self.exchange_64_mode:
                 node_name_parse_list = node.iname.split("stencil_")[2].split("_write")
 
                 packet_num = 0
                 if len(node_name_parse_list) > 1:
-                    # FIXME: Need to mod this with 4 or something like that. E.g., what if unroll is > 4 
                     packet_num = int(node_name_parse_list[0]) % 4
                 else:
                     packet_num = 0
@@ -878,15 +868,12 @@ class FixInputsOutputAndPipeline(Visitor):
 
             # -----------------IO-to-MEM/Pond Paths Pipelining-------------------- #
             if "io16in" in io_child.iname:
-                # MO: GLB CONN HACK 
-                #new_node = new_children[0].select("io2f_17") if self.ready_valid else new_children[0].select("io2f_16")
                 if self.ready_valid:
                     if self.include_E64_HW:
                         if self.exchange_64_mode:
                             node_name_parse_list = io_child.iname.split("stencil_")[2].split("_read")
                             packet_num = 0
                             if len(node_name_parse_list) > 1:
-                                # FIXME: Need to mod this with 4 or something like that. E.g., what if unroll is > 4 
                                 packet_num = int(node_name_parse_list[0]) % 4
                             else:
                                 packet_num = 0

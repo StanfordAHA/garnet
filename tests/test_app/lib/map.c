@@ -480,7 +480,7 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
                    (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_ST_DMA_HEADER_0_DIM_R,
                    loop_dim);
         
-        // Writing 8 bytes at once in EXCHANGE_64_MODE mode. TODO: instead of MU active, maybe call this exchange_64 mode
+        // Writing 8 bytes at once in EXCHANGE_64_MODE mode. 
         if (exchange_64_mode) {
             start_addr += 6; 
         }

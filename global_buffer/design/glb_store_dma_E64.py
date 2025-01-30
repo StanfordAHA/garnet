@@ -21,7 +21,6 @@ class GlbStoreDma_E64(Generator):
         self.reset = self.reset("reset")
         self.clk_en_dma2bank = self.output("clk_en_dma2bank", 1)
 
-        # MO: GLB WRITE HACK 
         self.num_packets = 4
         self.data_f2g = self.input("data_f2g", width=self._params.cgra_data_width,
                                    size=[self._params.cgra_per_glb, self.num_packets], packed=True)
@@ -149,7 +148,7 @@ class GlbStoreDma_E64(Generator):
         self.add_always(self.st_dma_start_pulse_logic)
         self.add_always(self.st_dma_start_pulse_ff)
         self.add_always(self.cycle_counter)
-        self.add_always(self.data_f2g_ff)
+        #self.add_always(self.data_f2g_ff)
         self.add_always(self.data_f2g_logic)
         self.add_always(self.qualified_iter_step_valid_comb)
         self.add_always(self.strm_wr_packet_comb)
@@ -184,7 +183,6 @@ class GlbStoreDma_E64(Generator):
         self.wire(self.dense_rv_mode_on, (self.cfg_st_dma_ctrl_valid_mode == self._params.st_dma_valid_mode_dense_ready_valid))
 
         # FIFO for ready/valid
-        # MO: GLB WRITE HACK (add more FIFOs)
         for packet_16 in range(self.num_packets):
             self.data_g2f_fifo = FIFO(self._params.cgra_data_width, self._params.store_dma_fifo_depth)
             self.add_child(f"data_f2g_fifo_{packet_16}",
@@ -212,19 +210,13 @@ class GlbStoreDma_E64(Generator):
             
             if packet_16 == 0:
                 self.wire(self.fifo_pop[packet_16], kts.ternary(self.cfg_exchange_64_mode, self.packet_64_pop, ~self.fifo_empty[packet_16] & self.strm_run))
-                # self.wire(self.fifo_pop[packet_16], kts.ternary(self.cfg_exchange_64_mode, self.dense_rv_mode_on, ~self.fifo_empty[packet_16] & self.strm_run))
             else:
                 self.wire(self.fifo_pop[packet_16], self.packet_64_pop)
-                # self.wire(self.fifo_pop[packet_16], self.dense_rv_mode_on)
-
-            #self.wire(self.fifo_pop[packet_16], ~self.fifo_empty[packet_16] & self.strm_run)
 
 
             self.wire(self.fifo_push[packet_16], ~self.fifo_full[packet_16] & self.strm_data_valid[packet_16])
             
-            # MO: Why is this using almost full? 
             # self.wire(self.fifo2cgra_ready[packet_16], ~self.fifo_almost_full[packet_16])
-
             self.wire(self.fifo2cgra_ready[packet_16], ~self.fifo_full[packet_16])
 
 
@@ -298,10 +290,6 @@ class GlbStoreDma_E64(Generator):
                        reset=self.reset,
                        restart=self.st_dma_start_pulse_r | self.rv_is_addrdata, 
                        step=kts.ternary(self.dense_rv_mode_on, self.qualified_iter_step_valid, self.iter_step_valid),
-
-                        # MO: GLB CONN HACK
-                       #quad=self.cfg_exchange_64_mode,
-
                        mux_sel=self.loop_mux_sel,
                        addr_out=self.data_current_addr)
         # In sparse RV mode, the start address is given by the header of each block
@@ -482,21 +470,18 @@ class GlbStoreDma_E64(Generator):
             elif(self.cycle_counter_en):
                 self.cycle_count = self.cycle_count + 1
 
-    @always_ff((posedge, "clk"), (posedge, "reset"))
-    def data_f2g_ff(self):
-        if self.reset:
-            self.data_f2g_r = 0
-            self.data_f2g_vld_r = 0
-            self.ctrl_f2g_r = 0
-        else:
-            for i in range(self._params.cgra_per_glb):
-                # MO: GLB WRITE HACK 
-                for j in range(self.num_packets):
-                    #self.data_f2g_r[i] = self.data_f2g[i]
-                    self.data_f2g_r[i][j] = self.data_f2g[i][j]
-                    #self.data_f2g_vld_r[i] = self.data_f2g_vld[i]
-                    self.data_f2g_vld_r[i][j] = self.data_f2g_vld[i][j]
-                self.ctrl_f2g_r[i] = self.ctrl_f2g[i]
+    # @always_ff((posedge, "clk"), (posedge, "reset"))
+    # def data_f2g_ff(self):
+    #     if self.reset:
+    #         self.data_f2g_r = 0
+    #         self.data_f2g_vld_r = 0
+    #         self.ctrl_f2g_r = 0
+    #     else:
+    #         for i in range(self._params.cgra_per_glb):
+    #             for j in range(self.num_packets):
+    #                 self.data_f2g_r[i][j] = self.data_f2g[i][j]
+    #                 self.data_f2g_vld_r[i][j] = self.data_f2g_vld[i][j]
+    #             self.ctrl_f2g_r[i] = self.ctrl_f2g[i]
 
     @always_comb
     def data_ready_g2f_comb(self):
@@ -514,20 +499,16 @@ class GlbStoreDma_E64(Generator):
             for i in range(self._params.cgra_per_glb):
                 if self.cfg_data_network_f2g_mux[i] == 1:
 
-                    # MO: Why does this need to be registered? 
+                    # MO: Removing reg in-between FIFOs b/c it causes issues with RV synchronization 
                     # self.strm_data[packet_16] = self.data_f2g_r[i][packet_16]
                     self.strm_data[packet_16] = self.data_f2g[i][packet_16]
 
-                    # MO: GLB WRITE HACK
                     # self.data_f2g_rdy[i] = self.data_ready_g2f_w
                     self.data_f2g_rdy[i][packet_16] = self.data_ready_g2f_w[packet_16]
                     if self.sparse_rv_mode_on | self.dense_rv_mode_on:
-
-                        # MO: Why does this need to be registered? 
                         #self.strm_data_valid[packet_16] = self.data_f2g_vld_r[i][packet_16]
                         self.strm_data_valid[packet_16] = self.data_f2g_vld[i][packet_16]
                     else:
-                        # MO: Why does this need to be registered? 
                         # self.strm_data_valid[packet_16] = self.ctrl_f2g_r[i]
                         self.strm_data_valid[packet_16] = self.ctrl_f2g[i]
                 else:
@@ -545,20 +526,14 @@ class GlbStoreDma_E64(Generator):
         # RV (SPARSE/DENSE) MODE AND E64 ENABLED
         # This is really self.fifo_pop & ~self.rv_is_addrdata
         # So in RV mode, iter_step everytime new (non-addr) data is popped from FIFO
-        # rv_is_addrdata should always be low in non sparse-rv-mode
-        #TODO Figure out if the readys should be ANDED here. I think they should  
+        # rv_is_addrdata should always be low in non sparse-rv-mode  
         elif self.cfg_exchange_64_mode & (self.sparse_rv_mode_on | self.dense_rv_mode_on):
-
-            # TODO: Think about changing this to self.packet_64_pop & ~self.rv_is_addrdata
             self.iter_step_valid = self.strm_run & self.packet_64_pop_ready & ~self.rv_is_addrdata
-            # self.iter_step_valid = self.strm_run & self.fifo_pop_ready[0] & self.fifo_pop_ready[1] & self.fifo_pop_ready[2] & self.fifo_pop_ready[3] & ~self.rv_is_addrdata
 
         elif self.sparse_rv_mode_on | self.dense_rv_mode_on:
-             # TODO: Think about changing this to self.fifo_pop[0] & ~self.rv_is_addrdata
             self.iter_step_valid = self.strm_run & self.fifo_pop_ready[0] & ~self.rv_is_addrdata
 
         # VALID MODE 
-        # MO: GLB WRITE HACK
         else:
             if self.num_packets == 1:
                 self.iter_step_valid = self.strm_data_valid
@@ -608,14 +583,8 @@ class GlbStoreDma_E64(Generator):
                 self.bank_wr_strb_cache_w[self.cgra_strb_width * 4 - 1,
                                             self.cgra_strb_width * 3] = const(self.cgra_strb_value,
                                                                                 self.cgra_strb_width)
-                
-                
-
-                # for packet_16 in range(self.num_packets):
-                #     self.bank_wr_data_cache_w[(packet_16 * self._params.cgra_data_width + self._params.cgra_data_width - 1,
-                #                             packet_16 * self._params.cgra_data_width)] = self.fifo2dma[packet_16]
-                    
-                # Assuming 4 packets when using matrix unit     
+        
+                # Assuming 4 packets    
                 self.bank_wr_data_cache_w[(0 * self._params.cgra_data_width + self._params.cgra_data_width - 1,
                                             0 * self._params.cgra_data_width)] = self.data_fifo2dma[0]
                 self.bank_wr_data_cache_w[(1 * self._params.cgra_data_width + self._params.cgra_data_width - 1,

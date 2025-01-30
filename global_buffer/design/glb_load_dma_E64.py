@@ -22,7 +22,6 @@ class GlbLoadDma_E64(Generator):
         self.reset = self.reset("reset")
         self.glb_tile_id = self.input("glb_tile_id", self._params.tile_sel_addr_width)
 
-        # MO: GLB READ HACK 
         self.num_packets = 4
         self.data_g2f = self.output("data_g2f", width=self._params.cgra_data_width,
                                     size=[self._params.cgra_per_glb, self.num_packets], packed=True)
@@ -220,10 +219,6 @@ class GlbLoadDma_E64(Generator):
                        clk_en=clock_en(self.cycle_counter_en),
                        reset=self.reset,
                        restart=self.ld_dma_start_pulse_r,
-
-                       # MO: GLB CONN HACK
-                       #quad=const(0, 1),
-
                        step=self.iter_step_valid,
                        mux_sel=self.loop_mux_sel,
                        addr_out=self.cycle_current_addr)
@@ -339,8 +334,6 @@ class GlbLoadDma_E64(Generator):
                             almost_full_diff=const(0, 1),
                             almost_empty_diff=const(0, 1))
 
-                # MO: GLB READ HACK
-                # self.wire(self.skid_out[i], self.data_g2f[i])
                 self.wire(self.skid_out[i][packet_16], self.data_g2f[i][packet_16])
 
                 self.wire(self.fifo2skid_rdy[i][packet_16], ~self.skid_full[i][packet_16])
@@ -348,9 +341,6 @@ class GlbLoadDma_E64(Generator):
                 # MO: GLB READ BUG FIX: ONLY PUSH TO SKID IF POP FROM FIFO
                 # self.wire(self.skid_push[i][packet_16], self.fifo2skid_rdy[i][packet_16] & self.fifo2skid_vld[i][packet_16])
                 self.wire(self.skid_push[i][packet_16], kts.ternary(self.cfg_data_network_g2f_mux[i] == 1, self.fifo_pop[packet_16], 0))
-
-                # MO: GLB READ HACK 
-                #self.wire(~self.skid_empty[i], self.data_g2f_vld[i])
                 self.wire(~self.skid_empty[i][packet_16], self.data_g2f_vld[i][packet_16])
 
                 self.wire(self.skid_pop[i][packet_16], ~self.skid_empty[i][packet_16] & self.data_g2f_rdy_muxed[i][packet_16])
@@ -367,7 +357,7 @@ class GlbLoadDma_E64(Generator):
         if self.cycle_counter_en:
             self.iter_step_valid = self.cycle_valid
         else:
-            # TODO: Implement synchronization logic here 
+            # synchronization logic here 
             self.iter_step_valid = kts.ternary(self.cfg_exchange_64_mode, self.strm_run & self.packet_64_push_ready, self.strm_run & self.fifo_push_ready[0])
 
     @ always_ff((posedge, "clk"), (posedge, "reset"))
