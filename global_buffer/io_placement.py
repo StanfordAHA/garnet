@@ -126,7 +126,7 @@ def place_io_blk(id_to_name, app_dir, io_sides):
     # input and outputs are placed on the same IO tiles
 
     # If operating in exchange_64 mode, place IOs in a denser way (4x denser)
-    exchange_64_mode = "EXCHANGE_64" in os.environ and os.environ.get("EXCHANGE_64") == "1"
+    exchange_64_mode = "E64_MODE_ON" in os.environ and os.environ.get("E64_MODE_ON") == "1"
     group_index = 0
     for idx, input_blk in enumerate(inputs):
         if exchange_64_mode:
