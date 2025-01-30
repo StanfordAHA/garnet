@@ -137,8 +137,8 @@ class GlbCfg(Generator):
             self.wire(self.cfg_st_dma_num_blocks, self.glb_pio_wrapper.ports["l2h_st_dma_num_blocks_value_r"])
             self.wire(self.cfg_st_dma_rv_seg_mode, self.glb_pio_wrapper.ports["l2h_st_dma_rv_seg_mode_value_r"])
             if "INCLUDE_E64_HW" in os.environ and os.environ.get("INCLUDE_E64_HW") == "1":
-                self.wire(self.cfg_st_dma_exchange_64_mode, self.glb_pio_wrapper.ports["l2h_st_dma_exchange_64_mode_value_r"])
-                self.wire(self.cfg_ld_dma_exchange_64_mode, self.glb_pio_wrapper.ports["l2h_ld_dma_exchange_64_mode_value_r"])
+                self.wire(self.cfg_st_dma_exchange_64_mode, self.glb_pio_wrapper.ports["l2h_dma_exchange_64_mode_value_r"])
+                self.wire(self.cfg_ld_dma_exchange_64_mode, self.glb_pio_wrapper.ports["l2h_dma_exchange_64_mode_value_r"])
 
         for i in range(self._params.queue_depth):
             if self._params.queue_depth == 1:
