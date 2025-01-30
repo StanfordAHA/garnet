@@ -330,6 +330,17 @@ int get_exchange_64_config() {
     return exchange_64_mode; 
 }
 
+
+int HW_supports_E64() {
+    int hw_suports_E64 = 0;
+    const char *HW_supports_E64_env_var = "INCLUDE_E64_HW";
+    char *hw_support_E64_value = getenv(HW_supports_E64_env_var);
+    if (hw_support_E64_value != NULL && strcmp(hw_support_E64_value, "1") == 0) {
+        hw_suports_E64 = 1;
+    }
+    return hw_suports_E64; 
+}
+
 int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigInfo *config_info, struct KernelInfo *kernel_info) {
     int tile = io_tile_info->tile;
     int start_addr = io_tile_info->start_addr;
@@ -388,9 +399,20 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
             mode = LD_DMA_VALID_MODE_STATIC;
         }
 
-        add_config(config_info,
-                   (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_DMA_EXCHANGE_64_MODE_R,
-                   exchange_64_mode << GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB);
+        #ifndef GLB_DMA_EXCHANGE_64_MODE_R
+        #define GLB_DMA_EXCHANGE_64_MODE_R 0
+        #endif
+
+        #ifndef GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB
+        #define GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB 0
+        #endif
+
+        if (HW_supports_E64()) {
+            add_config(config_info,
+                    (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_DMA_EXCHANGE_64_MODE_R,
+                    exchange_64_mode << GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB);
+        }
+
         add_config(config_info,
                    (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_LD_DMA_CTRL_R,
                    ((0b01 << GLB_LD_DMA_CTRL_MODE_F_LSB) | (mode << GLB_LD_DMA_CTRL_VALID_MODE_F_LSB) |
@@ -462,9 +484,11 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         // If use hacky padding then switch to valid mode
         if (use_padding || use_glb_tiling) mode = ST_DMA_VALID_MODE_STATIC;
 
-        add_config(config_info,
-                   (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_DMA_EXCHANGE_64_MODE_R,
-                   exchange_64_mode << GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB);
+        if (HW_supports_E64()) {
+            add_config(config_info,
+                    (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_DMA_EXCHANGE_64_MODE_R,
+                    exchange_64_mode << GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB);
+        }
 
         add_config(config_info,
                    (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_ST_DMA_CTRL_R,
