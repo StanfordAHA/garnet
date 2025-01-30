@@ -15,7 +15,7 @@ APP_ARGS ?= +APP0=app0
 APP0_NAME = $(shell echo $(APP_ARGS) | awk '{print $1}' | sed 's/.*=//')
 
 TOOL ?= VCS
-export WAVEFORM ?= 0
+export WAVEFORM ?= 1
 export WAVEFORM_GLB_ONLY ?= 0
 export SAIF ?= 0
 
