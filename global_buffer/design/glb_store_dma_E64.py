@@ -148,7 +148,7 @@ class GlbStoreDma_E64(Generator):
         self.add_always(self.st_dma_start_pulse_logic)
         self.add_always(self.st_dma_start_pulse_ff)
         self.add_always(self.cycle_counter)
-        #self.add_always(self.data_f2g_ff)
+        self.add_always(self.data_f2g_ff)
         self.add_always(self.data_f2g_logic)
         self.add_always(self.qualified_iter_step_valid_comb)
         self.add_always(self.strm_wr_packet_comb)
@@ -470,18 +470,18 @@ class GlbStoreDma_E64(Generator):
             elif(self.cycle_counter_en):
                 self.cycle_count = self.cycle_count + 1
 
-    # @always_ff((posedge, "clk"), (posedge, "reset"))
-    # def data_f2g_ff(self):
-    #     if self.reset:
-    #         self.data_f2g_r = 0
-    #         self.data_f2g_vld_r = 0
-    #         self.ctrl_f2g_r = 0
-    #     else:
-    #         for i in range(self._params.cgra_per_glb):
-    #             for j in range(self.num_packets):
-    #                 self.data_f2g_r[i][j] = self.data_f2g[i][j]
-    #                 self.data_f2g_vld_r[i][j] = self.data_f2g_vld[i][j]
-    #             self.ctrl_f2g_r[i] = self.ctrl_f2g[i]
+    @always_ff((posedge, "clk"), (posedge, "reset"))
+    def data_f2g_ff(self):
+        if self.reset:
+            self.data_f2g_r = 0
+            self.data_f2g_vld_r = 0
+            self.ctrl_f2g_r = 0
+        else:
+            for i in range(self._params.cgra_per_glb):
+                for j in range(self.num_packets):
+                    self.data_f2g_r[i][j] = self.data_f2g[i][j]
+                    self.data_f2g_vld_r[i][j] = self.data_f2g_vld[i][j]
+                self.ctrl_f2g_r[i] = self.ctrl_f2g[i]
 
     @always_comb
     def data_ready_g2f_comb(self):
@@ -499,18 +499,18 @@ class GlbStoreDma_E64(Generator):
             for i in range(self._params.cgra_per_glb):
                 if self.cfg_data_network_f2g_mux[i] == 1:
 
-                    # MO: Removing reg in-between FIFOs b/c it causes issues with RV synchronization 
+                    # MO: Removing reg in-between FIFOs in E64 mode b/c it causes issues with RV synchronization 
                     # self.strm_data[packet_16] = self.data_f2g_r[i][packet_16]
-                    self.strm_data[packet_16] = self.data_f2g[i][packet_16]
+                    self.strm_data[packet_16] = kts.ternary(self.cfg_exchange_64_mode, self.data_f2g[i][packet_16], self.data_f2g_r[i][packet_16])
 
                     # self.data_f2g_rdy[i] = self.data_ready_g2f_w
                     self.data_f2g_rdy[i][packet_16] = self.data_ready_g2f_w[packet_16]
                     if self.sparse_rv_mode_on | self.dense_rv_mode_on:
                         #self.strm_data_valid[packet_16] = self.data_f2g_vld_r[i][packet_16]
-                        self.strm_data_valid[packet_16] = self.data_f2g_vld[i][packet_16]
+                        self.strm_data_valid[packet_16] = kts.ternary(self.cfg_exchange_64_mode, self.data_f2g_vld[i][packet_16], self.data_f2g_vld_r[i][packet_16])
                     else:
                         # self.strm_data_valid[packet_16] = self.ctrl_f2g_r[i]
-                        self.strm_data_valid[packet_16] = self.ctrl_f2g[i]
+                        self.strm_data_valid[packet_16] = kts.ternary(self.cfg_exchange_64_mode, self.ctrl_f2g[i], self.ctrl_f2g_r[i])
                 else:
                     self.strm_data[packet_16] = self.strm_data[packet_16]
                     self.strm_data_valid[packet_16] = self.strm_data_valid[packet_16]
