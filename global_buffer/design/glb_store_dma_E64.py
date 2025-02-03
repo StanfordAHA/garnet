@@ -510,7 +510,10 @@ class GlbStoreDma_E64(Generator):
                         self.strm_data_valid[packet_16] = kts.ternary(self.cfg_exchange_64_mode, self.data_f2g_vld[i][packet_16], self.data_f2g_vld_r[i][packet_16])
                     else:
                         # self.strm_data_valid[packet_16] = self.ctrl_f2g_r[i]
-                        self.strm_data_valid[packet_16] = kts.ternary(self.cfg_exchange_64_mode, self.ctrl_f2g[i], self.ctrl_f2g_r[i])
+                        if packet_16 == 0:
+                            self.strm_data_valid[packet_16] = kts.ternary(self.cfg_exchange_64_mode, self.ctrl_f2g[i], self.ctrl_f2g_r[i])
+                        else:
+                            self.strm_data_valid[packet_16] = kts.ternary(self.cfg_exchange_64_mode, self.ctrl_f2g[i], 0)
                 else:
                     self.strm_data[packet_16] = self.strm_data[packet_16]
                     self.strm_data_valid[packet_16] = self.strm_data_valid[packet_16]
@@ -535,12 +538,12 @@ class GlbStoreDma_E64(Generator):
 
         # VALID MODE 
         else:
-            if self.num_packets == 1:
-                self.iter_step_valid = self.strm_data_valid
-
-            # Assuming num_packets is 4 here   
-            else:
-                self.iter_step_valid = self.strm_data_valid[0] & self.strm_data_valid[1] & self.strm_data_valid[2] & self.strm_data_valid[3]
+            # Can use just 0th element because they are all the same (ctrl_f2g)
+            self.iter_step_valid = self.strm_data_valid[0]
+            # if self.cfg_exchange_64_mode:
+            #     self.iter_step_valid = self.strm_data_valid[0] & self.strm_data_valid[1] & self.strm_data_valid[2] & self.strm_data_valid[3]
+            # else:
+            #     self.iter_step_valid = self.strm_data_valid[0]
 
     @always_comb
     def strm_wr_packet_comb(self):
