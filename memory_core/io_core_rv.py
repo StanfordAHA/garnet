@@ -113,34 +113,35 @@ class IOCoreReadyValid(LakeCoreBase):
                 ('glb2io_17_0_valid_reg_sel', 1),
                 ('glb2io_17_0_valid_reg_value', 1),
 
-                ('glb2io_17_1_valid_reg_sel', 1),
-                ('glb2io_17_1_valid_reg_value', 1),
-
-                ('glb2io_17_2_valid_reg_sel', 1),
-                ('glb2io_17_2_valid_reg_value', 1),
-
-                ('glb2io_17_3_valid_reg_sel', 1),
-                ('glb2io_17_3_valid_reg_value', 1),
-
                 ('glb2io_1_0_valid_reg_sel', 1),
                 ('glb2io_1_0_valid_reg_value', 1),
 
                 ('io2glb_17_0_ready_reg_sel', 1),
                 ('io2glb_17_0_ready_reg_value', 1),
 
-                ('io2glb_17_1_ready_reg_sel', 1),
-                ('io2glb_17_1_ready_reg_value', 1),
-
-                ('io2glb_17_2_ready_reg_sel', 1),
-                ('io2glb_17_2_ready_reg_value', 1),
-
-                ('io2glb_17_3_ready_reg_sel', 1),
-                ('io2glb_17_3_ready_reg_value', 1),
-
-
                 ('io2glb_1_0_ready_reg_sel', 1),
                 ('io2glb_1_0_ready_reg_value', 1),
             ]
+             if 'exchange_64_mode' in config_kwargs and config_kwargs['exchange_64_mode'] == 1:
+                 config_pre += [
+                    ('glb2io_17_1_valid_reg_sel', 1),
+                    ('glb2io_17_1_valid_reg_value', 1),
+
+                    ('glb2io_17_2_valid_reg_sel', 1),
+                    ('glb2io_17_2_valid_reg_value', 1),
+
+                    ('glb2io_17_3_valid_reg_sel', 1),
+                    ('glb2io_17_3_valid_reg_value', 1),
+
+                    ('io2glb_17_1_ready_reg_sel', 1),
+                    ('io2glb_17_1_ready_reg_value', 1),
+
+                    ('io2glb_17_2_ready_reg_sel', 1),
+                    ('io2glb_17_2_ready_reg_value', 1),
+
+                    ('io2glb_17_3_ready_reg_sel', 1),
+                    ('io2glb_17_3_ready_reg_value', 1),   
+                 ]
         else:
             configs_pre = [
                 ('glb2io_17_valid_reg_sel', 1),
