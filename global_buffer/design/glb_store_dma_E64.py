@@ -500,6 +500,7 @@ class GlbStoreDma_E64(Generator):
                 if self.cfg_data_network_f2g_mux[i] == 1:
 
                     # MO: Removing reg in-between FIFOs in E64 mode b/c it causes issues with RV synchronization 
+                    # TODO: Avoid adding this mux here. Use another FIFO instead
                     # self.strm_data[packet_16] = self.data_f2g_r[i][packet_16]
                     self.strm_data[packet_16] = kts.ternary(self.cfg_exchange_64_mode, self.data_f2g[i][packet_16], self.data_f2g_r[i][packet_16])
 
