@@ -202,7 +202,7 @@ else ifeq ($(TOOL), VERILATOR)
     COMPILE = $(VERILATOR)
     RUN = obj_dir/Vtop $(APP_ARGS)
 else
-    @echo "TOOL must be either XCELIUM or VCS"
+    @echo "TOOL env var must be one of: VCS, VERILATOR, or XCELIUM"
 endif
 
 ifeq ($(TOOL), XCELIUM)
