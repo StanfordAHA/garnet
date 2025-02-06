@@ -130,7 +130,7 @@ def place_io_blk(id_to_name, app_dir, io_sides):
     group_index = 0
     for idx, input_blk in enumerate(inputs):
         if exchange_64_mode:
-            x_coord = int((group_index * 2 + io_tile_shift_right_index) / 8) * 2
+            x_coord = int((group_index * 2 ) / 8) * 2 + io_tile_shift_right_index
             placement[input_blk] = (x_coord, 0) 
         else:
             placement[input_blk] = (group_index * 2 + io_tile_shift_right_index, 0)
@@ -142,7 +142,7 @@ def place_io_blk(id_to_name, app_dir, io_sides):
     group_index = 0
     for idx, output_blk in enumerate(outputs):
         if exchange_64_mode:
-              x_coord = int((group_index * 2 + io_tile_shift_right_index) / 8) * 2 + 1
+              x_coord = int((group_index * 2 ) / 8) * 2 + 1 + io_tile_shift_right_index
               placement[output_blk] = (x_coord, 0) 
         else:
             placement[output_blk] = (group_index * 2 + 1 + io_tile_shift_right_index, 0)
