@@ -300,7 +300,7 @@ task Env_wait_interrupt();
                 end
                 // Don't stop until interrupt mask (data) contains ALL tiles in tile_mask
                 if (data == tile_mask) break;
-                break;  // Gotta break out of forever loop, duh
+                //break;  // Gotta break out of forever loop, duh
             end
         end
         begin
@@ -339,7 +339,7 @@ task Env_clear_interrupt();
     end
     $display("%s clear ALL RELEVANT TILES(?) using mask", reg_name, tile_mask);
 
-    data = tile_mask;    // Yes this is redundant b/c clear_interrupt() always follows wait_interrupt()
+    //data = tile_mask;    // Yes this is redundant b/c clear_interrupt() always follows wait_interrupt()
     AxilDriver_write();  // Writes to interrupt reg addr from above
     $display("%s interrupts CLEARED i hope\n", reg_name);
 endtask // Env_clear_interrupt
