@@ -1,6 +1,7 @@
 from kratos import Generator, clog2, always_ff, always_comb, posedge, const
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 import os
+import kratos as kts
 
 
 class GlbLoopIter(Generator):
@@ -25,6 +26,7 @@ class GlbLoopIter(Generator):
         self.step = self.input("step", 1)
         self.mux_sel_out = self.output("mux_sel_out", max(clog2(self.loop_level), 1))
         self.restart = self.output("restart", 1)
+        self.exchange_64_mode = self.input("exchange_64_mode", 1)
 
         # local varaibles
         self.dim_counter = self.var("dim_counter", self._params.axi_data_width,
@@ -43,6 +45,9 @@ class GlbLoopIter(Generator):
         self.is_maxed = self.var("is_maxed", 1)
         self.wire(self.is_maxed, (self.dim_counter[self.mux_sel]
                                   == self.ranges[self.mux_sel]) & self.inc[self.mux_sel])
+        
+        self.dim_counter_inc = self.var("dim_counter_inc", self._params.axi_data_width)
+        self.wire(self.dim_counter_inc, kts.ternary(self.exchange_64_mode, kts.const(4, self._params.axi_data_width), kts.const(1, self._params.axi_data_width)))
 
         self.add_code(self.set_mux_sel)
         for i in range(self.loop_level):
@@ -86,7 +91,7 @@ class GlbLoopIter(Generator):
             if self.clear[idx]:
                 self.dim_counter[idx] = 0
             elif self.inc[idx]:
-                self.dim_counter[idx] = self.dim_counter[self.mux_sel] + 1
+                self.dim_counter[idx] = self.dim_counter[self.mux_sel] + self.dim_counter_inc
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def max_value_update(self, idx):

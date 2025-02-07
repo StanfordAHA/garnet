@@ -439,7 +439,6 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
             // Extent (value counters count up to) needs to be divided by 4 since we are writing 4x more data at once
             if (exchange_64_mode) {
                 data_stride[i] = data_stride[i] * 4; 
-                extent[i] = extent[i] / 4;
             }
 
             add_config(config_info,
@@ -528,7 +527,6 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
             // Extent (value counters count up to) needs to be divided by 4 since we are writing 4x more data at once
             if (exchange_64_mode) {
                 data_stride[i] = data_stride[i] * 4;
-                extent[i] = extent[i] / 4;
             }
             
             add_config(config_info,
