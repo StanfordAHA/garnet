@@ -284,9 +284,9 @@ function Kernel::new(string app_dir, int dpr);
         num_io_tiles = get_num_io_tiles(io_info, i);
 
         // MO: E64 HACK
-        if (get_exchange_64_config()) begin
-            num_io_tiles = (num_io_tiles / 4 < 1) ? 1 : (num_io_tiles / 4);
-        end
+        // if (get_exchange_64_config()) begin
+        //     num_io_tiles = (num_io_tiles / 4 < 1) ? 1 : (num_io_tiles / 4);
+        // end
 
         inputs[i].num_io_tiles = num_io_tiles;
         inputs[i].io_tiles = new[num_io_tiles];
@@ -298,7 +298,7 @@ function Kernel::new(string app_dir, int dpr);
             inputs[i].io_tiles[0].io_block_data = input_data[i];
         end else begin
             for (int j = 0; j < num_io_tiles; j++) begin
-                num_pixels = input_data[i].size / num_io_tiles;
+            num_pixels = input_data[i].size / num_io_tiles;
                 $display("Num input io tiles: %d\n", num_io_tiles);
                 $display("Num input pixels: %d\n", num_pixels);
                 inputs[i].io_tiles[j].num_data = num_pixels;
@@ -320,9 +320,9 @@ function Kernel::new(string app_dir, int dpr);
         io_info = get_output_info(kernel_info, i);
         num_io_tiles = get_num_io_tiles(io_info, i);
         // MO: E64 HACK
-        if (get_exchange_64_config()) begin
-            num_io_tiles = (num_io_tiles / 4 < 1) ? 1 : (num_io_tiles / 4);
-        end
+        // if (get_exchange_64_config()) begin
+        //     num_io_tiles = (num_io_tiles / 4 < 1) ? 1 : (num_io_tiles / 4);
+        // end
         outputs[i].num_io_tiles = num_io_tiles;
         outputs[i].io_tiles = new[num_io_tiles];
 
@@ -337,9 +337,9 @@ function Kernel::new(string app_dir, int dpr);
             end
 
             // MO: E64 HACK
-            if (get_exchange_64_config()) begin
-                num_pixels *= 4;
-            end
+            // if (get_exchange_64_config()) begin
+            //     num_pixels *= 4;
+            // end
 
             // For GLB tiling read memory region of entire feature map
             if (num_glb_tiling > 0) begin
