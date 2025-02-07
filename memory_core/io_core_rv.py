@@ -123,7 +123,7 @@ class IOCoreReadyValid(LakeCoreBase):
                 ('io2glb_1_0_ready_reg_value', 1),
             ]
              if 'exchange_64_mode' in config_kwargs and config_kwargs['exchange_64_mode'] == 1:
-                 config_pre += [
+                 configs_pre += [
                     ('glb2io_17_1_valid_reg_sel', 1),
                     ('glb2io_17_1_valid_reg_value', 1),
 
