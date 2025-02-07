@@ -347,6 +347,7 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
     int cycle_start_addr = io_tile_info->cycle_start_addr;
     int loop_dim = io_tile_info->loop_dim;
     int extent[LOOP_LEVEL];
+    int dma_range[LOOP_LEVEL];
     int data_stride[LOOP_LEVEL];
     int cycle_stride[LOOP_LEVEL];
     int mux_sel;
@@ -356,9 +357,19 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
     bool use_padding = output_padding_config(io_tile_info, &start_addr, &cycle_start_addr);
     bool use_glb_tiling = glb_tiling_config(kernel_info, io_tile_info, &start_addr, &cycle_start_addr);
 
+    // Check if we are in exchange_64 mode
+    int exchange_64_mode = get_exchange_64_config();
+
     // Convert extent/stride hardware-friendly
     for (int i = 0; i < loop_dim; i++) {
         extent[i] = io_tile_info->extent[i] - 2;
+
+        if (exchange_64_mode) {
+            dma_range[i] = (io_tile_info->extent[i]/4) - 2;
+        } else {    
+            dma_range[i] = extent[i];
+        }
+
         cycle_stride[i] = io_tile_info->cycle_stride[i];
         data_stride[i] = io_tile_info->data_stride[i];
         for (int j = 0; j < i; j++) {
@@ -383,8 +394,7 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
     else
         mux_sel = 0b10;
 
-    // Check if we are in exchange_64 mode
-    int exchange_64_mode = get_exchange_64_config();
+  
     
     if (io_tile_info->io == Input) {
 
@@ -444,7 +454,7 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
             add_config(config_info,
                        (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) +
                            (GLB_LD_DMA_HEADER_0_RANGE_0_R + 0x0c * i),
-                       extent[i] << (GLB_LD_DMA_HEADER_0_RANGE_0_RANGE_F_LSB));
+                       dma_range[i] << (GLB_LD_DMA_HEADER_0_RANGE_0_RANGE_F_LSB));
             add_config(config_info,
                        (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) +
                            (GLB_LD_DMA_HEADER_0_CYCLE_STRIDE_0_R + 0x0c * i),
@@ -532,7 +542,7 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
             add_config(config_info,
                        (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) +
                            (GLB_ST_DMA_HEADER_0_RANGE_0_R + 0x0c * i),
-                       extent[i] << (GLB_ST_DMA_HEADER_0_RANGE_0_RANGE_F_LSB));
+                       dma_range[i] << (GLB_ST_DMA_HEADER_0_RANGE_0_RANGE_F_LSB));
             add_config(config_info,
                        (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) +
                            (GLB_ST_DMA_HEADER_0_CYCLE_STRIDE_0_R + 0x0c * i),

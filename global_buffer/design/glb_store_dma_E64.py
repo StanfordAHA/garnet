@@ -65,7 +65,7 @@ class GlbStoreDma_E64(Generator):
         self.strm_data_valid = self.var("strm_data_valid", width=1, size=[self.num_packets], packed=True)
         self.st_dma_done_pulse = self.var("st_dma_done_pulse", 1)
         self.st_dma_done_pulse_last = self.var("st_dma_done_pulse_last", 1)
-        self.strm_wr_data_w = self.var("strm_wr_data_w", width=self._params.cgra_data_width)
+        self.strm_wr_data_w = self.var("strm_wr_data_w", width=self._params.cgra_data_width, size=[self.num_packets], packed=True)
         self.strm_wr_addr_w = self.var("strm_wr_addr_w", width=self._params.glb_addr_width)
         self.last_strm_wr_addr_r = self.var("last_strm_wr_addr_r", width=self._params.glb_addr_width)
         self.strm_wr_en_w = self.var("strm_wr_en_w", width=1)
@@ -235,6 +235,7 @@ class GlbStoreDma_E64(Generator):
                        reset=self.reset,
                        # MO: STENCIL VALID CHANGE
                        step=kts.ternary(self.dense_rv_mode_on, self.qualified_iter_step_valid, self.iter_step_valid),
+                    #    exchange_64_mode=self.cfg_exchange_64_mode,
                        mux_sel_out=self.loop_mux_sel,
                        restart=self.loop_done)
         self.wire(self.loop_iter.dim, self.current_dma_header["dim"])
@@ -552,10 +553,10 @@ class GlbStoreDma_E64(Generator):
         self.strm_wr_en_w = kts.ternary(self.dense_rv_mode_on, self.qualified_iter_step_valid, self.iter_step_valid)
         if self.sparse_rv_mode_on | self.dense_rv_mode_on:
             self.strm_wr_addr_w = resize(self.data_current_addr, self._params.glb_addr_width)
-            self.strm_wr_data_w = self.data_fifo2dma[0]
+            self.strm_wr_data_w = self.data_fifo2dma
         else:
             self.strm_wr_addr_w = resize(self.data_current_addr, self._params.glb_addr_width)
-            self.strm_wr_data_w = self.strm_data[0]
+            self.strm_wr_data_w = self.strm_data
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def last_strm_wr_addr_ff(self):
@@ -590,13 +591,13 @@ class GlbStoreDma_E64(Generator):
         
                 # Assuming 4 packets    
                 self.bank_wr_data_cache_w[(0 * self._params.cgra_data_width + self._params.cgra_data_width - 1,
-                                            0 * self._params.cgra_data_width)] = self.data_fifo2dma[0]
+                                            0 * self._params.cgra_data_width)] = self.strm_wr_data_w[0]
                 self.bank_wr_data_cache_w[(1 * self._params.cgra_data_width + self._params.cgra_data_width - 1,
-                                        1 * self._params.cgra_data_width)] = self.data_fifo2dma[1]
+                                        1 * self._params.cgra_data_width)] = self.strm_wr_data_w[1]
                 self.bank_wr_data_cache_w[(2 * self._params.cgra_data_width + self._params.cgra_data_width - 1,
-                                        2 * self._params.cgra_data_width)] = self.data_fifo2dma[2]
+                                        2 * self._params.cgra_data_width)] = self.strm_wr_data_w[2]
                 self.bank_wr_data_cache_w[(3 * self._params.cgra_data_width + self._params.cgra_data_width - 1,
-                                        3 * self._params.cgra_data_width)] = self.data_fifo2dma[3]
+                                        3 * self._params.cgra_data_width)] = self.strm_wr_data_w[3]
         else: 
             # First, if cached data is written to memory, clear it.
             if self.bank_wr_en:
@@ -607,25 +608,25 @@ class GlbStoreDma_E64(Generator):
                 if self.strm_data_sel == 0:
                     self.bank_wr_strb_cache_w[self.cgra_strb_width - 1,
                                             0] = const(self.cgra_strb_value, self.cgra_strb_width)
-                    self.bank_wr_data_cache_w[self._params.cgra_data_width - 1, 0] = self.strm_wr_data_w
+                    self.bank_wr_data_cache_w[self._params.cgra_data_width - 1, 0] = self.strm_wr_data_w[0]
                 elif self.strm_data_sel == 1:
                     self.bank_wr_strb_cache_w[self.cgra_strb_width * 2 - 1,
                                             self.cgra_strb_width] = const(self.cgra_strb_value,
                                                                             self.cgra_strb_width)
                     self.bank_wr_data_cache_w[self._params.cgra_data_width * 2 - 1,
-                                            self._params.cgra_data_width] = self.strm_wr_data_w
+                                            self._params.cgra_data_width] = self.strm_wr_data_w[0]
                 elif self.strm_data_sel == 2:
                     self.bank_wr_strb_cache_w[self.cgra_strb_width * 3 - 1,
                                             self.cgra_strb_width * 2] = const(self.cgra_strb_value,
                                                                                 self.cgra_strb_width)
                     self.bank_wr_data_cache_w[self._params.cgra_data_width * 3 - 1,
-                                            self._params.cgra_data_width * 2] = self.strm_wr_data_w
+                                            self._params.cgra_data_width * 2] = self.strm_wr_data_w[0]
                 elif self.strm_data_sel == 3:
                     self.bank_wr_strb_cache_w[self.cgra_strb_width * 4 - 1,
                                             self.cgra_strb_width * 3] = const(self.cgra_strb_value,
                                                                                 self.cgra_strb_width)
                     self.bank_wr_data_cache_w[self._params.cgra_data_width * 4 - 1,
-                                            self._params.cgra_data_width * 3] = self.strm_wr_data_w
+                                            self._params.cgra_data_width * 3] = self.strm_wr_data_w[0]
                 else:
                     self.bank_wr_strb_cache_w = self.bank_wr_strb_cache_r
                     self.bank_wr_data_cache_w = self.bank_wr_data_cache_r
