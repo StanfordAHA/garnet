@@ -26,7 +26,6 @@ class GlbLoopIter(Generator):
         self.step = self.input("step", 1)
         self.mux_sel_out = self.output("mux_sel_out", max(clog2(self.loop_level), 1))
         self.restart = self.output("restart", 1)
-        # self.exchange_64_mode = self.input("exchange_64_mode", 1)
 
         # local varaibles
         self.dim_counter = self.var("dim_counter", self._params.axi_data_width,
@@ -47,8 +46,6 @@ class GlbLoopIter(Generator):
                                   == self.ranges[self.mux_sel]) & self.inc[self.mux_sel])
         
         self.dim_counter_inc = self.var("dim_counter_inc", self._params.axi_data_width)
-        # self.wire(self.dim_counter_inc, kts.ternary(self.exchange_64_mode, kts.const(4, self._params.axi_data_width), kts.const(1, self._params.axi_data_width)))
-
 
         self.add_code(self.set_mux_sel)
         for i in range(self.loop_level):

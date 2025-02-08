@@ -446,7 +446,6 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         for (int i = 0; i < loop_dim; i++) {
             
             // Count addr 4x faster b/c reading 8 bytes at once instead of 2 bytes 
-            // Extent (value counters count up to) needs to be divided by 4 since we are writing 4x more data at once
             if (exchange_64_mode) {
                 data_stride[i] = data_stride[i] * 4; 
             }
@@ -534,7 +533,6 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         printf("Output block dimensionality: %0d\n", loop_dim);
         for (int i = 0; i < loop_dim; i++) {
             // Count 4x faster b/c writing 8 bytes at once instead of 2 bytes 
-            // Extent (value counters count up to) needs to be divided by 4 since we are writing 4x more data at once
             if (exchange_64_mode) {
                 data_stride[i] = data_stride[i] * 4;
             }

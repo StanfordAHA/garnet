@@ -190,8 +190,6 @@ class GlbLoadDma_E64(Generator):
                        clk_en=const(1, 1),
                        reset=self.reset,
                        step=self.iter_step_valid,
-                       mux_sel_out=self.loop_mux_sel,
-                    #    exchange_64_mode=self.cfg_exchange_64_mode,
                        restart=self.loop_done)
         self.wire(self.loop_iter.dim, self.current_dma_header["dim"])
         for i in range(self._params.load_dma_loop_level):
@@ -339,7 +337,6 @@ class GlbLoadDma_E64(Generator):
 
                 self.wire(self.fifo2skid_rdy[i][packet_16], ~self.skid_full[i][packet_16])
 
-                # MO: GLB READ BUG FIX: ONLY PUSH TO SKID IF POP FROM FIFO
                 # self.wire(self.skid_push[i][packet_16], self.fifo2skid_rdy[i][packet_16] & self.fifo2skid_vld[i][packet_16])
                 self.wire(self.skid_push[i][packet_16], kts.ternary(self.cfg_data_network_g2f_mux[i] == 1, self.fifo_pop[packet_16], 0))
                 self.wire(~self.skid_empty[i][packet_16], self.data_g2f_vld[i][packet_16])
