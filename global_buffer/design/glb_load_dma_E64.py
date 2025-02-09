@@ -190,6 +190,7 @@ class GlbLoadDma_E64(Generator):
                        clk_en=const(1, 1),
                        reset=self.reset,
                        step=self.iter_step_valid,
+                       mux_sel_out=self.loop_mux_sel,
                        restart=self.loop_done)
         self.wire(self.loop_iter.dim, self.current_dma_header["dim"])
         for i in range(self._params.load_dma_loop_level):
