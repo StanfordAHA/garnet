@@ -45,7 +45,6 @@ class GlbLoopIter(Generator):
         self.wire(self.is_maxed, (self.dim_counter[self.mux_sel]
                                   == self.ranges[self.mux_sel]) & self.inc[self.mux_sel])
         
-        self.dim_counter_inc = self.var("dim_counter_inc", self._params.axi_data_width)
 
         self.add_code(self.set_mux_sel)
         for i in range(self.loop_level):
