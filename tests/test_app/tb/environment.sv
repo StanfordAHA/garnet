@@ -292,15 +292,12 @@ task Env_wait_interrupt();
                 // Read the interrupt register to see which one(s) have finished so far.
 
                 AxilDriver_read();
-                $display("%s interrupt tiles %0x; waiting to see %0x", reg_name, data, tile_mask);
                 if (data == 0) begin
-                    $display("WARNING got interrupt, but not from %s apparently", reg_name);
-                    $display("(this is probably a fatal error ackshully");
+                    $display("WARNING: got interrupt, but not from %s", reg_name);
                     continue;  // Keep waiting for the RIGHT interrupt
                 end
                 // Don't stop until interrupt mask (data) contains ALL tiles in tile_mask
                 if (data == tile_mask) break;
-                break;  // Gotta break out of forever loop, duh
             end
         end
         begin
@@ -337,11 +334,9 @@ task Env_clear_interrupt();
         addr = `GLC_STRM_F2G_ISR_R;
         reg_name = "STRM_F2G";
     end
-    $display("%s clear ALL RELEVANT TILES(?) using mask", reg_name, tile_mask);
+    $display("%s clear interrupt using mask", reg_name, tile_mask);
 
-    data = tile_mask;    // Yes this is redundant b/c clear_interrupt() always follows wait_interrupt()
     AxilDriver_write();  // Writes to interrupt reg addr from above
-    $display("%s interrupts CLEARED i hope\n", reg_name);
 endtask // Env_clear_interrupt
 
 
