@@ -360,6 +360,13 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
     // Check if we are in exchange_64 mode
     int exchange_64_mode = get_exchange_64_config();
 
+
+    int bytes_written_per_cycle_non_E64_mode = 2;
+    
+    // Writing 4x as many bytes in EXCHANGE_64_MODE mode; do -1 b/c addr is 0 indexed
+    int E64_start_addr_increment = (4 - 1) * bytes_written_per_cycle_non_E64_mode;
+
+
     // Convert extent/stride hardware-friendly
     for (int i = 0; i < loop_dim; i++) {
         extent[i] = io_tile_info->extent[i] - 2;
@@ -514,9 +521,8 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
                    (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_ST_DMA_HEADER_0_DIM_R,
                    loop_dim);
         
-        // Writing 8 bytes at once in EXCHANGE_64_MODE mode. 
         if (exchange_64_mode) {
-            start_addr += 6; 
+            start_addr += E64_start_addr_increment; 
         }
 
         add_config(
