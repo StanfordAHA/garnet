@@ -344,8 +344,28 @@ task Env_set_interrupt_on();
     $display("Turn on interrupt enable registers");
     addr = `GLC_GLOBAL_IER_R;      data = 3'b111; AxilDriver_write();
     addr = `GLC_PAR_CFG_G2F_IER_R; data =   1'b1; AxilDriver_write();
-    addr = `GLC_STRM_F2G_IER_R;    data =   1'b1; AxilDriver_write();
-    addr = `GLC_STRM_G2F_IER_R;    data =   1'b1; AxilDriver_write();
+
+    // F2G interrupt enable for relevant GLB tiles 
+    addr = `GLC_STRM_F2G_IER_R;    
+    data = 32'b0; 
+    foreach (kernel.inputs[i]) begin
+        foreach (kernel.inputs[i].io_tiles[j]) begin
+            data |= 1 << kernel.inputs[i].io_tiles[j].tile;
+        end
+    end
+    $display("F2G interrupt enable : %0x\n", data);
+    AxilDriver_write();
+
+    // G2F interrupt enable for relevant GLB tiles 
+    addr = `GLC_STRM_G2F_IER_R;    
+    data = 32'b0;
+    foreach (kernel.inputs[i]) begin
+        foreach (kernel.inputs[i].io_tiles[j]) begin
+            data |= 1 << kernel.inputs[i].io_tiles[j].tile;
+        end
+    end
+    $display("G2F interrupt enable : %0x\n", data);
+    AxilDriver_write();
 endtask
 
 
@@ -355,9 +375,9 @@ task Env_run();
     $display("[%0t] wait for reset", $time);  // 100ps
     repeat (20) @(posedge p_ifc.clk);
 
-    // turn on interrupt
-    $display("[%0t] turn on interrupt", $time);  // 120ps?
-    Env_set_interrupt_on();
+    // // turn on interrupt
+    // $display("[%0t] turn on interrupt", $time);  // 120ps?
+    // Env_set_interrupt_on();
 
     if (dpr) begin
         $display("ERROR we no longer support dpr TRUE; we're not even sure when/if it was ever used");
@@ -369,6 +389,9 @@ task Env_run();
             begin
                 $display("[%0t] Processing kernel %0d BEGIN", $time, j);
                 kernel = kernels[j];
+                 // turn on interrupt
+                $display("[%0t] turn on interrupt", $time);  // 120ps?
+                Env_set_interrupt_on();
                 Env_write_bs();
                 Env_glb_configure();
                 Env_cgra_configure();

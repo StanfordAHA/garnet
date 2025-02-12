@@ -58,6 +58,7 @@ from lake.top.reduce_pe_cluster import ReducePECluster
 from lassen.sim import PE_fc
 import magma as m
 from peak import family
+import os
 
 
 def get_actual_size(width: int, height: int, io_sides: List[IOSide]):
@@ -139,6 +140,7 @@ def create_cgra(width: int, height: int, io_sides: List[IOSide],
                 add_pd: bool = True,
                 use_sim_sram: bool = True,
                 using_matrix_unit: bool = False,
+                include_E64_hw: bool = False,
                 give_north_io_sbs: bool = False,
                 num_fabric_cols_removed: int = 0,
                 hi_lo_tile_id: bool = True,
@@ -441,7 +443,7 @@ def create_cgra(width: int, height: int, io_sides: List[IOSide],
                     or y in range(y_min) \
                     or y in range(y_max + 1, height):
                 if ready_valid:
-                    core = IOCoreReadyValid(allow_bypass=False)
+                    core = IOCoreReadyValid(allow_bypass=False, include_E64_HW=include_E64_hw)
                 elif use_io_valid:
                     core = IOCoreValid(config_addr_width=reg_addr_width,
                                        config_data_width=config_data_width)
@@ -610,8 +612,7 @@ def create_cgra(width: int, height: int, io_sides: List[IOSide],
     bit_width_str = 17 if ready_valid else 16
     track_list = list(range(num_tracks))
 
-
-    io_in = {"f2io_1": [0], f"f2io_{bit_width_str}": [0]}
+    io_in = {"f2io_1": [0], f"f2io_{bit_width_str}": [0], "f2io_1_0": [0], f"f2io_{bit_width_str}_0": [0], f"f2io_{bit_width_str}_1": [0], f"f2io_{bit_width_str}_2": [0], f"f2io_{bit_width_str}_3": [0]}
     io_out = {"io2f_1": track_list, f"io2f_{bit_width_str}": track_list, f"io2f_{bit_width_str}_T0": [0], f"io2f_{bit_width_str}_T1": [1],
                                                     f"io2f_{bit_width_str}_T2": [2], f"io2f_{bit_width_str}_T3": [3], f"io2f_{bit_width_str}_T4": [4]}
 

@@ -28,6 +28,10 @@ class CreateBuses(Visitor):
     def __init__(self, inst_info, ready_valid=True):
         self.inst_info = inst_info
         self.ready_valid=ready_valid
+  
+        self.include_E64_HW = "INCLUDE_E64_HW" in os.environ and os.environ.get("INCLUDE_E64_HW") == "1"
+        self.exchange_64_mode = "E64_MODE_ON" in os.environ and os.environ.get("E64_MODE_ON") == "1"
+        self.outputCount = 0
 
     def doit(self, dag):
         self.i = 1
@@ -122,9 +126,28 @@ class CreateBuses(Visitor):
         Visitor.generic_visit(self, node)
         child_bid = self.node_to_bid[node.child]
         if node.child.type == Bit:
-            port = "f2io_1"
+            port = "f2io_1_0" if self.include_E64_HW else "f2io_1"
         else:
-            port = "f2io_17" if self.ready_valid else "f2io_16"
+            if self.exchange_64_mode:
+                node_name_parse_list = node.iname.split("stencil_")[2].split("_write")
+
+                packet_num = 0
+                if len(node_name_parse_list) > 1:
+                    packet_num = int(node_name_parse_list[0]) % 4
+                else:
+                    packet_num = 0
+    
+            if self.include_E64_HW:
+                if self.exchange_64_mode:
+                    port = f"f2io_17_{packet_num}"
+                else:
+                    port = f"f2io_17_0"
+            elif self.ready_valid:
+                port = f"f2io_17"
+            else:
+                port = "f2io_16"
+
+            self.outputCount = (self.outputCount + 1) % 4
         self.netlist[child_bid].append((node, port))
 
 
@@ -301,6 +324,10 @@ class IO_Input_t(Product):
 
 class IO_Input_t_rv(Product):
     io2f_17 = BitVector[16]
+    io2f_17_0 = BitVector[16]
+    io2f_17_1 = BitVector[16]
+    io2f_17_2 = BitVector[16]
+    io2f_17_3 = BitVector[16]
     io2f_1 = Bit
 
 
@@ -327,7 +354,9 @@ class FlattenIO(Visitor):
             if t == Bit:
                 return "io2f_1"
             elif ready_valid:
+                # MO: FIXME for E64 conns if FlattenIO is ever used  
                 return "io2f_17"
+                #return "io2f_17_0"
             else:
                 return "io2f_16"
         #isel = lambda t: "io2f_1" if t == Bit else "io2f_16"
@@ -515,6 +544,11 @@ class FixInputsOutputAndPipeline(Visitor):
     ):
         self.sinks = sinks
         self.ready_valid = ready_valid
+
+        self.include_E64_HW = "INCLUDE_E64_HW" in os.environ and os.environ.get("INCLUDE_E64_HW") == "1"
+        self.exchange_64_mode = "E64_MODE_ON" in os.environ and os.environ.get("E64_MODE_ON") == "1"
+
+        self.inputCount = 0
 
         self.pipeline_inputs = pipeline_inputs
 
@@ -834,7 +868,28 @@ class FixInputsOutputAndPipeline(Visitor):
 
             # -----------------IO-to-MEM/Pond Paths Pipelining-------------------- #
             if "io16in" in io_child.iname:
-                new_node = new_children[0].select("io2f_17") if self.ready_valid else new_children[0].select("io2f_16")
+                if self.ready_valid:
+                    if self.include_E64_HW:
+                        if self.exchange_64_mode:
+                            node_name_parse_list = io_child.iname.split("stencil_")[2].split("_read")
+                            packet_num = 0
+                            if len(node_name_parse_list) > 1:
+                                packet_num = int(node_name_parse_list[0]) % 4
+                            else:
+                                packet_num = 0
+                            new_node = new_children[0].select(f"io2f_17_{packet_num}")
+                            self.inputCount = (self.inputCount + 1) % 4
+
+                        else:
+                            new_node = new_children[0].select("io2f_17_0") 
+                    else:
+                        new_node = new_children[0].select("io2f_17") 
+
+
+
+                else:
+                    new_node = new_children[0].select("io2f_16") 
+
                 if self.pipeline_inputs:
                     if "IO2MEM_REG_CHAIN" not in os.environ:
                         self.create_register_tree(
@@ -1252,11 +1307,18 @@ def create_netlist_info(
     nodes_to_instrs = CreateInstrs(node_info).doit(pdag)
 
     dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1"  
+    exchange_64_mode = "E64_MODE_ON" in os.environ and os.environ.get("E64_MODE_ON") == "1"
+
     info["id_to_instrs"] = {}
     for node, id in nodes_to_ids.items():
+        node_config_kwargs = {}
         if dense_ready_valid and ("I" in id or "i" in id):
-            node_config_kwargs = {}
             node_config_kwargs['ready_valid_mode'] = 1 
+
+        if exchange_64_mode and ("I" in id or "i" in id):
+            node_config_kwargs['exchange_64_mode'] = 1
+
+        if (dense_ready_valid or exchange_64_mode) and ("I" in id or "i" in id):
             info["id_to_instrs"][id] = (1, node_config_kwargs) 
         else:
             info["id_to_instrs"][id] = nodes_to_instrs[node]
@@ -1298,6 +1360,13 @@ def create_netlist_info(
         # graph.generate_tile_conn(app_dir = app_dir)
         # manual placement
         graph.manualy_place_resnet(app_dir=app_dir)
+
+    # # MO: Matrix unit HACK 
+    #breakpoint()
+    # if "MU_APP_MANUAL_PLACER" in os.environ and os.environ.get("MU_APP_MANUAL_PLACER") == "1":
+    #     #breakpoint()
+    #     manual_place_filepath = os.path.join(app_dir, "../hardcoded_bin/manual.place")
+    #     os.system(f"cp {manual_place_filepath} {app_dir}")
 
     CountTiles().doit(pdag)
 

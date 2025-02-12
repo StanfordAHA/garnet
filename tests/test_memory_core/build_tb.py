@@ -2056,6 +2056,7 @@ if __name__ == "__main__":
     parser.add_argument('--using-matrix-unit', action="store_true")
     parser.add_argument('--give-north-io-sbs', action="store_true")
     parser.add_argument("--num-fabric-cols-removed", default=0, type=int)
+    parser.add_argument('--include-E64-hw', action="store_true")
 
     args = parser.parse_args()
     bespoke = args.bespoke
@@ -2101,6 +2102,7 @@ if __name__ == "__main__":
     using_matrix_unit = args.using_matrix_unit
     give_north_io_sbs = args.give_north_io_sbs
     num_fabric_cols_removed = args.num_fabric_cols_removed
+    include_E64_hw = args.include_E64_hw
 
     if using_matrix_unit:
         if num_fabric_cols_removed == 0:
@@ -2246,7 +2248,8 @@ if __name__ == "__main__":
                                    scgra=True,
                                    perf_debug=perf_debug,
                                    give_north_io_sbs=give_north_io_sbs,
-                                   num_fabric_cols_removed=num_fabric_cols_removed)
+                                   num_fabric_cols_removed=num_fabric_cols_removed,
+                                   include_E64_hw=include_E64_hw)
 
         time_x = time.time()
         # print(f"TIME:\tcreate_cgra\t{time_x - time_0}")
