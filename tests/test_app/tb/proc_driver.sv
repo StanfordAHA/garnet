@@ -3,12 +3,20 @@
 semaphore proc_lock; 
 initial proc_lock = new(1);
 
+semaphore mu_ifc_lock; 
+initial mu_ifc_lock = new(1);
+
+
 bit [GLB_ADDR_WIDTH-1:0] start_addr;
 bit [GLB_ADDR_WIDTH-1:0] cur_addr;
 bitstream_t              bs_q;
 
 bit [GLB_ADDR_WIDTH-1:0]  ProcDriver_write_waddr;
 bit [BANK_DATA_WIDTH-1:0] ProcDriver_write_wdata;
+
+bit [15:0] mu2cgra_wdata;
+
+
 
 task ProcDriver_write_bs();
     cur_addr = start_addr;
@@ -23,6 +31,8 @@ task ProcDriver_write_bs();
     proc_lock.put(1);
 endtask
 
+
+data_array_t mu_data_q;
 data_array_t data_q;
 bit [BANK_DATA_WIDTH-1:0] bdata;
 int size;
@@ -50,6 +60,35 @@ task ProcDriver_write_data();
     end
     repeat (10) @(posedge p_ifc.clk);
     proc_lock.put(1);
+endtask
+
+
+int i;
+task MU_driver_write_data();
+    cur_addr = start_addr;
+    mu_ifc_lock.get(1);
+    assert (BANK_DATA_WIDTH == 64);
+    size = mu_data_q.size();  
+    i = 0;
+    while (i < size) begin
+        bdata = mu_data_q[i];
+        mu2cgra_wdata = bdata;
+        MU_driver_write();
+        if (mu_ifc.cgra2mu_ready) begin
+            i += 1;
+        end
+    end
+    repeat (10) @(posedge mu_ifc.clk);
+    mu_ifc_lock.put(1);
+endtask
+
+
+task MU_driver_write();
+    for (int i = 0; i < 16; i++) begin
+        mu_ifc.mu2cgra[i] = mu2cgra_wdata;
+    end
+    mu_ifc.mu2cgra_valid = 1;
+    @(posedge mu_ifc.clk);
 endtask
 
 

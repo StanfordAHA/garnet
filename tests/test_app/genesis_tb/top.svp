@@ -74,7 +74,7 @@ module top;
     end
 
     //============================================================================//
-    // interfaces
+    // Proc interface and axi interface 
     //============================================================================//
     proc_ifc p_ifc (.clk(clk));
     axil_ifc #(
@@ -84,17 +84,8 @@ module top;
         .clk(clk)
     );
 
-    //============================================================================//
-    // instantiate test
-    //============================================================================//
-    garnet_test test (
-        .clk     (clk),
-        .reset   (reset),
-        .p_ifc   (p_ifc),
-        .axil_ifc(axil_ifc)
-    );
 
-//; if ($using_matrix_unit) {
+    //; if ($using_matrix_unit) {
     //============================================================================//
     // Matrix unit ifc 
     //============================================================================//
@@ -103,7 +94,6 @@ module top;
     logic cgra2mu_ready; 
 
     behavioral_matrix_unit #(
-        .NUM_TX(16384),
         .MU_DATAWIDTH(`$mu_datawidth`),
         .OC_0(`$oc_0`)
     ) mu_ifc (
@@ -114,8 +104,33 @@ module top;
         .mu2cgra_valid(mu2cgra_valid),
         .mu2cgra(mu2cgra)
     );
+//; } else {
+     // NOT IN USE 
+      behavioral_matrix_unit #(
+        .MU_DATAWIDTH(1),
+        .OC_0(1)
+    ) mu_ifc (
+        .clk(clk),
+        .reset(reset),
+        //.cgra2mu_ready(cgra2mu_ready_row0),
+        .cgra2mu_ready(/* NO CONN */ ),
+        .mu2cgra_valid(1'b0),
+        .mu2cgra(1'b0)
+    );
 //; }
 
+
+
+    //============================================================================//
+    // instantiate test
+    //============================================================================//
+    garnet_test test (
+        .clk     (clk),
+        .reset   (reset),
+        .p_ifc   (p_ifc),
+        .axil_ifc(axil_ifc),
+        .mu_ifc (mu_ifc)
+    );
 
 
     //============================================================================//
