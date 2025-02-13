@@ -113,9 +113,9 @@ module top;
         .clk(clk),
         .reset(reset),
         //.cgra2mu_ready(cgra2mu_ready_row0),
-        .cgra2mu_ready(/* NO CONN */ ),
-        .mu2cgra_valid(1'b0),
-        .mu2cgra(1'b0)
+        .cgra2mu_ready(1'b0),
+        .mu2cgra_valid(/* NO CONN */ ),
+        .mu2cgra(/* NO CONN */ )
     );
 //; }
 
