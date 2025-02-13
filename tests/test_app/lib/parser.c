@@ -70,7 +70,6 @@ int parse_num_group(struct KernelInfo *info) {
     
     const char *west_io_env_var = "WEST_IN_IO_SIDES";
     char *west_io_value = getenv(west_io_env_var);
-    printf("GOT TO WEST I/O tiles stuff\n");
     if (west_io_value != NULL && strcmp(west_io_value, "1") == 0) {
         printf("Num groups calculation adjusted due to WEST I/O tiles\n");
         info->num_groups = (max_x-1 + GROUP_SIZE) / GROUP_SIZE;

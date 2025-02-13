@@ -31,7 +31,6 @@ class CreateBuses(Visitor):
   
         self.include_E64_HW = "INCLUDE_E64_HW" in os.environ and os.environ.get("INCLUDE_E64_HW") == "1"
         self.exchange_64_mode = "E64_MODE_ON" in os.environ and os.environ.get("E64_MODE_ON") == "1"
-        self.outputCount = 0
 
     def doit(self, dag):
         self.i = 1
@@ -146,8 +145,7 @@ class CreateBuses(Visitor):
                 port = f"f2io_17"
             else:
                 port = "f2io_16"
-
-            self.outputCount = (self.outputCount + 1) % 4
+                
         self.netlist[child_bid].append((node, port))
 
 
@@ -548,8 +546,6 @@ class FixInputsOutputAndPipeline(Visitor):
         self.include_E64_HW = "INCLUDE_E64_HW" in os.environ and os.environ.get("INCLUDE_E64_HW") == "1"
         self.exchange_64_mode = "E64_MODE_ON" in os.environ and os.environ.get("E64_MODE_ON") == "1"
 
-        self.inputCount = 0
-
         self.pipeline_inputs = pipeline_inputs
 
         self.harden_flush = harden_flush
@@ -878,7 +874,6 @@ class FixInputsOutputAndPipeline(Visitor):
                             else:
                                 packet_num = 0
                             new_node = new_children[0].select(f"io2f_17_{packet_num}")
-                            self.inputCount = (self.inputCount + 1) % 4
 
                         else:
                             new_node = new_children[0].select("io2f_17_0") 
