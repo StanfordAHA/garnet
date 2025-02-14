@@ -85,10 +85,14 @@ def place_io_blk(id_to_name, app_dir, io_sides):
     placement = {}
     # find out all the IO blocks
     ios = []
+    inputs_from_MU = []
     for blk_id in blks:
         if blk_id[0] in {"i", "I"}:
             assert blk_id not in ios
             ios.append(blk_id)
+        elif blk_id[0] in {"u", "U"}:
+            assert blk_id not in inputs_from_MU
+            inputs_from_MU.append(blk_id)
 
     # need to know if it's an input or output
 
@@ -155,6 +159,13 @@ def place_io_blk(id_to_name, app_dir, io_sides):
     if reset is not None:
         #placement[reset] = (0, 0)
         placement[reset] = (1, 0)
+
+
+    # Place MU I/O tiles if needed
+    # TODO: Need to pass on the x column of the MU IO tiles. It's num_fabric_cols_removed - 1
+    mu_io_tile_column = 3
+    for idx, input_blk in enumerate(inputs_from_MU):
+        placement[input_blk] = (mu_io_tile_column, int(idx / 2) + 1)
 
     # manual placement of PE/MEM tiles if needed
     if "MANUAL_PLACER" in os.environ and os.environ.get("MANUAL_PLACER") == "1" and os.path.isfile(app_dir + "/manual.place"):

@@ -21,6 +21,10 @@ import "DPI-C" function chandle get_input_info(
     chandle info,
     int index
 );
+import "DPI-C" function chandle get_mu_input_info(
+    chandle info,
+    int index
+);
 import "DPI-C" function chandle get_output_info(
     chandle info,
     int index
@@ -30,6 +34,7 @@ import "DPI-C" function int get_exchange_64_config();
 import "DPI-C" function int get_num_groups(chandle info);
 import "DPI-C" function int get_group_start(chandle info);
 import "DPI-C" function int get_num_inputs(chandle info);
+import "DPI-C" function int get_num_mu_inputs(chandle info);
 import "DPI-C" function int get_num_io_tiles(
     chandle info,
     int index
@@ -41,11 +46,19 @@ import "DPI-C" function string get_input_filename(
     chandle info,
     int index
 );
+import "DPI-C" function string get_mu_input_filename(
+    chandle info,
+    int index
+);
 import "DPI-C" function string get_output_filename(
     chandle info,
     int index
 );
 import "DPI-C" function int get_input_size(
+    chandle info,
+    int index
+);
+import "DPI-C" function int get_mu_input_size(
     chandle info,
     int index
 );
@@ -160,6 +173,7 @@ class Kernel;
     int num_groups;
     int group_start;
     int num_inputs;
+    int num_mu_inputs;
     int num_outputs;
 
     int num_glb_tiling;
@@ -168,16 +182,20 @@ class Kernel;
     // TODO: Put all these into IO inputs/outputs
     // input/output information for testing
     string input_filenames[];
+    string mu_input_filenames[];
     string output_filenames[];
     int input_size[];
+    int mu_input_size[];
     int output_size[];
     // queue to store data
     data_array_t input_data[];
+    data_array_t mu_input_data[];
     data_array_t output_data[];
     data_array_t gold_data[];
 
     // IO information
     IO inputs[];
+    IO mu_inputs[];
     IO outputs[];
 
     // queue to store bitstream
@@ -196,6 +214,7 @@ class Kernel;
     extern function new(string app_dir, int dpr);
     extern function void display();
     extern function data_array_t parse_input_data(int idx);
+    extern function data_array_t parse_mu_input_data(int idx);
     extern function data_array_t parse_gold_data(int idx);
     extern function bitstream_t parse_bitstream();
     extern function void add_offset_bitstream(ref bitstream_t bitstream_data, input int offset);
@@ -249,6 +268,7 @@ function Kernel::new(string app_dir, int dpr);
     assert_(bs_info != null, $sformatf("Unable to find %s", bitstream_filename));
 
     num_inputs  = get_num_inputs(kernel_info);
+    num_mu_inputs = get_num_mu_inputs(kernel_info);
     num_outputs = get_num_outputs(kernel_info);
     num_groups  = get_num_groups(kernel_info);
 
@@ -257,15 +277,20 @@ function Kernel::new(string app_dir, int dpr);
     glb_tiling_cnt = get_glb_tiling_cnt(kernel_info);
 
     $display("[%s] num_inputs: %0d", name, num_inputs);
+    $display("[%s] num_mu_inputs: %0d", name, num_mu_inputs);
     $display("[%s] num_outputs: %0d", name, num_outputs);
     $display("[%s] num_groups: %0d", name, num_groups);
 
     // IO instantiate
     inputs = new[num_inputs];
+    mu_inputs = new[num_mu_inputs];
     outputs = new[num_outputs];
     input_filenames = new[num_inputs];
     input_data = new[num_inputs];
     input_size = new[num_inputs];
+    mu_input_filenames = new[num_mu_inputs];
+    mu_input_data = new[num_mu_inputs];
+    mu_input_size = new[num_mu_inputs];
     output_filenames = new[num_outputs];
     output_data = new[num_outputs];
     output_size = new[num_outputs];
@@ -302,6 +327,27 @@ function Kernel::new(string app_dir, int dpr);
                 end
             end
         end
+    end
+
+    for (int i = 0; i < num_mu_inputs; i++) begin
+        mu_input_filenames[i] = get_mu_input_filename(kernel_info, i);
+
+        mu_input_size[i] = get_mu_input_size(kernel_info, i);
+
+        mu_input_data[i] = parse_mu_input_data(i);
+        $display("Parse MU input_%0d data Done", i);
+
+        io_info = get_mu_input_info(kernel_info, i);
+
+        num_io_tiles = get_num_io_tiles(io_info, i);
+
+        mu_inputs[i].num_io_tiles = num_io_tiles;
+        mu_inputs[i].io_tiles = new[num_io_tiles];
+
+        $display("MU input_%0d has %0d input blocks", i, num_io_tiles);
+
+        mu_inputs[i].io_tiles[0].num_data = mu_input_data[i].size;
+        mu_inputs[i].io_tiles[0].io_block_data = mu_input_data[i];
     end
 
     for (int i = 0; i < num_outputs; i++) begin
@@ -429,6 +475,55 @@ function data_array_t Kernel::parse_input_data(int idx);
     $fclose(fp);
     return result;
 endfunction
+
+function data_array_t Kernel::parse_mu_input_data(int idx);
+    int num_pixel = (mu_input_size[idx] >> 1);  // Pixel is 2byte (16bit) size
+    data_array_t result = new[num_pixel];
+    // FIXME: VCS does not support to read input to dynamic memory
+    // Use temporary register
+    bit [15:0] result_tmp[2048*1440-1:0];
+
+    int fp = $fopen(mu_input_filenames[idx], "rb");
+    int name_len = mu_input_filenames[idx].len();
+    string tmp;
+    int cnt;
+    int f_out;
+    $display("Reading MU input data %s", mu_input_filenames[idx]);
+    assert_(fp != 0, "Unable to read MU input file");
+    if (mu_input_filenames[idx].substr(name_len - 3, name_len - 1) == "pgm") begin
+        // just skip the first three lines
+        for (int i = 0; i < 3; i++) begin
+            f_out = $fgets(tmp, fp);
+        end
+    end
+    if (mu_input_filenames[idx].substr(
+            name_len - 3, name_len - 1
+        ) == "pgm" | mu_input_filenames[idx].substr(
+            name_len - 3, name_len - 1
+        ) == "raw") begin
+        cnt = $fread(result_tmp, fp);
+        foreach (result[i]) begin
+            result[i] = result_tmp[i];
+        end
+    end else begin
+        cnt = 0;
+        while ($fscanf(
+            fp, "%h\n", result[cnt]
+        ) == 1) begin
+            cnt = cnt + 1;
+        end
+        // The total size in byte is the number of pixels times 2
+        cnt = cnt * 2;
+    end
+    assert_(cnt == mu_input_size[idx], $sformatf(
+            "Unable to read MU input data. Parsed size is %0d, while expected size is %0d\n",
+            cnt,
+            mu_input_size[idx]
+            ));
+    $fclose(fp);
+    return result;
+endfunction
+
 
 function data_array_t Kernel::parse_gold_data(int idx);
     int num_pixel = (output_size[idx] >> 1);  // Pixel is 2byte (16bit) size

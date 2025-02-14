@@ -253,12 +253,17 @@ class CreateIDs(Visitor):
             if node.type == Bit:
                 id = f"i"
             elif node.type == BitVector[16]:
-                id = f"I"
+                if "MU" in child.iname:
+                    id = f"U"
+                    self.tile_types.add("U")
+                else:
+                    id = f"I"
             else:
                 raise NotImplementedError(f"{node}, {node.type}")
             self.node_to_type[child.iname] = id
             self.tile_types.add("I")
             self.tile_types.add("i")
+            
 
     def visit_Combine(self, node):
         Visitor.generic_visit(self, node)
@@ -326,6 +331,11 @@ class IO_Input_t_rv(Product):
     io2f_17_1 = BitVector[16]
     io2f_17_2 = BitVector[16]
     io2f_17_3 = BitVector[16]
+    io2f_17_T0 = BitVector[16]
+    io2f_17_T1 = BitVector[16]
+    io2f_17_T2 = BitVector[16]
+    io2f_17_T3 = BitVector[16]
+    io2f_17_T4 = BitVector[16]
     io2f_1 = Bit
 
 
@@ -863,7 +873,12 @@ class FixInputsOutputAndPipeline(Visitor):
             io_child = new_children[0]
 
             # -----------------IO-to-MEM/Pond Paths Pipelining-------------------- #
-            if "io16in" in io_child.iname:
+            if "MU" in io_child.iname:
+                # MO: MU IO tile HACK. Temporarily hardcoding to use track T0
+                new_node = new_children[0].select("io2f_17_T0")
+
+
+            elif "io16in" in io_child.iname:
                 if self.ready_valid:
                     if self.include_E64_HW:
                         if self.exchange_64_mode:
@@ -1258,7 +1273,7 @@ def create_netlist_info(
 
     node_info = {t: tile_to_char(t) for t in tile_info}
     nodes_to_ids = CreateIDs(node_info).doit(pdag)
-
+    
     if load_only:
         names_to_ids = {name: id_ for id_, name in id_to_name.items()}
     else:
@@ -1313,7 +1328,12 @@ def create_netlist_info(
         if exchange_64_mode and ("I" in id or "i" in id):
             node_config_kwargs['exchange_64_mode'] = 1
 
-        if (dense_ready_valid or exchange_64_mode) and ("I" in id or "i" in id):
+        # MO: MU IO tile HACK for now. Hardcoding it to use track T0
+        if "U" in id or "u" in id:
+            node_config_kwargs['track_active_T0'] = 1
+
+
+        if ((dense_ready_valid or exchange_64_mode) and ("I" in id or "i" in id)) or "U" in id or "u" in id:
             info["id_to_instrs"][id] = (1, node_config_kwargs) 
         else:
             info["id_to_instrs"][id] = nodes_to_instrs[node]
@@ -1321,7 +1341,7 @@ def create_netlist_info(
     info["instance_to_instrs"] = {
         info["id_to_name"][id]: instr
         for id, instr in info["id_to_instrs"].items()
-        if ("p" in id or "m" in id or "I" in id or "i" in id)
+        if ("p" in id or "m" in id or "I" in id or "i" in id or "U" in id or "u" in id)
     }
     for node, md in node_to_metadata.items():
         info["instance_to_instrs"][node] = md

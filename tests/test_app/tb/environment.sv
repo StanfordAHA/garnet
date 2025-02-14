@@ -198,22 +198,18 @@ endtask // Env_cgra_unstall
 task MU_write_to_cgra();
     realtime start_time, end_time;
     // In reality, this would be a for loop over kernel.mu_inputs and kernel.mu_inputs[i].mu_io_tiles[j]
-    foreach (kernel.inputs[i]) begin
-        foreach (kernel.inputs[i].io_tiles[j]) begin
-            if (kernel.inputs[i].io_tiles[j].is_glb_input == 1) begin
-                // Skip writing input data that is already in GLB
-                continue;
-            end
+    foreach (kernel.mu_inputs[i]) begin
+        foreach (kernel.mu_inputs[i].io_tiles[j]) begin
             start_time = $realtime;
             $display("[%s] MU writes input_%0d_block_%0d to CGRA starting at %0t", kernel.name, i, j,
                     start_time);
-            mu_data_q = kernel.inputs[i].io_tiles[j].io_block_data;
+            mu_data_q = kernel.mu_inputs[i].io_tiles[j].io_block_data;
             MU_driver_write_data();
             end_time = $realtime;
             $display("[%s] MU write input_%0d_block_%0d to CGRA end at %0t", kernel.name, i, j,
                     end_time);
             $display("[%s] It takes %0t time for MU to write %0d Byte data to CGRA.", kernel.name,
-                    end_time - start_time, kernel.inputs[i].io_tiles[j].num_data * 2);
+                    end_time - start_time, kernel.mu_inputs[i].io_tiles[j].num_data * 2);
         end
     end
 
@@ -225,7 +221,7 @@ int total_output_size;
 // FIXME/TODO this could be three subtasks start_streaming(), wait_for_g2f(), wait_for_f2g()
 // or glb_stream_g2f() and glb_stream_f2g() or some such
 task Env_kernel_test();
-    realtime start_time, end_time, g2f_end_time, latency;
+    realtime start_time, end_time, g2f_end_time, mu2cgra_end_time, latency;
     $timeformat(-9, 2, " ns", 0);
     group_start = kernel.group_start;
     num_groups = kernel.num_groups;
@@ -253,6 +249,7 @@ task Env_kernel_test();
             //TODO: Add if statement to skip this if it's a CGRA-only kernel 
             repeat (7) @(posedge mu_ifc.clk);
             MU_write_to_cgra();
+            mu2cgra_end_time = $realtime;
         end
 
         // FORK BRANCH 2: G2F/F2G interrupts (GLB writes data to CGRA and vice-versa)
@@ -262,13 +259,17 @@ task Env_kernel_test();
             // Then clear the interrupt(s)
 
             // TODO: Skip waiting for the G2F interrupt if this is a MU-only kernel
-            glb_ctrl = GLB_STRM_G2F_CTRL;
-            build_input_tile_mask();
-            Env_wait_interrupt();
-            Env_clear_interrupt();
-            g2f_end_time = $realtime;
-            $display("[%s] GLB-to-CGRA streaming done at %0t", kernel.name, g2f_end_time);
-
+            // FIXME: This is a hack to skip G2F for MU-only kernels
+            bit is_mu2cgra_app = 1'b1; 
+            if (!is_mu2cgra_app) begin
+                glb_ctrl = GLB_STRM_G2F_CTRL;
+                build_input_tile_mask();
+                Env_wait_interrupt();
+                Env_clear_interrupt();
+                g2f_end_time = $realtime;
+                $display("[%s] GLB-to-CGRA streaming done at %0t", kernel.name, g2f_end_time);
+            end
+            
             // Wait for an interrupt to tell us when output streaming is done
             // Then wait until interrupt mask contains ALL TILES listed in tile_mask
             // Then clear the interrupt(s)
@@ -286,10 +287,17 @@ task Env_kernel_test();
             end
             $display("[%s] The size of output is %0d Byte.", kernel.name, total_output_size);
 
-            latency = end_time - g2f_end_time;
-            $display("[%s] The initial latency is %0t.", kernel.name, latency);
-            $display("[%s] The throughput is %.3f (GB/s).", kernel.name,
-                    total_output_size / (g2f_end_time - start_time));
+            if (is_mu2cgra_app) begin
+                latency = end_time - mu2cgra_end_time;
+                $display("[%s] The initial latency is %0t.", kernel.name, latency);
+                $display("[%s] The throughput is %.3f (GB/s).", kernel.name,
+                        total_output_size / (mu2cgra_end_time - start_time));
+            end else begin
+                latency = end_time - g2f_end_time;
+                $display("[%s] The initial latency is %0t.", kernel.name, latency);
+                $display("[%s] The throughput is %.3f (GB/s).", kernel.name,
+                        total_output_size / (g2f_end_time - start_time));
+            end
         end
 
     join
@@ -385,17 +393,6 @@ task Env_set_interrupt_on();
     addr = `GLC_GLOBAL_IER_R;      data = 3'b111; AxilDriver_write();
     addr = `GLC_PAR_CFG_G2F_IER_R; data =   1'b1; AxilDriver_write();
 
-    // F2G interrupt enable for relevant GLB tiles 
-    addr = `GLC_STRM_F2G_IER_R;    
-    data = 32'b0; 
-    foreach (kernel.inputs[i]) begin
-        foreach (kernel.inputs[i].io_tiles[j]) begin
-            data |= 1 << kernel.inputs[i].io_tiles[j].tile;
-        end
-    end
-    $display("F2G interrupt enable : %0x\n", data);
-    AxilDriver_write();
-
     // G2F interrupt enable for relevant GLB tiles 
     addr = `GLC_STRM_G2F_IER_R;    
     data = 32'b0;
@@ -405,6 +402,18 @@ task Env_set_interrupt_on();
         end
     end
     $display("G2F interrupt enable : %0x\n", data);
+    AxilDriver_write();
+
+
+    // F2G interrupt enable for relevant GLB tiles 
+    addr = `GLC_STRM_F2G_IER_R;    
+    data = 32'b0; 
+    foreach (kernel.outputs[i]) begin
+        foreach (kernel.outputs[i].io_tiles[j]) begin
+            data |= 1 << kernel.outputs[i].io_tiles[j].tile;
+        end
+    end
+    $display("F2G interrupt enable : %0x\n", data);
     AxilDriver_write();
 endtask
 
