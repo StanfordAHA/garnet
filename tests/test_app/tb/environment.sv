@@ -197,22 +197,34 @@ endtask // Env_cgra_unstall
 
 task MU_write_to_cgra();
     realtime start_time, end_time;
-    // In reality, this would be a for loop over kernel.mu_inputs and kernel.mu_inputs[i].mu_io_tiles[j]
-    foreach (kernel.mu_inputs[i]) begin
-        foreach (kernel.mu_inputs[i].io_tiles[j]) begin
+
+    // TODO: Compile all channels before starting to write to CGRA. Aggregate as one. 
+    fork
+        begin
+            // There should only be one MU input for now (and it is unrolled across several IO tiles below)
+            foreach (kernel.mu_inputs[i]) begin
+                foreach (kernel.mu_inputs[i].io_tiles[j]) begin
+                    mu_data_q[j] = kernel.mu_inputs[i].io_tiles[j].io_block_data;
+                end
+            end
+
             start_time = $realtime;
-            $display("[%s] MU writes input_%0d_block_%0d to CGRA starting at %0t", kernel.name, i, j,
-                    start_time);
-            mu_data_q = kernel.mu_inputs[i].io_tiles[j].io_block_data;
+            $display("[%s] MU writes to CGRA starting at %0t", kernel.name, start_time);
             MU_driver_write_data();
             end_time = $realtime;
-            $display("[%s] MU write input_%0d_block_%0d to CGRA end at %0t", kernel.name, i, j,
-                    end_time);
+            $display("[%s] MU write to CGRA ends at %0t", kernel.name, end_time);
             $display("[%s] It takes %0t time for MU to write %0d Byte data to CGRA.", kernel.name,
-                    end_time - start_time, kernel.mu_inputs[i].io_tiles[j].num_data * 2);
+                    end_time - start_time, kernel.mu_inputs[0].io_tiles[0].num_data * 2);
         end
-    end
 
+        begin
+            // ERROR if we go MAX_WAIT cycles without finishing streaming the MU inputs 
+            for (int i=0; i<MAX_WAIT; i++) @(posedge mu_ifc.clk);
+            $error("@%0t: %m ERROR: MU stream wait timeout, waited %0d cy to finish streaming MU inputs", 
+                   $time, MAX_WAIT);
+            $finish(2);  // The "2" prints more information about when/where/why
+        end
+    join_any
 endtask
 
 
@@ -249,6 +261,7 @@ task Env_kernel_test();
             //TODO: Add if statement to skip this if it's a CGRA-only kernel 
             repeat (7) @(posedge mu_ifc.clk);
             MU_write_to_cgra();
+
             mu2cgra_end_time = $realtime;
         end
 

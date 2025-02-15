@@ -874,8 +874,18 @@ class FixInputsOutputAndPipeline(Visitor):
 
             # -----------------IO-to-MEM/Pond Paths Pipelining-------------------- #
             if "MU" in io_child.iname:
-                # MO: MU IO tile HACK. Temporarily hardcoding to use track T0
-                new_node = new_children[0].select("io2f_17_T0")
+                # MO: MU IO tile HACK. Temporarily hardcoding to use track T0 and T1 
+                # TODO: Fix this to use correct track based on PnR tool 
+                node_name_parse_list = io_child.iname.split("stencil_")[2].split("_read")
+                if len(node_name_parse_list) > 1:
+                    oc0_index = int(node_name_parse_list[0])  
+                else:
+                    oc0_index = 0
+
+                if oc0_index % 2 == 0:
+                    new_node = new_children[0].select("io2f_17_T0")
+                else:
+                    new_node = new_children[0].select("io2f_17_T1")
 
 
             elif "io16in" in io_child.iname:
@@ -1328,9 +1338,16 @@ def create_netlist_info(
         if exchange_64_mode and ("I" in id or "i" in id):
             node_config_kwargs['exchange_64_mode'] = 1
 
-        # MO: MU IO tile HACK for now. Hardcoding it to use track T0
+        # MO: MU IO tile HACK for now. Hardcoding it to use tracks T0 and T1 for now
+        # TODO: In the future, find a way to let the PnR tool choose the tracks 
         if "U" in id or "u" in id:
-            node_config_kwargs['track_active_T0'] = 1
+            oc0_index = int(id[1])
+            if oc0_index % 2 == 0:
+                node_config_kwargs['track_active_T0'] = 1
+            else:
+                # Whatever track receieves data from odd numbered MU input needs its track_select set to 1
+                node_config_kwargs['track_select_T1'] = 1
+                node_config_kwargs['track_active_T1'] = 1
 
 
         if ((dense_ready_valid or exchange_64_mode) and ("I" in id or "i" in id)) or "U" in id or "u" in id:

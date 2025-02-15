@@ -346,8 +346,26 @@ function Kernel::new(string app_dir, int dpr);
 
         $display("MU input_%0d has %0d input blocks", i, num_io_tiles);
 
-        mu_inputs[i].io_tiles[0].num_data = mu_input_data[i].size;
-        mu_inputs[i].io_tiles[0].io_block_data = mu_input_data[i];
+        // parse the mu input data by the number of ios 
+        if (num_io_tiles == 1) begin
+            mu_inputs[i].io_tiles[0].num_data = mu_input_data[i].size;
+            mu_inputs[i].io_tiles[0].io_block_data = mu_input_data[i];
+        end else begin
+            for (int j = 0; j < num_io_tiles; j++) begin
+                num_pixels = mu_input_data[i].size / num_io_tiles;
+                mu_inputs[i].io_tiles[j].num_data = num_pixels;
+                mu_inputs[i].io_tiles[j].io_block_data = new[num_pixels];
+                // NOTE: We assume only innermost loop is unrolled.
+                for (int k = 0; k < num_pixels; k++) begin
+                    mu_inputs[i].io_tiles[j].io_block_data[k] = mu_input_data[i][j+num_io_tiles*k];
+                end
+            end
+        end
+
+
+
+        
+        
     end
 
     for (int i = 0; i < num_outputs; i++) begin

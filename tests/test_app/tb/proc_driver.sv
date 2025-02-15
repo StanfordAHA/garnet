@@ -14,7 +14,8 @@ bitstream_t              bs_q;
 bit [GLB_ADDR_WIDTH-1:0]  ProcDriver_write_waddr;
 bit [BANK_DATA_WIDTH-1:0] ProcDriver_write_wdata;
 
-bit [15:0] mu2cgra_wdata;
+// TODO: Parametrize this data width 
+bit [15:0] mu2cgra_wdata [31:0];
 
 
 
@@ -32,7 +33,8 @@ task ProcDriver_write_bs();
 endtask
 
 
-data_array_t mu_data_q;
+// TODO: Parametrize this 16 to OC_0
+data_array_t mu_data_q[32];
 data_array_t data_q;
 bit [BANK_DATA_WIDTH-1:0] bdata;
 int size;
@@ -67,26 +69,30 @@ int i;
 task MU_driver_write_data();
     cur_addr = start_addr;
     mu_ifc_lock.get(1);
-    assert (BANK_DATA_WIDTH == 64);
-    size = mu_data_q.size();  
+    size = mu_data_q[0].size(); 
+    $display("Size: %d\n", size); 
     i = 0;
     while (i < size) begin
-        bdata = mu_data_q[i];
-        mu2cgra_wdata = bdata;
+        // TODO: Parametrize this 16 to OC_0
+        for (int oc_0 = 0; oc_0 < 32; oc_0++) begin
+            mu2cgra_wdata[oc_0] = mu_data_q[oc_0][i];
+        end
         MU_driver_write();
         if (mu_ifc.cgra2mu_ready) begin
             i += 1;
         end
     end
+    mu_ifc.mu2cgra_valid = 0;
     repeat (10) @(posedge mu_ifc.clk);
     mu_ifc_lock.put(1);
 endtask
 
 
 task MU_driver_write();
-    for (int i = 0; i < 16; i++) begin
-        mu_ifc.mu2cgra[i] = mu2cgra_wdata;
-    end
+    // for (int i = 0; i < 16; i++) begin
+    //     mu_ifc.mu2cgra[i] = mu2cgra_wdata;
+    // end
+    mu_ifc.mu2cgra = mu2cgra_wdata;
     mu_ifc.mu2cgra_valid = 1;
     @(posedge mu_ifc.clk);
 endtask

@@ -510,7 +510,7 @@ void *parse_metadata(char *filename) {
     bool is_mu2cgra_glb2cgra_app = false;
 
     // parse inputs
-    if (is_mu2cgra_app) {
+    if (!is_mu2cgra_app) {
         json_t const *input_list_json = json_getProperty(IOs_json, "inputs");
         if (!input_list_json || JSON_ARRAY != json_getType(input_list_json)) {
             puts("Error, the input list property is not found.");

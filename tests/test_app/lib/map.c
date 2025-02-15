@@ -140,6 +140,9 @@ int glb_map(void *kernel_, int dpr_enabled) {
     int first_input_tile;
     int last_input_tile;
 
+    int first_output_tile;
+    int last_output_tile;
+
     struct IOInfo *io_info;
     struct IOTileInfo *io_tile_info;
     for (int i = 0; i < num_inputs; i++) {
@@ -188,8 +191,14 @@ int glb_map(void *kernel_, int dpr_enabled) {
                 (io_tile_info->start_addr << CGRA_BYTE_OFFSET) + ((tile * 2 + 1) << BANK_ADDR_WIDTH);
             printf("Mapping output_%0d_block_%0d to global buffer\n", i, j);
             update_io_tile_configuration(io_tile_info, &kernel->config, kernel);
+            if (i == 0 && j == 0) {
+                first_output_tile = tile;
+            }
         }
     }
+
+    // book keeping last output tile
+    last_output_tile = tile;
 
     // unset padding var after a kernel is mapped
     if(getenv("pad_o_left") != NULL) unsetenv("pad_o_left");
@@ -199,7 +208,8 @@ int glb_map(void *kernel_, int dpr_enabled) {
     int kernel_crossbar_config = 0;
     if (!kernel->opal_dense_scanner_workaround) {
         for (int i = group_start; i < group_start + num_groups; i++) {
-            crossbar_config[i] = first_input_tile;
+            //crossbar_config[i] = first_input_tile;
+            crossbar_config[i] = first_output_tile;
         }
     } else {
         for (int i = group_start; i < group_start + num_groups; i++) {
