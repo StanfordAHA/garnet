@@ -341,27 +341,6 @@ int get_exchange_64_config() {
     return exchange_64_mode; 
 }
 
-int get_MU_datawidth() {
-    int mu_datawidth = 0;
-    const char *mu_datawidth_env_var = "MU_DATAWIDTH";
-    char *mu_datawidth_value = getenv(mu_datawidth_env_var);
-    if (mu_datawidth_value != NULL) {
-        mu_datawidth = atoi(mu_datawidth_value);
-    }
-    return mu_datawidth; 
-}
-
-int get_MU_OC0() {
-    int mu_OC0 = 0;
-    const char *mu_OC0_env_var = "MU_DATAWIDTH";
-    char *mu_OC0_value = getenv(mu_OC0_env_var);
-    if (mu_OC0_value != NULL) {
-        mu_OC0 = atoi(mu_OC0_value);
-    }
-    return mu_OC0; 
-}
-
-
 int HW_supports_E64() {
     int hw_suports_E64 = 0;
     const char *HW_supports_E64_env_var = "INCLUDE_E64_HW";
@@ -370,6 +349,16 @@ int HW_supports_E64() {
         hw_suports_E64 = 1;
     }
     return hw_suports_E64; 
+}
+
+int get_MU_input_bubble_mode() {
+    int add_mu_input_bubbles = 0;
+    const char *add_mu_input_bubbles_env_var = "ADD_MU_INPUT_BUBBLES";
+    char *add_mu_input_bubbles_value = getenv(add_mu_input_bubbles_env_var);
+    if (add_mu_input_bubbles_value != NULL && strcmp(add_mu_input_bubbles_value, "1") == 0) {
+        add_mu_input_bubbles = 1;
+    }
+    return add_mu_input_bubbles; 
 }
 
 int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigInfo *config_info, struct KernelInfo *kernel_info) {

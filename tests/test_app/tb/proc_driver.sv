@@ -5,8 +5,7 @@ initial proc_lock = new(1);
 
 semaphore mu_ifc_lock; 
 initial mu_ifc_lock = new(1);
-import "DPI-C" function int get_MU_datawidth();
-import "DPI-C" function int get_MU_OC_0();
+import "DPI-C" function int get_MU_input_bubble_mode();
 
 
 bit [GLB_ADDR_WIDTH-1:0] start_addr;
@@ -18,6 +17,18 @@ bit [BANK_DATA_WIDTH-1:0] ProcDriver_write_wdata;
 
 bit [MU_DATAWIDTH-1:0] mu2cgra_wdata [OC_0-1:0];
 
+// For adding random bubbles to matrix unit input
+integer RANDOM_DELAY;
+integer ADD_MU_INPUT_BUBBLES;
+integer mask;
+integer RANDOM_SHIFT;
+
+// For adding random bubbles to matrix unit input
+initial begin
+    RANDOM_SHIFT = 2;
+    ADD_MU_INPUT_BUBBLES = get_MU_input_bubble_mode();
+    mask = 32'd3 << RANDOM_SHIFT;
+end
 
 
 task ProcDriver_write_bs();
@@ -88,6 +99,15 @@ endtask
 
 task MU_driver_write();
     mu_ifc.mu2cgra = mu2cgra_wdata;
+
+    mu_ifc.mu2cgra_valid = 0;
+    RANDOM_DELAY = $urandom & mask;
+    RANDOM_DELAY = RANDOM_DELAY >> RANDOM_SHIFT;
+    while (RANDOM_DELAY > 0 & ADD_MU_INPUT_BUBBLES) begin
+        @(posedge mu_ifc.clk);
+        RANDOM_DELAY--;
+    end
+
     mu_ifc.mu2cgra_valid = 1;
     @(posedge mu_ifc.clk);
 endtask
