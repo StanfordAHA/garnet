@@ -31,6 +31,7 @@ CLK_PERIOD ?= 1ns
 DESIGN_FILES += $(garnet_dir)/global_buffer/header/global_buffer_param.svh \
 				$(garnet_dir)/global_buffer/header/glb.svh \
 				$(garnet_dir)/global_controller/header/glc.svh \
+				$(garnet_dir)/matrix_unit/header/matrix_unit_param.svh \
 				$(garnet_dir)/garnet.v \
 				$(garnet_dir)/global_buffer/systemRDL/output/glb_pio.sv \
 				$(garnet_dir)/global_buffer/systemRDL/output/glb_jrdl_decode.sv \
@@ -171,8 +172,9 @@ endif
 libcgra.so: $(shell find lib -type f) \
             $(garnet_dir)/global_buffer/header/global_buffer_param.h \
             $(garnet_dir)/global_buffer/header/glb.h \
-            $(garnet_dir)/global_controller/header/glc.h
-	gcc -Wno-error -Wall lib/*.c -I$(garnet_dir)/global_buffer/header -I$(garnet_dir)/global_controller/header -shared -o libcgra.so -fPIC
+            $(garnet_dir)/global_controller/header/glc.h \
+			$(garnet_dir)/matrix_unit/header/matrix_unit_param.h 
+	gcc -Wno-error -Wall lib/*.c -I$(garnet_dir)/global_buffer/header -I$(garnet_dir)/global_controller/header -I$(garnet_dir)/matrix_unit/header -shared -o libcgra.so -fPIC
 
 # -------------------------------------------------------------------
 # Compile & Run

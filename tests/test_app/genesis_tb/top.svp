@@ -23,6 +23,7 @@
 \`endif
 
 import global_buffer_param::*;
+import matrix_unit_param::*;
 
 module top;
     // FIXME every other module assumes timescale == 1ps/1ps

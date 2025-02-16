@@ -8,6 +8,7 @@
 #include "glb.h"
 #include "glc.h"
 #include "global_buffer_param.h"
+#include "matrix_unit_param.h"
 
 #define MAX_NUM_COLS 32
 #define MAX_NUM_GLB_TILES 16
@@ -338,6 +339,26 @@ int get_exchange_64_config() {
         printf("INFO: Using exchange_64 mode\n");
     }
     return exchange_64_mode; 
+}
+
+int get_MU_datawidth() {
+    int mu_datawidth = 0;
+    const char *mu_datawidth_env_var = "MU_DATAWIDTH";
+    char *mu_datawidth_value = getenv(mu_datawidth_env_var);
+    if (mu_datawidth_value != NULL) {
+        mu_datawidth = atoi(mu_datawidth_value);
+    }
+    return mu_datawidth; 
+}
+
+int get_MU_OC0() {
+    int mu_OC0 = 0;
+    const char *mu_OC0_env_var = "MU_DATAWIDTH";
+    char *mu_OC0_value = getenv(mu_OC0_env_var);
+    if (mu_OC0_value != NULL) {
+        mu_OC0 = atoi(mu_OC0_value);
+    }
+    return mu_OC0; 
 }
 
 

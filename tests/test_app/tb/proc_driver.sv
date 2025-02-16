@@ -5,6 +5,8 @@ initial proc_lock = new(1);
 
 semaphore mu_ifc_lock; 
 initial mu_ifc_lock = new(1);
+import "DPI-C" function int get_MU_datawidth();
+import "DPI-C" function int get_MU_OC_0();
 
 
 bit [GLB_ADDR_WIDTH-1:0] start_addr;
@@ -14,8 +16,7 @@ bitstream_t              bs_q;
 bit [GLB_ADDR_WIDTH-1:0]  ProcDriver_write_waddr;
 bit [BANK_DATA_WIDTH-1:0] ProcDriver_write_wdata;
 
-// TODO: Parametrize this data width 
-bit [15:0] mu2cgra_wdata [31:0];
+bit [MU_DATAWIDTH-1:0] mu2cgra_wdata [OC_0-1:0];
 
 
 
@@ -33,8 +34,7 @@ task ProcDriver_write_bs();
 endtask
 
 
-// TODO: Parametrize this 16 to OC_0
-data_array_t mu_data_q[32];
+data_array_t mu_data_q[OC_0];
 data_array_t data_q;
 bit [BANK_DATA_WIDTH-1:0] bdata;
 int size;
@@ -70,11 +70,9 @@ task MU_driver_write_data();
     cur_addr = start_addr;
     mu_ifc_lock.get(1);
     size = mu_data_q[0].size(); 
-    $display("Size: %d\n", size); 
     i = 0;
     while (i < size) begin
-        // TODO: Parametrize this 16 to OC_0
-        for (int oc_0 = 0; oc_0 < 32; oc_0++) begin
+        for (int oc_0 = 0; oc_0 < OC_0; oc_0++) begin
             mu2cgra_wdata[oc_0] = mu_data_q[oc_0][i];
         end
         MU_driver_write();
@@ -89,9 +87,6 @@ endtask
 
 
 task MU_driver_write();
-    // for (int i = 0; i < 16; i++) begin
-    //     mu_ifc.mu2cgra[i] = mu2cgra_wdata;
-    // end
     mu_ifc.mu2cgra = mu2cgra_wdata;
     mu_ifc.mu2cgra_valid = 1;
     @(posedge mu_ifc.clk);

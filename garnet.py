@@ -920,6 +920,19 @@ def parse_args():
 
 
 def build_verilog(args, garnet):
+    breakpoint()
+    garnet_home = os.getenv('GARNET_HOME')
+    if not garnet_home:
+        garnet_home = os.path.dirname(os.path.abspath(__file__))
+    from matrix_unit.matrix_unit_main import gen_param_header
+    matrix_unit_params = {}
+    matrix_unit_params["MU_DATAWIDTH"] = args.mu_datawidth
+    matrix_unit_params["OC_0"] = 2 * args.height
+    gen_param_header(top_name="matrix_unit_param",
+                        params=matrix_unit_params,
+                        output_folder=os.path.join(garnet_home, "matrix_unit/header"))
+
+
     garnet_circ = garnet.circuit()
     magma.compile("garnet", garnet_circ, output="coreir-verilog",
                   coreir_libs={"float_CW"},
@@ -963,6 +976,17 @@ def build_verilog(args, garnet):
         gen_rdl_header(top_name="glc",
                        rdl_file=os.path.join(garnet_home, "global_controller/systemRDL/rdl_models/glc.rdl.final"),
                        output_folder=os.path.join(garnet_home, "global_controller/header"))
+    
+    # garnet_home = os.getenv('GARNET_HOME')
+    # if not garnet_home:
+    #     garnet_home = os.path.dirname(os.path.abspath(__file__))
+    # from matrix_unit.matrix_unit_main import gen_param_header
+    # matrix_unit_params = {}
+    # matrix_unit_params["MU_DATAWIDTH"] = args.mu_datawidth
+    # matrix_unit_params["OC_0"] = 2 * args.height
+    # gen_param_header(top_name="matrix_unit_param",
+    #                     params=matrix_unit_params,
+    #                     output_folder=os.path.join(garnet_home, "matrix_unit/header"))
 
 def pnr(garnet, args, app):
 
