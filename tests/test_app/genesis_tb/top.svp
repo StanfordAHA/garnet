@@ -108,8 +108,8 @@ module top;
 //; } else {
      // NOT IN USE 
       behavioral_matrix_unit #(
-        .MU_DATAWIDTH(1),
-        .OC_0(1)
+        .MU_DATAWIDTH(`$mu_datawidth`),
+        .OC_0(`$oc_0`)
     ) mu_ifc (
         .clk(clk),
         .reset(reset),

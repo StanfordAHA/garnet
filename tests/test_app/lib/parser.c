@@ -373,6 +373,8 @@ void *parse_metadata(char *filename) {
         return NULL;
     }
 
+    printf("Parsing metadata file: %s\n", filename);
+
     // get current directory
     char *dir;
     // Need to free directory
