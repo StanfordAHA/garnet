@@ -38,6 +38,7 @@ struct Position {
 };
 
 enum IO { Input = 0, Output = 1, MU_Input = 2 };
+enum APP_TYPE {glb2cgra = 0, mu2cgra = 1, mu2cgra_glb2cgra = 2};
 
 struct IOTileInfo {
     enum IO io;
@@ -70,6 +71,8 @@ struct KernelInfo {
     int num_inputs;
     int num_outputs;
     int num_mu_inputs;
+    
+    enum APP_TYPE app_type;
 
     int group_start;
     int num_groups;
@@ -114,6 +117,7 @@ int get_io_tile_is_glb_input(void *info, int index); // for back-to-back kernels
 // helper functions to access data from SV testbench
 int get_num_groups(void *info);
 int get_group_start(void *info);
+int get_app_type(void *info);
 int get_num_inputs(void *info);
 int get_num_mu_inputs(void *info);
 int get_num_outputs(void *info);

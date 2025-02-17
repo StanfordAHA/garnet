@@ -197,8 +197,6 @@ endtask // Env_cgra_unstall
 
 task MU_write_to_cgra();
     realtime start_time, end_time;
-
-    // TODO: Compile all channels before starting to write to CGRA. Aggregate as one. 
     fork
         begin
             // There should only be one MU input for now (and it is unrolled across several IO tiles below)
@@ -258,11 +256,12 @@ task Env_kernel_test();
     fork
         begin
             //TODO: Explain this magic number 7 from the RTL. Possibly add regs to solve this in real design.  
-            //TODO: Add if statement to skip this if it's a CGRA-only kernel 
-            repeat (7) @(posedge mu_ifc.clk);
-            MU_write_to_cgra();
+            if (kernel.app_type != GLB2CGRA) begin 
+                repeat (7) @(posedge mu_ifc.clk);
+                MU_write_to_cgra();
 
-            mu2cgra_end_time = $realtime;
+                mu2cgra_end_time = $realtime;
+            end
         end
 
         // FORK BRANCH 2: G2F/F2G interrupts (GLB writes data to CGRA and vice-versa)
@@ -271,10 +270,8 @@ task Env_kernel_test();
             // Then wait until interrupt mask contains ALL TILES listed in tile_mask
             // Then clear the interrupt(s)
 
-            // TODO: Skip waiting for the G2F interrupt if this is a MU-only kernel
-            // FIXME: This is a hack to skip G2F for MU-only kernels
-            bit is_mu2cgra_app = 1'b1; 
-            if (!is_mu2cgra_app) begin
+            // Skip waiting for the G2F interrupt if this is a MU-input-only kernel
+            if (kernel.app_type != MU2CGRA) begin
                 glb_ctrl = GLB_STRM_G2F_CTRL;
                 build_input_tile_mask();
                 Env_wait_interrupt();
@@ -300,7 +297,7 @@ task Env_kernel_test();
             end
             $display("[%s] The size of output is %0d Byte.", kernel.name, total_output_size);
 
-            if (is_mu2cgra_app) begin
+            if (kernel.app_type == MU2CGRA) begin
                 latency = end_time - mu2cgra_end_time;
                 $display("[%s] The initial latency is %0t.", kernel.name, latency);
                 $display("[%s] The throughput is %.3f (GB/s).", kernel.name,

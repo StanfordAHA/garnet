@@ -33,6 +33,7 @@ import "DPI-C" function int glb_map(chandle kernel, int dpr_enabled);
 import "DPI-C" function int get_exchange_64_config();
 import "DPI-C" function int get_num_groups(chandle info);
 import "DPI-C" function int get_group_start(chandle info);
+import "DPI-C" function int get_app_type(chandle info);
 import "DPI-C" function int get_num_inputs(chandle info);
 import "DPI-C" function int get_num_mu_inputs(chandle info);
 import "DPI-C" function int get_num_io_tiles(
@@ -132,6 +133,12 @@ typedef enum int {
     FINISH = 4
 } app_state_t;
 
+typedef enum int {
+    GLB2CGRA = 0,
+    MU2CGRA = 1,
+    MU2CGRA_GLB2CGRA = 2
+} app_type_t;
+
 typedef struct packed {
     int unsigned addr;
     int unsigned data;
@@ -175,6 +182,8 @@ class Kernel;
     int num_inputs;
     int num_mu_inputs;
     int num_outputs;
+
+    app_type_t app_type;
 
     int num_glb_tiling;
     int glb_tiling_cnt;
@@ -266,6 +275,8 @@ function Kernel::new(string app_dir, int dpr);
     bitstream_filename = get_bitstream_filename(kernel_info);
     bs_info = get_bs_info(kernel_info);
     assert_(bs_info != null, $sformatf("Unable to find %s", bitstream_filename));
+
+    app_type = get_app_type(kernel_info);
 
     num_inputs  = get_num_inputs(kernel_info);
     num_mu_inputs = get_num_mu_inputs(kernel_info);

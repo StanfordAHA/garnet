@@ -504,59 +504,62 @@ void *parse_metadata(char *filename) {
     // Parse IO scheduling information
     json_t const *IOs_json = json_getProperty(json, "IOs");  
 
-
-    // MO: Temporary HACK
-    bool is_mu2cgra_app = true;
-    bool is_mu2cgra_glb2cgra_app = false;
-
     // parse inputs
-    if (!is_mu2cgra_app) {
-        json_t const *input_list_json = json_getProperty(IOs_json, "inputs");
-        if (!input_list_json || JSON_ARRAY != json_getType(input_list_json)) {
-            puts("Error, the input list property is not found.");
-            exit(1);
-        }
-
-        json_t const *input_json;
-        for (input_json = json_getChild(input_list_json), cnt = 0; input_json != 0;
-            input_json = json_getSibling(input_json), cnt++) {
-            if (JSON_OBJ == json_getType(input_json)) {
-                info->input_info[cnt] = parse_io(input_json, Input);
-                strncpy(info->input_info[cnt]->filename, dir, strnlen(dir, BUFFER_SIZE));
-                strncat(info->input_info[cnt]->filename, json_getPropertyValue(input_json, "datafile"), BUFFER_SIZE);
-            }
-        }
-        info->num_inputs = cnt;
-    } else {
-        info->num_inputs = 0;
+    json_t const *input_list_json = json_getProperty(IOs_json, "inputs");
+    if (!input_list_json || JSON_ARRAY != json_getType(input_list_json)) {
+        puts("Error, the input list property is not found.");
+        exit(1);
     }
+
+    json_t const *input_json;
+    for (input_json = json_getChild(input_list_json), cnt = 0; input_json != 0;
+        input_json = json_getSibling(input_json), cnt++) {
+        if (JSON_OBJ == json_getType(input_json)) {
+            info->input_info[cnt] = parse_io(input_json, Input);
+            strncpy(info->input_info[cnt]->filename, dir, strnlen(dir, BUFFER_SIZE));
+            strncat(info->input_info[cnt]->filename, json_getPropertyValue(input_json, "datafile"), BUFFER_SIZE);
+        }
+    }
+    info->num_inputs = cnt;
 
 
     // parse mu inputs
-    if (is_mu2cgra_app || is_mu2cgra_glb2cgra_app) {
-        json_t const *mu_input_list_json = json_getProperty(IOs_json, "mu_inputs");
-        if (!mu_input_list_json || JSON_ARRAY != json_getType(mu_input_list_json)) {
-            puts("Error, the mu input list property is not found.");
-            exit(1);
-        }
-
-        json_t const *mu_input_json;
-        for (mu_input_json = json_getChild(mu_input_list_json), cnt = 0; mu_input_json != 0;
-            mu_input_json = json_getSibling(mu_input_json), cnt++) {
-            if (JSON_OBJ == json_getType(mu_input_json)) {
-                info->mu_input_info[cnt] = parse_mu_io(mu_input_json, MU_Input);
-                strncpy(info->mu_input_info[cnt]->filename, dir, strnlen(dir, BUFFER_SIZE));
-                strncat(info->mu_input_info[cnt]->filename, json_getPropertyValue(mu_input_json, "datafile"), BUFFER_SIZE);
-            }
-        }
-        info->num_mu_inputs = cnt;
-    } else {
-        info->num_mu_inputs = 0;
+    json_t const *mu_input_list_json = json_getProperty(IOs_json, "mu_inputs");
+    if (!mu_input_list_json || JSON_ARRAY != json_getType(mu_input_list_json)) {
+        puts("Error, the mu input list property is not found.");
+        exit(1);
     }
+
+    json_t const *mu_input_json;
+    for (mu_input_json = json_getChild(mu_input_list_json), cnt = 0; mu_input_json != 0;
+        mu_input_json = json_getSibling(mu_input_json), cnt++) {
+        if (JSON_OBJ == json_getType(mu_input_json)) {
+            info->mu_input_info[cnt] = parse_mu_io(mu_input_json, MU_Input);
+            strncpy(info->mu_input_info[cnt]->filename, dir, strnlen(dir, BUFFER_SIZE));
+            strncat(info->mu_input_info[cnt]->filename, json_getPropertyValue(mu_input_json, "datafile"), BUFFER_SIZE);
+        }
+    }
+    info->num_mu_inputs = cnt;
+
+    // Set app type based on which inputs are provided
+    // MU and GLB feed CGRA
+    if (info->num_inputs > 0 && info-> num_mu_inputs > 0) {
+        info->app_type = mu2cgra_glb2cgra;
+        printf("APP TYPE is mu2cgra_glb2cgra\n");
+
+    // GLB feeds CGRA   
+    } else if (info->num_inputs > 0) {
+        info->app_type = glb2cgra;
+        printf("APP TYPE is glb2cgra\n");
+
+    // MU feeds CGRA    
+    } else {
+        info->app_type = mu2cgra;
+        printf("APP TYPE is mu2cgra\n");
+    }
+
     
-  
-
-
+   
     // parse outputs
     json_t const *output_list_json = json_getProperty(IOs_json, "outputs");
     if (!output_list_json || JSON_ARRAY != json_getType(output_list_json)) {
@@ -742,6 +745,11 @@ int get_num_groups(void *info) {
 int get_group_start(void *info) {
     GET_KERNEL_INFO(info);
     return kernel_info->group_start;
+}
+
+int get_app_type(void *info) {
+    GET_KERNEL_INFO(info);
+    return kernel_info->app_type;
 }
 
 int get_num_inputs(void *info) {
