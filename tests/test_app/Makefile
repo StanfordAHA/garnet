@@ -20,8 +20,6 @@ export WAVEFORM_GLB_ONLY ?= 0
 export SAIF ?= 0
 
 export USING_MATRIX_UNIT ?= 0
-export MU_DATAWIDTH ?= 16
-export OC_0 ?= 32 
 
 # -------------------------------------------------------------------
 # Compile Parameters
@@ -235,7 +233,7 @@ ifeq ($(TOOL), VERILATOR)
 endif
 
 generate:
-	Genesis2.pl -parse -generate -top top -input $(genesis_tb_dir)/top.svp -parameter top.using_matrix_unit=$(USING_MATRIX_UNIT) top.oc_0=$(OC_0) top.mu_datawidth=$(MU_DATAWIDTH)
+	Genesis2.pl -parse -generate -top top -input $(genesis_tb_dir)/top.svp -parameter top.using_matrix_unit=$(USING_MATRIX_UNIT)
 	mv genesis_verif/top.sv tb/top.sv
 
 prep-data:

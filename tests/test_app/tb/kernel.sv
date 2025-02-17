@@ -276,7 +276,7 @@ function Kernel::new(string app_dir, int dpr);
     bs_info = get_bs_info(kernel_info);
     assert_(bs_info != null, $sformatf("Unable to find %s", bitstream_filename));
 
-    app_type = get_app_type(kernel_info);
+    app_type = app_type_t'(get_app_type(kernel_info));
 
     num_inputs  = get_num_inputs(kernel_info);
     num_mu_inputs = get_num_mu_inputs(kernel_info);

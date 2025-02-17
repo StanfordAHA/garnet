@@ -13,8 +13,6 @@
 //============================================================================//
 //; use POSIX;
 //; my $using_matrix_unit = parameter(NAME => 'using_matrix_unit', VAL => 0, DOC => 'Indicates if matrix unit ifc should be included');
-//; my $oc_0 = parameter(NAME => 'oc_0', VAL => 32, DOC => 'Matrix unit output channel unrolling');
-//; my $mu_datawidth = parameter(NAME => 'mu_datawidth', VAL => 16, DOC => 'Width of data coming from matrix unit');
 
 \`define DBG_TBTOP 0 // Set to '1' for debugging
 
@@ -90,17 +88,16 @@ module top;
     //============================================================================//
     // Matrix unit ifc 
     //============================================================================//
-    logic [`$mu_datawidth-1`:0] mu2cgra [`$oc_0-1`:0];
+    logic [MU_DATAWIDTH-1:0] mu2cgra [OC_0-1:0];
     logic mu2cgra_valid;
     logic cgra2mu_ready; 
 
     behavioral_matrix_unit #(
-        .MU_DATAWIDTH(`$mu_datawidth`),
-        .OC_0(`$oc_0`)
+        .MU_DATAWIDTH(MU_DATAWIDTH),
+        .OC_0(OC_0)
     ) mu_ifc (
         .clk(clk),
         .reset(reset),
-        //.cgra2mu_ready(cgra2mu_ready_row0),
         .cgra2mu_ready(cgra2mu_ready),
         .mu2cgra_valid(mu2cgra_valid),
         .mu2cgra(mu2cgra)
@@ -108,12 +105,11 @@ module top;
 //; } else {
      // NOT IN USE 
       behavioral_matrix_unit #(
-        .MU_DATAWIDTH(`$mu_datawidth`),
-        .OC_0(`$oc_0`)
+        .MU_DATAWIDTH(MU_DATAWIDTH),
+        .OC_0(OC_0)
     ) mu_ifc (
         .clk(clk),
         .reset(reset),
-        //.cgra2mu_ready(cgra2mu_ready_row0),
         .cgra2mu_ready(1'b0),
         .mu2cgra_valid(/* NO CONN */ ),
         .mu2cgra(/* NO CONN */ )
