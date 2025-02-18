@@ -713,18 +713,26 @@ function void Kernel::compare();
     string tmp_filename_nopath = "";
     int tmp_output_name_len;
     int last_line;
+    int output_data_index;
     // Hacky way to interleave output data in io_block to final output
     // TODO: Make interleave and uninterleave as a function
     for (int i = 0; i < num_outputs; i++) begin
         num_io_tiles = outputs[i].num_io_tiles;
-        $display("Number of I/O tiles: %d", num_io_tiles);
+        $display("Number of output I/O tiles: %d", num_io_tiles);
         if (num_io_tiles == 1) begin
             output_data[i] = outputs[i].io_tiles[0].io_block_data;
         end else begin
             for (int j = 0; j < num_io_tiles; j++) begin
                 num_pixels = outputs[i].io_tiles[j].io_block_data.size;
                 for (int k = 0; k < num_pixels; k++) begin
-                    output_data[i][j+num_io_tiles*k] = outputs[i].io_tiles[j].io_block_data[k];
+
+                    // Deinterleaving is different for MU if operating in E64 mode 
+                    if ((app_type == MU2CGRA || app_type == MU2CGRA_GLB2CGRA) && get_exchange_64_config() == 1) begin
+                        output_data_index = (int'(k/4) * 4) * num_io_tiles + j * 4 + (k % 4);
+                        output_data[i][output_data_index] = outputs[i].io_tiles[j].io_block_data[k];
+                    end else begin
+                        output_data[i][j+num_io_tiles*k] = outputs[i].io_tiles[j].io_block_data[k];
+                    end
                 end
             end
         end

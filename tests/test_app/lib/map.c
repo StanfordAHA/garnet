@@ -336,7 +336,6 @@ int get_exchange_64_config() {
     char *exchange_64_value = getenv(exchange_64_env_var);
     if (exchange_64_value != NULL && strcmp(exchange_64_value, "1") == 0) {
         exchange_64_mode = 1;
-        printf("INFO: Using exchange_64 mode\n");
     }
     return exchange_64_mode; 
 }
@@ -379,6 +378,9 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
 
     // Check if we are in exchange_64 mode
     int exchange_64_mode = get_exchange_64_config();
+    if (exchange_64_mode) {
+        printf("INFO: Using exchange_64 mode\n");
+    }
 
 
     int bytes_written_per_cycle_non_E64_mode = 2;
