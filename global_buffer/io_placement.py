@@ -62,7 +62,7 @@ def parse_glb_bank_config(app_dir, id_to_name, inputs, outputs, valid, placement
                 placement[blk_id] = coord
     return placement
 
-def place_io_blk(id_to_name, app_dir, io_sides):
+def place_io_blk(id_to_name, app_dir, io_sides, num_fabric_cols_removed): 
     """Hacky function to place the IO blocks"""
 
     if IOSide.West in io_sides:
@@ -162,8 +162,7 @@ def place_io_blk(id_to_name, app_dir, io_sides):
 
 
     # Place MU I/O tiles if needed
-    # TODO: Need to pass on the x column of the MU IO tiles. It's num_fabric_cols_removed - 1
-    mu_io_tile_column = 3
+    mu_io_tile_column = num_fabric_cols_removed - 1
     for idx, input_blk in enumerate(inputs_from_MU):
         placement[input_blk] = (mu_io_tile_column, int(idx / 2) + 1)
 

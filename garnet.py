@@ -614,7 +614,7 @@ class Garnet(Generator):
             fixed_io = None
         else:
             from global_buffer.io_placement import place_io_blk
-            fixed_io = place_io_blk(id_to_name, app_dir, self.io_sides)
+            fixed_io = place_io_blk(id_to_name, app_dir, self.io_sides, args.num_fabric_cols_removed)
 
         west_in_io_sides = IOSide.West in self.io_sides
         dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1" 
