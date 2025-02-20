@@ -1,4 +1,4 @@
-from kratos import Generator, RawStringStmt
+from kratos import Generator, RawStringStmt, always_ff, posedge
 from kratos.util import clock
 from global_buffer.design.glb_store_dma import GlbStoreDma
 from global_buffer.design.glb_store_dma_E64 import GlbStoreDma_E64
@@ -243,15 +243,20 @@ class GlbTile(Generator):
                        gclk=self.gclk_pcfg_broadcast)
 
         # Clock gating - ld_dma
-        self.clk_en_ld_dma = self.var("clk_en_ld_dma", 1)
+        self.clk_n_en_ld_dma = self.var("clk_n_en_ld_dma", 1)
         self.gclk_ld_dma = self.var("gclk_ld_dma", 1)
-        # TODO: Potentially change this so it clock gates after emitting flush in emit flush mode only
-        self.wire(self.clk_en_ld_dma, self.cfg_ld_dma_ctrl['mode'] != 0)
+
+        self.flush_emitted = self.var("flush_emitted", 1)
+        self.add_always(self.flush_emitted_ff)
+
+        # Mode == 4 is emit flush only mode for ld_dma. Currently used by MU2CGRA apps. 
+        self.wire(self.clk_n_en_ld_dma, (self.cfg_ld_dma_ctrl['mode'] == 0) | ((self.cfg_ld_dma_ctrl['mode'] == 4) & self.flush_emitted)) 
+
         self.clk_en_lddma2bank = self.var("clk_en_lddma2bank", 1)
         self.add_child("glb_clk_gate_ld_dma",
                        ClkGate(_params=self._params),
                        clk=self.clk,
-                       enable=self.clk_en_ld_dma | self.clk_en_master,
+                       enable= (~self.clk_n_en_ld_dma) | self.clk_en_master,
                        gclk=self.gclk_ld_dma)
 
         # Clock gating - st_dma
@@ -517,7 +522,7 @@ class GlbTile(Generator):
                        rdrq_packet_dma2ring=self.rdrq_packet_dma2ring,
                        rdrs_packet_ring2dma=self.rdrs_packet_ring2dma,
                        rdrs_packet_bank2ring=self.rdrs_packet_bank2ring,
-                       cfg_ld_dma_on=(self.cfg_ld_dma_ctrl['mode'] != 0),
+                       cfg_ld_dma_on=(self.cfg_ld_dma_ctrl['mode'][1, 0] != 0),
                        cfg_tile_connected_prev=self.cfg_tile_connected_prev,
                        cfg_tile_connected_next=self.cfg_tile_connected_next)
 
@@ -586,6 +591,14 @@ class GlbTile(Generator):
             self.add_stmt(self.writememh_block.stmt())
 
         self.pcfg_wiring()
+
+
+    @ always_ff((posedge, "clk"), (posedge, "reset"))
+    def flush_emitted_ff(self):
+        if self.reset:
+            self.flush_emitted = 0
+        elif self.data_flush:
+            self.flush_emitted = 1
 
     def struct_wiring(self):
         self.wr_packet_sw2bankarr = self.var(
