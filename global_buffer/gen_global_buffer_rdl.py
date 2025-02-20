@@ -269,7 +269,7 @@ def gen_global_buffer_rdl(name, params: GlobalBufferParams):
 
     # Load DMA Ctrl
     ld_dma_ctrl_r = Reg("ld_dma_ctrl")
-    ld_dma_mode_f = Field("mode", 2)
+    ld_dma_mode_f = Field("mode", 3)
     ld_dma_ctrl_r.add_child(ld_dma_mode_f)
 
     if os.getenv('WHICH_SOC') == "amber":

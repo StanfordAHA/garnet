@@ -209,8 +209,13 @@ int glb_map(void *kernel_, int dpr_enabled) {
     int kernel_crossbar_config = 0;
     if (!kernel->opal_dense_scanner_workaround) {
         for (int i = group_start; i < group_start + num_groups; i++) {
-            //crossbar_config[i] = first_input_tile;
-            crossbar_config[i] = first_output_tile;
+            
+            // MO: Hack to emit flush from output tiles for MU2CGRA app
+            if (kernel->app_type == mu2cgra) {
+                crossbar_config[i] = first_output_tile;
+            } else {
+                crossbar_config[i] = first_input_tile;
+            }
         }
     } else {
         for (int i = group_start; i < group_start + num_groups; i++) {
@@ -451,10 +456,9 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
                     (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_DMA_EXCHANGE_64_MODE_R,
                     exchange_64_mode << GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB);
         }
-
         add_config(config_info,
                    (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_LD_DMA_CTRL_R,
-                   ((0b01 << GLB_LD_DMA_CTRL_MODE_F_LSB) | (mode << GLB_LD_DMA_CTRL_VALID_MODE_F_LSB) |
+                   ((0b001 << GLB_LD_DMA_CTRL_MODE_F_LSB) | (mode << GLB_LD_DMA_CTRL_VALID_MODE_F_LSB) |
                     (mux_sel << GLB_LD_DMA_CTRL_DATA_MUX_F_LSB)));
         add_config(config_info,
                    (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_LD_DMA_HEADER_0_DIM_R,
@@ -527,6 +531,14 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
             add_config(config_info,
                     (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_DMA_EXCHANGE_64_MODE_R,
                     exchange_64_mode << GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB);
+        }
+
+        // MO: Hack to emit flush from output tiles for MU2CGRA app
+        if (kernel_info->app_type == mu2cgra) {
+            printf("INFO: MU2CGRA app detected. Emitting flush from output tiles\n");
+            add_config(config_info,
+                   (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_LD_DMA_CTRL_R,
+                   ((0b100 << GLB_LD_DMA_CTRL_MODE_F_LSB)));
         }
 
         add_config(config_info,

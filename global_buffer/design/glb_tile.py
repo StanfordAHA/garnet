@@ -245,6 +245,7 @@ class GlbTile(Generator):
         # Clock gating - ld_dma
         self.clk_en_ld_dma = self.var("clk_en_ld_dma", 1)
         self.gclk_ld_dma = self.var("gclk_ld_dma", 1)
+        # TODO: Potentially change this so it clock gates after emitting flush in emit flush mode only
         self.wire(self.clk_en_ld_dma, self.cfg_ld_dma_ctrl['mode'] != 0)
         self.clk_en_lddma2bank = self.var("clk_en_lddma2bank", 1)
         self.add_child("glb_clk_gate_ld_dma",
