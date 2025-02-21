@@ -51,7 +51,7 @@ TB_FILES += -F tb/tb_cgra.f
 
 OFFICIAL_CW_DIR = /cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CW/
 BACKUP_CW_DIR   = tb/CW/
-CW_DIR         ?= $(shell test -d $(OFFICIAL_CW_DIR) || echo $(BACKUP_CW_DIR)
+CW_DIR         ?= $(shell test -d $(OFFICIAL_CW_DIR) || echo $(BACKUP_CW_DIR))
 
 IP_FILES += -y $(CW_DIR) \
 	-y /cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CWTECH/ \
