@@ -399,7 +399,11 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         extent[i] = io_tile_info->extent[i] - 2;
 
         if (exchange_64_mode) {
-            dma_range[i] = (io_tile_info->extent[i]/4) - 2;
+            if (i == 0) {
+                dma_range[i] = (io_tile_info->extent[i]/4) - 2;
+            } else {
+                dma_range[i] = extent[i];
+            }
         } else {    
             dma_range[i] = extent[i];
         }
@@ -407,8 +411,13 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         cycle_stride[i] = io_tile_info->cycle_stride[i];
         data_stride[i] = io_tile_info->data_stride[i];
         for (int j = 0; j < i; j++) {
-            cycle_stride[i] -= io_tile_info->cycle_stride[j] * (io_tile_info->extent[j] - 1);
-            data_stride[i] -= io_tile_info->data_stride[j] * (io_tile_info->extent[j] - 1);
+            if (exchange_64_mode && j == 0) {
+                cycle_stride[i] -= io_tile_info->cycle_stride[j] * (io_tile_info->extent[j]/4 - 1);
+                data_stride[i] -= io_tile_info->data_stride[j] * (io_tile_info->extent[j]/4 - 1);
+            } else {
+                cycle_stride[i] -= io_tile_info->cycle_stride[j] * (io_tile_info->extent[j] - 1);
+                data_stride[i] -= io_tile_info->data_stride[j] * (io_tile_info->extent[j] - 1);
+            }
         }
         data_stride[i] = data_stride[i] << CGRA_BYTE_OFFSET;
     }
