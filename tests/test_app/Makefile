@@ -42,15 +42,12 @@ DESIGN_FILES += $(garnet_dir)/global_buffer/header/global_buffer_param.svh \
 
 TB_FILES += -F tb/tb_cgra.f
 
-
-
-
 # IP_FILES += -y /cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CW/ \
 # 			-y /cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CWTECH/ \
 # 			+libext+.v+.sv 
 
 OFFICIAL_CW_DIR = /cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CW/
-BACKUP_CW_DIR   = tb/CW/
+BACKUP_CW_DIR   = CW/
 CW_DIR         ?= $(shell test -d $(OFFICIAL_CW_DIR) || echo $(BACKUP_CW_DIR))
 
 IP_FILES += -y $(CW_DIR) \
