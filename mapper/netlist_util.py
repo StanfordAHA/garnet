@@ -1341,7 +1341,11 @@ def create_netlist_info(
         # MO: MU IO tile HACK for now. Hardcoding it to use tracks T0 and T1 for now
         # TODO: In the future, find a way to let the PnR tool choose the tracks 
         if "U" in id or "u" in id:
-            oc0_index = int(id[1])
+            node_name_parse_list = node.split("stencil_")[2].split("_read")
+            if len(node_name_parse_list) > 1:
+                oc0_index = int(node_name_parse_list[0])  
+            else:
+                oc0_index = 0
             if oc0_index % 2 == 0:
                 node_config_kwargs['track_active_T0'] = 1
             else:
