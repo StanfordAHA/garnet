@@ -856,6 +856,7 @@ def parse_args():
     parser.add_argument("--mu-datawidth", type=int, default=16)
     parser.add_argument("--give-north-io-sbs", action="store_true")
     parser.add_argument("--num-fabric-cols-removed", type=int, default=0)
+    parser.add_argument("--mu-oc-0", type=int, default=32)
     parser.add_argument('--include-E64-hw', action="store_true")
 
     # Daemon choices are maybe ['help', 'launch', 'use', 'kill', 'force', 'status', 'wait']
@@ -970,7 +971,7 @@ def build_verilog(args, garnet):
     from matrix_unit.matrix_unit_main import gen_param_header
     matrix_unit_params = {}
     matrix_unit_params["MU_DATAWIDTH"] = args.mu_datawidth
-    matrix_unit_params["MU_OC_0"] = 2 * args.height
+    matrix_unit_params["MU_OC_0"] = args.mu_oc_0
     gen_param_header(top_name="matrix_unit_param",
                         params=matrix_unit_params,
                         output_folder=os.path.join(garnet_home, "matrix_unit/header"))
