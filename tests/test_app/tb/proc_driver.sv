@@ -15,7 +15,7 @@ bitstream_t              bs_q;
 bit [GLB_ADDR_WIDTH-1:0]  ProcDriver_write_waddr;
 bit [BANK_DATA_WIDTH-1:0] ProcDriver_write_wdata;
 
-bit [MU_DATAWIDTH-1:0] mu2cgra_wdata [OC_0-1:0];
+bit [MU_DATAWIDTH-1:0] mu2cgra_wdata [MU_OC_0-1:0];
 
 // For adding random bubbles to matrix unit input
 integer RANDOM_DELAY;
@@ -45,7 +45,7 @@ task ProcDriver_write_bs();
 endtask
 
 
-data_array_t mu_data_q[OC_0];
+data_array_t mu_data_q[MU_OC_0];
 data_array_t data_q;
 bit [BANK_DATA_WIDTH-1:0] bdata;
 int size;
@@ -83,7 +83,7 @@ task MU_driver_write_data();
     size = mu_data_q[0].size(); 
     i = 0;
     while (i < size) begin
-        for (int oc_0 = 0; oc_0 < OC_0; oc_0++) begin
+        for (int oc_0 = 0; oc_0 < MU_OC_0; oc_0++) begin
             mu2cgra_wdata[oc_0] = mu_data_q[oc_0][i];
         end
         MU_driver_write();

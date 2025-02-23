@@ -88,13 +88,13 @@ module top;
     //============================================================================//
     // Matrix unit ifc 
     //============================================================================//
-    logic [MU_DATAWIDTH-1:0] mu2cgra [OC_0-1:0];
+    logic [MU_DATAWIDTH-1:0] mu2cgra [MU_OC_0-1:0];
     logic mu2cgra_valid;
     logic cgra2mu_ready; 
 
     behavioral_matrix_unit #(
         .MU_DATAWIDTH(MU_DATAWIDTH),
-        .OC_0(OC_0)
+        .MU_OC_0(MU_OC_0)
     ) mu_ifc (
         .clk(clk),
         .reset(reset),
@@ -106,7 +106,7 @@ module top;
      // NOT IN USE 
       behavioral_matrix_unit #(
         .MU_DATAWIDTH(MU_DATAWIDTH),
-        .OC_0(OC_0)
+        .MU_OC_0(MU_OC_0)
     ) mu_ifc (
         .clk(clk),
         .reset(reset),

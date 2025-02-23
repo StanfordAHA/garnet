@@ -8,13 +8,13 @@
 **===========================================================================*/
 interface behavioral_matrix_unit #(
     parameter MU_DATAWIDTH = 16,
-    parameter OC_0 = 32
+    parameter MU_OC_0 = 32
 ) (
     input logic clk,
     input logic reset,
     input logic cgra2mu_ready,
     output logic mu2cgra_valid,
-    output logic [MU_DATAWIDTH-1:0] mu2cgra [OC_0-1:0]
+    output logic [MU_DATAWIDTH-1:0] mu2cgra [MU_OC_0-1:0]
 );
 
 endinterface

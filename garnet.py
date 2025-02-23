@@ -970,7 +970,7 @@ def build_verilog(args, garnet):
     from matrix_unit.matrix_unit_main import gen_param_header
     matrix_unit_params = {}
     matrix_unit_params["MU_DATAWIDTH"] = args.mu_datawidth
-    matrix_unit_params["OC_0"] = 2 * args.height
+    matrix_unit_params["MU_OC_0"] = 2 * args.height
     gen_param_header(top_name="matrix_unit_param",
                         params=matrix_unit_params,
                         output_folder=os.path.join(garnet_home, "matrix_unit/header"))
