@@ -20,32 +20,38 @@ jobs:
         git submodule sync --recursive
         git -c "http.extraheader=$auth_header" -c protocol.version=2 submodule update --init --force --recursive --depth=1
 
-    - name: Pull and run docker
+    - name: Pull and run docker container and install garnet test branch
       shell: bash
       run: |
         docker pull stanfordaha/garnet:latest
         docker run -d -it --name CONTAINER stanfordaha/garnet:latest bash
         docker exec CONTAINER /bin/bash -c "rm -rf /aha/garnet"
-        docker exec CONTAINER /bin/bash -c "source /aha/bin/activate"
         docker cp ../garnet CONTAINER:/aha/garnet
+
+#         docker exec CONTAINER /bin/bash -c "source /aha/bin/activate"
 
 #     - name: Run tests
 #       shell: bash
 #       run: |
 #         docker exec -i CONTAINER bash -c "/aha/garnet/.github/scripts/run_pytest.sh"
 
-    - name: Install verilator v5
+    - name: Install verilator v5 (6m maybe)
       shell: bash
       run: |
         echo '+++ SETUP'
-        cmd="make -f garnet/tests/test_app/Makefile setup-verilator"
-        echo cmd="'$cmd'"
-        docker exec CONTAINER /bin/bash -c "$cmd"
+        cmd1="source /aha/bin/activate";
+        echo cmd1="'$cmd1'"
+        cmd2="make -f garnet/tests/test_app/Makefile setup-verilator"
+        echo cmd2="'$cmd2'"
+        docker exec CONTAINER /bin/bash -c "$cmd1; $cmd2"
 
 
     - name: Run tests old style (should fail)
       shell: bash
       run: |
         echo '+++ GAUSSIAN TEST 4x16'
-        cmd="make -f garnet/tests/test_app/Makefile gaussian"
-        docker exec CONTAINER /bin/bash -c "$cmd"
+        cmd1="source /aha/bin/activate";
+        echo cmd1="'$cmd1'"
+        cmd2="make -f garnet/tests/test_app/Makefile gaussian"
+        echo cmd2="'$cmd2'"
+        docker exec CONTAINER /bin/bash -c "$cmd1; $cmd2"
