@@ -28,7 +28,7 @@ jobs:
         git submodule sync --recursive
         git -c "http.extraheader=$auth_header" -c protocol.version=2 submodule update --init --force --recursive --depth=1
 
-    - name: Pull and run docker 🐋 
+    - name: Pull and run docker
       shell: bash
       run: |
         docker pull stanfordaha/garnet:latest
@@ -37,7 +37,7 @@ jobs:
         docker exec CONTAINER /bin/bash -c "source /aha/bin/activate; pip install psutil"
         docker cp ../garnet CONTAINER:/aha/garnet
 
-    - name: Run tests ⚙️
+    - name: Run tests
       shell: bash
       run: |
         docker exec -i CONTAINER bash -c "/aha/garnet/.github/scripts/run_pytest.sh"
