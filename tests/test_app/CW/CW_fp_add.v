@@ -1,3 +1,5 @@
+// `define DBG_CW_FP_ADD 1   // Uncomment this line for debugging
+
 module CW_fp_add (a,b,rnd,z,status);
    parameter sig_width             = 23;
    parameter exp_width             = 8;
@@ -98,7 +100,7 @@ module CW_fp_add (a,b,rnd,z,status);
    assign srz = sra + srb;
    assign z = real_to_bfloat(srz);
 
-   // TODO ifdef DEBUG
+`ifdef DBG_CW_FP_ADD
    always @* begin
       $display("");
       $display("ADD: I see BITS %04x + %04x = %04x", a, b, z);
@@ -106,6 +108,7 @@ module CW_fp_add (a,b,rnd,z,status);
       $display("ADD: I see z=%04x bfloat_to_real(z)=%e", z, bfloat_to_real(z));
       $display("");
    end
+`endif
    assign status = 0;
 
 endmodule // CW_fp_add

@@ -1,3 +1,5 @@
+// `define DBG_CW_FP_MULT 1   // Uncomment this line for debugging
+
 /*
 CW_fp_mult
   #(.sig_width(frac_bits+3), .exp_width(exp_bits), .ieee_compliance(ieee_compliance)) 
@@ -114,7 +116,7 @@ module CW_fp_mult(a,b,rnd,status,z);
    assign srz = sra * srb;
    assign z = real_to_mfloat(srz);
 
-   // TODO ifdef DEBUG
+`ifdef DBG_CW_FP_MULT
    always @* begin
       $display("");
       /*
@@ -129,6 +131,7 @@ module CW_fp_mult(a,b,rnd,status,z);
       $display("MUL: I see z=%04x mfloat_to_real(z)=%e", z, mfloat_to_real(z));
       $display("");
    end
+`endif
    assign status = 0;
 
 
