@@ -36,7 +36,7 @@ class CG(Generator):
             self.clkout = self.output("clkout", 1)
 
             self.enable_latch = self.var("enable_latch", 1)
-            self.add_always(self.clk_en_latch)
+            self.add_always(self.clk_en_latch_intel)
             self.wire(self.clkout, (self.clk & self.enable_latch))
 
         else:
@@ -50,7 +50,12 @@ class CG(Generator):
             self.wire(self.Z, (self.CLK & self.enable_latch))
 
     @always_latch
-    # TODO fix this so it works with all techs
     def clk_en_latch(self):
+        if (~self.CLK):
+            self.enable_latch = self.E
+
+    @always_latch
+    def clk_en_latch_intel(self):
         if (~self.clk):
             self.enable_latch = self.en
+
