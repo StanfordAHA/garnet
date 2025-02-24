@@ -1,0 +1,52 @@
+name: verilator
+
+# on:
+#   # Every push
+#   push:
+#   # Every morning at 3am -- how does it know which branch to run??
+#   schedule:
+#   - cron: '0 3 * * *'
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, 'skip ci')"
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Checkout submodules
+      shell: bash
+      run: |
+        auth_header="$(git config --local --get http.https://github.com/.extraheader)"
+        git submodule sync --recursive
+        git -c "http.extraheader=$auth_header" -c protocol.version=2 submodule update --init --force --recursive --depth=1
+
+    - name: Pull and run docker
+      shell: bash
+      run: |
+        docker pull stanfordaha/garnet:latest
+        docker run -d -it --name CONTAINER stanfordaha/garnet:latest bash
+        docker exec CONTAINER /bin/bash -c "rm -rf /aha/garnet"
+        docker exec CONTAINER /bin/bash -c "source /aha/bin/activate"
+        docker cp ../garnet CONTAINER:/aha/garnet
+
+#     - name: Run tests
+#       shell: bash
+#       run: |
+#         docker exec -i CONTAINER bash -c "/aha/garnet/.github/scripts/run_pytest.sh"
+
+    - name: Install verilator v5
+      shell: bash
+      run: docker exec CONTAINER /bin/bash -c "
+        echo '+++ SETUP';
+        make -f garnet/tests/test_app/Makefile setup-verilator;
+      "
+
+    - name: Run tests old style (should fail)
+      shell: bash
+      run: docker exec CONTAINER /bin/bash -c "
+        echo '+++ GAUSSIAN TEST 4x16';
+        make -f garnet/tests/test_app/Makefile gaussian;
+     "
