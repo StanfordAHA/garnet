@@ -1,11 +1,8 @@
 name: verilator
 
-# on:
-#   # Every push
-#   push:
-#   # Every morning at 3am -- how does it know which branch to run??
-#   schedule:
-#   - cron: '0 3 * * *'
+# Run on every push (PR's do pushes too I think)
+on:
+  push:
 
 jobs:
   build:
