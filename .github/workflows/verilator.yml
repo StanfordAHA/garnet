@@ -39,14 +39,16 @@ jobs:
 
     - name: Install verilator v5
       shell: bash
-      run: docker exec CONTAINER /bin/bash -c "
-        echo '+++ SETUP';
-        make -f garnet/tests/test_app/Makefile setup-verilator;
-      "
+      run: |
+        echo '+++ SETUP'
+        cmd="make -f garnet/tests/test_app/Makefile setup-verilator"
+        echo cmd="'$cmd'"
+        docker exec CONTAINER /bin/bash -c "$cmd"
+
 
     - name: Run tests old style (should fail)
       shell: bash
-      run: docker exec CONTAINER /bin/bash -c "
-        echo '+++ GAUSSIAN TEST 4x16';
-        make -f garnet/tests/test_app/Makefile gaussian;
-     "
+      run: |
+        echo '+++ GAUSSIAN TEST 4x16'
+        cmd="make -f garnet/tests/test_app/Makefile gaussian"
+        docker exec CONTAINER /bin/bash -c "$cmd"
