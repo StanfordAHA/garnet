@@ -20,20 +20,13 @@ jobs:
         git submodule sync --recursive
         git -c "http.extraheader=$auth_header" -c protocol.version=2 submodule update --init --force --recursive --depth=1
 
-    - name: Pull and run docker container and install garnet test branch
+    - name: Pull docker image, install garnet test branch in CONTAINER
       shell: bash
       run: |
         docker pull stanfordaha/garnet:latest
         docker run -d -it --name CONTAINER stanfordaha/garnet:latest bash
         docker exec CONTAINER /bin/bash -c "rm -rf /aha/garnet"
         docker cp ../garnet CONTAINER:/aha/garnet
-
-#         docker exec CONTAINER /bin/bash -c "source /aha/bin/activate"
-
-#     - name: Run tests
-#       shell: bash
-#       run: |
-#         docker exec -i CONTAINER bash -c "/aha/garnet/.github/scripts/run_pytest.sh"
 
     - name: Install verilator v5 (6m maybe)
       shell: bash
@@ -46,7 +39,7 @@ jobs:
         docker exec CONTAINER /bin/bash -c "$cmd1; $cmd2"
 
 
-    - name: Run tests old style (should fail)
+    - name: Run tests (20m maybe)
       shell: bash
       run: |
         echo '+++ GAUSSIAN TEST 4x16'
