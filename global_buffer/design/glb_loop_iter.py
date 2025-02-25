@@ -1,6 +1,7 @@
 from kratos import Generator, clog2, always_ff, always_comb, posedge, const
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 import os
+import kratos as kts
 
 
 class GlbLoopIter(Generator):
@@ -43,6 +44,7 @@ class GlbLoopIter(Generator):
         self.is_maxed = self.var("is_maxed", 1)
         self.wire(self.is_maxed, (self.dim_counter[self.mux_sel]
                                   == self.ranges[self.mux_sel]) & self.inc[self.mux_sel])
+        
 
         self.add_code(self.set_mux_sel)
         for i in range(self.loop_level):

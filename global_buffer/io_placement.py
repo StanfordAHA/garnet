@@ -124,9 +124,16 @@ def place_io_blk(id_to_name, app_dir, io_sides):
 
     # place it on the interconnect
     # input and outputs are placed on the same IO tiles
+
+    # If operating in exchange_64 mode, place IOs in a denser way (4x denser)
+    exchange_64_mode = "E64_MODE_ON" in os.environ and os.environ.get("E64_MODE_ON") == "1"
     group_index = 0
     for idx, input_blk in enumerate(inputs):
-        placement[input_blk] = (group_index * 2 + io_tile_shift_right_index, 0)
+        if exchange_64_mode:
+            x_coord = int((group_index * 2 ) / 8) * 2 + io_tile_shift_right_index
+            placement[input_blk] = (x_coord, 0) 
+        else:
+            placement[input_blk] = (group_index * 2 + io_tile_shift_right_index, 0)
         group_index += 1
     for en_blk in en:
         placement[en_blk] = (group_index * 2 + io_tile_shift_right_index, 0)
@@ -134,7 +141,12 @@ def place_io_blk(id_to_name, app_dir, io_sides):
 
     group_index = 0
     for idx, output_blk in enumerate(outputs):
-        placement[output_blk] = (group_index * 2 + 1 + io_tile_shift_right_index, 0)
+        if exchange_64_mode:
+              x_coord = int((group_index * 2 ) / 8) * 2 + 1 + io_tile_shift_right_index
+              placement[output_blk] = (x_coord, 0) 
+        else:
+            placement[output_blk] = (group_index * 2 + 1 + io_tile_shift_right_index, 0)
+      
         if idx < len(valid):
             placement[valid[idx]] = (group_index * 2 + 1 + io_tile_shift_right_index, 0)
         group_index += 1
@@ -147,7 +159,9 @@ def place_io_blk(id_to_name, app_dir, io_sides):
     # manual placement of PE/MEM tiles if needed
     if "MANUAL_PLACER" in os.environ and os.environ.get("MANUAL_PLACER") == "1" and os.path.isfile(app_dir + "/manual.place"):
     # MO: Matrix unit HACK for manual placement
-    #if (("MANUAL_PLACER" in os.environ and os.environ.get("MANUAL_PLACER") == "1") or ("MU_APP_MANUAL_PLACER" in os.environ and os.environ.get("MU_APP_MANUAL_PLACER") == "1")) and os.path.isfile(app_dir + "/manual.place"):
+    # manual_place_filepath = os.path.join(app_dir, "../manual.place")
+    # os.system(f"cp {manual_place_filepath} {app_dir}")
+    # if (("MANUAL_PLACER" in os.environ and os.environ.get("MANUAL_PLACER") == "1") or ("MU_APP_MANUAL_PLACER" in os.environ and os.environ.get("MU_APP_MANUAL_PLACER") == "1")) and os.path.isfile(app_dir + "/manual.place"):
         with open(app_dir + "/manual.place", "r") as f:
             data = f.readlines()
             for dat in data:

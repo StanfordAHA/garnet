@@ -88,8 +88,6 @@ def glb_interconnect_wiring(garnet):
     col_per_glb = width // num_glb_tiles
     assert width % num_glb_tiles == 0
 
-    #breakpoint()
-
     # parallel configuration ports wiring
     for i in range(num_glb_tiles):
 
@@ -139,52 +137,60 @@ def glb_interconnect_wiring(garnet):
                 x = i * col_per_glb + j + 1  
             else:
                 x = i * col_per_glb + j 
-            io2glb_16_port = f"io2glb_{data_bit_width}_X{x:02X}_Y{0:02X}"
-            # FIXME
-            io2glb_1_port = f"io2glb_1_X{x:02X}_Y{0:02X}"
-            glb2io_16_port = f"glb2io_{data_bit_width}_X{x:02X}_Y{0:02X}"
-            glb2io_1_port = f"glb2io_1_X{x:02X}_Y{0:02X}"
-            garnet.wire(garnet.global_buffer.ports[f"strm_data_f2g_{i}_{j}"],
-                        garnet.interconnect.ports[io2glb_16_port][0:16])
-            garnet.wire(garnet.global_buffer.ports[f"strm_ctrl_f2g_{i}_{j}"],
-                        garnet.interconnect.ports[io2glb_1_port])
 
-            garnet.wire(garnet.global_buffer.ports[f"strm_data_g2f_{i}_{j}"],
-                        garnet.interconnect.ports[glb2io_16_port][0:16])
+            io2glb_16_port = f"io2glb_{data_bit_width}_X{x:02X}_Y{0:02X}"
+            io2glb_1_port = f"io2glb_1_0_X{x:02X}_Y{0:02X}"
+
+            glb2io_16_port = f"glb2io_{data_bit_width}_X{x:02X}_Y{0:02X}"
+            glb2io_1_port = f"glb2io_1_0_X{x:02X}_Y{0:02X}"
+
+            num_packets = 4
+            for k in range(num_packets):
+                io2glb_16_port = f"io2glb_{data_bit_width}_{k}_X{x:02X}_Y{0:02X}"
+                glb2io_16_port = f"glb2io_{data_bit_width}_{k}_X{x:02X}_Y{0:02X}"
+
+                garnet.wire(garnet.global_buffer.ports[f"strm_data_f2g_{i}_{j}_{k}"],
+                            garnet.interconnect.ports[io2glb_16_port][0:16])
+                
+                garnet.wire(garnet.global_buffer.ports[f"strm_data_g2f_{i}_{j}_{k}"],
+                            garnet.interconnect.ports[glb2io_16_port][0:16])
+                
+                if garnet.ready_valid:
+                    io2glb_16_rdy_port = f"io2glb_{data_bit_width}_{k}_X{x:02X}_Y{0:02X}_ready"
+                    io2glb_16_vld_port = f"io2glb_{data_bit_width}_{k}_X{x:02X}_Y{0:02X}_valid"
+                    io2glb_1_rdy_port = f"io2glb_1_0_X{x:02X}_Y{0:02X}_ready"
+                    io2glb_1_vld_port = f"io2glb_1_0_X{x:02X}_Y{0:02X}_valid"
+                    glb2io_16_rdy_port = f"glb2io_{data_bit_width}_{k}_X{x:02X}_Y{0:02X}_ready"
+                    glb2io_16_vld_port = f"glb2io_{data_bit_width}_{k}_X{x:02X}_Y{0:02X}_valid"
+                    glb2io_1_rdy_port = f"glb2io_1_0_X{x:02X}_Y{0:02X}_ready"
+                    glb2io_1_vld_port = f"glb2io_1_0_X{x:02X}_Y{0:02X}_valid"
+                    # Wire 1 to in' valid and out's ready
+                    garnet.wire(Const(1),
+                                garnet.interconnect.ports[glb2io_1_vld_port])
+                    garnet.wire(garnet.global_buffer.ports[f"strm_data_f2g_vld_{i}_{j}_{k}"][0],
+                                garnet.interconnect.ports[io2glb_16_vld_port])
+                    garnet.wire(garnet.global_buffer.ports[f"strm_data_f2g_rdy_{i}_{j}_{k}"][0],
+                                garnet.interconnect.ports[io2glb_16_rdy_port])
+                    garnet.wire(Const(1),
+                                garnet.interconnect.ports[io2glb_1_rdy_port])
+                    garnet.wire(garnet.global_buffer.ports[f"strm_data_g2f_vld_{i}_{j}_{k}"][0],
+                                garnet.interconnect.ports[glb2io_16_vld_port])
+                    garnet.wire(garnet.global_buffer.ports[f"strm_data_g2f_rdy_{i}_{j}_{k}"][0],
+                                garnet.interconnect.ports[glb2io_16_rdy_port])
+                    garnet.wire(Const(0),
+                                garnet.interconnect.ports[glb2io_16_port][16])
+                else:
+                    garnet.wire(garnet.global_buffer.ports[f"strm_data_f2g_vld_{i}_{j}_{k}"][0],
+                                Const(0))
+                    garnet.wire(garnet.global_buffer.ports[f"strm_data_g2f_rdy_{i}_{j}_{k}"][0],
+                                Const(0))
+                  
+            
+
+            garnet.wire(garnet.global_buffer.ports[f"strm_ctrl_f2g_{i}_{j}"],
+                        garnet.interconnect.ports[io2glb_1_port])            
             garnet.wire(garnet.global_buffer.ports[f"strm_ctrl_g2f_{i}_{j}"],
                         garnet.interconnect.ports[glb2io_1_port])
-            if garnet.ready_valid:
-                io2glb_16_rdy_port = f"io2glb_{data_bit_width}_X{x:02X}_Y{0:02X}_ready"
-                io2glb_16_vld_port = f"io2glb_{data_bit_width}_X{x:02X}_Y{0:02X}_valid"
-                io2glb_1_rdy_port = f"io2glb_1_X{x:02X}_Y{0:02X}_ready"
-                io2glb_1_vld_port = f"io2glb_1_X{x:02X}_Y{0:02X}_valid"
-                glb2io_16_rdy_port = f"glb2io_{data_bit_width}_X{x:02X}_Y{0:02X}_ready"
-                glb2io_16_vld_port = f"glb2io_{data_bit_width}_X{x:02X}_Y{0:02X}_valid"
-                glb2io_1_rdy_port = f"glb2io_1_X{x:02X}_Y{0:02X}_ready"
-                glb2io_1_vld_port = f"glb2io_1_X{x:02X}_Y{0:02X}_valid"
-                # Wire 1 to in' valid and out's ready
-                garnet.wire(Const(1),
-                            garnet.interconnect.ports[glb2io_1_vld_port])
-                garnet.wire(garnet.global_buffer.ports[f"strm_data_f2g_vld_{i}_{j}"][0],
-                            garnet.interconnect.ports[io2glb_16_vld_port])
-                garnet.wire(garnet.global_buffer.ports[f"strm_data_f2g_rdy_{i}_{j}"][0],
-                            garnet.interconnect.ports[io2glb_16_rdy_port])
-                garnet.wire(Const(1),
-                            garnet.interconnect.ports[io2glb_1_rdy_port])
-                garnet.wire(garnet.global_buffer.ports[f"strm_data_g2f_vld_{i}_{j}"][0],
-                            garnet.interconnect.ports[glb2io_16_vld_port])
-                garnet.wire(garnet.global_buffer.ports[f"strm_data_g2f_rdy_{i}_{j}"][0],
-                            garnet.interconnect.ports[glb2io_16_rdy_port])
-                garnet.wire(Const(0),
-                            garnet.interconnect.ports[glb2io_16_port][16])
-            else:
-                garnet.wire(garnet.global_buffer.ports[f"strm_data_f2g_vld_{i}_{j}"][0],
-                            Const(0))
-                garnet.wire(garnet.global_buffer.ports[f"strm_data_g2f_rdy_{i}_{j}"][0],
-                            Const(0))
-
-
-
 
     # flush signal wiring
     if num_groups == 1:

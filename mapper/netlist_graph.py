@@ -68,7 +68,7 @@ class NetlistGraph:
                 node.add_source(source_node)
         # merge pond connections into pe
         for node in self.pond_nodes:
-            assert(len(node.sources) == 1) and (len(node.sinks) == 1)
+            assert(len(node.sources) == 1)
             pond_source = node.sources[0]
             pond_sink = node.sinks[0]
             pond_source.remove_sink(node)

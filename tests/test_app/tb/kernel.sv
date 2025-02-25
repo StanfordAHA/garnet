@@ -26,6 +26,7 @@ import "DPI-C" function chandle get_output_info(
     int index
 );
 import "DPI-C" function int glb_map(chandle kernel, int dpr_enabled);
+import "DPI-C" function int get_exchange_64_config();
 import "DPI-C" function int get_num_groups(chandle info);
 import "DPI-C" function int get_group_start(chandle info);
 import "DPI-C" function int get_num_inputs(chandle info);
@@ -281,6 +282,7 @@ function Kernel::new(string app_dir, int dpr);
         io_info = get_input_info(kernel_info, i);
 
         num_io_tiles = get_num_io_tiles(io_info, i);
+
         inputs[i].num_io_tiles = num_io_tiles;
         inputs[i].io_tiles = new[num_io_tiles];
 
@@ -291,7 +293,7 @@ function Kernel::new(string app_dir, int dpr);
             inputs[i].io_tiles[0].io_block_data = input_data[i];
         end else begin
             for (int j = 0; j < num_io_tiles; j++) begin
-                num_pixels = input_data[i].size / num_io_tiles;
+            num_pixels = input_data[i].size / num_io_tiles;
                 inputs[i].io_tiles[j].num_data = num_pixels;
                 inputs[i].io_tiles[j].io_block_data = new[num_pixels];
                 // NOTE: We assume only innermost loop is unrolled.
@@ -322,6 +324,7 @@ function Kernel::new(string app_dir, int dpr);
                     num_pixels = num_pixels * get_io_tile_extent(io_info, j, k);
                 end
             end
+
             // For GLB tiling read memory region of entire feature map
             if (num_glb_tiling > 0) begin
                 num_pixels = num_pixels * num_glb_tiling;
@@ -376,6 +379,8 @@ function bitstream_t Kernel::parse_bitstream();
     end
     return result;
 endfunction
+
+
 
 function data_array_t Kernel::parse_input_data(int idx);
     int num_pixel = (input_size[idx] >> 1);  // Pixel is 2byte (16bit) size
@@ -588,6 +593,7 @@ function void Kernel::compare();
     // TODO: Make interleave and uninterleave as a function
     for (int i = 0; i < num_outputs; i++) begin
         num_io_tiles = outputs[i].num_io_tiles;
+        $display("Number of I/O tiles: %d", num_io_tiles);
         if (num_io_tiles == 1) begin
             output_data[i] = outputs[i].io_tiles[0].io_block_data;
         end else begin

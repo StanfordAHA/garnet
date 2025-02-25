@@ -1,6 +1,7 @@
 from gemstone.generator.from_magma import FromMagma
 from gemstone.common.core import PnRTag
 from lake.modules.io_core import IOCore
+from lake.modules.io_core_64 import IOCore_64
 import kratos as kts
 
 if __name__ == "__main__":
@@ -18,7 +19,8 @@ class IOCoreReadyValid(LakeCoreBase):
                  tracks_supported=[1, 17],
                  fifo_depth=2,
                  allow_bypass=False,
-                 use_almost_full=False):
+                 use_almost_full=False,
+                 include_E64_HW=False):
 
         buffet_name = "IOCoreReadyValid"  # noqa "assigned but never used"
         super().__init__(config_data_width=config_data_width,
@@ -34,6 +36,7 @@ class IOCoreReadyValid(LakeCoreBase):
         self.tracks_supported = tracks_supported
         self.allow_bypass = allow_bypass
         self.use_almost_full = use_almost_full
+        self.include_E64_HW = include_E64_HW
 
         cache_key = (self.data_width,
                      self.config_data_width,
@@ -47,7 +50,17 @@ class IOCoreReadyValid(LakeCoreBase):
             # Instantiate core object here - will only use the object representation to
             # query for information. The circuit representation will be cached and retrieved
             # in the following steps.
-            self.dut = IOCore(data_width=data_width,
+
+            if include_E64_HW:
+                self.dut = IOCore_64(data_width=data_width,
+                              tracks_supported=self.tracks_supported,
+                              fifo_depth=fifo_depth,
+                              use_17_to_16_hack=False,
+                              allow_bypass=self.allow_bypass,
+                              use_almost_full=self.use_almost_full,
+                              add_flush=True)
+            else:
+                self.dut = IOCore(data_width=data_width,
                               tracks_supported=self.tracks_supported,
                               fifo_depth=fifo_depth,
                               use_17_to_16_hack=False,
@@ -94,6 +107,41 @@ class IOCoreReadyValid(LakeCoreBase):
 
         if 'ready_valid_mode' in config_kwargs:
             configs_pre = []
+
+        elif self.include_E64_HW: 
+             configs_pre = [
+                ('glb2io_17_0_valid_reg_sel', 1),
+                ('glb2io_17_0_valid_reg_value', 1),
+
+                ('glb2io_1_0_valid_reg_sel', 1),
+                ('glb2io_1_0_valid_reg_value', 1),
+
+                ('io2glb_17_0_ready_reg_sel', 1),
+                ('io2glb_17_0_ready_reg_value', 1),
+
+                ('io2glb_1_0_ready_reg_sel', 1),
+                ('io2glb_1_0_ready_reg_value', 1),
+            ]
+             if 'exchange_64_mode' in config_kwargs and config_kwargs['exchange_64_mode'] == 1:
+                 configs_pre += [
+                    ('glb2io_17_1_valid_reg_sel', 1),
+                    ('glb2io_17_1_valid_reg_value', 1),
+
+                    ('glb2io_17_2_valid_reg_sel', 1),
+                    ('glb2io_17_2_valid_reg_value', 1),
+
+                    ('glb2io_17_3_valid_reg_sel', 1),
+                    ('glb2io_17_3_valid_reg_value', 1),
+
+                    ('io2glb_17_1_ready_reg_sel', 1),
+                    ('io2glb_17_1_ready_reg_value', 1),
+
+                    ('io2glb_17_2_ready_reg_sel', 1),
+                    ('io2glb_17_2_ready_reg_value', 1),
+
+                    ('io2glb_17_3_ready_reg_sel', 1),
+                    ('io2glb_17_3_ready_reg_value', 1),   
+                 ]
         else:
             configs_pre = [
                 ('glb2io_17_valid_reg_sel', 1),
@@ -109,7 +157,11 @@ class IOCoreReadyValid(LakeCoreBase):
         configs = []
         # add valid high reg sel
 
-        sub_dict = {'dense_bypass': dense_bypass}
+        exchange_64_mode = 0
+        if 'exchange_64_mode' in config_kwargs:
+            exchange_64_mode = config_kwargs['exchange_64_mode']
+
+        sub_dict = {'dense_bypass': dense_bypass, 'exchange_64_mode': exchange_64_mode}
         tile_config = self.dut.get_bitstream(sub_dict)
         for name, v in configs_pre:
             configs = [self.get_config_data(name, v)] + configs

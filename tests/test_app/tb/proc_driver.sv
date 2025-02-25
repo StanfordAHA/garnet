@@ -69,6 +69,9 @@ int num_words, num_trans;
 task ProcDriver_read_data();
     num_words = data_q.size();        // Should be 4K / 0x1000?
     num_trans = (num_words + 3) / 4;  // Should be 1K
+
+    $display("Num words: %d\n", num_words);
+    $display("Num transactions: %d\n", num_trans);
     proc_lock.get(1);
     fork
         // Process 1 initiates read by setting rd_en HIGH and feeding addresses one per cycle
