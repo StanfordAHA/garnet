@@ -55,6 +55,8 @@ function GROUP    { sleep 1; printf "%s%s[group]%s\n"  "#" "#" "$1"; sleep 1; se
 function ENDGROUP { sleep 1; printf "%s%s[endgroup]\n" "#" "#";      sleep 1; set -x; }
 
 
+
+
 # DOCKER image and container
 # set +x; sleep 1; echo "##[group]DOCKER image and container"; sleep 1; set -x
 set +x; GROUP "DOCKER image and container"
@@ -70,15 +72,26 @@ trap cleanup EXIT
 # set +x; sleep 1; echo "##[endgroup]"; sleep 1; set -x
 set +x; ENDGROUP
 
+
+
+
+
 # VERILATOR
-set +x; echo "##[group]VERILATOR installer"; set -x
+# set +x; echo "##[group]VERILATOR installer"; set -x
+set +x; GROUP "VERILATOR installer"
 [ "$CAD" ] || docker exec $container /bin/bash -c "
 cd /aha/garnet/tests/test_app; make setup-verilator
 "
 # echo "##[endgroup]"
-set +x; echo "##[endgroup]"; set -x
+# set +x; echo "##[endgroup]"; set -x
+set +x; ENDGROUP
 
-set +x; echo "##[group]UPDATE docker w local garnet"; set -x
+
+
+
+
+# set +x; echo "##[group]UPDATE docker w local garnet"; set -x
+set +x; GROUP "UPDATE docker w local garnet"
 
 # Find local garnet home dir $GARNET, based on where this script lives
 # Assume this script is $GARNET/tests/test_app/$0
@@ -106,7 +119,8 @@ docker exec $container /bin/bash -c "rm -rf /aha/garnet"
 docker cp /tmp/deleteme-garnet-$$ $container:/aha/garnet
 /bin/rm -rf /tmp/deleteme-garnet-$$
 # echo "##[endgroup]"
-set +x; echo "##[endgroup]"; set -x
+# set +x; echo "##[endgroup]"; set -x
+set +x; ENDGROUP
 
 # TEST
 set +x
