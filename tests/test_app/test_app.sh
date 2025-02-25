@@ -51,11 +51,13 @@ fi
 # function GROUP    { printf "%s%s[group]%s\n"  "#" "#" "$1"; }
 # function ENDGROUP { printf "%s%s[endgroup]\n" "#" "#"; }
 
-# function GROUP    { printf "%s%s[group]%s\n"  "#" "#" "$1"; }
+function GROUP    { sleep 1; printf "%s%s[group]%s\n"  "#" "#" "$1"; sleep 1; set -x; }
+function ENDGROUP { sleep 1; printf "%s%s[endgroup]\n" "#" "#";      sleep 1; set -x; }
 
 
 # DOCKER image and container
-set +x; sleep 1; echo "##[group]DOCKER image and container"; sleep 1; set -x
+# set +x; sleep 1; echo "##[group]DOCKER image and container"; sleep 1; set -x
+set +x; GROUP "DOCKER image and container"
 image=stanfordaha/garnet:latest
 docker pull $image
 container=DELETEME-$USER-apptest-$$
@@ -65,7 +67,8 @@ docker run -id --name $container --rm $CAD $image bash
 function cleanup { set -x; docker kill $container; }
 trap cleanup EXIT
 # echo "##[endgroup]"
-set +x; sleep 1; echo "##[endgroup]"; sleep 1; set -x
+# set +x; sleep 1; echo "##[endgroup]"; sleep 1; set -x
+set +x; ENDGROUP
 
 # VERILATOR
 set +x; echo "##[group]VERILATOR installer"; set -x
