@@ -34,21 +34,35 @@ if [ "$DO_VCS" ]; then
     TOOL='. /cad/modules/tcl/init/bash; module load base; module load vcs'
 fi
 
+echo "::group::Colon group"
+echo "foo"
+echo "::endgroup::"
+
+echo "##[group]Hash group"
+echo "bar"
+echo "##[endgroup]"
+
+
+
 # DOCKER image and container
+echo "##[group]DOCKER image and container"
 set -x
 image=stanfordaha/garnet:latest
 docker pull $image
 container=DELETEME-$USER-apptest-$$
 docker run -id --name $container --rm $CAD $image bash
+echo "##[endgroup]"
 
 # TRAPPER KILLER: Trap and kill docker container on exit ('--rm' no workee, but why?)
 function cleanup { set -x; docker kill $container; }
 trap cleanup EXIT
 
 # VERILATOR
+echo "##[group]VERILATOR install"
 [ "$CAD" ] || docker exec $container /bin/bash -c "
 cd /aha/garnet/tests/test_app; make setup-verilator
 "
+echo "##[endgroup]"
 
 # Find local garnet home dir $GARNET, based on where this script lives
 # Assume this script is $GARNET/tests/test_app/$0
@@ -67,6 +81,7 @@ script_home=`where_this_script_lives`
 GARNET=$(cd $script_home; cd ../..; pwd)
 
 # Copy local garnet branch to /tmp/deleteme-garnet-$$
+echo "##[group]UPDATE docker w local garnet"
 /bin/rm -rf /tmp/deleteme-garnet-$$; mkdir -p /tmp/deleteme-garnet-$$
 cd /nobackup/steveri/github/garnet  #   script_home=...; garnet_home=... get it?
 git ls-files | xargs -I{} cp -r --parents {} /tmp/deleteme-garnet-$$
@@ -75,19 +90,30 @@ git ls-files | xargs -I{} cp -r --parents {} /tmp/deleteme-garnet-$$
 docker exec $container /bin/bash -c "rm -rf /aha/garnet"
 docker cp /tmp/deleteme-garnet-$$ $container:/aha/garnet
 /bin/rm -rf /tmp/deleteme-garnet-$$
+echo "##[endgroup]"
 
 # TEST
 docker exec $container /bin/bash -c "
-set -x
+# set -x
 rm -f garnet/garnet.v
 source /aha/bin/activate
 $TOOL
-# $USE_GARNET_BRANCH
-# aha garnet $size --verilog --use_sim_sram --glb_tile_mem_size 128
-aha garnet $size --verilog --use_sim_sram --glb_tile_mem_size 128 # does this happen TWICE??
+
+echo '##[group]aha garnet $size --verilog --use_sim_sram --glb_tile_mem_size 128'
+aha garnet $size --verilog --use_sim_sram --glb_tile_mem_size 128
+echo '##[endgroup]'
+
+echo '##[group]aha map $app'
 aha map $app
+echo '##[endgroup]'
+
+echo '##[group]aha pnr $app $size'
 aha pnr $app $size
+echo '##[endgroup]'
+
+echo '##[group]aha test $app $DO_FP'
 aha test $app $DO_FP
+echo '##[endgroup]'
 "
 
 # 'aha test' calls 'make sim' and 'make run' etc.
