@@ -38,13 +38,17 @@ fi
 # echo "::group::Colon group"; echo "foo"; echo "::endgroup::"
 # echo "##[group]Hash group";  echo "bar"; echo "##[endgroup]"
 
-# Experiment 2
-echo "fooz::group::Colon group"; echo "foo"; echo "foz::endgroup::baz"
-echo "booz##[group]Hash group";  echo "bar"; echo "boz##[endgroup]barz"
+# Experiment 2 fails pretty hard
+# echo "fooz::group::Colon group"; echo "foo"; echo "foz::endgroup::baz"
+# echo "booz##[group]Hash group";  echo "bar"; echo "boz##[endgroup]barz"
+
+# Experiment 3 maybe the double hash works anywhere in the line, even without the [group] keyword??
+echo "foo bar ## baz bye"
+echo "##[endgroup]"
 
 # Need this subterfuge to prevent extra groups during 'set -x'
-function GROUP    { printf "%s[group]%s\n"  "##" "$1"; }
-function ENDGROUP { printf "%s[endgroup]\n" "##"; }
+function GROUP    { printf "%s%s[group]%s\n"  "#" "#" "$1"; }
+function ENDGROUP { printf "%s%s[endgroup]\n" "#" "#"; }
 
 # DOCKER image and container
 # echo "##[group]DOCKER image and container"
@@ -61,7 +65,7 @@ trap cleanup EXIT
 ENDGROUP
 
 # VERILATOR
-# echo "##[group]VERILATOR install"
+# echo "##[group]VERILATOR installzer"
 GROUP "VERILATOR install"
 [ "$CAD" ] || docker exec $container /bin/bash -c "
 cd /aha/garnet/tests/test_app; make setup-verilator
