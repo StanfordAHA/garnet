@@ -20,31 +20,36 @@ jobs:
         git submodule sync --recursive
         git -c "http.extraheader=$auth_header" -c protocol.version=2 submodule update --init --force --recursive --depth=1
 
-    - name: Pull docker image, install garnet test branch in CONTAINER
+    - name: Run test
       shell: bash
       run: |
-        docker pull stanfordaha/garnet:latest
-        docker run -d -it --name CONTAINER stanfordaha/garnet:latest bash
-        docker exec CONTAINER /bin/bash -c "rm -rf /aha/garnet"
-        docker cp ../garnet CONTAINER:/aha/garnet
+        tests/test_app/test_app.sh --fp  4x2 tests/fp_pointwise
 
-    - name: Install verilator v5 (6m maybe)
-      shell: bash
-      run: |
-        echo '+++ SETUP'
-        cmd1="source /aha/bin/activate";
-        echo cmd1="'$cmd1'"
-        cmd2="make -f garnet/tests/test_app/Makefile setup-verilator"
-        echo cmd2="'$cmd2'"
-        docker exec CONTAINER /bin/bash -c "$cmd1; $cmd2"
-
-
-    - name: Run tests (20m maybe)
-      shell: bash
-      run: |
-        echo '+++ GAUSSIAN TEST 4x16'
-        cmd1="source /aha/bin/activate";
-        echo cmd1="'$cmd1'"
-        cmd2="make -f garnet/tests/test_app/Makefile gaussian"
-        echo cmd2="'$cmd2'"
-        docker exec CONTAINER /bin/bash -c "$cmd1; $cmd2"
+#     - name: Pull docker image, install garnet test branch in CONTAINER
+#       shell: bash
+#       run: |
+#         docker pull stanfordaha/garnet:latest
+#         docker run -d -it --name CONTAINER stanfordaha/garnet:latest bash
+#         docker exec CONTAINER /bin/bash -c "rm -rf /aha/garnet"
+#         docker cp ../garnet CONTAINER:/aha/garnet
+# 
+#     - name: Install verilator v5 (6m maybe)
+#       shell: bash
+#       run: |
+#         echo '+++ SETUP'
+#         cmd1="source /aha/bin/activate";
+#         echo cmd1="'$cmd1'"
+#         cmd2="make -f garnet/tests/test_app/Makefile setup-verilator"
+#         echo cmd2="'$cmd2'"
+#         docker exec CONTAINER /bin/bash -c "$cmd1; $cmd2"
+# 
+# 
+#     - name: Run tests (20m maybe)
+#       shell: bash
+#       run: |
+#         echo '+++ GAUSSIAN TEST 4x16'
+#         cmd1="source /aha/bin/activate";
+#         echo cmd1="'$cmd1'"
+#         cmd2="make -f garnet/tests/test_app/Makefile gaussian"
+#         echo cmd2="'$cmd2'"
+#         docker exec CONTAINER /bin/bash -c "$cmd1; $cmd2"
