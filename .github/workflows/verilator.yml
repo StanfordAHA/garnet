@@ -23,4 +23,4 @@ jobs:
     - name: Run test
       shell: bash
       run: |
-        tests/test_app/test_app.sh --fp  4x2 tests/fp_pointwise
+        tests/test_app/test_app.sh --fp 4x2 tests/fp_pointwise

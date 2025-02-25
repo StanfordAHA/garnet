@@ -51,8 +51,11 @@ fi
 # function GROUP    { printf "%s%s[group]%s\n"  "#" "#" "$1"; }
 # function ENDGROUP { printf "%s%s[endgroup]\n" "#" "#"; }
 
+# function GROUP    { printf "%s%s[group]%s\n"  "#" "#" "$1"; }
+
+
 # DOCKER image and container
-set +x; echo "##[group]DOCKER image and container"; set -x
+set +x; sleep 1; echo "##[group]DOCKER image and container"; sleep 1; set -x
 image=stanfordaha/garnet:latest
 docker pull $image
 container=DELETEME-$USER-apptest-$$
@@ -62,10 +65,10 @@ docker run -id --name $container --rm $CAD $image bash
 function cleanup { set -x; docker kill $container; }
 trap cleanup EXIT
 # echo "##[endgroup]"
-set +x; echo "##[endgroup]"; set -x
+set +x; sleep 1; echo "##[endgroup]"; sleep 1; set -x
 
 # VERILATOR
-set +x; echo "##[group]VERILATOR installzer"; set -x
+set +x; echo "##[group]VERILATOR installer"; set -x
 [ "$CAD" ] || docker exec $container /bin/bash -c "
 cd /aha/garnet/tests/test_app; make setup-verilator
 "
