@@ -43,17 +43,16 @@ fi
 # echo "booz##[group]Hash group";  echo "bar"; echo "boz##[endgroup]barz"
 
 # Experiment 3 maybe the double hash works anywhere in the line, even without the [group] keyword??
-echo "foo bar ## baz bye"
-echo "##[endgroup]"
+# FAILED
+# echo "foo bar ## baz bye"
+# echo "##[endgroup]"
 
-# Need this subterfuge to prevent extra groups during 'set -x'
-function GROUP    { printf "%s%s[group]%s\n"  "#" "#" "$1"; }
-function ENDGROUP { printf "%s%s[endgroup]\n" "#" "#"; }
+# # Need this subterfuge to prevent extra groups during 'set -x'
+# function GROUP    { printf "%s%s[group]%s\n"  "#" "#" "$1"; }
+# function ENDGROUP { printf "%s%s[endgroup]\n" "#" "#"; }
 
 # DOCKER image and container
-# echo "##[group]DOCKER image and container"
-GROUP "DOCKER image and container"
-set -x
+set +x; echo "##[group]DOCKER image and container"; set -x
 image=stanfordaha/garnet:latest
 docker pull $image
 container=DELETEME-$USER-apptest-$$
@@ -62,19 +61,18 @@ docker run -id --name $container --rm $CAD $image bash
 # TRAPPER KILLER: Trap and kill docker container on exit ('--rm' no workee, but why?)
 function cleanup { set -x; docker kill $container; }
 trap cleanup EXIT
-ENDGROUP
+# echo "##[endgroup]"
+set +x; echo "##[endgroup]"; set -x
 
 # VERILATOR
-# echo "##[group]VERILATOR installzer"
-GROUP "VERILATOR install"
+set +x; echo "##[group]VERILATOR installzer"; set -x
 [ "$CAD" ] || docker exec $container /bin/bash -c "
 cd /aha/garnet/tests/test_app; make setup-verilator
 "
 # echo "##[endgroup]"
-ENDGROUP
+set +x; echo "##[endgroup]"; set -x
 
-# echo "##[group]UPDATE docker w local garnet"
-GROUP "UPDATE docker w local garnet"
+set +x; echo "##[group]UPDATE docker w local garnet"; set -x
 
 # Find local garnet home dir $GARNET, based on where this script lives
 # Assume this script is $GARNET/tests/test_app/$0
@@ -102,7 +100,7 @@ docker exec $container /bin/bash -c "rm -rf /aha/garnet"
 docker cp /tmp/deleteme-garnet-$$ $container:/aha/garnet
 /bin/rm -rf /tmp/deleteme-garnet-$$
 # echo "##[endgroup]"
-ENDGROUP
+set +x; echo "##[endgroup]"; set -x
 
 # TEST
 set +x
