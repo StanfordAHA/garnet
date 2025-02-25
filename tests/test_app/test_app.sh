@@ -105,6 +105,7 @@ docker cp /tmp/deleteme-garnet-$$ $container:/aha/garnet
 ENDGROUP
 
 # TEST
+set +x
 docker exec $container /bin/bash -c "
 # set -x
 rm -f garnet/garnet.v
