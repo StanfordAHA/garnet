@@ -267,17 +267,23 @@ def gen_global_buffer_rdl(name, params: GlobalBufferParams):
 
     addr_map.add_child(st_dma_header_rf)
 
-    # Load DMA Ctrl
-    ld_dma_ctrl_r = Reg("ld_dma_ctrl")
-    ld_dma_mode_f = Field("mode", 2)
-    ld_dma_ctrl_r.add_child(ld_dma_mode_f)
-
     if os.getenv('WHICH_SOC') == "amber":
+        # Load DMA Ctrl
+        ld_dma_ctrl_r = Reg("ld_dma_ctrl")
+        ld_dma_mode_f = Field("mode", 2)
+        ld_dma_ctrl_r.add_child(ld_dma_mode_f)
         ld_dma_use_valid_f = Field("use_valid", 1)
+
         ld_dma_ctrl_r.add_child(ld_dma_use_valid_f)
         ld_dma_use_flush_f = Field("use_flush", 1)
         ld_dma_ctrl_r.add_child(ld_dma_use_flush_f)
+
     else:
+        # Load DMA Ctrl
+        ld_dma_ctrl_r = Reg("ld_dma_ctrl")
+        ld_dma_mode_f = Field("mode", 3)
+        ld_dma_ctrl_r.add_child(ld_dma_mode_f)
+
         ld_dma_valid_mode_f = Field("valid_mode", 2)
         ld_dma_ctrl_r.add_child(ld_dma_valid_mode_f)
         ld_dma_flush_mode_f = Field("flush_mode", 1)

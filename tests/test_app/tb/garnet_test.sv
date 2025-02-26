@@ -13,7 +13,8 @@ program garnet_test #(
     input logic clk,
     reset,
     proc_ifc p_ifc,
-    axil_ifc axil_ifc
+    axil_ifc axil_ifc,
+    behavioral_matrix_unit mu_ifc
 );
     int test_toggle = 0;
     int value;

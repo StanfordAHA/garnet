@@ -8,6 +8,7 @@
 #include "glb.h"
 #include "glc.h"
 #include "global_buffer_param.h"
+#include "matrix_unit_param.h"
 
 #define MAX_NUM_COLS 32
 #define MAX_NUM_GLB_TILES 16
@@ -140,6 +141,9 @@ int glb_map(void *kernel_, int dpr_enabled) {
     int first_input_tile;
     int last_input_tile;
 
+    int first_output_tile;
+    int last_output_tile;
+
     struct IOInfo *io_info;
     struct IOTileInfo *io_tile_info;
     for (int i = 0; i < num_inputs; i++) {
@@ -188,8 +192,14 @@ int glb_map(void *kernel_, int dpr_enabled) {
                 (io_tile_info->start_addr << CGRA_BYTE_OFFSET) + ((tile * 2 + 1) << BANK_ADDR_WIDTH);
             printf("Mapping output_%0d_block_%0d to global buffer\n", i, j);
             update_io_tile_configuration(io_tile_info, &kernel->config, kernel);
+            if (i == 0 && j == 0) {
+                first_output_tile = tile;
+            }
         }
     }
+
+    // book keeping last output tile
+    last_output_tile = tile;
 
     // unset padding var after a kernel is mapped
     if(getenv("pad_o_left") != NULL) unsetenv("pad_o_left");
@@ -199,7 +209,13 @@ int glb_map(void *kernel_, int dpr_enabled) {
     int kernel_crossbar_config = 0;
     if (!kernel->opal_dense_scanner_workaround) {
         for (int i = group_start; i < group_start + num_groups; i++) {
-            crossbar_config[i] = first_input_tile;
+            
+            // MO: Hack to emit flush from output tiles for MU2CGRA app
+            if (kernel->app_type == mu2cgra) {
+                crossbar_config[i] = first_output_tile;
+            } else {
+                crossbar_config[i] = first_input_tile;
+            }
         }
     } else {
         for (int i = group_start; i < group_start + num_groups; i++) {
@@ -325,11 +341,9 @@ int get_exchange_64_config() {
     char *exchange_64_value = getenv(exchange_64_env_var);
     if (exchange_64_value != NULL && strcmp(exchange_64_value, "1") == 0) {
         exchange_64_mode = 1;
-        printf("INFO: Using exchange_64 mode\n");
     }
     return exchange_64_mode; 
 }
-
 
 int HW_supports_E64() {
     int hw_suports_E64 = 0;
@@ -339,6 +353,16 @@ int HW_supports_E64() {
         hw_suports_E64 = 1;
     }
     return hw_suports_E64; 
+}
+
+int get_MU_input_bubble_mode() {
+    int add_mu_input_bubbles = 0;
+    const char *add_mu_input_bubbles_env_var = "ADD_MU_INPUT_BUBBLES";
+    char *add_mu_input_bubbles_value = getenv(add_mu_input_bubbles_env_var);
+    if (add_mu_input_bubbles_value != NULL && strcmp(add_mu_input_bubbles_value, "1") == 0) {
+        add_mu_input_bubbles = 1;
+    }
+    return add_mu_input_bubbles; 
 }
 
 int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigInfo *config_info, struct KernelInfo *kernel_info) {
@@ -359,6 +383,9 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
 
     // Check if we are in exchange_64 mode
     int exchange_64_mode = get_exchange_64_config();
+    if (exchange_64_mode) {
+        printf("INFO: Using exchange_64 mode\n");
+    }
 
 
     int bytes_written_per_cycle_non_E64_mode = 2;
@@ -372,7 +399,11 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         extent[i] = io_tile_info->extent[i] - 2;
 
         if (exchange_64_mode) {
-            dma_range[i] = (io_tile_info->extent[i]/4) - 2;
+            if (i == 0) {
+                dma_range[i] = (io_tile_info->extent[i]/4) - 2;
+            } else {
+                dma_range[i] = extent[i];
+            }
         } else {    
             dma_range[i] = extent[i];
         }
@@ -380,8 +411,13 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         cycle_stride[i] = io_tile_info->cycle_stride[i];
         data_stride[i] = io_tile_info->data_stride[i];
         for (int j = 0; j < i; j++) {
-            cycle_stride[i] -= io_tile_info->cycle_stride[j] * (io_tile_info->extent[j] - 1);
-            data_stride[i] -= io_tile_info->data_stride[j] * (io_tile_info->extent[j] - 1);
+            if (exchange_64_mode && j == 0) {
+                cycle_stride[i] -= io_tile_info->cycle_stride[j] * (io_tile_info->extent[j]/4 - 1);
+                data_stride[i] -= io_tile_info->data_stride[j] * (io_tile_info->extent[j]/4 - 1);
+            } else {
+                cycle_stride[i] -= io_tile_info->cycle_stride[j] * (io_tile_info->extent[j] - 1);
+                data_stride[i] -= io_tile_info->data_stride[j] * (io_tile_info->extent[j] - 1);
+            }
         }
         data_stride[i] = data_stride[i] << CGRA_BYTE_OFFSET;
     }
@@ -429,10 +465,9 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
                     (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_DMA_EXCHANGE_64_MODE_R,
                     exchange_64_mode << GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB);
         }
-
         add_config(config_info,
                    (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_LD_DMA_CTRL_R,
-                   ((0b01 << GLB_LD_DMA_CTRL_MODE_F_LSB) | (mode << GLB_LD_DMA_CTRL_VALID_MODE_F_LSB) |
+                   ((0b001 << GLB_LD_DMA_CTRL_MODE_F_LSB) | (mode << GLB_LD_DMA_CTRL_VALID_MODE_F_LSB) |
                     (mux_sel << GLB_LD_DMA_CTRL_DATA_MUX_F_LSB)));
         add_config(config_info,
                    (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_LD_DMA_HEADER_0_DIM_R,
@@ -505,6 +540,14 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
             add_config(config_info,
                     (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_DMA_EXCHANGE_64_MODE_R,
                     exchange_64_mode << GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB);
+        }
+
+        // MO: Hack to emit flush from output tiles for MU2CGRA app
+        if (kernel_info->app_type == mu2cgra) {
+            printf("INFO: MU2CGRA app detected. Emitting flush from output tiles\n");
+            add_config(config_info,
+                   (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_LD_DMA_CTRL_R,
+                   ((0b100 << GLB_LD_DMA_CTRL_MODE_F_LSB)));
         }
 
         add_config(config_info,

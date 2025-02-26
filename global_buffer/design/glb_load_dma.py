@@ -40,7 +40,7 @@ class GlbLoadDma(Generator):
         self.cfg_ld_dma_num_repeat = self.input("cfg_ld_dma_num_repeat", clog2(self._params.queue_depth) + 1)
         self.cfg_ld_dma_ctrl_valid_mode = self.input("cfg_ld_dma_ctrl_valid_mode", 2)
         self.cfg_ld_dma_ctrl_flush_mode = self.input("cfg_ld_dma_ctrl_flush_mode", 1)
-        self.cfg_ld_dma_ctrl_mode = self.input("cfg_ld_dma_ctrl_mode", 2)
+        self.cfg_ld_dma_ctrl_mode = self.input("cfg_ld_dma_ctrl_mode", 3)
         self.cfg_data_network_latency = self.input("cfg_data_network_latency", self._params.latency_width)
         self.cfg_ld_dma_header = self.input(
             "cfg_ld_dma_header", self.header.cfg_load_dma_header_t, size=self._params.queue_depth)
@@ -48,6 +48,7 @@ class GlbLoadDma(Generator):
 
         self.clk_en_dma2bank = self.output("clk_en_dma2bank", 1)
         self.ld_dma_start_pulse = self.input("ld_dma_start_pulse", 1)
+        self.ld_dma_start_pulse_emit_flush_r = self.var("ld_dma_start_pulse_emit_flush_r", 1)
         self.ld_dma_done_interrupt = self.output("ld_dma_done_interrupt", 1)
 
         # local variables
@@ -152,6 +153,7 @@ class GlbLoadDma(Generator):
         self.add_strm_data_sel_pipeline()
         self.add_always(self.ld_dma_start_pulse_logic)
         self.add_always(self.ld_dma_start_pulse_ff)
+        self.add_always(self.ld_dma_start_pulse_emit_flush_ff)
         self.add_always(self.strm_data_flush_mux)
         self.add_always(self.ctrl_mux)
         self.add_always(self.ld_dma_done_pulse_logic)
@@ -376,8 +378,11 @@ class GlbLoadDma(Generator):
     def ld_dma_start_pulse_logic(self):
         if self.cfg_ld_dma_ctrl_mode == 0:
             self.ld_dma_start_pulse_next = 0
-        elif self.cfg_ld_dma_ctrl_mode == 1:
+
+        # ctrl_mode == 4 is emit flush only mode     
+        elif ((self.cfg_ld_dma_ctrl_mode == 1) | (self.cfg_ld_dma_ctrl_mode == 4)):
             self.ld_dma_start_pulse_next = (~self.strm_run) & self.ld_dma_start_pulse
+
         elif (self.cfg_ld_dma_ctrl_mode == 2) | (self.cfg_ld_dma_ctrl_mode == 3):
             self.ld_dma_start_pulse_next = (((~self.strm_run) & self.ld_dma_start_pulse)
                                             | ((self.ld_dma_done_pulse)
@@ -390,10 +395,24 @@ class GlbLoadDma(Generator):
         if self.reset:
             self.ld_dma_start_pulse_r = 0
         else:
-            if self.ld_dma_start_pulse_r:
+            if self.cfg_ld_dma_ctrl_mode == 4:
                 self.ld_dma_start_pulse_r = 0
             else:
-                self.ld_dma_start_pulse_r = self.ld_dma_start_pulse_next
+                if self.ld_dma_start_pulse_r:
+                    self.ld_dma_start_pulse_r = 0
+                else:
+                    self.ld_dma_start_pulse_r = self.ld_dma_start_pulse_next
+
+
+    @ always_ff((posedge, "clk"), (posedge, "reset"))
+    def ld_dma_start_pulse_emit_flush_ff(self):
+        if self.reset:
+            self.ld_dma_start_pulse_emit_flush_r = 0
+        else:
+            if self.ld_dma_start_pulse_emit_flush_r:
+                self.ld_dma_start_pulse_emit_flush_r = 0
+            else:
+                self.ld_dma_start_pulse_emit_flush_r = self.ld_dma_start_pulse_next
 
     @ always_ff((posedge, "clk"), (posedge, "reset"))
     def cycle_counter(self):
@@ -607,7 +626,7 @@ class GlbLoadDma(Generator):
                        clk=self.clk,
                        clk_en=const(1, 1),
                        reset=self.reset,
-                       in_=self.ld_dma_start_pulse_r,
+                       in_=self.ld_dma_start_pulse_emit_flush_r,
                        out_=self.strm_data_start_pulse_d_arr)
         self.strm_data_start_pulse = self.var("strm_data_start_pulse", 1)
         self.wire(self.strm_data_start_pulse,

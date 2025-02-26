@@ -20,8 +20,6 @@ export WAVEFORM_GLB_ONLY ?= 0
 export SAIF ?= 0
 
 export USING_MATRIX_UNIT ?= 0
-export MU_DATAWIDTH ?= 16
-export OC_0 ?= 32 
 
 # -------------------------------------------------------------------
 # Compile Parameters
@@ -31,6 +29,7 @@ CLK_PERIOD ?= 1ns
 DESIGN_FILES += $(garnet_dir)/global_buffer/header/global_buffer_param.svh \
 				$(garnet_dir)/global_buffer/header/glb.svh \
 				$(garnet_dir)/global_controller/header/glc.svh \
+				$(garnet_dir)/matrix_unit/header/matrix_unit_param.svh \
 				$(garnet_dir)/garnet.v \
 				$(garnet_dir)/global_buffer/systemRDL/output/glb_pio.sv \
 				$(garnet_dir)/global_buffer/systemRDL/output/glb_jrdl_decode.sv \
@@ -171,8 +170,9 @@ endif
 libcgra.so: $(shell find lib -type f) \
             $(garnet_dir)/global_buffer/header/global_buffer_param.h \
             $(garnet_dir)/global_buffer/header/glb.h \
-            $(garnet_dir)/global_controller/header/glc.h
-	gcc -Wno-error -Wall lib/*.c -I$(garnet_dir)/global_buffer/header -I$(garnet_dir)/global_controller/header -shared -o libcgra.so -fPIC
+            $(garnet_dir)/global_controller/header/glc.h \
+			$(garnet_dir)/matrix_unit/header/matrix_unit_param.h 
+	gcc -Wno-error -Wall lib/*.c -I$(garnet_dir)/global_buffer/header -I$(garnet_dir)/global_controller/header -I$(garnet_dir)/matrix_unit/header -shared -o libcgra.so -fPIC
 
 # -------------------------------------------------------------------
 # Compile & Run
@@ -233,13 +233,8 @@ ifeq ($(TOOL), VERILATOR)
 endif
 
 generate:
-	Genesis2.pl -parse -generate -top top -input $(genesis_tb_dir)/top.svp -parameter top.using_matrix_unit=$(USING_MATRIX_UNIT) top.oc_0=$(OC_0) top.mu_datawidth=$(MU_DATAWIDTH)
+	Genesis2.pl -parse -generate -top top -input $(genesis_tb_dir)/top.svp -parameter top.using_matrix_unit=$(USING_MATRIX_UNIT)
 	mv genesis_verif/top.sv tb/top.sv
-
-prep-data:
-ifeq ($(USING_MATRIX_UNIT), 1)
-	python /aha/garnet/tests/test_app/gen_mu2cgra_data.py
-endif
 
 .PHONY: run
 run: $(APP0_NAME)/bin/design_meta.json
@@ -249,7 +244,7 @@ run: $(APP0_NAME)/bin/design_meta.json
 	echo '+++ PASSED maybe' `date +%H:%M`
 
 .PHONY: sim
-sim: libcgra.so generate prep-data compile run
+sim: libcgra.so generate compile run
 
 
 # -------------------------------------------------------------------
