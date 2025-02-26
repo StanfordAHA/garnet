@@ -614,7 +614,7 @@ class Garnet(Generator):
             fixed_io = None
         else:
             from global_buffer.io_placement import place_io_blk
-            fixed_io = place_io_blk(id_to_name, app_dir, self.io_sides)
+            fixed_io = place_io_blk(id_to_name, app_dir, self.io_sides, args.num_fabric_cols_removed)
 
         west_in_io_sides = IOSide.West in self.io_sides
         dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1" 
@@ -856,6 +856,7 @@ def parse_args():
     parser.add_argument("--mu-datawidth", type=int, default=16)
     parser.add_argument("--give-north-io-sbs", action="store_true")
     parser.add_argument("--num-fabric-cols-removed", type=int, default=0)
+    parser.add_argument("--mu-oc-0", type=int, default=32)
     parser.add_argument('--include-E64-hw', action="store_true")
 
     # Daemon choices are maybe ['help', 'launch', 'use', 'kill', 'force', 'status', 'wait']
@@ -963,6 +964,17 @@ def build_verilog(args, garnet):
         gen_rdl_header(top_name="glc",
                        rdl_file=os.path.join(garnet_home, "global_controller/systemRDL/rdl_models/glc.rdl.final"),
                        output_folder=os.path.join(garnet_home, "global_controller/header"))
+    
+    garnet_home = os.getenv('GARNET_HOME')
+    if not garnet_home:
+        garnet_home = os.path.dirname(os.path.abspath(__file__))
+    from matrix_unit.matrix_unit_main import gen_param_header
+    matrix_unit_params = {}
+    matrix_unit_params["MU_DATAWIDTH"] = args.mu_datawidth
+    matrix_unit_params["MU_OC_0"] = args.mu_oc_0
+    gen_param_header(top_name="matrix_unit_param",
+                        params=matrix_unit_params,
+                        output_folder=os.path.join(garnet_home, "matrix_unit/header"))
 
 def pnr(garnet, args, app):
 

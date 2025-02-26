@@ -228,6 +228,26 @@ int parse_io_tile_info(struct IOTileInfo *io_tile_info, json_t const *io_tile_js
     return SUCCESS;
 }
 
+
+int parse_mu_io_tile_info(struct IOTileInfo *io_tile_info, json_t const *io_tile_json) {
+    int cnt;
+    // parse x position
+    json_t const *x_pos_json = json_getProperty(io_tile_json, "x_pos");
+    if (!x_pos_json || JSON_INTEGER != json_getType(x_pos_json)) {
+        puts("Error, the x_pos property is not found.");
+        exit(1);
+    }
+    io_tile_info->pos.x = json_getInteger(x_pos_json);
+
+    // parse y position
+    json_t const *y_pos_json = json_getProperty(io_tile_json, "y_pos");
+    if (!y_pos_json || JSON_INTEGER != json_getType(y_pos_json)) {
+        puts("Error, the y_pos property is not found.");
+        exit(1);
+    }
+    io_tile_info->pos.y = json_getInteger(y_pos_json);
+}
+
 void *parse_io(json_t const *io_json, enum IO io) {
     if (io_info_index >= MAX_NUM_KERNEL * MAX_NUM_IO) return NULL;
     struct IOInfo *io_info = &io_info_list[io_info_index++];
@@ -277,6 +297,41 @@ void *parse_io(json_t const *io_json, enum IO io) {
     return io_info;
 }
 
+void *parse_mu_io(json_t const *io_json, enum IO io) {
+    if (io_info_index >= MAX_NUM_KERNEL * MAX_NUM_IO) return NULL;
+    struct IOInfo *io_info = &io_info_list[io_info_index++];
+
+    io_info->io = io;
+
+    json_t const *shape_json = json_getProperty(io_json, "shape");
+    if (!shape_json || JSON_ARRAY != json_getType(shape_json)) {
+        puts("Error, the shape property is not found.");
+        exit(1);
+    }
+
+    // parse io_tile list
+    json_t const *io_tile_list_json = json_getProperty(io_json, "mu_io_tiles");
+    if (!io_tile_list_json || JSON_ARRAY != json_getType(io_tile_list_json)) {
+        puts("Error, the mu_io_tiles property is not found.");
+        exit(1);
+    }
+
+    // parse each io_tile
+    int cnt = 0;
+    json_t const *io_tile_json;
+    for (io_tile_json = json_getChild(io_tile_list_json); io_tile_json != 0;
+         io_tile_json = json_getSibling(io_tile_json)) {
+        if (JSON_OBJ == json_getType(io_tile_json)) {
+            io_info->io_tiles[cnt].io = io;
+            parse_mu_io_tile_info(&io_info->io_tiles[cnt], io_tile_json);
+            cnt++;
+        }
+    }
+    io_info->num_io_tiles = cnt;
+
+    return io_info;
+}
+
 void *parse_bitstream(char *filename) {
     if (bitstream_info_index >= MAX_NUM_KERNEL) return NULL;
     struct BitstreamInfo *bs_info = &bitstream_info_list[bitstream_info_index++];
@@ -317,6 +372,8 @@ void *parse_metadata(char *filename) {
     if (fp == NULL) {
         return NULL;
     }
+
+    printf("Parsing metadata file: %s\n", filename);
 
     // get current directory
     char *dir;
@@ -447,7 +504,7 @@ void *parse_metadata(char *filename) {
     info->bitstream_info = parse_bitstream(info->bitstream_filename);
 
     // Parse IO scheduling information
-    json_t const *IOs_json = json_getProperty(json, "IOs");
+    json_t const *IOs_json = json_getProperty(json, "IOs");  
 
     // parse inputs
     json_t const *input_list_json = json_getProperty(IOs_json, "inputs");
@@ -458,7 +515,7 @@ void *parse_metadata(char *filename) {
 
     json_t const *input_json;
     for (input_json = json_getChild(input_list_json), cnt = 0; input_json != 0;
-         input_json = json_getSibling(input_json), cnt++) {
+        input_json = json_getSibling(input_json), cnt++) {
         if (JSON_OBJ == json_getType(input_json)) {
             info->input_info[cnt] = parse_io(input_json, Input);
             strncpy(info->input_info[cnt]->filename, dir, strnlen(dir, BUFFER_SIZE));
@@ -467,6 +524,44 @@ void *parse_metadata(char *filename) {
     }
     info->num_inputs = cnt;
 
+
+    // parse mu inputs
+    json_t const *mu_input_list_json = json_getProperty(IOs_json, "mu_inputs");
+    if (!mu_input_list_json || JSON_ARRAY != json_getType(mu_input_list_json)) {
+        puts("Error, the mu input list property is not found.");
+        exit(1);
+    }
+
+    json_t const *mu_input_json;
+    for (mu_input_json = json_getChild(mu_input_list_json), cnt = 0; mu_input_json != 0;
+        mu_input_json = json_getSibling(mu_input_json), cnt++) {
+        if (JSON_OBJ == json_getType(mu_input_json)) {
+            info->mu_input_info[cnt] = parse_mu_io(mu_input_json, MU_Input);
+            strncpy(info->mu_input_info[cnt]->filename, dir, strnlen(dir, BUFFER_SIZE));
+            strncat(info->mu_input_info[cnt]->filename, json_getPropertyValue(mu_input_json, "datafile"), BUFFER_SIZE);
+        }
+    }
+    info->num_mu_inputs = cnt;
+
+    // Set app type based on which inputs are provided
+    // MU and GLB feed CGRA
+    if (info->num_inputs > 0 && info-> num_mu_inputs > 0) {
+        info->app_type = mu2cgra_glb2cgra;
+        printf("APP TYPE is mu2cgra_glb2cgra\n");
+
+    // GLB feeds CGRA   
+    } else if (info->num_inputs > 0) {
+        info->app_type = glb2cgra;
+        printf("APP TYPE is glb2cgra\n");
+
+    // MU feeds CGRA    
+    } else {
+        info->app_type = mu2cgra;
+        printf("APP TYPE is mu2cgra\n");
+    }
+
+    
+   
     // parse outputs
     json_t const *output_list_json = json_getProperty(IOs_json, "outputs");
     if (!output_list_json || JSON_ARRAY != json_getType(output_list_json)) {
@@ -527,6 +622,42 @@ void *parse_metadata(char *filename) {
                 printf("Input %0d: %s - %0d Byte.\n", i, info->input_info[i]->filename, info->input_info[i]->filesize);
             } else {
                 printf("Error, input file %s does not exist.\n", info->input_info[i]->filename);
+                exit(1);
+            }
+        }
+    }
+
+    for (int i = 0; i < info->num_mu_inputs; i++) {
+        if (*info->mu_input_info[i]->filename != '\0') {
+            fp2 = fopen(info->mu_input_info[i]->filename, "r");
+            if (fp2) {
+                int name_len = strlen(info->mu_input_info[i]->filename);
+                if (strncmp(&info->mu_input_info[i]->filename[name_len - 3], "raw", strlen("raw")) == 0) {
+                    fseek(fp2, 0L, SEEK_END);
+                    info->mu_input_info[i]->filesize = (int)ftell(fp2);
+                } else if (strncmp(&info->mu_input_info[i]->filename[name_len - 3], "hex", strlen("hex")) == 0) {
+                    fseek(fp2, 0L, SEEK_END);
+                    info->mu_input_info[i]->filesize = 2 * (((int)ftell(fp2)) / 5);
+                } else {
+                    char c;
+                    int ch1, ch2, bitwidth, filesize;
+                    // skip the first line
+                    while (true) {
+                        c = fgetc(fp2);
+                        if (c == '\n') break;
+                    }
+                    fscanf(fp2, "%d %d\n%d", &ch1, &ch2, &bitwidth);
+                    if (bitwidth == 65535) {
+                        filesize = ch1 * ch2 * 2;
+                    } else {
+                        filesize = ch1 * ch2;
+                    }
+                    info->mu_input_info[i]->filesize = filesize;
+                }
+                fclose(fp2);
+                printf("MU input %0d: %s - %0d Byte.\n", i, info->mu_input_info[i]->filename, info->mu_input_info[i]->filesize);
+            } else {
+                printf("Error, MU input file %s does not exist.\n", info->mu_input_info[i]->filename);
                 exit(1);
             }
         }
@@ -598,6 +729,11 @@ void *get_input_info(void *info, int index) {
     return kernel_info->input_info[index];
 }
 
+void *get_mu_input_info(void *info, int index) {
+    GET_KERNEL_INFO(info);
+    return kernel_info->mu_input_info[index];
+}
+
 void *get_output_info(void *info, int index) {
     GET_KERNEL_INFO(info);
     return kernel_info->output_info[index];
@@ -613,9 +749,19 @@ int get_group_start(void *info) {
     return kernel_info->group_start;
 }
 
+int get_app_type(void *info) {
+    GET_KERNEL_INFO(info);
+    return kernel_info->app_type;
+}
+
 int get_num_inputs(void *info) {
     GET_KERNEL_INFO(info);
     return kernel_info->num_inputs;
+}
+
+int get_num_mu_inputs(void *info) {
+    GET_KERNEL_INFO(info);
+    return kernel_info->num_mu_inputs;
 }
 
 int get_num_outputs(void *info) {
@@ -692,6 +838,11 @@ char *get_input_filename(void *info, int index) {
     return kernel_info->input_info[index]->filename;
 }
 
+char *get_mu_input_filename(void *info, int index) {
+    GET_KERNEL_INFO(info);
+    return kernel_info->mu_input_info[index]->filename;
+}
+
 char *get_output_filename(void *info, int index) {
     GET_KERNEL_INFO(info);
     return kernel_info->output_info[index]->filename;
@@ -700,6 +851,11 @@ char *get_output_filename(void *info, int index) {
 int get_input_size(void *info, int index) {
     GET_KERNEL_INFO(info);
     return kernel_info->input_info[index]->filesize;
+}
+
+int get_mu_input_size(void *info, int index) {
+    GET_KERNEL_INFO(info);
+    return kernel_info->mu_input_info[index]->filesize;
 }
 
 int get_io_tile_start_addr(void *info, int index) {

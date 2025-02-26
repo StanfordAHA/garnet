@@ -98,23 +98,13 @@ class MU2F_IOCoreReadyValid(LakeCoreBase):
         else:
             config_kwargs = config_tuple
 
-        if 'sparse_mode' in config_kwargs:
-            configs_pre = []
-        else:
-            configs_pre = [
-            ]
-        dense_bypass = 0
+  
         configs = []
-        # add valid high reg sel
 
-       # sub_dict = {'dense_bypass': dense_bypass}
-        tile_config = self.dut.get_bitstream(sub_dict)
-        for name, v in configs_pre:
-            configs = [self.get_config_data(name, v)] + configs
+        tile_config = self.dut.get_bitstream(config_kwargs)
         for name, v in tile_config:
             configs = [self.get_config_data(name, v)] + configs
-        #return configs
-        return []
+        return configs
 
     def pnr_info(self):
         return [PnRTag("U", 2, self.DEFAULT_PRIORITY),

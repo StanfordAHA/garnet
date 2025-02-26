@@ -49,7 +49,7 @@ class GlbHeader():
                                                          ("num_repeat", clog2(self._params.queue_depth) + 1)])
 
             self.cfg_load_dma_ctrl_t = PackedStruct("load_dma_ctrl_t",
-                                                    [("mode", 2),
+                                                    [("mode", 3),
                                                      ("valid_mode", 2),
                                                      ("flush_mode", 1),
                                                         ("data_mux", 2),

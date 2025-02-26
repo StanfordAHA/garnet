@@ -37,7 +37,8 @@ struct Position {
     int y;
 };
 
-enum IO { Input = 0, Output = 1 };
+enum IO { Input = 0, Output = 1, MU_Input = 2 };
+enum APP_TYPE {glb2cgra = 0, mu2cgra = 1, mu2cgra_glb2cgra = 2};
 
 struct IOTileInfo {
     enum IO io;
@@ -69,6 +70,9 @@ struct IOInfo {
 struct KernelInfo {
     int num_inputs;
     int num_outputs;
+    int num_mu_inputs;
+    
+    enum APP_TYPE app_type;
 
     int group_start;
     int num_groups;
@@ -86,6 +90,7 @@ struct KernelInfo {
     char placement_filename[BUFFER_SIZE];
 
     struct IOInfo *input_info[MAX_NUM_IO];
+    struct IOInfo *mu_input_info[MAX_NUM_IO];
     struct IOInfo *output_info[MAX_NUM_IO];
     struct BitstreamInfo *bitstream_info;
 
@@ -100,6 +105,7 @@ void *parse_schedule(json_t const *IOs_json);
 int parse_num_group(struct KernelInfo *info);
 void *get_bs_info(void *info);
 void *get_input_info(void *info, int index);
+void *get_mu_input_info(void *info, int index);
 void *get_output_info(void *info, int index);
 void *get_io_tile_info(void *info, int index);
 int get_io_tile_loop_dim(void *info, int index);
@@ -111,7 +117,9 @@ int get_io_tile_is_glb_input(void *info, int index); // for back-to-back kernels
 // helper functions to access data from SV testbench
 int get_num_groups(void *info);
 int get_group_start(void *info);
+int get_app_type(void *info);
 int get_num_inputs(void *info);
+int get_num_mu_inputs(void *info);
 int get_num_outputs(void *info);
 int get_num_io_tiles(void *info, int index);
 int get_io_tile_x(void *info, int index);
@@ -124,8 +132,10 @@ void update_glb_tiling_cnt(void *info, int cnt); // for GLB tiling
 char *get_placement_filename(void *info);
 char *get_bitstream_filename(void *info);
 char *get_input_filename(void *info, int index);
+char *get_mu_input_filename(void *info, int index);
 char *get_output_filename(void *info, int index);
 int get_input_size(void *info, int index);
+int get_mu_input_size(void *info, int index);
 int get_output_size(void *info, int index);
 
 int get_io_tile_start_addr(void *info, int index);
