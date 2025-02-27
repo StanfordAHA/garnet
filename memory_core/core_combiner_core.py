@@ -273,7 +273,7 @@ class CoreCombinerCore(LakeCoreBase):
                 for name, v in config_rv_bypass:
                     configs = [self.get_config_data(name, v)] + configs
 
-                
+                full_instance_name = config_tuple[2]
                 input_bogus_init_num = [0, 0, 0, 0]
                 assert all(0 <= num <= 2 for num in input_bogus_init_num), "All elements in input_bogus_init_num must be between 0 and 2 inclusive"
                 config_input_bogus_init = [(f"PE_input_width_17_num_0_fifo_bogus_init_num", input_bogus_init_num[0]),

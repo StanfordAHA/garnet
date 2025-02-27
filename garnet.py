@@ -290,7 +290,7 @@ class Garnet(Generator):
                 continue
             instr = instrs[instance]
             result += self.interconnect.configure_placement(x, y, instr,
-                                                            node[0], node[1], active_core_ports)
+                                                            node[0], node[1], active_core_ports, instance)
             if node in self.pes_with_packed_ponds:
                 print(f"pond {self.pes_with_packed_ponds[node]} being packed with {node} in {x},{y}")
                 node = self.pes_with_packed_ponds[node]
@@ -299,7 +299,7 @@ class Garnet(Generator):
                     continue
                 instr = instrs[instance]
                 result += self.interconnect.configure_placement(x, y, instr,
-                                                                node[0], node[1], active_core_ports)
+                                                                node[0], node[1], active_core_ports, instance)
         return result
 
     def convert_mapped_to_netlist(self, mapped):
