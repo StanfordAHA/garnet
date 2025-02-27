@@ -264,7 +264,6 @@ class CoreCombinerCore(LakeCoreBase):
 
             # BEGIN BLOCK COMMENT
             #TODO: Fix this and name it better. ready_valid really means include RV interconnect in this context
-            #TODO: Rename all this stuff: rename rv_bypass to ready-valid bypass
             if self.ready_valid:
                 rv_bypass_value = 0 if dense_ready_valid else 1
                 config_rv_bypass = [(f"{self.get_port_remap()['alu']['data0']}_bypass_rv", rv_bypass_value),
@@ -273,6 +272,25 @@ class CoreCombinerCore(LakeCoreBase):
                                        (f"{self.get_port_remap()['alu']['res']}_bypass_rv", rv_bypass_value)]
                 for name, v in config_rv_bypass:
                     configs = [self.get_config_data(name, v)] + configs
+
+                
+                input_bogus_init_num = [0, 0, 0, 0]
+                assert all(0 <= num <= 2 for num in input_bogus_init_num), "All elements in input_bogus_init_num must be between 0 and 2 inclusive"
+                config_input_bogus_init = [(f"PE_input_width_17_num_0_fifo_bogus_init_num", input_bogus_init_num[0]),
+                                           (f"PE_input_width_17_num_1_fifo_bogus_init_num", input_bogus_init_num[1]),
+                                           (f"PE_input_width_17_num_2_fifo_bogus_init_num", input_bogus_init_num[2]),
+                                           (f"PE_input_width_17_num_3_fifo_bogus_init_num", input_bogus_init_num[3])]
+                for name, v in config_input_bogus_init:
+                    configs = [self.get_config_data(name, v)] + configs
+
+                output_bogus_init_num = [0, 0, 0]
+                assert all(0 <= num <= 2 for num in output_bogus_init_num), "All elements in output_bogus_init_num must be between 0 and 2 inclusive"
+                config_output_bogus_init = [(f"PE_output_width_17_num_0_fifo_bogus_init_num", output_bogus_init_num[0]),
+                                           (f"PE_output_width_17_num_1_fifo_bogus_init_num", output_bogus_init_num[1]),
+                                           (f"PE_output_width_17_num_2_fifo_bogus_init_num", output_bogus_init_num[2])]
+                for name, v in config_output_bogus_init:
+                    configs = [self.get_config_data(name, v)] + configs    
+     
             # END BLOCK COMMENT
             #print(configs)
             return configs
