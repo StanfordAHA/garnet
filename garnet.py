@@ -139,7 +139,7 @@ class Garnet(Generator):
 
         self.global_buffer = GlobalBufferMagma(glb_params)
 
-    def build_glb_ports(self, glb_params, using_matrix_unit, mu_datawidth, dense_only, num_fabric_cols_removed):
+    def build_glb_ports(self, glb_params, using_matrix_unit, mu_datawidth, dense_only, num_fabric_cols_removed, mu_oc_0):
 
         # axi_data_width must be same as cgra config_data_width
         axi_addr_width = self.glb_params.cgra_axi_addr_width
@@ -165,8 +165,6 @@ class Garnet(Generator):
             self.add_ports(
                 mu2cgra=magma.In(magma.Array[(num_output_channels, magma.Bits[mu_datawidth])]),
                 mu2cgra_valid=magma.In(magma.Bit),
-                # MO: Temporary HACK 
-                #cgra2mu_ready_row0 = magma.Out(magma.Bit),
                 cgra2mu_ready=magma.Out(magma.Bit)
             )
 
@@ -181,34 +179,26 @@ class Garnet(Generator):
             assert mu_datawidth < cgra_track_width, "Matrix unit datawidth must be < CGRA track width"
             width_difference = cgra_track_width - mu_datawidth
 
-            breakpoint()
-            mu_io_tile_col = max(num_fabric_cols_removed - 1, 0)
-
             num_mu_io_tiles = int(num_output_channels/2)
-            mu_io_startX = int(((input_width - num_fabric_cols_removed) - num_mu_io_tiles)/2) + num_fabric_cols_removed
+            mu_io_startX = int(((self.width - num_fabric_cols_removed) - num_mu_io_tiles)/2) + num_fabric_cols_removed
             mu_io_endX = mu_io_startX + num_mu_io_tiles-1
 
             for i in range(num_output_channels):
                 io_num = i % 2
-                cgra_row_num = int(i/2 + 1)
+
+                mu_io_tile_row = self.height + 1
+                cgra_col_num = mu_io_startX + i//2
 
                 # Tie MSB(s) not driven by MU to GND
                 if (width_difference > 0):
-                   self.wire(Const(0), self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{mu_io_tile_col:02X}_Y{cgra_row_num:02X}"][cgra_track_width-width_difference:cgra_track_width])
+                   self.wire(Const(0), self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{cgra_col_num:02X}_Y{mu_io_tile_row:02X}"][cgra_track_width-width_difference:cgra_track_width])
 
-                self.wire(self.ports.mu2cgra[i], self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{mu_io_tile_col:02X}_Y{cgra_row_num:02X}"][:cgra_track_width-width_difference])
-                self.wire(self.ports.mu2cgra_valid, self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{mu_io_tile_col:02X}_Y{cgra_row_num:02X}_valid"])
+                self.wire(self.ports.mu2cgra[i], self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{cgra_col_num:02X}_Y{mu_io_tile_row:02X}"][:cgra_track_width-width_difference])
+                self.wire(self.ports.mu2cgra_valid, self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{cgra_col_num:02X}_Y{mu_io_tile_row:02X}_valid"])
 
-                self.wire(self.cgra2mu_ready_and.ports[f"I{i}"], self.convert(self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{mu_io_tile_col:02X}_Y{cgra_row_num:02X}_ready"], magma.Bits[1]))
+                self.wire(self.cgra2mu_ready_and.ports[f"I{i}"], self.convert(self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{cgra_col_num:02X}_Y{mu_io_tile_row:02X}_ready"], magma.Bits[1]))
 
             self.wire(self.convert(self.cgra2mu_ready_and.ports.O, magma.bit), self.ports.cgra2mu_ready)
-
-            # MO: Temporary HACK
-            # self.cgra2mu_row0_ready_and = FromMagma(mantle.DefineAnd(height=2, width=1))
-            # self.wire(self.cgra2mu_row0_ready_and.ports.I0, self.convert(self.interconnect.ports.mu2io_17_0_X07_Y01_ready, magma.Bits[1]))
-            # self.wire(self.cgra2mu_row0_ready_and.ports.I1, self.convert(self.interconnect.ports.mu2io_17_1_X07_Y01_ready, magma.Bits[1]))
-            # self.wire(self.convert(self.cgra2mu_row0_ready_and.ports.O, magma.bit), self.ports.cgra2mu_ready_row0)
-
 
         # top <-> global controller ports connection
         self.wire(self.ports.clk_in, self.global_controller.ports.clk_in)
