@@ -10,6 +10,7 @@ from memory_core.crdhold_core import CrdHoldCore
 from memory_core.fake_pe_core import FakePECore
 from memory_core.io_core_rv import IOCoreReadyValid
 from memory_core.mu2f_io_core_rv import MU2F_IOCoreReadyValid
+from memory_core.mu2f_io_core_rv_clk_rcv import MU2F_IOCoreReadyValid_clk_rcv
 from memory_core.repeat_core import RepeatCore
 from memory_core.repeat_signal_generator_core import RepeatSignalGeneratorCore
 from memory_core.write_scanner_core import WriteScannerCore
@@ -433,7 +434,11 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
             
             elif using_matrix_unit and y in range(y_max + 1, height):
                 if x in range(mu_io_startX, mu_io_endX + 1):
-                    core = MU2F_IOCoreReadyValid(matrix_unit_data_width=17, tile_array_data_width=17, num_ios=2, allow_bypass=False)
+                    isMemTileColumn = (x + 1) % (mem_tile_ratio + 1) == 0
+                    if isMemTileColumn:
+                        core = MU2F_IOCoreReadyValid_clk_rcv(matrix_unit_data_width=17, tile_array_data_width=17, num_ios=2, allow_bypass=False)
+                    else:
+                        core = MU2F_IOCoreReadyValid(matrix_unit_data_width=17, tile_array_data_width=17, num_ios=2, allow_bypass=False)
                 else:
                     core = None 
 
@@ -451,7 +456,6 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
                                        config_data_width=config_data_width)
                 else:
                     core = IOCore()
-
 
             else:
                 # now override this...to just use the altcore list to not waste space
@@ -518,9 +522,9 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
 
     def skip_sbs_for_core(core, give_north_io_sbs):
         if give_north_io_sbs:
-            return isinstance(core, IOCoreValid) or isinstance(core, MU2F_IOCoreReadyValid)
+            return isinstance(core, IOCoreValid) or isinstance(core, MU2F_IOCoreReadyValid) or isinstance(core, MU2F_IOCoreReadyValid_clk_rcv)
         else:
-            return isinstance(core, IOCoreValid) or isinstance(core, IOCoreReadyValid) or isinstance(core, MU2F_IOCoreReadyValid)
+            return isinstance(core, IOCoreValid) or isinstance(core, IOCoreReadyValid) or isinstance(core, MU2F_IOCoreReadyValid) or isinstance(core, MU2F_IOCoreReadyValid_clk_rcv)
 
     # Specify input and output port connections.
     inputs = set()
