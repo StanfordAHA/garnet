@@ -86,8 +86,8 @@ def get_cc_args(width, height, io_sides, garnet_args):
     args = Namespace(**vars(garnet_args))
 
     # Manually set required (non-keyword) parameters
-    args.width = width
-    args.height = height
+    args.input_width = width
+    args.input_height = height
     args.io_sides = io_sides
 
 
@@ -130,7 +130,7 @@ def get_cc_args(width, height, io_sides, garnet_args):
 #     return create_cgra(**cc_args.__dict__)
 
 
-def create_cgra(width: int, height: int, io_sides: List[IOSide],
+def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
                 add_reg: bool = True,
                 mem_ratio: Tuple[int, int] = (1, 4),
                 reg_addr_width: int = 8,
@@ -143,6 +143,7 @@ def create_cgra(width: int, height: int, io_sides: List[IOSide],
                 include_E64_hw: bool = False,
                 give_north_io_sbs: bool = False,
                 num_fabric_cols_removed: int = 0,
+                mu_oc_0: int = 0,
                 hi_lo_tile_id: bool = True,
                 pass_through_clk: bool = True,
                 tile_layout_option: int = 0,  # 0: column-based, 1: row-based
@@ -387,7 +388,7 @@ def create_cgra(width: int, height: int, io_sides: List[IOSide],
                                        'rf': rf})]
 
     # compute the actual size
-    width, height = get_actual_size(width, height, io_sides)
+    width, height = get_actual_size(input_width, input_height, io_sides)
     # these values are inclusive
     x_min, x_max, y_min, y_max = get_array_size(width, height, io_sides)
     # compute ratio
@@ -405,6 +406,11 @@ def create_cgra(width: int, height: int, io_sides: List[IOSide],
     intercore_mapping = None
 
     remove_fabric_cols = num_fabric_cols_removed > 0
+
+    # Try to center the MU IO tiles 
+    num_mu_io_tiles = int(mu_oc_0/2)
+    mu_io_startX = int(((input_width - num_fabric_cols_removed) - num_mu_io_tiles)/2) + num_fabric_cols_removed
+    mu_io_endX = mu_io_startX + num_mu_io_tiles-1
 
     for x in range(width):
         # Only update the altcore if it had been used actually.
@@ -424,18 +430,14 @@ def create_cgra(width: int, height: int, io_sides: List[IOSide],
                 core = None
             elif x in range(x_max + 1, width) and y in range(y_max + 1, height):
                 core = None
+            
+            elif using_matrix_unit and y in range(y_max + 1, height):
+                if x in range(mu_io_startX, mu_io_endX + 1):
+                    core = MU2F_IOCoreReadyValid(matrix_unit_data_width=17, tile_array_data_width=17, num_ios=2, allow_bypass=False)
+                else:
+                    core = None 
 
-
-            elif not(remove_fabric_cols) and using_matrix_unit and x in range(x_min):
-                core = MU2F_IOCoreReadyValid(matrix_unit_data_width=17, tile_array_data_width=17, num_ios=2, allow_bypass=False)
-
-            # elif using_matrix_unit and x in range(x_min):
-            #     core = MU2F_IOCoreReadyValid(matrix_unit_data_width=17, tile_array_data_width=17, num_ios=2, allow_bypass=False)
-
-            elif remove_fabric_cols and using_matrix_unit and x == num_fabric_cols_removed-1 and not(y in range(y_min)):
-                core = MU2F_IOCoreReadyValid(matrix_unit_data_width=17, tile_array_data_width=17, num_ios=2, allow_bypass=False)
-
-            elif remove_fabric_cols and x in range(num_fabric_cols_removed-1) and not(y in range(y_min)):
+            elif remove_fabric_cols and x in range(num_fabric_cols_removed) and not(y in range(y_min)):
                  core = None
 
             elif x in range(x_min) \
@@ -636,6 +638,7 @@ def create_cgra(width: int, height: int, io_sides: List[IOSide],
                                          io_conn=io_conn,
                                          give_north_io_sbs=give_north_io_sbs,
                                          num_fabric_cols_removed=num_fabric_cols_removed,
+                                         using_matrix_unit=using_matrix_unit,
                                          additional_core_fn=create_additional_core,
                                          inter_core_connection=inter_core_connection)
         ics[bit_width] = ic

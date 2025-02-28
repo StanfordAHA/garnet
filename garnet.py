@@ -98,7 +98,7 @@ class Garnet(Generator):
         # GLB ports (or not)
 
         if not args.interconnect_only:
-            self.build_glb_ports(args.glb_params, args.using_matrix_unit, args.mu_datawidth, args.dense_only, args.num_fabric_cols_removed)
+            self.build_glb_ports(args.glb_params, args.using_matrix_unit, args.mu_datawidth, args.dense_only, args.num_fabric_cols_removed, args.mu_oc_0)
         else:
             self.lift_ports(self.width, self.config_data_width, self.harden_flush)
 
@@ -161,7 +161,7 @@ class Garnet(Generator):
 
         # Add MU interface, if necessary
         if using_matrix_unit:
-            num_output_channels = self.height * 2
+            num_output_channels = mu_oc_0
             self.add_ports(
                 mu2cgra=magma.In(magma.Array[(num_output_channels, magma.Bits[mu_datawidth])]),
                 mu2cgra_valid=magma.In(magma.Bit),
@@ -181,7 +181,12 @@ class Garnet(Generator):
             assert mu_datawidth < cgra_track_width, "Matrix unit datawidth must be < CGRA track width"
             width_difference = cgra_track_width - mu_datawidth
 
+            breakpoint()
             mu_io_tile_col = max(num_fabric_cols_removed - 1, 0)
+
+            num_mu_io_tiles = int(num_output_channels/2)
+            mu_io_startX = int(((input_width - num_fabric_cols_removed) - num_mu_io_tiles)/2) + num_fabric_cols_removed
+            mu_io_endX = mu_io_startX + num_mu_io_tiles-1
 
             for i in range(num_output_channels):
                 io_num = i % 2
@@ -881,15 +886,12 @@ def parse_args():
     if args.include_E64_hw:
         os.environ["INCLUDE_E64_HW"] = "1"
 
-    # If using MU, West and North have IO, else only north side has IO
+    # If using MU, South and North have IO, else only north side has IO
     from canal.util import IOSide
     if args.standalone:
         io_sides = [IOSide.None_]
     elif args.using_matrix_unit:
-        if args.num_fabric_cols_removed == 0:
-            io_sides = [IOSide.North, IOSide.West]
-        else:
-            io_sides = [IOSide.North]
+        io_sides = [IOSide.North, IOSide.South]
     else:
         io_sides = [IOSide.North]
 
