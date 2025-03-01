@@ -28,6 +28,9 @@ class CreateBuses(Visitor):
     def __init__(self, inst_info, ready_valid=True):
         self.inst_info = inst_info
         self.ready_valid=ready_valid
+  
+        self.include_E64_HW = "INCLUDE_E64_HW" in os.environ and os.environ.get("INCLUDE_E64_HW") == "1"
+        self.exchange_64_mode = "E64_MODE_ON" in os.environ and os.environ.get("E64_MODE_ON") == "1"
 
     def doit(self, dag):
         self.i = 1
@@ -122,9 +125,27 @@ class CreateBuses(Visitor):
         Visitor.generic_visit(self, node)
         child_bid = self.node_to_bid[node.child]
         if node.child.type == Bit:
-            port = "f2io_1"
+            port = "f2io_1_0" if self.include_E64_HW else "f2io_1"
         else:
-            port = "f2io_17" if self.ready_valid else "f2io_16"
+            if self.exchange_64_mode:
+                node_name_parse_list = node.iname.split("stencil_")[2].split("_write")
+
+                packet_num = 0
+                if len(node_name_parse_list) > 1:
+                    packet_num = int(node_name_parse_list[0]) % 4
+                else:
+                    packet_num = 0
+    
+            if self.include_E64_HW:
+                if self.exchange_64_mode:
+                    port = f"f2io_17_{packet_num}"
+                else:
+                    port = f"f2io_17_0"
+            elif self.ready_valid:
+                port = f"f2io_17"
+            else:
+                port = "f2io_16"
+                
         self.netlist[child_bid].append((node, port))
 
 
@@ -232,12 +253,17 @@ class CreateIDs(Visitor):
             if node.type == Bit:
                 id = f"i"
             elif node.type == BitVector[16]:
-                id = f"I"
+                if "MU" in child.iname:
+                    id = f"U"
+                    self.tile_types.add("U")
+                else:
+                    id = f"I"
             else:
                 raise NotImplementedError(f"{node}, {node.type}")
             self.node_to_type[child.iname] = id
             self.tile_types.add("I")
             self.tile_types.add("i")
+            
 
     def visit_Combine(self, node):
         Visitor.generic_visit(self, node)
@@ -301,6 +327,15 @@ class IO_Input_t(Product):
 
 class IO_Input_t_rv(Product):
     io2f_17 = BitVector[16]
+    io2f_17_0 = BitVector[16]
+    io2f_17_1 = BitVector[16]
+    io2f_17_2 = BitVector[16]
+    io2f_17_3 = BitVector[16]
+    io2f_17_T0 = BitVector[16]
+    io2f_17_T1 = BitVector[16]
+    io2f_17_T2 = BitVector[16]
+    io2f_17_T3 = BitVector[16]
+    io2f_17_T4 = BitVector[16]
     io2f_1 = Bit
 
 
@@ -327,7 +362,9 @@ class FlattenIO(Visitor):
             if t == Bit:
                 return "io2f_1"
             elif ready_valid:
+                # MO: FIXME for E64 conns if FlattenIO is ever used  
                 return "io2f_17"
+                #return "io2f_17_0"
             else:
                 return "io2f_16"
         #isel = lambda t: "io2f_1" if t == Bit else "io2f_16"
@@ -515,6 +552,9 @@ class FixInputsOutputAndPipeline(Visitor):
     ):
         self.sinks = sinks
         self.ready_valid = ready_valid
+
+        self.include_E64_HW = "INCLUDE_E64_HW" in os.environ and os.environ.get("INCLUDE_E64_HW") == "1"
+        self.exchange_64_mode = "E64_MODE_ON" in os.environ and os.environ.get("E64_MODE_ON") == "1"
 
         self.pipeline_inputs = pipeline_inputs
 
@@ -833,8 +873,43 @@ class FixInputsOutputAndPipeline(Visitor):
             io_child = new_children[0]
 
             # -----------------IO-to-MEM/Pond Paths Pipelining-------------------- #
-            if "io16in" in io_child.iname:
-                new_node = new_children[0].select("io2f_17") if self.ready_valid else new_children[0].select("io2f_16")
+            if "MU" in io_child.iname:
+                # MO: MU IO tile HACK. Temporarily hardcoding to use track T0 and T1 
+                # TODO: Fix this to use correct track based on PnR tool 
+                node_name_parse_list = io_child.iname.split("stencil_")[2].split("_read")
+                if len(node_name_parse_list) > 1:
+                    oc0_index = int(node_name_parse_list[0])  
+                else:
+                    oc0_index = 0
+
+                if oc0_index % 2 == 0:
+                    new_node = new_children[0].select("io2f_17_T0")
+                else:
+                    new_node = new_children[0].select("io2f_17_T1")
+
+
+            elif "io16in" in io_child.iname:
+                if self.ready_valid:
+                    if self.include_E64_HW:
+                        if self.exchange_64_mode:
+                            node_name_parse_list = io_child.iname.split("stencil_")[2].split("_read")
+                            packet_num = 0
+                            if len(node_name_parse_list) > 1:
+                                packet_num = int(node_name_parse_list[0]) % 4
+                            else:
+                                packet_num = 0
+                            new_node = new_children[0].select(f"io2f_17_{packet_num}")
+
+                        else:
+                            new_node = new_children[0].select("io2f_17_0") 
+                    else:
+                        new_node = new_children[0].select("io2f_17") 
+
+
+
+                else:
+                    new_node = new_children[0].select("io2f_16") 
+
                 if self.pipeline_inputs:
                     if "IO2MEM_REG_CHAIN" not in os.environ:
                         self.create_register_tree(
@@ -1208,7 +1283,7 @@ def create_netlist_info(
 
     node_info = {t: tile_to_char(t) for t in tile_info}
     nodes_to_ids = CreateIDs(node_info).doit(pdag)
-
+    
     if load_only:
         names_to_ids = {name: id_ for id_, name in id_to_name.items()}
     else:
@@ -1252,11 +1327,34 @@ def create_netlist_info(
     nodes_to_instrs = CreateInstrs(node_info).doit(pdag)
 
     dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1"  
+    exchange_64_mode = "E64_MODE_ON" in os.environ and os.environ.get("E64_MODE_ON") == "1"
+
     info["id_to_instrs"] = {}
     for node, id in nodes_to_ids.items():
+        node_config_kwargs = {}
         if dense_ready_valid and ("I" in id or "i" in id):
-            node_config_kwargs = {}
             node_config_kwargs['ready_valid_mode'] = 1 
+
+        if exchange_64_mode and ("I" in id or "i" in id):
+            node_config_kwargs['exchange_64_mode'] = 1
+
+        # MO: MU IO tile HACK for now. Hardcoding it to use tracks T0 and T1 for now
+        # TODO: In the future, find a way to let the PnR tool choose the tracks 
+        if "U" in id or "u" in id:
+            node_name_parse_list = node.split("stencil_")[2].split("_read")
+            if len(node_name_parse_list) > 1:
+                oc0_index = int(node_name_parse_list[0])  
+            else:
+                oc0_index = 0
+            if oc0_index % 2 == 0:
+                node_config_kwargs['track_active_T0'] = 1
+            else:
+                # Whatever track receieves data from odd numbered MU input needs its track_select set to 1
+                node_config_kwargs['track_select_T1'] = 1
+                node_config_kwargs['track_active_T1'] = 1
+
+
+        if ((dense_ready_valid or exchange_64_mode) and ("I" in id or "i" in id)) or "U" in id or "u" in id:
             info["id_to_instrs"][id] = (1, node_config_kwargs) 
         else:
             info["id_to_instrs"][id] = nodes_to_instrs[node]
@@ -1264,7 +1362,7 @@ def create_netlist_info(
     info["instance_to_instrs"] = {
         info["id_to_name"][id]: instr
         for id, instr in info["id_to_instrs"].items()
-        if ("p" in id or "m" in id or "I" in id or "i" in id)
+        if ("p" in id or "m" in id or "I" in id or "i" in id or "U" in id or "u" in id)
     }
     for node, md in node_to_metadata.items():
         info["instance_to_instrs"][node] = md
@@ -1300,8 +1398,9 @@ def create_netlist_info(
         graph.manualy_place_resnet(app_dir=app_dir)
 
     # # MO: Matrix unit HACK 
+    #breakpoint()
     # if "MU_APP_MANUAL_PLACER" in os.environ and os.environ.get("MU_APP_MANUAL_PLACER") == "1":
-    #     breakpoint()
+    #     #breakpoint()
     #     manual_place_filepath = os.path.join(app_dir, "../hardcoded_bin/manual.place")
     #     os.system(f"cp {manual_place_filepath} {app_dir}")
 

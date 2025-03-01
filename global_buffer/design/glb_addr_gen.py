@@ -1,5 +1,6 @@
 import os
-from kratos import always_ff, posedge, Generator, clog2
+import kratos as kts
+from kratos import always_ff, posedge, Generator, clog2, resize, always_comb
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 
 

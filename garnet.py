@@ -9,7 +9,7 @@ if os.getenv('WHICH_SOC') == "amber":
 import argparse
 import magma
 from systemRDL.util import gen_rdl_header  # If I move this it breaks. Dunno why.
-from cgra import compress_config_data
+# from cgra import compress_config_data
 import json
 import archipelago
 import archipelago.power
@@ -61,6 +61,7 @@ class Garnet(Generator):
 
 
         self.io_sides = io_sides
+        self.include_E64_hw = args.include_E64_hw
 
         # Build GLB unless interconnect_only (CGRA-only) requested
 
@@ -164,9 +165,8 @@ class Garnet(Generator):
             self.add_ports(
                 mu2cgra=magma.In(magma.Array[(num_output_channels, magma.Bits[mu_datawidth])]),
                 mu2cgra_valid=magma.In(magma.Bit),
-
                 # MO: Temporary HACK
-                cgra2mu_ready_row0 = magma.Out(magma.Bit),
+                #cgra2mu_ready_row0 = magma.Out(magma.Bit),
                 cgra2mu_ready=magma.Out(magma.Bit)
             )
 
@@ -199,10 +199,10 @@ class Garnet(Generator):
             self.wire(self.convert(self.cgra2mu_ready_and.ports.O, magma.bit), self.ports.cgra2mu_ready)
 
             # MO: Temporary HACK
-            self.cgra2mu_row0_ready_and = FromMagma(mantle.DefineAnd(height=2, width=1))
-            self.wire(self.cgra2mu_row0_ready_and.ports.I0, self.convert(self.interconnect.ports.mu2io_17_0_X07_Y01_ready, magma.Bits[1]))
-            self.wire(self.cgra2mu_row0_ready_and.ports.I1, self.convert(self.interconnect.ports.mu2io_17_1_X07_Y01_ready, magma.Bits[1]))
-            self.wire(self.convert(self.cgra2mu_row0_ready_and.ports.O, magma.bit), self.ports.cgra2mu_ready_row0)
+            # self.cgra2mu_row0_ready_and = FromMagma(mantle.DefineAnd(height=2, width=1))
+            # self.wire(self.cgra2mu_row0_ready_and.ports.I0, self.convert(self.interconnect.ports.mu2io_17_0_X07_Y01_ready, magma.Bits[1]))
+            # self.wire(self.cgra2mu_row0_ready_and.ports.I1, self.convert(self.interconnect.ports.mu2io_17_1_X07_Y01_ready, magma.Bits[1]))
+            # self.wire(self.convert(self.cgra2mu_row0_ready_and.ports.O, magma.bit), self.ports.cgra2mu_ready_row0)
 
 
         # top <-> global controller ports connection
@@ -289,10 +289,8 @@ class Garnet(Generator):
             if instance not in instrs:
                 continue
             instr = instrs[instance]
-            #TODO: Pass netlist in here, get the instance, search the netlist for the instance, and get the ports being used
-            # If it's a PE, pass this info on to configure sparse_num_inputs appropriately
             result += self.interconnect.configure_placement(x, y, instr,
-                                                            node[0], node[1], active_core_ports)
+                                                            node[0], node[1], active_core_ports, instance)
             if node in self.pes_with_packed_ponds:
                 print(f"pond {self.pes_with_packed_ponds[node]} being packed with {node} in {x},{y}")
                 node = self.pes_with_packed_ponds[node]
@@ -301,7 +299,7 @@ class Garnet(Generator):
                     continue
                 instr = instrs[instance]
                 result += self.interconnect.configure_placement(x, y, instr,
-                                                                node[0], node[1], active_core_ports)
+                                                                node[0], node[1], active_core_ports, instance)
         return result
 
     def convert_mapped_to_netlist(self, mapped):
@@ -616,9 +614,11 @@ class Garnet(Generator):
             fixed_io = None
         else:
             from global_buffer.io_placement import place_io_blk
-            fixed_io = place_io_blk(id_to_name, app_dir, self.io_sides)
+            fixed_io = place_io_blk(id_to_name, app_dir, self.io_sides, args.num_fabric_cols_removed)
 
         west_in_io_sides = IOSide.West in self.io_sides
+        dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1"
+
         placement, routing, id_to_name = \
             archipelago.pnr(self.interconnect, (netlist, bus),
                             load_only=load_only,
@@ -629,7 +629,8 @@ class Garnet(Generator):
                             harden_flush=self.harden_flush,
                             pipeline_config_interval=self.pipeline_config_interval,
                             pes_with_packed_ponds=self.pes_with_packed_ponds,
-                            west_in_io_sides=west_in_io_sides)
+                            west_in_io_sides=west_in_io_sides,
+                            sparse=dense_ready_valid)
 
         return placement, routing, id_to_name, instance_to_instr, netlist, bus, active_core_ports
 
@@ -706,6 +707,7 @@ class Garnet(Generator):
 
     def generate_bitstream(self, halide_src, placement, routing, id_to_name, instance_to_instr, netlist, bus,
                            compact=False, end_to_end=False, active_core_ports=None):
+        from cgra import compress_config_data
         routing_fix = archipelago.power.reduce_switching(routing, self.interconnect,
                                                          compact=compact)
         routing.update(routing_fix)
@@ -714,7 +716,14 @@ class Garnet(Generator):
         if end_to_end: self.write_zero_to_config_regs(bitstream)
 
         dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1"
-        bitstream += self.interconnect.get_route_bitstream(routing, use_fifo=dense_ready_valid)
+
+
+        reg_loc_to_id = {}
+        for id, loc in placement.items():
+            if 'r' in id:
+                reg_loc_to_id.setdefault(loc, []).append(id)
+
+        bitstream += self.interconnect.get_route_bitstream(routing, use_fifo=dense_ready_valid, id_to_name=id_to_name, reg_loc_to_id=reg_loc_to_id)
 
 
         bitstream += self.fix_pond_flush_bug(placement, routing)
@@ -854,6 +863,8 @@ def parse_args():
     parser.add_argument("--mu-datawidth", type=int, default=16)
     parser.add_argument("--give-north-io-sbs", action="store_true")
     parser.add_argument("--num-fabric-cols-removed", type=int, default=0)
+    parser.add_argument("--mu-oc-0", type=int, default=32)
+    parser.add_argument('--include-E64-hw', action="store_true")
 
     # Daemon choices are maybe ['help', 'launch', 'use', 'kill', 'force', 'status', 'wait']
     parser.add_argument('--daemon', type=str, choices=GarnetDaemon.choices, default=None)
@@ -873,6 +884,9 @@ def parse_args():
         arch = read_arch(args.pe)
         args.pe_fc = wrapped_peak_class(arch, debug=True)
 
+
+    if args.include_E64_hw:
+        os.environ["INCLUDE_E64_HW"] = "1"
 
     # If using MU, West and North have IO, else only north side has IO
     from canal.util import IOSide
@@ -897,7 +911,6 @@ def parse_args():
         num_glb_tiles=args.width // 2,
         num_cgra_cols=args.width,
 
-        # Matrix unit hack
         num_cgra_cols_including_io=num_cgra_cols_including_io,
 
         # NOTE: We assume num_prr is same as num_glb_tiles
@@ -958,6 +971,17 @@ def build_verilog(args, garnet):
         gen_rdl_header(top_name="glc",
                        rdl_file=os.path.join(garnet_home, "global_controller/systemRDL/rdl_models/glc.rdl.final"),
                        output_folder=os.path.join(garnet_home, "global_controller/header"))
+
+    garnet_home = os.getenv('GARNET_HOME')
+    if not garnet_home:
+        garnet_home = os.path.dirname(os.path.abspath(__file__))
+    from matrix_unit.matrix_unit_main import gen_param_header
+    matrix_unit_params = {}
+    matrix_unit_params["MU_DATAWIDTH"] = args.mu_datawidth
+    matrix_unit_params["MU_OC_0"] = args.mu_oc_0
+    gen_param_header(top_name="matrix_unit_param",
+                        params=matrix_unit_params,
+                        output_folder=os.path.join(garnet_home, "matrix_unit/header"))
 
 def pnr(garnet, args, app):
 

@@ -8,6 +8,7 @@
 #include "glb.h"
 #include "glc.h"
 #include "global_buffer_param.h"
+#include "matrix_unit_param.h"
 
 #define MAX_NUM_COLS 32
 #define MAX_NUM_GLB_TILES 16
@@ -140,6 +141,9 @@ int glb_map(void *kernel_, int dpr_enabled) {
     int first_input_tile;
     int last_input_tile;
 
+    int first_output_tile;
+    int last_output_tile;
+
     struct IOInfo *io_info;
     struct IOTileInfo *io_tile_info;
     for (int i = 0; i < num_inputs; i++) {
@@ -188,8 +192,14 @@ int glb_map(void *kernel_, int dpr_enabled) {
                 (io_tile_info->start_addr << CGRA_BYTE_OFFSET) + ((tile * 2 + 1) << BANK_ADDR_WIDTH);
             printf("Mapping output_%0d_block_%0d to global buffer\n", i, j);
             update_io_tile_configuration(io_tile_info, &kernel->config, kernel);
+            if (i == 0 && j == 0) {
+                first_output_tile = tile;
+            }
         }
     }
+
+    // book keeping last output tile
+    last_output_tile = tile;
 
     // unset padding var after a kernel is mapped
     if(getenv("pad_o_left") != NULL) unsetenv("pad_o_left");
@@ -199,7 +209,13 @@ int glb_map(void *kernel_, int dpr_enabled) {
     int kernel_crossbar_config = 0;
     if (!kernel->opal_dense_scanner_workaround) {
         for (int i = group_start; i < group_start + num_groups; i++) {
-            crossbar_config[i] = first_input_tile;
+            
+            // MO: Hack to emit flush from output tiles for MU2CGRA app
+            if (kernel->app_type == mu2cgra) {
+                crossbar_config[i] = first_output_tile;
+            } else {
+                crossbar_config[i] = first_input_tile;
+            }
         }
     } else {
         for (int i = group_start; i < group_start + num_groups; i++) {
@@ -318,12 +334,44 @@ bool glb_tiling_config(struct KernelInfo *kernel_info, struct IOTileInfo *io_til
     return true;
 }
 
+
+int get_exchange_64_config() {
+    int exchange_64_mode = 0;
+    const char *exchange_64_env_var = "E64_MODE_ON";
+    char *exchange_64_value = getenv(exchange_64_env_var);
+    if (exchange_64_value != NULL && strcmp(exchange_64_value, "1") == 0) {
+        exchange_64_mode = 1;
+    }
+    return exchange_64_mode; 
+}
+
+int HW_supports_E64() {
+    int hw_suports_E64 = 0;
+    const char *HW_supports_E64_env_var = "INCLUDE_E64_HW";
+    char *hw_support_E64_value = getenv(HW_supports_E64_env_var);
+    if (hw_support_E64_value != NULL && strcmp(hw_support_E64_value, "1") == 0) {
+        hw_suports_E64 = 1;
+    }
+    return hw_suports_E64; 
+}
+
+int get_MU_input_bubble_mode() {
+    int add_mu_input_bubbles = 0;
+    const char *add_mu_input_bubbles_env_var = "ADD_MU_INPUT_BUBBLES";
+    char *add_mu_input_bubbles_value = getenv(add_mu_input_bubbles_env_var);
+    if (add_mu_input_bubbles_value != NULL && strcmp(add_mu_input_bubbles_value, "1") == 0) {
+        add_mu_input_bubbles = 1;
+    }
+    return add_mu_input_bubbles; 
+}
+
 int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigInfo *config_info, struct KernelInfo *kernel_info) {
     int tile = io_tile_info->tile;
     int start_addr = io_tile_info->start_addr;
     int cycle_start_addr = io_tile_info->cycle_start_addr;
     int loop_dim = io_tile_info->loop_dim;
     int extent[LOOP_LEVEL];
+    int dma_range[LOOP_LEVEL];
     int data_stride[LOOP_LEVEL];
     int cycle_stride[LOOP_LEVEL];
     int mux_sel;
@@ -333,14 +381,43 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
     bool use_padding = output_padding_config(io_tile_info, &start_addr, &cycle_start_addr);
     bool use_glb_tiling = glb_tiling_config(kernel_info, io_tile_info, &start_addr, &cycle_start_addr);
 
+    // Check if we are in exchange_64 mode
+    int exchange_64_mode = get_exchange_64_config();
+    if (exchange_64_mode) {
+        printf("INFO: Using exchange_64 mode\n");
+    }
+
+
+    int bytes_written_per_cycle_non_E64_mode = 2;
+    
+    // Writing 4x as many bytes in EXCHANGE_64_MODE mode; do -1 b/c addr is 0 indexed
+    int E64_start_addr_increment = (4 - 1) * bytes_written_per_cycle_non_E64_mode;
+
+
     // Convert extent/stride hardware-friendly
     for (int i = 0; i < loop_dim; i++) {
         extent[i] = io_tile_info->extent[i] - 2;
+
+        if (exchange_64_mode) {
+            if (i == 0) {
+                dma_range[i] = (io_tile_info->extent[i]/4) - 2;
+            } else {
+                dma_range[i] = extent[i];
+            }
+        } else {    
+            dma_range[i] = extent[i];
+        }
+
         cycle_stride[i] = io_tile_info->cycle_stride[i];
         data_stride[i] = io_tile_info->data_stride[i];
         for (int j = 0; j < i; j++) {
-            cycle_stride[i] -= io_tile_info->cycle_stride[j] * (io_tile_info->extent[j] - 1);
-            data_stride[i] -= io_tile_info->data_stride[j] * (io_tile_info->extent[j] - 1);
+            if (exchange_64_mode && j == 0) {
+                cycle_stride[i] -= io_tile_info->cycle_stride[j] * (io_tile_info->extent[j]/4 - 1);
+                data_stride[i] -= io_tile_info->data_stride[j] * (io_tile_info->extent[j]/4 - 1);
+            } else {
+                cycle_stride[i] -= io_tile_info->cycle_stride[j] * (io_tile_info->extent[j] - 1);
+                data_stride[i] -= io_tile_info->data_stride[j] * (io_tile_info->extent[j] - 1);
+            }
         }
         data_stride[i] = data_stride[i] << CGRA_BYTE_OFFSET;
     }
@@ -360,6 +437,8 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
     else
         mux_sel = 0b10;
 
+  
+    
     if (io_tile_info->io == Input) {
 
         // Point to the other bank if the input is stored in GLB
@@ -372,9 +451,23 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
             printf("\nIO tiles are in STATIC mode\n");
             mode = LD_DMA_VALID_MODE_STATIC;
         }
+
+        #ifndef GLB_DMA_EXCHANGE_64_MODE_R
+        #define GLB_DMA_EXCHANGE_64_MODE_R 0
+        #endif
+
+        #ifndef GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB
+        #define GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB 0
+        #endif
+
+        if (HW_supports_E64()) {
+            add_config(config_info,
+                    (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_DMA_EXCHANGE_64_MODE_R,
+                    exchange_64_mode << GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB);
+        }
         add_config(config_info,
                    (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_LD_DMA_CTRL_R,
-                   ((0b01 << GLB_LD_DMA_CTRL_MODE_F_LSB) | (mode << GLB_LD_DMA_CTRL_VALID_MODE_F_LSB) |
+                   ((0b001 << GLB_LD_DMA_CTRL_MODE_F_LSB) | (mode << GLB_LD_DMA_CTRL_VALID_MODE_F_LSB) |
                     (mux_sel << GLB_LD_DMA_CTRL_DATA_MUX_F_LSB)));
         add_config(config_info,
                    (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_LD_DMA_HEADER_0_DIM_R,
@@ -391,11 +484,18 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         printf("Input block start addr: 0x%0x\n", start_addr);
         printf("Input block cycle start addr: %0d\n", cycle_start_addr);
         printf("Input block dimensionality: %0d\n", loop_dim);
+        
         for (int i = 0; i < loop_dim; i++) {
+            
+            // Count addr 4x faster b/c reading 8 bytes at once instead of 2 bytes 
+            if (exchange_64_mode) {
+                data_stride[i] = data_stride[i] * 4; 
+            }
+
             add_config(config_info,
                        (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) +
                            (GLB_LD_DMA_HEADER_0_RANGE_0_R + 0x0c * i),
-                       extent[i] << (GLB_LD_DMA_HEADER_0_RANGE_0_RANGE_F_LSB));
+                       dma_range[i] << (GLB_LD_DMA_HEADER_0_RANGE_0_RANGE_F_LSB));
             add_config(config_info,
                        (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) +
                            (GLB_LD_DMA_HEADER_0_CYCLE_STRIDE_0_R + 0x0c * i),
@@ -436,6 +536,20 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         // If use hacky padding then switch to valid mode
         if (use_padding || use_glb_tiling) mode = ST_DMA_VALID_MODE_STATIC;
 
+        if (HW_supports_E64()) {
+            add_config(config_info,
+                    (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_DMA_EXCHANGE_64_MODE_R,
+                    exchange_64_mode << GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB);
+        }
+
+        // MO: Hack to emit flush from output tiles for MU2CGRA app
+        if (kernel_info->app_type == mu2cgra) {
+            printf("INFO: MU2CGRA app detected. Emitting flush from output tiles\n");
+            add_config(config_info,
+                   (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_LD_DMA_CTRL_R,
+                   ((0b100 << GLB_LD_DMA_CTRL_MODE_F_LSB)));
+        }
+
         add_config(config_info,
                    (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_ST_DMA_CTRL_R,
                    ((0b01 << GLB_ST_DMA_CTRL_MODE_F_LSB) | (mode << GLB_ST_DMA_CTRL_VALID_MODE_F_LSB) |
@@ -449,6 +563,11 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         add_config(config_info,
                    (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_ST_DMA_HEADER_0_DIM_R,
                    loop_dim);
+        
+        if (exchange_64_mode) {
+            start_addr += E64_start_addr_increment; 
+        }
+
         add_config(
             config_info,
             (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_ST_DMA_HEADER_0_START_ADDR_R,
@@ -462,10 +581,15 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         printf("Output block cycle start addr: %0d\n", cycle_start_addr);
         printf("Output block dimensionality: %0d\n", loop_dim);
         for (int i = 0; i < loop_dim; i++) {
+            // Count 4x faster b/c writing 8 bytes at once instead of 2 bytes 
+            if (exchange_64_mode) {
+                data_stride[i] = data_stride[i] * 4;
+            }
+            
             add_config(config_info,
                        (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) +
                            (GLB_ST_DMA_HEADER_0_RANGE_0_R + 0x0c * i),
-                       extent[i] << (GLB_ST_DMA_HEADER_0_RANGE_0_RANGE_F_LSB));
+                       dma_range[i] << (GLB_ST_DMA_HEADER_0_RANGE_0_RANGE_F_LSB));
             add_config(config_info,
                        (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) +
                            (GLB_ST_DMA_HEADER_0_CYCLE_STRIDE_0_R + 0x0c * i),

@@ -64,8 +64,16 @@ int get_strm_pulse_data(void *info) {
             f2g_mask |= (1 << io_info->io_tiles[j].tile);
         }
     }
-    mask = (f2g_mask << GLC_STREAM_START_PULSE_F2G_GLB_TILE_0_F_LSB) |
-           (g2f_mask << GLC_STREAM_START_PULSE_G2F_GLB_TILE_0_F_LSB);
+
+    // MO: Hack to emit flush from output tiles for MU2CGRA app 
+    if (kernel_info->app_type == mu2cgra) {
+        mask = (f2g_mask << GLC_STREAM_START_PULSE_F2G_GLB_TILE_0_F_LSB) |
+            (f2g_mask << GLC_STREAM_START_PULSE_G2F_GLB_TILE_0_F_LSB);
+    } else {
+        mask = (f2g_mask << GLC_STREAM_START_PULSE_F2G_GLB_TILE_0_F_LSB) |
+            (g2f_mask << GLC_STREAM_START_PULSE_G2F_GLB_TILE_0_F_LSB);
+    }
+
 
     return mask;
 }

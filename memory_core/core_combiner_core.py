@@ -147,7 +147,6 @@ class CoreCombinerCore(LakeCoreBase):
         self.runtime_mode = runtime_mode
 
     def get_config_bitstream(self, config_tuple):
-        #breakpoint()
         # print(self.runtime_mode)
         # assert self.runtime_mode is not None
         configs = []
@@ -216,9 +215,7 @@ class CoreCombinerCore(LakeCoreBase):
                 #print(configs)
                 return configs
         elif not isinstance(config_tuple, tuple):
-            # MO: DRV HACK
             dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1"
-            #active_inputs = 5 if dense_ready_valid else 0
             # It's a PE then...
             active_core_ports = config_tuple[1]
             active_inputs = list("000")
@@ -246,7 +243,7 @@ class CoreCombinerCore(LakeCoreBase):
             if self.ready_valid:
                 config_kwargs = {
                     'mode': 'alu',
-                    'use_dense': not(dense_ready_valid),
+                    'bypass_rv': not(dense_ready_valid),
                     'active_inputs': active_inputs,
                     'op': int(config_tuple[0]),
                     # pe in dense mode always accept inputs that are external
@@ -268,15 +265,33 @@ class CoreCombinerCore(LakeCoreBase):
 
             # BEGIN BLOCK COMMENT
             #TODO: Fix this and name it better. ready_valid really means include RV interconnect in this context
-            #TODO: Rename all this stuff: rename dense_bypass to ready-valid bypass
             if self.ready_valid:
-                dense_bypass_value = 0 if dense_ready_valid else 1
-                config_dense_bypass = [(f"{self.get_port_remap()['alu']['data0']}_dense", dense_bypass_value),
-                                       (f"{self.get_port_remap()['alu']['data1']}_dense", dense_bypass_value),
-                                       (f"{self.get_port_remap()['alu']['data2']}_dense", dense_bypass_value),
-                                       (f"{self.get_port_remap()['alu']['res']}_dense", dense_bypass_value)]
-                for name, v in config_dense_bypass:
+                rv_bypass_value = 0 if dense_ready_valid else 1
+                config_rv_bypass = [(f"{self.get_port_remap()['alu']['data0']}_bypass_rv", rv_bypass_value),
+                                       (f"{self.get_port_remap()['alu']['data1']}_bypass_rv", rv_bypass_value),
+                                       (f"{self.get_port_remap()['alu']['data2']}_bypass_rv", rv_bypass_value),
+                                       (f"{self.get_port_remap()['alu']['res']}_bypass_rv", rv_bypass_value)]
+                for name, v in config_rv_bypass:
                     configs = [self.get_config_data(name, v)] + configs
+
+                full_instance_name = config_tuple[2]
+                input_bogus_init_num = [0, 0, 0, 0]
+                assert all(0 <= num <= 2 for num in input_bogus_init_num), "All elements in input_bogus_init_num must be between 0 and 2 inclusive"
+                config_input_bogus_init = [(f"PE_input_width_17_num_0_fifo_bogus_init_num", input_bogus_init_num[0]),
+                                           (f"PE_input_width_17_num_1_fifo_bogus_init_num", input_bogus_init_num[1]),
+                                           (f"PE_input_width_17_num_2_fifo_bogus_init_num", input_bogus_init_num[2]),
+                                           (f"PE_input_width_17_num_3_fifo_bogus_init_num", input_bogus_init_num[3])]
+                for name, v in config_input_bogus_init:
+                    configs = [self.get_config_data(name, v)] + configs
+
+                output_bogus_init_num = [0, 0, 0]
+                assert all(0 <= num <= 2 for num in output_bogus_init_num), "All elements in output_bogus_init_num must be between 0 and 2 inclusive"
+                config_output_bogus_init = [(f"PE_output_width_17_num_0_fifo_bogus_init_num", output_bogus_init_num[0]),
+                                           (f"PE_output_width_17_num_1_fifo_bogus_init_num", output_bogus_init_num[1]),
+                                           (f"PE_output_width_17_num_2_fifo_bogus_init_num", output_bogus_init_num[2])]
+                for name, v in config_output_bogus_init:
+                    configs = [self.get_config_data(name, v)] + configs    
+     
             # END BLOCK COMMENT
             #print(configs)
             return configs

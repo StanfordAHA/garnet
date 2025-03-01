@@ -1,7 +1,9 @@
-from kratos import Generator, RawStringStmt
+from kratos import Generator, RawStringStmt, always_ff, posedge
 from kratos.util import clock
 from global_buffer.design.glb_store_dma import GlbStoreDma
+from global_buffer.design.glb_store_dma_E64 import GlbStoreDma_E64
 from global_buffer.design.glb_load_dma import GlbLoadDma
+from global_buffer.design.glb_load_dma_E64 import GlbLoadDma_E64
 from global_buffer.design.glb_pcfg_dma import GlbPcfgDma
 from global_buffer.design.glb_cfg import GlbCfg
 from global_buffer.design.glb_bank_mux import GlbBankMux
@@ -13,6 +15,7 @@ from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from global_buffer.design.glb_header import GlbHeader
 from global_buffer.design.glb_bank import GlbBank
 from global_buffer.design.clk_gate import ClkGate
+import os
 
 
 class GlbTile(Generator):
@@ -144,17 +147,29 @@ class GlbTile(Generator):
         self.cgra_cfg_pcfg_addr_e2w_wsto = self.output("cgra_cfg_pcfg_addr_e2w_wsto", self._params.cgra_cfg_addr_width)
         self.cgra_cfg_pcfg_data_e2w_wsto = self.output("cgra_cfg_pcfg_data_e2w_wsto", self._params.cgra_cfg_data_width)
 
-        self.strm_data_f2g = self.input("strm_data_f2g", self._params.cgra_data_width,
-                                        size=self._params.cgra_per_glb, packed=True)
-        self.strm_data_f2g_vld = self.input("strm_data_f2g_vld", 1, size=self._params.cgra_per_glb, packed=True)
-        self.strm_data_f2g_rdy = self.output("strm_data_f2g_rdy", 1, size=self._params.cgra_per_glb, packed=True)
+        if "INCLUDE_E64_HW" in os.environ and os.environ.get("INCLUDE_E64_HW") == "1":
+            self.strm_data_f2g = self.input("strm_data_f2g", self._params.cgra_data_width,
+                                            size=[self._params.cgra_per_glb, 4], packed=True)
+            self.strm_data_f2g_vld = self.input("strm_data_f2g_vld", 1, size=[self._params.cgra_per_glb, 4], packed=True)
+            self.strm_data_f2g_rdy = self.output("strm_data_f2g_rdy", 1, size=[self._params.cgra_per_glb, 4], packed=True)
+
+            self.strm_data_g2f = self.output("strm_data_g2f", self._params.cgra_data_width,
+                                            size=[self._params.cgra_per_glb, 4], packed=True)
+            self.strm_data_g2f_vld = self.output("strm_data_g2f_vld", 1, size=[self._params.cgra_per_glb, 4], packed=True)
+            self.strm_data_g2f_rdy = self.input("strm_data_g2f_rdy", 1, size=[self._params.cgra_per_glb, 4], packed=True)
+        else:
+            self.strm_data_f2g = self.input("strm_data_f2g", self._params.cgra_data_width,
+                                            size=[self._params.cgra_per_glb], packed=True)
+            self.strm_data_f2g_vld = self.input("strm_data_f2g_vld", 1, size=[self._params.cgra_per_glb], packed=True)
+            self.strm_data_f2g_rdy = self.output("strm_data_f2g_rdy", 1, size=[self._params.cgra_per_glb], packed=True)
+
+            self.strm_data_g2f = self.output("strm_data_g2f", self._params.cgra_data_width,
+                                            size=[self._params.cgra_per_glb], packed=True)
+            self.strm_data_g2f_vld = self.output("strm_data_g2f_vld", 1, size=[self._params.cgra_per_glb], packed=True)
+            self.strm_data_g2f_rdy = self.input("strm_data_g2f_rdy", 1, size=[self._params.cgra_per_glb], packed=True)
+
 
         self.strm_ctrl_f2g = self.input("strm_ctrl_f2g", 1, size=self._params.cgra_per_glb, packed=True)
-
-        self.strm_data_g2f = self.output("strm_data_g2f", self._params.cgra_data_width,
-                                         size=self._params.cgra_per_glb, packed=True)
-        self.strm_data_g2f_vld = self.output("strm_data_g2f_vld", 1, size=self._params.cgra_per_glb, packed=True)
-        self.strm_data_g2f_rdy = self.input("strm_data_g2f_rdy", 1, size=self._params.cgra_per_glb, packed=True)
 
         self.strm_ctrl_g2f = self.output("strm_ctrl_g2f", 1, size=self._params.cgra_per_glb, packed=True)
 
@@ -192,6 +207,9 @@ class GlbTile(Generator):
                                           size=self._params.queue_depth)
         self.cfg_st_dma_num_blocks = self.var("cfg_st_dma_num_blocks", self._params.axi_data_width)
         self.cfg_st_dma_rv_seg_mode = self.var("cfg_st_dma_rv_seg_mode", 1)
+        if "INCLUDE_E64_HW" in os.environ and os.environ.get("INCLUDE_E64_HW") == "1":
+            self.cfg_st_dma_exchange_64_mode = self.var("cfg_st_dma_exchange_64_mode", 1)
+            self.cfg_ld_dma_exchange_64_mode = self.var("cfg_ld_dma_exchange_64_mode", 1)
 
         # ld dma
         self.cfg_ld_dma_ctrl = self.var("cfg_ld_dma_ctrl", self.header.cfg_load_dma_ctrl_t)
@@ -225,14 +243,20 @@ class GlbTile(Generator):
                        gclk=self.gclk_pcfg_broadcast)
 
         # Clock gating - ld_dma
-        self.clk_en_ld_dma = self.var("clk_en_ld_dma", 1)
+        self.clk_n_en_ld_dma = self.var("clk_n_en_ld_dma", 1)
         self.gclk_ld_dma = self.var("gclk_ld_dma", 1)
-        self.wire(self.clk_en_ld_dma, self.cfg_ld_dma_ctrl['mode'] != 0)
+
+        self.flush_emitted = self.var("flush_emitted", 1)
+        self.add_always(self.flush_emitted_ff)
+
+        # Mode == 4 is emit flush only mode for ld_dma. Currently used by MU2CGRA apps. 
+        self.wire(self.clk_n_en_ld_dma, (self.cfg_ld_dma_ctrl['mode'] == 0) | ((self.cfg_ld_dma_ctrl['mode'] == 4) & self.flush_emitted)) 
+
         self.clk_en_lddma2bank = self.var("clk_en_lddma2bank", 1)
         self.add_child("glb_clk_gate_ld_dma",
                        ClkGate(_params=self._params),
                        clk=self.clk,
-                       enable=self.clk_en_ld_dma | self.clk_en_master,
+                       enable= (~self.clk_n_en_ld_dma) | self.clk_en_master,
                        gclk=self.gclk_ld_dma)
 
         # Clock gating - st_dma
@@ -328,6 +352,10 @@ class GlbTile(Generator):
         self.wire(self.cfg_st_dma_num_blocks, self.glb_cfg.cfg_st_dma_num_blocks)
         self.wire(self.cfg_st_dma_rv_seg_mode, self.glb_cfg.cfg_st_dma_rv_seg_mode)
 
+        if "INCLUDE_E64_HW" in os.environ and os.environ.get("INCLUDE_E64_HW") == "1":
+            self.wire(self.cfg_st_dma_exchange_64_mode, self.glb_cfg.cfg_st_dma_exchange_64_mode)
+            self.wire(self.cfg_ld_dma_exchange_64_mode, self.glb_cfg.cfg_ld_dma_exchange_64_mode)
+
         self.glb_pcfg_broadcast = GlbPcfgBroadcast(_params=self._params)
         self.add_child("glb_pcfg_broadcast",
                        self.glb_pcfg_broadcast,
@@ -336,8 +364,15 @@ class GlbTile(Generator):
                        cgra_cfg_dma2mux=self.cgra_cfg_pcfgdma2mux,
                        cfg_pcfg_broadcast_mux=self.cfg_pcfg_broadcast_mux)
 
+        if "INCLUDE_E64_HW" in os.environ and os.environ.get("INCLUDE_E64_HW") == "1":
+            self.glb_store_dma = GlbStoreDma_E64(_params=self._params)
+            self.glb_load_dma = GlbLoadDma_E64(_params=self._params)
+        else:
+            self.glb_store_dma = GlbStoreDma(_params=self._params)
+            self.glb_load_dma = GlbLoadDma(_params=self._params)
+
         self.add_child("glb_store_dma",
-                       GlbStoreDma(_params=self._params),
+                       self.glb_store_dma,
                        clk=clock(self.gclk_st_dma),
                        reset=self.reset,
                        clk_en_dma2bank=self.clk_en_stdma2bank,
@@ -361,9 +396,12 @@ class GlbTile(Generator):
                        cfg_data_network_f2g_mux=self.cfg_st_dma_ctrl['data_mux'],
                        cfg_st_dma_num_blocks=self.cfg_st_dma_num_blocks,
                        cfg_st_dma_rv_seg_mode=self.cfg_st_dma_rv_seg_mode)
+        
+        if "INCLUDE_E64_HW" in os.environ and os.environ.get("INCLUDE_E64_HW") == "1":
+            self.wire(self.glb_store_dma.cfg_exchange_64_mode, self.cfg_st_dma_exchange_64_mode)
 
         self.add_child("glb_load_dma",
-                       GlbLoadDma(_params=self._params),
+                       self.glb_load_dma,
                        clk=clock(self.gclk_ld_dma),
                        reset=self.reset,
                        clk_en_dma2bank=self.clk_en_lddma2bank,
@@ -389,6 +427,9 @@ class GlbTile(Generator):
                        cfg_data_network_g2f_mux=self.cfg_ld_dma_ctrl['data_mux'],
                        ld_dma_start_pulse=self.strm_g2f_start_pulse,
                        ld_dma_done_interrupt=self.strm_g2f_interrupt_pulse)
+        
+        if "INCLUDE_E64_HW" in os.environ and os.environ.get("INCLUDE_E64_HW") == "1":
+            self.wire(self.glb_load_dma.cfg_exchange_64_mode, self.cfg_ld_dma_exchange_64_mode)
 
         self.add_child("glb_pcfg_dma",
                        GlbPcfgDma(_params=self._params),
@@ -481,7 +522,7 @@ class GlbTile(Generator):
                        rdrq_packet_dma2ring=self.rdrq_packet_dma2ring,
                        rdrs_packet_ring2dma=self.rdrs_packet_ring2dma,
                        rdrs_packet_bank2ring=self.rdrs_packet_bank2ring,
-                       cfg_ld_dma_on=(self.cfg_ld_dma_ctrl['mode'] != 0),
+                       cfg_ld_dma_on=(self.cfg_ld_dma_ctrl['mode'][1, 0] != 0),
                        cfg_tile_connected_prev=self.cfg_tile_connected_prev,
                        cfg_tile_connected_next=self.cfg_tile_connected_next)
 
@@ -550,6 +591,14 @@ class GlbTile(Generator):
             self.add_stmt(self.writememh_block.stmt())
 
         self.pcfg_wiring()
+
+
+    @ always_ff((posedge, "clk"), (posedge, "reset"))
+    def flush_emitted_ff(self):
+        if self.reset:
+            self.flush_emitted = 0
+        elif self.data_flush:
+            self.flush_emitted = 1
 
     def struct_wiring(self):
         self.wr_packet_sw2bankarr = self.var(
