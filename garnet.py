@@ -53,6 +53,9 @@ class Garnet(Generator):
         # size
         self.width = args.width
         self.height = args.height
+        
+        self.mu_oc_0 = args.mu_oc_0
+        self.num_fabric_cols_removed = args.num_fabric_cols_removed
 
         self.pe_fc = args.pe_fc
         self.harden_flush = args.harden_flush
@@ -470,7 +473,11 @@ class Garnet(Generator):
                                            pipeline_input_broadcasts,
                                            input_broadcast_branch_factor,
                                            input_broadcast_max_leaves,
-                                           self.ready_valid)
+                                           self.ready_valid,
+                                           self.width,
+                                           self.height,
+                                           self.mu_oc_0,
+                                           self.num_fabric_cols_removed)
 
         # Remapping all of the ports in the application to generic ports that exist in the hardware
         # Seems really brittle, we should probably do this in a better way
@@ -609,7 +616,7 @@ class Garnet(Generator):
             fixed_io = None
         else:
             from global_buffer.io_placement import place_io_blk
-            fixed_io = place_io_blk(id_to_name, app_dir, self.io_sides, args.num_fabric_cols_removed)
+            fixed_io = place_io_blk(id_to_name, app_dir, self.io_sides, self.width, self.height, args.mu_oc_0, args.num_fabric_cols_removed)
 
         west_in_io_sides = IOSide.West in self.io_sides
         dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1" 

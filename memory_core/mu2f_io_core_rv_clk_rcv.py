@@ -107,8 +107,8 @@ class MU2F_IOCoreReadyValid_clk_rcv(LakeCoreBase):
         return configs
 
     def pnr_info(self):
-        return [PnRTag("U", 2, self.DEFAULT_PRIORITY),
-                PnRTag("u", 1, self.DEFAULT_PRIORITY),
+        return [PnRTag("V", 2, self.DEFAULT_PRIORITY),
+                PnRTag("v", 1, self.DEFAULT_PRIORITY),
                 ]
 
     # def inputs(self):
