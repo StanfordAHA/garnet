@@ -274,8 +274,8 @@ class CoreCombinerCore(LakeCoreBase):
                     configs = [self.get_config_data(name, v)] + configs
 
 
-                fine_grained_input_fifo_bypass = [1, 0, 0]
-                fine_grained_output_fifo_bypass = 1
+                fine_grained_input_fifo_bypass = [0, 0, 0]
+                fine_grained_output_fifo_bypass = 0
 
                 config_fine_grained_input_fifo_bypass = [(f"{self.get_port_remap()['alu']['data0']}_fine_grain_fifo_bypass", fine_grained_input_fifo_bypass[0]),
                                                           (f"{self.get_port_remap()['alu']['data1']}_fine_grain_fifo_bypass", fine_grained_input_fifo_bypass[1]),
