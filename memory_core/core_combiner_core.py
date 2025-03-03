@@ -264,7 +264,6 @@ class CoreCombinerCore(LakeCoreBase):
 
             # BEGIN BLOCK COMMENT
             #TODO: Fix this and name it better. ready_valid really means include RV interconnect in this context
-            #TODO: Rename all this stuff: rename rv_bypass to ready-valid bypass
             if self.ready_valid:
                 rv_bypass_value = 0 if dense_ready_valid else 1
                 config_rv_bypass = [(f"{self.get_port_remap()['alu']['data0']}_bypass_rv", rv_bypass_value),
@@ -272,6 +271,17 @@ class CoreCombinerCore(LakeCoreBase):
                                        (f"{self.get_port_remap()['alu']['data2']}_bypass_rv", rv_bypass_value),
                                        (f"{self.get_port_remap()['alu']['res']}_bypass_rv", rv_bypass_value)]
                 for name, v in config_rv_bypass:
+                    configs = [self.get_config_data(name, v)] + configs
+
+
+                fine_grained_input_fifo_bypass = [1, 0, 0]
+                fine_grained_output_fifo_bypass = 1
+
+                config_fine_grained_input_fifo_bypass = [(f"{self.get_port_remap()['alu']['data0']}_fine_grain_fifo_bypass", fine_grained_input_fifo_bypass[0]),
+                                                          (f"{self.get_port_remap()['alu']['data1']}_fine_grain_fifo_bypass", fine_grained_input_fifo_bypass[1]),
+                                                          (f"{self.get_port_remap()['alu']['data2']}_fine_grain_fifo_bypass", fine_grained_input_fifo_bypass[2]),
+                                                          (f"{self.get_port_remap()['alu']['res']}_fine_grain_fifo_bypass", fine_grained_output_fifo_bypass)]
+                for name, v in config_fine_grained_input_fifo_bypass:
                     configs = [self.get_config_data(name, v)] + configs
             # END BLOCK COMMENT
             #print(configs)
