@@ -9,7 +9,7 @@ steps:
 # ------------------------------------------------------------------------
 - label: "Get latest docker"
   agents:
-    khaki: "true"
+    docker: "true"
   commands:
   - docker pull $IMAGE
 
