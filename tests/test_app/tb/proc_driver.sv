@@ -3,12 +3,33 @@
 semaphore proc_lock; 
 initial proc_lock = new(1);
 
+semaphore mu_ifc_lock; 
+initial mu_ifc_lock = new(1);
+import "DPI-C" function int get_MU_input_bubble_mode();
+
+
 bit [GLB_ADDR_WIDTH-1:0] start_addr;
 bit [GLB_ADDR_WIDTH-1:0] cur_addr;
 bitstream_t              bs_q;
 
 bit [GLB_ADDR_WIDTH-1:0]  ProcDriver_write_waddr;
 bit [BANK_DATA_WIDTH-1:0] ProcDriver_write_wdata;
+
+bit [MU_DATAWIDTH-1:0] mu2cgra_wdata [MU_OC_0-1:0];
+
+// For adding random bubbles to matrix unit input
+integer RANDOM_DELAY;
+integer ADD_MU_INPUT_BUBBLES;
+integer mask;
+integer RANDOM_SHIFT;
+
+// For adding random bubbles to matrix unit input
+initial begin
+    RANDOM_SHIFT = 2;
+    ADD_MU_INPUT_BUBBLES = get_MU_input_bubble_mode();
+    mask = 32'd3 << RANDOM_SHIFT;
+end
+
 
 task ProcDriver_write_bs();
     cur_addr = start_addr;
@@ -23,6 +44,8 @@ task ProcDriver_write_bs();
     proc_lock.put(1);
 endtask
 
+
+data_array_t mu_data_q[MU_OC_0];
 data_array_t data_q;
 bit [BANK_DATA_WIDTH-1:0] bdata;
 int size;
@@ -50,6 +73,43 @@ task ProcDriver_write_data();
     end
     repeat (10) @(posedge p_ifc.clk);
     proc_lock.put(1);
+endtask
+
+
+int i;
+task MU_driver_write_data();
+    cur_addr = start_addr;
+    mu_ifc_lock.get(1);
+    size = mu_data_q[0].size(); 
+    i = 0;
+    while (i < size) begin
+        for (int oc_0 = 0; oc_0 < MU_OC_0; oc_0++) begin
+            mu2cgra_wdata[oc_0] = mu_data_q[oc_0][i];
+        end
+        MU_driver_write();
+        if (mu_ifc.cgra2mu_ready) begin
+            i += 1;
+        end
+    end
+    mu_ifc.mu2cgra_valid = 0;
+    repeat (10) @(posedge mu_ifc.clk);
+    mu_ifc_lock.put(1);
+endtask
+
+
+task MU_driver_write();
+    mu_ifc.mu2cgra = mu2cgra_wdata;
+
+    mu_ifc.mu2cgra_valid = 0;
+    RANDOM_DELAY = $urandom & mask;
+    RANDOM_DELAY = RANDOM_DELAY >> RANDOM_SHIFT;
+    while (RANDOM_DELAY > 0 & ADD_MU_INPUT_BUBBLES) begin
+        @(posedge mu_ifc.clk);
+        RANDOM_DELAY--;
+    end
+
+    mu_ifc.mu2cgra_valid = 1;
+    @(posedge mu_ifc.clk);
 endtask
 
 

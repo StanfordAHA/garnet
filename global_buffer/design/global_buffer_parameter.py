@@ -95,6 +95,7 @@ class GlobalBufferParams:
     process: str = "INTEL"
     tsmc_icg_name: str = "CKLNQD1BWP16P90"
     gf_icg_name: str = "SC7P5T_CKGPRELATNX1_SSC14R"
+    intel_icg_name: str = "b0mcilb05hn1n16x5" # b0mcilb05hn1n16x5 (nom), b0mcilb05as1n16x5 (ulvt)
     tsmc_sram_macro_prefix: str = "TS1N16FFCLLSBLVTC2048X64M8SW"
     gf_sram_macro_prefix: str = "IN12LP_S1DB_"
 

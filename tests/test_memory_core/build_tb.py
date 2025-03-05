@@ -1594,7 +1594,8 @@ def prepare_glb_collateral(glb_dir=None, bitstream=None, matrices_in=None, desig
         design_meta_json["testing"]["opal_dense_scanner_workaround"] = 1
     design_meta_json["IOs"] = {
         "inputs": [],
-        "outputs": []
+        "outputs": [],
+        "mu_inputs": []
     }
 
     tmp_json = None
@@ -2236,7 +2237,7 @@ if __name__ == "__main__":
 
         time_0 = time.time()
 
-        interconnect = create_cgra(width=chip_width, height=chip_height,
+        interconnect = create_cgra(input_width=chip_width, input_height=chip_height,
                                    io_sides=io_sides,
                                    using_matrix_unit=using_matrix_unit,
                                    num_tracks=num_tracks,

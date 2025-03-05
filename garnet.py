@@ -53,6 +53,9 @@ class Garnet(Generator):
         # size
         self.width = args.width
         self.height = args.height
+        
+        self.mu_oc_0 = args.mu_oc_0
+        self.num_fabric_cols_removed = args.num_fabric_cols_removed
 
         self.pe_fc = args.pe_fc
         self.harden_flush = args.harden_flush
@@ -98,7 +101,7 @@ class Garnet(Generator):
         # GLB ports (or not)
 
         if not args.interconnect_only:
-            self.build_glb_ports(args.glb_params, args.using_matrix_unit, args.mu_datawidth, args.dense_only, args.num_fabric_cols_removed)
+            self.build_glb_ports(args.glb_params, args.using_matrix_unit, args.mu_datawidth, args.dense_only, args.num_fabric_cols_removed, args.mu_oc_0)
         else:
             self.lift_ports(self.width, self.config_data_width, self.harden_flush)
 
@@ -139,7 +142,7 @@ class Garnet(Generator):
 
         self.global_buffer = GlobalBufferMagma(glb_params)
 
-    def build_glb_ports(self, glb_params, using_matrix_unit, mu_datawidth, dense_only, num_fabric_cols_removed):
+    def build_glb_ports(self, glb_params, using_matrix_unit, mu_datawidth, dense_only, num_fabric_cols_removed, mu_oc_0):
 
         # axi_data_width must be same as cgra config_data_width
         axi_addr_width = self.glb_params.cgra_axi_addr_width
@@ -161,12 +164,10 @@ class Garnet(Generator):
 
         # Add MU interface, if necessary
         if using_matrix_unit:
-            num_output_channels = self.height * 2
+            num_output_channels = mu_oc_0
             self.add_ports(
                 mu2cgra=magma.In(magma.Array[(num_output_channels, magma.Bits[mu_datawidth])]),
                 mu2cgra_valid=magma.In(magma.Bit),
-                # MO: Temporary HACK 
-                #cgra2mu_ready_row0 = magma.Out(magma.Bit),
                 cgra2mu_ready=magma.Out(magma.Bit)
             )
 
@@ -181,29 +182,26 @@ class Garnet(Generator):
             assert mu_datawidth < cgra_track_width, "Matrix unit datawidth must be < CGRA track width"
             width_difference = cgra_track_width - mu_datawidth
 
-            mu_io_tile_col = max(num_fabric_cols_removed - 1, 0)
+            num_mu_io_tiles = int(num_output_channels/2)
+            mu_io_startX = int(((self.width - num_fabric_cols_removed) - num_mu_io_tiles)/2) + num_fabric_cols_removed
+            mu_io_endX = mu_io_startX + num_mu_io_tiles-1
 
             for i in range(num_output_channels):
                 io_num = i % 2
-                cgra_row_num = int(i/2 + 1)
+
+                mu_io_tile_row = self.height + 1
+                cgra_col_num = mu_io_startX + i//2
 
                 # Tie MSB(s) not driven by MU to GND
                 if (width_difference > 0):
-                   self.wire(Const(0), self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{mu_io_tile_col:02X}_Y{cgra_row_num:02X}"][cgra_track_width-width_difference:cgra_track_width])
+                   self.wire(Const(0), self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{cgra_col_num:02X}_Y{mu_io_tile_row:02X}"][cgra_track_width-width_difference:cgra_track_width])
 
-                self.wire(self.ports.mu2cgra[i], self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{mu_io_tile_col:02X}_Y{cgra_row_num:02X}"][:cgra_track_width-width_difference])
-                self.wire(self.ports.mu2cgra_valid, self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{mu_io_tile_col:02X}_Y{cgra_row_num:02X}_valid"])
+                self.wire(self.ports.mu2cgra[i], self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{cgra_col_num:02X}_Y{mu_io_tile_row:02X}"][:cgra_track_width-width_difference])
+                self.wire(self.ports.mu2cgra_valid, self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{cgra_col_num:02X}_Y{mu_io_tile_row:02X}_valid"])
 
-                self.wire(self.cgra2mu_ready_and.ports[f"I{i}"], self.convert(self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{mu_io_tile_col:02X}_Y{cgra_row_num:02X}_ready"], magma.Bits[1]))
+                self.wire(self.cgra2mu_ready_and.ports[f"I{i}"], self.convert(self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{cgra_col_num:02X}_Y{mu_io_tile_row:02X}_ready"], magma.Bits[1]))
 
             self.wire(self.convert(self.cgra2mu_ready_and.ports.O, magma.bit), self.ports.cgra2mu_ready)
-
-            # MO: Temporary HACK
-            # self.cgra2mu_row0_ready_and = FromMagma(mantle.DefineAnd(height=2, width=1))
-            # self.wire(self.cgra2mu_row0_ready_and.ports.I0, self.convert(self.interconnect.ports.mu2io_17_0_X07_Y01_ready, magma.Bits[1]))
-            # self.wire(self.cgra2mu_row0_ready_and.ports.I1, self.convert(self.interconnect.ports.mu2io_17_1_X07_Y01_ready, magma.Bits[1]))
-            # self.wire(self.convert(self.cgra2mu_row0_ready_and.ports.O, magma.bit), self.ports.cgra2mu_ready_row0)
-
 
         # top <-> global controller ports connection
         self.wire(self.ports.clk_in, self.global_controller.ports.clk_in)
@@ -475,7 +473,11 @@ class Garnet(Generator):
                                            pipeline_input_broadcasts,
                                            input_broadcast_branch_factor,
                                            input_broadcast_max_leaves,
-                                           self.ready_valid)
+                                           self.ready_valid,
+                                           self.width,
+                                           self.height,
+                                           self.mu_oc_0,
+                                           self.num_fabric_cols_removed)
 
         # Remapping all of the ports in the application to generic ports that exist in the hardware
         # Seems really brittle, we should probably do this in a better way
@@ -614,7 +616,7 @@ class Garnet(Generator):
             fixed_io = None
         else:
             from global_buffer.io_placement import place_io_blk
-            fixed_io = place_io_blk(id_to_name, app_dir, self.io_sides)
+            fixed_io = place_io_blk(id_to_name, app_dir, self.io_sides, self.width, self.height, args.mu_oc_0, args.num_fabric_cols_removed)
 
         west_in_io_sides = IOSide.West in self.io_sides
         dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1" 
@@ -856,6 +858,7 @@ def parse_args():
     parser.add_argument("--mu-datawidth", type=int, default=16)
     parser.add_argument("--give-north-io-sbs", action="store_true")
     parser.add_argument("--num-fabric-cols-removed", type=int, default=0)
+    parser.add_argument("--mu-oc-0", type=int, default=32)
     parser.add_argument('--include-E64-hw', action="store_true")
 
     # Daemon choices are maybe ['help', 'launch', 'use', 'kill', 'force', 'status', 'wait']
@@ -880,15 +883,12 @@ def parse_args():
     if args.include_E64_hw:
         os.environ["INCLUDE_E64_HW"] = "1"
 
-    # If using MU, West and North have IO, else only north side has IO
+    # If using MU, South and North have IO, else only north side has IO
     from canal.util import IOSide
     if args.standalone:
         io_sides = [IOSide.None_]
     elif args.using_matrix_unit:
-        if args.num_fabric_cols_removed == 0:
-            io_sides = [IOSide.North, IOSide.West]
-        else:
-            io_sides = [IOSide.North]
+        io_sides = [IOSide.North, IOSide.South]
     else:
         io_sides = [IOSide.North]
 
@@ -963,6 +963,17 @@ def build_verilog(args, garnet):
         gen_rdl_header(top_name="glc",
                        rdl_file=os.path.join(garnet_home, "global_controller/systemRDL/rdl_models/glc.rdl.final"),
                        output_folder=os.path.join(garnet_home, "global_controller/header"))
+    
+    garnet_home = os.getenv('GARNET_HOME')
+    if not garnet_home:
+        garnet_home = os.path.dirname(os.path.abspath(__file__))
+    from matrix_unit.matrix_unit_main import gen_param_header
+    matrix_unit_params = {}
+    matrix_unit_params["MU_DATAWIDTH"] = args.mu_datawidth
+    matrix_unit_params["MU_OC_0"] = args.mu_oc_0
+    gen_param_header(top_name="matrix_unit_param",
+                        params=matrix_unit_params,
+                        output_folder=os.path.join(garnet_home, "matrix_unit/header"))
 
 def pnr(garnet, args, app):
 

@@ -1,6 +1,6 @@
 from gemstone.generator.from_magma import FromMagma
 from gemstone.common.core import PnRTag
-from lake.modules.mu2f_io_core import IOCore_mu2f
+from lake.modules.mu2f_io_core_clk_rcv import IOCore_mu2f_clk_rcv
 import kratos as kts
 
 if __name__ == "__main__":
@@ -9,7 +9,7 @@ else:
     from .memtile_util import LakeCoreBase
 
 
-class MU2F_IOCoreReadyValid(LakeCoreBase):
+class MU2F_IOCoreReadyValid_clk_rcv(LakeCoreBase):
 
     def __init__(self,
                  matrix_unit_data_width=16,  # CGRA Params
@@ -21,11 +21,11 @@ class MU2F_IOCoreReadyValid(LakeCoreBase):
                  allow_bypass=False,
                  use_almost_full=False):
 
-        buffet_name = "MU2F_IOCoreReadyValid"  # noqa "assigned but never used"
+        buffet_name = "MU2F_IOCoreReadyValid_clk_rcv"  # noqa "assigned but never used"
         super().__init__(config_data_width=config_data_width,
                          config_addr_width=config_addr_width,
                          data_width=16,
-                         name="MU2F_IOCoreReadyValid",
+                         name="MU2F_IOCoreReadyValid_clk_rcv",
                          ready_valid=True 
                         ) 
 
@@ -46,14 +46,14 @@ class MU2F_IOCoreReadyValid(LakeCoreBase):
                      self.config_addr_width,
                      self.allow_bypass,
                      self.use_almost_full,
-                     "MU2F_IOCoreReadyValid")
+                     "MU2F_IOCoreReadyValid_clk_rcv")
 
         # Check for circuit caching
         if cache_key not in LakeCoreBase._circuit_cache:
             # Instantiate core object here - will only use the object representation to
             # query for information. The circuit representation will be cached and retrieved
             # in the following steps.
-            self.dut = IOCore_mu2f(matrix_unit_data_width=self.matrix_unit_data_width,
+            self.dut = IOCore_mu2f_clk_rcv(matrix_unit_data_width=self.matrix_unit_data_width,
                               tile_array_data_width=self.tile_array_data_width,
                               fifo_depth=fifo_depth,
                               allow_bypass=self.allow_bypass,
@@ -77,11 +77,11 @@ class MU2F_IOCoreReadyValid(LakeCoreBase):
 
         conf_names = list(self.registers.keys())
         conf_names.sort()
-        with open("mu2f_iocorerv_cfg.txt", "w+") as cfg_dump:
+        with open("mu2f_iocorerv_clk_rcv_cfg.txt", "w+") as cfg_dump:
             for idx, reg in enumerate(conf_names):
                 write_line = f"(\"{reg}\", 0),  # {self.registers[reg].width}\n"
                 cfg_dump.write(write_line)
-        with open("mu2f_iocorerv_synth.txt", "w+") as cfg_dump:
+        with open("mu2f_iocorerv_clk_rcv_synth.txt", "w+") as cfg_dump:
             for idx, reg in enumerate(conf_names):
                 write_line = f"{reg}\n"
                 cfg_dump.write(write_line)
@@ -107,8 +107,8 @@ class MU2F_IOCoreReadyValid(LakeCoreBase):
         return configs
 
     def pnr_info(self):
-        return [PnRTag("U", 2, self.DEFAULT_PRIORITY),
-                PnRTag("u", 1, self.DEFAULT_PRIORITY),
+        return [PnRTag("V", 2, self.DEFAULT_PRIORITY),
+                PnRTag("v", 1, self.DEFAULT_PRIORITY),
                 ]
 
     # def inputs(self):
@@ -123,4 +123,4 @@ class MU2F_IOCoreReadyValid(LakeCoreBase):
 
 
 if __name__ == "__main__":
-    mu2f_rviocore = MU2F_IOCoreReadyValid()
+    mu2f_rviocore = MU2F_IOCoreReadyValid_clk_rcv()
