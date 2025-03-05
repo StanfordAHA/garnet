@@ -587,7 +587,7 @@ class Garnet(Generator):
         print_netlist_info(netlist_info, self.pes_with_packed_ponds, app_dir + "/netlist_info.txt")
 
         return (netlist_info["id_to_name"], netlist_info["instance_to_instrs"], netlist_info["netlist"],
-                netlist_info["buses"], netlist_info["active_core_ports"])
+                netlist_info["buses"], netlist_info["active_core_ports"], netlist_info["id_to_metadata"])
 
     def place_and_route(self, args, load_only=False):
 
@@ -602,7 +602,7 @@ class Garnet(Generator):
         input_broadcast_branch_factor = args.input_broadcast_branch_factor
         input_broadcast_max_leaves    = args.input_broadcast_max_leaves
 
-        id_to_name, instance_to_instr, netlist, bus, active_core_ports = \
+        id_to_name, instance_to_instr, netlist, bus, active_core_ports, id_to_metadata = \
             self.load_netlist(halide_src,
                               load_only,
                               pipeline_input_broadcasts,
@@ -632,7 +632,7 @@ class Garnet(Generator):
                             west_in_io_sides=west_in_io_sides,
                             sparse=dense_ready_valid)
 
-        return placement, routing, id_to_name, instance_to_instr, netlist, bus, active_core_ports
+        return placement, routing, id_to_name, instance_to_instr, netlist, bus, active_core_ports, id_to_metadata
 
     def fix_pond_flush_bug(self, placement, routing):
         from collections import defaultdict
@@ -706,7 +706,7 @@ class Garnet(Generator):
 
 
     def generate_bitstream(self, halide_src, placement, routing, id_to_name, instance_to_instr, netlist, bus,
-                           compact=False, end_to_end=False, active_core_ports=None):
+                           compact=False, end_to_end=False, active_core_ports=None, id_to_metadata=None):
         from cgra import compress_config_data
         routing_fix = archipelago.power.reduce_switching(routing, self.interconnect,
                                                          compact=compact)
@@ -717,14 +717,13 @@ class Garnet(Generator):
 
         dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1"
 
-
         reg_loc_to_id = {}
         for id, loc in placement.items():
             if 'r' in id:
                 reg_loc_to_id.setdefault(loc, []).append(id)
 
-        bitstream += self.interconnect.get_route_bitstream(routing, use_fifo=dense_ready_valid, id_to_name=id_to_name, reg_loc_to_id=reg_loc_to_id)
-
+        bitstream += self.interconnect.get_route_bitstream(routing, use_fifo=dense_ready_valid, id_to_name=id_to_name,
+                                                           reg_loc_to_id=reg_loc_to_id, id_to_metadata=id_to_metadata)
 
         bitstream += self.fix_pond_flush_bug(placement, routing)
         bitstream += self.get_placement_bitstream(placement, id_to_name,
@@ -985,7 +984,7 @@ def build_verilog(args, garnet):
 
 def pnr(garnet, args, app):
 
-    placement, routing, id_to_name, instance_to_instr, netlist, bus, active_core_ports = \
+    placement, routing, id_to_name, instance_to_instr, netlist, bus, active_core_ports, id_to_metadata = \
         garnet.place_and_route(args, load_only=args.generate_bitstream_only)
 
     # When 'generate_bitstream_only' is set, we do not actually do any NEW pnr;
@@ -1002,7 +1001,8 @@ def pnr(garnet, args, app):
         placement, routing, id_to_name, instance_to_instr, netlist, bus,
         compact=args.compact,
         end_to_end=args.end_to_end,
-        active_core_ports=active_core_ports
+        active_core_ports=active_core_ports,
+        id_to_metadata=id_to_metadata
     )
     (inputs, outputs, reset, valid, en, delay) = iorved_tuple
 
