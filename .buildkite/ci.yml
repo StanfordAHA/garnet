@@ -23,7 +23,7 @@ steps:
   soft_fail: true
 
   agents:
-    docker: "true"
+    khaki: "true"
 
   commands:
 
@@ -48,7 +48,7 @@ steps:
 
 # ------------------------------------------------------------------------
 - label: ":wrench: Verilator"
-  agents: { docker: "true" }
+  agents: { khaki: "true" }
   commands:
 
   # Container setup
@@ -68,7 +68,7 @@ steps:
 
 # ------------------------------------------------------------------------
 - label: ":wrench: Verilator 2"
-  agents: { docker: "true" }
+  agents: { khaki: "true" }
   commands:
   - echo "This test disabled b/c takes too long (2.5hr)"; exit
 
@@ -89,7 +89,7 @@ steps:
 
 # ------------------------------------------------------------------------
 - label: ":wrench: Aha regressions"
-  agents: { docker: "true" }
+  agents: { khaki: "true" }
   commands:
 
   # In case Lint step failed to clean up correctly
@@ -117,7 +117,7 @@ steps:
 # 3. Delete any and all unused docker images.
 
 - label: "Delete container"
-  agents: { docker: "true" }
+  agents: { khaki: "true" }
   commands:
   - set -x; docker kill $CONTAINER || true
   - set -x; docker kill $VCONTAINER || true
