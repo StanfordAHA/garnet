@@ -28,7 +28,7 @@ class CreateBuses(Visitor):
     def __init__(self, inst_info, ready_valid=True):
         self.inst_info = inst_info
         self.ready_valid=ready_valid
-  
+
         self.include_E64_HW = "INCLUDE_E64_HW" in os.environ and os.environ.get("INCLUDE_E64_HW") == "1"
         self.exchange_64_mode = "E64_MODE_ON" in os.environ and os.environ.get("E64_MODE_ON") == "1"
 
@@ -135,7 +135,7 @@ class CreateBuses(Visitor):
                     packet_num = int(node_name_parse_list[0]) % 4
                 else:
                     packet_num = 0
-    
+
             if self.include_E64_HW:
                 if self.exchange_64_mode:
                     port = f"f2io_17_{packet_num}"
@@ -145,7 +145,7 @@ class CreateBuses(Visitor):
                 port = f"f2io_17"
             else:
                 port = "f2io_16"
-                
+
         self.netlist[child_bid].append((node, port))
 
 
@@ -158,7 +158,7 @@ class CreateInstrs(Visitor):
         self.run(dag)
         for src, sink in zip(dag.non_input_sources, dag.non_output_sinks):
             self.node_to_instr[src.iname] = self.node_to_instr[sink.iname]
-       
+
         return self.node_to_instr
 
     def visit_Input(self, node):
@@ -263,7 +263,7 @@ class CreateIDs(Visitor):
             self.node_to_type[child.iname] = id
             self.tile_types.add("I")
             self.tile_types.add("i")
-            
+
 
     def visit_Combine(self, node):
         Visitor.generic_visit(self, node)
@@ -362,7 +362,7 @@ class FlattenIO(Visitor):
             if t == Bit:
                 return "io2f_1"
             elif ready_valid:
-                # MO: FIXME for E64 conns if FlattenIO is ever used  
+                # MO: FIXME for E64 conns if FlattenIO is ever used
                 return "io2f_17"
                 #return "io2f_17_0"
             else:
@@ -373,7 +373,7 @@ class FlattenIO(Visitor):
                 Input(type=IO_Input_t_rv, iname="_".join(str(field) for field in path))
                 for path in ipath_to_type
             ]
-        else: 
+        else:
             real_inputs = [
                 Input(type=IO_Input_t, iname="_".join(str(field) for field in path))
                 for path in ipath_to_type
@@ -874,11 +874,11 @@ class FixInputsOutputAndPipeline(Visitor):
 
             # -----------------IO-to-MEM/Pond Paths Pipelining-------------------- #
             if "MU" in io_child.iname:
-                # MO: MU IO tile HACK. Temporarily hardcoding to use track T0 and T1 
-                # TODO: Fix this to use correct track based on PnR tool 
+                # MO: MU IO tile HACK. Temporarily hardcoding to use track T0 and T1
+                # TODO: Fix this to use correct track based on PnR tool
                 node_name_parse_list = io_child.iname.split("stencil_")[2].split("_read")
                 if len(node_name_parse_list) > 1:
-                    oc0_index = int(node_name_parse_list[0])  
+                    oc0_index = int(node_name_parse_list[0])
                 else:
                     oc0_index = 0
 
@@ -901,14 +901,14 @@ class FixInputsOutputAndPipeline(Visitor):
                             new_node = new_children[0].select(f"io2f_17_{packet_num}")
 
                         else:
-                            new_node = new_children[0].select("io2f_17_0") 
+                            new_node = new_children[0].select("io2f_17_0")
                     else:
-                        new_node = new_children[0].select("io2f_17") 
+                        new_node = new_children[0].select("io2f_17")
 
 
 
                 else:
-                    new_node = new_children[0].select("io2f_16") 
+                    new_node = new_children[0].select("io2f_16")
 
                 if self.pipeline_inputs:
                     if "IO2MEM_REG_CHAIN" not in os.environ:
@@ -976,8 +976,33 @@ class FixInputsOutputAndPipeline(Visitor):
 
     def generic_visit(self, node: DagNode):
         Visitor.generic_visit(self, node)
+
+        # HACK: Duplicate clockwork generated shift registers for dense RV apps
+        # This change is a temporary workaround to fix the delay as in RV mode two regs will be
+        # mapped to one fifo with delay of one
+        dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1"
+        if (dense_ready_valid):
+            if node.node_name == "Register" and "$d_reg" in node.iname:
+                original_children = list(node.children())
+                new_children = []
+                for child in original_children:
+                    mapped_child = self.node_map[child]
+                    new_reg_sink = RegisterSink(
+                        mapped_child,
+                        iname=node.iname + "$dup",
+                    )
+                    new_reg_source = RegisterSource(
+                        iname=node.iname + "$dup"
+                    )
+                    self.dag_sinks.append(new_reg_sink)
+                    self.dag_sources.append(new_reg_source)
+                    self.node_map[new_reg_sink] = new_reg_sink
+                    self.node_map[new_reg_source] = new_reg_source
+                    new_children.append(new_reg_source)
+                node.set_children(*new_children)
+
         if node.node_name == "global.IO" or node.node_name == "global.BitIO":
-            dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1"   
+            dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1"
             if "write" in node.iname:
                 new_node = Output(type=IO_Output_t, iname=node.iname)
                 new_children = []
@@ -1003,11 +1028,11 @@ class FixInputsOutputAndPipeline(Visitor):
                     self.node_map[new_reg_source] = new_reg_source
                     self.node_map[new_reg_sink] = new_reg_sink
                     self.added_regs += 1
-                   
+
                     if not(dense_ready_valid):
                         new_children.append(new_reg_source)
 
-                    # MO: DRV HACK: Insert another register to make even number of regs (b/c of FIFOs) 
+                    # MO: DRV HACK: Insert another register to make even number of regs (b/c of FIFOs)
                     if (dense_ready_valid):
                         if node.node_name == "global.IO":
                             new_reg_sink_1 = RegisterSink(
@@ -1034,7 +1059,7 @@ class FixInputsOutputAndPipeline(Visitor):
 
                 new_node.set_children(*new_children)
                 self.outputs.append(new_node)
-                
+
             else:
                 if self.ready_valid:
                     new_node = Input(type=IO_Input_t_rv, iname=node.iname)
@@ -1283,7 +1308,7 @@ def create_netlist_info(
 
     node_info = {t: tile_to_char(t) for t in tile_info}
     nodes_to_ids = CreateIDs(node_info).doit(pdag)
-    
+
     if load_only:
         names_to_ids = {name: id_ for id_, name in id_to_name.items()}
     else:
@@ -1326,24 +1351,24 @@ def create_netlist_info(
 
     nodes_to_instrs = CreateInstrs(node_info).doit(pdag)
 
-    dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1"  
+    dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1"
     exchange_64_mode = "E64_MODE_ON" in os.environ and os.environ.get("E64_MODE_ON") == "1"
 
     info["id_to_instrs"] = {}
     for node, id in nodes_to_ids.items():
         node_config_kwargs = {}
         if dense_ready_valid and ("I" in id or "i" in id):
-            node_config_kwargs['ready_valid_mode'] = 1 
+            node_config_kwargs['ready_valid_mode'] = 1
 
         if exchange_64_mode and ("I" in id or "i" in id):
             node_config_kwargs['exchange_64_mode'] = 1
 
         # MO: MU IO tile HACK for now. Hardcoding it to use tracks T0 and T1 for now
-        # TODO: In the future, find a way to let the PnR tool choose the tracks 
+        # TODO: In the future, find a way to let the PnR tool choose the tracks
         if "U" in id or "u" in id:
             node_name_parse_list = node.split("stencil_")[2].split("_read")
             if len(node_name_parse_list) > 1:
-                oc0_index = int(node_name_parse_list[0])  
+                oc0_index = int(node_name_parse_list[0])
             else:
                 oc0_index = 0
             if oc0_index % 2 == 0:
@@ -1355,7 +1380,7 @@ def create_netlist_info(
 
 
         if ((dense_ready_valid or exchange_64_mode) and ("I" in id or "i" in id)) or "U" in id or "u" in id:
-            info["id_to_instrs"][id] = (1, node_config_kwargs) 
+            info["id_to_instrs"][id] = (1, node_config_kwargs)
         else:
             info["id_to_instrs"][id] = nodes_to_instrs[node]
 
@@ -1397,7 +1422,7 @@ def create_netlist_info(
         # manual placement
         graph.manualy_place_resnet(app_dir=app_dir)
 
-    # # MO: Matrix unit HACK 
+    # # MO: Matrix unit HACK
     #breakpoint()
     # if "MU_APP_MANUAL_PLACER" in os.environ and os.environ.get("MU_APP_MANUAL_PLACER") == "1":
     #     #breakpoint()
