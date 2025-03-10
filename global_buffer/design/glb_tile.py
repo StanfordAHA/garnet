@@ -81,8 +81,8 @@ class GlbTile(Generator):
         # MU interface
         if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1":
             # TODO: Eventually, make num_tracks 4 here 
-            self.if_mu_rd = GlbTileReadOnlyInterface(addr_width=self._params.glb_addr_width,
-                                            data_width=self._params.bank_data_width, is_clk_en=True, num_tracks=1)
+            self.if_mu_rd = GlbTileInterface(addr_width=self._params.glb_addr_width,
+                                            data_width=self._params.bank_data_width, is_clk_en=True, is_strb=False, has_wr_ifc=False, num_tracks=1)
             self.if_mu_rd_est_m = self.interface(self.if_mu_rd, "if_mu_rd_est_m")
             self.if_mu_rd_wst_s = self.interface(self.if_mu_rd, "if_mu_rd_wst_s")
 
