@@ -232,30 +232,38 @@ $(APP0_NAME)/bin/design_meta.json:
 compile: COMPILE_ARGS = $(COMPILE_RTL_ARGS)
 compile: INPUT_ARGS = $(DESIGN_FILES) $(TB_FILES) $(IP_FILES)
 compile:
+	echo '##[endgroup]'; echo '##[group]make compile (verilator => Vtop.mk) or (vcs => simv)' `date +%H:%M`
 	echo '--- MAKE COMPILE (verilator => Vtop.mk) or (vcs => simv)' `date +%H:%M`
 	$(COMPILE)
+	echo '##[endgroup]'
 ifeq ($(TOOL), VERILATOR)
+	echo '##[group]make vtop (make -f Vtop.mk => Vtop)' `date +%H:%M`
 	echo '--- MAKE VTOP (make -f Vtop.mk => Vtop)' `date +%H:%M`
 	make -C obj_dir/ -f Vtop.mk
+	echo '##[endgroup]'
 endif
 
 generate:
+	echo '##[endgroup]'; echo '##[group]make generate (genesis testbench/top.svp)' `date +%H:%M`
 	Genesis2.pl -parse -generate -top top -input $(genesis_tb_dir)/top.svp -parameter top.using_matrix_unit=$(USING_MATRIX_UNIT)
 	mv genesis_verif/top.sv tb/top.sv
+	echo '##[endgroup]'
 
 .PHONY: run
 # Print log info in both buildkite and github-action format
 run: $(APP0_NAME)/bin/design_meta.json
 
-	sleep 1; printf "%s%s[group]%s %s\n"  "#" "#" "MAKE RUN (e.g. Vtop or simv)" `date +%H:%M`; sleep 1
+	echo '##[endgroup]'; echo '##[group]aha run (e.g. Vtop or simv)' `date +%H:%M`
 	echo '--- MAKE RUN (e.g. Vtop or simv)' `date +%H:%M`
 	@rm -rf *.txt; rm -rf ../../SPARSE_TESTS/batch_*
 	$(RUN) $(DUMP_ARGS) $(RUN_ARGS) $(APP_ARGS)
-	sleep 1; printf "%s%s[endgroup]\n" "#" "#"; sleep 1
+	echo '##[endgroup]'
 
-	sleep 1; printf "%s%s[group]%s %s\n"  "#" "#" "PASSED maybe" `date +%H:%M`; sleep 1
+	echo '##[group]PASSED maybe' `date +%H:%M`
+#	sleep 1; printf "%s%s[group]%s %s\n"  "#" "#" "PASSED maybe" `date +%H:%M`; sleep 1
 	echo '+++ PASSED maybe' `date +%H:%M`
-	sleep 1; printf "%s%s[endgroup]\n" "#" "#"; sleep 1
+#	sleep 1; printf "%s%s[endgroup]\n" "#" "#"; sleep 1
+	echo '##[endgroup]'
 
 .PHONY: sim
 sim: libcgra.so generate compile run
