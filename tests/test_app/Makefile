@@ -244,11 +244,18 @@ generate:
 	mv genesis_verif/top.sv tb/top.sv
 
 .PHONY: run
+# Print log info in both buildkite and github-action format
 run: $(APP0_NAME)/bin/design_meta.json
+
+	sleep 1; printf "%s%s[group]%s %s\n"  "#" "#" "MAKE RUN (e.g. Vtop or simv)" `date +%H:%M`; sleep 1
 	echo '--- MAKE RUN (e.g. Vtop or simv)' `date +%H:%M`
 	@rm -rf *.txt; rm -rf ../../SPARSE_TESTS/batch_*
 	$(RUN) $(DUMP_ARGS) $(RUN_ARGS) $(APP_ARGS)
+	sleep 1; printf "%s%s[endgroup]\n" "#" "#"; sleep 1
+
+	sleep 1; printf "%s%s[group]%s %s\n"  "#" "#" "PASSED maybe" `date +%H:%M`; sleep 1
 	echo '+++ PASSED maybe' `date +%H:%M`
+	sleep 1; printf "%s%s[endgroup]\n" "#" "#"; sleep 1
 
 .PHONY: sim
 sim: libcgra.so generate compile run
