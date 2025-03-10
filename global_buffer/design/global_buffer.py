@@ -2,7 +2,7 @@ from kratos import Generator, always_ff, posedge, always_comb, clock_en, clog2, 
 from kratos.util import to_magma
 from global_buffer.design.glb_tile import GlbTile
 from global_buffer.design.glb_tile_ifc import GlbTileInterface
-from global_buffer.design.glb_tile_rd_only_ifc import GlbTileReadOnlyInterface
+from global_buffer.design.glb_tile_data_loop_ifc import GlbTileDataLoopInterface
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from global_buffer.design.glb_header import GlbHeader
 from global_buffer.design.pipeline import Pipeline
@@ -267,7 +267,7 @@ class GlobalBuffer(Generator):
         
         # Num tracks will equal 4 here eventually. This information should really be in self.params. Also, the enviornment variable should be in params instead. 
         if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1": 
-            if_mu_rd_tile2tile = GlbTileInterface(addr_width=self._params.glb_addr_width,
+            if_mu_rd_tile2tile = GlbTileDataLoopInterface(addr_width=self._params.glb_addr_width,
                                                 data_width=self._params.bank_data_width, is_clk_en=True, is_strb=False, has_wr_ifc=False, num_tracks=1)
         
 
@@ -304,8 +304,8 @@ class GlobalBuffer(Generator):
         self.wire(self.if_proc_list[-1].rd_data, 0)
         self.wire(self.if_proc_list[-1].rd_data_valid, 0)
         if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1":
-            self.wire(self.if_mu_rd_list[-1].rd_data, 0)
-            self.wire(self.if_mu_rd_list[-1].rd_data_valid, 0)
+            self.wire(self.if_mu_rd_list[-1].rd_data_e2w, 0)
+            self.wire(self.if_mu_rd_list[-1].rd_data_e2w_valid, 0)
         self.wire(self.if_cfg_list[-1].rd_data, 0)
         self.wire(self.if_cfg_list[-1].rd_data_valid, 0)
         self.wire(self.if_sram_cfg_list[-1].rd_data, 0)
@@ -546,8 +546,8 @@ class GlobalBuffer(Generator):
 
     @always_comb
     def left_edge_mu_rd_out_logic(self):
-        self.mu_rd_data_w = self.if_mu_rd_list[0].rd_data
-        self.mu_rd_data_valid_w = self.if_mu_rd_list[0].rd_data_valid
+        self.mu_rd_data_w = self.if_mu_rd_list[0].rd_data_e2w
+        self.mu_rd_data_valid_w = self.if_mu_rd_list[0].rd_data_e2w_valid
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def left_edge_proc_rd_out_ff(self):
@@ -842,15 +842,31 @@ class GlobalBuffer(Generator):
                 self.wire(self.if_mu_rd_list[i + 1].rd_en, self.glb_tile[i].ports.if_mu_rd_est_m_rd_en)
                 self.wire(self.if_mu_rd_list[i + 1].rd_clk_en, self.glb_tile[i].ports.if_mu_rd_est_m_rd_clk_en)
                 self.wire(self.if_mu_rd_list[i + 1].rd_addr, self.glb_tile[i].ports.if_mu_rd_est_m_rd_addr)
-                self.wire(self.glb_tile[i].ports.if_mu_rd_est_m_rd_data, self.if_mu_rd_list[i + 1].rd_data)
-                self.wire(self.glb_tile[i].ports.if_mu_rd_est_m_rd_data_valid, self.if_mu_rd_list[i + 1].rd_data_valid)
+
+                # RIGHT EDGE: LOOP BACK
+                if i != self._params.num_glb_tiles - 1:
+                    self.wire(self.glb_tile[i].ports.if_mu_rd_est_m_rd_data_e2w, self.if_mu_rd_list[i + 1].rd_data_e2w)
+                    self.wire(self.glb_tile[i].ports.if_mu_rd_est_m_rd_data_e2w_valid, self.if_mu_rd_list[i + 1].rd_data_e2w_valid)
+                else:
+                    self.wire(self.glb_tile[i].ports.if_mu_rd_est_m_rd_data_e2w, self.glb_tile[i].ports.if_mu_rd_est_m_rd_data_w2e)
+                    self.wire(self.glb_tile[i].ports.if_mu_rd_est_m_rd_data_e2w_valid, self.glb_tile[i].ports.if_mu_rd_est_m_rd_data_w2e_valid)
+
+                self.wire(self.if_mu_rd_list[i].rd_data_w2e, self.glb_tile[i].ports.if_mu_rd_est_m_rd_data_w2e)
+                self.wire(self.if_mu_rd_list[i].rd_data_w2e_valid, self.glb_tile[i].ports.if_mu_rd_est_m_rd_data_w2e_valid)
 
                 self.wire(self.glb_tile[i].ports.if_mu_rd_wst_s_rd_en, self.if_mu_rd_list[i].rd_en)
                 self.wire(self.glb_tile[i].ports.if_mu_rd_wst_s_rd_clk_en, self.if_mu_rd_list[i].rd_clk_en)
                 self.wire(self.glb_tile[i].ports.if_mu_rd_wst_s_rd_addr, self.if_mu_rd_list[i].rd_addr)
-                self.wire(self.if_mu_rd_list[i].rd_data, self.glb_tile[i].ports.if_mu_rd_wst_s_rd_data)
-                self.wire(self.if_mu_rd_list[i].rd_data_valid, self.glb_tile[i].ports.if_mu_rd_wst_s_rd_data_valid)
-               
+                self.wire(self.if_mu_rd_list[i].rd_data_e2w, self.glb_tile[i].ports.if_mu_rd_wst_s_rd_data_e2w)
+                self.wire(self.if_mu_rd_list[i].rd_data_e2w_valid, self.glb_tile[i].ports.if_mu_rd_wst_s_rd_data_e2w_valid)
+
+                # LEFT EDGE
+                if i != 0:
+                    self.wire(self.glb_tile[i].ports.if_mu_rd_wst_s_rd_data_w2e, self.if_mu_rd_list[i-1].rd_data_w2e)
+                    self.wire(self.glb_tile[i].ports.if_mu_rd_wst_s_rd_data_w2e_valid, self.if_mu_rd_list[i-1].rd_data_w2e_valid)
+                else:
+                    self.wire(self.glb_tile[i].ports.if_mu_rd_wst_s_rd_data_w2e, 0)
+                    self.wire(self.glb_tile[i].ports.if_mu_rd_wst_s_rd_data_w2e_valid, 0)
 
 
     @ always_ff((posedge, "clk"), (posedge, "reset"))

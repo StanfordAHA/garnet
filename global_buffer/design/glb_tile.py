@@ -10,8 +10,9 @@ from global_buffer.design.glb_bank_mux import GlbBankMux
 from global_buffer.design.glb_ring_switch import GlbRingSwitch
 from global_buffer.design.glb_pcfg_broadcast import GlbPcfgBroadcast
 from global_buffer.design.glb_switch import GlbSwitch
+from global_buffer.design.glb_switch_data_loop import GlbSwitchDataLoop
 from global_buffer.design.glb_tile_ifc import GlbTileInterface
-from global_buffer.design.glb_tile_rd_only_ifc import GlbTileReadOnlyInterface
+from global_buffer.design.glb_tile_data_loop_ifc import GlbTileDataLoopInterface
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from global_buffer.design.glb_header import GlbHeader
 from global_buffer.design.glb_bank import GlbBank
@@ -81,7 +82,7 @@ class GlbTile(Generator):
         # MU interface
         if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1":
             # TODO: Eventually, make num_tracks 4 here 
-            self.if_mu_rd = GlbTileInterface(addr_width=self._params.glb_addr_width,
+            self.if_mu_rd = GlbTileDataLoopInterface(addr_width=self._params.glb_addr_width,
                                             data_width=self._params.bank_data_width, is_clk_en=True, is_strb=False, has_wr_ifc=False, num_tracks=1)
             self.if_mu_rd_est_m = self.interface(self.if_mu_rd, "if_mu_rd_est_m")
             self.if_mu_rd_wst_s = self.interface(self.if_mu_rd, "if_mu_rd_wst_s")
@@ -546,7 +547,7 @@ class GlbTile(Generator):
         
 
         if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1":
-            self.glb_mu_rd_switch = GlbSwitch(self._params, ifc=self.if_mu_rd, wr_channel=False, rd_channel=True)
+            self.glb_mu_rd_switch = GlbSwitchDataLoop(self._params, ifc=self.if_mu_rd, wr_channel=False, rd_channel=True)
             self.add_child("glb_mu_rd_switch",
                         self.glb_mu_rd_switch,
                         mclk=self.clk,
