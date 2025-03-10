@@ -146,7 +146,8 @@ class PondCore(LakeCoreBase):
                                   stencil_valid=False,
                                   name="PondTop",
                                   comply_with_17=self.ready_valid,
-                                  do_config_lift=False)
+                                  do_config_lift=False,
+                                  allow_flush_memory=self.add_flush)
 
                 # Nonsensical but LakeTop now has its own internal dut
                 self.dut = self.LT.dut
