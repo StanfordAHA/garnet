@@ -235,13 +235,12 @@ compile:
 	echo '##[endgroup]'; echo '##[group]make compile (verilator => Vtop.mk) or (vcs => simv)' `date +%H:%M`
 	echo '--- MAKE COMPILE (verilator => Vtop.mk) or (vcs => simv)' `date +%H:%M`
 	$(COMPILE)
-	echo '##[endgroup]'
 ifeq ($(TOOL), VERILATOR)
-	echo '##[group]make vtop (make -f Vtop.mk => Vtop)' `date +%H:%M`
+	echo '##[endgroup]'; echo '##[group]make vtop (make -f Vtop.mk => Vtop)' `date +%H:%M`
 	echo '--- MAKE VTOP (make -f Vtop.mk => Vtop)' `date +%H:%M`
 	make -C obj_dir/ -f Vtop.mk
-	echo '##[endgroup]'
 endif
+	echo '##[endgroup]'
 
 generate:
 	echo '##[endgroup]'; echo '##[group]make generate (genesis testbench/top.svp)' `date +%H:%M`
@@ -257,12 +256,9 @@ run: $(APP0_NAME)/bin/design_meta.json
 	echo '--- MAKE RUN (e.g. Vtop or simv)' `date +%H:%M`
 	@rm -rf *.txt; rm -rf ../../SPARSE_TESTS/batch_*
 	$(RUN) $(DUMP_ARGS) $(RUN_ARGS) $(APP_ARGS)
-	echo '##[endgroup]'
 
-	echo '##[group]PASSED maybe' `date +%H:%M`
-#	sleep 1; printf "%s%s[group]%s %s\n"  "#" "#" "PASSED maybe" `date +%H:%M`; sleep 1
+	echo '##[endgroup]'; echo '##[group]PASSED maybe' `date +%H:%M`
 	echo '+++ PASSED maybe' `date +%H:%M`
-#	sleep 1; printf "%s%s[endgroup]\n" "#" "#"; sleep 1
 	echo '##[endgroup]'
 
 .PHONY: sim
