@@ -170,6 +170,16 @@ class Garnet(Generator):
                 mu2cgra_valid=magma.In(magma.Bit),
                 cgra2mu_ready=magma.Out(magma.Bit)
             )
+            
+            # TODO: Fix this HACK 
+            include_mu_glb_ifc = True
+            if include_mu_glb_ifc:
+                self.add_ports(
+                    mu_rd_addr=magma.In(magma.Bits[glb_params.glb_addr_width]),
+                    mu_rd_en=magma.In(magma.Bit),
+                    mu_rd_data=magma.Out(magma.Bits[glb_params.bank_data_width]),
+                    mu_rd_data_valid=magma.Out(magma.Bit)
+                )
 
             # Matrix unit <-> interconnnect ports connection
             self.cgra2mu_ready_and = FromMagma(mantle.DefineAnd(height=num_output_channels, width=1))
@@ -202,6 +212,14 @@ class Garnet(Generator):
                 self.wire(self.cgra2mu_ready_and.ports[f"I{i}"], self.convert(self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{cgra_col_num:02X}_Y{mu_io_tile_row:02X}_ready"], magma.Bits[1]))
 
             self.wire(self.convert(self.cgra2mu_ready_and.ports.O, magma.bit), self.ports.cgra2mu_ready)
+
+
+            # Matrix unit <-> GLB ports connection 
+            if include_mu_glb_ifc:
+                self.wire(self.global_buffer.ports.mu_rd_addr, self.ports.mu_rd_addr)
+                self.wire(self.global_buffer.ports.mu_rd_en[0], self.ports.mu_rd_en)
+                self.wire(self.ports.mu_rd_data, self.global_buffer.ports.mu_rd_data)
+                self.wire(self.ports.mu_rd_data_valid, self.global_buffer.ports.mu_rd_data_valid[0])
 
         # top <-> global controller ports connection
         self.wire(self.ports.clk_in, self.global_controller.ports.clk_in)
@@ -882,6 +900,11 @@ def parse_args():
 
     if args.include_E64_hw:
         os.environ["INCLUDE_E64_HW"] = "1"
+
+    # MO: MU-GLB ifc HACK
+    include_mu_glb_ifc = True
+    if include_mu_glb_ifc:
+        os.environ["INCLUDE_MU_GLB_IFC"] = "1" 
 
     # If using MU, South and North have IO, else only north side has IO
     from canal.util import IOSide

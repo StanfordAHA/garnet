@@ -8,8 +8,18 @@ import os
 
 
 class GlbSwitch(Generator):
-    def __init__(self, _params: GlobalBufferParams, ifc: GlbTileInterface):
-        super().__init__("glb_switch")
+    def __init__(self, _params: GlobalBufferParams, ifc: GlbTileInterface, wr_channel=True, rd_channel=True):
+        name = "glb_switch"
+        if wr_channel:
+            name += "_WR"
+        if rd_channel:
+            name += "_RD"
+        super().__init__(name)
+
+        self.wr_channel = wr_channel
+        self.rd_channel = rd_channel
+        assert self.wr_channel is True or self.rd_channel is True
+
         self._params = _params
         self.header = GlbHeader(self._params)
         self.mclk = self.clock("mclk")
@@ -29,9 +39,12 @@ class GlbSwitch(Generator):
 
         # port to switch
         self.clk_en_sw2bank = self.output("clk_en_sw2bank", 1)
-        self.wr_packet = self.output("wr_packet", self.header.wr_packet_t)
-        self.rdrq_packet = self.output("rdrq_packet", self.header.rdrq_packet_t)
-        self.rdrs_packet = self.input("rdrs_packet", self.header.rdrs_packet_t)
+        if self.wr_channel:
+            self.wr_packet = self.output("wr_packet", self.header.wr_packet_t)
+        
+        if self.rd_channel:
+            self.rdrq_packet = self.output("rdrq_packet", self.header.rdrq_packet_t)
+            self.rdrs_packet = self.input("rdrs_packet", self.header.rdrs_packet_t)
 
         # config port
         self.if_est_m = self.interface(self.ifc.master, "if_est_m", is_port=True)
@@ -69,41 +82,55 @@ class GlbSwitch(Generator):
         # local pararmeters
         self.tile_id_lsb = self._params.bank_addr_width + self._params.bank_sel_addr_width
         self.tile_id_msb = self.tile_id_lsb + self._params.tile_sel_addr_width - 1
-
-        if self.data_width != self._params.bank_data_width:
+        
+        if self.rd_channel and (self.data_width != self._params.bank_data_width):
             self.add_bank_rd_addr_sel_pipeline()
         self.add_always(self.tile_id_match)
-        self.add_always(self.wr_logic, is_partial=(self.data_width != self._params.bank_data_width))
-        self.add_always(self.rdrq_logic)
-        self.add_always(self.rdrs_logic, is_partial=(self.data_width != self._params.bank_data_width))
+        if self.wr_channel:
+            self.add_always(self.wr_logic, is_partial=(self.data_width != self._params.bank_data_width))
+        if self.rd_channel: 
+            self.add_always(self.rdrq_logic)
+            self.add_always(self.rdrs_logic, is_partial=(self.data_width != self._params.bank_data_width))
         self.add_always(self.pipeline)
         self.add_always(self.clk_en_pipeline)
         self.add_always(self.est_m_clk_en_sel_first_cycle_comb)
-        self.add_always(self.est_m_wr_clk_en_sel_latch)
-        self.add_always(self.est_m_rd_clk_en_sel_latch)
+        if self.wr_channel:
+            self.add_always(self.est_m_wr_clk_en_sel_latch)
+        if self.rd_channel: 
+            self.add_always(self.est_m_rd_clk_en_sel_latch)
         self.add_always(self.est_m_clk_en_sel_comb)
-        self.add_always(self.est_m_wr_clk_en_mux)
-        self.add_always(self.est_m_rd_clk_en_mux)
+        if self.wr_channel:
+            self.add_always(self.est_m_wr_clk_en_mux)
+        if self.rd_channel:
+            self.add_always(self.est_m_rd_clk_en_mux)
         self.add_sw2bank_clk_en()
 
     @always_comb
     def tile_id_match(self):
-        self.wr_tile_id_match = self.glb_tile_id == self.if_wst_s.wr_addr[self.tile_id_msb, self.tile_id_lsb]
-        self.rd_tile_id_match = self.glb_tile_id == self.if_wst_s.rd_addr[self.tile_id_msb, self.tile_id_lsb]
+        if self.wr_channel:
+            self.wr_tile_id_match = self.glb_tile_id == self.if_wst_s.wr_addr[self.tile_id_msb, self.tile_id_lsb]
+        if self.rd_channel:
+            self.rd_tile_id_match = self.glb_tile_id == self.if_wst_s.rd_addr[self.tile_id_msb, self.tile_id_lsb]
 
     @always_ff((posedge, "mclk"), (posedge, "reset"))
     def clk_en_pipeline(self):
         if self.reset:
-            self.if_wst_s_wr_clk_en_d = 0
-            self.if_wst_s_rd_clk_en_d = 0
+            if self.wr_channel:
+                self.if_wst_s_wr_clk_en_d = 0
+            if self.rd_channel:
+                self.if_wst_s_rd_clk_en_d = 0
         else:
-            self.if_wst_s_wr_clk_en_d = self.if_wst_s.wr_clk_en
-            self.if_wst_s_rd_clk_en_d = self.if_wst_s.rd_clk_en
+            if self.wr_channel:
+                self.if_wst_s_wr_clk_en_d = self.if_wst_s.wr_clk_en
+            if self.rd_channel:
+                self.if_wst_s_rd_clk_en_d = self.if_wst_s.rd_clk_en
 
     @always_comb
     def est_m_clk_en_sel_first_cycle_comb(self):
-        self.if_est_m_wr_clk_en_sel_first_cycle = self.if_wst_s.wr_en & (~self.wr_tile_id_match)
-        self.if_est_m_rd_clk_en_sel_first_cycle = self.if_wst_s.rd_en & (~self.rd_tile_id_match)
+        if self.wr_channel:
+            self.if_est_m_wr_clk_en_sel_first_cycle = self.if_wst_s.wr_en & (~self.wr_tile_id_match)
+        if self.rd_channel:
+            self.if_est_m_rd_clk_en_sel_first_cycle = self.if_wst_s.rd_en & (~self.rd_tile_id_match)
 
     @always_ff((posedge, "mclk"), (posedge, "reset"))
     def est_m_wr_clk_en_sel_latch(self):
@@ -137,10 +164,12 @@ class GlbSwitch(Generator):
 
     @always_comb
     def est_m_clk_en_sel_comb(self):
-        self.if_est_m_wr_clk_en_sel = (
-            self.if_est_m_wr_clk_en_sel_first_cycle | self.if_est_m_wr_clk_en_sel_latch)
-        self.if_est_m_rd_clk_en_sel = (
-            self.if_est_m_rd_clk_en_sel_first_cycle | self.if_est_m_rd_clk_en_sel_latch)
+        if self.wr_channel:
+            self.if_est_m_wr_clk_en_sel = (
+                self.if_est_m_wr_clk_en_sel_first_cycle | self.if_est_m_wr_clk_en_sel_latch)
+        if self.rd_channel:
+            self.if_est_m_rd_clk_en_sel = (
+                self.if_est_m_rd_clk_en_sel_first_cycle | self.if_est_m_rd_clk_en_sel_latch)
 
     @always_comb
     def est_m_wr_clk_en_mux(self):
@@ -157,33 +186,42 @@ class GlbSwitch(Generator):
             self.if_est_m.rd_clk_en = 0
 
     def add_sw2bank_clk_en(self):
-        self.wr_clk_en_gen = GlbClkEnGen(cnt=self._params.tile2sram_wr_delay + self._params.wr_clk_en_margin)
-        if os.getenv('WHICH_SOC') == "amber":
-            pass
-        else:
-            self.wr_clk_en_gen.p_cnt.value = self._params.tile2sram_wr_delay + self._params.wr_clk_en_margin
-        self.sw2bank_wr_clk_en = self.var("sw2bank_wr_clk_en", 1)
-        self.add_child("sw2bank_wr_clk_en_gen",
-                       self.wr_clk_en_gen,
-                       clk=self.mclk,
-                       reset=self.reset,
-                       enable=(self.if_wst_s.wr_en & self.wr_tile_id_match),
-                       clk_en=self.sw2bank_wr_clk_en
-                       )
-        self.rd_clk_en_gen = GlbClkEnGen(cnt=self._params.tile2sram_rd_delay + self._params.rd_clk_en_margin)
-        if os.getenv('WHICH_SOC') == "amber":
-            pass
-        else:
-            self.rd_clk_en_gen.p_cnt.value = self._params.tile2sram_rd_delay + self._params.rd_clk_en_margin
-        self.sw2bank_rd_clk_en = self.var("sw2bank_rd_clk_en", 1)
-        self.add_child("sw2bank_rd_clk_en_gen",
-                       self.rd_clk_en_gen,
-                       clk=self.mclk,
-                       reset=self.reset,
-                       enable=(self.if_wst_s.rd_en & self.rd_tile_id_match),
-                       clk_en=self.sw2bank_rd_clk_en
-                       )
-        self.wire(self.clk_en_sw2bank, self.sw2bank_wr_clk_en | self.sw2bank_rd_clk_en)
+        if self.wr_channel:
+            self.wr_clk_en_gen = GlbClkEnGen(cnt=self._params.tile2sram_wr_delay + self._params.wr_clk_en_margin)
+            if os.getenv('WHICH_SOC') == "amber":
+                pass
+            else:
+                self.wr_clk_en_gen.p_cnt.value = self._params.tile2sram_wr_delay + self._params.wr_clk_en_margin
+            self.sw2bank_wr_clk_en = self.var("sw2bank_wr_clk_en", 1)
+            self.add_child("sw2bank_wr_clk_en_gen",
+                        self.wr_clk_en_gen,
+                        clk=self.mclk,
+                        reset=self.reset,
+                        enable=(self.if_wst_s.wr_en & self.wr_tile_id_match),
+                        clk_en=self.sw2bank_wr_clk_en
+                        )
+            
+        if self.rd_channel:
+            self.rd_clk_en_gen = GlbClkEnGen(cnt=self._params.tile2sram_rd_delay + self._params.rd_clk_en_margin)
+            if os.getenv('WHICH_SOC') == "amber":
+                pass
+            else:
+                self.rd_clk_en_gen.p_cnt.value = self._params.tile2sram_rd_delay + self._params.rd_clk_en_margin
+            self.sw2bank_rd_clk_en = self.var("sw2bank_rd_clk_en", 1)
+            self.add_child("sw2bank_rd_clk_en_gen",
+                        self.rd_clk_en_gen,
+                        clk=self.mclk,
+                        reset=self.reset,
+                        enable=(self.if_wst_s.rd_en & self.rd_tile_id_match),
+                        clk_en=self.sw2bank_rd_clk_en
+                        )
+
+        if self.wr_channel and self.rd_channel:
+            self.wire(self.clk_en_sw2bank, self.sw2bank_wr_clk_en | self.sw2bank_rd_clk_en)
+        elif self.wr_channel:
+            self.wire(self.clk_en_sw2bank, self.sw2bank_wr_clk_en)
+        elif self.rd_channel:
+            self.wire(self.clk_en_sw2bank, self.sw2bank_rd_clk_en)
 
     @always_comb
     def wr_logic(self, is_partial: bool):
@@ -296,34 +334,48 @@ class GlbSwitch(Generator):
     @ always_ff((posedge, "gclk"), (posedge, "reset"))
     def pipeline(self):
         if self.reset:
-            self.if_est_m.wr_en = 0
-            if self.ifc.is_strb is True:
-                self.if_est_m.wr_strb = 0
-            self.if_est_m.wr_addr = 0
-            self.if_est_m.wr_data = 0
-            self.if_est_m.rd_en = 0
-            self.if_est_m.rd_addr = 0
-            self.if_wst_s.rd_data = 0
-            self.if_wst_s.rd_data_valid = 0
-            self.wr_packet['wr_en'] = 0
-            self.wr_packet['wr_strb'] = 0
-            self.wr_packet['wr_addr'] = 0
-            self.wr_packet['wr_data'] = 0
-            self.rdrq_packet['rd_en'] = 0
-            self.rdrq_packet['rd_addr'] = 0
+            if self.wr_channel:
+                self.if_est_m.wr_en = 0
+                if self.ifc.is_strb is True:
+                    self.if_est_m.wr_strb = 0
+                self.if_est_m.wr_addr = 0
+                self.if_est_m.wr_data = 0
+
+            if self.rd_channel:    
+                self.if_est_m.rd_en = 0
+                self.if_est_m.rd_addr = 0
+                self.if_wst_s.rd_data = 0
+                self.if_wst_s.rd_data_valid = 0
+
+            if self.wr_channel:
+                self.wr_packet['wr_en'] = 0
+                self.wr_packet['wr_strb'] = 0
+                self.wr_packet['wr_addr'] = 0
+                self.wr_packet['wr_data'] = 0
+
+            if self.rd_channel:
+                self.rdrq_packet['rd_en'] = 0
+                self.rdrq_packet['rd_addr'] = 0
         else:
-            self.if_est_m.wr_en = self.if_est_m_wr_en_w
-            if self.ifc.is_strb is True:
-                self.if_est_m.wr_strb = self.if_est_m_wr_strb_w
-            self.if_est_m.wr_addr = self.if_est_m_wr_addr_w
-            self.if_est_m.wr_data = self.if_est_m_wr_data_w
-            self.if_est_m.rd_en = self.if_est_m_rd_en_w
-            self.if_est_m.rd_addr = self.if_est_m_rd_addr_w
-            self.if_wst_s.rd_data = self.rd_data_w
-            self.if_wst_s.rd_data_valid = self.rd_data_valid_w
-            self.wr_packet['wr_en'] = self.bank_wr_en
-            self.wr_packet['wr_strb'] = self.bank_wr_strb
-            self.wr_packet['wr_addr'] = self.bank_wr_addr
-            self.wr_packet['wr_data'] = self.bank_wr_data
-            self.rdrq_packet['rd_en'] = self.bank_rd_en
-            self.rdrq_packet['rd_addr'] = self.bank_rd_addr
+            if self.wr_channel:
+                self.if_est_m.wr_en = self.if_est_m_wr_en_w
+                if self.ifc.is_strb is True:
+                    self.if_est_m.wr_strb = self.if_est_m_wr_strb_w
+                self.if_est_m.wr_addr = self.if_est_m_wr_addr_w
+                self.if_est_m.wr_data = self.if_est_m_wr_data_w
+
+            if self.rd_channel:
+                self.if_est_m.rd_en = self.if_est_m_rd_en_w
+                self.if_est_m.rd_addr = self.if_est_m_rd_addr_w
+                self.if_wst_s.rd_data = self.rd_data_w
+                self.if_wst_s.rd_data_valid = self.rd_data_valid_w
+
+            if self.wr_channel:
+                self.wr_packet['wr_en'] = self.bank_wr_en
+                self.wr_packet['wr_strb'] = self.bank_wr_strb
+                self.wr_packet['wr_addr'] = self.bank_wr_addr
+                self.wr_packet['wr_data'] = self.bank_wr_data
+
+            if self.rd_channel:
+                self.rdrq_packet['rd_en'] = self.bank_rd_en
+                self.rdrq_packet['rd_addr'] = self.bank_rd_addr

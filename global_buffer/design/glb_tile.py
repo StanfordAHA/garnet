@@ -11,6 +11,7 @@ from global_buffer.design.glb_ring_switch import GlbRingSwitch
 from global_buffer.design.glb_pcfg_broadcast import GlbPcfgBroadcast
 from global_buffer.design.glb_switch import GlbSwitch
 from global_buffer.design.glb_tile_ifc import GlbTileInterface
+from global_buffer.design.glb_tile_rd_only_ifc import GlbTileReadOnlyInterface
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from global_buffer.design.glb_header import GlbHeader
 from global_buffer.design.glb_bank import GlbBank
@@ -76,6 +77,15 @@ class GlbTile(Generator):
                                         data_width=self._params.bank_data_width, is_clk_en=True, is_strb=True)
         self.if_proc_est_m = self.interface(self.if_proc, "if_proc_est_m")
         self.if_proc_wst_s = self.interface(self.if_proc, "if_proc_wst_s")
+
+        # MU interface
+        if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1":
+            # TODO: Eventually, make num_tracks 4 here 
+            self.if_mu_rd = GlbTileReadOnlyInterface(addr_width=self._params.glb_addr_width,
+                                            data_width=self._params.bank_data_width, is_clk_en=True, num_tracks=1)
+            self.if_mu_rd_est_m = self.interface(self.if_mu_rd, "if_mu_rd_est_m")
+            self.if_mu_rd_wst_s = self.interface(self.if_mu_rd, "if_mu_rd_wst_s")
+
         # Connect m2s ports
         for m2s_port in self.if_proc.m_to_s:
             port = self.output(f"if_proc_est_m_{m2s_port}", self.if_proc_est_m[m2s_port].width)
@@ -88,6 +98,21 @@ class GlbTile(Generator):
             self.wire(port, self.if_proc_est_m[s2m_port])
             port = self.output(f"if_proc_wst_s_{s2m_port}", self.if_proc_wst_s[s2m_port].width)
             self.wire(port, self.if_proc_wst_s[s2m_port])
+
+
+        if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1":
+            # Connect m2s ports
+            for m2s_port in self.if_mu_rd.m_to_s:
+                port = self.output(f"if_mu_rd_est_m_{m2s_port}", self.if_mu_rd_est_m[m2s_port].width)
+                self.wire(port, self.if_mu_rd_est_m[m2s_port])
+                port = self.input(f"if_mu_rd_wst_s_{m2s_port}", self.if_mu_rd_wst_s[m2s_port].width)
+                self.wire(port, self.if_mu_rd_wst_s[m2s_port])
+            # Connect s2m ports
+            for s2m_port in self.if_mu_rd.s_to_m:
+                port = self.input(f"if_mu_rd_est_m_{s2m_port}", self.if_mu_rd_est_m[s2m_port].width)
+                self.wire(port, self.if_mu_rd_est_m[s2m_port])
+                port = self.output(f"if_mu_rd_wst_s_{s2m_port}", self.if_mu_rd_wst_s[s2m_port].width)
+                self.wire(port, self.if_mu_rd_wst_s[s2m_port])
 
         # Configuration interface
         self.if_cfg = GlbTileInterface(addr_width=self._params.axi_addr_width,
@@ -280,6 +305,18 @@ class GlbTile(Generator):
                        clk=self.clk,
                        enable=self.clk_en_proc_switch | self.clk_en_master,
                        gclk=self.gclk_proc_switch)
+        
+        if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1":
+            # Clock gating - mu_rd switch 
+            self.clk_en_mu_rd_switch = self.var("clk_en_mu_rd_switch", 1)
+            self.gclk_mu_rd_switch = self.var("gclk_mu_rd_switch", 1)
+            self.wire(self.clk_en_mu_rd_switch, self.if_mu_rd_wst_s['rd_clk_en'])
+            self.clk_en_mu_rd_sw2bank = self.var("clk_en_mu_rd_sw2bank", 1)
+            self.add_child("glb_clk_gate_mu_rd_switch",
+                        ClkGate(_params=self._params),
+                        clk=self.clk,
+                        enable=self.clk_en_mu_rd_switch | self.clk_en_master,
+                        gclk=self.gclk_mu_rd_switch)
 
         # Clock gating - pcfg_dma
         self.clk_en_pcfg_dma = self.var("clk_en_pcfg_dma", 1)
@@ -317,8 +354,12 @@ class GlbTile(Generator):
         # Clock gating - bank
         self.clk_en_bank = self.var("clk_en_bank", 1)
         self.gclk_bank = self.var("gclk_bank", 1)
-        self.wire(self.clk_en_bank, self.clk_en_lddma2bank | self.clk_en_stdma2bank | self.clk_en_pcfgdma2bank
-                  | self.clk_en_ring2bank | self.clk_en_pcfgring2bank | self.clk_en_procsw2bank)
+        if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1":
+            self.wire(self.clk_en_bank, self.clk_en_lddma2bank | self.clk_en_stdma2bank | self.clk_en_pcfgdma2bank
+                      | self.clk_en_ring2bank | self.clk_en_pcfgring2bank | self.clk_en_procsw2bank | self.clk_en_mu_rd_sw2bank)
+        else:
+            self.wire(self.clk_en_bank, self.clk_en_lddma2bank | self.clk_en_stdma2bank | self.clk_en_pcfgdma2bank
+                    | self.clk_en_ring2bank | self.clk_en_pcfgring2bank | self.clk_en_procsw2bank)
         self.add_child("glb_clk_gate_bank",
                        ClkGate(_params=self._params),
                        clk=self.clk,
@@ -483,8 +524,13 @@ class GlbTile(Generator):
                        cfg_tile_connected_next=self.cfg_tile_connected_next,
                        cfg_pcfg_tile_connected_prev=self.cfg_pcfg_tile_connected_prev,
                        cfg_pcfg_tile_connected_next=self.cfg_pcfg_tile_connected_next)
+        
 
-        self.glb_proc_switch = GlbSwitch(self._params, ifc=self.if_proc)
+        if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1":
+            self.wire(self.glb_bank_mux.rdrq_packet_mu_rd_sw2bank, self.rdrq_packet_mu_rd_sw2bank)
+            self.wire(self.rdrs_packet_bank2mu_rd_sw, self.glb_bank_mux.rdrs_packet_bank2mu_rd_sw)
+
+        self.glb_proc_switch = GlbSwitch(self._params, ifc=self.if_proc, wr_channel=True, rd_channel=True)
         self.add_child("glb_proc_switch",
                        self.glb_proc_switch,
                        mclk=self.clk,
@@ -497,6 +543,21 @@ class GlbTile(Generator):
                        wr_packet=self.wr_packet_procsw2bank,
                        rdrq_packet=self.rdrq_packet_procsw2bank,
                        rdrs_packet=self.rdrs_packet_bank2procsw)
+        
+
+        if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1":
+            self.glb_mu_rd_switch = GlbSwitch(self._params, ifc=self.if_mu_rd, wr_channel=False, rd_channel=True)
+            self.add_child("glb_mu_rd_switch",
+                        self.glb_mu_rd_switch,
+                        mclk=self.clk,
+                        gclk=clock(self.gclk_mu_rd_switch),
+                        reset=self.reset,
+                        glb_tile_id=self.glb_tile_id,
+                        if_est_m=self.if_mu_rd_est_m,
+                        if_wst_s=self.if_mu_rd_wst_s,
+                        clk_en_sw2bank=self.clk_en_mu_rd_sw2bank,
+                        rdrq_packet=self.rdrq_packet_mu_rd_sw2bank,
+                        rdrs_packet=self.rdrs_packet_bank2mu_rd_sw)
 
         self.add_child("glb_strm_ring_switch",
                        GlbRingSwitch(_params=self._params, wr_channel=True, rd_channel=True),
@@ -616,6 +677,8 @@ class GlbTile(Generator):
         self.wr_packet_dma2bank = self.var("wr_packet_dma2bank", self.header.wr_packet_t)
 
         self.rdrq_packet_procsw2bank = self.var("rdrq_packet_procsw2bank", self.header.rdrq_packet_t)
+        if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1":
+            self.rdrq_packet_mu_rd_sw2bank = self.var("rdrq_packet_mu_rd_sw2bank", self.header.rdrq_packet_t)
         self.rdrq_packet_ring2bank = self.var("rdrq_packet_ring2bank", self.header.rdrq_packet_t)
         self.rdrq_packet_dma2ring = self.var("rdrq_packet_dma2ring", self.header.rdrq_packet_t)
         self.rdrq_packet_dma2bank = self.var("rdrq_packet_dma2bank", self.header.rdrq_packet_t)
@@ -624,6 +687,8 @@ class GlbTile(Generator):
         self.rdrq_packet_pcfgdma2ring = self.var("rdrq_packet_pcfgdma2ring", self.header.rdrq_packet_t)
 
         self.rdrs_packet_bank2procsw = self.var("rdrs_packet_bank2procsw", self.header.rdrs_packet_t)
+        if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1":
+            self.rdrs_packet_bank2mu_rd_sw = self.var("rdrs_packet_bank2mu_rd_sw", self.header.rdrs_packet_t)
         self.rdrs_packet_bank2ring = self.var("rdrs_packet_bank2ring", self.header.rdrs_packet_t)
         self.rdrs_packet_ring2dma = self.var("rdrs_packet_ring2dma", self.header.rdrs_packet_t)
         self.rdrs_packet_bank2dma = self.var("rdrs_packet_bank2dma", self.header.rdrs_packet_t)
