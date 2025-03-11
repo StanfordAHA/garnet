@@ -592,11 +592,11 @@ program glb_test (
                                      int extent[LOOP_LEVEL], int cycle_stride[LOOP_LEVEL],
                                      int data_stride[LOOP_LEVEL], bit [1:0] valid_mode);
         glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_CTRL_R,
-                      ((2'b01 << `GLB_LD_DMA_CTRL_DATA_MUX_F_LSB)
+                      ((3'b001 << `GLB_LD_DMA_CTRL_DATA_MUX_F_LSB)
                     | (on << `GLB_LD_DMA_CTRL_MODE_F_LSB)
                     | (valid_mode << `GLB_LD_DMA_CTRL_VALID_MODE_F_LSB)));
         glb_cfg_read((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_CTRL_R,
-                     ((2'b01 << `GLB_LD_DMA_CTRL_DATA_MUX_F_LSB)
+                     ((3'b001 << `GLB_LD_DMA_CTRL_DATA_MUX_F_LSB)
                     | (on << `GLB_LD_DMA_CTRL_MODE_F_LSB)
                     | (valid_mode << `GLB_LD_DMA_CTRL_VALID_MODE_F_LSB)));
         void'($root.top.cgra.set_glb2prr_valid_mode(tile_id, valid_mode));
