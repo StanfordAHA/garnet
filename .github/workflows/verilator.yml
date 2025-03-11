@@ -24,3 +24,7 @@ jobs:
       shell: bash
       run: |
         tests/test_app/test_app.sh --fp 4x2 tests/fp_pointwise
+
+# Not running these tests b/c takes too long
+        # tests/test_app/test_app.sh  4x16 tests/gaussian (40min)
+        # tests/test_app/test_app.sh 28x16 tests/pointwise (2.5hr)
