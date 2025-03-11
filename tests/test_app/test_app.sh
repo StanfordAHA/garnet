@@ -1,9 +1,5 @@
 #!/bin/bash
 
-USE_GARNET_BRANCH=
-# BRANCH=origin/CW
-# USE_GARNET_BRANCH="(cd /aha/garnet; git pull; git fetch origin; git checkout $BRANCH)"
-
 HELP="
   DESCRIPTION:
     Launch a docker container and run the indicated app.
@@ -34,29 +30,17 @@ if [ "$DO_VCS" ]; then
     TOOL='. /cad/modules/tcl/init/bash; module load base; module load vcs'
 fi
 
-# Experiment result: both of these work
-# echo "::group::Colon group"; echo "foo"; echo "::endgroup::"
-# echo "##[group]Hash group";  echo "bar"; echo "##[endgroup]"
-
-# Experiment 2 fails pretty hard
-# echo "fooz::group::Colon group"; echo "foo"; echo "foz::endgroup::baz"
-# echo "booz##[group]Hash group";  echo "bar"; echo "boz##[endgroup]barz"
-
-# Experiment 3 maybe the double hash works anywhere in the line, even without the [group] keyword??
-# FAILED
-# echo "foo bar ## baz bye"
-# echo "##[endgroup]"
-
-# # Need this subterfuge to prevent extra groups during 'set -x'
-# function GROUP    { printf "%s%s[group]%s\n"  "#" "#" "$1"; }
-# function ENDGROUP { printf "%s%s[endgroup]\n" "#" "#"; }
+########################################################################
+# Two ways to form groups in github workflow action logs:
+#   echo "::group::Colon group"; echo "foo"; echo "::endgroup::"
+#   echo "##[group]Hash group";  echo "bar"; echo "##[endgroup]"
+#
+# But unless you use subterfuge (below), the echo command itself can trigger a group :(
 
 function GROUP    { sleep 1; printf "%s%s[group]%s\n"  "#" "#" "$1"; sleep 1; set -x; }
 function ENDGROUP { sleep 1; printf "%s%s[endgroup]\n" "#" "#";      sleep 1; set -x; }
 
-
-
-
+########################################################################
 # DOCKER image and container
 # set +x; sleep 1; echo "##[group]DOCKER image and container"; sleep 1; set -x
 set +x; GROUP "DOCKER image and container"
@@ -65,6 +49,8 @@ docker pull $image
 container=DELETEME-$USER-apptest-$$
 docker run -id --name $container --rm $CAD $image bash
 
+
+########################################################################
 # TRAPPER KILLER: Trap and kill docker container on exit ('--rm' no workee, but why?)
 function cleanup { set -x; docker kill $container; }
 trap cleanup EXIT
@@ -73,9 +59,7 @@ trap cleanup EXIT
 set +x; ENDGROUP
 
 
-
-
-
+########################################################################
 # VERILATOR
 # set +x; echo "##[group]VERILATOR installer"; set -x
 set +x; GROUP "VERILATOR installer"
@@ -87,9 +71,7 @@ cd /aha/garnet/tests/test_app; make setup-verilator
 set +x; ENDGROUP
 
 
-
-
-
+########################################################################
 # set +x; echo "##[group]UPDATE docker w local garnet"; set -x
 set +x; GROUP "UPDATE docker w local garnet"
 
@@ -122,6 +104,7 @@ docker cp /tmp/deleteme-garnet-$$ $container:/aha/garnet
 # set +x; echo "##[endgroup]"; set -x
 set +x; ENDGROUP
 
+########################################################################
 # TEST
 set +x
 docker exec $container /bin/bash -c "

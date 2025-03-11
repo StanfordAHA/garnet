@@ -41,10 +41,6 @@ DESIGN_FILES += $(garnet_dir)/global_buffer/header/global_buffer_param.svh \
 
 TB_FILES += -F tb/tb_cgra.f
 
-# IP_FILES += -y /cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CW/ \
-# 			-y /cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CWTECH/ \
-# 			+libext+.v+.sv 
-
 # If official cadence libs are available, use those; else use the stubs that I wrote
 CADENCE_VLIBS    = /cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog
 OFFICIAL_CW_LIBS = -y $(CADENCE_VLIBS)/CW/ -y $(CADENCE_VLIBS)/CWTECH/
