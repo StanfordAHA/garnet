@@ -17,12 +17,17 @@ from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from global_buffer.design.glb_header import GlbHeader
 from global_buffer.design.glb_bank import GlbBank
 from global_buffer.design.clk_gate import ClkGate
+from global_buffer.design.glb_addr_builder import GlbAddrBuilder
 import os
 
 
 class GlbTile(Generator):
-    def __init__(self, _params: GlobalBufferParams):
-        super().__init__("glb_tile")
+    def __init__(self, _params: GlobalBufferParams, is_addr_builder_tile: bool = False):
+        name = "glb_tile"
+        if is_addr_builder_tile:
+            name += "_w_addr_builder"
+        super().__init__(name)
+        self.is_addr_builder_tile = is_addr_builder_tile
         self._params = _params
         self.header = GlbHeader(self._params)
 
@@ -87,6 +92,7 @@ class GlbTile(Generator):
             self.if_mu_rd_est_m = self.interface(self.if_mu_rd, "if_mu_rd_est_m")
             self.if_mu_rd_wst_s = self.interface(self.if_mu_rd, "if_mu_rd_wst_s")
 
+
         # Connect m2s ports
         for m2s_port in self.if_proc.m_to_s:
             port = self.output(f"if_proc_est_m_{m2s_port}", self.if_proc_est_m[m2s_port].width)
@@ -114,6 +120,19 @@ class GlbTile(Generator):
                 self.wire(port, self.if_mu_rd_est_m[s2m_port])
                 port = self.output(f"if_mu_rd_wst_s_{s2m_port}", self.if_mu_rd_wst_s[s2m_port].width)
                 self.wire(port, self.if_mu_rd_wst_s[s2m_port])
+
+
+            if self.is_addr_builder_tile:
+                self.mu_rd_addr_build_in_w2e = self.input("mu_rd_addr_build_in_w2e", self._params.glb_addr_width)
+                self.mu_rd_addr_build_out_w2e = self.output("mu_rd_addr_build_out_w2e", self._params.glb_addr_width)
+
+                self.glb_addr_builder = GlbAddrBuilder(_params=self._params)
+                self.add_child("glb_addr_builder",
+                       self.glb_addr_builder,
+                       clk=self.clk,
+                       reset=self.reset,
+                       rd_addr_build_in=self.mu_rd_addr_build_in_w2e,
+                       rd_addr_build_out=self.mu_rd_addr_build_out_w2e)
 
         # Configuration interface
         self.if_cfg = GlbTileInterface(addr_width=self._params.axi_addr_width,

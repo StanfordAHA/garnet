@@ -18,6 +18,9 @@ class GlobalBuffer(Generator):
         self._params = _params
         self.header = GlbHeader(self._params)
 
+        # MO: Fix this HACK
+        num_mu_addr_builder_tiles = 4
+
         self.clk = self.clock("clk")
         self.glb_clk_en_master = self.input("glb_clk_en_master", self._params.num_glb_tiles)
         self.glb_clk_en_bank_master = self.input("glb_clk_en_bank_master", self._params.num_glb_tiles)
@@ -299,7 +302,10 @@ class GlobalBuffer(Generator):
         # GLB Tiles
         self.glb_tile = []
         for i in range(self._params.num_glb_tiles):
-            self.glb_tile.append(GlbTile(_params=self._params))
+            if i in range(num_mu_addr_builder_tiles):
+                self.glb_tile.append(GlbTile(_params=self._params, is_addr_builder_tile=True))
+            else:
+                self.glb_tile.append(GlbTile(_params=self._params))
 
         self.wire(self.if_proc_list[-1].rd_data, 0)
         self.wire(self.if_proc_list[-1].rd_data_valid, 0)
@@ -867,6 +873,14 @@ class GlobalBuffer(Generator):
                 else:
                     self.wire(self.glb_tile[i].ports.if_mu_rd_wst_s_rd_data_w2e, 0)
                     self.wire(self.glb_tile[i].ports.if_mu_rd_wst_s_rd_data_w2e_valid, 0)
+
+                    
+                if self.glb_tile[i].is_addr_builder_tile:
+                    if i != 0:
+                        self.wire(self.glb_tile[i].ports.mu_rd_addr_build_in_w2e, self.glb_tile[i-1].ports.mu_rd_addr_build_out_w2e)
+                    else:
+                        self.wire(self.glb_tile[i].ports.mu_rd_addr_build_in_w2e, self.mu_rd_addr_d)
+
 
 
     @ always_ff((posedge, "clk"), (posedge, "reset"))
