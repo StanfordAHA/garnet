@@ -108,7 +108,7 @@ foreach layer { m3 m4 m5 m6 m7 m8 } {
     set stripe_spacing        [lindex $ADK_M3_TO_M8_STRIPE_SPACE_LIST $i]
     set stripe_interset_pitch [expr 2 * ($stripe_width + $stripe_spacing)]
     # create the stripes
-    if { $layer == "m5" || $layer == "m6" } {
+    if { $layer == "m3" || $layer == "m4" } {
         # for m5 and m6, don't extend the stripes to the design boundary
         # because there are pins
         addStripe \
