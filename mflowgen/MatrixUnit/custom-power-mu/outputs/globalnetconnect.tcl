@@ -1,0 +1,1 @@
+../../../common/power-scripts/globalnetconnect.tcl

@@ -1,0 +1,12 @@
+name: testbench
+
+parameters:
+  array_width: 4
+  array_height: 2
+
+commands:
+  - python $GARNET_HOME/tests/test_timing/generate_testbench.py outputs --width $array_width --height $array_height
+  - mv outputs/Interconnect_tb.sv outputs/testbench.sv
+
+outputs:
+  - testbench.sv
