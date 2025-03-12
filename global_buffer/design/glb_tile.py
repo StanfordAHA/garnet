@@ -123,16 +123,19 @@ class GlbTile(Generator):
 
 
             if self.is_addr_builder_tile:
-                self.mu_rd_addr_build_in_w2e = self.input("mu_rd_addr_build_in_w2e", self._params.glb_addr_width)
-                self.mu_rd_addr_build_out_w2e = self.output("mu_rd_addr_build_out_w2e", self._params.glb_addr_width)
+                self.mu_rdrq_packet_build_in_w2e = self.input("mu_rdrq_packet_build_in_w2e", self.header.rdrq_packet_t)
+                self.mu_rdrq_packet_incr_out_w2e = self.output("mu_rdrq_packet_incr_out_w2e", self.header.rdrq_packet_t)
+                self.mu_rdrq_packet_build_out = self.var("mu_rdrq_packet_build_out", self.header.rdrq_packet_t)
 
                 self.glb_addr_builder = GlbAddrBuilder(_params=self._params)
                 self.add_child("glb_addr_builder",
                        self.glb_addr_builder,
                        clk=self.clk,
                        reset=self.reset,
-                       rd_addr_build_in=self.mu_rd_addr_build_in_w2e,
-                       rd_addr_build_out=self.mu_rd_addr_build_out_w2e)
+                       glb_tile_id=self.glb_tile_id,
+                       rdrq_packet_build_in=self.mu_rdrq_packet_build_in_w2e,
+                       rdrq_packet_incr_out=self.mu_rdrq_packet_incr_out_w2e,
+                       rdrq_packet_build_out=self.mu_rdrq_packet_build_out)
 
         # Configuration interface
         self.if_cfg = GlbTileInterface(addr_width=self._params.axi_addr_width,

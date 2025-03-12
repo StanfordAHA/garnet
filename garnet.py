@@ -936,7 +936,8 @@ def parse_args():
         cfg_data_width=32,
         cgra_axi_addr_width=13,
         axi_data_width=32,
-        config_port_pipeline=args.config_port_pipeline)
+        config_port_pipeline=args.config_port_pipeline,
+        num_mu_addr_builder_tiles=4)
 
     # for a in vars(args).items(): print(f'arg {a} has type {type(a)}')
     return args, io_sides
