@@ -1,0 +1,30 @@
+name: verilator
+
+# Run on every push (PR's do pushes too I think)
+on:
+  push:
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, 'skip ci')"
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Checkout submodules
+      shell: bash
+      run: |
+        auth_header="$(git config --local --get http.https://github.com/.extraheader)"
+        git submodule sync --recursive
+        git -c "http.extraheader=$auth_header" -c protocol.version=2 submodule update --init --force --recursive --depth=1
+
+    - name: Run test
+      shell: bash
+      run: |
+        tests/test_app/test_app.sh --fp 4x2 tests/fp_pointwise
+
+# Not running these tests b/c takes too long
+        # tests/test_app/test_app.sh  4x16 tests/gaussian (40min)
+        # tests/test_app/test_app.sh 28x16 tests/pointwise (2.5hr)

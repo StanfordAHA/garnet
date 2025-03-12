@@ -48,46 +48,7 @@ steps:
 
 - wait: { continue_on_failure: true }
 
-# ------------------------------------------------------------------------
-- label: ":wrench: Verilator"
-  agents: { hostname: $BUILDKITE_AGENT_META_DATA_HOSTNAME }
-  commands:
-
-  # Container setup
-  - docker run -id --name $VCONTAINER --rm -v /cad:/cad $IMAGE bash
-  - docker exec $VCONTAINER /bin/bash -c "rm -rf /aha/garnet"
-  - docker cp . $VCONTAINER:/aha/garnet
-
-  # Run the test
-  - docker exec $VCONTAINER /bin/bash -c "
-      source /aha/bin/activate;
-      source /cad/modules/tcl/init/sh;
-      echo '+++ SETUP';
-      make -f garnet/tests/test_app/Makefile setup-verilator;
-      echo '+++ GAUSSIAN TEST 4x16';
-      make -f garnet/tests/test_app/Makefile gaussian
-    "
-
-# ------------------------------------------------------------------------
-- label: ":wrench: Verilator 2"
-  agents: { hostname: $BUILDKITE_AGENT_META_DATA_HOSTNAME }
-  commands:
-  - echo "This test disabled b/c takes too long (2.5hr)"; exit
-
-  # Container setup
-  - docker run -id --name $VCONTAINER2 --rm -v /cad:/cad $IMAGE bash
-  - docker exec $VCONTAINER2 /bin/bash -c "rm -rf /aha/garnet"
-  - docker cp . $VCONTAINER2:/aha/garnet
-
-  # Run the test
-  - docker exec $VCONTAINER2 /bin/bash -c "
-      source /aha/bin/activate;
-      source /cad/modules/tcl/init/sh;
-      echo '+++ SETUP';
-      make -f garnet/tests/test_app/Makefile setup-verilator;
-      echo '+++ POINTWISE TEST 28x16';
-      make -f garnet/tests/test_app/Makefile pointwise
-    "
+# [ Verilator tests deleted Mar 2025 in favor of github workflow-action equivalent(s) ]
 
 # ------------------------------------------------------------------------
 - label: ":wrench: Aha regressions"

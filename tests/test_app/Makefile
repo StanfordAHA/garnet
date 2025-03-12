@@ -41,9 +41,12 @@ DESIGN_FILES += $(garnet_dir)/global_buffer/header/global_buffer_param.svh \
 
 TB_FILES += -F tb/tb_cgra.f
 
-IP_FILES += -y /cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CW/ \
-			-y /cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CWTECH/ \
-			+libext+.v+.sv 
+# If official cadence libs are available, use those; else use the stubs that I wrote
+CADENCE_VLIBS    = /cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog
+OFFICIAL_CW_LIBS = -y $(CADENCE_VLIBS)/CW/ -y $(CADENCE_VLIBS)/CWTECH/
+BACKUP_CW_LIBS   = -y CW/
+CW_LIBS  ?= $(shell test -d $(CADENCE_VLIBS) && echo $(OFFICIAL_CW_LIBS) || echo $(BACKUP_CW_LIBS))
+IP_FILES += $(CW_LIBS) +libext+.v+.sv 
 
 # -------------------------------------------------------------------
 # GLS Parameters
@@ -225,23 +228,34 @@ $(APP0_NAME)/bin/design_meta.json:
 compile: COMPILE_ARGS = $(COMPILE_RTL_ARGS)
 compile: INPUT_ARGS = $(DESIGN_FILES) $(TB_FILES) $(IP_FILES)
 compile:
+	echo '##[endgroup]'; echo '##[group]make compile (verilator => Vtop.mk) or (vcs => simv)' `date +%H:%M`
 	echo '--- MAKE COMPILE (verilator => Vtop.mk) or (vcs => simv)' `date +%H:%M`
 	$(COMPILE)
 ifeq ($(TOOL), VERILATOR)
+	echo '##[endgroup]'; echo '##[group]make vtop (make -f Vtop.mk => Vtop)' `date +%H:%M`
 	echo '--- MAKE VTOP (make -f Vtop.mk => Vtop)' `date +%H:%M`
 	make -C obj_dir/ -f Vtop.mk
 endif
+	echo '##[endgroup]'
 
 generate:
+	echo '##[endgroup]'; echo '##[group]make generate (genesis testbench/top.svp)' `date +%H:%M`
 	Genesis2.pl -parse -generate -top top -input $(genesis_tb_dir)/top.svp -parameter top.using_matrix_unit=$(USING_MATRIX_UNIT)
 	mv genesis_verif/top.sv tb/top.sv
+	echo '##[endgroup]'
 
 .PHONY: run
+# Print log info in both buildkite and github-action format
 run: $(APP0_NAME)/bin/design_meta.json
+
+	echo '##[endgroup]'; echo '##[group]aha run (e.g. Vtop or simv)' `date +%H:%M`
 	echo '--- MAKE RUN (e.g. Vtop or simv)' `date +%H:%M`
 	@rm -rf *.txt; rm -rf ../../SPARSE_TESTS/batch_*
 	$(RUN) $(DUMP_ARGS) $(RUN_ARGS) $(APP_ARGS)
+
+	echo '##[endgroup]'; echo '##[group]PASSED maybe' `date +%H:%M`
 	echo '+++ PASSED maybe' `date +%H:%M`
+	echo '##[endgroup]'
 
 .PHONY: sim
 sim: libcgra.so generate compile run
