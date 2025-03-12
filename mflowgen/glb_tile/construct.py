@@ -31,8 +31,8 @@ def construct():
     'clock_period'       : 1.1 * 1000,
     'adk'                : adk_name,
     'adk_view'           : adk_view,
-    'adk_stdcell'        : 'b15_7t_108pp',
-    'adk_libmodel'       : 'ccslnt',
+    'adk_stdcell'        : 'b0m_6t_108pp',
+    'adk_libmodel'       : 'nldm',
     # Synthesis
     'flatten_effort'     : 3,
     'topographical'      : True,

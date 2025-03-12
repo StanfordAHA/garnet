@@ -31,8 +31,8 @@ def construct():
     'clock_period'             : 1.1 * 1000,
     'adk'                      : adk_name,
     'adk_view'                 : adk_view,
-    'adk_stdcell'              : 'b15_7t_108pp',
-    'adk_libmodel'             : 'ccslnt',
+    'adk_stdcell'              : 'b0m_6t_108pp',
+    'adk_libmodel'             : 'nldm',
     # Synthesis
     'flatten_effort'           : 0,
     'topographical'            : True,
@@ -142,6 +142,7 @@ def construct():
   # Block-level designs
   tile_array   = Subgraph(f'{this_dir}/../tile_array',             'tile_array')
   glb_top      = Subgraph(f'{this_dir}/../glb_top',                'glb_top')
+  matrix_unit  = Subgraph(f'{this_dir}/../MatrixUnit',             'MatrixUnit')
   tapeout_flow = Subgraph(f'{this_dir}/../intel-usp-tapeout-flow', 'tapeout-flow')
 
   # CGRA simulation
@@ -187,18 +188,21 @@ def construct():
   for step in hier_steps:
     step.extend_inputs( ['tile_array-typical.lib', 'tile_array-bc.lib', 'tile_array.lef'] )
     step.extend_inputs( ['glb_top-typical.lib',    'glb_top-bc.lib',    'glb_top.lef'] )
+    step.extend_inputs( ['MatrixUnit-typical.lib', 'MatrixUnit-bc.lib', 'MatrixUnit.lef'] )
     step.extend_inputs( ['sram_nic-typical.lib',   'sram_nic-bc.lib',   'sram_nic.lef'] )
     step.extend_inputs( ['sram_cpu-typical.lib',   'sram_cpu-bc.lib',   'sram_cpu.lef'] )
   
   # PTPX Signoff needs .db files only
   pt_signoff.extend_inputs( ['tile_array-typical.db', 'tile_array-bc.db'] )
   pt_signoff.extend_inputs( ['glb_top-typical.db',    'glb_top-bc.db'] )
+  pt_signoff.extend_inputs( ['MatrixUnit-typical.db', 'MatrixUnit-bc.db'] )
   pt_signoff.extend_inputs( ['sram_nic-typical.db',   'sram_nic-bc.db'] )
   pt_signoff.extend_inputs( ['sram_cpu-typical.db',   'sram_cpu-bc.db'] )
 
   # Need all block oasis's to merge into the final layout
   signoff.extend_inputs( ['tile_array.oas'] )
   signoff.extend_inputs( ['glb_top.oas'] )
+  signoff.extend_inputs( ['MatrixUnit.oas'] )
   signoff.extend_inputs( ['sram_nic.oas'] )
   signoff.extend_inputs( ['sram_cpu.oas'] )
 
@@ -218,11 +222,17 @@ def construct():
 
   lvs.extend_inputs( ['tile_array.lvs.v'] )
   lvs.extend_inputs( ['glb_top.lvs.v'] )
+  lvs.extend_inputs( ['MatrixUnit.lvs.v'] )
 
   # Need sram spice file for LVS
 
   lvs.extend_inputs( ['glb_top_sram.spi'] )
   lvs.extend_inputs( ['tile_array_sram.spi'] )
+
+  # TODO: Need MatrixUnit spice file for LVS
+  # lvs.extend_inputs( ['MatrixUnit_sram_input.spi'] )
+  # lvs.extend_inputs( ['MatrixUnit_sram_weight.spi'] )
+  # lvs.extend_inputs( ['MatrixUnit_sram_accum.spi'] )
 
   # signoff extend inputs
   signoff.extend_inputs( custom_signoff.all_outputs() )
@@ -241,6 +251,7 @@ def construct():
   g.add_step( gen_sram_cpu      )
   g.add_step( tile_array        )
   g.add_step( glb_top           )
+  g.add_step( matrix_unit       )
   g.add_step( constraints       )
   g.add_step( read_design       )
   g.add_step( synth             )
@@ -303,7 +314,7 @@ def construct():
   # All of the blocks within this hierarchical design
   # Skip these if we're doing soc_only
   if parameters['soc_only'] == False:
-      blocks = [tile_array, glb_top]
+      blocks = [tile_array, glb_top, matrix_unit]
       for block in blocks:
           g.connect_by_name( block, synth          )
           g.connect_by_name( block, iflow          )
@@ -322,6 +333,8 @@ def construct():
       g.connect_by_name( rtl, tile_array )
       # glb_top can use rtl from rtl node
       g.connect_by_name( rtl, glb_top )
+      # MatrixUnit can use rtl from rtl node
+      g.connect_by_name( rtl, matrix_unit )
 
   g.connect_by_name( rtl,          synth          )
   g.connect_by_name( soc_rtl,      synth          )

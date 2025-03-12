@@ -221,3 +221,28 @@ set_false_path -hold -through [get_property [get_pins -hierarchical */wa[1]]    
 set rmux_cells [get_cells -hier -regexp .*RMUX_.*_sel_(inst0|value)]
 set_dont_touch $rmux_cells true
 set_dont_touch [get_nets -of_objects [get_pins -of_objects $rmux_cells -filter name=~O*]] true
+
+
+###########################################################################
+# Disabling Timing Checks on Input Diodes
+#
+# Input diodes are dynamically added during the PnR initialization stage.
+# To ensure accurate timing analysis, we need the tool to ignore timing
+# checks on these cells. However, since constraints may be applied before
+# these cells are introduced, we include a safeguard to verify their
+# existence before applying the constraint.
+###########################################################################
+
+# Get the list of cells matching the pattern "IN_PORT_DIODE_*"
+set diode_cells [get_cells -quiet -hierarchical -filter "name =~ IN_PORT_DIODE_*"]
+
+# Check if the list is not empty
+if {[llength $diode_cells] > 0} {
+    foreach cell $diode_cells {
+        # Apply false path to each cell
+        set_false_path -through $cell
+    }
+    puts "False path applied to diode cells: $diode_cells"
+} else {
+    puts "No matching diode cells found."
+}

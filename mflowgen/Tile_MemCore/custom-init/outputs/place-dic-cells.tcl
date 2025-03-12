@@ -16,11 +16,11 @@ set vert_pitch [dbGet top.fPlan.coreSite.size_y]
 # Place DIC-CD
 set dic_cd_inst_name INTEL_DIC_CD
 set dic_cd_x [snap_to_grid 140 $hori_pitch]
-set dic_cd_y [snap_to_grid 150 $vert_pitch]
-set halo_cd_left   [expr $hori_pitch * 5]
-set halo_cd_bottom [expr $vert_pitch * 2]
-set halo_cd_right  [expr $hori_pitch * 5]
-set halo_cd_top    [expr $vert_pitch * 1]
+set dic_cd_y [snap_to_grid 140 $vert_pitch]
+set halo_cd_left   [expr $hori_pitch * 8]
+set halo_cd_bottom [expr $vert_pitch * 4]
+set halo_cd_right  [expr $hori_pitch * 8]
+set halo_cd_top    [expr $vert_pitch * 4]
 addInst \
     -cell $ADK_DIC_CELL_CD \
     -inst $dic_cd_inst_name \

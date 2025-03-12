@@ -116,3 +116,26 @@ set_dont_touch $io_tile_nets false
 set_multicycle_path 16 -to [get_ports read_config_data] -setup
 set_multicycle_path 15 -to [get_ports read_config_data] -hold
 
+###########################################################################
+# Disabling Timing Checks on Input Diodes
+#
+# Input diodes are dynamically added during the PnR initialization stage.
+# To ensure accurate timing analysis, we need the tool to ignore timing
+# checks on these cells. However, since constraints may be applied before
+# these cells are introduced, we include a safeguard to verify their
+# existence before applying the constraint.
+###########################################################################
+
+# Get the list of cells matching the pattern "IN_PORT_DIODE_*"
+set diode_cells [get_cells -quiet -hierarchical -filter "name =~ IN_PORT_DIODE_*"]
+
+# Check if the list is not empty
+if {[llength $diode_cells] > 0} {
+    foreach cell $diode_cells {
+        # Apply false path to each cell
+        set_false_path -through $cell
+    }
+    puts "False path applied to diode cells: $diode_cells"
+} else {
+    puts "No matching diode cells found."
+}

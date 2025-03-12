@@ -33,8 +33,8 @@ def construct():
     'core_density_target' : 0.6,
     'adk'                 : adk_name,
     'adk_view'            : adk_view,
-    'adk_stdcell'         : 'b15_7t_108pp',
-    'adk_libmodel'        : 'ccslnt',
+    'adk_stdcell'         : 'b0m_6t_108pp',
+    'adk_libmodel'        : 'nldm',
     # Synthesis
     'flatten_effort'      : 3,
     'topographical'       : True,
@@ -96,12 +96,12 @@ def construct():
   postroute_hold = Step( 'cadence-innovus-postroute_hold',default=True )
   signoff        = Step( 'cadence-innovus-signoff',       default=True )
   pt_signoff     = Step( 'synopsys-pt-timing-signoff',    default=True )
-  genlibdb_tt    = Step( 'synopsys-ptpx-genlibdb',        default=True )
-  genlibdb_ff    = Step( 'synopsys-ptpx-genlibdb',        default=True )
+  genlibdb_tt    = Step( 'synopsys-ptpx-genlibdb-r7cad-hack', default=True )
+  genlibdb_ff    = Step( 'synopsys-ptpx-genlibdb-r7cad-hack', default=True )
   debugcalibre   = Step( 'cadence-innovus-debug-calibre', default=True )
 
-  genlibdb_tt.set_name( 'synopsys-ptpx-genlibdb-tt' )
-  genlibdb_ff.set_name( 'synopsys-ptpx-genlibdb-ff' )
+  genlibdb_tt.set_name( 'synopsys-ptpx-genlibdb-r7cad-hack-tt' )
+  genlibdb_ff.set_name( 'synopsys-ptpx-genlibdb-r7cad-hack-ff' )
 
   # Add custom timing scripts
   custom_timing_steps = [ synth, postcts_hold, signoff ] # connects to these
@@ -341,18 +341,11 @@ def construct():
   drc.update_params( {'rule_decks': drc_rule_decks } )
 
   # genlibdb parameters
-  genlibdb_order = [
-    'read_design.tcl',
-    'genlibdb-constraints.tcl',
-    'extract_model.tcl'
-  ]
   genlibdb_tt.update_params({
     'corner': 'typical',
-    'order': genlibdb_order
   })
   genlibdb_ff.update_params({
     'corner': 'bc',
-    'order': genlibdb_order
   })
   
   # Add SDC unit hack before genlibdb and pt_signoff

@@ -32,8 +32,8 @@ def construct():
     'clock_period'      : 1.1 * 1000,
     'adk'               : adk_name,
     'adk_view'          : adk_view,
-    'adk_stdcell'       : 'b15_7t_108pp',
-    'adk_libmodel'      : 'ccslnt',
+    'adk_stdcell'       : 'b0m_6t_108pp',
+    'adk_libmodel'      : 'nldm',
     # Synthesis
     'flatten_effort'    : 3,
     'topographical'     : True,
@@ -451,17 +451,11 @@ def construct():
   # which scripts get run and when they get run.
 
   # genlibdb parameters
-  genlibdb_order = [
-    'read_design.tcl',
-    'extract_model.tcl'
-  ]
   genlibdb_tt.update_params({
-    'corner': 'typical',
-    'order': genlibdb_order
+    'corner': 'typical'
   })
   genlibdb_ff.update_params({
-    'corner': 'bc',
-    'order': genlibdb_order
+    'corner': 'bc'
   })
 
   # Add SDC unit hack before genlibdb and pt_signoff

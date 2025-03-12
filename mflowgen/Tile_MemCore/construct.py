@@ -32,10 +32,11 @@ def construct():
     'clock_period'        : 1.1 * 1000,
     'adk'                 : adk_name,
     'adk_view'            : adk_view,
-    'adk_stdcell'         : 'b15_7t_108pp',
-    'adk_libmodel'        : 'ccslnt',
+    'adk_stdcell'         : 'b0m_6t_108pp',
+    'adk_libmodel'        : 'nldm',
     # Synthesis
-    'flatten_effort'      : 3,
+    'flatten_effort'      : 0, # turn-off for Max's area report
+    # 'flatten_effort'      : 3,
     'topographical'       : True,
     'read_hdl_defines'    : read_hdl_defines,
     # SRAM macros
@@ -103,12 +104,12 @@ def construct():
   postroute_hold       = Step( 'cadence-innovus-postroute_hold',       default=True )
   signoff              = Step( 'cadence-innovus-signoff',              default=True )
   pt_signoff           = Step( 'synopsys-pt-timing-signoff',           default=True )
-  genlibdb_tt          = Step( 'synopsys-ptpx-genlibdb',               default=True )
-  genlibdb_ff          = Step( 'synopsys-ptpx-genlibdb',               default=True )
+  genlibdb_tt          = Step( 'synopsys-ptpx-genlibdb-r7cad-hack',    default=True )
+  genlibdb_ff          = Step( 'synopsys-ptpx-genlibdb-r7cad-hack',    default=True )
   debugcalibre         = Step( 'cadence-innovus-debug-calibre',        default=True )
 
-  genlibdb_tt.set_name( 'synopsys-ptpx-genlibdb-tt' )
-  genlibdb_ff.set_name( 'synopsys-ptpx-genlibdb-ff' )
+  genlibdb_tt.set_name( 'synopsys-ptpx-genlibdb-r7cad-hack-tt' )
+  genlibdb_ff.set_name( 'synopsys-ptpx-genlibdb-r7cad-hack-ff' )
 
   # Extra DC input
   synth.extend_inputs(["common.tcl"])
@@ -370,18 +371,11 @@ def construct():
   drc.update_params( {'rule_decks': drc_rule_decks } )
 
   # genlibdb parameters
-  genlibdb_order = [
-    'read_design.tcl',
-    'genlibdb-constraints.tcl',
-    'extract_model.tcl'
-  ]
   genlibdb_tt.update_params({
-    'corner': 'typical',
-    'order': genlibdb_order
+    'corner': 'typical'
   })
   genlibdb_ff.update_params({
-    'corner': 'bc',
-    'order': genlibdb_order
+    'corner': 'bc'
   })
 
   # Add SDC unit hack before genlibdb and pt_signoff

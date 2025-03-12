@@ -124,12 +124,12 @@ set height [dbGet top.fPlan.box_ury]
 editPin -pin "clk" -side TOP -spreadType CENTER -layer M7
 
 # control pins assignment 
-editPin -pin $top -side TOP -spreadType RANGE -start [list 10 $height] -end [list [expr {$width - 10}] $height] -layer M5
+editPin -pin $top -side TOP -spreadType RANGE -start [list 10 $height] -end [list [expr {$width - 10}] $height] -layer M3
 
-editPin -pin $left -start { 0 5 } -end [list 0 [expr {$height - 5}]] -side LEFT -spreadType RANGE -spreadDirection clockwise -layer M6
-editPin -pin $right -start [list $width  5] -end [list $width [expr {$height - 5}]] -side RIGHT -spreadType RANGE -spreadDirection counterclockwise -layer M6
+editPin -pin $left -start { 0 5 } -end [list 0 [expr {$height - 5}]] -side LEFT -spreadType RANGE -spreadDirection clockwise -layer M4
+editPin -pin $right -start [list $width  5] -end [list $width [expr {$height - 5}]] -side RIGHT -spreadType RANGE -spreadDirection counterclockwise -layer M4
 
 for {set j 0} {$j < $cols_per_tile} {incr j} {
-    editPin -pin $bottom_col($j) -start [list [expr {($width/2)*$j+10}] 0] -end [list [expr {($width/2)*($j+1)-10}] 0] -side BOTTOM -spreadType RANGE -spreadDirection counterclockwise -layer M5
+    editPin -pin $bottom_col($j) -start [list [expr {($width/2)*$j+10}] 0] -end [list [expr {($width/2)*($j+1)-10}] 0] -side BOTTOM -spreadType RANGE -spreadDirection counterclockwise -layer M3
 }
 
