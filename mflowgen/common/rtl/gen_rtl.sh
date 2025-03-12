@@ -71,7 +71,8 @@ flags+=" -v --glb_tile_mem_size $glb_tile_mem_size"
 # TODO someone needs to unify garnet.py and garnet_amber.py but not me, not today haha
 
 # sparsity flags for onyx
-[ "$WHICH_SOC" != "amber" ] && flags+=" --include-sparse"
+# [pohan] It seems like the latest garnet.py doesn't support --include-sparse either
+# [ "$WHICH_SOC" != "amber" ] && flags+=" --include-sparse"
 
 
 # Default is power-aware, but can be turned off
@@ -79,6 +80,9 @@ flags+=" -v --glb_tile_mem_size $glb_tile_mem_size"
 
 # Where/when is this used?
 [ "$interconnect_only" == True ] && flags+=" --interconnect-only"
+
+# Include Matrix Unit (Zircon)
+[ "$include_matrix_unit" == True ] && flags+=" --using-matrix-unit --mu-datawidth 16 --give-north-io-sbs --num-fabric-cols-removed 8 --include-E64-hw"
 
 # Use aha docker container for all dependencies
 if [ "$use_container" == True ]; then
@@ -153,7 +157,8 @@ if [ "$use_container" == True ]; then
       if [ "$use_local_garnet" == True ]; then
         docker exec $container_name /bin/bash -c "rm -rf /aha/garnet"
         # Clone local garnet repo to prevent copying untracked files
-        git clone $GARNET_HOME ./garnet
+        # git clone $GARNET_HOME ./garnet
+        cp -r $GARNET_HOME ./garnet
         docker cp ./garnet $container_name:/aha/garnet
       fi
       
@@ -262,7 +267,18 @@ if [ "$use_container" == True ]; then
       echo '--- gen_rtl docker cleanup BEGIN' `date +%H:%M`
 
       # Copy the concatenated design.v output out of the container
-      docker cp $container_name:/aha/garnet/design.v ../outputs/design.v
+      if [ "$include_matrix_unit" == True ]; then
+        docker cp $container_name:/aha/garnet/design.v ../outputs/garnet.v
+        docker cp $container_name:/aha/garnet/zircon_wrapper/zircon.v ../outputs/zircon.v
+        cp /nsim/mcoduoza/zircon_matrix_unit/Accelerator/build-MXINT8-64x32-1024x1024x2048-1.0ns/15-hls/outputs/design.v ../outputs/mu.v
+        cat ../outputs/garnet.v > ../outputs/design.v
+        echo "" >> ../outputs/design.v
+        cat ../outputs/zircon.v >> ../outputs/design.v
+        echo "" >> ../outputs/design.v
+        cat ../outputs/mu.v >> ../outputs/design.v
+      else
+        docker cp $container_name:/aha/garnet/design.v ../outputs/design.v
+      fi
 
       # FIXME there might be a more elegant solution for this, see e.g.
       # /aha/gemstone/tests/common/rtl/{AN_CELL.sv,AO_CELL.sv}

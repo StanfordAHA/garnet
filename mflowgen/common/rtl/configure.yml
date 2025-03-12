@@ -18,6 +18,7 @@ parameters:
   num_glb_tiles: 2
   pipeline_config_interval: 8
   interconnect_only: False
+  include_matrix_unit: True
   glb_only: False
   soc_only: False
   PWR_AWARE: False
