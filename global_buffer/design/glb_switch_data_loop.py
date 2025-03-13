@@ -147,7 +147,10 @@ class GlbSwitchDataLoop(Generator):
             self.if_est_m_wr_clk_en_sel_first_cycle = self.if_wst_s.wr_en & (~self.wr_tile_id_match)
         if self.rd_channel:
             # self.if_est_m_rd_clk_en_sel_first_cycle = self.if_wst_s.rd_en & (~self.rd_tile_id_match)
-            self.if_est_m_rd_clk_en_sel_first_cycle = self.if_wst_s.rd_en & (~self.rd_cycle)
+
+            # TODO: Decide which of the below two implementations to use. First one might be fine b/c the bank gets the correct clk_en at the correct time anyway 
+            # self.if_est_m_rd_clk_en_sel_first_cycle = self.if_wst_s.rd_en & (~self.rd_cycle)
+            self.if_est_m_rd_clk_en_sel_first_cycle = self.if_wst_s.rd_en & (~self.last_sub_packet)
 
     @always_ff((posedge, "mclk"), (posedge, "reset"))
     def est_m_wr_clk_en_sel_latch(self):
