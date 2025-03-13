@@ -86,6 +86,7 @@ class GlobalBufferParams:
     cgra_cfg_addr_width: int = 32
     cgra_cfg_data_width: int = 32
     num_mu_addr_builder_tiles: int = 4
+    mu_word_num_tiles: int = 4
 
     # Not used by TSMC (yet)
     load_dma_fifo_depth: int = 16
@@ -205,6 +206,7 @@ def gen_global_buffer_params(**kwargs):
     cfg_data_width = kwargs.pop('cfg_data_width', 32)
     is_sram_stub = kwargs.pop('is_sram_stub', 0)
     num_mu_addr_builder_tiles = kwargs.pop('num_mu_addr_builder_tiles', 4)
+    mu_word_num_tiles = kwargs.pop('mu_word_num_tiles', 4)
 
     # config_port_pipeline not used by TSMC (yet)
     # pop() returns True if config_port_pipeline not exists
@@ -248,7 +250,8 @@ def gen_global_buffer_params(**kwargs):
                                 cgra_cfg_data_width=cfg_data_width,
                                 is_sram_stub=is_sram_stub,
                                 config_port_pipeline_depth=config_port_pipeline_depth,
-                                num_mu_addr_builder_tiles=num_mu_addr_builder_tiles)
+                                num_mu_addr_builder_tiles=num_mu_addr_builder_tiles,
+                                mu_word_num_tiles=mu_word_num_tiles)
                                 
     return params
 

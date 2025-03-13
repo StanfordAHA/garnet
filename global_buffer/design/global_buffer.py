@@ -268,7 +268,7 @@ class GlobalBuffer(Generator):
         # Num tracks will equal 4 here eventually. This information should really be in self.params. Also, the enviornment variable should be in params instead. 
         if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1": 
             if_mu_rd_tile2tile = GlbTileDataLoopInterface(addr_width=self._params.glb_addr_width,
-                                                data_width=self._params.bank_data_width, is_clk_en=True, is_strb=False, has_wr_ifc=False, num_tracks=1)
+                                                data_width=self._params.bank_data_width, is_clk_en=True, is_strb=False, has_wr_ifc=False, num_tracks=1, mu_word_num_tiles=self._params.mu_word_num_tiles)
         
 
         if_cfg_tile2tile = GlbTileInterface(addr_width=self._params.axi_addr_width,
@@ -293,22 +293,26 @@ class GlobalBuffer(Generator):
             self.if_sram_cfg_list.append(self.interface(
                 if_sram_cfg_tile2tile, f"if_sram_cfg_tile2tile_{i}"))
 
-        # Passthrough cgar_stall signals
+        # Passthrough cgra_stall signals
         self.wire(self.cgra_stall_in, self.cgra_stall)
 
         # GLB Tiles
         self.glb_tile = []
         for i in range(self._params.num_glb_tiles):
-            if i in range(self._params.num_mu_addr_builder_tiles):
-                self.glb_tile.append(GlbTile(_params=self._params, is_addr_builder_tile=True))
-            else:
-                self.glb_tile.append(GlbTile(_params=self._params))
+             self.glb_tile.append(GlbTile(_params=self._params))
+
+            # SKIPING ADDR BUILDER IMPLEMENTATION FOR NOW 
+            # if i in range(self._params.num_mu_addr_builder_tiles):
+            #     self.glb_tile.append(GlbTile(_params=self._params, is_addr_builder_tile=True))
+            # else:
+            #     self.glb_tile.append(GlbTile(_params=self._params))
 
         self.wire(self.if_proc_list[-1].rd_data, 0)
         self.wire(self.if_proc_list[-1].rd_data_valid, 0)
         if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1":
             self.wire(self.if_mu_rd_list[-1].rd_data_e2w, 0)
             self.wire(self.if_mu_rd_list[-1].rd_data_e2w_valid, 0)
+            self.wire(self.if_mu_rd_list[0].sub_packet_idx, 0)
         self.wire(self.if_cfg_list[-1].rd_data, 0)
         self.wire(self.if_cfg_list[-1].rd_data_valid, 0)
         self.wire(self.if_sram_cfg_list[-1].rd_data, 0)
@@ -845,6 +849,7 @@ class GlobalBuffer(Generator):
                 self.wire(self.if_mu_rd_list[i + 1].rd_en, self.glb_tile[i].ports.if_mu_rd_est_m_rd_en)
                 self.wire(self.if_mu_rd_list[i + 1].rd_clk_en, self.glb_tile[i].ports.if_mu_rd_est_m_rd_clk_en)
                 self.wire(self.if_mu_rd_list[i + 1].rd_addr, self.glb_tile[i].ports.if_mu_rd_est_m_rd_addr)
+                self.wire(self.if_mu_rd_list[i + 1].sub_packet_idx, self.glb_tile[i].ports.if_mu_rd_est_m_sub_packet_idx)
 
                 # RIGHT EDGE: LOOP BACK
                 if i != self._params.num_glb_tiles - 1:
@@ -860,6 +865,7 @@ class GlobalBuffer(Generator):
                 self.wire(self.glb_tile[i].ports.if_mu_rd_wst_s_rd_en, self.if_mu_rd_list[i].rd_en)
                 self.wire(self.glb_tile[i].ports.if_mu_rd_wst_s_rd_clk_en, self.if_mu_rd_list[i].rd_clk_en)
                 self.wire(self.glb_tile[i].ports.if_mu_rd_wst_s_rd_addr, self.if_mu_rd_list[i].rd_addr)
+                self.wire(self.glb_tile[i].ports.if_mu_rd_wst_s_sub_packet_idx, self.if_mu_rd_list[i].sub_packet_idx)
                 self.wire(self.if_mu_rd_list[i].rd_data_e2w, self.glb_tile[i].ports.if_mu_rd_wst_s_rd_data_e2w)
                 self.wire(self.if_mu_rd_list[i].rd_data_e2w_valid, self.glb_tile[i].ports.if_mu_rd_wst_s_rd_data_e2w_valid)
 

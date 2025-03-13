@@ -88,7 +88,7 @@ class GlbTile(Generator):
         if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1":
             # TODO: Eventually, make num_tracks 4 here 
             self.if_mu_rd = GlbTileDataLoopInterface(addr_width=self._params.glb_addr_width,
-                                            data_width=self._params.bank_data_width, is_clk_en=True, is_strb=False, has_wr_ifc=False, num_tracks=1)
+                                            data_width=self._params.bank_data_width, is_clk_en=True, is_strb=False, has_wr_ifc=False, num_tracks=1, mu_word_num_tiles=self._params.mu_word_num_tiles)
             self.if_mu_rd_est_m = self.interface(self.if_mu_rd, "if_mu_rd_est_m")
             self.if_mu_rd_wst_s = self.interface(self.if_mu_rd, "if_mu_rd_wst_s")
 
@@ -701,7 +701,7 @@ class GlbTile(Generator):
 
         self.rdrq_packet_procsw2bank = self.var("rdrq_packet_procsw2bank", self.header.rdrq_packet_t)
         if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1":
-            self.rdrq_packet_mu_rd_sw2bank = self.var("rdrq_packet_mu_rd_sw2bank", self.header.rdrq_packet_t)
+            self.rdrq_packet_mu_rd_sw2bank = self.var("rdrq_packet_mu_rd_sw2bank", self.header.mu_rdrq_packet_t)
         self.rdrq_packet_ring2bank = self.var("rdrq_packet_ring2bank", self.header.rdrq_packet_t)
         self.rdrq_packet_dma2ring = self.var("rdrq_packet_dma2ring", self.header.rdrq_packet_t)
         self.rdrq_packet_dma2bank = self.var("rdrq_packet_dma2bank", self.header.rdrq_packet_t)

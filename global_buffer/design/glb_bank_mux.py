@@ -30,7 +30,7 @@ class GlbBankMux(Generator):
         self.rdrq_packet_pcfgdma2bank = self.input("rdrq_packet_pcfgdma2bank", self.header.rdrq_packet_t)
 
         if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1":
-            self.rdrq_packet_mu_rd_sw2bank = self.input("rdrq_packet_mu_rd_sw2bank", self.header.rdrq_packet_t)
+            self.rdrq_packet_mu_rd_sw2bank = self.input("rdrq_packet_mu_rd_sw2bank", self.header.mu_rdrq_packet_t)
 
         self.rdrq_packet_sw2bankarr = self.output(
             "rdrq_packet_sw2bankarr", self.header.rdrq_bank_packet_t, size=self._params.banks_per_tile)
@@ -179,7 +179,8 @@ class GlbBankMux(Generator):
     @ always_comb
     def rdrq_sw2bankarr_logic_support_mu(self, i):
         if ((self.rdrq_packet_mu_rd_sw2bank['rd_en'] == 1)
-                & (self.rdrq_packet_mu_rd_sw2bank['rd_addr'][self.tile_sel_msb, self.tile_sel_lsb] == self.glb_tile_id)
+                # READ if tileID matches or sub_packet_idx not 0 
+                & ((self.rdrq_packet_mu_rd_sw2bank['rd_addr'][self.tile_sel_msb, self.tile_sel_lsb] == self.glb_tile_id) | (self.rdrq_packet_mu_rd_sw2bank['sub_packet_idx'] != 0))
                 & (self.rdrq_packet_mu_rd_sw2bank['rd_addr'][self.bank_sel_msb, self.bank_sel_lsb] == i)):
             self.rdrq_packet_sw2bankarr_w[i]['rd_en'] = self.rdrq_packet_mu_rd_sw2bank['rd_en']
             self.rdrq_packet_sw2bankarr_w[i]['rd_addr'] = self.rdrq_packet_mu_rd_sw2bank['rd_addr'][(
