@@ -17,9 +17,9 @@ CLK_PERIOD_TIMEUNIT = $(shell echo "scale=2; $(CLK_PERIOD_NUMBER_ONLY) / $(TIMEU
 CLK_SRC_LATENCY_TIMEUNIT = $(shell echo "scale=2; $(CLK_SRC_LATENCY_NUMBER_ONLY) / $(TIMEUNIT_NUMBER_ONLY)" | bc) 
 
 # architecture
-CGRA_WIDTH ?= 32
+CGRA_WIDTH ?= 28
 NUM_GLB_TILES ?= $(shell expr $(CGRA_WIDTH) / 2 )
-GLB_TILE_MEM_SIZE ?= 256
+GLB_TILE_MEM_SIZE ?= 128
 
 # tool chain
 TOOL ?= VCS
@@ -64,6 +64,7 @@ ifeq ($(WHICH_SOC), amber)
 endif
 
 TB_FILES ?= -F $(SIM)/tb_global_buffer.f 
+TB_MU_FILES ?= -F $(SIM)/tb_global_buffer_mu.f 
 
 # -------------------------------------------------------------------
 # Commands
@@ -160,8 +161,10 @@ endif
 
 ifeq ($(TOOL), XCELIUM)
 	DUMP_ARGS = -input $(SIM)/dump_shm.tcl
+	DUMP_ARGS_MU = -input $(SIM)/dump_shm.tcl
 else ifeq ($(TOOL), VCS)
 	DUMP_ARGS = -ucli -i $(SIM)/dump_fsdb.tcl
+	DUMP_ARGS_MU = -ucli -i $(SIM)/dump_fsdb_mu.tcl
 endif
 
 ifneq ($(SDF), 0)
@@ -183,13 +186,29 @@ compile: INPUT_ARGS = $(HEADER_FILES) $(DESIGN_FILES) $(TB_FILES)
 compile:
 	$(COMPILE)
 
+
+.PHONY: compile_mu
+compile_mu: COMPILE_ARGS = $(COMPILE_RTL_ARGS)
+compile_mu: INPUT_ARGS = $(HEADER_FILES) $(DESIGN_FILES) $(TB_MU_FILES)
+compile_mu:
+	$(COMPILE)
+
 .PHONY: run
 run:
 	$(GENERATE_TV)
 	$(RUN) $(DUMP_ARGS) $(RUN_ARGS)
 
+.PHONY: run_mu
+# run_mu:
+# 	$(RUN) $(RUN_ARGS)
+run_mu:
+	$(RUN) $(DUMP_ARGS_MU) $(RUN_ARGS)
+
 .PHONY: sim
 sim: compile run
+
+.PHONY: sim_mu
+sim_mu: compile_mu run_mu
 
 # -------------------------------------------------------------------
 # GLS Compile
