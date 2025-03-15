@@ -41,7 +41,7 @@ class GlobalBuffer(Generator):
         if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1":
             self.mu_rd_en = self.input("mu_rd_en", 1)
             self.mu_rd_addr = self.input("mu_rd_addr", self._params.glb_addr_width)
-            self.mu_rd_data = self.output("mu_rd_data", self._params.bank_data_width)
+            self.mu_rd_data = self.output("mu_rd_data", self._params.bank_data_width * self._params.mu_word_num_tiles)
             self.mu_rd_data_valid = self.output("mu_rd_data_valid", 1)
 
 
@@ -144,7 +144,7 @@ class GlobalBuffer(Generator):
         if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1":
             self.mu_rd_en_d = self.var("mu_rd_en_d", 1)
             self.mu_rd_addr_d = self.var("mu_rd_addr_d", self._params.glb_addr_width)
-            self.mu_rd_data_w = self.var("mu_rd_data_w", self._params.bank_data_width)
+            self.mu_rd_data_w = self.var("mu_rd_data_w", self._params.bank_data_width * self._params.mu_word_num_tiles)
             self.mu_rd_data_valid_w = self.var("mu_rd_data_valid_w", 1)
 
         self.sram_cfg_wr_en_d = self.var("sram_cfg_wr_en_d", 1)
@@ -268,7 +268,7 @@ class GlobalBuffer(Generator):
         # Num tracks will equal 4 here eventually. This information should really be in self.params. Also, the enviornment variable should be in params instead. 
         if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1": 
             if_mu_rd_tile2tile = GlbTileDataLoopInterface(addr_width=self._params.glb_addr_width,
-                                                data_width=self._params.bank_data_width, is_clk_en=True, is_strb=False, has_wr_ifc=False, num_tracks=1, mu_word_num_tiles=self._params.mu_word_num_tiles)
+                                                data_width=self._params.bank_data_width, is_clk_en=True, is_strb=False, has_wr_ifc=False, num_tracks=self._params.mu_word_num_tiles, mu_word_num_tiles=self._params.mu_word_num_tiles)
         
 
         if_cfg_tile2tile = GlbTileInterface(addr_width=self._params.axi_addr_width,
@@ -553,8 +553,19 @@ class GlobalBuffer(Generator):
 
     @always_comb
     def left_edge_mu_rd_out_logic(self):
-        self.mu_rd_data_w = self.if_mu_rd_list[0].rd_data_e2w
-        self.mu_rd_data_valid_w = self.if_mu_rd_list[0].rd_data_e2w_valid
+
+        #FIXME: Kratos won't allow this. Need to figure out how to do this.
+        # for sub_packet in range(self._params.mu_word_num_tiles):
+        #     # self.mu_rd_data_w[((sub_packet + 1) * self._params.bank_data_width) - 1, sub_packet * self._params.bank_data_width] = self.if_mu_rd_list[0].rd_data_e2w[sub_packet]
+
+        self.mu_rd_data_w[self._params.bank_data_width - 1, 0] = self.if_mu_rd_list[0].rd_data_e2w[0]
+        self.mu_rd_data_w[self._params.bank_data_width * 2 - 1, self._params.bank_data_width * 1] = self.if_mu_rd_list[0].rd_data_e2w[1]
+        self.mu_rd_data_w[self._params.bank_data_width * 3 - 1, self._params.bank_data_width * 2] = self.if_mu_rd_list[0].rd_data_e2w[2]
+        self.mu_rd_data_w[self._params.bank_data_width * 4 - 1, self._params.bank_data_width * 3] = self.if_mu_rd_list[0].rd_data_e2w[3]
+
+
+        # Just take 0th valid (packet should be moving at the same time)
+        self.mu_rd_data_valid_w = self.if_mu_rd_list[0].rd_data_e2w_valid[0]
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def left_edge_proc_rd_out_ff(self):

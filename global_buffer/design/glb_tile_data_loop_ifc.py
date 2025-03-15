@@ -1,4 +1,4 @@
-from kratos import Interface, clog2
+from kratos import Generator, Interface, clog2
 import math
 
 
@@ -10,11 +10,12 @@ class GlbTileDataLoopInterface(Interface):
         self.is_strb = is_strb
         self.has_wr_ifc = has_wr_ifc
         self.mu_word_num_tiles = mu_word_num_tiles
+        self.num_tracks = num_tracks
 
         if not(self.has_wr_ifc):
-            name = f"glb_tile_rd_only_data_loop_ifc_A_{addr_width}_{num_tracks}xD_{data_width}"
+            name = f"glb_tile_rd_only_data_loop_ifc_A_{addr_width}_{self.num_tracks}xD_{data_width}"
         else:
-            name = f"glb_tile_data_loop_ifc_A_{addr_width}_{num_tracks}xD_{data_width}"
+            name = f"glb_tile_data_loop_ifc_A_{addr_width}_{self.num_tracks}xD_{data_width}"
         Interface.__init__(self, name)
 
         # Local variables
@@ -32,15 +33,15 @@ class GlbTileDataLoopInterface(Interface):
         if is_clk_en is True:
             self.rd_clk_en = self.var("rd_clk_en", 1)
         self.rd_addr = self.var("rd_addr", addr_width)
-        self.rd_data_e2w = self.var("rd_data_e2w", data_width)
+        # self.rd_data_e2w = self.var("rd_data_e2w", data_width)
         # TODO: use this eventually
-        # self.rd_data_e2w = self.var("rd_data_e2w", size=[data_width, num_tracks], packed=True)
-        self.rd_data_e2w_valid = self.var("rd_data_e2w_valid", 1)
+        self.rd_data_e2w = self.var("rd_data_e2w", self.data_width, self.num_tracks)
+        self.rd_data_e2w_valid = self.var("rd_data_e2w_valid", 1, self.num_tracks)
 
-        self.rd_data_w2e = self.var("rd_data_w2e", data_width)
+        # self.rd_data_w2e = self.var("rd_data_w2e", data_width)
         # TODO: use this eventually
-        # self.rd_data_w2e = self.var("rd_data_w2e", size=[data_width, num_tracks], packed=True)
-        self.rd_data_w2e_valid = self.var("rd_data_w2e_valid", 1)
+        self.rd_data_w2e = self.var("rd_data_w2e", self.data_width, self.num_tracks)
+        self.rd_data_w2e_valid = self.var("rd_data_w2e_valid", 1, self.num_tracks)
 
         if self.has_wr_ifc:
             self.m_to_s = [self.wr_en, self.wr_addr, self.wr_data, self.rd_en, self.rd_addr, self.sub_packet_idx]

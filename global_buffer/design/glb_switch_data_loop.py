@@ -9,7 +9,7 @@ import os
 
 
 class GlbSwitchDataLoop(Generator):
-    def __init__(self, _params: GlobalBufferParams, ifc: GlbTileDataLoopInterface, wr_channel=True, rd_channel=True):
+    def __init__(self, _params: GlobalBufferParams, ifc: GlbTileDataLoopInterface, wr_channel=True, rd_channel=True, num_tracks=1):
         name = "glb_switch_data_loop"
         if wr_channel:
             name += "_WR"
@@ -27,6 +27,7 @@ class GlbSwitchDataLoop(Generator):
         self.gclk = self.clock("gclk")
         self.reset = self.reset("reset")
         self.glb_tile_id = self.input("glb_tile_id", self._params.tile_sel_addr_width)
+        self.num_tracks = num_tracks
 
         self.ifc = ifc
         self.addr_width = self.ifc.addr_width
@@ -76,10 +77,11 @@ class GlbSwitchDataLoop(Generator):
         self.bank_rd_en = self.var("bank_rd_en", 1)
         self.bank_rd_addr = self.var("bank_rd_addr", self._params.glb_addr_width)
         self.bank_sub_packet_idx = self.var("bank_sub_packet_idx", clog2(self._params.mu_word_num_tiles))
-        self.rd_data_e2w_valid_w = self.var("rd_data_e2w_valid_w", 1)
-        self.rd_data_e2w_w = self.var("rd_data_e2w_w", self.data_width)
-        self.rd_data_w2e_valid_w = self.var("rd_data_w2e_valid_w", 1)
-        self.rd_data_w2e_w = self.var("rd_data_w2e_w", self.data_width)
+        self.sub_packet_idx_d = self.var("sub_packet_idx_d", clog2(self._params.mu_word_num_tiles))
+        self.rd_data_e2w_valid_w = self.var("rd_data_e2w_valid_w", 1, size=self.num_tracks, packed=True)
+        self.rd_data_e2w_w = self.var("rd_data_e2w_w", width=self.data_width, size =self.num_tracks, packed=True)
+        self.rd_data_w2e_valid_w = self.var("rd_data_w2e_valid_w", 1, size=self.num_tracks, packed=True)
+        self.rd_data_w2e_w = self.var("rd_data_w2e_w", width=self.data_width, size =self.num_tracks, packed=True)
 
         self.wr_tile_id_match = self.var("wr_tile_id_match", 1)
         self.rd_tile_id_match = self.var("rd_tile_id_match", 1)
@@ -114,6 +116,7 @@ class GlbSwitchDataLoop(Generator):
         self.add_sw2bank_clk_en()
         if self.rd_channel:
             self.add_always(self.mu_sub_packet_logic)
+            self.add_sub_packet_idx_pipeline()
 
     @always_comb
     def tile_id_match(self):
@@ -121,6 +124,20 @@ class GlbSwitchDataLoop(Generator):
             self.wr_tile_id_match = self.glb_tile_id == self.if_wst_s.wr_addr[self.tile_id_msb, self.tile_id_lsb]
         if self.rd_channel:
             self.rd_tile_id_match = self.glb_tile_id == self.if_wst_s.rd_addr[self.tile_id_msb, self.tile_id_lsb]
+
+
+    def add_sub_packet_idx_pipeline(self):
+        # ADD + 1 for the if_wst_s_rd_addr -> bank_rd_addr 1 cycle delay introduced by this module (pipeline at bottom of file)
+        self.pipeline_sub_packet_idx = Pipeline(width=clog2(self._params.mu_word_num_tiles),
+                                       depth=(self._params.sram_macro_read_latency + self._params.glb_bank2sw_pipeline_depth + 1))
+        self.add_child("pipeline_sub_packet_idx",
+                       self.pipeline_sub_packet_idx,
+                       # TODO: Figure out if this should be mclk or gclk. Using mclk for now. 
+                       clk=self.mclk,
+                       clk_en=const(1, 1),
+                       reset=self.reset,
+                       in_=self.if_wst_s.sub_packet_idx,
+                       out_=self.sub_packet_idx_d)
             
 
     @always_comb
@@ -350,19 +367,20 @@ class GlbSwitchDataLoop(Generator):
     def rdrs_logic_w2e(self, is_partial: bool):
         self.rd_data_w2e_w = 0
         self.rd_data_w2e_valid_w = 0
-        if self.rdrs_packet['rd_data_valid'] == 1:
-            if is_partial:
-                if self.bank_rd_addr_sel_d == 0:
-                    self.rd_data_w2e_w = self.rdrs_packet['rd_data'][self.data_width - 1, 0]
-                else:
-                    self.rd_data_w2e_w = self.rdrs_packet['rd_data'][self.data_width * 2 - 1, self.data_width]
-                self.rd_data_w2e_valid_w = 1
-            else:
-                self.rd_data_w2e_w = self.rdrs_packet['rd_data']
-                self.rd_data_w2e_valid_w = 1
-        elif self.if_wst_s.rd_data_w2e_valid == 1:
-            self.rd_data_w2e_w = self.if_wst_s.rd_data_w2e
-            self.rd_data_w2e_valid_w = 1
+        for sub_packet in range(self.num_tracks):
+            if (sub_packet == self.sub_packet_idx_d) & (self.rdrs_packet['rd_data_valid'] == 1):
+                    if is_partial:
+                        if self.bank_rd_addr_sel_d == 0:
+                            self.rd_data_w2e_w[sub_packet] = self.rdrs_packet['rd_data'][self.data_width - 1, 0]
+                        else:
+                            self.rd_data_w2e_w[sub_packet] = self.rdrs_packet['rd_data'][self.data_width * 2 - 1, self.data_width]
+                        self.rd_data_w2e_valid_w[sub_packet] = 1
+                    else:
+                        self.rd_data_w2e_w[sub_packet] = self.rdrs_packet['rd_data']
+                        self.rd_data_w2e_valid_w[sub_packet]= 1
+            elif self.if_wst_s.rd_data_w2e_valid[sub_packet] == 1:
+                self.rd_data_w2e_w[sub_packet] = self.if_wst_s.rd_data_w2e[sub_packet]
+                self.rd_data_w2e_valid_w[sub_packet] = 1
 
     @ always_comb
     def rd_data_logic_e2w(self):

@@ -177,7 +177,7 @@ class Garnet(Generator):
                 self.add_ports(
                     mu_rd_addr=magma.In(magma.Bits[glb_params.glb_addr_width]),
                     mu_rd_en=magma.In(magma.Bit),
-                    mu_rd_data=magma.Out(magma.Bits[glb_params.bank_data_width]),
+                    mu_rd_data=magma.Out(magma.Bits[glb_params.bank_data_width * glb_params.mu_word_num_tiles]),
                     mu_rd_data_valid=magma.Out(magma.Bit)
                 )
 

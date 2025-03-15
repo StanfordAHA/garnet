@@ -13,11 +13,10 @@ program glb_mu_test #(
     proc_ifc p_ifc,
     glb_mu_ifc glb_mu_ifc
 );
-    int test_toggle = 0;
-    int value;
-    int dpr = 0;
     int err = 0;
     const int MAX_NUM_ERRORS = 20;
+    const int GLB_TILE_BASE = 5;
+    int x = 0;
 
     semaphore proc_lock; 
     initial proc_lock = new(1);
@@ -27,23 +26,49 @@ program glb_mu_test #(
         logic [CGRA_DATA_WIDTH-1:0] data_arr16_out [];
         logic [GLB_ADDR_WIDTH-1:0] start_addr;
 
+        // Split data_arr16 into 4 even segments
+        logic [CGRA_DATA_WIDTH-1:0] data_arr16_seg0[128];
+        logic [CGRA_DATA_WIDTH-1:0] data_arr16_seg1[128];
+        logic [CGRA_DATA_WIDTH-1:0] data_arr16_seg2[128];
+        logic [CGRA_DATA_WIDTH-1:0] data_arr16_seg3[128];
+
         // Load data
         data_arr16 = new[512];
         $readmemh("testvectors/512_v1.dat", data_arr16);
 
+
+        for (int i = 0; i < 128; i++) begin
+            x = int'(i/4) * 16 + (i % 4);
+            data_arr16_seg0[i] = data_arr16[x];
+            data_arr16_seg1[i] = data_arr16[x + 4];
+            data_arr16_seg2[i] = data_arr16[x + 8];
+            data_arr16_seg3[i] = data_arr16[x + 12];
+        end
+
         // Initiialize
         initialize(); 
-  
-        // Write data
-        // Start from glb tile 5
-        start_addr = 'hA0000;
-        ProcDriver_write_data(start_addr, data_arr16);
+        
+        // Write data to 4 consecutive GLB tiles, starting from base tile 
+        start_addr = GLB_TILE_BASE << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH);
+        ProcDriver_write_data(start_addr, data_arr16_seg0);
+
+        start_addr = (GLB_TILE_BASE + 1) << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH);
+        ProcDriver_write_data(start_addr, data_arr16_seg1);
+
+        start_addr = (GLB_TILE_BASE + 2) << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH);
+        ProcDriver_write_data(start_addr, data_arr16_seg2);
+
+        start_addr = (GLB_TILE_BASE + 3) << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH);
+        ProcDriver_write_data(start_addr, data_arr16_seg3);
+
 
         repeat (10) @(posedge p_ifc.clk);
 
         // Read data
         data_arr16_out = new[512];
-        ProcDriver_read_data(start_addr, data_arr16_out);
+        start_addr = GLB_TILE_BASE << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH);
+        MUDriver_read_data(start_addr, data_arr16_out);
+        // ProcDriver_read_data(start_addr, data_arr16_out);
 
         // Compare data
         err = compare_16b_arr(data_arr16, data_arr16_out);
@@ -52,6 +77,8 @@ program glb_mu_test #(
         end else begin
             $error("Test failed!");
         end
+
+        repeat (50) @(posedge clk);
 
         $display("Time: %0t", $time);
         $display("Simulation exited normally\n");
@@ -82,7 +109,7 @@ program glb_mu_test #(
     task ProcDriver_write_data(input [GLB_ADDR_WIDTH-1:0] start_addr, logic [CGRA_DATA_WIDTH-1:0] data_q[]);
         cur_addr = start_addr;
         proc_lock.get(1);
-        size = data_q.size();  // 0x1000 = 2^12 = 4K??
+        size = data_q.size();  
         for (int i = 0; i < size; i += 4) begin
             if ((i + 1) == size) begin
                 bdata = data_q[i];
@@ -115,7 +142,7 @@ program glb_mu_test #(
     int num_words, num_trans;
     task ProcDriver_read_data(input [GLB_ADDR_WIDTH-1:0] start_addr, ref logic [CGRA_DATA_WIDTH-1:0] data_q[]);
         num_words = data_q.size();  
-        num_trans = (num_words + 3) / 4;  // Should be 1K
+        num_trans = (num_words + 3) / 4;  
         proc_lock.get(1);
         fork
             // Process 1 initiates read by setting rd_en HIGH and feeding addresses one per cycle
@@ -125,16 +152,12 @@ program glb_mu_test #(
                 @(posedge p_ifc.clk);
                 for (int i = 0; i < num_trans; i++) begin
                     p_ifc.rd_en = 1'b1;
-                    // glb_mu_ifc.mu_rd_en = 1'b1;
                     // address increases by 8 every write
                     p_ifc.rd_addr = (start_addr + 8 * i);
-                    // glb_mu_ifc.mu_rd_addr = (start_addr + 8 * i);
                     @(posedge p_ifc.clk);
                 end
                 p_ifc.rd_en   = 0;
                 p_ifc.rd_addr = 0;
-                // glb_mu_ifc.mu_rd_en = 0;
-                // glb_mu_ifc.mu_rd_addr = 0;
             end
             begin
                 for (int i = 0; i < num_trans; i++) begin
@@ -162,6 +185,102 @@ program glb_mu_test #(
             end
         join
         repeat (10) @(posedge p_ifc.clk);
+        proc_lock.put(1);
+    endtask
+
+    int num_mu_words, num_mu_trans;
+    task MUDriver_read_data(input [GLB_ADDR_WIDTH-1:0] start_addr, ref logic [CGRA_DATA_WIDTH-1:0] data_q[]);
+        num_mu_words = data_q.size();  
+        num_mu_trans = (num_mu_words + 3) / 16; 
+        proc_lock.get(1);
+        fork
+            // Process 1 initiates read by setting mu_rd_en HIGH and feeding addresses one per cycle
+            // Process 2 unloads the data by waiting for data_valid signal and then reading data one per cycle
+            begin
+                $display("Set     %0d consecutive addresses BEGIN", num_mu_trans);
+                @(posedge glb_mu_ifc.clk);
+                for (int i = 0; i < num_mu_trans; i++) begin
+                    glb_mu_ifc.mu_rd_en = 1'b1;
+                    // address increases by 8 every write
+                    glb_mu_ifc.mu_rd_addr = (start_addr + 8 * i);
+                    @(posedge glb_mu_ifc.clk);
+                end
+                glb_mu_ifc.mu_rd_en   = 0;
+                glb_mu_ifc.mu_rd_addr = 0;
+            end
+            begin
+                for (int i = 0; i < num_mu_trans; i++) begin
+                    wait (glb_mu_ifc.mu_rd_data_valid);      
+
+                    data_q[i*16] = glb_mu_ifc.mu_rd_data & 'hFFFF;
+
+                    if ((i * 16 + 1) < num_mu_words) begin
+                        data_q[i*16+1] = (glb_mu_ifc.mu_rd_data & (('hFFFF) << 16)) >> 16;
+                    end
+
+                    if ((i * 16 + 2) < num_mu_words) begin
+                        data_q[i*16+2] = (glb_mu_ifc.mu_rd_data & (('hFFFF) << 32)) >> 32;
+                    end
+
+                    if ((i * 16 + 3) < num_mu_words) begin
+                        data_q[i*16+3] = (glb_mu_ifc.mu_rd_data & (('hFFFF) << 48)) >> 48;
+                    end
+
+                    if ((i * 16 + 4) < num_mu_words) begin
+                        data_q[i*16+4] = (glb_mu_ifc.mu_rd_data & (('hFFFF) << 64)) >> 64;
+                    end
+
+                    if ((i * 16 + 5) < num_mu_words) begin
+                        data_q[i*16+5] = (glb_mu_ifc.mu_rd_data & (('hFFFF) << 80)) >> 80;
+                    end
+
+                    if ((i * 16 + 6) < num_mu_words) begin
+                        data_q[i*16+6] = (glb_mu_ifc.mu_rd_data & (('hFFFF) << 96)) >> 96;
+                    end
+
+                    if ((i * 16 + 7) < num_mu_words) begin
+                        data_q[i*16+7] = (glb_mu_ifc.mu_rd_data & (('hFFFF) << 112)) >> 112;
+                    end
+
+                    if ((i * 16 + 8) < num_mu_words) begin
+                        data_q[i*16+8] = (glb_mu_ifc.mu_rd_data & (('hFFFF) << 128)) >> 128;
+                    end
+
+                    if ((i * 16 + 9) < num_mu_words) begin
+                        data_q[i*16+9] = (glb_mu_ifc.mu_rd_data & (('hFFFF) << 144)) >> 144;
+                    end
+
+                    if ((i * 16 + 10) < num_mu_words) begin
+                        data_q[i*16+10] = (glb_mu_ifc.mu_rd_data & (('hFFFF) << 160)) >> 160;
+                    end
+
+                    if ((i * 16 + 11) < num_mu_words) begin
+                        data_q[i*16+11] = (glb_mu_ifc.mu_rd_data & (('hFFFF) << 176)) >> 176;
+                    end
+
+                    if ((i * 16 + 12) < num_mu_words) begin
+                        data_q[i*16+12] = (glb_mu_ifc.mu_rd_data & (('hFFFF) << 192)) >> 192;
+                    end
+
+                    if ((i * 16 + 13) < num_mu_words) begin
+                        data_q[i*16+13] = (glb_mu_ifc.mu_rd_data & (('hFFFF) << 208)) >> 208;
+                    end
+
+                    if ((i * 16 + 14) < num_mu_words) begin
+                        data_q[i*16+14] = (glb_mu_ifc.mu_rd_data & (('hFFFF) << 224)) >> 224;
+                    end
+
+                    if ((i * 16 + 15) < num_mu_words) begin
+                        data_q[i*16+15] = (glb_mu_ifc.mu_rd_data & (('hFFFF) << 240)) >> 240;
+                    end    
+                    
+                    @(posedge glb_mu_ifc.clk);
+                
+                end
+    
+            end
+        join
+        repeat (10) @(posedge glb_mu_ifc.clk);
         proc_lock.put(1);
     endtask
 

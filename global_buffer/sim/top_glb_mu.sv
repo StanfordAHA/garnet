@@ -12,7 +12,7 @@
 `define DBG_TBTOP 0 // Set to '1' for debugging
 
 
-`define CLK_PERIOD 1ns
+`define MY_CLK_PERIOD 1ns
 
 import global_buffer_param::*;
 // import matrix_unit_param::*;
@@ -32,15 +32,22 @@ module top;
     // clk generation
     initial begin
         clk = 0;
-        forever #(`CLK_PERIOD / 2.0) clk = !clk;
+        forever #(`MY_CLK_PERIOD / 2.0) clk = !clk;
     end
 
     // Print a debug message every once in awhile
     initial begin
          $display("[%0t] Model running...\n", $time);
          $display("[%0t]", $time);
-         forever #(`CLK_PERIOD * 1000) $display("[%0t]", $time);
-     end
+         forever #(`MY_CLK_PERIOD * 1000) $display("[%0t]", $time);
+    end
+
+    // max cycle set
+    initial begin
+        repeat (10000000) @(posedge clk);
+        $display("\n%0t\tERROR: The 10000000 cycles marker has passed!", $time);
+        $finish(2);
+    end
 
 
      `ifdef verilator

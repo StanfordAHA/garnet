@@ -88,7 +88,7 @@ class GlbTile(Generator):
         if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1":
             # TODO: Eventually, make num_tracks 4 here 
             self.if_mu_rd = GlbTileDataLoopInterface(addr_width=self._params.glb_addr_width,
-                                            data_width=self._params.bank_data_width, is_clk_en=True, is_strb=False, has_wr_ifc=False, num_tracks=1, mu_word_num_tiles=self._params.mu_word_num_tiles)
+                                            data_width=self._params.bank_data_width, is_clk_en=True, is_strb=False, has_wr_ifc=False, num_tracks=self._params.mu_word_num_tiles, mu_word_num_tiles=self._params.mu_word_num_tiles)
             self.if_mu_rd_est_m = self.interface(self.if_mu_rd, "if_mu_rd_est_m")
             self.if_mu_rd_wst_s = self.interface(self.if_mu_rd, "if_mu_rd_wst_s")
 
@@ -110,15 +110,15 @@ class GlbTile(Generator):
         if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1":
             # Connect m2s ports
             for m2s_port in self.if_mu_rd.m_to_s:
-                port = self.output(f"if_mu_rd_est_m_{m2s_port}", self.if_mu_rd_est_m[m2s_port].width)
+                port = self.output(f"if_mu_rd_est_m_{m2s_port}", width=self.if_mu_rd_est_m[m2s_port].width, size=self.if_mu_rd_est_m[m2s_port].size, packed=True)
                 self.wire(port, self.if_mu_rd_est_m[m2s_port])
-                port = self.input(f"if_mu_rd_wst_s_{m2s_port}", self.if_mu_rd_wst_s[m2s_port].width)
+                port = self.input(f"if_mu_rd_wst_s_{m2s_port}", self.if_mu_rd_wst_s[m2s_port].width, size=self.if_mu_rd_wst_s[m2s_port].size, packed=True)
                 self.wire(port, self.if_mu_rd_wst_s[m2s_port])
             # Connect s2m ports
             for s2m_port in self.if_mu_rd.s_to_m:
-                port = self.input(f"if_mu_rd_est_m_{s2m_port}", self.if_mu_rd_est_m[s2m_port].width)
+                port = self.input(f"if_mu_rd_est_m_{s2m_port}", self.if_mu_rd_est_m[s2m_port].width, size=self.if_mu_rd_est_m[s2m_port].size, packed=True)
                 self.wire(port, self.if_mu_rd_est_m[s2m_port])
-                port = self.output(f"if_mu_rd_wst_s_{s2m_port}", self.if_mu_rd_wst_s[s2m_port].width)
+                port = self.output(f"if_mu_rd_wst_s_{s2m_port}", self.if_mu_rd_wst_s[s2m_port].width, size=self.if_mu_rd_wst_s[s2m_port].size, packed=True)
                 self.wire(port, self.if_mu_rd_wst_s[s2m_port])
 
 
@@ -569,7 +569,7 @@ class GlbTile(Generator):
         
 
         if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1":
-            self.glb_mu_rd_switch = GlbSwitchDataLoop(self._params, ifc=self.if_mu_rd, wr_channel=False, rd_channel=True)
+            self.glb_mu_rd_switch = GlbSwitchDataLoop(self._params, ifc=self.if_mu_rd, wr_channel=False, rd_channel=True, num_tracks=self._params.mu_word_num_tiles)
             self.add_child("glb_mu_rd_switch",
                         self.glb_mu_rd_switch,
                         mclk=self.clk,
