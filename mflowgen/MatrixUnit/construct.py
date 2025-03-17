@@ -65,22 +65,30 @@ def construct():
 
   # Initialization orders
   init_order = [
+    # ----- Setup
     'pre-init.tcl',
     'main.tcl',
     'innovus-pnr-config.tcl',
     'dont-use.tcl',
     'quality-of-life.tcl',
+    # ----- Frames
     'floorplan.tcl',
-    'create-rows.tcl',
-    'add-endcaps-welltaps.tcl',
-    'pin-assignments.tcl',
     'add-tracks.tcl',
-    'create-boundary-blockage.tcl',
+    'create-rows.tcl',
+    'pin-assignments.tcl',
+    # ----- Place the important blocks
     'insert-input-antenna-diodes.tcl',
-    'create-special-grid.tcl',
-    'make-path-groups.tcl',
-    'dont-touch.tcl',
-    'reporting.tcl'
+    'place-memory-buffers.tcl',
+    # 'place-pe-array.tcl',
+    # 'place-dic-cells.tcl',
+    # 'add-endcaps-welltaps.tcl',
+    # ----- Blockages (TODO: check what's inside extend-blockage.tcl)
+    #'create-boundary-blockage.tcl',
+    # 'extend-blockage.tcl',
+    # ----- Final Touch
+    # 'create-special-grid.tcl',
+    # 'make-path-groups.tcl',
+    # 'reporting.tcl'
   ]
 
   # ADK step
