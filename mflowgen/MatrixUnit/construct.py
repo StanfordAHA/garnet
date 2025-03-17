@@ -275,22 +275,34 @@ def construct():
   g.connect_by_name( adk,      gen_sram_accum )
 
   #-----------------------------------------------------------------------
-  # Graph -- Add edges for SRAMs
+  # Graph -- Add edges for SRAMs/PEs
   #-----------------------------------------------------------------------
   # These PD steps need lib/lef files for the SRAMs
   for step in [synth, iflow, init, power, place, cts, postcts_hold, route, postroute, postroute_hold, signoff]:
     step.extend_inputs( ['sram_iw-typical.lib', 'sram_iw-bc.lib', 'sram_iw.lef'] )
     step.extend_inputs( ['sram_accum-typical.lib', 'sram_accum-bc.lib', 'sram_accum.lef'] )
+    step.extend_inputs( ['ProcessingElement-typical.lib', 'ProcessingElement-bc.lib', 'ProcessingElement.lef'] )
   # PTPX Signoff / genlibdb needs .db files
-  pt_signoff.extend_inputs( ['sram_iw-typical.db', 'sram_iw-bc.db', 'sram_accum-typical.db', 'sram_accum-bc.db'] )
-  genlibdb_tt.extend_inputs( ['sram_iw-typical.db', 'sram_accum-typical.db'] )
-  genlibdb_ff.extend_inputs( ['sram_iw-bc.db', 'sram_accum-bc.db'] )
+  pt_signoff.extend_inputs( ['sram_iw-typical.db',
+                             'sram_iw-bc.db',
+                             'sram_accum-typical.db',
+                             'sram_accum-bc.db',
+                             'ProcessingElement-typical.db',
+                             'ProcessingElement-bc.db'] )
+  genlibdb_tt.extend_inputs( ['sram_iw-typical.db',
+                              'sram_accum-typical.db'
+                              'ProcessingElement-typical.db'] )
+  genlibdb_ff.extend_inputs( ['sram_iw-bc.db',
+                              'sram_accum-bc.db'
+                              'ProcessingElement.db'] )
   # Signoff needs the merged OASIS file
   signoff.extend_inputs( ['sram_iw.oas'] )
   signoff.extend_inputs( ['sram_accum.oas'] )
+  signoff.extend_inputs( ['ProcessingElement.oas'] )
   # LVS node need spi
   lvs.extend_inputs( ['sram_iw.spi'] )
   lvs.extend_inputs( ['sram_accum.spi'] )
+  lvs.extend_inputs( ['ProcessingElement.spi'] )
   # Connect gen_sram_macro node(s) to all downstream nodes that need them
   nodes_need_sram = [synth, iflow, init, power, place, cts, postcts_hold,
                 route, postroute, postroute_hold, signoff, pt_signoff,

@@ -19,3 +19,5 @@ outputs:
   - create-special-grid.tcl
   - innovus-pnr-config.tcl
   - insert-input-antenna-diodes.tcl
+  - place-memory-buffers.tcl
+  - place-pe-array.tcl
