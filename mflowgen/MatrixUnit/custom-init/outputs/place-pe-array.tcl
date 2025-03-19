@@ -134,9 +134,9 @@ proc place_macro_grid_row_major {macros llx lly gap_x gap_y max_per_row} {
 }
 
 #-------------------------------------------------------------------------
-# Memory Macro Information
+# PE Macro Information
 #-------------------------------------------------------------------------
-# Organize memory macros into collection objects
+# Organize pe macros into collection objects
 set macro_pes [get_pe_cells_by_name *systolicArray_pe*]
 
 # Debugging
@@ -145,11 +145,12 @@ set macro_pes [get_pe_cells_by_name *systolicArray_pe*]
 #-------------------------------------------------------------------------
 # Placing PE Array
 #-------------------------------------------------------------------------
-set llx 80.0
-set lly 2600.0
-set gap_x 3.0
-set gap_y 4.5
-set max_per_row 32
+# Assuming PE is 27umx27um, this will make the PE array match the power stripes
+set llx             80.64
+set lly           2592.00
+set gap_x           10.80
+set gap_y           16.20
+set max_per_row     32
 place_macro_grid_row_major \
     $macro_pes \
     $llx \
