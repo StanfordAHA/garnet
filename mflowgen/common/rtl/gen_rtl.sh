@@ -270,7 +270,8 @@ if [ "$use_container" == True ]; then
       if [ "$include_matrix_unit" == True ]; then
         docker cp $container_name:/aha/garnet/design.v ../outputs/garnet.v
         docker cp $container_name:/aha/garnet/zircon_wrapper/zircon.v ../outputs/zircon.v
-        cp /nsim/mcoduoza/zircon_matrix_unit/Accelerator/build-MXINT8-64x32-1024x1024x2048-1.0ns/15-hls/outputs/design.v ../outputs/mu.v
+        # cp /nsim/mcoduoza/zircon_matrix_unit/Accelerator/build-MXINT8-64x32-1024x1024x2048-1.0ns/15-hls/outputs/design.v ../outputs/mu.v
+        cp /nsim/mcoduoza/zircon_matrix_unit/Accelerator/Feb-2025-build/design.v ../outputs/mu.v
         cat ../outputs/garnet.v > ../outputs/design.v
         echo "" >> ../outputs/design.v
         cat ../outputs/zircon.v >> ../outputs/design.v
