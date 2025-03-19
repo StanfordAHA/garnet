@@ -53,8 +53,8 @@ def emit_signal_rc(ports_to_print, rc_file, node_to_tile, fsdb_file_path="cgra.f
         tile_x, tile_y = node_to_tile[prim]
 
         # format tile_x to be a two digit hex numbers
-        tile_x = format(tile_x, '02x')
-        tile_y = format(tile_y, '02x')
+        tile_x = format(tile_x, '02X')
+        tile_y = format(tile_y, '02X')
 
         if "m" in prim or "p" in prim:
             # Won't be expanded when opening....
