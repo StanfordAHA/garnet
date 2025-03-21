@@ -39,18 +39,20 @@ clean:
 	@echo ""
 
 	@echo Moving core Genesis files...
-	@echo mv $(GENESIS_CORE_FILES) $(CLEANDIR)/ | fold -s | sed 's/^/  /'
-	@mv $(GENESIS_CORE_FILES) $(CLEANDIR)/
+	@echo mv $(GENESIS_CORE_FILES) $(CLEANDIR)/
+	@for p in $(GENESIS_CORE_FILES); do test -e $$p && mv $$p $(CLEANDIR); done || echo Done.
 	@echo ""
 
 	@echo Moving build-specific Genesis files...
-	@echo mv $(GENESIS_ADJUNCT_FILES) $(CLEANDIR)/ | fold -s | sed 's/^/  /'
-	@mv $(GENESIS_ADJUNCT_FILES) $(CLEANDIR)/
+	@echo mv $(GENESIS_ADJUNCT_FILES) $(CLEANDIR)/
+# 	@mv       $(GENESIS_ADJUNCT_FILES) $(CLEANDIR)/
+	@for p in $(GENESIS_ADJUNCT_FILES); do test -e $$p && mv $$p $(CLEANDIR); done || echo Done.
 	@echo ""
 
 	@echo Moving Garnet files...
-	@echo mv $(GARNET_FILES) $(CLEANDIR)/ | fold -s | sed 's/^/  /'
-	@mv $(GARNET_FILES) $(CLEANDIR)/
+	@echo mv $(GARNET_FILES) $(CLEANDIR)/
+# 	@mv       $(GARNET_FILES) $(CLEANDIR)/
+	@for p in $(GARNET_FILES); do test -e $$p && mv $$p $(CLEANDIR); done || echo Done.
 	@echo ""
 
 	ls -l $(CLEANDIR)
