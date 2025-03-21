@@ -105,56 +105,47 @@ docker cp /tmp/deleteme-garnet-$$ $container:/aha/garnet
 set +x; ENDGROUP
 
 ########################################################################
-# VERILATOR
-# set +x; echo "##[group]VERILATOR installer"; set -x
-# GROUP "VERILATOR installer"
-# [ "$CAD" ] || docker exec $container /bin/bash -c "
-# cd /aha/garnet/tests/test_app; make setup-verilator
-# "
-# # echo "##[endgroup]"
-# # set +x; echo "##[endgroup]"; set -x
-# set +x; ENDGROUP
+# VERILATOR - prepare to install verilator if needed
 
-
-# Prepare to install verilator if needed
 if [ "$CAD" ]; then
     make_verilator='echo Using vcs, no need for verilator'
 else
     make_verilator="(set -x; /aha/garnet/tests/install-verilator.sh) || exit 13"
 fi
-GROUP "make_verilator=$make_verilator"
+GROUP "VERILATOR PREP: make_verilator=$make_verilator"
 ENDGROUP
-
-
-
-
-
 
 
 ########################################################################
 # TEST
 set +x
 docker exec $container /bin/bash -c "
-# set -x
-rm -f garnet/garnet.v
-source /aha/bin/activate
-$TOOL
+  # set -x
+  rm -f garnet/garnet.v
+  source /aha/bin/activate
+  $TOOL
 
-echo '##[group]aha garnet $size --verilog --use_sim_sram --glb_tile_mem_size 128'
-aha garnet $size --verilog --use_sim_sram --glb_tile_mem_size 128
-echo '##[endgroup]'
+  # Note (echo \#\# ...) gives much better result than (echo '##...') 
+  echo '##[group]aha garnet $size --verilog --use_sim_sram --glb_tile_mem_size 128'
+  aha garnet $size --verilog --use_sim_sram --glb_tile_mem_size 128
+  echo '##[endgroup]'
 
-echo '##[group]aha map $app'
-aha map $app
-echo '##[endgroup]'
+  echo '##[group]aha map $app'
+  aha map $app
+  echo '##[endgroup]'
 
-echo '##[group]aha pnr $app $size'
-aha pnr $app $size
-echo '##[endgroup]'
+  echo '##[group]aha pnr $app $size'
+  aha pnr $app $size
+  echo '##[endgroup]'
 
-echo '##[group]aha test $app $DO_FP'
-aha test $app $DO_FP
-echo '##[endgroup]'
+  # We need verilator for the final step, if we make it this far...
+  echo \#\#[group]install verilator
+  $make_verilator || exit 13
+  echo \#\#[endgroup]
+
+  echo '##[group]aha test $app $DO_FP'
+  aha test $app $DO_FP
+  echo '##[endgroup]'
 "
 
 # 'aha test' calls 'make sim' and 'make run' etc.
