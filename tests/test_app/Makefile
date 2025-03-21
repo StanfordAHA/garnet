@@ -209,7 +209,7 @@ $(APP0_NAME)/bin/design_meta.json:
 compile: COMPILE_ARGS = $(COMPILE_RTL_ARGS)
 compile: INPUT_ARGS = $(DESIGN_FILES) $(TB_FILES) $(IP_FILES)
 compile:
-	echo \#\#[endgroup]; echo \#\#[group]make compile \(verilator => Vtop.mk\) or \(vcs => simv\) `date +%H:%M`
+	echo \#\#[group]make compile \(verilator => Vtop.mk\) or \(vcs => simv\) `date +%H:%M`
 	echo '--- MAKE COMPILE (verilator => Vtop.mk) or (vcs => simv)' `date +%H:%M`
 	$(COMPILE)
 ifeq ($(TOOL), VERILATOR)
@@ -220,10 +220,10 @@ endif
 	echo \#\#[endgroup]
 
 generate:
-	echo \#\#[endgroup]; echo \#\#[group]make generate \(genesis testbench/top.svp\) `date +%H:%M`
+	echo \#\#[group]make generate \(genesis testbench/top.svp\) `date +%H:%M`
 	Genesis2.pl -parse -generate -top top -input $(genesis_tb_dir)/top.svp -parameter top.using_matrix_unit=$(USING_MATRIX_UNIT)
 	mv genesis_verif/top.sv tb/top.sv
-	echo \#\#[endgroup]
+	# echo \#\#[endgroup]
 
 .PHONY: run
 # Print log info in both buildkite and github-action format
