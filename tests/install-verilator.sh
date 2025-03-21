@@ -1,15 +1,12 @@
 #!/bin/bash
-
 set -x
-
-# Verilator must be 5.028 or better maybe
-function insufficient { awk "BEGIN {if ($1 < 5.028) exit(0); else exit(13)}"; }
-
 
 # E.g. verilator --version = "Verilator 5.032 2025-01-01 rev (Debian 5.032-1)"
 if ! verilator --version >& /dev/null; then version=0.0
 else version=$(verilator --version |& cut -d " " -f2); fi
 
+# Verilator must be 5.028 or better maybe
+function insufficient { awk "BEGIN {if ($1 < 5.028) exit(0); else exit(13)}"; }
 if insufficient $version; then
 
     # Only works with g++-10 else "unrecognized option ‘-fcoroutines’"
@@ -28,6 +25,3 @@ if insufficient $version; then
     yes | apt install -t plucky verilator
     verilator --version
 fi
-
-
-

@@ -45,13 +45,11 @@ clean:
 
 	@echo Moving build-specific Genesis files...
 	@echo mv $(GENESIS_ADJUNCT_FILES) $(CLEANDIR)/
-# 	@mv       $(GENESIS_ADJUNCT_FILES) $(CLEANDIR)/
 	@for p in $(GENESIS_ADJUNCT_FILES); do test -e $$p && mv $$p $(CLEANDIR); done || echo Done.
 	@echo ""
 
 	@echo Moving Garnet files...
 	@echo mv $(GARNET_FILES) $(CLEANDIR)/
-# 	@mv       $(GARNET_FILES) $(CLEANDIR)/
 	@for p in $(GARNET_FILES); do test -e $$p && mv $$p $(CLEANDIR); done || echo Done.
 	@echo ""
 
