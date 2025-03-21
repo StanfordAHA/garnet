@@ -131,14 +131,9 @@ all: sim
 # INSTALL VERILATOR 5.028
 # -------------------------------------------------------------------
 
-# Want to see VERILATOR_VERSION 5.028 and GPP_VERSION 10
-# E.g. "Verilator 5.028 2024-08-21 rev v5.028-44-g1d79f5c59"
-
-VERILATOR_VERSION ?= $(shell verilator --version |& cut -d " " -f2 || echo 0)
-GPP_VERSION = $(shell gcc -dumpversion)
 NPROC = $(shell nproc)
 
-# Because *some people* are stoopid
+# Because *some people* are stoopid (that's me, I'm the stoopid)
 .PHONY: verilator-setup
 verilator-setup: setup-verilator
 
