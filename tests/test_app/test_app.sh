@@ -1,4 +1,5 @@
 #!/bin/bash
+# Compare: diff garnet/tests/test_app/test_app.sh Genesis2/test/copy_of_garnet_tests_test_app.sh
 
 # Use '--fail' test failure path (for debugging)
 [ "$1" == "--fail" ] && TEST_FAILURE_PATH=true
@@ -19,9 +20,14 @@ HELP="
     $0 --vcs 4x2 apps/pointwise     # Default is verilator
     $0 --fp  4x2 tests/fp_pointwise
 "
+
+
 if [ "$1" == "--help" ]; then echo "$HELP"; exit; fi
 
-# ARGS e.g. '4x2' => '--width 4 --height 2'
+# Unpack the args
+# commit=$1; shift  # See Genesis2/test/copy_of_garnet_tests_test_app.sh
+
+# More args e.g. '4x2' => '--width 4 --height 2'
 DO_FP=;  if [ "$1" == "--fp"  ]; then shift; DO_FP="--dense-fp"; fi
 DO_VCS=; if [ "$1" == "--vcs" ]; then shift; DO_VCS=True; fi
 size=`echo $1 | awk -Fx '{printf("--width %s --height %s", $1, $2)}'`
@@ -56,7 +62,7 @@ container=DELETEME-$USER-apptest-$$
 [ "$REUSE_CONTAINER" ] && container=deleteme-steveri-testapp-dev
 # Note for verilator CAD="" else CAD="-v /cad:/cad"
 # Note this will err if reusing container, but that's okay maybe.
-docker run -id --name $container --rm $CAD $image bash
+docker run -id --name $container --rm $CAD $image bash || echo okay
 
 
 ########################################################################
@@ -67,10 +73,8 @@ function cleanup { set -x; docker kill $container; }
 # set +x; sleep 1; echo "##[endgroup]"; sleep 1; set -x
 set +x; ENDGROUP
 
-
 ########################################################################
-# set +x; echo "##[group]UPDATE docker w local garnet"; set -x
-set +x; GROUP "UPDATE docker w local garnet"
+GROUP "UPDATE docker w local garnet"
 
 # Find local garnet home dir $GARNET, based on where this script lives
 # Assume this script is $GARNET/tests/test_app/$0
@@ -110,6 +114,21 @@ cd /aha/garnet/tests/test_app; make setup-verilator
 # echo "##[endgroup]"
 # set +x; echo "##[endgroup]"; set -x
 set +x; ENDGROUP
+
+
+# # Prepare to install verilator if needed
+# if [ "$CAD" ]; then
+#     make_verilator='echo Using vcs, no need for verilator'
+# else
+#     make_verilator="(set -x; /aha/garnet/tests/install-verilator.sh)"
+# fi
+# GROUP "make_verilator=$make_verilator"
+# ENDGROUP
+
+
+
+
+
 
 
 ########################################################################
