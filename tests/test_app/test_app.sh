@@ -116,14 +116,14 @@ cd /aha/garnet/tests/test_app; make setup-verilator
 set +x; ENDGROUP
 
 
-# # Prepare to install verilator if needed
-# if [ "$CAD" ]; then
-#     make_verilator='echo Using vcs, no need for verilator'
-# else
-#     make_verilator="(set -x; /aha/garnet/tests/install-verilator.sh)"
-# fi
-# GROUP "make_verilator=$make_verilator"
-# ENDGROUP
+# Prepare to install verilator if needed
+if [ "$CAD" ]; then
+    make_verilator='echo Using vcs, no need for verilator'
+else
+    make_verilator="(set -x; /aha/garnet/tests/install-verilator.sh)"
+fi
+GROUP "make_verilator=$make_verilator"
+ENDGROUP
 
 
 
