@@ -107,20 +107,20 @@ set +x; ENDGROUP
 ########################################################################
 # VERILATOR
 # set +x; echo "##[group]VERILATOR installer"; set -x
-set +x; GROUP "VERILATOR installer"
-[ "$CAD" ] || docker exec $container /bin/bash -c "
-cd /aha/garnet/tests/test_app; make setup-verilator
-"
-# echo "##[endgroup]"
-# set +x; echo "##[endgroup]"; set -x
-set +x; ENDGROUP
+# GROUP "VERILATOR installer"
+# [ "$CAD" ] || docker exec $container /bin/bash -c "
+# cd /aha/garnet/tests/test_app; make setup-verilator
+# "
+# # echo "##[endgroup]"
+# # set +x; echo "##[endgroup]"; set -x
+# set +x; ENDGROUP
 
 
 # Prepare to install verilator if needed
 if [ "$CAD" ]; then
     make_verilator='echo Using vcs, no need for verilator'
 else
-    make_verilator="(set -x; /aha/garnet/tests/install-verilator.sh)"
+    make_verilator="(set -x; /aha/garnet/tests/install-verilator.sh) || exit 13"
 fi
 GROUP "make_verilator=$make_verilator"
 ENDGROUP
