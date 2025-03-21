@@ -120,11 +120,12 @@ ENDGROUP
 # TEST
 # size='--width 4 --height 2'
 docker exec $container /bin/bash -c "
+  echo \#\#[group]SETUP
   rm -f garnet/garnet.v
   source /aha/bin/activate
   $TOOL
-
   (cd /aha/garnet; make clean)  # In case of e.g. CONTAINER_REUSE
+  echo \#\#[endgroup]
 
   # Note (echo \#\# ...) gives much better result than (echo '##...') 
   echo \#\#[group]aha garnet $size --verilog --use_sim_sram --glb_tile_mem_size 128
@@ -139,8 +140,7 @@ docker exec $container /bin/bash -c "
   aha pnr $app $size || exit 13
   echo \#\#[endgroup]
 
-  # We need verilator for the final step, if we make it this far...
-  echo \#\#[group]install verilator
+  echo \#\#[group]INSTALL verilator5
   $make_verilator || exit 13
   echo \#\#[endgroup]
 
