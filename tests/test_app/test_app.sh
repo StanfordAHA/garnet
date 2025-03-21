@@ -112,40 +112,40 @@ if [ "$CAD" ]; then
 else
     make_verilator="(set -x; /aha/garnet/tests/install-verilator.sh) || exit 13"
 fi
-GROUP "VERILATOR PREP: make_verilator=$make_verilator"
+GROUP "VERILATOR PREP: make_verilator='$make_verilator'"
 ENDGROUP
 
 
 ########################################################################
 # TEST
-set +x
+# size='--width 4 --height 2'
 docker exec $container /bin/bash -c "
-  # set -x
   rm -f garnet/garnet.v
   source /aha/bin/activate
   $TOOL
 
+  (cd /aha/garnet; make clean)  # In case of e.g. CONTAINER_REUSE
+
   # Note (echo \#\# ...) gives much better result than (echo '##...') 
-  echo '##[group]aha garnet $size --verilog --use_sim_sram --glb_tile_mem_size 128'
-  aha garnet $size --verilog --use_sim_sram --glb_tile_mem_size 128
-  echo '##[endgroup]'
+  echo \#\#[group]aha garnet $size --verilog --use_sim_sram --glb_tile_mem_size 128
+  aha garnet $size --verilog --use_sim_sram --glb_tile_mem_size 128 || exit 13
+  echo \#\#[endgroup]
 
-  echo '##[group]aha map $app'
-  aha map $app
-  echo '##[endgroup]'
+  echo \#\#[group]aha map $app
+  aha map $app || exit 13
+  echo \#\#[endgroup]
 
-  echo '##[group]aha pnr $app $size'
-  aha pnr $app $size
-  echo '##[endgroup]'
+  echo \#\#[group]aha pnr $app $size
+  aha pnr $app $size || exit 13
+  echo \#\#[endgroup]
 
   # We need verilator for the final step, if we make it this far...
   echo \#\#[group]install verilator
   $make_verilator || exit 13
   echo \#\#[endgroup]
 
-  echo '##[group]aha test $app $DO_FP'
-  aha test $app $DO_FP
-  echo '##[endgroup]'
+  # 'aha test' calls 'make sim' and 'make run' etc.
+  echo \#\#[group]aha test $app $DO_FP
+  aha test $app $DO_FP || exit 13
+  echo \#\#[endgroup]
 "
-
-# 'aha test' calls 'make sim' and 'make run' etc.
