@@ -65,8 +65,7 @@ def construct():
   adk = g.get_adk_step()
 
   # Custom steps
-  rtl                = Step( this_dir + '/../common/rtl'                          )
-  # rtl                  = Step( this_dir + '/../common/rtl-cache'                    )
+  rtl                  = Step( this_dir + '/../common/rtl'                          )
   constraints          = Step( this_dir + '/constraints'                            )
   custom_init          = Step( this_dir + '/custom-init'                            )
   gen_sram             = Step( this_dir + '/../common/gen_sram_macro'               )
@@ -112,8 +111,8 @@ def construct():
   # Add graph inputs and outputs so this can be used in hierarchical flows
 
   # Inputs
-  #g.add_input( 'design.v', rtl.i('design.v') )
-  #g.add_input( 'header'  , rtl.i('header')   )
+  g.add_input( 'design.v', rtl.i('design.v') )
+  g.add_input( 'header'  , rtl.i('header')   )
 
   # Outputs
   g.add_output( 'glb_tile-typical.lib',      genlibdb_tt.o('design.lib')       )
