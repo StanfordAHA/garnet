@@ -11,6 +11,7 @@ steps:
 
   # Agents must have tag hostname=<hostname>
   # And then this will guarantee that all steps run on the same host, see?
+  # BUT ONLY IF agent actually has a hostname tag, see? So we also require a docker tag.
   agents: { hostname: $BUILDKITE_AGENT_META_DATA_HOSTNAME, docker: true }
 
   commands:
