@@ -8,6 +8,7 @@ from global_buffer.design.glb_header import GlbHeader
 from global_buffer.design.pipeline import Pipeline
 from global_buffer.design.glb_clk_en_gen import GlbClkEnGen
 from global_buffer.design.glb_crossbar import GlbCrossbar
+from global_buffer.design.glb_mu_addr_transl import GlbMUAddrTransl
 from gemstone.generator.from_magma import FromMagma
 import os
 
@@ -39,8 +40,9 @@ class GlobalBuffer(Generator):
 
 
         if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1":
-            self.mu_rd_en = self.input("mu_rd_en", 1)
-            self.mu_rd_addr = self.input("mu_rd_addr", self._params.glb_addr_width)
+            self.mu_addr_in = self.input("mu_addr_in", self._params.mu_addr_width)
+            self.mu_addr_in_vld = self.input("mu_addr_in_vld", 1)
+            self.mu_addr_in_rdy = self.output("mu_addr_in_rdy", 1)
             self.mu_rd_data = self.output("mu_rd_data", self._params.bank_data_width * self._params.mu_word_num_tiles)
             self.mu_rd_data_valid = self.output("mu_rd_data_valid", 1)
 
@@ -142,6 +144,8 @@ class GlobalBuffer(Generator):
         self.proc_rd_data_valid_w = self.var("proc_rd_data_valid_w", 1)
 
         if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1":
+            self.mu_rd_en = self.var("mu_rd_en", 1)
+            self.mu_rd_addr = self.var("mu_rd_addr", self._params.glb_addr_width)
             self.mu_rd_en_d = self.var("mu_rd_en_d", 1)
             self.mu_rd_addr_d = self.var("mu_rd_addr_d", self._params.glb_addr_width)
             self.mu_rd_data_w = self.var("mu_rd_data_w", self._params.bank_data_width * self._params.mu_word_num_tiles)
@@ -300,6 +304,20 @@ class GlobalBuffer(Generator):
         self.glb_tile = []
         for i in range(self._params.num_glb_tiles):
              self.glb_tile.append(GlbTile(_params=self._params))
+
+
+        # GLB-MU Address translator
+        if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1":
+            self.glb_mu_addr_transl = GlbMUAddrTransl(_params=self._params)
+            self.add_child("glb_mu_addr_transl",
+                           self.glb_mu_addr_transl,
+                           clk=self.clk,
+                           reset=self.reset,
+                           addr_in=self.mu_addr_in,
+                           addr_in_vld=self.mu_addr_in_vld,
+                           addr_in_rdy=self.mu_addr_in_rdy,
+                           addr2glb=self.mu_rd_addr,
+                           rd_en2glb=self.mu_rd_en)     
 
             # SKIPING ADDR BUILDER IMPLEMENTATION FOR NOW 
             # if i in range(self._params.num_mu_addr_builder_tiles):

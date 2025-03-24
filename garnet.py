@@ -175,8 +175,9 @@ class Garnet(Generator):
             include_mu_glb_ifc = True
             if include_mu_glb_ifc:
                 self.add_ports(
-                    mu_rd_addr=magma.In(magma.Bits[glb_params.glb_addr_width]),
-                    mu_rd_en=magma.In(magma.Bit),
+                    mu_addr_in=magma.In(magma.Bits[glb_params.mu_addr_width]),
+                    mu_addr_in_vld=magma.In(magma.Bit),
+                    mu_addr_in_rdy=magma.Out(magma.Bit),
                     mu_rd_data=magma.Out(magma.Bits[glb_params.bank_data_width * glb_params.mu_word_num_tiles]),
                     mu_rd_data_valid=magma.Out(magma.Bit)
                 )
@@ -216,8 +217,9 @@ class Garnet(Generator):
 
             # Matrix unit <-> GLB ports connection 
             if include_mu_glb_ifc:
-                self.wire(self.global_buffer.ports.mu_rd_addr, self.ports.mu_rd_addr)
-                self.wire(self.global_buffer.ports.mu_rd_en[0], self.ports.mu_rd_en)
+                self.wire(self.global_buffer.ports.mu_addr_in, self.ports.mu_addr_in)
+                self.wire(self.global_buffer.ports.mu_addr_in_vld[0], self.ports.mu_addr_in_vld)
+                self.wire(self.ports.mu_addr_in_rdy, self.global_buffer.ports.mu_addr_in_rdy[0])
                 self.wire(self.ports.mu_rd_data, self.global_buffer.ports.mu_rd_data)
                 self.wire(self.ports.mu_rd_data_valid, self.global_buffer.ports.mu_rd_data_valid[0])
 

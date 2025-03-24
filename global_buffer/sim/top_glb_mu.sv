@@ -220,11 +220,11 @@ module top;
 
 
         // matrix unit ifc
-        .mu_rd_addr (glb_mu_ifc.mu_rd_addr),
+        .mu_addr_in (glb_mu_ifc.mu_addr_in),
+        .mu_addr_in_vld (glb_mu_ifc.mu_addr_in_vld),
+        .mu_addr_in_rdy (glb_mu_ifc.mu_addr_in_rdy),
         .mu_rd_data (glb_mu_ifc.mu_rd_data),
-        .mu_rd_data_valid (glb_mu_ifc.mu_rd_data_valid),
-        .mu_rd_en (glb_mu_ifc.mu_rd_en)
-
+        .mu_rd_data_valid (glb_mu_ifc.mu_rd_data_valid)
     `ifdef PWR
             .VDD(VDD),
             .VSS(VSS),

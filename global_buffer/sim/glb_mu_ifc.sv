@@ -12,8 +12,9 @@ interface glb_mu_ifc (
 );
 
     // declare the signals
-    logic                         mu_rd_en;
-    logic [   GLB_ADDR_WIDTH-1:0] mu_rd_addr;
+    logic [   MU_ADDR_WIDTH-1:0] mu_addr_in;
+    logic                         mu_addr_in_vld;
+    logic                         mu_addr_in_rdy;
     logic [  (BANK_DATA_WIDTH*MU_WORD_NUM_TILES)-1:0] mu_rd_data;
     logic                         mu_rd_data_valid;
 

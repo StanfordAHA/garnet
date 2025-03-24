@@ -15,16 +15,26 @@ program glb_mu_test #(
 );
     int err = 0;
     const int MAX_NUM_ERRORS = 20;
-    const int GLB_TILE_BASE = 5;
+    const int GLB_TILE_BASE = 4;
+    const int BURST_SIZE = 4;
+    const int ADD_INPUT_BUBBLES = 1;
+    const int RANDOM_SHIFT = 2;
     int x = 0;
 
     semaphore proc_lock; 
     initial proc_lock = new(1);
+    semaphore mu_lock; 
+    initial mu_lock = new(1);
 
     initial begin
         logic [CGRA_DATA_WIDTH-1:0] data_arr16 [];
         logic [CGRA_DATA_WIDTH-1:0] data_arr16_out [];
         logic [GLB_ADDR_WIDTH-1:0] start_addr;
+        logic [MU_ADDR_WIDTH-MU_ADDR_NUM_BURST_BITS-1:0] mu_rd_start_addr;  
+        logic [MU_ADDR_NUM_BURST_BITS-1:0] mu_rd_burst_size;
+        logic [TILE_SEL_ADDR_WIDTH-1:0] tile_sel;
+        logic [TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES) - 1:0] mu_rd_group_sel;
+        logic [MU_ADDR_WIDTH-1:0] mu_addr_in;
 
         // Split data_arr16 into 4 even segments
         logic [CGRA_DATA_WIDTH-1:0] data_arr16_seg0[128];
@@ -35,8 +45,6 @@ program glb_mu_test #(
         // Load data
         data_arr16 = new[512];
         $readmemh("testvectors/512_v1.dat", data_arr16);
-
-
         for (int i = 0; i < 128; i++) begin
             x = int'(i/4) * 16 + (i % 4);
             data_arr16_seg0[i] = data_arr16[x];
@@ -65,9 +73,14 @@ program glb_mu_test #(
         repeat (10) @(posedge p_ifc.clk);
 
         // Read data
-        data_arr16_out = new[512];
-        start_addr = GLB_TILE_BASE << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH);
-        MUDriver_read_data(start_addr, data_arr16_out);
+        data_arr16_out = new[512]; 
+        // Mask away uncessary bits from tile ID
+        tile_sel = GLB_TILE_BASE;
+        mu_rd_group_sel = tile_sel[TILE_SEL_ADDR_WIDTH - 1 : $clog2(MU_WORD_NUM_TILES)];
+        mu_rd_start_addr = mu_rd_group_sel << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH);
+        mu_rd_burst_size = BURST_SIZE;
+        mu_addr_in = {mu_rd_burst_size, mu_rd_start_addr};
+        MUDriver_read_data(mu_addr_in, data_arr16_out);
         // ProcDriver_read_data(start_addr, data_arr16_out);
 
         // Compare data
@@ -94,8 +107,8 @@ program glb_mu_test #(
         p_ifc.rd_addr = 0;
         p_ifc.rd_en = 0;
 
-        glb_mu_ifc.mu_rd_addr = 0;
-        glb_mu_ifc.mu_rd_en = 0;
+        glb_mu_ifc.mu_addr_in = 0;
+        glb_mu_ifc.mu_addr_in_vld = 0;
 
         repeat (10) @(posedge clk);
         // wait for reset clear
@@ -188,25 +201,38 @@ program glb_mu_test #(
         proc_lock.put(1);
     endtask
 
-    int num_mu_words, num_mu_trans;
-    task MUDriver_read_data(input [GLB_ADDR_WIDTH-1:0] start_addr, ref logic [CGRA_DATA_WIDTH-1:0] data_q[]);
+    int num_mu_words, num_mu_trans, num_mu_addr_trans, mask, RANDOM_DELAY;
+    task MUDriver_read_data(input [MU_ADDR_WIDTH-1:0] start_addr, ref logic [CGRA_DATA_WIDTH-1:0] data_q[]);
         num_mu_words = data_q.size();  
         num_mu_trans = (num_mu_words + 3) / 16; 
-        proc_lock.get(1);
+        num_mu_addr_trans = num_mu_trans / BURST_SIZE;
+        mu_lock.get(1);
         fork
-            // Process 1 initiates read by setting mu_rd_en HIGH and feeding addresses one per cycle
+            // Process 1 initiates read by feeding addresses one per cycle when ready is high
             // Process 2 unloads the data by waiting for data_valid signal and then reading data one per cycle
             begin
                 $display("Set     %0d consecutive addresses BEGIN", num_mu_trans);
                 @(posedge glb_mu_ifc.clk);
-                for (int i = 0; i < num_mu_trans; i++) begin
-                    glb_mu_ifc.mu_rd_en = 1'b1;
-                    // address increases by 8 every write
-                    glb_mu_ifc.mu_rd_addr = (start_addr + 8 * i);
+                for (int i = 0; i < num_mu_addr_trans; i++) begin
+
+                    // Add random bubbles to input
+                    glb_mu_ifc.mu_addr_in_vld = 0;
+                    mask = 32'd3 << RANDOM_SHIFT;
+                    RANDOM_DELAY = $urandom & mask;
+                    RANDOM_DELAY = RANDOM_DELAY >> RANDOM_SHIFT;
+                    while (RANDOM_DELAY > 0 & ADD_INPUT_BUBBLES) begin
+                        @(posedge glb_mu_ifc.clk);
+                        RANDOM_DELAY--;
+                    end
+
+                    glb_mu_ifc.mu_addr_in_vld = 1'b1;
+                    // address increases by 8 * BURST_SIZE every read
+                    glb_mu_ifc.mu_addr_in = (start_addr + 8 * i * BURST_SIZE);
+                    wait (glb_mu_ifc.mu_addr_in_rdy);
                     @(posedge glb_mu_ifc.clk);
                 end
-                glb_mu_ifc.mu_rd_en   = 0;
-                glb_mu_ifc.mu_rd_addr = 0;
+                glb_mu_ifc.mu_addr_in = 0;
+                glb_mu_ifc.mu_addr_in_vld = 0;
             end
             begin
                 for (int i = 0; i < num_mu_trans; i++) begin
@@ -281,7 +307,7 @@ program glb_mu_test #(
             end
         join
         repeat (10) @(posedge glb_mu_ifc.clk);
-        proc_lock.put(1);
+        mu_lock.put(1);
     endtask
 
 
