@@ -144,6 +144,9 @@ int glb_map(void *kernel_, int dpr_enabled) {
     int first_output_tile;
     int last_output_tile;
 
+    // MO: Temporary HACK FIXME!!!
+    bool multi_bank_mode = true; 
+
     struct IOInfo *io_info;
     struct IOTileInfo *io_tile_info;
     for (int i = 0; i < num_inputs; i++) {
@@ -188,8 +191,14 @@ int glb_map(void *kernel_, int dpr_enabled) {
             }
            
             io_tile_info->tile = tile;
-            io_tile_info->start_addr =
+            if (multi_bank_mode) {
+                io_tile_info->start_addr =
+                (io_tile_info->start_addr << CGRA_BYTE_OFFSET) + ((tile * 2 + j%2) << BANK_ADDR_WIDTH);
+            } else {
+                io_tile_info->start_addr =
                 (io_tile_info->start_addr << CGRA_BYTE_OFFSET) + ((tile * 2 + 1) << BANK_ADDR_WIDTH);
+            }
+           
             printf("Mapping output_%0d_block_%0d to global buffer\n", i, j);
             update_io_tile_configuration(io_tile_info, &kernel->config, kernel);
             if (i == 0 && j == 0) {

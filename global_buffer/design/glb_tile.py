@@ -397,6 +397,9 @@ class GlbTile(Generator):
                        cfg_st_dma_num_blocks=self.cfg_st_dma_num_blocks,
                        cfg_st_dma_rv_seg_mode=self.cfg_st_dma_rv_seg_mode)
         
+        # MO: Temporary HACK
+        self.wire(self.glb_store_dma.cfg_multi_bank_mode, 1)
+        
         if "INCLUDE_E64_HW" in os.environ and os.environ.get("INCLUDE_E64_HW") == "1":
             self.wire(self.glb_store_dma.cfg_exchange_64_mode, self.cfg_st_dma_exchange_64_mode)
 
@@ -483,6 +486,10 @@ class GlbTile(Generator):
                        cfg_tile_connected_next=self.cfg_tile_connected_next,
                        cfg_pcfg_tile_connected_prev=self.cfg_pcfg_tile_connected_prev,
                        cfg_pcfg_tile_connected_next=self.cfg_pcfg_tile_connected_next)
+        
+
+        # MO: Temporary HACK
+        self.wire(self.glb_bank_mux.cfg_multi_bank_mode, 1)
 
         self.glb_proc_switch = GlbSwitch(self._params, ifc=self.if_proc)
         self.add_child("glb_proc_switch",
@@ -613,7 +620,9 @@ class GlbTile(Generator):
         self.wr_packet_procsw2bank = self.var("wr_packet_procsw2bank", self.header.wr_packet_t)
         self.wr_packet_ring2bank = self.var("wr_packet_ring2bank", self.header.wr_packet_t)
         self.wr_packet_dma2ring = self.var("wr_packet_dma2ring", self.header.wr_packet_t)
-        self.wr_packet_dma2bank = self.var("wr_packet_dma2bank", self.header.wr_packet_t)
+        # FIXME: Make this if include_dual_bank_hw
+        # self.wr_packet_dma2bank = self.var("wr_packet_dma2bank", self.header.wr_packet_t)
+        self.wr_packet_dma2bank = self.var("wr_packet_dma2bank", self.header.wr_packet_t, size=self._params.banks_per_tile)
 
         self.rdrq_packet_procsw2bank = self.var("rdrq_packet_procsw2bank", self.header.rdrq_packet_t)
         self.rdrq_packet_ring2bank = self.var("rdrq_packet_ring2bank", self.header.rdrq_packet_t)
