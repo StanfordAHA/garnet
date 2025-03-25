@@ -147,11 +147,11 @@ class GlobalBuffer(Generator):
         if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1":
             self.mu_rd_en = self.var("mu_rd_en", 1)
             self.mu_rd_addr = self.var("mu_rd_addr", self._params.glb_addr_width)
-            self.mu_rd_data = self.var("mu_rd_data", self._params.mu_word_width)
-            self.mu_rd_data_valid = self.var("mu_rd_data_valid", 1)
-            self.mu_rd_en_d = self.var("mu_rd_en_d", 1)
-            self.mu_rd_addr_d = self.var("mu_rd_addr_d", self._params.glb_addr_width)
-            self.mu_rd_data_w = self.var("mu_rd_data_w", self._params.bank_data_width * self._params.mu_word_num_tiles)
+            # self.mu_rd_data = self.var("mu_rd_data", self._params.mu_word_width)
+            # self.mu_rd_data_valid = self.var("mu_rd_data_valid", 1)
+            # self.mu_rd_en_d = self.var("mu_rd_en_d", 1)
+            # self.mu_rd_addr_d = self.var("mu_rd_addr_d", self._params.glb_addr_width)
+            self.mu_rd_data_w = self.var("mu_rd_data_w", self._params.mu_word_width)
             self.mu_rd_data_valid_w = self.var("mu_rd_data_valid_w", 1)
 
         self.sram_cfg_wr_en_d = self.var("sram_cfg_wr_en_d", 1)
@@ -321,8 +321,8 @@ class GlobalBuffer(Generator):
                            addr_in_rdy=self.mu_addr_in_rdy,
                            addr2glb=self.mu_rd_addr,
                            rd_en2glb=self.mu_rd_en,
-                           rd_data_in=self.mu_rd_data,
-                           rd_data_in_vld=self.mu_rd_data_valid,
+                           rd_data_in=self.mu_rd_data_w,
+                           rd_data_in_vld=self.mu_rd_data_valid_w,
                            rd_data_out=self.mu_rd_data_out,
                            rd_data_out_vld=self.mu_rd_data_out_vld,
                            rd_data_out_rdy=self.mu_rd_data_out_rdy)     
@@ -346,8 +346,8 @@ class GlobalBuffer(Generator):
 
         self.add_glb_tile()
         self.add_always(self.proc_pipeline)
-        if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1":
-            self.add_always(self.mu_rd_addr_pipeline)
+        # if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1":
+        #     self.add_always(self.mu_rd_addr_pipeline)
         self.add_always(self.sram_cfg_pipeline)
         self.add_always(self.left_edge_proc_wr_ff)
         self.add_always(self.left_edge_proc_rd_in_ff)
@@ -356,7 +356,7 @@ class GlobalBuffer(Generator):
         if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1":
             self.add_always(self.left_edge_mu_rd_in_ff)
             self.add_always(self.left_edge_mu_rd_out_logic)
-            self.add_always(self.left_edge_mu_rd_out_ff)
+            # self.add_always(self.left_edge_mu_rd_out_ff)
         self.add_proc_clk_en()
         if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1":
             self.add_mu_clk_en()
@@ -418,14 +418,14 @@ class GlobalBuffer(Generator):
             self.proc_rd_en_d = self.proc_rd_en
             self.proc_rd_addr_d = self.proc_rd_addr
 
-    @always_ff((posedge, "clk"), (posedge, "reset"))
-    def mu_rd_addr_pipeline(self):
-        if self.reset:
-            self.mu_rd_en_d = 0
-            self.mu_rd_addr_d = 0
-        else:
-            self.mu_rd_en_d = self.mu_rd_en
-            self.mu_rd_addr_d = self.mu_rd_addr
+    # @always_ff((posedge, "clk"), (posedge, "reset"))
+    # def mu_rd_addr_pipeline(self):
+    #     if self.reset:
+    #         self.mu_rd_en_d = 0
+    #         self.mu_rd_addr_d = 0
+    #     else:
+    #         self.mu_rd_en_d = self.mu_rd_en
+    #         self.mu_rd_addr_d = self.mu_rd_addr
 
 
     @ always_ff((posedge, "clk"), (posedge, "reset"))
@@ -492,7 +492,8 @@ class GlobalBuffer(Generator):
                        self.mu_rd_clk_en_gen,
                        clk=self.clk,
                        reset=self.reset,
-                       enable=self.mu_rd_en_d,
+                    #    enable=self.mu_rd_en_d,
+                       enable=self.mu_rd_en,
                        clk_en=self.mu_rd_clk_en
                        )
         self.wire(self.if_mu_rd_list[0].rd_clk_en, self.mu_rd_clk_en)
@@ -552,8 +553,10 @@ class GlobalBuffer(Generator):
             self.if_mu_rd_list[0].rd_en = 0
             self.if_mu_rd_list[0].rd_addr = 0
         else:
-            self.if_mu_rd_list[0].rd_en = self.mu_rd_en_d
-            self.if_mu_rd_list[0].rd_addr = self.mu_rd_addr_d
+            # self.if_mu_rd_list[0].rd_en = self.mu_rd_en_d
+            self.if_mu_rd_list[0].rd_en = self.mu_rd_en
+            # self.if_mu_rd_list[0].rd_addr = self.mu_rd_addr_d
+            self.if_mu_rd_list[0].rd_addr = self.mu_rd_addr
       
     @always_comb
     def left_edge_proc_rd_out_logic(self):
@@ -606,14 +609,14 @@ class GlobalBuffer(Generator):
             self.if_sram_cfg_rd_data = self.if_sram_cfg_rd_data_w
             self.if_sram_cfg_rd_data_valid = self.if_sram_cfg_rd_data_valid_w
 
-    @always_ff((posedge, "clk"), (posedge, "reset"))
-    def left_edge_mu_rd_out_ff(self):
-        if self.reset:
-            self.mu_rd_data = 0
-            self.mu_rd_data_valid = 0
-        else:
-            self.mu_rd_data = self.mu_rd_data_w
-            self.mu_rd_data_valid = self.mu_rd_data_valid_w
+    # @always_ff((posedge, "clk"), (posedge, "reset"))
+    # def left_edge_mu_rd_out_ff(self):
+    #     if self.reset:
+    #         self.mu_rd_data = 0
+    #         self.mu_rd_data_valid = 0
+    #     else:
+    #         self.mu_rd_data = self.mu_rd_data_w
+    #         self.mu_rd_data_valid = self.mu_rd_data_valid_w
 
     @ always_ff((posedge, "clk"), (posedge, "reset"))
     def left_edge_cfg_ff(self):
@@ -915,13 +918,12 @@ class GlobalBuffer(Generator):
                     self.wire(self.glb_tile[i].ports.if_mu_rd_wst_s_rd_data_w2e_valid, 0)
 
                     
-                if self.glb_tile[i].is_addr_builder_tile:
-                    if i != 0:
-                        self.wire(self.glb_tile[i].ports.mu_rdrq_packet_build_in_w2e, self.glb_tile[i-1].ports.mu_rdrq_packet_incr_out_w2e)
-                    else:
-                        self.wire(self.glb_tile[i].ports.mu_rdrq_packet_build_in_w2e['rd_addr'], self.mu_rd_addr_d)
-                        self.wire(self.glb_tile[i].ports.mu_rdrq_packet_build_in_w2e['rd_en'], self.mu_rd_en_d)
-
+                # if self.glb_tile[i].is_addr_builder_tile:
+                #     if i != 0:
+                #         self.wire(self.glb_tile[i].ports.mu_rdrq_packet_build_in_w2e, self.glb_tile[i-1].ports.mu_rdrq_packet_incr_out_w2e)
+                #     else:
+                #         self.wire(self.glb_tile[i].ports.mu_rdrq_packet_build_in_w2e['rd_addr'], self.mu_rd_addr_d)
+                #         self.wire(self.glb_tile[i].ports.mu_rdrq_packet_build_in_w2e['rd_en'], self.mu_rd_en_d)
 
 
     @ always_ff((posedge, "clk"), (posedge, "reset"))
