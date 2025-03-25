@@ -11,7 +11,8 @@ steps:
 
   # Agents must have tag hostname=<hostname>
   # And then this will guarantee that all steps run on the same host, see?
-  agents: { hostname: $BUILDKITE_AGENT_META_DATA_HOSTNAME }
+  # BUT ONLY IF agent actually has a hostname tag, see? So we also require a docker tag.
+  agents: { hostname: $BUILDKITE_AGENT_META_DATA_HOSTNAME, docker: true }
 
   commands:
   - docker pull $IMAGE
@@ -25,7 +26,7 @@ steps:
   # For now at least; set soft_fail so failing lint does not fail pipeline
   soft_fail: true
 
-  agents: { hostname: $BUILDKITE_AGENT_META_DATA_HOSTNAME }
+  agents: { hostname: $BUILDKITE_AGENT_META_DATA_HOSTNAME, docker: true }
 
   commands:
 
@@ -52,7 +53,7 @@ steps:
 
 # ------------------------------------------------------------------------
 - label: ":wrench: Aha regressions"
-  agents: { hostname: $BUILDKITE_AGENT_META_DATA_HOSTNAME }
+  agents: { hostname: $BUILDKITE_AGENT_META_DATA_HOSTNAME, docker: true }
   commands:
 
   # In case Lint step failed to clean up correctly
@@ -80,7 +81,7 @@ steps:
 # 3. Delete any and all unused docker images.
 
 - label: "Delete container"
-  agents: { hostname: $BUILDKITE_AGENT_META_DATA_HOSTNAME }
+  agents: { hostname: $BUILDKITE_AGENT_META_DATA_HOSTNAME, docker: true }
   commands:
   - set -x; docker kill $CONTAINER || true
   - set -x; docker kill $VCONTAINER || true
