@@ -171,10 +171,10 @@ class GlbBankMux(Generator):
 
         # REGULAR OPERATION         
         else:
-            if ((self.wr_packet_dma2bank[i]['wr_en'] == 1)
+            if ((self.wr_packet_dma2bank[0]['wr_en'] == 1)
                     & ((~self.cfg_tile_connected_prev) & (~self.cfg_tile_connected_next))
-                    & (self.wr_packet_dma2bank[i]['wr_addr'][self.tile_sel_msb, self.tile_sel_lsb] == self.glb_tile_id)
-                    & (self.wr_packet_dma2bank[i]['wr_addr'][self.bank_sel_msb, self.bank_sel_lsb] == i)):
+                    & (self.wr_packet_dma2bank[0]['wr_addr'][self.tile_sel_msb, self.tile_sel_lsb] == self.glb_tile_id)
+                    & (self.wr_packet_dma2bank[0]['wr_addr'][self.bank_sel_msb, self.bank_sel_lsb] == i)):
                 self.wr_packet_sw2bankarr_w[i]['wr_en'] = self.wr_packet_dma2bank[0]['wr_en']
                 self.wr_packet_sw2bankarr_w[i]['wr_addr'] = self.wr_packet_dma2bank[0]['wr_addr'][(
                     self._params.bank_addr_width - 1), 0]
