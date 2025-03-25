@@ -36,6 +36,10 @@ class GlobalBufferParams:
     @property
     def mu_addr_width(self):
         return self.glb_addr_width - math.ceil(math.log(self.mu_word_num_tiles, 2)) + self.mu_addr_num_burst_bits
+    
+    @property
+    def mu_data_out_fifo_depth(self):
+        return self.mu_addr_fifo_depth * self.mu_read_max_burst
 
     @property
     def cgra_byte_offset(self):
@@ -91,12 +95,14 @@ class GlobalBufferParams:
     cgra_cfg_data_width: int = 32
     num_mu_addr_builder_tiles: int = 4
     mu_word_num_tiles: int = 4
+    mu_word_width: int = 256
     mu_addr_num_burst_bits: int = 3
 
     # Not used by TSMC (yet)
     load_dma_fifo_depth: int = 16
     store_dma_fifo_depth: int = 4
     mu_addr_fifo_depth: int = 4
+    mu_read_max_burst: int = 4
     max_num_chain: int = 8
 
     # cell parameters
@@ -135,6 +141,7 @@ class GlobalBufferParams:
     bank_byte_offset: int = field(init=False, default=bank_byte_offset)
     glb_addr_width: int = field(init=False, default=glb_addr_width)
     mu_addr_width: int = field(init=False, default=mu_addr_width)
+    mu_data_out_fifo_depth: int = field(init=False, default=mu_data_out_fifo_depth)
     cgra_byte_offset: int = field(init=False, default=cgra_byte_offset)
     axi_addr_width: int = field(init=False, default=axi_addr_width)
     axi_addr_reg_width: int = field(init=False, default=axi_addr_reg_width)

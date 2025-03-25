@@ -110,6 +110,8 @@ program glb_mu_test #(
         glb_mu_ifc.mu_addr_in = 0;
         glb_mu_ifc.mu_addr_in_vld = 0;
 
+        glb_mu_ifc.mu_rd_data_ready = 0;
+
         repeat (10) @(posedge clk);
         // wait for reset clear
         wait (reset == 0);
@@ -214,7 +216,7 @@ program glb_mu_test #(
                 $display("Set     %0d consecutive addresses BEGIN", num_mu_trans);
                 @(posedge glb_mu_ifc.clk);
                 for (int i = 0; i < num_mu_addr_trans; i++) begin
-
+                    glb_mu_ifc.mu_rd_data_ready = 1'b1;
                     // Add random bubbles to input
                     glb_mu_ifc.mu_addr_in_vld = 0;
                     mask = 32'd3 << RANDOM_SHIFT;

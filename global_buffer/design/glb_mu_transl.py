@@ -3,7 +3,7 @@ from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from global_buffer.design.fifo import FIFO
 
 
-class GlbMUAddrTransl(Generator):
+class GlbMUTransl(Generator):
     def __init__(self, _params: GlobalBufferParams):
         self._params = _params
         super().__init__(f"glb_mu_addr_transl_{self._params.mu_addr_width}_{self._params.glb_addr_width}")
@@ -19,6 +19,13 @@ class GlbMUAddrTransl(Generator):
 
         self.addr2glb = self.output("addr2glb", self._params.glb_addr_width)
         self.rd_en2glb = self.output("rd_en2glb", 1)
+
+        self.rd_data_in = self.input("rd_data_in", self._params.mu_word_width)
+        self.rd_data_in_vld = self.input("rd_data_in_vld", 1)
+
+        self.rd_data_out = self.output("rd_data_out", self._params.mu_word_width)
+        self.rd_data_out_vld = self.output("rd_data_out_vld", 1)
+        self.rd_data_out_rdy = self.input("rd_data_out_rdy", 1) 
 
         # Localparam
         self.num_tile_id_bits_in_mu_addr = self._params.tile_sel_addr_width - clog2(self._params.mu_word_num_tiles)
@@ -43,30 +50,12 @@ class GlbMUAddrTransl(Generator):
         self.addr_fifo_out_valid = self.var("addr_fifo_out_valid", 1)
         self.addr_fifo_pop = self.var("addr_fifo_pop", 1)
 
-        # ADDRESS FIFO
-        # TODO: finalize the depth of this fifo in the parameters
-        self.addr_fifo = FIFO(self._params.mu_addr_width, self._params.mu_addr_fifo_depth)
-        self.add_child("addr_fifo",
-                       self.addr_fifo,
-                       clk=self.clk,
-                       clk_en=const(1, 1),
-                       reset=self.reset,
-                    #    flush=self.st_dma_start_pulse_r,
-                        # TODO: Figure out what to put here for flush
-                       flush=const(0, 1), 
-                       data_in=self.addr_in,
-                       data_out=self.addr_fifo_out,
-                       push=self.addr_in_vld,
-                       pop=self.addr_fifo_pop,
-                       full=self.addr_fifo_full,
-                       empty=self.addr_fifo_empty,
-                       almost_full=self.addr_fifo_almost_full,
-                       almost_full_diff=const(2, clog2(self._params.mu_addr_fifo_depth)),
-                       almost_empty_diff=const(2, clog2(self._params.mu_addr_fifo_depth)))
-        
-        self.wire(self.addr_in_rdy, ~self.addr_fifo_full)
-        self.wire(self.addr_fifo_out_valid, ~self.addr_fifo_empty)
+        self.data_out_fifo_full = self.var("data_out_fifo_full", 1)
+        self.data_out_fifo_empty = self.var("data_out_fifo_empty", 1)
+        self.data_out_fifo_almost_full = self.var("data_out_fifo_almost_full", 1)
 
+        self.add_addr_in_fifo_logic()
+        self.add_data_out_fifo_logic()
         self.add_always(self.burst_addr_incr_ff)
         self.add_always(self.burst_counter_ff)
         self.add_always(self.output_logic)
@@ -115,6 +104,56 @@ class GlbMUAddrTransl(Generator):
         # End read_req_fsm
         ###################
 
+
+    def add_addr_in_fifo_logic(self):
+        # ADDRESS FIFO
+        # TODO: finalize the depth of this fifo in the parameters
+        self.addr_fifo = FIFO(self._params.mu_addr_width, self._params.mu_addr_fifo_depth)
+        self.add_child("addr_fifo",
+                       self.addr_fifo,
+                       clk=self.clk,
+                       clk_en=const(1, 1),
+                       reset=self.reset,
+                    #    flush=self.st_dma_start_pulse_r,
+                        # TODO: Figure out what to put here for flush
+                       flush=const(0, 1), 
+                       data_in=self.addr_in,
+                       data_out=self.addr_fifo_out,
+                       push=self.addr_in_vld,
+                       pop=self.addr_fifo_pop,
+                       full=self.addr_fifo_full,
+                       empty=self.addr_fifo_empty,
+                       almost_full=self.addr_fifo_almost_full,
+                       almost_full_diff=const(2, clog2(self._params.mu_addr_fifo_depth)),
+                       almost_empty_diff=const(2, clog2(self._params.mu_addr_fifo_depth)))
+        
+        self.wire(self.addr_in_rdy, ~self.addr_fifo_full)
+        self.wire(self.addr_fifo_out_valid, ~self.addr_fifo_empty)
+
+    def add_data_out_fifo_logic(self):
+        # DATA OUT FIFO
+        # TODO: Create mu_data_out_fifo_depth in params
+        self.data_out_fifo = FIFO(self._params.mu_word_width, self._params.mu_data_out_fifo_depth)
+        self.add_child("data_out_fifo",
+                       self.data_out_fifo,
+                       clk=self.clk,
+                       clk_en=const(1, 1),
+                       reset=self.reset,
+                    #    flush=self.st_dma_start_pulse_r,
+                        # TODO: Figure out what to put here for flush
+                       flush=const(0, 1), 
+                       data_in=self.rd_data_in,
+                       data_out=self.rd_data_out,
+                       push=self.rd_data_in_vld,
+                       pop=self.rd_data_out_rdy,
+                       full=self.data_out_fifo_full,
+                       empty=self.data_out_fifo_empty,
+                       almost_full=self.data_out_fifo_almost_full,
+                       almost_full_diff=const(2, clog2(self._params.mu_data_out_fifo_depth)),
+                       almost_empty_diff=const(2, clog2(self._params.mu_data_out_fifo_depth)))
+        
+        self.wire(self.rd_data_out_vld, ~self.data_out_fifo_empty)    
+
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def burst_counter_ff(self):
         if self.reset:
@@ -140,7 +179,10 @@ class GlbMUAddrTransl(Generator):
     # 3. Rest of address 
     @always_comb
     def tile_ID_logic(self):
-        self.adjusted_addr_fifo_out = concat(self.addr_fifo_out[self.burst_lsb - 1, self.burst_lsb - 1 - (self.num_tile_id_bits_in_mu_addr - 1)], 
-                                            const(0, clog2(self._params.mu_word_num_tiles)),
-                                            self.addr_fifo_out[self.burst_lsb - 1 - (self.num_tile_id_bits_in_mu_addr), 0])
-        
+        if self.num_tile_id_bits_in_mu_addr > 0:
+            self.adjusted_addr_fifo_out = concat(self.addr_fifo_out[self.burst_lsb - 1, self.burst_lsb - 1 - (self.num_tile_id_bits_in_mu_addr - 1)], 
+                                                const(0, clog2(self._params.mu_word_num_tiles)),
+                                                self.addr_fifo_out[self.burst_lsb - 1 - (self.num_tile_id_bits_in_mu_addr), 0])
+        else:
+            self.adjusted_addr_fifo_out = concat(const(0, clog2(self._params.mu_word_num_tiles)),
+                                                self.addr_fifo_out[self.burst_lsb - 1 - (self.num_tile_id_bits_in_mu_addr), 0])

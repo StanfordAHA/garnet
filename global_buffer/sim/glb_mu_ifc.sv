@@ -17,6 +17,7 @@ interface glb_mu_ifc (
     logic                         mu_addr_in_rdy;
     logic [  (BANK_DATA_WIDTH*MU_WORD_NUM_TILES)-1:0] mu_rd_data;
     logic                         mu_rd_data_valid;
+    logic                         mu_rd_data_ready;
 
     // modport glb(
     //     input clk,
