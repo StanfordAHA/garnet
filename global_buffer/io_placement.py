@@ -137,15 +137,6 @@ def place_io_blk(id_to_name, app_dir, io_sides, orig_cgra_width, orig_cgra_heigh
     for idx, input_blk in enumerate(inputs):
         if exchange_64_mode:
             if multi_bank_mode:
-            #    # TEMPORARY HACK
-            #     if group_index < 4:
-            #         x_coord = 0
-            #     elif group_index < 8:
-            #         x_coord = 1
-            #     elif group_index < 12:
-            #         x_coord = 2
-            #     else:
-            #         x_coord = 3
                 x_coord = int((group_index * 2 ) / 8) + io_tile_shift_right_index
             else:
                 x_coord = int((group_index * 2 ) / 8) * 2 + io_tile_shift_right_index
@@ -157,21 +148,12 @@ def place_io_blk(id_to_name, app_dir, io_sides, orig_cgra_width, orig_cgra_heigh
         placement[en_blk] = (group_index * 2 + io_tile_shift_right_index, 0)
         group_index += 1
 
-
+    last_input_x_pos = x_coord
     group_index = 0
     for idx, output_blk in enumerate(outputs):
         if exchange_64_mode:
             if multi_bank_mode:
-                # # TEMPORARY HACK
-                # if group_index < 4:
-                #     x_coord = 8
-                # elif group_index < 8:
-                #     x_coord = 9
-                # elif group_index < 12:
-                #     x_coord = 10
-                # else:
-                #     x_coord = 11
-                x_coord = int((group_index * 2 ) / 8) + 1 + io_tile_shift_right_index
+                x_coord = int((group_index * 2 ) / 8) + last_input_x_pos + 1 + io_tile_shift_right_index
             else:
                 x_coord = int((group_index * 2 ) / 8) * 2 + 1 + io_tile_shift_right_index
             placement[output_blk] = (x_coord, 0) 

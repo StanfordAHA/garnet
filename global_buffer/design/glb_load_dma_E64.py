@@ -282,13 +282,10 @@ class GlbLoadDma_E64(Generator):
                 self.wire(self.fifo_push_ready[i][packet_16], ~self.fifo_almost_full[i][packet_16])
                 self.wire(self.data_dma2fifo[i][packet_16], self.strm_data[i][packet_16])
 
-                # TODO: Here, add logic about when to push to fifo, depending on if multi_bank mode is enabled 
                 if (packet_16 == 0) & (i == 0):
                     self.wire(self.fifo_push[i][packet_16], ~self.fifo_full[i][packet_16] & self.strm_data_valid[i])
                 else:
                     self.wire(self.fifo_push[i][packet_16], kts.ternary(self.cfg_exchange_64_mode, ~self.fifo_full[i][packet_16] & self.strm_data_valid[i], 0))
-
-
 
                 self.wire(self.fifo2skid_vld_muxed[i][packet_16], ~self.fifo_empty[i][packet_16])
                 self.wire(self.fifo_pop_cond[i][packet_16], self.fifo2skid_vld_muxed[i][packet_16] & self.fifo2skid_rdy_muxed[i][packet_16])
@@ -304,6 +301,7 @@ class GlbLoadDma_E64(Generator):
             self.wire(self.packet_64_pop[i], self.fifo_pop_cond[i][0] & self.fifo_pop_cond[i][1] & self.fifo_pop_cond[i][2] & self.fifo_pop_cond[i][3])
             self.wire(self.packet_64_push_ready[i], self.fifo_push_ready[i][0] & self.fifo_push_ready[i][1] & self.fifo_push_ready[i][2] & self.fifo_push_ready[i][3])
         
+        # Synchonization
         self.wire(self.packet_128_pop, self.packet_64_pop[0] & self.packet_64_pop[1])
         self.wire(self.packet_128_push_ready, self.packet_64_push_ready[0] & self.packet_64_push_ready[1])
         self.add_always(self.almost_full_diff_logic)
@@ -645,13 +643,17 @@ class GlbLoadDma_E64(Generator):
                     self.strm_data[i][0] = self.bank_rdrs_data_cache_r[i][self._params.cgra_data_width - 1, 0]
 
             # Assign rest of strm_data packet 
-            # TODO: Think about if this could be optimized 
-            self.strm_data[i][1] = self.bank_rdrs_data_cache_r[i][self._params.cgra_data_width * 2 - 1,
-                                                                self._params.cgra_data_width * 1]
-            self.strm_data[i][2] = self.bank_rdrs_data_cache_r[i][self._params.cgra_data_width * 3 - 1,
-                                                                self._params.cgra_data_width * 2]
-            self.strm_data[i][3] = self.bank_rdrs_data_cache_r[i][self._params.cgra_data_width * 4 - 1,
-                                                                self._params.cgra_data_width * 3]
+            if self.cfg_exchange_64_mode:
+                self.strm_data[i][1] = self.bank_rdrs_data_cache_r[i][self._params.cgra_data_width * 2 - 1,
+                                                                    self._params.cgra_data_width * 1]
+                self.strm_data[i][2] = self.bank_rdrs_data_cache_r[i][self._params.cgra_data_width * 3 - 1,
+                                                                    self._params.cgra_data_width * 2]
+                self.strm_data[i][3] = self.bank_rdrs_data_cache_r[i][self._params.cgra_data_width * 4 - 1,
+                                                                    self._params.cgra_data_width * 3]
+            else:
+                self.strm_data[i][1] = 0
+                self.strm_data[i][2] = 0
+                self.strm_data[i][3] = 0
 
     def add_strm_rd_en_pipeline(self):
         maximum_latency = (2 * self._params.max_num_chain

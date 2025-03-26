@@ -215,41 +215,24 @@ class GlbStoreDma_E64(Generator):
                 self.wire(self.fifo_pop_ready[i][packet_16], ~self.fifo_empty[i][packet_16])
                 
                 # TODO: Potentially change this to if packet_16 == 0 & i == 0
-                if packet_16 == 0:
-                    # if self.cfg_multi_bank_mode:
-                    #     self.fifo_pop[i][packet_16] = self.packet_128_pop
-                    # elif self.cfg_exchange_64_mode:
-                    #     self.fifo_pop[i][packet_16] = self.packet_64_pop[i]
-                    # else:
-                    #     self.fifo_pop[i][packet_16] = ~self.fifo_empty[i][packet_16] & self.strm_run
-
+                if (packet_16 == 0) & (i == 0):
                     self.wire(self.fifo_pop[i][packet_16], kts.ternary(self.cfg_multi_bank_mode, self.packet_128_pop,
                                                                 kts.ternary(self.cfg_exchange_64_mode, self.packet_64_pop[i], 
                                                                             ~self.fifo_empty[i][packet_16] & self.strm_run)))
                 else:
-                    # if self.cfg_multi_bank_mode:
-                    #     self.fifo_pop[i][packet_16] = self.packet_128_pop_ready
-                    # else:
-                    #     self.fifo_pop[i][packet_16] = self.packet_64_pop_ready[i]
                     self.wire(self.fifo_pop[i][packet_16], kts.ternary(self.cfg_multi_bank_mode, self.packet_128_pop, self.packet_64_pop[i]))
 
-
                 self.wire(self.fifo_push[i][packet_16], ~self.fifo_full[i][packet_16] & self.strm_data_valid[i][packet_16])
-                
-                # self.wire(self.fifo2cgra_ready[packet_16], ~self.fifo_almost_full[packet_16])
                 self.wire(self.fifo2cgra_ready[i][packet_16], ~self.fifo_full[i][packet_16])
-
 
             # Write packet synchronization for E64 write 
             self.wire(self.packet_64_pop[i], ~self.fifo_empty[i][0] & ~self.fifo_empty[i][1] & ~self.fifo_empty[i][2] & ~self.fifo_empty[i][3] & self.strm_run)
             
             self.wire(self.packet_64_pop_ready[i], self.fifo_pop_ready[i][0] & self.fifo_pop_ready[i][1] & self.fifo_pop_ready[i][2] & self.fifo_pop_ready[i][3])
         
+        # Write packet synchronization for E128 write (dual bank mode)
         self.wire(self.packet_128_pop, self.packet_64_pop[0] & self.packet_64_pop[1])
         self.wire(self.packet_128_pop_ready, self.packet_64_pop_ready[0] & self.packet_64_pop_ready[1])
-
-
-
 
         # Loop iteration shared for cycle and data
         self.loop_iter = GlbLoopIter(self._params, loop_level=self._params.store_dma_loop_level)
@@ -524,41 +507,31 @@ class GlbStoreDma_E64(Generator):
                 self.strm_data[i][packet_16] = 0
                 self.strm_data_valid[i][packet_16] = 0
 
-
                 if self.cfg_multi_bank_mode:
                     # MO: Removing reg in-between FIFOs in E64 mode b/c it causes issues with RV synchronization 
                     # TODO: Avoid adding this mux here. Use another FIFO instead
-                    # self.strm_data[packet_16] = self.data_f2g_r[i][packet_16]
                     self.strm_data[i][packet_16] = kts.ternary(self.cfg_exchange_64_mode, self.data_f2g[i][packet_16], self.data_f2g_r[i][packet_16])
 
-                    # self.data_f2g_rdy[i] = self.data_ready_g2f_w
                     self.data_f2g_rdy[i][packet_16] = self.data_ready_g2f_w[i][packet_16]
                     if self.sparse_rv_mode_on | self.dense_rv_mode_on:
-                        #self.strm_data_valid[packet_16] = self.data_f2g_vld_r[i][packet_16]
                         self.strm_data_valid[i][packet_16] = kts.ternary(self.cfg_exchange_64_mode, self.data_f2g_vld[i][packet_16], self.data_f2g_vld_r[i][packet_16])
                     else:
-                        # self.strm_data_valid[packet_16] = self.ctrl_f2g_r[i]
                         if packet_16 == 0:
                             self.strm_data_valid[i][packet_16] = kts.ternary(self.cfg_exchange_64_mode, self.ctrl_f2g[i], self.ctrl_f2g_r[i])
                         else:
                             self.strm_data_valid[i][packet_16] = kts.ternary(self.cfg_exchange_64_mode, self.ctrl_f2g[i], 0)
               
-
                 else:
                     if self.cfg_data_network_f2g_mux[i] == 1:
 
                         # MO: Removing reg in-between FIFOs in E64 mode b/c it causes issues with RV synchronization 
                         # TODO: Avoid adding this mux here. Use another FIFO instead
-                        # self.strm_data[packet_16] = self.data_f2g_r[i][packet_16]
                         self.strm_data[0][packet_16] = kts.ternary(self.cfg_exchange_64_mode, self.data_f2g[i][packet_16], self.data_f2g_r[i][packet_16])
 
-                        # self.data_f2g_rdy[i] = self.data_ready_g2f_w
                         self.data_f2g_rdy[i][packet_16] = self.data_ready_g2f_w[0][packet_16]
                         if self.sparse_rv_mode_on | self.dense_rv_mode_on:
-                            #self.strm_data_valid[packet_16] = self.data_f2g_vld_r[i][packet_16]
                             self.strm_data_valid[0][packet_16] = kts.ternary(self.cfg_exchange_64_mode, self.data_f2g_vld[i][packet_16], self.data_f2g_vld_r[i][packet_16])
                         else:
-                            # self.strm_data_valid[packet_16] = self.ctrl_f2g_r[i]
                             if packet_16 == 0:
                                 self.strm_data_valid[0][packet_16] = kts.ternary(self.cfg_exchange_64_mode, self.ctrl_f2g[i], self.ctrl_f2g_r[i])
                             else:
@@ -584,7 +557,7 @@ class GlbStoreDma_E64(Generator):
                 self.iter_step_valid = self.strm_run & self.packet_128_pop_ready & ~self.rv_is_addrdata
             else:
                 # TODO: change this to packet_64_pop_ready[0]
-                self.iter_step_valid = self.strm_run & self.packet_64_pop_ready & ~self.rv_is_addrdata
+                self.iter_step_valid = self.strm_run & self.packet_64_pop_ready[0] & ~self.rv_is_addrdata
 
         elif self.sparse_rv_mode_on | self.dense_rv_mode_on:
             self.iter_step_valid = self.strm_run & self.fifo_pop_ready[0][0] & ~self.rv_is_addrdata
@@ -595,10 +568,6 @@ class GlbStoreDma_E64(Generator):
             #TODO: Review this logic. Need to understand how dual bank mode would work for static schedule. 
             # Can use just 0th element because they are all the same (ctrl_f2g)
             self.iter_step_valid = self.strm_data_valid[0][0]
-            # if self.cfg_exchange_64_mode:
-            #     self.iter_step_valid = self.strm_data_valid[0] & self.strm_data_valid[1] & self.strm_data_valid[2] & self.strm_data_valid[3]
-            # else:
-            #     self.iter_step_valid = self.strm_data_valid[0]
 
     @always_comb
     def strm_wr_packet_comb(self):
@@ -715,7 +684,6 @@ class GlbStoreDma_E64(Generator):
             self.wr_packet_dma2ring_w['wr_data'] = self.bank_wr_data_cache_r[0] #FIXME
             self.wr_packet_dma2ring_w['wr_addr'] = self.bank_wr_addr
         else:
-            #TODO: Complete this code block 
             self.wr_packet_dma2bank_w = 0
 
             self.wr_packet_dma2bank_w[0]['wr_en'] = self.bank_wr_en
