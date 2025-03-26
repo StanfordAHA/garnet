@@ -256,8 +256,16 @@ if [ "$use_container" == True ]; then
            cat global_buffer/systemRDL/output/glb_jrdl_decode.sv >> design.v
            cat global_buffer/systemRDL/output/glb_jrdl_logic.sv >> design.v
            cat global_controller/systemRDL/output/*.sv >> design.v
-         fi"
 
+           # For details about the anti-pohan hack hack see garnet pull request #TBD ~ March 2025
+           # Note we are still in double-quote regime (I hope)
+           if [ '$WHICH_SOC' == 'amber' ]; then
+             echo '--- BEGIN egregious anti-pohan-hack hack'
+             cp design.v tmp.v
+             sed -i '/.*CG Hack/,/[)][;]/s,^,// ,' design.v
+             diff design.v tmp.v
+           fi
+         fi"
 
       echo '--- gen_rtl docker cleanup BEGIN' `date +%H:%M`
 
