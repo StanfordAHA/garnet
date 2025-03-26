@@ -263,7 +263,7 @@ if [ "$use_container" == True ]; then
              echo '--- BEGIN egregious anti-pohan-hack hack'
              cp design.v tmp.v
              sed -i '/.*CG Hack/,/[)][;]/s,^,// ,' design.v
-             diff design.v tmp.v
+             diff design.v tmp.v || printf '\n\n'
            fi
          fi"
 
