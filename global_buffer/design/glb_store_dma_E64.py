@@ -191,7 +191,7 @@ class GlbStoreDma_E64(Generator):
         for i in range(self._params.cgra_per_glb):
             for packet_16 in range(self.num_packets):
                 self.data_g2f_fifo = FIFO(self._params.cgra_data_width, self._params.store_dma_fifo_depth)
-                self.add_child(f"data_f2g_fifo_bank_{i}_packet_{packet_16}",
+                self.add_child(f"data_f2g_fifo_{i}_packet_{packet_16}",
                             self.data_g2f_fifo,
                             clk=self.clk,
                             clk_en=clock_en(self.sparse_rv_mode_on | self.dense_rv_mode_on),
@@ -214,6 +214,7 @@ class GlbStoreDma_E64(Generator):
 
                 self.wire(self.fifo_pop_ready[i][packet_16], ~self.fifo_empty[i][packet_16])
                 
+                # TODO: Potentially change this to if packet_16 == 0 & i == 0
                 if packet_16 == 0:
                     # if self.cfg_multi_bank_mode:
                     #     self.fifo_pop[i][packet_16] = self.packet_128_pop
@@ -582,6 +583,7 @@ class GlbStoreDma_E64(Generator):
             if self.cfg_multi_bank_mode:
                 self.iter_step_valid = self.strm_run & self.packet_128_pop_ready & ~self.rv_is_addrdata
             else:
+                # TODO: change this to packet_64_pop_ready[0]
                 self.iter_step_valid = self.strm_run & self.packet_64_pop_ready & ~self.rv_is_addrdata
 
         elif self.sparse_rv_mode_on | self.dense_rv_mode_on:

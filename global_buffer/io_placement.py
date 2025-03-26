@@ -132,18 +132,23 @@ def place_io_blk(id_to_name, app_dir, io_sides, orig_cgra_width, orig_cgra_heigh
     # If operating in exchange_64 mode, place IOs in a denser way (4x denser)
     exchange_64_mode = "E64_MODE_ON" in os.environ and os.environ.get("E64_MODE_ON") == "1"
     # MO: Temporary HACK
-    multi_bank_mode = True
+    multi_bank_mode = False
     group_index = 0
     for idx, input_blk in enumerate(inputs):
         if exchange_64_mode:
-            # if multi_bank_mode:
-            #     # TEMPORARY HACK
+            if multi_bank_mode:
+            #    # TEMPORARY HACK
             #     if group_index < 4:
             #         x_coord = 0
+            #     elif group_index < 8:
+            #         x_coord = 1
+            #     elif group_index < 12:
+            #         x_coord = 2
             #     else:
-            #         x_coord = 4
-            # else:
-            x_coord = int((group_index * 2 ) / 8) * 2 + io_tile_shift_right_index
+            #         x_coord = 3
+                x_coord = int((group_index * 2 ) / 8) + io_tile_shift_right_index
+            else:
+                x_coord = int((group_index * 2 ) / 8) * 2 + io_tile_shift_right_index
             placement[input_blk] = (x_coord, 0) 
         else:
             placement[input_blk] = (group_index * 2 + io_tile_shift_right_index, 0)
@@ -157,15 +162,16 @@ def place_io_blk(id_to_name, app_dir, io_sides, orig_cgra_width, orig_cgra_heigh
     for idx, output_blk in enumerate(outputs):
         if exchange_64_mode:
             if multi_bank_mode:
-                # TEMPORARY HACK
-                if group_index < 4:
-                    x_coord = 8
-                elif group_index < 8:
-                    x_coord = 9
-                elif group_index < 12:
-                    x_coord = 10
-                else:
-                    x_coord = 11
+                # # TEMPORARY HACK
+                # if group_index < 4:
+                #     x_coord = 8
+                # elif group_index < 8:
+                #     x_coord = 9
+                # elif group_index < 12:
+                #     x_coord = 10
+                # else:
+                #     x_coord = 11
+                x_coord = int((group_index * 2 ) / 8) + 1 + io_tile_shift_right_index
             else:
                 x_coord = int((group_index * 2 ) / 8) * 2 + 1 + io_tile_shift_right_index
             placement[output_blk] = (x_coord, 0) 

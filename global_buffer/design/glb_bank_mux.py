@@ -37,7 +37,7 @@ class GlbBankMux(Generator):
             "rdrs_packet_bankarr2sw", self.header.rdrs_packet_t, size=self._params.banks_per_tile)
         self.rdrs_packet_bank2procsw = self.output("rdrs_packet_bank2procsw", self.header.rdrs_packet_t)
         self.rdrs_packet_bank2ring = self.output("rdrs_packet_bank2ring", self.header.rdrs_packet_t)
-        self.rdrs_packet_bank2dma = self.output("rdrs_packet_bank2dma", self.header.rdrs_packet_t)
+        self.rdrs_packet_bank2dma = self.output("rdrs_packet_bank2dma", self.header.rdrs_packet_t, size=_params.banks_per_tile)
         self.rdrs_packet_bank2pcfgring = self.output("rdrs_packet_bank2pcfgring", self.header.rdrs_packet_t)
         self.rdrs_packet_bank2pcfgdma = self.output("rdrs_packet_bank2pcfgdma", self.header.rdrs_packet_t)
 
@@ -218,7 +218,7 @@ class GlbBankMux(Generator):
         elif ((self.rdrq_packet_dma2bank['rd_en'] == 1)
                 & ((~self.cfg_tile_connected_prev) & (~self.cfg_tile_connected_next))
                 & (self.rdrq_packet_dma2bank['rd_addr'][self.tile_sel_msb, self.tile_sel_lsb] == self.glb_tile_id)
-                & (self.rdrq_packet_dma2bank['rd_addr'][self.bank_sel_msb, self.bank_sel_lsb] == i)):
+                & ((self.rdrq_packet_dma2bank['rd_addr'][self.bank_sel_msb, self.bank_sel_lsb] == i) | self.cfg_multi_bank_mode)):
             self.rdrq_packet_sw2bankarr_w[i]['rd_en'] = self.rdrq_packet_dma2bank['rd_en']
             self.rdrq_packet_sw2bankarr_w[i]['rd_addr'] = self.rdrq_packet_dma2bank['rd_addr'][(
                 self._params.bank_addr_width - 1), 0]
@@ -240,7 +240,7 @@ class GlbBankMux(Generator):
         if ((~self.cfg_tile_connected_next) & (~self.cfg_tile_connected_prev)):
             for i in range(self._params.banks_per_tile):
                 if self.rd_type_d[i] == self.rd_type_e.strm:
-                    self.rdrs_packet_bank2dma = self.rdrs_packet_bankarr2sw_d[i]
+                    self.rdrs_packet_bank2dma[i] = self.rdrs_packet_bankarr2sw_d[i]
 
     @ always_comb
     def rdrs_sw2sr_logic(self):

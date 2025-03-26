@@ -34,7 +34,7 @@ class GlbLoadDma_E64(Generator):
 
         self.rdrq_packet_dma2bank = self.output("rdrq_packet_dma2bank", self.header.rdrq_packet_t)
         self.rdrq_packet_dma2ring = self.output("rdrq_packet_dma2ring", self.header.rdrq_packet_t)
-        self.rdrs_packet_bank2dma = self.input("rdrs_packet_bank2dma", self.header.rdrs_packet_t)
+        self.rdrs_packet_bank2dma = self.input("rdrs_packet_bank2dma", self.header.rdrs_packet_t, size=_params.banks_per_tile)
         self.rdrs_packet_ring2dma = self.input("rdrs_packet_ring2dma", self.header.rdrs_packet_t)
 
         self.cfg_tile_connected_prev = self.input("cfg_tile_connected_prev", 1)
@@ -52,6 +52,9 @@ class GlbLoadDma_E64(Generator):
         # Exchange 64 (configuration)
         self.cfg_exchange_64_mode = self.input("cfg_exchange_64_mode", 1)
 
+        # Multi-bank mode (configuration)
+        self.cfg_multi_bank_mode = self.input("cfg_multi_bank_mode", 1)
+
         self.clk_en_dma2bank = self.output("clk_en_dma2bank", 1)
         self.ld_dma_start_pulse = self.input("ld_dma_start_pulse", 1)
         self.ld_dma_done_interrupt = self.output("ld_dma_done_interrupt", 1)
@@ -60,7 +63,7 @@ class GlbLoadDma_E64(Generator):
         self.data_flush_w = self.var("data_flush_w", 1)
         self.rdrq_packet_dma2bank_w = self.var("rdrq_packet_dma2bank_w", self.header.rdrq_packet_t)
         self.rdrq_packet_dma2ring_w = self.var("rdrq_packet_dma2ring_w", self.header.rdrq_packet_t)
-        self.rdrs_packet = self.var("rdrs_packet", self.header.rdrs_packet_t)
+        self.rdrs_packet = self.var("rdrs_packet", self.header.rdrs_packet_t, size=_params.banks_per_tile)
         self.data_g2f_w = self.var("data_g2f_w", width=self._params.cgra_data_width,
                                    size=self._params.cgra_per_glb, packed=True)
         self.data_g2f_vld_w = self.var("data_g2f_vld_w", 1, size=self._params.cgra_per_glb, packed=True)
@@ -71,8 +74,8 @@ class GlbLoadDma_E64(Generator):
         self.ld_dma_done_pulse_anded = self.var("ld_dma_done_pulse_anded", 1)
         self.ld_dma_done_pulse_last = self.var("ld_dma_done_pulse_last", 1)
         self.ld_dma_done_pulse_pipeline_out = self.var("ld_dma_done_pulse_pipeline_out", 1)
-        self.strm_data = self.var("strm_data", self._params.cgra_data_width, size=[self.num_packets], packed=True)
-        self.strm_data_valid = self.var("strm_data_valid", 1)
+        self.strm_data = self.var("strm_data", self._params.cgra_data_width, size=[self._params.cgra_per_glb, self.num_packets], packed=True)
+        self.strm_data_valid = self.var("strm_data_valid", 1, size=self._params.cgra_per_glb, packed=True)
         self.strm_ctrl_muxed = self.var("strm_ctrl_muxed", 1)
         self.strm_data_sel_w = self.var(
             "strm_data_sel_w", self._params.bank_byte_offset - self._params.cgra_byte_offset)
@@ -94,7 +97,7 @@ class GlbLoadDma_E64(Generator):
         self.is_cached = self.var("is_cached", 1)
         self.bank_rdrq_rd_en = self.var("bank_rdrq_rd_en", 1)
         self.bank_rdrq_rd_addr = self.var("bank_rdrq_rd_addr", self._params.glb_addr_width)
-        self.bank_rdrs_data_cache_r = self.var("bank_rdrs_data_cache_r", self._params.bank_data_width)
+        self.bank_rdrs_data_cache_r = self.var("bank_rdrs_data_cache_r", self._params.bank_data_width, size=self._params.cgra_per_glb, packed=True)
 
         self.strm_run = self.var("strm_run", 1)
         self.loop_done = self.var("loop_done", 1)
@@ -111,24 +114,26 @@ class GlbLoadDma_E64(Generator):
         # ready_valid controller
         self.cycle_counter_en = self.var("cycle_counter_en", 1)
         self.iter_step_valid = self.var("iter_step_valid", 1)
-        self.fifo_push_ready = self.var("fifo_push_ready", 1, size=[self.num_packets], packed=True)
-        self.packet_64_push_ready = self.var("packet_64_push_ready", 1)
-        self.data_dma2fifo = self.var("data_dma2fifo", self._params.cgra_data_width, size=[self.num_packets], packed=True)
-        self.data_fifo2cgra = self.var("data_fifo2cgra", self._params.cgra_data_width, size=[self.num_packets], packed=True)
-        self.fifo_push = self.var("fifo_push", 1, size=[self.num_packets], packed=True)
-        self.fifo_pop_cond = self.var("fifo_pop_cond", 1, size=[self.num_packets], packed=True)
-        self.fifo_pop = self.var("fifo_pop", 1, size=[self.num_packets], packed=True)
-        self.packet_64_pop = self.var("packet_64_pop", 1)
-        self.fifo_full = self.var("fifo_full", 1, size=[self.num_packets], packed=True)
-        self.fifo_empty = self.var("fifo_empty", 1, size=[self.num_packets], packed=True)
-        self.fifo_almost_full = self.var("fifo_almost_full", 1, size=[self.num_packets], packed=True)
+        self.fifo_push_ready = self.var("fifo_push_ready", 1, size=[self._params.cgra_per_glb, self.num_packets], packed=True)
+        self.packet_64_push_ready = self.var("packet_64_push_ready", 1, size=[self._params.cgra_per_glb], packed=True)
+        self.packet_128_push_ready = self.var("packet_128_push_ready", 1)
+        self.data_dma2fifo = self.var("data_dma2fifo", self._params.cgra_data_width, size=[self._params.cgra_per_glb, self.num_packets], packed=True)
+        self.data_fifo2cgra = self.var("data_fifo2cgra", self._params.cgra_data_width, size=[self._params.cgra_per_glb, self.num_packets], packed=True)
+        self.fifo_push = self.var("fifo_push", 1, size=[self._params.cgra_per_glb, self.num_packets], packed=True)
+        self.fifo_pop_cond = self.var("fifo_pop_cond", 1, size=[self._params.cgra_per_glb, self.num_packets], packed=True)
+        self.fifo_pop = self.var("fifo_pop", 1, size=[self._params.cgra_per_glb, self.num_packets], packed=True)
+        self.packet_64_pop = self.var("packet_64_pop", 1, size=[self._params.cgra_per_glb], packed=True)
+        self.packet_128_pop = self.var("packet_128_pop", 1)
+        self.fifo_full = self.var("fifo_full", 1, size=[self._params.cgra_per_glb, self.num_packets], packed=True)
+        self.fifo_empty = self.var("fifo_empty", 1, size=[self._params.cgra_per_glb, self.num_packets], packed=True)
+        self.fifo_almost_full = self.var("fifo_almost_full", 1, size=[self._params.cgra_per_glb, self.num_packets], packed=True)
         self.fifo_depth = self._params.max_num_chain * 2 + self._params.tile2sram_rd_delay
 
         self.data_g2f_rdy_muxed = self.var("data_g2f_rdy_muxed", 1, size=[self._params.cgra_per_glb, self.num_packets], packed=True)
         self.fifo2skid_rdy = self.var("fifo2skid_rdy", 1, size=[self._params.cgra_per_glb, self.num_packets], packed=True)
-        self.fifo2skid_rdy_muxed = self.var("fifo2skid_rdy_muxed", 1, size=[self.num_packets], packed=True)
+        self.fifo2skid_rdy_muxed = self.var("fifo2skid_rdy_muxed", 1, size=[self._params.cgra_per_glb, self.num_packets], packed=True)
         self.fifo2skid_vld = self.var("fifo2skid_vld", 1, size=[self._params.cgra_per_glb, self.num_packets], packed=True)
-        self.fifo2skid_vld_muxed = self.var("fifo2skid_vld_muxed", 1, size=[self.num_packets], packed=True)
+        self.fifo2skid_vld_muxed = self.var("fifo2skid_vld_muxed", 1, size=[self._params.cgra_per_glb, self.num_packets], packed=True)
         self.skid_in = self.var("skid_in", self._params.cgra_data_width, size=[self._params.cgra_per_glb, self.num_packets], packed=True)
         self.skid_out = self.var("skid_out", self._params.cgra_data_width, size=[self._params.cgra_per_glb, self.num_packets], packed=True)
         self.skid_push = self.var("skid_push", 1, size=[self._params.cgra_per_glb, self.num_packets], packed=True)
@@ -253,61 +258,75 @@ class GlbLoadDma_E64(Generator):
     # FIFO for ready/valid
     def add_fifo(self):
         self.fifo_almost_full_diff = self.var("fifo_almost_full_diff", clog2(self.fifo_depth))
-        for packet_16 in range(self.num_packets):
-            self.data_g2f_fifo = FIFO(self._params.cgra_data_width, self.fifo_depth)
-            self.add_child(f"data_g2f_fifo_{packet_16}",
-                        self.data_g2f_fifo,
-                        clk=self.clk,
-                        clk_en=const(1, 1),
-                        reset=self.reset,
-                        flush=self.ld_dma_start_pulse_r,
-                        data_in=self.data_dma2fifo[packet_16],
-                        data_out=self.data_fifo2cgra[packet_16],
-                        push=self.fifo_push[packet_16],
-                        pop=self.fifo_pop[packet_16],
-                        full=self.fifo_full[packet_16],
-                        empty=self.fifo_empty[packet_16],
-                        almost_full=self.fifo_almost_full[packet_16],
-                        almost_full_diff=self.fifo_almost_full_diff,
-                        almost_empty_diff=const(2, clog2(self.fifo_depth)))
+        for i in range(self._params.cgra_per_glb):
+            for packet_16 in range(self.num_packets):
+                self.data_g2f_fifo = FIFO(self._params.cgra_data_width, self.fifo_depth)
+                self.add_child(f"data_g2f_fifo_{i}_packet_{packet_16}",
+                            self.data_g2f_fifo,
+                            clk=self.clk,
+                            clk_en=const(1, 1),
+                            reset=self.reset,
+                            flush=self.ld_dma_start_pulse_r,
+                            data_in=self.data_dma2fifo[i][packet_16],
+                            data_out=self.data_fifo2cgra[i][packet_16],
+                            push=self.fifo_push[i][packet_16],
+                            pop=self.fifo_pop[i][packet_16],
+                            full=self.fifo_full[i][packet_16],
+                            empty=self.fifo_empty[i][packet_16],
+                            almost_full=self.fifo_almost_full[i][packet_16],
+                            almost_full_diff=self.fifo_almost_full_diff,
+                            almost_empty_diff=const(2, clog2(self.fifo_depth)))
 
-            # TODO: Using almost full here may cause issues 
-            # TODO: Maybe revisit this and make sure it isn't causing any unnecessary bubbles 
-            self.wire(self.fifo_push_ready[packet_16], ~self.fifo_almost_full[packet_16])
-            self.wire(self.data_dma2fifo[packet_16], self.strm_data[packet_16])
+                # TODO: Using almost full here may cause issues 
+                # TODO: Maybe revisit this and make sure it isn't causing any unnecessary bubbles 
+                self.wire(self.fifo_push_ready[i][packet_16], ~self.fifo_almost_full[i][packet_16])
+                self.wire(self.data_dma2fifo[i][packet_16], self.strm_data[i][packet_16])
 
-            if packet_16 == 0:
-                self.wire(self.fifo_push[packet_16], ~self.fifo_full[packet_16] & self.strm_data_valid)
-            else:
-                self.wire(self.fifo_push[packet_16], kts.ternary(self.cfg_exchange_64_mode, ~self.fifo_full[packet_16] & self.strm_data_valid, 0))
+                # TODO: Here, add logic about when to push to fifo, depending on if multi_bank mode is enabled 
+                if (packet_16 == 0) & (i == 0):
+                    self.wire(self.fifo_push[i][packet_16], ~self.fifo_full[i][packet_16] & self.strm_data_valid[i])
+                else:
+                    self.wire(self.fifo_push[i][packet_16], kts.ternary(self.cfg_exchange_64_mode, ~self.fifo_full[i][packet_16] & self.strm_data_valid[i], 0))
 
 
-            self.wire(self.fifo2skid_vld_muxed[packet_16], ~self.fifo_empty[packet_16])
-            self.wire(self.fifo_pop_cond[packet_16], self.fifo2skid_vld_muxed[packet_16] & self.fifo2skid_rdy_muxed[packet_16])
 
-            if packet_16 == 0:
-                self.wire(self.fifo_pop[packet_16], kts.ternary(self.cfg_exchange_64_mode, self.packet_64_pop, self.fifo_pop_cond[packet_16]))
-            else:
-                self.wire(self.fifo_pop[packet_16], self.packet_64_pop)
+                self.wire(self.fifo2skid_vld_muxed[i][packet_16], ~self.fifo_empty[i][packet_16])
+                self.wire(self.fifo_pop_cond[i][packet_16], self.fifo2skid_vld_muxed[i][packet_16] & self.fifo2skid_rdy_muxed[i][packet_16])
 
-        # Synchronization
-        self.wire(self.packet_64_pop, self.fifo_pop_cond[0] & self.fifo_pop_cond[1] & self.fifo_pop_cond[2] & self.fifo_pop_cond[3])
-        self.wire(self.packet_64_push_ready, self.fifo_push_ready[0] & self.fifo_push_ready[1] & self.fifo_push_ready[2] & self.fifo_push_ready[3])
+                if (packet_16 == 0) & (i == 0):
+                    self.wire(self.fifo_pop[i][packet_16], kts.ternary(self.cfg_multi_bank_mode, self.packet_128_pop,
+                                                                kts.ternary(self.cfg_exchange_64_mode, self.packet_64_pop[i], 
+                                                                            self.fifo_pop_cond[i][packet_16])))
+                else:
+                    self.wire(self.fifo_pop[i][packet_16], kts.ternary(self.cfg_multi_bank_mode, self.packet_128_pop, self.packet_64_pop[i]))
+
+            # Synchronization
+            self.wire(self.packet_64_pop[i], self.fifo_pop_cond[i][0] & self.fifo_pop_cond[i][1] & self.fifo_pop_cond[i][2] & self.fifo_pop_cond[i][3])
+            self.wire(self.packet_64_push_ready[i], self.fifo_push_ready[i][0] & self.fifo_push_ready[i][1] & self.fifo_push_ready[i][2] & self.fifo_push_ready[i][3])
+        
+        self.wire(self.packet_128_pop, self.packet_64_pop[0] & self.packet_64_pop[1])
+        self.wire(self.packet_128_push_ready, self.packet_64_push_ready[0] & self.packet_64_push_ready[1])
         self.add_always(self.almost_full_diff_logic)
 
     @ always_comb
     def fifo_to_skid(self):
         for packet_16 in range(self.num_packets):
-            self.fifo2skid_rdy_muxed [packet_16]= 0
             for i in range(self._params.cgra_per_glb):
-                if self.cfg_data_network_g2f_mux[i] == 1:
-                    self.fifo2skid_rdy_muxed[packet_16] = self.fifo2skid_rdy[i][packet_16]
-                    self.fifo2skid_vld[i][packet_16] = self.fifo2skid_vld_muxed[packet_16]
-                    self.skid_in[i][packet_16] = self.data_fifo2cgra[packet_16]
+                self.fifo2skid_rdy_muxed[i][packet_16]= 0
+                if self.cfg_multi_bank_mode:
+                    self.fifo2skid_rdy_muxed[i][packet_16] = self.fifo2skid_rdy[i][packet_16]
+                    self.fifo2skid_vld[i][packet_16] = self.fifo2skid_vld_muxed[i][packet_16]
+                    self.skid_in[i][packet_16] = self.data_fifo2cgra[i][packet_16]
+
                 else:
-                    self.fifo2skid_rdy_muxed[packet_16] = self.fifo2skid_rdy_muxed[packet_16]
-                    self.fifo2skid_vld[i][packet_16] = 0
-                    self.skid_in[i][packet_16] = 0
+                    if self.cfg_data_network_g2f_mux[i] == 1:
+                        self.fifo2skid_rdy_muxed[0][packet_16] = self.fifo2skid_rdy[i][packet_16]
+                        self.fifo2skid_vld[i][packet_16] = self.fifo2skid_vld_muxed[0][packet_16]
+                        self.skid_in[i][packet_16] = self.data_fifo2cgra[0][packet_16]
+                    else:
+                        self.fifo2skid_rdy_muxed[i][packet_16] = self.fifo2skid_rdy_muxed[i][packet_16]
+                        self.fifo2skid_vld[i][packet_16] = 0
+                        self.skid_in[i][packet_16] = 0
 
     @ always_comb
     def data_g2f_rdy_muxed_logic(self):
@@ -344,7 +363,8 @@ class GlbLoadDma_E64(Generator):
                 self.wire(self.fifo2skid_rdy[i][packet_16], ~self.skid_full[i][packet_16])
 
                 # self.wire(self.skid_push[i][packet_16], self.fifo2skid_rdy[i][packet_16] & self.fifo2skid_vld[i][packet_16])
-                self.wire(self.skid_push[i][packet_16], kts.ternary(self.cfg_data_network_g2f_mux[i] == 1, self.fifo_pop[packet_16], 0))
+                self.wire(self.skid_push[i][packet_16], kts.ternary(self.cfg_multi_bank_mode, self.fifo_pop[i][packet_16],
+                                                            kts.ternary(self.cfg_data_network_g2f_mux[i] == 1, self.fifo_pop[0][packet_16], 0)))
                 self.wire(~self.skid_empty[i][packet_16], self.data_g2f_vld[i][packet_16])
 
                 self.wire(self.skid_pop[i][packet_16], ~self.skid_empty[i][packet_16] & self.data_g2f_rdy_muxed[i][packet_16])
@@ -362,7 +382,9 @@ class GlbLoadDma_E64(Generator):
             self.iter_step_valid = self.cycle_valid
         else:
             # synchronization logic here 
-            self.iter_step_valid = kts.ternary(self.cfg_exchange_64_mode, self.strm_run & self.packet_64_push_ready, self.strm_run & self.fifo_push_ready[0])
+            self.iter_step_valid = kts.ternary(self.cfg_multi_bank_mode, self.strm_run & self.packet_128_push_ready,
+                                        kts.ternary(self.cfg_exchange_64_mode, self.strm_run & self.packet_64_push_ready[0], 
+                                                    self.strm_run & self.fifo_push_ready[0][0]))
 
     @ always_ff((posedge, "clk"), (posedge, "reset"))
     def queue_sel_ff(self):
@@ -468,20 +490,20 @@ class GlbLoadDma_E64(Generator):
         if self.cfg_ld_dma_ctrl_flush_mode == self._params.ld_dma_flush_mode_external:
             self.data_flush_w = self.strm_data_start_pulse
             if self.cfg_ld_dma_ctrl_valid_mode == self._params.ld_dma_valid_mode_valid:
-                self.strm_ctrl_muxed = self.strm_data_valid
+                self.strm_ctrl_muxed = self.strm_data_valid[0]
             else:
                 self.strm_ctrl_muxed = 0
         else:
             self.data_flush_w = 0
             if self.cfg_ld_dma_ctrl_valid_mode == self._params.ld_dma_valid_mode_valid:
-                self.strm_ctrl_muxed = self.strm_data_valid
+                self.strm_ctrl_muxed = self.strm_data_valid[0]
             else:
                 self.strm_ctrl_muxed = self.strm_data_start_pulse
 
     @ always_comb
     def ctrl_mux(self):
         for i in range(self._params.cgra_per_glb):
-            if self.cfg_data_network_g2f_mux[i] == 1:
+            if (self.cfg_data_network_g2f_mux[i] == 1) | (self.cfg_multi_bank_mode):
                 if self.cfg_ld_dma_ctrl_valid_mode != self._params.ld_dma_valid_mode_ready_valid:
                     self.ctrl_g2f_w[i] = self.strm_ctrl_muxed
                 else:
@@ -578,8 +600,10 @@ class GlbLoadDma_E64(Generator):
 
     @ always_comb
     def rdrs_packet_logic(self):
+        # FIXME: Remove this eventually
+        self.rdrs_packet = 0
         if self.cfg_tile_connected_next | self.cfg_tile_connected_prev:
-            self.rdrs_packet = self.rdrs_packet_ring2dma
+            self.rdrs_packet[0] = self.rdrs_packet_ring2dma
         else:
             self.rdrs_packet = self.rdrs_packet_bank2dma
 
@@ -588,37 +612,46 @@ class GlbLoadDma_E64(Generator):
         if self.reset:
             self.bank_rdrs_data_cache_r = 0
         else:
-            if self.rdrs_packet['rd_data_valid']:
-                self.bank_rdrs_data_cache_r = self.rdrs_packet['rd_data']
+            # Kratos won't support this for loop. Hard wire for now. 
+            # for i in range(self._params.cgra_per_glb):
+            #     if self.rdrs_packet[i]['rd_data_valid']:
+            #         self.bank_rdrs_data_cache_r[i] = self.rdrs_packet[i]['rd_data']
+
+                if self.rdrs_packet[0]['rd_data_valid']:
+                    self.bank_rdrs_data_cache_r[0] = self.rdrs_packet[0]['rd_data']
+                
+                if self.rdrs_packet[1]['rd_data_valid']:
+                    self.bank_rdrs_data_cache_r[1] = self.rdrs_packet[1]['rd_data']
 
     @ always_comb
     def strm_data_logic(self):
         # Assign strm_data[0]
-        if self.cfg_exchange_64_mode:
-            self.strm_data[0] = self.bank_rdrs_data_cache_r[self._params.cgra_data_width - 1, 0] 
-        else: 
-            if self.strm_data_sel == 0:
-                self.strm_data[0] = self.bank_rdrs_data_cache_r[self._params.cgra_data_width - 1, 0]
-            elif self.strm_data_sel == 1:
-                self.strm_data[0] = self.bank_rdrs_data_cache_r[self._params.cgra_data_width * 2 - 1,
-                                                            self._params.cgra_data_width * 1]
-            elif self.strm_data_sel == 2:
-                self.strm_data[0] = self.bank_rdrs_data_cache_r[self._params.cgra_data_width * 3 - 1,
-                                                            self._params.cgra_data_width * 2]
-            elif self.strm_data_sel == 3:
-                self.strm_data[0] = self.bank_rdrs_data_cache_r[self._params.cgra_data_width * 4 - 1,
-                                                            self._params.cgra_data_width * 3]
-            else:
-                self.strm_data[0] = self.bank_rdrs_data_cache_r[self._params.cgra_data_width - 1, 0]
+        for i in range(self._params.cgra_per_glb):
+            if self.cfg_exchange_64_mode:
+                self.strm_data[i][0] = self.bank_rdrs_data_cache_r[i][self._params.cgra_data_width - 1, 0] 
+            else: 
+                if self.strm_data_sel == 0:
+                    self.strm_data[i][0] = self.bank_rdrs_data_cache_r[i][self._params.cgra_data_width - 1, 0]
+                elif self.strm_data_sel == 1:
+                    self.strm_data[i][0] = self.bank_rdrs_data_cache_r[i][self._params.cgra_data_width * 2 - 1,
+                                                                self._params.cgra_data_width * 1]
+                elif self.strm_data_sel == 2:
+                    self.strm_data[i][0] = self.bank_rdrs_data_cache_r[i][self._params.cgra_data_width * 3 - 1,
+                                                                self._params.cgra_data_width * 2]
+                elif self.strm_data_sel == 3:
+                    self.strm_data[i][0] = self.bank_rdrs_data_cache_r[i][self._params.cgra_data_width * 4 - 1,
+                                                                self._params.cgra_data_width * 3]
+                else:
+                    self.strm_data[i][0] = self.bank_rdrs_data_cache_r[i][self._params.cgra_data_width - 1, 0]
 
-        # Assign rest of strm_data packet 
-        # TODO: Think about if this could be optimized 
-        self.strm_data[1] = self.bank_rdrs_data_cache_r[self._params.cgra_data_width * 2 - 1,
-                                                            self._params.cgra_data_width * 1]
-        self.strm_data[2] = self.bank_rdrs_data_cache_r[self._params.cgra_data_width * 3 - 1,
-                                                            self._params.cgra_data_width * 2]
-        self.strm_data[3] = self.bank_rdrs_data_cache_r[self._params.cgra_data_width * 4 - 1,
-                                                            self._params.cgra_data_width * 3]
+            # Assign rest of strm_data packet 
+            # TODO: Think about if this could be optimized 
+            self.strm_data[i][1] = self.bank_rdrs_data_cache_r[i][self._params.cgra_data_width * 2 - 1,
+                                                                self._params.cgra_data_width * 1]
+            self.strm_data[i][2] = self.bank_rdrs_data_cache_r[i][self._params.cgra_data_width * 3 - 1,
+                                                                self._params.cgra_data_width * 2]
+            self.strm_data[i][3] = self.bank_rdrs_data_cache_r[i][self._params.cgra_data_width * 4 - 1,
+                                                                self._params.cgra_data_width * 3]
 
     def add_strm_rd_en_pipeline(self):
         maximum_latency = (2 * self._params.max_num_chain
@@ -637,8 +670,13 @@ class GlbLoadDma_E64(Generator):
                        in_=self.strm_rd_en_w,
                        out_=self.strm_rd_en_d_arr)
 
-        self.wire(self.strm_data_valid, self.strm_rd_en_d_arr[resize(
-            self.cfg_data_network_latency, latency_width) + self._params.tile2sram_rd_delay])
+        for i in range(self._params.cgra_per_glb):
+            if i == 0:
+                self.wire(self.strm_data_valid[i], self.strm_rd_en_d_arr[resize(
+                    self.cfg_data_network_latency, latency_width) + self._params.tile2sram_rd_delay])
+            else:
+                self.wire(self.strm_data_valid[i], kts.ternary(self.cfg_multi_bank_mode, self.strm_rd_en_d_arr[resize(
+                    self.cfg_data_network_latency, latency_width) + self._params.tile2sram_rd_delay], 0))
 
     def add_strm_data_sel_pipeline(self):
         maximum_latency = (2 * self._params.max_num_chain
@@ -708,7 +746,7 @@ class GlbLoadDma_E64(Generator):
         for packet_16 in range(self.num_packets):
             self.all_skid_empty[packet_16] = 1
             for i in range(self._params.cgra_per_glb):
-                if self.cfg_data_network_g2f_mux[i]:
+                if self.cfg_data_network_g2f_mux[i] | self.cfg_multi_bank_mode:
                     self.all_skid_empty[packet_16] = self.all_skid_empty[packet_16] & self.skid_empty[i][packet_16]
                 else:
                     self.all_skid_empty[packet_16] = self.all_skid_empty[packet_16]

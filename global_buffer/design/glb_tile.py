@@ -398,7 +398,7 @@ class GlbTile(Generator):
                        cfg_st_dma_rv_seg_mode=self.cfg_st_dma_rv_seg_mode)
         
         # MO: Temporary HACK
-        self.wire(self.glb_store_dma.cfg_multi_bank_mode, 1)
+        self.wire(self.glb_store_dma.cfg_multi_bank_mode, 0)
         
         if "INCLUDE_E64_HW" in os.environ and os.environ.get("INCLUDE_E64_HW") == "1":
             self.wire(self.glb_store_dma.cfg_exchange_64_mode, self.cfg_st_dma_exchange_64_mode)
@@ -430,6 +430,9 @@ class GlbTile(Generator):
                        cfg_data_network_g2f_mux=self.cfg_ld_dma_ctrl['data_mux'],
                        ld_dma_start_pulse=self.strm_g2f_start_pulse,
                        ld_dma_done_interrupt=self.strm_g2f_interrupt_pulse)
+        
+        # Temporary HACK 
+        self.wire(self.glb_load_dma.cfg_multi_bank_mode, 0)
         
         if "INCLUDE_E64_HW" in os.environ and os.environ.get("INCLUDE_E64_HW") == "1":
             self.wire(self.glb_load_dma.cfg_exchange_64_mode, self.cfg_ld_dma_exchange_64_mode)
@@ -489,7 +492,7 @@ class GlbTile(Generator):
         
 
         # MO: Temporary HACK
-        self.wire(self.glb_bank_mux.cfg_multi_bank_mode, 1)
+        self.wire(self.glb_bank_mux.cfg_multi_bank_mode, 0)
 
         self.glb_proc_switch = GlbSwitch(self._params, ifc=self.if_proc)
         self.add_child("glb_proc_switch",
@@ -635,7 +638,9 @@ class GlbTile(Generator):
         self.rdrs_packet_bank2procsw = self.var("rdrs_packet_bank2procsw", self.header.rdrs_packet_t)
         self.rdrs_packet_bank2ring = self.var("rdrs_packet_bank2ring", self.header.rdrs_packet_t)
         self.rdrs_packet_ring2dma = self.var("rdrs_packet_ring2dma", self.header.rdrs_packet_t)
-        self.rdrs_packet_bank2dma = self.var("rdrs_packet_bank2dma", self.header.rdrs_packet_t)
+        # FIXME: Make this if include_dual_bank_hw
+        # self.rdrs_packet_bank2dma = self.var("rdrs_packet_bank2dma", self.header.rdrs_packet_t)
+        self.rdrs_packet_bank2dma = self.var("rdrs_packet_bank2dma", self.header.rdrs_packet_t, size=self._params.banks_per_tile)
         self.rdrs_packet_pcfgring2dma = self.var("rdrs_packet_pcfgring2dma", self.header.rdrs_packet_t)
         self.rdrs_packet_bank2pcfgring = self.var("rdrs_packet_bank2pcfgring", self.header.rdrs_packet_t)
         self.rdrs_packet_bank2pcfgdma = self.var("rdrs_packet_bank2pcfgdma", self.header.rdrs_packet_t)
