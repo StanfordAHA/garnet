@@ -131,8 +131,9 @@ def place_io_blk(id_to_name, app_dir, io_sides, orig_cgra_width, orig_cgra_heigh
 
     # If operating in exchange_64 mode, place IOs in a denser way (4x denser)
     exchange_64_mode = "E64_MODE_ON" in os.environ and os.environ.get("E64_MODE_ON") == "1"
-    # MO: Temporary HACK
-    multi_bank_mode = False
+
+    # If operating in multi-bank mode, place IOs 8x denser and with all inputs placed first and then outputs
+    multi_bank_mode = "E64_MULTI_BANK_MODE_ON" in os.environ and os.environ.get("E64_MULTI_BANK_MODE_ON") == "1"
     group_index = 0
     for idx, input_blk in enumerate(inputs):
         if exchange_64_mode:

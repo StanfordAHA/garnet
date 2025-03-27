@@ -2,11 +2,14 @@ from kratos import Generator, RawStringStmt, always_ff, posedge
 from kratos.util import clock
 from global_buffer.design.glb_store_dma import GlbStoreDma
 from global_buffer.design.glb_store_dma_E64 import GlbStoreDma_E64
+from global_buffer.design.glb_store_dma_E64_MB import GlbStoreDma_E64_MB
 from global_buffer.design.glb_load_dma import GlbLoadDma
 from global_buffer.design.glb_load_dma_E64 import GlbLoadDma_E64
+from global_buffer.design.glb_load_dma_E64_MB import GlbLoadDma_E64_MB
 from global_buffer.design.glb_pcfg_dma import GlbPcfgDma
 from global_buffer.design.glb_cfg import GlbCfg
 from global_buffer.design.glb_bank_mux import GlbBankMux
+from global_buffer.design.glb_bank_mux_MB import GlbBankMux_MB
 from global_buffer.design.glb_ring_switch import GlbRingSwitch
 from global_buffer.design.glb_pcfg_broadcast import GlbPcfgBroadcast
 from global_buffer.design.glb_switch import GlbSwitch
@@ -208,6 +211,8 @@ class GlbTile(Generator):
         self.cfg_st_dma_num_blocks = self.var("cfg_st_dma_num_blocks", self._params.axi_data_width)
         self.cfg_st_dma_rv_seg_mode = self.var("cfg_st_dma_rv_seg_mode", 1)
         if "INCLUDE_E64_HW" in os.environ and os.environ.get("INCLUDE_E64_HW") == "1":
+            if self._params.include_multi_bank_hw:
+                self.cfg_multi_bank_mode = self.var("cfg_multi_bank_mode", 1)
             self.cfg_st_dma_exchange_64_mode = self.var("cfg_st_dma_exchange_64_mode", 1)
             self.cfg_ld_dma_exchange_64_mode = self.var("cfg_ld_dma_exchange_64_mode", 1)
 
@@ -353,6 +358,8 @@ class GlbTile(Generator):
         self.wire(self.cfg_st_dma_rv_seg_mode, self.glb_cfg.cfg_st_dma_rv_seg_mode)
 
         if "INCLUDE_E64_HW" in os.environ and os.environ.get("INCLUDE_E64_HW") == "1":
+            if self._params.include_multi_bank_hw:
+                self.wire(self.cfg_multi_bank_mode, self.glb_cfg.cfg_multi_bank_mode)
             self.wire(self.cfg_st_dma_exchange_64_mode, self.glb_cfg.cfg_st_dma_exchange_64_mode)
             self.wire(self.cfg_ld_dma_exchange_64_mode, self.glb_cfg.cfg_ld_dma_exchange_64_mode)
 
@@ -365,8 +372,12 @@ class GlbTile(Generator):
                        cfg_pcfg_broadcast_mux=self.cfg_pcfg_broadcast_mux)
 
         if "INCLUDE_E64_HW" in os.environ and os.environ.get("INCLUDE_E64_HW") == "1":
-            self.glb_store_dma = GlbStoreDma_E64(_params=self._params)
-            self.glb_load_dma = GlbLoadDma_E64(_params=self._params)
+            if self._params.include_multi_bank_hw:
+                self.glb_store_dma = GlbStoreDma_E64_MB(_params=self._params)
+                self.glb_load_dma = GlbLoadDma_E64_MB(_params=self._params)  
+            else:
+                self.glb_store_dma = GlbStoreDma_E64(_params=self._params)
+                self.glb_load_dma = GlbLoadDma_E64(_params=self._params)
         else:
             self.glb_store_dma = GlbStoreDma(_params=self._params)
             self.glb_load_dma = GlbLoadDma(_params=self._params)
@@ -396,11 +407,10 @@ class GlbTile(Generator):
                        cfg_data_network_f2g_mux=self.cfg_st_dma_ctrl['data_mux'],
                        cfg_st_dma_num_blocks=self.cfg_st_dma_num_blocks,
                        cfg_st_dma_rv_seg_mode=self.cfg_st_dma_rv_seg_mode)
-        
-        # MO: Temporary HACK
-        self.wire(self.glb_store_dma.cfg_multi_bank_mode, 0)
-        
+                
         if "INCLUDE_E64_HW" in os.environ and os.environ.get("INCLUDE_E64_HW") == "1":
+            if self._params.include_multi_bank_hw:
+                self.wire(self.glb_store_dma.cfg_multi_bank_mode, self.cfg_multi_bank_mode)
             self.wire(self.glb_store_dma.cfg_exchange_64_mode, self.cfg_st_dma_exchange_64_mode)
 
         self.add_child("glb_load_dma",
@@ -431,10 +441,11 @@ class GlbTile(Generator):
                        ld_dma_start_pulse=self.strm_g2f_start_pulse,
                        ld_dma_done_interrupt=self.strm_g2f_interrupt_pulse)
         
-        # Temporary HACK 
-        self.wire(self.glb_load_dma.cfg_multi_bank_mode, 0)
         
         if "INCLUDE_E64_HW" in os.environ and os.environ.get("INCLUDE_E64_HW") == "1":
+            if self._params.include_multi_bank_hw:
+                self.wire(self.glb_load_dma.cfg_multi_bank_mode, self.cfg_multi_bank_mode)
+
             self.wire(self.glb_load_dma.cfg_exchange_64_mode, self.cfg_ld_dma_exchange_64_mode)
 
         self.add_child("glb_pcfg_dma",
@@ -459,7 +470,10 @@ class GlbTile(Generator):
                        pcfg_dma_start_pulse=self.pcfg_start_pulse,
                        pcfg_dma_done_interrupt=self.pcfg_g2f_interrupt_pulse)
 
-        self.glb_bank_mux = GlbBankMux(_params=self._params)
+        if self._params.include_multi_bank_hw:
+            self.glb_bank_mux = GlbBankMux_MB(_params=self._params)
+        else:
+            self.glb_bank_mux = GlbBankMux(_params=self._params)
         self.add_child("glb_bank_mux",
                        self.glb_bank_mux,
                        clk=clock(self.gclk_bank),
@@ -490,9 +504,8 @@ class GlbTile(Generator):
                        cfg_pcfg_tile_connected_prev=self.cfg_pcfg_tile_connected_prev,
                        cfg_pcfg_tile_connected_next=self.cfg_pcfg_tile_connected_next)
         
-
-        # MO: Temporary HACK
-        self.wire(self.glb_bank_mux.cfg_multi_bank_mode, 0)
+        if self._params.include_multi_bank_hw:
+            self.wire(self.glb_bank_mux.cfg_multi_bank_mode, self.cfg_multi_bank_mode)        
 
         self.glb_proc_switch = GlbSwitch(self._params, ifc=self.if_proc)
         self.add_child("glb_proc_switch",
@@ -623,9 +636,9 @@ class GlbTile(Generator):
         self.wr_packet_procsw2bank = self.var("wr_packet_procsw2bank", self.header.wr_packet_t)
         self.wr_packet_ring2bank = self.var("wr_packet_ring2bank", self.header.wr_packet_t)
         self.wr_packet_dma2ring = self.var("wr_packet_dma2ring", self.header.wr_packet_t)
-        # FIXME: Make this if include_dual_bank_hw
-        # self.wr_packet_dma2bank = self.var("wr_packet_dma2bank", self.header.wr_packet_t)
-        self.wr_packet_dma2bank = self.var("wr_packet_dma2bank", self.header.wr_packet_t, size=self._params.banks_per_tile)
+
+        size = self._params.banks_per_tile if self._params.include_multi_bank_hw else 1
+        self.wr_packet_dma2bank = self.var("wr_packet_dma2bank", self.header.wr_packet_t, size=size)
 
         self.rdrq_packet_procsw2bank = self.var("rdrq_packet_procsw2bank", self.header.rdrq_packet_t)
         self.rdrq_packet_ring2bank = self.var("rdrq_packet_ring2bank", self.header.rdrq_packet_t)
@@ -638,9 +651,10 @@ class GlbTile(Generator):
         self.rdrs_packet_bank2procsw = self.var("rdrs_packet_bank2procsw", self.header.rdrs_packet_t)
         self.rdrs_packet_bank2ring = self.var("rdrs_packet_bank2ring", self.header.rdrs_packet_t)
         self.rdrs_packet_ring2dma = self.var("rdrs_packet_ring2dma", self.header.rdrs_packet_t)
-        # FIXME: Make this if include_dual_bank_hw
-        # self.rdrs_packet_bank2dma = self.var("rdrs_packet_bank2dma", self.header.rdrs_packet_t)
-        self.rdrs_packet_bank2dma = self.var("rdrs_packet_bank2dma", self.header.rdrs_packet_t, size=self._params.banks_per_tile)
+
+        size = self._params.banks_per_tile if self._params.include_multi_bank_hw else 1
+        self.rdrs_packet_bank2dma = self.var("rdrs_packet_bank2dma", self.header.rdrs_packet_t, size=size)
+
         self.rdrs_packet_pcfgring2dma = self.var("rdrs_packet_pcfgring2dma", self.header.rdrs_packet_t)
         self.rdrs_packet_bank2pcfgring = self.var("rdrs_packet_bank2pcfgring", self.header.rdrs_packet_t)
         self.rdrs_packet_bank2pcfgdma = self.var("rdrs_packet_bank2pcfgdma", self.header.rdrs_packet_t)

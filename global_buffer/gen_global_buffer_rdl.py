@@ -213,6 +213,12 @@ def gen_global_buffer_rdl(name, params: GlobalBufferParams):
 
 
     if "INCLUDE_E64_HW" in os.environ and os.environ.get("INCLUDE_E64_HW") == "1":
+        if params.include_multi_bank_hw:
+            multi_bank_mode_r = Reg("multi_bank_mode")
+            multi_bank_mode_f = Field("value", 1)
+            multi_bank_mode_r.add_child(multi_bank_mode_f)
+            addr_map.add_child(multi_bank_mode_r)
+
         dma_exchange_64_mode_r = Reg("dma_exchange_64_mode")
         dma_exchange_64_mode_f = Field("value", 1)
         dma_exchange_64_mode_r.add_child(dma_exchange_64_mode_f)

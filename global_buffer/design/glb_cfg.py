@@ -60,6 +60,8 @@ class GlbCfg(Generator):
             self.cfg_st_dma_rv_seg_mode = self.output("cfg_st_dma_rv_seg_mode", 1)
 
         if "INCLUDE_E64_HW" in os.environ and os.environ.get("INCLUDE_E64_HW") == "1":
+            if self._params.include_multi_bank_hw:
+                self.cfg_multi_bank_mode = self.output("cfg_multi_bank_mode", 1)
             self.cfg_st_dma_exchange_64_mode = self.output("cfg_st_dma_exchange_64_mode", 1)
             self.cfg_ld_dma_exchange_64_mode = self.output("cfg_ld_dma_exchange_64_mode", 1)
 
@@ -137,6 +139,8 @@ class GlbCfg(Generator):
             self.wire(self.cfg_st_dma_num_blocks, self.glb_pio_wrapper.ports["l2h_st_dma_num_blocks_value_r"])
             self.wire(self.cfg_st_dma_rv_seg_mode, self.glb_pio_wrapper.ports["l2h_st_dma_rv_seg_mode_value_r"])
             if "INCLUDE_E64_HW" in os.environ and os.environ.get("INCLUDE_E64_HW") == "1":
+                if self._params.include_multi_bank_hw:
+                    self.wire(self.cfg_multi_bank_mode, self.glb_pio_wrapper.ports["l2h_multi_bank_mode_value_r"])
                 self.wire(self.cfg_st_dma_exchange_64_mode, self.glb_pio_wrapper.ports["l2h_dma_exchange_64_mode_value_r"])
                 self.wire(self.cfg_ld_dma_exchange_64_mode, self.glb_pio_wrapper.ports["l2h_dma_exchange_64_mode_value_r"])
 

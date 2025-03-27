@@ -86,6 +86,9 @@ class GlobalBufferParams:
     cgra_cfg_addr_width: int = 32
     cgra_cfg_data_width: int = 32
 
+    # zircon parameters
+    include_multi_bank_hw: bool = False
+
     # Not used by TSMC (yet)
     load_dma_fifo_depth: int = 16
     store_dma_fifo_depth: int = 4
@@ -208,6 +211,8 @@ def gen_global_buffer_params(**kwargs):
     # pop() returns True if config_port_pipeline not exists
     config_port_pipeline = kwargs.pop('config_port_pipeline', True)
 
+    include_multi_bank_hw = kwargs.pop('include_multi_bank_hw', False)
+
     if config_port_pipeline is True:
         config_port_pipeline_depth = 1
     else:
@@ -245,8 +250,8 @@ def gen_global_buffer_params(**kwargs):
                                 cgra_cfg_addr_width=cfg_addr_width,
                                 cgra_cfg_data_width=cfg_data_width,
                                 is_sram_stub=is_sram_stub,
-                                config_port_pipeline_depth=config_port_pipeline_depth
-                                )
+                                config_port_pipeline_depth=config_port_pipeline_depth,
+                                include_multi_bank_hw=include_multi_bank_hw)
     return params
 
 
