@@ -150,7 +150,7 @@ class GlbTile(Generator):
         self.cgra_cfg_pcfg_addr_e2w_wsto = self.output("cgra_cfg_pcfg_addr_e2w_wsto", self._params.cgra_cfg_addr_width)
         self.cgra_cfg_pcfg_data_e2w_wsto = self.output("cgra_cfg_pcfg_data_e2w_wsto", self._params.cgra_cfg_data_width)
 
-        if "INCLUDE_E64_HW" in os.environ and os.environ.get("INCLUDE_E64_HW") == "1":
+        if self._params.include_E64_hw:
             self.strm_data_f2g = self.input("strm_data_f2g", self._params.cgra_data_width,
                                             size=[self._params.cgra_per_glb, 4], packed=True)
             self.strm_data_f2g_vld = self.input("strm_data_f2g_vld", 1, size=[self._params.cgra_per_glb, 4], packed=True)
@@ -210,7 +210,7 @@ class GlbTile(Generator):
                                           size=self._params.queue_depth)
         self.cfg_st_dma_num_blocks = self.var("cfg_st_dma_num_blocks", self._params.axi_data_width)
         self.cfg_st_dma_rv_seg_mode = self.var("cfg_st_dma_rv_seg_mode", 1)
-        if "INCLUDE_E64_HW" in os.environ and os.environ.get("INCLUDE_E64_HW") == "1":
+        if self._params.include_E64_hw:
             if self._params.include_multi_bank_hw:
                 self.cfg_multi_bank_mode = self.var("cfg_multi_bank_mode", 1)
             self.cfg_st_dma_exchange_64_mode = self.var("cfg_st_dma_exchange_64_mode", 1)
@@ -357,7 +357,7 @@ class GlbTile(Generator):
         self.wire(self.cfg_st_dma_num_blocks, self.glb_cfg.cfg_st_dma_num_blocks)
         self.wire(self.cfg_st_dma_rv_seg_mode, self.glb_cfg.cfg_st_dma_rv_seg_mode)
 
-        if "INCLUDE_E64_HW" in os.environ and os.environ.get("INCLUDE_E64_HW") == "1":
+        if self._params.include_E64_hw:
             if self._params.include_multi_bank_hw:
                 self.wire(self.cfg_multi_bank_mode, self.glb_cfg.cfg_multi_bank_mode)
             self.wire(self.cfg_st_dma_exchange_64_mode, self.glb_cfg.cfg_st_dma_exchange_64_mode)
@@ -371,7 +371,7 @@ class GlbTile(Generator):
                        cgra_cfg_dma2mux=self.cgra_cfg_pcfgdma2mux,
                        cfg_pcfg_broadcast_mux=self.cfg_pcfg_broadcast_mux)
 
-        if "INCLUDE_E64_HW" in os.environ and os.environ.get("INCLUDE_E64_HW") == "1":
+        if self._params.include_E64_hw:
             if self._params.include_multi_bank_hw:
                 self.glb_store_dma = GlbStoreDma_E64_MB(_params=self._params)
                 self.glb_load_dma = GlbLoadDma_E64_MB(_params=self._params)  
@@ -408,7 +408,7 @@ class GlbTile(Generator):
                        cfg_st_dma_num_blocks=self.cfg_st_dma_num_blocks,
                        cfg_st_dma_rv_seg_mode=self.cfg_st_dma_rv_seg_mode)
                 
-        if "INCLUDE_E64_HW" in os.environ and os.environ.get("INCLUDE_E64_HW") == "1":
+        if self._params.include_E64_hw:
             if self._params.include_multi_bank_hw:
                 self.wire(self.glb_store_dma.cfg_multi_bank_mode, self.cfg_multi_bank_mode)
             self.wire(self.glb_store_dma.cfg_exchange_64_mode, self.cfg_st_dma_exchange_64_mode)
@@ -442,7 +442,7 @@ class GlbTile(Generator):
                        ld_dma_done_interrupt=self.strm_g2f_interrupt_pulse)
         
         
-        if "INCLUDE_E64_HW" in os.environ and os.environ.get("INCLUDE_E64_HW") == "1":
+        if self._params.include_E64_hw:
             if self._params.include_multi_bank_hw:
                 self.wire(self.glb_load_dma.cfg_multi_bank_mode, self.cfg_multi_bank_mode)
 

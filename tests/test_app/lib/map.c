@@ -500,6 +500,10 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         #define GLB_MULTI_BANK_MODE_R 0
         #endif
 
+        #ifndef GLB_MULTI_BANK_MODE_VALUE_F_LSB
+        #define GLB_MULTI_BANK_MODE_VALUE_F_LSB 0
+        #endif
+
         if (HW_supports_E64()) {
             add_config(config_info,
                     (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_DMA_EXCHANGE_64_MODE_R,

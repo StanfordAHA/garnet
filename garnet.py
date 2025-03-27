@@ -915,6 +915,7 @@ def parse_args():
         cgra_axi_addr_width=13,
         axi_data_width=32,
         config_port_pipeline=args.config_port_pipeline,
+        include_E64_hw=args.include_E64_hw,
         include_multi_bank_hw=args.include_multi_bank_hw) # MO: HACK FIXME
 
     # for a in vars(args).items(): print(f'arg {a} has type {type(a)}')
