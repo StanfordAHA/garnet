@@ -9,6 +9,7 @@ function get_amber_updates {
       cd /aha/canal        && git checkout 6fec524;
       cd /aha/clockwork    && git checkout efdd95e;
       cd /aha/lake         && git checkout 837ffe1;
+      cd /aha/lassen       && git checkout 77c32df;
     '
 }
 function update_kratos {
@@ -153,7 +154,7 @@ if [ "$use_container" == True ]; then
       if [ "$use_local_garnet" == True ]; then
         docker exec $container_name /bin/bash -c "rm -rf /aha/garnet"
         # Clone local garnet repo to prevent copying untracked files
-        git clone $GARNET_HOME ./garnet
+        test -e ./garnet || git clone $GARNET_HOME ./garnet
         docker cp ./garnet $container_name:/aha/garnet
       fi
       
@@ -261,9 +262,9 @@ if [ "$use_container" == True ]; then
            # Note we are still in double-quote regime (I hope)
            if [ '$WHICH_SOC' == 'amber' ]; then
              echo '--- BEGIN egregious anti-pohan-hack hack'
-             cp design.v tmp.v
+             cp design.v design.v.orig
              sed -i '/.*CG Hack/,/[)][;]/s,^,// ,' design.v
-             diff design.v tmp.v || printf '\n\n'
+             diff design.v.orig design.v || printf '\n\n'
            fi
          fi"
 
