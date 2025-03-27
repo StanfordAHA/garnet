@@ -17,7 +17,7 @@ class GlbBankMux(Generator):
 
         # wr packet
         self.wr_packet_procsw2bank = self.input("wr_packet_procsw2bank", self.header.wr_packet_t)
-        self.wr_packet_ring2bank = self.input("wr_packet_ring2bank", self.header.wr_packet_t)
+        self.wr_packet_ring2bank = self.input("wr_packet_ring2bank", self.header.wr_packet_t, size=_params.banks_per_tile)
         self.wr_packet_dma2bank = self.input("wr_packet_dma2bank",  self.header.wr_packet_t, size=_params.banks_per_tile)
         self.wr_packet_sw2bankarr = self.output(
             "wr_packet_sw2bankarr", self.header.wr_bank_packet_t, size=self._params.banks_per_tile)
@@ -36,7 +36,7 @@ class GlbBankMux(Generator):
         self.rdrs_packet_bankarr2sw = self.input(
             "rdrs_packet_bankarr2sw", self.header.rdrs_packet_t, size=self._params.banks_per_tile)
         self.rdrs_packet_bank2procsw = self.output("rdrs_packet_bank2procsw", self.header.rdrs_packet_t)
-        self.rdrs_packet_bank2ring = self.output("rdrs_packet_bank2ring", self.header.rdrs_packet_t)
+        self.rdrs_packet_bank2ring = self.output("rdrs_packet_bank2ring", self.header.rdrs_packet_t, size=_params.banks_per_tile)
         self.rdrs_packet_bank2dma = self.output("rdrs_packet_bank2dma", self.header.rdrs_packet_t, size=_params.banks_per_tile)
         self.rdrs_packet_bank2pcfgring = self.output("rdrs_packet_bank2pcfgring", self.header.rdrs_packet_t)
         self.rdrs_packet_bank2pcfgdma = self.output("rdrs_packet_bank2pcfgdma", self.header.rdrs_packet_t)
@@ -159,13 +159,13 @@ class GlbBankMux(Generator):
                     self._params.bank_addr_width - 1), 0]
                 self.wr_packet_sw2bankarr_w[i]['wr_strb'] = self.wr_packet_dma2bank[i]['wr_strb']
                 self.wr_packet_sw2bankarr_w[i]['wr_data'] = self.wr_packet_dma2bank[i]['wr_data']
-            elif ((self.wr_packet_ring2bank['wr_en'] == 1)
-                    & (self.wr_packet_ring2bank['wr_addr'][self.tile_sel_msb, self.tile_sel_lsb] == self.glb_tile_id)):
-                self.wr_packet_sw2bankarr_w[i]['wr_en'] = self.wr_packet_ring2bank['wr_en']
-                self.wr_packet_sw2bankarr_w[i]['wr_addr'] = self.wr_packet_ring2bank['wr_addr'][(
+            elif ((self.wr_packet_ring2bank[i]['wr_en'] == 1)
+                    & (self.wr_packet_ring2bank[i]['wr_addr'][self.tile_sel_msb, self.tile_sel_lsb] == self.glb_tile_id)):
+                self.wr_packet_sw2bankarr_w[i]['wr_en'] = self.wr_packet_ring2bank[i]['wr_en']
+                self.wr_packet_sw2bankarr_w[i]['wr_addr'] = self.wr_packet_ring2bank[i]['wr_addr'][(
                     self._params.bank_addr_width - 1), 0]
-                self.wr_packet_sw2bankarr_w[i]['wr_strb'] = self.wr_packet_ring2bank['wr_strb']
-                self.wr_packet_sw2bankarr_w[i]['wr_data'] = self.wr_packet_ring2bank['wr_data']
+                self.wr_packet_sw2bankarr_w[i]['wr_strb'] = self.wr_packet_ring2bank[i]['wr_strb']
+                self.wr_packet_sw2bankarr_w[i]['wr_data'] = self.wr_packet_ring2bank[i]['wr_data']
             else:
                 self.wr_packet_sw2bankarr_w[i] = 0
 
@@ -180,14 +180,14 @@ class GlbBankMux(Generator):
                     self._params.bank_addr_width - 1), 0]
                 self.wr_packet_sw2bankarr_w[i]['wr_strb'] = self.wr_packet_dma2bank[0]['wr_strb']
                 self.wr_packet_sw2bankarr_w[i]['wr_data'] = self.wr_packet_dma2bank[0]['wr_data']
-            elif ((self.wr_packet_ring2bank['wr_en'] == 1)
-                    & (self.wr_packet_ring2bank['wr_addr'][self.tile_sel_msb, self.tile_sel_lsb] == self.glb_tile_id)
-                    & (self.wr_packet_ring2bank['wr_addr'][self.bank_sel_msb, self.bank_sel_lsb] == i)):
-                self.wr_packet_sw2bankarr_w[i]['wr_en'] = self.wr_packet_ring2bank['wr_en']
-                self.wr_packet_sw2bankarr_w[i]['wr_addr'] = self.wr_packet_ring2bank['wr_addr'][(
+            elif ((self.wr_packet_ring2bank[0]['wr_en'] == 1)
+                    & (self.wr_packet_ring2bank[0]['wr_addr'][self.tile_sel_msb, self.tile_sel_lsb] == self.glb_tile_id)
+                    & (self.wr_packet_ring2bank[0]['wr_addr'][self.bank_sel_msb, self.bank_sel_lsb] == i)):
+                self.wr_packet_sw2bankarr_w[i]['wr_en'] = self.wr_packet_ring2bank[0]['wr_en']
+                self.wr_packet_sw2bankarr_w[i]['wr_addr'] = self.wr_packet_ring2bank[0]['wr_addr'][(
                     self._params.bank_addr_width - 1), 0]
-                self.wr_packet_sw2bankarr_w[i]['wr_strb'] = self.wr_packet_ring2bank['wr_strb']
-                self.wr_packet_sw2bankarr_w[i]['wr_data'] = self.wr_packet_ring2bank['wr_data']
+                self.wr_packet_sw2bankarr_w[i]['wr_strb'] = self.wr_packet_ring2bank[0]['wr_strb']
+                self.wr_packet_sw2bankarr_w[i]['wr_data'] = self.wr_packet_ring2bank[0]['wr_data']
             else:
                 self.wr_packet_sw2bankarr_w[i] = 0
 
@@ -225,7 +225,7 @@ class GlbBankMux(Generator):
             self.rd_type[i] = self.rd_type_e.strm
         elif ((self.rdrq_packet_ring2bank['rd_en'] == 1)
                 & (self.rdrq_packet_ring2bank['rd_addr'][self.tile_sel_msb, self.tile_sel_lsb] == self.glb_tile_id)
-                & (self.rdrq_packet_ring2bank['rd_addr'][self.bank_sel_msb, self.bank_sel_lsb] == i)):
+                & ((self.rdrq_packet_ring2bank['rd_addr'][self.bank_sel_msb, self.bank_sel_lsb] == i) | self.cfg_multi_bank_mode)):
             self.rdrq_packet_sw2bankarr_w[i]['rd_en'] = self.rdrq_packet_ring2bank['rd_en']
             self.rdrq_packet_sw2bankarr_w[i]['rd_addr'] = self.rdrq_packet_ring2bank['rd_addr'][(
                 self._params.bank_addr_width - 1), 0]
@@ -248,7 +248,7 @@ class GlbBankMux(Generator):
         if (self.cfg_tile_connected_next | self.cfg_tile_connected_prev):
             for i in range(self._params.banks_per_tile):
                 if self.rd_type_d[i] == self.rd_type_e.strm:
-                    self.rdrs_packet_bank2ring = self.rdrs_packet_bankarr2sw_d[i]
+                    self.rdrs_packet_bank2ring[i] = self.rdrs_packet_bankarr2sw_d[i]
 
     @ always_comb
     def rdrs_sw2pr_logic(self):
