@@ -44,11 +44,8 @@ class GlbStoreDma_E64_MB(Generator):
         self.cfg_st_dma_num_blocks = self.input("cfg_st_dma_num_blocks", self._params.axi_data_width)
         self.cfg_st_dma_rv_seg_mode = self.input("cfg_st_dma_rv_seg_mode", 1)
 
-        # Exchange 64 (configuration)
-        self.cfg_exchange_64_mode = self.input("cfg_exchange_64_mode", 1)
-
-        # Multi-bank mode (configuration)
-        self.cfg_multi_bank_mode = self.input("cfg_multi_bank_mode", 1)
+        # Exchange 64 (configuration). Contains info about multi-bank mode as well 
+        self.cfg_exchange_64_mode = self.input("cfg_exchange_64_mode", 2)
 
         self.st_dma_start_pulse = self.input("st_dma_start_pulse", 1)
         self.st_dma_done_interrupt = self.output("st_dma_done_interrupt", 1)
@@ -98,8 +95,10 @@ class GlbStoreDma_E64_MB(Generator):
         self.data_current_addr_pre = self.var("data_current_addr_pre", self._params.glb_addr_width + 1)
         self.loop_mux_sel = self.var("loop_mux_sel", clog2(self._params.store_dma_loop_level))
         self.repeat_cnt = self.var("repeat_cnt", clog2(self._params.queue_depth) + 1)
-        
 
+        self.exchange_64_mode_on = self.var("exchange_64_mode_on", 1)
+        self.multi_bank_mode_on = self.var("multi_bank_mode_on", 1)
+        
         # ready_valid controller
         self.block_done = self.var("block_done", 1)
         self.seg_done = self.var("seg_done", 1)
@@ -183,6 +182,10 @@ class GlbStoreDma_E64_MB(Generator):
         self.add_always(self.rv_num_seg_cnt_ff)
         self.add_always(self.rv_num_seg_cnt_total_comb)
 
+        # E64/mutli-bank control 
+        self.wire(self.exchange_64_mode_on, self.cfg_exchange_64_mode[0])
+        self.wire(self.multi_bank_mode_on, self.cfg_exchange_64_mode == self._params.exchange_64_multibank_mode)
+
         # ready/valid control
         self.wire(self.sparse_rv_mode_on, (self.cfg_st_dma_ctrl_valid_mode == self._params.st_dma_valid_mode_sparse_ready_valid))
         self.wire(self.dense_rv_mode_on, (self.cfg_st_dma_ctrl_valid_mode == self._params.st_dma_valid_mode_dense_ready_valid))
@@ -216,11 +219,11 @@ class GlbStoreDma_E64_MB(Generator):
                 
                 # TODO: Potentially change this to if packet_16 == 0 & i == 0
                 if (packet_16 == 0) & (i == 0):
-                    self.wire(self.fifo_pop[i][packet_16], kts.ternary(self.cfg_multi_bank_mode, self.packet_128_pop,
-                                                                kts.ternary(self.cfg_exchange_64_mode, self.packet_64_pop[i], 
+                    self.wire(self.fifo_pop[i][packet_16], kts.ternary(self.multi_bank_mode_on, self.packet_128_pop,
+                                                                kts.ternary(self.exchange_64_mode_on, self.packet_64_pop[i], 
                                                                             ~self.fifo_empty[i][packet_16] & self.strm_run)))
                 else:
-                    self.wire(self.fifo_pop[i][packet_16], kts.ternary(self.cfg_multi_bank_mode, self.packet_128_pop, self.packet_64_pop[i]))
+                    self.wire(self.fifo_pop[i][packet_16], kts.ternary(self.multi_bank_mode_on, self.packet_128_pop, self.packet_64_pop[i]))
 
                 self.wire(self.fifo_push[i][packet_16], ~self.fifo_full[i][packet_16] & self.strm_data_valid[i][packet_16])
                 self.wire(self.fifo2cgra_ready[i][packet_16], ~self.fifo_full[i][packet_16])
@@ -507,35 +510,35 @@ class GlbStoreDma_E64_MB(Generator):
                 self.strm_data[i][packet_16] = 0
                 self.strm_data_valid[i][packet_16] = 0
 
-                if self.cfg_multi_bank_mode:
+                if self.multi_bank_mode_on:
                     # MO: Removing reg in-between FIFOs in E64 mode b/c it causes issues with RV synchronization 
                     # TODO: Avoid adding this mux here. Use another FIFO instead
-                    self.strm_data[i][packet_16] = kts.ternary(self.cfg_exchange_64_mode, self.data_f2g[i][packet_16], self.data_f2g_r[i][packet_16])
+                    self.strm_data[i][packet_16] = kts.ternary(self.exchange_64_mode_on, self.data_f2g[i][packet_16], self.data_f2g_r[i][packet_16])
 
                     self.data_f2g_rdy[i][packet_16] = self.data_ready_g2f_w[i][packet_16]
                     if self.sparse_rv_mode_on | self.dense_rv_mode_on:
-                        self.strm_data_valid[i][packet_16] = kts.ternary(self.cfg_exchange_64_mode, self.data_f2g_vld[i][packet_16], self.data_f2g_vld_r[i][packet_16])
+                        self.strm_data_valid[i][packet_16] = kts.ternary(self.exchange_64_mode_on, self.data_f2g_vld[i][packet_16], self.data_f2g_vld_r[i][packet_16])
                     else:
                         if packet_16 == 0:
-                            self.strm_data_valid[i][packet_16] = kts.ternary(self.cfg_exchange_64_mode, self.ctrl_f2g[i], self.ctrl_f2g_r[i])
+                            self.strm_data_valid[i][packet_16] = kts.ternary(self.exchange_64_mode_on, self.ctrl_f2g[i], self.ctrl_f2g_r[i])
                         else:
-                            self.strm_data_valid[i][packet_16] = kts.ternary(self.cfg_exchange_64_mode, self.ctrl_f2g[i], 0)
+                            self.strm_data_valid[i][packet_16] = kts.ternary(self.exchange_64_mode_on, self.ctrl_f2g[i], 0)
               
                 else:
                     if self.cfg_data_network_f2g_mux[i] == 1:
 
                         # MO: Removing reg in-between FIFOs in E64 mode b/c it causes issues with RV synchronization 
                         # TODO: Avoid adding this mux here. Use another FIFO instead
-                        self.strm_data[0][packet_16] = kts.ternary(self.cfg_exchange_64_mode, self.data_f2g[i][packet_16], self.data_f2g_r[i][packet_16])
+                        self.strm_data[0][packet_16] = kts.ternary(self.exchange_64_mode_on, self.data_f2g[i][packet_16], self.data_f2g_r[i][packet_16])
 
                         self.data_f2g_rdy[i][packet_16] = self.data_ready_g2f_w[0][packet_16]
                         if self.sparse_rv_mode_on | self.dense_rv_mode_on:
-                            self.strm_data_valid[0][packet_16] = kts.ternary(self.cfg_exchange_64_mode, self.data_f2g_vld[i][packet_16], self.data_f2g_vld_r[i][packet_16])
+                            self.strm_data_valid[0][packet_16] = kts.ternary(self.exchange_64_mode_on, self.data_f2g_vld[i][packet_16], self.data_f2g_vld_r[i][packet_16])
                         else:
                             if packet_16 == 0:
-                                self.strm_data_valid[0][packet_16] = kts.ternary(self.cfg_exchange_64_mode, self.ctrl_f2g[i], self.ctrl_f2g_r[i])
+                                self.strm_data_valid[0][packet_16] = kts.ternary(self.exchange_64_mode_on, self.ctrl_f2g[i], self.ctrl_f2g_r[i])
                             else:
-                                self.strm_data_valid[0][packet_16] = kts.ternary(self.cfg_exchange_64_mode, self.ctrl_f2g[i], 0)
+                                self.strm_data_valid[0][packet_16] = kts.ternary(self.exchange_64_mode_on, self.ctrl_f2g[i], 0)
                     else:
                         self.strm_data[0][packet_16] = self.strm_data[0][packet_16]
                         self.strm_data_valid[0][packet_16] = self.strm_data_valid[0][packet_16]
@@ -552,8 +555,8 @@ class GlbStoreDma_E64_MB(Generator):
         # This is really self.fifo_pop & ~self.rv_is_addrdata
         # So in RV mode, iter_step everytime new (non-addr) data is popped from FIFO
         # rv_is_addrdata should always be low in non sparse-rv-mode  
-        elif self.cfg_exchange_64_mode & (self.sparse_rv_mode_on | self.dense_rv_mode_on):
-            if self.cfg_multi_bank_mode:
+        elif self.exchange_64_mode_on & (self.sparse_rv_mode_on | self.dense_rv_mode_on):
+            if self.multi_bank_mode_on:
                 self.iter_step_valid = self.strm_run & self.packet_128_pop_ready & ~self.rv_is_addrdata
             else:
                 # TODO: change this to packet_64_pop_ready[0]
@@ -597,7 +600,7 @@ class GlbStoreDma_E64_MB(Generator):
         self.bank_wr_strb_cache_w = self.bank_wr_strb_cache_r
         self.bank_wr_data_cache_w = self.bank_wr_data_cache_r
 
-        if self.cfg_exchange_64_mode:
+        if self.exchange_64_mode_on:
             if self.strm_wr_en_w:
                 self.bank_wr_strb_cache_w[self.cgra_strb_width - 1,
                                             0] = const(self.cgra_strb_value, self.cgra_strb_width)
@@ -691,7 +694,7 @@ class GlbStoreDma_E64_MB(Generator):
             self.wr_packet_dma2bank_w[0]['wr_data'] = self.bank_wr_data_cache_r[0]
             self.wr_packet_dma2bank_w[0]['wr_addr'] = self.bank_wr_addr
             
-            if self.cfg_multi_bank_mode:
+            if self.multi_bank_mode_on:
                 # Kratos won't support this for loop. Hard wire for now. 
                 #for i in range(1, self._params.cgra_per_glb):
                 self.wr_packet_dma2bank_w[1]['wr_en'] = self.bank_wr_en

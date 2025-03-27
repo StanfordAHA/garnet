@@ -496,25 +496,17 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         #define GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB 0
         #endif
 
-        #ifndef GLB_MULTI_BANK_MODE_R
-        #define GLB_MULTI_BANK_MODE_R 0
-        #endif
-
-        #ifndef GLB_MULTI_BANK_MODE_VALUE_F_LSB
-        #define GLB_MULTI_BANK_MODE_VALUE_F_LSB 0
-        #endif
-
-        if (HW_supports_E64()) {
+        if (HW_supports_multi_bank() && HW_supports_E64()) {
+            add_config(config_info,
+                    (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_DMA_EXCHANGE_64_MODE_R,
+                    (E64_multi_bank_mode << GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB + 1) |
+                    (exchange_64_mode << GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB));
+        } else if (HW_supports_E64()) {
             add_config(config_info,
                     (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_DMA_EXCHANGE_64_MODE_R,
                     exchange_64_mode << GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB);
         }
 
-        if (HW_supports_multi_bank()) {
-            add_config(config_info,
-                    (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_MULTI_BANK_MODE_R,
-                    E64_multi_bank_mode << GLB_MULTI_BANK_MODE_VALUE_F_LSB);
-        }
         add_config(config_info,
                    (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_LD_DMA_CTRL_R,
                    ((0b001 << GLB_LD_DMA_CTRL_MODE_F_LSB) | (mode << GLB_LD_DMA_CTRL_VALID_MODE_F_LSB) |
@@ -586,16 +578,15 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         // If use hacky padding then switch to valid mode
         if (use_padding || use_glb_tiling) mode = ST_DMA_VALID_MODE_STATIC;
 
-        if (HW_supports_E64()) {
+        if (HW_supports_multi_bank() && HW_supports_E64()) {
+            add_config(config_info,
+                    (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_DMA_EXCHANGE_64_MODE_R,
+                    (E64_multi_bank_mode << GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB + 1) |
+                    (exchange_64_mode << GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB));
+        } else if (HW_supports_E64()) {
             add_config(config_info,
                     (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_DMA_EXCHANGE_64_MODE_R,
                     exchange_64_mode << GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB);
-        }
-
-        if (HW_supports_multi_bank()) {
-            add_config(config_info,
-                    (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_MULTI_BANK_MODE_R,
-                    E64_multi_bank_mode << GLB_MULTI_BANK_MODE_VALUE_F_LSB);
         }
 
         // MO: Hack to emit flush from output tiles for MU2CGRA app

@@ -212,9 +212,12 @@ class GlbTile(Generator):
         self.cfg_st_dma_rv_seg_mode = self.var("cfg_st_dma_rv_seg_mode", 1)
         if self._params.include_E64_hw:
             if self._params.include_multi_bank_hw:
-                self.cfg_multi_bank_mode = self.var("cfg_multi_bank_mode", 1)
-            self.cfg_st_dma_exchange_64_mode = self.var("cfg_st_dma_exchange_64_mode", 1)
-            self.cfg_ld_dma_exchange_64_mode = self.var("cfg_ld_dma_exchange_64_mode", 1)
+                self.cfg_bank_mux_multi_bank_mode = self.var("cfg_bank_mux_multi_bank_mode", 1)
+                self.cfg_st_dma_exchange_64_mode = self.var("cfg_st_dma_exchange_64_mode", 2)
+                self.cfg_ld_dma_exchange_64_mode = self.var("cfg_ld_dma_exchange_64_mode", 2)
+            else:
+                self.cfg_st_dma_exchange_64_mode = self.var("cfg_st_dma_exchange_64_mode", 1)
+                self.cfg_ld_dma_exchange_64_mode = self.var("cfg_ld_dma_exchange_64_mode", 1)
 
         # ld dma
         self.cfg_ld_dma_ctrl = self.var("cfg_ld_dma_ctrl", self.header.cfg_load_dma_ctrl_t)
@@ -359,9 +362,9 @@ class GlbTile(Generator):
 
         if self._params.include_E64_hw:
             if self._params.include_multi_bank_hw:
-                self.wire(self.cfg_multi_bank_mode, self.glb_cfg.cfg_multi_bank_mode)
-            self.wire(self.cfg_st_dma_exchange_64_mode, self.glb_cfg.cfg_st_dma_exchange_64_mode)
-            self.wire(self.cfg_ld_dma_exchange_64_mode, self.glb_cfg.cfg_ld_dma_exchange_64_mode)
+                self.wire(self.cfg_bank_mux_multi_bank_mode, self.glb_cfg.cfg_exchange_64_mode == self._params.exchange_64_multibank_mode)
+            self.wire(self.cfg_st_dma_exchange_64_mode, self.glb_cfg.cfg_exchange_64_mode)
+            self.wire(self.cfg_ld_dma_exchange_64_mode, self.glb_cfg.cfg_exchange_64_mode)
 
         self.glb_pcfg_broadcast = GlbPcfgBroadcast(_params=self._params)
         self.add_child("glb_pcfg_broadcast",
@@ -409,8 +412,6 @@ class GlbTile(Generator):
                        cfg_st_dma_rv_seg_mode=self.cfg_st_dma_rv_seg_mode)
                 
         if self._params.include_E64_hw:
-            if self._params.include_multi_bank_hw:
-                self.wire(self.glb_store_dma.cfg_multi_bank_mode, self.cfg_multi_bank_mode)
             self.wire(self.glb_store_dma.cfg_exchange_64_mode, self.cfg_st_dma_exchange_64_mode)
 
         self.add_child("glb_load_dma",
@@ -443,9 +444,6 @@ class GlbTile(Generator):
         
         
         if self._params.include_E64_hw:
-            if self._params.include_multi_bank_hw:
-                self.wire(self.glb_load_dma.cfg_multi_bank_mode, self.cfg_multi_bank_mode)
-
             self.wire(self.glb_load_dma.cfg_exchange_64_mode, self.cfg_ld_dma_exchange_64_mode)
 
         self.add_child("glb_pcfg_dma",
@@ -505,7 +503,7 @@ class GlbTile(Generator):
                        cfg_pcfg_tile_connected_next=self.cfg_pcfg_tile_connected_next)
         
         if self._params.include_multi_bank_hw:
-            self.wire(self.glb_bank_mux.cfg_multi_bank_mode, self.cfg_multi_bank_mode)        
+            self.wire(self.glb_bank_mux.cfg_multi_bank_mode, self.cfg_bank_mux_multi_bank_mode)        
 
         self.glb_proc_switch = GlbSwitch(self._params, ifc=self.if_proc)
         self.add_child("glb_proc_switch",

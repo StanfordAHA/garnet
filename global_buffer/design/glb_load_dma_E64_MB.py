@@ -49,11 +49,8 @@ class GlbLoadDma_E64_MB(Generator):
             "cfg_ld_dma_header", self.header.cfg_load_dma_header_t, size=self._params.queue_depth)
         self.cfg_data_network_g2f_mux = self.input("cfg_data_network_g2f_mux", self._params.cgra_per_glb)
 
-        # Exchange 64 (configuration)
-        self.cfg_exchange_64_mode = self.input("cfg_exchange_64_mode", 1)
-
-        # Multi-bank mode (configuration)
-        self.cfg_multi_bank_mode = self.input("cfg_multi_bank_mode", 1)
+        # Exchange 64 (configuration). Contains info about multi-bank mode as well 
+        self.cfg_exchange_64_mode = self.input("cfg_exchange_64_mode", 2)
 
         self.clk_en_dma2bank = self.output("clk_en_dma2bank", 1)
         self.ld_dma_start_pulse = self.input("ld_dma_start_pulse", 1)
@@ -111,6 +108,9 @@ class GlbLoadDma_E64_MB(Generator):
         if self._params.queue_depth != 1:
             self.queue_sel_r = self.var("queue_sel_r", max(1, clog2(self.repeat_cnt.width)))
 
+        self.exchange_64_mode_on = self.var("exchange_64_mode_on", 1)
+        self.multi_bank_mode_on = self.var("multi_bank_mode_on", 1)        
+
         # ready_valid controller
         self.cycle_counter_en = self.var("cycle_counter_en", 1)
         self.iter_step_valid = self.var("iter_step_valid", 1)
@@ -150,6 +150,10 @@ class GlbLoadDma_E64_MB(Generator):
         self.add_always(self.all_skid_empty_logic)
         self.add_always(self.all_skid_empty_muxed_logic)
 
+        # E64/mutli-bank control 
+        self.wire(self.exchange_64_mode_on, self.cfg_exchange_64_mode[0])
+        self.wire(self.multi_bank_mode_on, self.cfg_exchange_64_mode == self._params.exchange_64_multibank_mode)
+        
         # Current dma header
         self.current_dma_header = self.var("current_dma_header", self.header.cfg_load_dma_header_t)
         if self._params.queue_depth == 1:
@@ -285,17 +289,17 @@ class GlbLoadDma_E64_MB(Generator):
                 if (packet_16 == 0) & (i == 0):
                     self.wire(self.fifo_push[i][packet_16], ~self.fifo_full[i][packet_16] & self.strm_data_valid[i])
                 else:
-                    self.wire(self.fifo_push[i][packet_16], kts.ternary(self.cfg_exchange_64_mode, ~self.fifo_full[i][packet_16] & self.strm_data_valid[i], 0))
+                    self.wire(self.fifo_push[i][packet_16], kts.ternary(self.exchange_64_mode_on, ~self.fifo_full[i][packet_16] & self.strm_data_valid[i], 0))
 
                 self.wire(self.fifo2skid_vld_muxed[i][packet_16], ~self.fifo_empty[i][packet_16])
                 self.wire(self.fifo_pop_cond[i][packet_16], self.fifo2skid_vld_muxed[i][packet_16] & self.fifo2skid_rdy_muxed[i][packet_16])
 
                 if (packet_16 == 0) & (i == 0):
-                    self.wire(self.fifo_pop[i][packet_16], kts.ternary(self.cfg_multi_bank_mode, self.packet_128_pop,
-                                                                kts.ternary(self.cfg_exchange_64_mode, self.packet_64_pop[i], 
+                    self.wire(self.fifo_pop[i][packet_16], kts.ternary(self.multi_bank_mode_on, self.packet_128_pop,
+                                                                kts.ternary(self.exchange_64_mode_on, self.packet_64_pop[i], 
                                                                             self.fifo_pop_cond[i][packet_16])))
                 else:
-                    self.wire(self.fifo_pop[i][packet_16], kts.ternary(self.cfg_multi_bank_mode, self.packet_128_pop, self.packet_64_pop[i]))
+                    self.wire(self.fifo_pop[i][packet_16], kts.ternary(self.multi_bank_mode_on, self.packet_128_pop, self.packet_64_pop[i]))
 
             # Synchronization
             self.wire(self.packet_64_pop[i], self.fifo_pop_cond[i][0] & self.fifo_pop_cond[i][1] & self.fifo_pop_cond[i][2] & self.fifo_pop_cond[i][3])
@@ -311,7 +315,7 @@ class GlbLoadDma_E64_MB(Generator):
         for packet_16 in range(self.num_packets):
             for i in range(self._params.cgra_per_glb):
                 self.fifo2skid_rdy_muxed[i][packet_16]= 0
-                if self.cfg_multi_bank_mode:
+                if self.multi_bank_mode_on:
                     self.fifo2skid_rdy_muxed[i][packet_16] = self.fifo2skid_rdy[i][packet_16]
                     self.fifo2skid_vld[i][packet_16] = self.fifo2skid_vld_muxed[i][packet_16]
                     self.skid_in[i][packet_16] = self.data_fifo2cgra[i][packet_16]
@@ -361,7 +365,7 @@ class GlbLoadDma_E64_MB(Generator):
                 self.wire(self.fifo2skid_rdy[i][packet_16], ~self.skid_full[i][packet_16])
 
                 # self.wire(self.skid_push[i][packet_16], self.fifo2skid_rdy[i][packet_16] & self.fifo2skid_vld[i][packet_16])
-                self.wire(self.skid_push[i][packet_16], kts.ternary(self.cfg_multi_bank_mode, self.fifo_pop[i][packet_16],
+                self.wire(self.skid_push[i][packet_16], kts.ternary(self.multi_bank_mode_on, self.fifo_pop[i][packet_16],
                                                             kts.ternary(self.cfg_data_network_g2f_mux[i] == 1, self.fifo_pop[0][packet_16], 0)))
                 self.wire(~self.skid_empty[i][packet_16], self.data_g2f_vld[i][packet_16])
 
@@ -380,8 +384,8 @@ class GlbLoadDma_E64_MB(Generator):
             self.iter_step_valid = self.cycle_valid
         else:
             # synchronization logic here 
-            self.iter_step_valid = kts.ternary(self.cfg_multi_bank_mode, self.strm_run & self.packet_128_push_ready,
-                                        kts.ternary(self.cfg_exchange_64_mode, self.strm_run & self.packet_64_push_ready[0], 
+            self.iter_step_valid = kts.ternary(self.multi_bank_mode_on, self.strm_run & self.packet_128_push_ready,
+                                        kts.ternary(self.exchange_64_mode_on, self.strm_run & self.packet_64_push_ready[0], 
                                                     self.strm_run & self.fifo_push_ready[0][0]))
 
     @ always_ff((posedge, "clk"), (posedge, "reset"))
@@ -501,7 +505,7 @@ class GlbLoadDma_E64_MB(Generator):
     @ always_comb
     def ctrl_mux(self):
         for i in range(self._params.cgra_per_glb):
-            if (self.cfg_data_network_g2f_mux[i] == 1) | (self.cfg_multi_bank_mode):
+            if (self.cfg_data_network_g2f_mux[i] == 1) | (self.multi_bank_mode_on):
                 if self.cfg_ld_dma_ctrl_valid_mode != self._params.ld_dma_valid_mode_ready_valid:
                     self.ctrl_g2f_w[i] = self.strm_ctrl_muxed
                 else:
@@ -625,7 +629,7 @@ class GlbLoadDma_E64_MB(Generator):
     def strm_data_logic(self):
         # Assign strm_data[0]
         for i in range(self._params.cgra_per_glb):
-            if self.cfg_exchange_64_mode:
+            if self.exchange_64_mode_on:
                 self.strm_data[i][0] = self.bank_rdrs_data_cache_r[i][self._params.cgra_data_width - 1, 0] 
             else: 
                 if self.strm_data_sel == 0:
@@ -643,7 +647,7 @@ class GlbLoadDma_E64_MB(Generator):
                     self.strm_data[i][0] = self.bank_rdrs_data_cache_r[i][self._params.cgra_data_width - 1, 0]
 
             # Assign rest of strm_data packet 
-            if self.cfg_exchange_64_mode:
+            if self.exchange_64_mode_on:
                 self.strm_data[i][1] = self.bank_rdrs_data_cache_r[i][self._params.cgra_data_width * 2 - 1,
                                                                     self._params.cgra_data_width * 1]
                 self.strm_data[i][2] = self.bank_rdrs_data_cache_r[i][self._params.cgra_data_width * 3 - 1,
@@ -677,7 +681,7 @@ class GlbLoadDma_E64_MB(Generator):
                 self.wire(self.strm_data_valid[i], self.strm_rd_en_d_arr[resize(
                     self.cfg_data_network_latency, latency_width) + self._params.tile2sram_rd_delay])
             else:
-                self.wire(self.strm_data_valid[i], kts.ternary(self.cfg_multi_bank_mode, self.strm_rd_en_d_arr[resize(
+                self.wire(self.strm_data_valid[i], kts.ternary(self.multi_bank_mode_on, self.strm_rd_en_d_arr[resize(
                     self.cfg_data_network_latency, latency_width) + self._params.tile2sram_rd_delay], 0))
 
     def add_strm_data_sel_pipeline(self):
@@ -748,14 +752,14 @@ class GlbLoadDma_E64_MB(Generator):
         for packet_16 in range(self.num_packets):
             self.all_skid_empty[packet_16] = 1
             for i in range(self._params.cgra_per_glb):
-                if self.cfg_data_network_g2f_mux[i] | self.cfg_multi_bank_mode:
+                if self.cfg_data_network_g2f_mux[i] | self.multi_bank_mode_on:
                     self.all_skid_empty[packet_16] = self.all_skid_empty[packet_16] & self.skid_empty[i][packet_16]
                 else:
                     self.all_skid_empty[packet_16] = self.all_skid_empty[packet_16]
 
     @ always_comb
     def all_skid_empty_muxed_logic(self):
-        self.wire(self.all_skid_empty_muxed, kts.ternary(self.cfg_exchange_64_mode, self.all_skid_empty[0] & self.all_skid_empty[1] & self.all_skid_empty[2] & self.all_skid_empty[3],
+        self.wire(self.all_skid_empty_muxed, kts.ternary(self.exchange_64_mode_on, self.all_skid_empty[0] & self.all_skid_empty[1] & self.all_skid_empty[2] & self.all_skid_empty[3],
                                                          self.all_skid_empty[0]))
 
 

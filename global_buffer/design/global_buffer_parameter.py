@@ -109,6 +109,8 @@ class GlobalBufferParams:
     st_dma_valid_mode_static: int = 2
     st_dma_valid_mode_dense_ready_valid: int = 3
 
+    # zircon variables
+    exchange_64_multibank_mode: int = 3
 
     ld_dma_valid_mode_static: int = 0
     ld_dma_valid_mode_valid: int = 1
