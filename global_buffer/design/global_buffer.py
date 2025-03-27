@@ -71,7 +71,7 @@ class GlobalBuffer(Generator):
         self.cgra_cfg_jtag_gc2glb_addr = self.input("cgra_cfg_jtag_gc2glb_addr", self._params.cgra_cfg_addr_width)
         self.cgra_cfg_jtag_gc2glb_data = self.input("cgra_cfg_jtag_gc2glb_data", self._params.cgra_cfg_data_width)
 
-        if "INCLUDE_E64_HW" in os.environ and os.environ.get("INCLUDE_E64_HW") == "1":
+        if self._params.include_E64_hw:
             self.strm_data_f2g = self.input("strm_data_f2g", self._params.cgra_data_width, size=[
                 self._params.num_glb_tiles, self._params.cgra_per_glb, 4], packed=True)  
             self.strm_data_f2g_vld = self.input("strm_data_f2g_vld", 1, size=[

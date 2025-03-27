@@ -882,6 +882,7 @@ def parse_args():
     parser.add_argument("--num-fabric-cols-removed", type=int, default=0)
     parser.add_argument("--mu-oc-0", type=int, default=32)
     parser.add_argument('--include-E64-hw', action="store_true")
+    parser.add_argument('--include-multi-bank-hw', action="store_true")
 
     # Daemon choices are maybe ['help', 'launch', 'use', 'kill', 'force', 'status', 'wait']
     parser.add_argument('--daemon', type=str, choices=GarnetDaemon.choices, default=None)
@@ -941,8 +942,11 @@ def parse_args():
         cgra_axi_addr_width=13,
         axi_data_width=32,
         config_port_pipeline=args.config_port_pipeline,
+        include_E64_hw=args.include_E64_hw,
+        include_multi_bank_hw=args.include_multi_bank_hw,
         num_mu_addr_builder_tiles=4,
         mu_word_num_tiles=4)
+        
 
     # for a in vars(args).items(): print(f'arg {a} has type {type(a)}')
     return args, io_sides
