@@ -34,8 +34,8 @@ class GlbLoadDma_E64(Generator):
 
         self.rdrq_packet_dma2bank = self.output("rdrq_packet_dma2bank", self.header.rdrq_packet_t)
         self.rdrq_packet_dma2ring = self.output("rdrq_packet_dma2ring", self.header.rdrq_packet_t)
-        self.rdrs_packet_bank2dma = self.input("rdrs_packet_bank2dma", self.header.rdrs_packet_t, size=_params.cgra_per_glb)
-        self.rdrs_packet_ring2dma = self.input("rdrs_packet_ring2dma", self.header.rdrs_packet_t, size=_params.cgra_per_glb)
+        self.rdrs_packet_bank2dma = self.input("rdrs_packet_bank2dma", self.header.rdrs_packet_t, size=_params.banks_per_tile)
+        self.rdrs_packet_ring2dma = self.input("rdrs_packet_ring2dma", self.header.rdrs_packet_t)
 
         self.cfg_tile_connected_prev = self.input("cfg_tile_connected_prev", 1)
         self.cfg_tile_connected_next = self.input("cfg_tile_connected_next", 1)
@@ -598,8 +598,10 @@ class GlbLoadDma_E64(Generator):
 
     @ always_comb
     def rdrs_packet_logic(self):
+        # FIXME: Remove this eventually
+        self.rdrs_packet = 0
         if self.cfg_tile_connected_next | self.cfg_tile_connected_prev:
-            self.rdrs_packet = self.rdrs_packet_ring2dma
+            self.rdrs_packet[0] = self.rdrs_packet_ring2dma
         else:
             self.rdrs_packet = self.rdrs_packet_bank2dma
 

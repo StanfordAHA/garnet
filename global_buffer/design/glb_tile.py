@@ -8,7 +8,6 @@ from global_buffer.design.glb_pcfg_dma import GlbPcfgDma
 from global_buffer.design.glb_cfg import GlbCfg
 from global_buffer.design.glb_bank_mux import GlbBankMux
 from global_buffer.design.glb_ring_switch import GlbRingSwitch
-from global_buffer.design.glb_ring_switch_multi_bank import GlbRingSwitchMultiBank
 from global_buffer.design.glb_pcfg_broadcast import GlbPcfgBroadcast
 from global_buffer.design.glb_switch import GlbSwitch
 from global_buffer.design.glb_tile_ifc import GlbTileInterface
@@ -32,53 +31,45 @@ class GlbTile(Generator):
         self.reset = self.reset("reset")
         self.glb_tile_id = self.input("glb_tile_id", self._params.tile_sel_addr_width)
 
-
-        # TEMPORARY HACK
-        include_multi_bank_hw = True 
-
         self.strm_w2e_wsti_dict = {}
-        for port, port_width in self.header.packet_ports:
+        for port, size in self.header.packet_ports:
             name = f"strm_{port}_w2e_wsti"
-            size = self._params.cgra_per_glb if (include_multi_bank_hw and (port not in self.header.rdrq_packet_port_names)) else 1 
-            self.strm_w2e_wsti_dict[port] = self.input(name, port_width, size=size)
+            self.strm_w2e_wsti_dict[port] = self.input(name, size)
 
         self.strm_w2e_esto_dict = {}
-        for port, port_width in self.header.packet_ports:
+        for port, size in self.header.packet_ports:
             name = f"strm_{port}_w2e_esto"
-            size = self._params.cgra_per_glb if (include_multi_bank_hw and (port not in self.header.rdrq_packet_port_names)) else 1 
-            self.strm_w2e_esto_dict[port] = self.output(name, port_width, size=size)
+            self.strm_w2e_esto_dict[port] = self.output(name, size)
 
         self.strm_e2w_esti_dict = {}
-        for port, port_width in self.header.packet_ports:
+        for port, size in self.header.packet_ports:
             name = f"strm_{port}_e2w_esti"
-            size = self._params.cgra_per_glb if (include_multi_bank_hw and (port not in self.header.rdrq_packet_port_names)) else 1 
-            self.strm_e2w_esti_dict[port] = self.input(name, port_width, size=size)
+            self.strm_e2w_esti_dict[port] = self.input(name, size)
 
         self.strm_e2w_wsto_dict = {}
-        for port, port_width in self.header.packet_ports:
+        for port, size in self.header.packet_ports:
             name = f"strm_{port}_e2w_wsto"
-            size = self._params.cgra_per_glb if (include_multi_bank_hw and (port not in self.header.rdrq_packet_port_names)) else 1 
-            self.strm_e2w_wsto_dict[port] = self.output(name, port_width, size=size)
+            self.strm_e2w_wsto_dict[port] = self.output(name, size)
 
         self.pcfg_w2e_wsti_dict = {}
-        for port, port_width in self.header.rd_packet_ports:
+        for port, size in self.header.rd_packet_ports:
             name = f"pcfg_{port}_w2e_wsti"
-            self.pcfg_w2e_wsti_dict[port] = self.input(name, port_width)
+            self.pcfg_w2e_wsti_dict[port] = self.input(name, size)
 
         self.pcfg_w2e_esto_dict = {}
-        for port, port_width in self.header.rd_packet_ports:
+        for port, size in self.header.rd_packet_ports:
             name = f"pcfg_{port}_w2e_esto"
-            self.pcfg_w2e_esto_dict[port] = self.output(name, port_width)
+            self.pcfg_w2e_esto_dict[port] = self.output(name, size)
 
         self.pcfg_e2w_esti_dict = {}
-        for port, port_width in self.header.rd_packet_ports:
+        for port, size in self.header.rd_packet_ports:
             name = f"pcfg_{port}_e2w_esti"
-            self.pcfg_e2w_esti_dict[port] = self.input(name, port_width)
+            self.pcfg_e2w_esti_dict[port] = self.input(name, size)
 
         self.pcfg_e2w_wsto_dict = {}
-        for port, port_width in self.header.rd_packet_ports:
+        for port, size in self.header.rd_packet_ports:
             name = f"pcfg_{port}_e2w_wsto"
-            self.pcfg_e2w_wsto_dict[port] = self.output(name, port_width)
+            self.pcfg_e2w_wsto_dict[port] = self.output(name, size)
 
         # Processor AXI interface
         self.if_proc = GlbTileInterface(addr_width=self._params.glb_addr_width,
@@ -407,7 +398,7 @@ class GlbTile(Generator):
                        cfg_st_dma_rv_seg_mode=self.cfg_st_dma_rv_seg_mode)
         
         # MO: Temporary HACK
-        self.wire(self.glb_store_dma.cfg_multi_bank_mode, 1)
+        self.wire(self.glb_store_dma.cfg_multi_bank_mode, 0)
         
         if "INCLUDE_E64_HW" in os.environ and os.environ.get("INCLUDE_E64_HW") == "1":
             self.wire(self.glb_store_dma.cfg_exchange_64_mode, self.cfg_st_dma_exchange_64_mode)
@@ -441,7 +432,7 @@ class GlbTile(Generator):
                        ld_dma_done_interrupt=self.strm_g2f_interrupt_pulse)
         
         # Temporary HACK 
-        self.wire(self.glb_load_dma.cfg_multi_bank_mode, 1)
+        self.wire(self.glb_load_dma.cfg_multi_bank_mode, 0)
         
         if "INCLUDE_E64_HW" in os.environ and os.environ.get("INCLUDE_E64_HW") == "1":
             self.wire(self.glb_load_dma.cfg_exchange_64_mode, self.cfg_ld_dma_exchange_64_mode)
@@ -501,7 +492,7 @@ class GlbTile(Generator):
         
 
         # MO: Temporary HACK
-        self.wire(self.glb_bank_mux.cfg_multi_bank_mode, 1)
+        self.wire(self.glb_bank_mux.cfg_multi_bank_mode, 0)
 
         self.glb_proc_switch = GlbSwitch(self._params, ifc=self.if_proc)
         self.add_child("glb_proc_switch",
@@ -518,7 +509,7 @@ class GlbTile(Generator):
                        rdrs_packet=self.rdrs_packet_bank2procsw)
 
         self.add_child("glb_strm_ring_switch",
-                       GlbRingSwitchMultiBank(_params=self._params, wr_channel=True, rd_channel=True),
+                       GlbRingSwitch(_params=self._params, wr_channel=True, rd_channel=True),
                        clk=clock(self.gclk_strm_switch),
                        reset=self.reset,
                        glb_tile_id=self.glb_tile_id,
@@ -630,10 +621,8 @@ class GlbTile(Generator):
         self.cgra_cfg_pcfgdma2mux = self.var("cgra_cfg_pcfgdma2mux", self.header.cgra_cfg_t)
 
         self.wr_packet_procsw2bank = self.var("wr_packet_procsw2bank", self.header.wr_packet_t)
-        # FIXME: Make this if include_dual_bank_hw
-        self.wr_packet_ring2bank = self.var("wr_packet_ring2bank", self.header.wr_packet_t, size=self._params.banks_per_tile)
-        # FIXME: Make this if include_dual_bank_hw
-        self.wr_packet_dma2ring = self.var("wr_packet_dma2ring", self.header.wr_packet_t, size=self._params.banks_per_tile)
+        self.wr_packet_ring2bank = self.var("wr_packet_ring2bank", self.header.wr_packet_t)
+        self.wr_packet_dma2ring = self.var("wr_packet_dma2ring", self.header.wr_packet_t)
         # FIXME: Make this if include_dual_bank_hw
         # self.wr_packet_dma2bank = self.var("wr_packet_dma2bank", self.header.wr_packet_t)
         self.wr_packet_dma2bank = self.var("wr_packet_dma2bank", self.header.wr_packet_t, size=self._params.banks_per_tile)
@@ -647,8 +636,8 @@ class GlbTile(Generator):
         self.rdrq_packet_pcfgdma2ring = self.var("rdrq_packet_pcfgdma2ring", self.header.rdrq_packet_t)
 
         self.rdrs_packet_bank2procsw = self.var("rdrs_packet_bank2procsw", self.header.rdrs_packet_t)
-        self.rdrs_packet_bank2ring = self.var("rdrs_packet_bank2ring", self.header.rdrs_packet_t, size=self._params.banks_per_tile)
-        self.rdrs_packet_ring2dma = self.var("rdrs_packet_ring2dma", self.header.rdrs_packet_t, size=self._params.banks_per_tile)
+        self.rdrs_packet_bank2ring = self.var("rdrs_packet_bank2ring", self.header.rdrs_packet_t)
+        self.rdrs_packet_ring2dma = self.var("rdrs_packet_ring2dma", self.header.rdrs_packet_t)
         # FIXME: Make this if include_dual_bank_hw
         # self.rdrs_packet_bank2dma = self.var("rdrs_packet_bank2dma", self.header.rdrs_packet_t)
         self.rdrs_packet_bank2dma = self.var("rdrs_packet_bank2dma", self.header.rdrs_packet_t, size=self._params.banks_per_tile)
@@ -656,21 +645,20 @@ class GlbTile(Generator):
         self.rdrs_packet_bank2pcfgring = self.var("rdrs_packet_bank2pcfgring", self.header.rdrs_packet_t)
         self.rdrs_packet_bank2pcfgdma = self.var("rdrs_packet_bank2pcfgdma", self.header.rdrs_packet_t)
 
-        # FIXME: Make this if include dual bank hw
-        self.strm_wr_packet_w2e_wsti = self.var("strm_wr_packet_w2e_wsti", self.header.wr_packet_t, size=self._params.banks_per_tile)
-        self.strm_wr_packet_e2w_wsto = self.var("strm_wr_packet_e2w_wsto", self.header.wr_packet_t, size=self._params.banks_per_tile)
-        self.strm_wr_packet_e2w_esti = self.var("strm_wr_packet_e2w_esti", self.header.wr_packet_t, size=self._params.banks_per_tile)
-        self.strm_wr_packet_w2e_esto = self.var("strm_wr_packet_w2e_esto", self.header.wr_packet_t, size=self._params.banks_per_tile)
+        self.strm_wr_packet_w2e_wsti = self.var("strm_wr_packet_w2e_wsti", self.header.wr_packet_t)
+        self.strm_wr_packet_e2w_wsto = self.var("strm_wr_packet_e2w_wsto", self.header.wr_packet_t)
+        self.strm_wr_packet_e2w_esti = self.var("strm_wr_packet_e2w_esti", self.header.wr_packet_t)
+        self.strm_wr_packet_w2e_esto = self.var("strm_wr_packet_w2e_esto", self.header.wr_packet_t)
 
         self.strm_rdrq_packet_w2e_wsti = self.var("strm_rdrq_packet_w2e_wsti", self.header.rdrq_packet_t)
         self.strm_rdrq_packet_e2w_wsto = self.var("strm_rdrq_packet_e2w_wsto", self.header.rdrq_packet_t)
         self.strm_rdrq_packet_e2w_esti = self.var("strm_rdrq_packet_e2w_esti", self.header.rdrq_packet_t)
         self.strm_rdrq_packet_w2e_esto = self.var("strm_rdrq_packet_w2e_esto", self.header.rdrq_packet_t)
 
-        self.strm_rdrs_packet_w2e_wsti = self.var("strm_rdrs_packet_w2e_wsti", self.header.rdrs_packet_t, size=self._params.banks_per_tile)
-        self.strm_rdrs_packet_e2w_wsto = self.var("strm_rdrs_packet_e2w_wsto", self.header.rdrs_packet_t, size=self._params.banks_per_tile)
-        self.strm_rdrs_packet_e2w_esti = self.var("strm_rdrs_packet_e2w_esti", self.header.rdrs_packet_t, size=self._params.banks_per_tile)
-        self.strm_rdrs_packet_w2e_esto = self.var("strm_rdrs_packet_w2e_esto", self.header.rdrs_packet_t, size=self._params.banks_per_tile)
+        self.strm_rdrs_packet_w2e_wsti = self.var("strm_rdrs_packet_w2e_wsti", self.header.rdrs_packet_t)
+        self.strm_rdrs_packet_e2w_wsto = self.var("strm_rdrs_packet_e2w_wsto", self.header.rdrs_packet_t)
+        self.strm_rdrs_packet_e2w_esti = self.var("strm_rdrs_packet_e2w_esti", self.header.rdrs_packet_t)
+        self.strm_rdrs_packet_w2e_esto = self.var("strm_rdrs_packet_w2e_esto", self.header.rdrs_packet_t)
 
         self.pcfg_rdrq_packet_w2e_wsti = self.var("pcfg_rdrq_packet_w2e_wsti", self.header.rdrq_packet_t)
         self.pcfg_rdrq_packet_e2w_wsto = self.var("pcfg_rdrq_packet_e2w_wsto", self.header.rdrq_packet_t)
@@ -682,16 +670,14 @@ class GlbTile(Generator):
         self.pcfg_rdrs_packet_e2w_esti = self.var("pcfg_rdrs_packet_e2w_esti", self.header.rdrs_packet_t)
         self.pcfg_rdrs_packet_w2e_esto = self.var("pcfg_rdrs_packet_w2e_esto", self.header.rdrs_packet_t)
 
-        # FIXME: Make this if include dual bank hw
-        for i in range(self._params.banks_per_tile):
-            for port, _ in self.header.wr_packet_ports:
-                self.wire(self.strm_wr_packet_w2e_wsti[i][port], self.strm_w2e_wsti_dict[port][i])
-            for port, _ in self.header.wr_packet_ports:
-                self.wire(self.strm_wr_packet_w2e_esto[i][port], self.strm_w2e_esto_dict[port][i])
-            for port, _ in self.header.wr_packet_ports:
-                self.wire(self.strm_wr_packet_e2w_esti[i][port], self.strm_e2w_esti_dict[port][i])
-            for port, _ in self.header.wr_packet_ports:
-                self.wire(self.strm_wr_packet_e2w_wsto[i][port], self.strm_e2w_wsto_dict[port][i])
+        for port, _ in self.header.wr_packet_ports:
+            self.wire(self.strm_wr_packet_w2e_wsti[port], self.strm_w2e_wsti_dict[port])
+        for port, _ in self.header.wr_packet_ports:
+            self.wire(self.strm_wr_packet_w2e_esto[port], self.strm_w2e_esto_dict[port])
+        for port, _ in self.header.wr_packet_ports:
+            self.wire(self.strm_wr_packet_e2w_esti[port], self.strm_e2w_esti_dict[port])
+        for port, _ in self.header.wr_packet_ports:
+            self.wire(self.strm_wr_packet_e2w_wsto[port], self.strm_e2w_wsto_dict[port])
 
         for port, _ in self.header.rdrq_packet_ports:
             self.wire(self.strm_rdrq_packet_w2e_wsti[port], self.strm_w2e_wsti_dict[port])
@@ -702,15 +688,14 @@ class GlbTile(Generator):
         for port, _ in self.header.rdrq_packet_ports:
             self.wire(self.strm_rdrq_packet_e2w_wsto[port], self.strm_e2w_wsto_dict[port])
 
-        for i in range(self._params.banks_per_tile):
-            for port, _ in self.header.rdrs_packet_ports:
-                self.wire(self.strm_rdrs_packet_e2w_wsto[i][port], self.strm_e2w_wsto_dict[port][i])
-            for port, _ in self.header.rdrs_packet_ports:
-                self.wire(self.strm_rdrs_packet_e2w_esti[i][port], self.strm_e2w_esti_dict[port][i])
-            for port, _ in self.header.rdrs_packet_ports:
-                self.wire(self.strm_rdrs_packet_w2e_wsti[i][port], self.strm_w2e_wsti_dict[port][i])
-            for port, _ in self.header.rdrs_packet_ports:
-                self.wire(self.strm_rdrs_packet_w2e_esto[i][port], self.strm_w2e_esto_dict[port][i])
+        for port, _ in self.header.rdrs_packet_ports:
+            self.wire(self.strm_rdrs_packet_e2w_wsto[port], self.strm_e2w_wsto_dict[port])
+        for port, _ in self.header.rdrs_packet_ports:
+            self.wire(self.strm_rdrs_packet_e2w_esti[port], self.strm_e2w_esti_dict[port])
+        for port, _ in self.header.rdrs_packet_ports:
+            self.wire(self.strm_rdrs_packet_w2e_wsti[port], self.strm_w2e_wsti_dict[port])
+        for port, _ in self.header.rdrs_packet_ports:
+            self.wire(self.strm_rdrs_packet_w2e_esto[port], self.strm_w2e_esto_dict[port])
 
         for port, _ in self.header.rdrq_packet_ports:
             self.wire(self.pcfg_rdrq_packet_w2e_wsti[port], self.pcfg_w2e_wsti_dict[port])
