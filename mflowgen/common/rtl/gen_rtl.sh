@@ -258,11 +258,13 @@ if [ "$use_container" == True ]; then
            cat global_buffer/systemRDL/output/glb_jrdl_logic.sv >> design.v
            cat global_controller/systemRDL/output/*.sv >> design.v
 
-           # For details about the anti-pohan hack hack see garnet pull request #TBD ~ March 2025
+           # For details about this anti-pohan/intel hack hack
+           # see garnet pull request #TBD ~ March 2025
            # Note we are still in double-quote regime (I hope)
            if [ '$WHICH_SOC' == 'amber' ]; then
              echo '--- BEGIN egregious anti-pohan-hack hack'
              cp design.v design.v.orig
+             sed -i 's|// \(clk.*Are we stalling.*\)|\1|' design.v
              sed -i '/.*CG Hack/,/[)][;]/s,^,// ,' design.v
              diff design.v.orig design.v || printf '\n\n'
            fi
