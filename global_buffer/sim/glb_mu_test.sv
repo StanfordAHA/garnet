@@ -56,17 +56,19 @@ program glb_mu_test #(
         // Initiialize
         initialize(); 
         
-        // Write data to 4 consecutive GLB tiles, starting from base tile 
+        // Write data to 4 consecutive BANKS, starting from base tile
         start_addr = GLB_TILE_BASE << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH);
         ProcDriver_write_data(start_addr, data_arr16_seg0);
 
-        start_addr = (GLB_TILE_BASE + 1) << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH);
+        start_addr = ((GLB_TILE_BASE) << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) | 
+                      (1 << BANK_ADDR_WIDTH);
         ProcDriver_write_data(start_addr, data_arr16_seg1);
 
-        start_addr = (GLB_TILE_BASE + 2) << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH);
+        start_addr = (GLB_TILE_BASE + 1) << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH);
         ProcDriver_write_data(start_addr, data_arr16_seg2);
 
-        start_addr = (GLB_TILE_BASE + 3) << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH);
+        start_addr =  ((GLB_TILE_BASE + 1) << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) | 
+                      (1 << BANK_ADDR_WIDTH);
         ProcDriver_write_data(start_addr, data_arr16_seg3);
 
 
@@ -77,11 +79,10 @@ program glb_mu_test #(
         // Mask away uncessary bits from tile ID
         tile_sel = GLB_TILE_BASE;
         mu_rd_group_sel = tile_sel[TILE_SEL_ADDR_WIDTH - 1 : $clog2(MU_WORD_NUM_TILES)];
-        mu_rd_start_addr = mu_rd_group_sel << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH);
+        mu_rd_start_addr = mu_rd_group_sel << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH); // TODO: Remove bank bit from here eventually (and in the addr transl HW)
         mu_rd_burst_size = BURST_SIZE;
         mu_addr_in = {mu_rd_burst_size, mu_rd_start_addr};
         MUDriver_read_data(mu_addr_in, data_arr16_out);
-        // ProcDriver_read_data(start_addr, data_arr16_out);
 
         // Compare data
         err = compare_16b_arr(data_arr16, data_arr16_out);

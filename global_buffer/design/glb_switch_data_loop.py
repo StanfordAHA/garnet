@@ -46,7 +46,7 @@ class GlbSwitchDataLoop(Generator):
         
         if self.rd_channel:
             self.rdrq_packet = self.output("rdrq_packet", self.header.mu_rdrq_packet_t)
-            self.rdrs_packet = self.input("rdrs_packet", self.header.rdrs_packet_t)
+            self.rdrs_packet = self.input("rdrs_packet", self.header.rdrs_packet_t, size=self._params.banks_per_tile) # size > 1 for multibank HW
 
         # config port
         self.if_est_m = self.interface(self.ifc.master, "if_est_m", is_port=True)
@@ -368,15 +368,17 @@ class GlbSwitchDataLoop(Generator):
         self.rd_data_w2e_w = 0
         self.rd_data_w2e_valid_w = 0
         for sub_packet in range(self.num_tracks):
-            if (sub_packet == self.sub_packet_idx_d) & (self.rdrs_packet['rd_data_valid'] == 1):
+            # idx = sub_packet // 2
+            # bank = sub_packet % 2
+            if (sub_packet//2 == self.sub_packet_idx_d) & (self.rdrs_packet[sub_packet % 2]['rd_data_valid'] == 1):
                     if is_partial:
                         if self.bank_rd_addr_sel_d == 0:
-                            self.rd_data_w2e_w[sub_packet] = self.rdrs_packet['rd_data'][self.data_width - 1, 0]
+                            self.rd_data_w2e_w[sub_packet] = self.rdrs_packet[sub_packet % 2]['rd_data'][self.data_width - 1, 0]
                         else:
-                            self.rd_data_w2e_w[sub_packet] = self.rdrs_packet['rd_data'][self.data_width * 2 - 1, self.data_width]
+                            self.rd_data_w2e_w[sub_packet] = self.rdrs_packet[sub_packet % 2]['rd_data'][self.data_width * 2 - 1, self.data_width]
                         self.rd_data_w2e_valid_w[sub_packet] = 1
                     else:
-                        self.rd_data_w2e_w[sub_packet] = self.rdrs_packet['rd_data']
+                        self.rd_data_w2e_w[sub_packet] = self.rdrs_packet[sub_packet % 2]['rd_data']
                         self.rd_data_w2e_valid_w[sub_packet]= 1
             elif self.if_wst_s.rd_data_w2e_valid[sub_packet] == 1:
                 self.rd_data_w2e_w[sub_packet] = self.if_wst_s.rd_data_w2e[sub_packet]

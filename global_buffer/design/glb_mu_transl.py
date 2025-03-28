@@ -6,7 +6,7 @@ from global_buffer.design.fifo import FIFO
 class GlbMUTransl(Generator):
     def __init__(self, _params: GlobalBufferParams):
         self._params = _params
-        super().__init__(f"glb_mu_addr_transl_{self._params.mu_addr_width}_{self._params.glb_addr_width}")
+        super().__init__(f"glb_mu_transl_{self._params.mu_addr_width}_{self._params.glb_addr_width}")
       
         # Clock and Reset
         self.clk = self.clock("clk")

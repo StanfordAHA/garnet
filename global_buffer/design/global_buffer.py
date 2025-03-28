@@ -275,7 +275,7 @@ class GlobalBuffer(Generator):
         # Num tracks will equal 4 here eventually. This information should really be in self.params. Also, the enviornment variable should be in params instead. 
         if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1": 
             if_mu_rd_tile2tile = GlbTileDataLoopInterface(addr_width=self._params.glb_addr_width,
-                                                data_width=self._params.bank_data_width, is_clk_en=True, is_strb=False, has_wr_ifc=False, num_tracks=self._params.mu_word_num_tiles, mu_word_num_tiles=self._params.mu_word_num_tiles)
+                                                data_width=self._params.bank_data_width, is_clk_en=True, is_strb=False, has_wr_ifc=False, num_tracks=self._params.mu_switch_num_tracks, mu_word_num_tiles=self._params.mu_word_num_tiles)
         
 
         if_cfg_tile2tile = GlbTileInterface(addr_width=self._params.axi_addr_width,

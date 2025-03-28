@@ -93,14 +93,15 @@ class GlobalBufferParams:
     cgra_axi_data_width: int = 32
     cgra_cfg_addr_width: int = 32
     cgra_cfg_data_width: int = 32
-    num_mu_addr_builder_tiles: int = 4
-    mu_word_num_tiles: int = 4
-    mu_word_width: int = 256
-    mu_addr_num_burst_bits: int = 3
-
+   
     # zircon parameters
     include_E64_hw: bool = False
     include_multi_bank_hw: bool = False
+    num_mu_addr_builder_tiles: int = 4
+    mu_word_num_tiles: int = 2
+    mu_switch_num_tracks: int = 4
+    mu_word_width: int = 256
+    mu_addr_num_burst_bits: int = 3
 
     # Not used by TSMC (yet)
     load_dma_fifo_depth: int = 16
@@ -226,7 +227,6 @@ def gen_global_buffer_params(**kwargs):
     cfg_data_width = kwargs.pop('cfg_data_width', 32)
     is_sram_stub = kwargs.pop('is_sram_stub', 0)
     num_mu_addr_builder_tiles = kwargs.pop('num_mu_addr_builder_tiles', 4)
-    mu_word_num_tiles = kwargs.pop('mu_word_num_tiles', 4)
 
     # config_port_pipeline not used by TSMC (yet)
     # pop() returns True if config_port_pipeline not exists
@@ -275,8 +275,7 @@ def gen_global_buffer_params(**kwargs):
                                 config_port_pipeline_depth=config_port_pipeline_depth,
                                 include_E64_hw=include_E64_hw,
                                 include_multi_bank_hw=include_multi_bank_hw,
-                                num_mu_addr_builder_tiles=num_mu_addr_builder_tiles,
-                                mu_word_num_tiles=mu_word_num_tiles)
+                                num_mu_addr_builder_tiles=num_mu_addr_builder_tiles)
                                                               
     return params
 

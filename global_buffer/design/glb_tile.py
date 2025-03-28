@@ -91,7 +91,7 @@ class GlbTile(Generator):
         if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1":
             # TODO: Eventually, make num_tracks 4 here 
             self.if_mu_rd = GlbTileDataLoopInterface(addr_width=self._params.glb_addr_width,
-                                            data_width=self._params.bank_data_width, is_clk_en=True, is_strb=False, has_wr_ifc=False, num_tracks=self._params.mu_word_num_tiles, mu_word_num_tiles=self._params.mu_word_num_tiles)
+                                            data_width=self._params.bank_data_width, is_clk_en=True, is_strb=False, has_wr_ifc=False, num_tracks=self._params.mu_switch_num_tracks, mu_word_num_tiles=self._params.mu_word_num_tiles)
             self.if_mu_rd_est_m = self.interface(self.if_mu_rd, "if_mu_rd_est_m")
             self.if_mu_rd_wst_s = self.interface(self.if_mu_rd, "if_mu_rd_wst_s")
 
@@ -589,7 +589,7 @@ class GlbTile(Generator):
         
 
         if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1":
-            self.glb_mu_rd_switch = GlbSwitchDataLoop(self._params, ifc=self.if_mu_rd, wr_channel=False, rd_channel=True, num_tracks=self._params.mu_word_num_tiles)
+            self.glb_mu_rd_switch = GlbSwitchDataLoop(self._params, ifc=self.if_mu_rd, wr_channel=False, rd_channel=True, num_tracks=self._params.mu_switch_num_tracks)
             self.add_child("glb_mu_rd_switch",
                         self.glb_mu_rd_switch,
                         mclk=self.clk,
@@ -733,7 +733,7 @@ class GlbTile(Generator):
 
         self.rdrs_packet_bank2procsw = self.var("rdrs_packet_bank2procsw", self.header.rdrs_packet_t)
         if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1":
-            self.rdrs_packet_bank2mu_rd_sw = self.var("rdrs_packet_bank2mu_rd_sw", self.header.rdrs_packet_t)
+            self.rdrs_packet_bank2mu_rd_sw = self.var("rdrs_packet_bank2mu_rd_sw", self.header.rdrs_packet_t, size = self._params.banks_per_tile)
         self.rdrs_packet_bank2ring = self.var("rdrs_packet_bank2ring", self.header.rdrs_packet_t)
         self.rdrs_packet_ring2dma = self.var("rdrs_packet_ring2dma", self.header.rdrs_packet_t)
 
