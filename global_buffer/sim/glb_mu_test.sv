@@ -15,7 +15,7 @@ program glb_mu_test #(
 );
     int err = 0;
     const int MAX_NUM_ERRORS = 20;
-    const int GLB_TILE_BASE = 4;
+    const int GLB_TILE_BASE = 6;
     const int BURST_SIZE = 4;
     const int ADD_INPUT_BUBBLES = 1;
     const int RANDOM_SHIFT = 2;
@@ -79,7 +79,8 @@ program glb_mu_test #(
         // Mask away uncessary bits from tile ID
         tile_sel = GLB_TILE_BASE;
         mu_rd_group_sel = tile_sel[TILE_SEL_ADDR_WIDTH - 1 : $clog2(MU_WORD_NUM_TILES)];
-        mu_rd_start_addr = mu_rd_group_sel << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH); // TODO: Remove bank bit from here eventually (and in the addr transl HW)
+        // mu_rd_start_addr = mu_rd_group_sel << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH); // TODO: Remove bank bit from here eventually (and in the addr transl HW)
+        mu_rd_start_addr = mu_rd_group_sel << (BANK_ADDR_WIDTH);
         mu_rd_burst_size = BURST_SIZE;
         mu_addr_in = {mu_rd_burst_size, mu_rd_start_addr};
         MUDriver_read_data(mu_addr_in, data_arr16_out);

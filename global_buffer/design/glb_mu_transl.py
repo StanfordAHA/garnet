@@ -36,8 +36,8 @@ class GlbMUTransl(Generator):
         # Local vars
         self.burst_counter = self.var("burst_counter",self._params.mu_addr_num_burst_bits)
         self.next_burst_counter = self.var("next_burst_counter",self._params.mu_addr_num_burst_bits) 
-        self.burst_addr_incr = self.var("burst_addr_incr", self._params.glb_addr_width)
-        self.adjusted_addr_fifo_out = self.var("adjusted_addr_fifo_out", self._params.glb_addr_width)
+        self.burst_addr_incr = self.var("burst_addr_incr", self._params.mu_addr_width)
+        self.addr_to_adjuster = self.var("addr_to_adjuster", self._params.mu_addr_width)
         self.read_en2glb_w = self.var("read_en2glb_w", 1)
         self.addr_to_glb_w = self.var("addr_to_glb_w", self._params.glb_addr_width)
 
@@ -59,7 +59,7 @@ class GlbMUTransl(Generator):
         self.add_always(self.burst_addr_incr_ff)
         self.add_always(self.burst_counter_ff)
         self.add_always(self.output_logic)
-        self.add_always(self.tile_ID_logic)
+        self.add_always(self.address_adjustment_logic)
 
 
         ###################
@@ -75,7 +75,7 @@ class GlbMUTransl(Generator):
         # Bind FSM outputs 
         self.read_req_fsm.output(self.addr_fifo_pop)
         self.read_req_fsm.output(self.read_en2glb_w)    
-        self.read_req_fsm.output(self.addr_to_glb_w)
+        self.read_req_fsm.output(self.addr_to_adjuster)
         self.read_req_fsm.output(self.next_burst_counter)
        
         # Next State Logic 
@@ -89,12 +89,12 @@ class GlbMUTransl(Generator):
         # FSM Output Logic
         READY.output(self.addr_fifo_pop, 1)
         READY.output(self.read_en2glb_w, self.addr_fifo_out_valid)
-        READY.output(self.addr_to_glb_w, self.adjusted_addr_fifo_out)
+        READY.output(self.addr_to_adjuster, self.addr_fifo_out)
         READY.output(self.next_burst_counter, self.addr_fifo_out[self.burst_msb, self.burst_lsb] - 1)
 
         BUSY.output(self.addr_fifo_pop, 0)
         BUSY.output(self.read_en2glb_w, 1)
-        BUSY.output(self.addr_to_glb_w, self.burst_addr_incr)
+        BUSY.output(self.addr_to_adjuster, self.burst_addr_incr)
         BUSY.output(self.next_burst_counter, self.burst_counter - 1)
        
         # Realize FSM
@@ -132,7 +132,6 @@ class GlbMUTransl(Generator):
 
     def add_data_out_fifo_logic(self):
         # DATA OUT FIFO
-        # TODO: Create mu_data_out_fifo_depth in params
         self.data_out_fifo = FIFO(self._params.mu_word_width, self._params.mu_data_out_fifo_depth)
         self.add_child("data_out_fifo",
                        self.data_out_fifo,
@@ -166,7 +165,7 @@ class GlbMUTransl(Generator):
         if self.reset:
             self.burst_addr_incr = 0
         else:
-            self.burst_addr_incr = self.addr_to_glb_w + self.addr_incr_value 
+            self.burst_addr_incr = self.addr_to_adjuster + self.addr_incr_value 
 
     @always_comb
     def output_logic(self):
@@ -176,13 +175,16 @@ class GlbMUTransl(Generator):
     # Adjusted address consists of 3 components:
     # 1. The tileID bits provided by MU, referring to a group of GLB tiles 
     # 2. Inserted 0s at MSBs of tileID, to refer to base tile of that group
-    # 3. Rest of address 
+    # 3. Inserted 0 for the bank ID
+    # 4. Rest of address 
     @always_comb
-    def tile_ID_logic(self):
+    def address_adjustment_logic(self):
         if self.num_tile_id_bits_in_mu_addr > 0:
-            self.adjusted_addr_fifo_out = concat(self.addr_fifo_out[self.burst_lsb - 1, self.burst_lsb - 1 - (self.num_tile_id_bits_in_mu_addr - 1)], 
+            self.addr_to_glb_w = concat(self.addr_to_adjuster[self.burst_lsb - 1, self.burst_lsb - 1 - (self.num_tile_id_bits_in_mu_addr - 1)], 
                                                 const(0, clog2(self._params.mu_word_num_tiles)),
-                                                self.addr_fifo_out[self.burst_lsb - 1 - (self.num_tile_id_bits_in_mu_addr), 0])
+                                                const(0, self._params.bank_sel_addr_width),
+                                                self.addr_to_adjuster[self.burst_lsb - 1 - (self.num_tile_id_bits_in_mu_addr), 0])
         else:
-            self.adjusted_addr_fifo_out = concat(const(0, clog2(self._params.mu_word_num_tiles)),
-                                                self.addr_fifo_out[self.burst_lsb - 1 - (self.num_tile_id_bits_in_mu_addr), 0])
+            self.addr_to_glb_w = concat(const(0, clog2(self._params.mu_word_num_tiles)),
+                                                 const(0, self._params.bank_sel_addr_width),
+                                                 self.addr_to_adjuster[self.burst_lsb - 1 - (self.num_tile_id_bits_in_mu_addr), 0])

@@ -35,7 +35,7 @@ class GlobalBufferParams:
     
     @property
     def mu_addr_width(self):
-        return self.glb_addr_width - math.ceil(math.log(self.mu_word_num_tiles, 2)) + self.mu_addr_num_burst_bits
+        return self.glb_addr_width - math.ceil(math.log(self.mu_word_num_tiles, 2)) + self.mu_addr_num_burst_bits - self.bank_sel_addr_width
     
     @property
     def mu_data_out_fifo_depth(self):
