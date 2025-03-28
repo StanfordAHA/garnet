@@ -9,7 +9,6 @@ function get_amber_updates {
       cd /aha/canal        && git checkout 6fec524;
       cd /aha/clockwork    && git checkout efdd95e;
       cd /aha/lake         && git checkout 837ffe1;
-      cd /aha/lassen       && git checkout 77c32df;
     '
 }
 function update_kratos {
@@ -260,7 +259,6 @@ if [ "$use_container" == True ]; then
 
            # For details about this anti-pohan/intel hack hack
            # see garnet pull request #TBD ~ March 2025
-           # Note we are still in double-quote regime (I hope)
            if [ '$WHICH_SOC' == 'amber' ]; then
              echo '--- BEGIN egregious anti-pohan-hack hack'
              cp design.v design.v.orig
