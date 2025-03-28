@@ -23,6 +23,55 @@ struct Monitor {
 };
 
 static struct Monitor monitor;
+int get_exchange_64_config() {
+    int exchange_64_mode = 0;
+    const char *exchange_64_env_var = "E64_MODE_ON";
+    char *exchange_64_value = getenv(exchange_64_env_var);
+    if (exchange_64_value != NULL && strcmp(exchange_64_value, "1") == 0) {
+        exchange_64_mode = 1;
+    }
+    return exchange_64_mode; 
+}
+
+int HW_supports_E64() {
+    int hw_suports_E64 = 0;
+    const char *HW_supports_E64_env_var = "INCLUDE_E64_HW";
+    char *hw_support_E64_value = getenv(HW_supports_E64_env_var);
+    if (hw_support_E64_value != NULL && strcmp(hw_support_E64_value, "1") == 0) {
+        hw_suports_E64 = 1;
+    }
+    return hw_suports_E64; 
+}
+
+int get_E64_multi_bank_mode_config() {
+    int E64_multi_bank_mode = 0;
+    const char *E64_multi_bank_mode_env_var = "E64_MULTI_BANK_MODE_ON";
+    char *E64_multi_bank_mode_value = getenv(E64_multi_bank_mode_env_var);
+    if (E64_multi_bank_mode_value != NULL && strcmp(E64_multi_bank_mode_value, "1") == 0) {
+        E64_multi_bank_mode = 1;
+    }
+    return E64_multi_bank_mode; 
+}
+
+int HW_supports_multi_bank() {
+    int hw_suports_multi_bank = 0;
+    const char *HW_supports_multi_bank_env_var = "INCLUDE_MULTI_BANK_HW";
+    char *hw_support_multi_bank_value = getenv(HW_supports_multi_bank_env_var);
+    if (hw_support_multi_bank_value != NULL && strcmp(hw_support_multi_bank_value, "1") == 0) {
+        hw_suports_multi_bank = 1;
+    }
+    return hw_suports_multi_bank; 
+}
+
+int get_MU_input_bubble_mode() {
+    int add_mu_input_bubbles = 0;
+    const char *add_mu_input_bubbles_env_var = "ADD_MU_INPUT_BUBBLES";
+    char *add_mu_input_bubbles_value = getenv(add_mu_input_bubbles_env_var);
+    if (add_mu_input_bubbles_value != NULL && strcmp(add_mu_input_bubbles_value, "1") == 0) {
+        add_mu_input_bubbles = 1;
+    }
+    return add_mu_input_bubbles; 
+}
 
 int initialize_monitor(int num_cols) {
     assert(num_cols % GROUP_SIZE == 0);
@@ -161,7 +210,14 @@ int glb_map(void *kernel_, int dpr_enabled) {
             }
             printf("Group start: %d, pos x: %d\n", group_start, io_tile_info->pos.x);
             io_tile_info->tile = tile;
-            io_tile_info->start_addr = (io_tile_info->start_addr << CGRA_BYTE_OFFSET) + ((tile * 2) << BANK_ADDR_WIDTH);
+            if (get_E64_multi_bank_mode_config()) {
+                io_tile_info->start_addr =
+                (io_tile_info->start_addr << CGRA_BYTE_OFFSET) + ((tile * 2 + j%2) << BANK_ADDR_WIDTH);
+            } else {
+                io_tile_info->start_addr = 
+                (io_tile_info->start_addr << CGRA_BYTE_OFFSET) + ((tile * 2) << BANK_ADDR_WIDTH);
+            }
+
             printf("Mapping input_%0d_block_%0d to global buffer\n", i, j);
             update_io_tile_configuration(io_tile_info, &kernel->config, kernel);
             if (i == 0 && j == 0) {
@@ -188,8 +244,14 @@ int glb_map(void *kernel_, int dpr_enabled) {
             }
            
             io_tile_info->tile = tile;
-            io_tile_info->start_addr =
+            if (get_E64_multi_bank_mode_config()) {
+                io_tile_info->start_addr =
+                (io_tile_info->start_addr << CGRA_BYTE_OFFSET) + ((tile * 2 + j%2) << BANK_ADDR_WIDTH);
+            } else {
+                io_tile_info->start_addr =
                 (io_tile_info->start_addr << CGRA_BYTE_OFFSET) + ((tile * 2 + 1) << BANK_ADDR_WIDTH);
+            }
+           
             printf("Mapping output_%0d_block_%0d to global buffer\n", i, j);
             update_io_tile_configuration(io_tile_info, &kernel->config, kernel);
             if (i == 0 && j == 0) {
@@ -334,37 +396,6 @@ bool glb_tiling_config(struct KernelInfo *kernel_info, struct IOTileInfo *io_til
     return true;
 }
 
-
-int get_exchange_64_config() {
-    int exchange_64_mode = 0;
-    const char *exchange_64_env_var = "E64_MODE_ON";
-    char *exchange_64_value = getenv(exchange_64_env_var);
-    if (exchange_64_value != NULL && strcmp(exchange_64_value, "1") == 0) {
-        exchange_64_mode = 1;
-    }
-    return exchange_64_mode; 
-}
-
-int HW_supports_E64() {
-    int hw_suports_E64 = 0;
-    const char *HW_supports_E64_env_var = "INCLUDE_E64_HW";
-    char *hw_support_E64_value = getenv(HW_supports_E64_env_var);
-    if (hw_support_E64_value != NULL && strcmp(hw_support_E64_value, "1") == 0) {
-        hw_suports_E64 = 1;
-    }
-    return hw_suports_E64; 
-}
-
-int get_MU_input_bubble_mode() {
-    int add_mu_input_bubbles = 0;
-    const char *add_mu_input_bubbles_env_var = "ADD_MU_INPUT_BUBBLES";
-    char *add_mu_input_bubbles_value = getenv(add_mu_input_bubbles_env_var);
-    if (add_mu_input_bubbles_value != NULL && strcmp(add_mu_input_bubbles_value, "1") == 0) {
-        add_mu_input_bubbles = 1;
-    }
-    return add_mu_input_bubbles; 
-}
-
 int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigInfo *config_info, struct KernelInfo *kernel_info) {
     int tile = io_tile_info->tile;
     int start_addr = io_tile_info->start_addr;
@@ -385,6 +416,11 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
     int exchange_64_mode = get_exchange_64_config();
     if (exchange_64_mode) {
         printf("INFO: Using exchange_64 mode\n");
+    }
+
+    int E64_multi_bank_mode = get_E64_multi_bank_mode_config();
+    if (E64_multi_bank_mode) {
+        printf("INFO: Using exchange_64 with multi-bank mode\n");
     }
 
 
@@ -460,11 +496,17 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         #define GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB 0
         #endif
 
-        if (HW_supports_E64()) {
+        if (HW_supports_multi_bank() && HW_supports_E64()) {
+            add_config(config_info,
+                    (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_DMA_EXCHANGE_64_MODE_R,
+                    (E64_multi_bank_mode << GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB + 1) |
+                    (exchange_64_mode << GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB));
+        } else if (HW_supports_E64()) {
             add_config(config_info,
                     (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_DMA_EXCHANGE_64_MODE_R,
                     exchange_64_mode << GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB);
         }
+
         add_config(config_info,
                    (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_LD_DMA_CTRL_R,
                    ((0b001 << GLB_LD_DMA_CTRL_MODE_F_LSB) | (mode << GLB_LD_DMA_CTRL_VALID_MODE_F_LSB) |
@@ -536,7 +578,12 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         // If use hacky padding then switch to valid mode
         if (use_padding || use_glb_tiling) mode = ST_DMA_VALID_MODE_STATIC;
 
-        if (HW_supports_E64()) {
+        if (HW_supports_multi_bank() && HW_supports_E64()) {
+            add_config(config_info,
+                    (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_DMA_EXCHANGE_64_MODE_R,
+                    (E64_multi_bank_mode << GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB + 1) |
+                    (exchange_64_mode << GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB));
+        } else if (HW_supports_E64()) {
             add_config(config_info,
                     (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_DMA_EXCHANGE_64_MODE_R,
                     exchange_64_mode << GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB);
