@@ -146,10 +146,6 @@ class GlobalBuffer(Generator):
         if self._params.include_mu_glb_hw:
             self.mu_rd_en = self.var("mu_rd_en", 1)
             self.mu_rd_addr = self.var("mu_rd_addr", self._params.glb_addr_width)
-            # self.mu_rd_data = self.var("mu_rd_data", self._params.mu_word_width)
-            # self.mu_rd_data_valid = self.var("mu_rd_data_valid", 1)
-            # self.mu_rd_en_d = self.var("mu_rd_en_d", 1)
-            # self.mu_rd_addr_d = self.var("mu_rd_addr_d", self._params.glb_addr_width)
             self.mu_rd_data_w = self.var("mu_rd_data_w", self._params.mu_word_width)
             self.mu_rd_data_valid_w = self.var("mu_rd_data_valid_w", 1)
 
@@ -271,7 +267,6 @@ class GlobalBuffer(Generator):
         if_proc_tile2tile = GlbTileInterface(addr_width=self._params.glb_addr_width,
                                              data_width=self._params.bank_data_width, is_clk_en=True, is_strb=True)
         
-        # Num tracks will equal 4 here eventually. This information should really be in self.params. Also, the enviornment variable should be in params instead. 
         if self._params.include_mu_glb_hw: 
             if_mu_rd_tile2tile = GlbTileDataLoopInterface(addr_width=self._params.glb_addr_width,
                                                 data_width=self._params.bank_data_width, is_clk_en=True, is_strb=False, has_wr_ifc=False, num_tracks=self._params.mu_switch_num_tracks, mu_word_num_tiles=self._params.mu_word_num_tiles)
@@ -473,8 +468,6 @@ class GlobalBuffer(Generator):
                        )
         self.wire(self.if_proc_list[0].rd_clk_en, self.proc_rd_clk_en)
 
-
-    # TODO: Understand what proc_clk_en_margin is and if it should be changed for the MU interface 
     def add_mu_clk_en(self):
         self.mu_rd_clk_en_gen = GlbClkEnGen(cnt=2 * self._params.num_glb_tiles
                                          + self._params.tile2sram_rd_delay + self._params.proc_clk_en_margin)
@@ -546,9 +539,7 @@ class GlobalBuffer(Generator):
             self.if_mu_rd_list[0].rd_en = 0
             self.if_mu_rd_list[0].rd_addr = 0
         else:
-            # self.if_mu_rd_list[0].rd_en = self.mu_rd_en_d
             self.if_mu_rd_list[0].rd_en = self.mu_rd_en
-            # self.if_mu_rd_list[0].rd_addr = self.mu_rd_addr_d
             self.if_mu_rd_list[0].rd_addr = self.mu_rd_addr
       
     @always_comb
@@ -577,8 +568,8 @@ class GlobalBuffer(Generator):
     def left_edge_mu_rd_out_logic(self):
 
         #FIXME: Kratos won't allow this. Need to figure out how to do this.
-        # for sub_packet in range(self._params.mu_word_num_tiles):
-        #     # self.mu_rd_data_w[((sub_packet + 1) * self._params.bank_data_width) - 1, sub_packet * self._params.bank_data_width] = self.if_mu_rd_list[0].rd_data_e2w[sub_packet]
+        # for sub_packet in range(self._params.mu_switch_num_tracks):
+            # self.mu_rd_data_w[((sub_packet + 1) * self._params.bank_data_width) - 1, sub_packet * self._params.bank_data_width] = self.if_mu_rd_list[0].rd_data_e2w[sub_packet]
 
         self.mu_rd_data_w[self._params.bank_data_width - 1, 0] = self.if_mu_rd_list[0].rd_data_e2w[0]
         self.mu_rd_data_w[self._params.bank_data_width * 2 - 1, self._params.bank_data_width * 1] = self.if_mu_rd_list[0].rd_data_e2w[1]
@@ -586,7 +577,7 @@ class GlobalBuffer(Generator):
         self.mu_rd_data_w[self._params.bank_data_width * 4 - 1, self._params.bank_data_width * 3] = self.if_mu_rd_list[0].rd_data_e2w[3]
 
 
-        # Just take 0th valid (packet should be moving at the same time)
+        # Just take 0th valid (entire packet should be moving in lock-step)
         self.mu_rd_data_valid_w = self.if_mu_rd_list[0].rd_data_e2w_valid[0]
 
     @always_ff((posedge, "clk"), (posedge, "reset"))

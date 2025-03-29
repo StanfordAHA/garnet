@@ -31,8 +31,6 @@ class GlbTileInterface(Interface):
             self.rd_clk_en = self.var("rd_clk_en", 1)
         self.rd_addr = self.var("rd_addr", addr_width)
         self.rd_data = self.var("rd_data", data_width)
-        # TODO: use this eventually
-        # self.rd_data = self.var("rd_data", size=[data_width, num_tracks], packed=True)
         self.rd_data_valid = self.var("rd_data_valid", 1)
 
         if self.has_wr_ifc:

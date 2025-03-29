@@ -2,7 +2,6 @@ from kratos import Generator, always_comb, const, concat
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from global_buffer.design.pipeline import Pipeline
 from global_buffer.design.glb_header import GlbHeader
-import os
 
 
 class GlbBankMux(Generator):
