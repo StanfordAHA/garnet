@@ -153,7 +153,7 @@ endif
 rtl_zircon: export GARNET_HOME := $(current_dir)/..
 rtl_zircon: export PYTHONPATH = $(GARNET_HOME):$$PYTHONPATH
 rtl_zircon: 
-	python global_buffer_main.py -r -v -p --num_cgra_cols=$(CGRA_WIDTH) --num_glb_tiles=$(NUM_GLB_TILES) --glb_tile_mem_size=$(GLB_TILE_MEM_SIZE) $(SRAM_STUB_ARG) --include_E64_hw --include_multi_bank_hw
+	python global_buffer_main.py -r -v -p --num_cgra_cols=$(CGRA_WIDTH) --num_glb_tiles=$(NUM_GLB_TILES) --glb_tile_mem_size=$(GLB_TILE_MEM_SIZE) $(SRAM_STUB_ARG) --include_E64_hw --include_multi_bank_hw --include_mu_glb_hw
 
 
 # -------------------------------------------------------------------

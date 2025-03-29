@@ -35,11 +35,11 @@ def main():
     parser.add_argument("--no-cfg_port_pipeline", action="store_true")
     parser.add_argument("--include_E64_hw", action="store_true")
     parser.add_argument("--include_multi_bank_hw", action="store_true")
+    parser.add_argument("--include_mu_glb_hw", action="store_true")
     
 
     args = parser.parse_args()
     cfg_port_pipeline = not args.no_cfg_port_pipeline
-    os.environ["INCLUDE_MU_GLB_IFC"] = "1" 
     params = gen_global_buffer_params(num_glb_tiles=args.num_glb_tiles,
                                       num_cgra_cols=args.num_cgra_cols,
                                       num_cgra_cols_including_io=args.num_cgra_cols,
@@ -54,7 +54,8 @@ def main():
                                       axi_data_width=32,
                                       config_port_pipeline=cfg_port_pipeline,
                                       include_E64_hw=args.include_E64_hw,
-                                      include_multi_bank_hw=args.include_multi_bank_hw)
+                                      include_multi_bank_hw=args.include_multi_bank_hw,
+                                      include_mu_glb_hw=args.include_mu_glb_hw)
 
     glb = GlobalBuffer(_params=params)
 

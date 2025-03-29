@@ -39,7 +39,7 @@ class GlobalBuffer(Generator):
         self.proc_rd_data_valid = self.output("proc_rd_data_valid", 1)
 
 
-        if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1":
+        if self._params.include_mu_glb_hw:
             self.mu_addr_in = self.input("mu_addr_in", self._params.mu_addr_width)
             self.mu_addr_in_vld = self.input("mu_addr_in_vld", 1)
             self.mu_addr_in_rdy = self.output("mu_addr_in_rdy", 1)
@@ -144,7 +144,7 @@ class GlobalBuffer(Generator):
         self.proc_rd_data_w = self.var("proc_rd_data_w", self._params.bank_data_width)
         self.proc_rd_data_valid_w = self.var("proc_rd_data_valid_w", 1)
 
-        if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1":
+        if self._params.include_mu_glb_hw:
             self.mu_rd_en = self.var("mu_rd_en", 1)
             self.mu_rd_addr = self.var("mu_rd_addr", self._params.glb_addr_width)
             # self.mu_rd_data = self.var("mu_rd_data", self._params.mu_word_width)
@@ -273,7 +273,7 @@ class GlobalBuffer(Generator):
                                              data_width=self._params.bank_data_width, is_clk_en=True, is_strb=True)
         
         # Num tracks will equal 4 here eventually. This information should really be in self.params. Also, the enviornment variable should be in params instead. 
-        if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1": 
+        if self._params.include_mu_glb_hw: 
             if_mu_rd_tile2tile = GlbTileDataLoopInterface(addr_width=self._params.glb_addr_width,
                                                 data_width=self._params.bank_data_width, is_clk_en=True, is_strb=False, has_wr_ifc=False, num_tracks=self._params.mu_switch_num_tracks, mu_word_num_tiles=self._params.mu_word_num_tiles)
         
@@ -291,7 +291,7 @@ class GlobalBuffer(Generator):
             self.if_proc_list.append(self.interface(
                 if_proc_tile2tile, f"if_proc_tile2tile_{i}"))
             
-            if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1":
+            if self._params.include_mu_glb_hw:
                 self.if_mu_rd_list.append(self.interface(
                     if_mu_rd_tile2tile, f"if_mu_rd_tile2tile_{i}"))
             
@@ -310,7 +310,7 @@ class GlobalBuffer(Generator):
 
 
         # GLB-MU Address translator
-        if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1":
+        if self._params.include_mu_glb_hw:
             self.glb_mu_addr_transl = GlbMUTransl(_params=self._params)
             self.add_child("glb_mu_addr_transl",
                            self.glb_mu_addr_transl,
@@ -335,7 +335,7 @@ class GlobalBuffer(Generator):
 
         self.wire(self.if_proc_list[-1].rd_data, 0)
         self.wire(self.if_proc_list[-1].rd_data_valid, 0)
-        if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1":
+        if self._params.include_mu_glb_hw:
             self.wire(self.if_mu_rd_list[-1].rd_data_e2w, 0)
             self.wire(self.if_mu_rd_list[-1].rd_data_e2w_valid, 0)
             self.wire(self.if_mu_rd_list[0].sub_packet_idx, 0)
@@ -346,19 +346,19 @@ class GlobalBuffer(Generator):
 
         self.add_glb_tile()
         self.add_always(self.proc_pipeline)
-        # if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1":
+        # if self._params.include_mu_glb_hw:
         #     self.add_always(self.mu_rd_addr_pipeline)
         self.add_always(self.sram_cfg_pipeline)
         self.add_always(self.left_edge_proc_wr_ff)
         self.add_always(self.left_edge_proc_rd_in_ff)
         self.add_always(self.left_edge_proc_rd_out_logic)
         self.add_always(self.left_edge_proc_rd_out_ff)
-        if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1":
+        if self._params.include_mu_glb_hw:
             self.add_always(self.left_edge_mu_rd_in_ff)
             self.add_always(self.left_edge_mu_rd_out_logic)
             # self.add_always(self.left_edge_mu_rd_out_ff)
         self.add_proc_clk_en()
-        if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1":
+        if self._params.include_mu_glb_hw:
             self.add_mu_clk_en()
         self.add_always(self.left_edge_cfg_ff)
         self.add_always(self.left_edge_cgra_cfg_ff)
@@ -884,7 +884,7 @@ class GlobalBuffer(Generator):
                            strm_g2f_interrupt_pulse=self.strm_g2f_interrupt_pulse_w[i],
                            pcfg_g2f_interrupt_pulse=self.pcfg_g2f_interrupt_pulse_w[i])
             
-            if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1":
+            if self._params.include_mu_glb_hw:
                 # MU interface      
                 self.wire(self.if_mu_rd_list[i + 1].rd_en, self.glb_tile[i].ports.if_mu_rd_est_m_rd_en)
                 self.wire(self.if_mu_rd_list[i + 1].rd_clk_en, self.glb_tile[i].ports.if_mu_rd_est_m_rd_clk_en)

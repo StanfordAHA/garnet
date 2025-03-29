@@ -65,6 +65,8 @@ class Garnet(Generator):
 
         self.io_sides = io_sides
         self.include_E64_hw = args.include_E64_hw
+        self.include_multi_bank_hw = args.include_multi_bank_hw
+        self.include_mu_glb_hw = args.include_mu_glb_hw
 
         # Build GLB unless interconnect_only (CGRA-only) requested
 
@@ -171,9 +173,7 @@ class Garnet(Generator):
                 cgra2mu_ready=magma.Out(magma.Bit)
             )
             
-            # TODO: Fix this HACK 
-            include_mu_glb_ifc = True
-            if include_mu_glb_ifc:
+            if self.include_mu_glb_hw:
                 self.add_ports(
                     mu_addr_in=magma.In(magma.Bits[glb_params.mu_addr_width]),
                     mu_addr_in_vld=magma.In(magma.Bit),
@@ -217,7 +217,7 @@ class Garnet(Generator):
 
 
             # Matrix unit <-> GLB ports connection 
-            if include_mu_glb_ifc:
+            if self.include_mu_glb_hw:
                 self.wire(self.global_buffer.ports.mu_addr_in, self.ports.mu_addr_in)
                 self.wire(self.global_buffer.ports.mu_addr_in_vld[0], self.ports.mu_addr_in_vld)
                 self.wire(self.ports.mu_addr_in_rdy, self.global_buffer.ports.mu_addr_in_rdy[0])
@@ -883,6 +883,7 @@ def parse_args():
     parser.add_argument("--mu-oc-0", type=int, default=32)
     parser.add_argument('--include-E64-hw', action="store_true")
     parser.add_argument('--include-multi-bank-hw', action="store_true")
+    parser.add_argument('--include-mu-glb-hw', action="store_true")
 
     # Daemon choices are maybe ['help', 'launch', 'use', 'kill', 'force', 'status', 'wait']
     parser.add_argument('--daemon', type=str, choices=GarnetDaemon.choices, default=None)
@@ -905,11 +906,6 @@ def parse_args():
 
     if args.include_E64_hw:
         os.environ["INCLUDE_E64_HW"] = "1"
-
-    # MO: MU-GLB ifc HACK
-    include_mu_glb_ifc = True
-    if include_mu_glb_ifc:
-        os.environ["INCLUDE_MU_GLB_IFC"] = "1" 
 
     # If using MU, South and North have IO, else only north side has IO
     from canal.util import IOSide
@@ -943,7 +939,8 @@ def parse_args():
         axi_data_width=32,
         config_port_pipeline=args.config_port_pipeline,
         include_E64_hw=args.include_E64_hw,
-        include_multi_bank_hw=args.include_multi_bank_hw)
+        include_multi_bank_hw=args.include_multi_bank_hw,
+        include_mu_glb_hw=args.include_mu_glb_hw)
         
 
     # for a in vars(args).items(): print(f'arg {a} has type {type(a)}')

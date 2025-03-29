@@ -29,7 +29,7 @@ class GlbBankMux(Generator):
         self.rdrq_packet_pcfgring2bank = self.input("rdrq_packet_pcfgring2bank", self.header.rdrq_packet_t)
         self.rdrq_packet_pcfgdma2bank = self.input("rdrq_packet_pcfgdma2bank", self.header.rdrq_packet_t)
 
-        if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1":
+        if self._params.include_mu_glb_hw:
             self.rdrq_packet_mu_rd_sw2bank = self.input("rdrq_packet_mu_rd_sw2bank", self.header.mu_rdrq_packet_t)
 
         self.rdrq_packet_sw2bankarr = self.output(
@@ -44,7 +44,7 @@ class GlbBankMux(Generator):
         self.rdrs_packet_bank2pcfgring = self.output("rdrs_packet_bank2pcfgring", self.header.rdrs_packet_t)
         self.rdrs_packet_bank2pcfgdma = self.output("rdrs_packet_bank2pcfgdma", self.header.rdrs_packet_t)
 
-        if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1":
+        if self._params.include_mu_glb_hw:
             self.rdrs_packet_bank2mu_rd_sw = self.output("rdrs_packet_bank2mu_rd_sw", self.header.rdrs_packet_t)
 
         # configuration
@@ -132,7 +132,7 @@ class GlbBankMux(Generator):
 
         # rdrq packet
         for i in range(self._params.banks_per_tile):
-            if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1":
+            if self._params.include_mu_glb_hw:
                 self.add_always(self.rdrq_sw2bankarr_logic_support_mu, i=i)
             else:
                 self.add_always(self.rdrq_sw2bankarr_logic, i=i)
@@ -141,7 +141,7 @@ class GlbBankMux(Generator):
         self.add_always(self.rdrs_sw2dma_logic)
         self.add_always(self.rdrs_sw2sr_logic)
         self.add_always(self.rdrs_sw2pr_logic)
-        if "INCLUDE_MU_GLB_IFC" in os.environ and os.environ.get("INCLUDE_MU_GLB_IFC") == "1":
+        if self._params.include_mu_glb_hw:
             self.add_always(self.rdrs_sw2mu_logic)
         self.add_always(self.rdrs_sw2pcfgdma_logic)
         self.add_always(self.rdrs_sw2pcfgr_logic)

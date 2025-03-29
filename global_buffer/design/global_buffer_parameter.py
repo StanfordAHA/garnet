@@ -97,6 +97,7 @@ class GlobalBufferParams:
     # zircon parameters
     include_E64_hw: bool = False
     include_multi_bank_hw: bool = False
+    include_mu_glb_hw: bool = False
     num_mu_addr_builder_tiles: int = 4
     mu_word_num_tiles: int = 2
     mu_switch_num_tracks: int = 4
@@ -234,6 +235,7 @@ def gen_global_buffer_params(**kwargs):
 
     include_E64_hw = kwargs.pop('include_E64_hw', False)
     include_multi_bank_hw = kwargs.pop('include_multi_bank_hw', False)
+    include_mu_glb_hw = kwargs.pop('include_mu_glb_hw', False)
 
     if config_port_pipeline is True:
         config_port_pipeline_depth = 1
@@ -275,6 +277,7 @@ def gen_global_buffer_params(**kwargs):
                                 config_port_pipeline_depth=config_port_pipeline_depth,
                                 include_E64_hw=include_E64_hw,
                                 include_multi_bank_hw=include_multi_bank_hw,
+                                include_mu_glb_hw=include_mu_glb_hw,
                                 num_mu_addr_builder_tiles=num_mu_addr_builder_tiles)
                                                               
     return params

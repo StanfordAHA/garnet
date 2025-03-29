@@ -110,8 +110,6 @@ program glb_mu_test #(
 
                 $display("\n---RUNNING OVERLAP TEST ACROSS TILES %0d and %0d---", glb_tile_base, glb_tile_base + 2); 
 
-       
-
                 // Write all of the first group to the tail end of base tile 
                 write_data_to_banks(glb_tile_base, BANK_DEPTH - (OVERLAP_TEST_SIZE_1 / 4), start_addr, data_arr16_pt2_seg0, data_arr16_pt2_seg1, data_arr16_pt2_seg2, data_arr16_pt2_seg3);
 
