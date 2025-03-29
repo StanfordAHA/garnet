@@ -19,7 +19,13 @@ program glb_mu_test #(
     const int BURST_SIZE = 4;
     const int ADD_INPUT_BUBBLES = 0;
     const int RANDOM_SHIFT = 2;
+    const int INPUT_DATA_SIZE = 512;
+    const int NUM_SEGMENTS = 4;
+    const int BANK_DEPTH = 2 ** (BANK_ADDR_WIDTH - BANK_BYTE_OFFSET);
+    const real OVERLAP_TEST_SPLIT_FACTOR = 0.5625;
     int x = 0;
+    int OVERLAP_TEST_SIZE_1 = (INPUT_DATA_SIZE/NUM_SEGMENTS) * OVERLAP_TEST_SPLIT_FACTOR;
+    int OVERLAP_TEST_SIZE_2 = (INPUT_DATA_SIZE/NUM_SEGMENTS) - OVERLAP_TEST_SIZE_1;
 
     semaphore proc_lock; 
     initial proc_lock = new(1);
@@ -53,17 +59,16 @@ program glb_mu_test #(
         
 
         // Load data
-        data_arr16 = new[512];
-        data_arr16_out = new[512]; 
-        data_arr16_seg0 = new[128];
-        data_arr16_seg1 = new[128];
-        data_arr16_seg2 = new[128];
-        data_arr16_seg3 = new[128];
+        data_arr16 = new[INPUT_DATA_SIZE];
+        data_arr16_out = new[INPUT_DATA_SIZE]; 
+        data_arr16_seg0 = new[INPUT_DATA_SIZE/NUM_SEGMENTS];
+        data_arr16_seg1 = new[INPUT_DATA_SIZE/NUM_SEGMENTS];
+        data_arr16_seg2 = new[INPUT_DATA_SIZE/NUM_SEGMENTS];
+        data_arr16_seg3 = new[INPUT_DATA_SIZE/NUM_SEGMENTS];
         load_data("testvectors/512_v1.dat", data_arr16, data_arr16_seg0, data_arr16_seg1, data_arr16_seg2, data_arr16_seg3);
 
         for (int glb_tile_base = 0; glb_tile_base < NUM_GLB_TILES; glb_tile_base += MU_WORD_NUM_TILES) begin 
-                // Max offset is 4096 * 2 = 8192 (2 4096x64 macros per bank) to stay within a bank
-                for (int offset = 0; offset < 8192; offset += 32) begin
+                for (int offset = 0; offset < BANK_DEPTH; offset += 32) begin
                     $display("\n---RUNNING BASIC RAW TEST WITH BASE %0d---", glb_tile_base);    
 
                     // Initialize
@@ -82,34 +87,44 @@ program glb_mu_test #(
             end
         end
 
-        $display("\n---RUNNING OVERLAP TEST---"); 
-        // Load data custom for pt2
-        data_arr16_pt2_seg0 = new[72];
-        data_arr16_pt2_seg1 = new[72];
-        data_arr16_pt2_seg2 = new[72];
-        data_arr16_pt2_seg3 = new[72];
-        data_arr16_pt2_seg4 = new[56];
-        data_arr16_pt2_seg5 = new[56];
-        data_arr16_pt2_seg6 = new[56];
-        data_arr16_pt2_seg7 = new[56];
+ 
+        // Load data custom for pt2 (overlap test)
+        $display("\n---RUNNING OVERLAP TEST---");
+        $display("OVERLAP TEST SIZE 1: %0d", OVERLAP_TEST_SIZE_1);
+        $display("OVERLAP TEST SIZE 2: %0d", OVERLAP_TEST_SIZE_2);
+        data_arr16_pt2_seg0 = new[OVERLAP_TEST_SIZE_1];
+        data_arr16_pt2_seg1 = new[OVERLAP_TEST_SIZE_1];
+        data_arr16_pt2_seg2 = new[OVERLAP_TEST_SIZE_1];
+        data_arr16_pt2_seg3 = new[OVERLAP_TEST_SIZE_1];
+
+        data_arr16_pt2_seg4 = new[OVERLAP_TEST_SIZE_2];
+        data_arr16_pt2_seg5 = new[OVERLAP_TEST_SIZE_2];
+        data_arr16_pt2_seg6 = new[OVERLAP_TEST_SIZE_2];
+        data_arr16_pt2_seg7 = new[OVERLAP_TEST_SIZE_2];
         load_data_custom("testvectors/512_v1.dat", data_arr16, data_arr16_pt2_seg0, data_arr16_pt2_seg1, data_arr16_pt2_seg2, data_arr16_pt2_seg3,
                            data_arr16_pt2_seg4, data_arr16_pt2_seg5, data_arr16_pt2_seg6, data_arr16_pt2_seg7);
 
-        // Initialize
-        initialize(); 
+        for (int glb_tile_base = 0; glb_tile_base < NUM_GLB_TILES-2; glb_tile_base+=2) begin
+                // Initialize
+                initialize(); 
 
-        // Write data to 4 consecutive BANKS, starting from base tile
-        write_data_to_banks(0, 8174, start_addr, data_arr16_pt2_seg0, data_arr16_pt2_seg1, data_arr16_pt2_seg2, data_arr16_pt2_seg3);
+                $display("\n---RUNNING OVERLAP TEST ACROSS TILES %0d and %0d---", glb_tile_base, glb_tile_base + 2); 
 
-        // Write data to 4 consecutive BANKS, starting from base tile
-        write_data_to_banks(2, 0, start_addr, data_arr16_pt2_seg4, data_arr16_pt2_seg5, data_arr16_pt2_seg6, data_arr16_pt2_seg7);
+       
 
+                // Write all of the first group to the tail end of base tile 
+                write_data_to_banks(glb_tile_base, BANK_DEPTH - (OVERLAP_TEST_SIZE_1 / 4), start_addr, data_arr16_pt2_seg0, data_arr16_pt2_seg1, data_arr16_pt2_seg2, data_arr16_pt2_seg3);
 
-        repeat (10) @(posedge p_ifc.clk);
+                // Write 2nd group at beginning of neighboring tiles
+                write_data_to_banks(glb_tile_base + 2, 0, start_addr, data_arr16_pt2_seg4, data_arr16_pt2_seg5, data_arr16_pt2_seg6, data_arr16_pt2_seg7);
 
-        // Read data using MU-GLB read-path
-        MU_read_data_from_banks(0, 8174, BURST_SIZE, data_arr16_out);
+                repeat (10) @(posedge p_ifc.clk);
+
+                // Read data using MU-GLB read-path
+                MU_read_data_from_banks(glb_tile_base, BANK_DEPTH - (OVERLAP_TEST_SIZE_1 / 4), BURST_SIZE, data_arr16_out);
+        end
     
+
         // Compare data
         compare_data(data_arr16, data_arr16_out);
 
@@ -149,12 +164,12 @@ program glb_mu_test #(
         ref logic [CGRA_DATA_WIDTH-1:0] data_arr16_seg3[]
     );
         $readmemh(file_name, data_arr16);
-        for (int i = 0; i < 128; i++) begin
-            int x = int'(i / 4) * 16 + (i % 4);
+        for (int i = 0; i < INPUT_DATA_SIZE/NUM_SEGMENTS; i++) begin
+            int x = int'(i / NUM_SEGMENTS) * 16 + (i % NUM_SEGMENTS);
             data_arr16_seg0[i] = data_arr16[x];
-            data_arr16_seg1[i] = data_arr16[x + 4];
-            data_arr16_seg2[i] = data_arr16[x + 8];
-            data_arr16_seg3[i] = data_arr16[x + 12];
+            data_arr16_seg1[i] = data_arr16[x + NUM_SEGMENTS * 1];
+            data_arr16_seg2[i] = data_arr16[x + NUM_SEGMENTS * 2];
+            data_arr16_seg3[i] = data_arr16[x + NUM_SEGMENTS * 3];
         end
     endtask
 
@@ -173,21 +188,21 @@ program glb_mu_test #(
     );
         $readmemh(file_name, data_arr16);
         x_max = 0;
-        for (int i = 0; i < 72; i++) begin
-            int x = int'(i / 4) * 16 + (i % 4);
+        for (int i = 0; i < OVERLAP_TEST_SIZE_1; i++) begin
+            int x = int'(i / NUM_SEGMENTS) * 16 + (i % NUM_SEGMENTS);
             data_arr16_seg0[i] = data_arr16[x];
-            data_arr16_seg1[i] = data_arr16[x + 4];
-            data_arr16_seg2[i] = data_arr16[x + 8];
-            data_arr16_seg3[i] = data_arr16[x + 12];
-            x_max = x + 13;
+            data_arr16_seg1[i] = data_arr16[x + NUM_SEGMENTS * 1];
+            data_arr16_seg2[i] = data_arr16[x + NUM_SEGMENTS * 2];
+            data_arr16_seg3[i] = data_arr16[x + NUM_SEGMENTS * 3];
+            x_max = x + (NUM_SEGMENTS * 3) + 1; // +1 to go to the next segment
         end
 
-        for (int i = 0; i < 56; i++) begin
-            int x = int'(i / 4) * 16 + (i % 4) + x_max;
+        for (int i = 0; i < OVERLAP_TEST_SIZE_2; i++) begin
+            int x = int'(i / NUM_SEGMENTS) * 16 + (i % NUM_SEGMENTS) + x_max;
             data_arr16_seg4[i] = data_arr16[x];
-            data_arr16_seg5[i] = data_arr16[x + 4];
-            data_arr16_seg6[i] = data_arr16[x + 8];
-            data_arr16_seg7[i] = data_arr16[x + 12];
+            data_arr16_seg5[i] = data_arr16[x + NUM_SEGMENTS * 1];
+            data_arr16_seg6[i] = data_arr16[x + NUM_SEGMENTS * 2];
+            data_arr16_seg7[i] = data_arr16[x + NUM_SEGMENTS * 3];
         end
     endtask
 
@@ -201,19 +216,19 @@ program glb_mu_test #(
         input logic [CGRA_DATA_WIDTH-1:0] data_arr16_seg2[],
         input logic [CGRA_DATA_WIDTH-1:0] data_arr16_seg3[]
     );
-        start_addr = (tile_base << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) + (offset * 8);
+        start_addr = (tile_base << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) + (offset * (2 **(BANK_BYTE_OFFSET)));
         $display("Writing data starting at address %0h", start_addr);
         ProcDriver_write_data(start_addr, data_arr16_seg0);
 
         start_addr = (((tile_base) << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) | 
-                      (1 << BANK_ADDR_WIDTH)) + (offset * 8);
+                      (1 << BANK_ADDR_WIDTH)) + (offset * (2 **(BANK_BYTE_OFFSET)));
         ProcDriver_write_data(start_addr, data_arr16_seg1);
 
-        start_addr = ((tile_base + 1) << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) + (offset * 8);
+        start_addr = ((tile_base + 1) << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) + (offset * (2 **(BANK_BYTE_OFFSET)));
         ProcDriver_write_data(start_addr, data_arr16_seg2);
 
         start_addr =  (((tile_base + 1) << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) | 
-                      (1 << BANK_ADDR_WIDTH)) + (offset * 8);
+                      (1 << BANK_ADDR_WIDTH)) + (offset * (2 **(BANK_BYTE_OFFSET)));
         ProcDriver_write_data(start_addr, data_arr16_seg3);
     endtask
 
@@ -231,7 +246,7 @@ program glb_mu_test #(
 
         // Mask away unnecessary bits from tile ID
         mu_rd_group_sel = tile_sel_base[TILE_SEL_ADDR_WIDTH - 1 : $clog2(MU_WORD_NUM_TILES)];
-        mu_rd_start_addr = (mu_rd_group_sel << (BANK_ADDR_WIDTH)) + (offset * 8);
+        mu_rd_start_addr = (mu_rd_group_sel << (BANK_ADDR_WIDTH)) + (offset * (2 **(BANK_BYTE_OFFSET)));
         mu_rd_burst_size = burst_size;
         mu_addr_in = {mu_rd_burst_size, mu_rd_start_addr};
         $display("Reading data starting at MU (untranslated) input address %0h.", mu_addr_in);
