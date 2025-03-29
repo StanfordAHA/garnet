@@ -10,7 +10,6 @@ from global_buffer.design.glb_clk_en_gen import GlbClkEnGen
 from global_buffer.design.glb_crossbar import GlbCrossbar
 from global_buffer.design.glb_mu_transl import GlbMUTransl
 from gemstone.generator.from_magma import FromMagma
-import os
 
 
 class GlobalBuffer(Generator):
@@ -326,12 +325,6 @@ class GlobalBuffer(Generator):
                            rd_data_out=self.mu_rd_data_out,
                            rd_data_out_vld=self.mu_rd_data_out_vld,
                            rd_data_out_rdy=self.mu_rd_data_out_rdy)     
-
-            # SKIPING ADDR BUILDER IMPLEMENTATION FOR NOW 
-            # if i in range(self._params.num_mu_addr_builder_tiles):
-            #     self.glb_tile.append(GlbTile(_params=self._params, is_addr_builder_tile=True))
-            # else:
-            #     self.glb_tile.append(GlbTile(_params=self._params))
 
         self.wire(self.if_proc_list[-1].rd_data, 0)
         self.wire(self.if_proc_list[-1].rd_data_valid, 0)
@@ -916,15 +909,6 @@ class GlobalBuffer(Generator):
                 else:
                     self.wire(self.glb_tile[i].ports.if_mu_rd_wst_s_rd_data_w2e, 0)
                     self.wire(self.glb_tile[i].ports.if_mu_rd_wst_s_rd_data_w2e_valid, 0)
-
-                    
-                # if self.glb_tile[i].is_addr_builder_tile:
-                #     if i != 0:
-                #         self.wire(self.glb_tile[i].ports.mu_rdrq_packet_build_in_w2e, self.glb_tile[i-1].ports.mu_rdrq_packet_incr_out_w2e)
-                #     else:
-                #         self.wire(self.glb_tile[i].ports.mu_rdrq_packet_build_in_w2e['rd_addr'], self.mu_rd_addr_d)
-                #         self.wire(self.glb_tile[i].ports.mu_rdrq_packet_build_in_w2e['rd_en'], self.mu_rd_en_d)
-
 
     @ always_ff((posedge, "clk"), (posedge, "reset"))
     def interrupt_pipeline(self):

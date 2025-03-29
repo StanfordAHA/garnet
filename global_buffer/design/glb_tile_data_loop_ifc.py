@@ -33,13 +33,10 @@ class GlbTileDataLoopInterface(Interface):
         if is_clk_en is True:
             self.rd_clk_en = self.var("rd_clk_en", 1)
         self.rd_addr = self.var("rd_addr", addr_width)
-        # self.rd_data_e2w = self.var("rd_data_e2w", data_width)
-        # TODO: use this eventually
+        
         self.rd_data_e2w = self.var("rd_data_e2w", self.data_width, self.num_tracks)
         self.rd_data_e2w_valid = self.var("rd_data_e2w_valid", 1, self.num_tracks)
 
-        # self.rd_data_w2e = self.var("rd_data_w2e", data_width)
-        # TODO: use this eventually
         self.rd_data_w2e = self.var("rd_data_w2e", self.data_width, self.num_tracks)
         self.rd_data_w2e_valid = self.var("rd_data_w2e_valid", 1, self.num_tracks)
 

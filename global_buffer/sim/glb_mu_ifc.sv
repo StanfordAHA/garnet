@@ -19,22 +19,4 @@ interface glb_mu_ifc (
     logic                         mu_rd_data_valid;
     logic                         mu_rd_data_ready;
 
-    // modport glb(
-    //     input clk,
-    //     input wr_en, wr_strb, wr_addr, wr_data, rd_en, rd_addr,
-    //     output rd_data, rd_data_valid
-    // );
-
-    // // clocking cbd @(posedge clk);
-    // modport driver(
-    //     input clk,
-    //     output wr_en, wr_strb, wr_addr, wr_data, rd_en, rd_addr,
-    //     input rd_data, rd_data_valid
-    // );
-
-    // // clocking cbm @(posedge clk);
-    // modport monitor(
-    //     input clk, wr_en, wr_strb, wr_addr, wr_data, rd_en, rd_addr, rd_data, rd_data_valid
-    // );
-
 endinterface

@@ -189,14 +189,10 @@ module top;
         .proc_wr_strb             (proc_wr_strb),
         .proc_wr_addr             (proc_wr_addr),
         .proc_wr_data             (proc_wr_data),
-        // .proc_rd_en               (proc_rd_en),
-        // .proc_rd_addr             (proc_rd_addr),
-        // .proc_rd_data             (proc_rd_data),
-        // .proc_rd_data_valid       (proc_rd_data_valid),
-        .proc_rd_en               (1'b0),
-        .proc_rd_addr             (22'b0),
-        .proc_rd_data             ( /* TEMPORARY NO CONN */ ),
-        .proc_rd_data_valid       ( /* TEMPORARY NO CONN */ ),
+        .proc_rd_en               (proc_rd_en),
+        .proc_rd_addr             (proc_rd_addr),
+        .proc_rd_data             (proc_rd_data),
+        .proc_rd_data_valid       (proc_rd_data_valid),
         // config ifc
         .if_cfg_wr_en             (if_cfg_wr_en),
         .if_cfg_wr_clk_en         (if_cfg_wr_clk_en),
@@ -227,17 +223,6 @@ module top;
         .strm_data_g2f_rdy(strm_data_g2f_rdy),
 
         .strm_data_flush_g2f(strm_data_flush_g2f),
-
-        // FIXME: This is a hack 
-        // Matrix unit
-        .mu_rd_addr (proc_rd_addr),
-        .mu_rd_data (proc_rd_data),
-        .mu_rd_data_valid (proc_rd_data_valid),
-        .mu_rd_en (proc_rd_en),
-        // .mu_rd_addr (22'b0),
-        // .mu_rd_data ( /* TEMPORARY NO CONN */ ),
-        // .mu_rd_data_valid ( /* TEMPORARY NO CONN */ ),
-        // .mu_rd_en (1'b0),
 
 `ifdef PWR
         .VDD(VDD),

@@ -20,17 +20,12 @@ from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from global_buffer.design.glb_header import GlbHeader
 from global_buffer.design.glb_bank import GlbBank
 from global_buffer.design.clk_gate import ClkGate
-from global_buffer.design.glb_addr_builder import GlbAddrBuilder
-import os
 
 
 class GlbTile(Generator):
-    def __init__(self, _params: GlobalBufferParams, is_addr_builder_tile: bool = False):
+    def __init__(self, _params: GlobalBufferParams):
         name = "glb_tile"
-        if is_addr_builder_tile:
-            name += "_w_addr_builder"
         super().__init__(name)
-        self.is_addr_builder_tile = is_addr_builder_tile
         self._params = _params
         self.header = GlbHeader(self._params)
 
@@ -89,7 +84,6 @@ class GlbTile(Generator):
 
         # MU interface
         if self._params.include_mu_glb_hw:
-            # TODO: Eventually, make num_tracks 4 here 
             self.if_mu_rd = GlbTileDataLoopInterface(addr_width=self._params.glb_addr_width,
                                             data_width=self._params.bank_data_width, is_clk_en=True, is_strb=False, has_wr_ifc=False, num_tracks=self._params.mu_switch_num_tracks, mu_word_num_tiles=self._params.mu_word_num_tiles)
             self.if_mu_rd_est_m = self.interface(self.if_mu_rd, "if_mu_rd_est_m")
@@ -123,22 +117,6 @@ class GlbTile(Generator):
                 self.wire(port, self.if_mu_rd_est_m[s2m_port])
                 port = self.output(f"if_mu_rd_wst_s_{s2m_port}", self.if_mu_rd_wst_s[s2m_port].width, size=self.if_mu_rd_wst_s[s2m_port].size, packed=True)
                 self.wire(port, self.if_mu_rd_wst_s[s2m_port])
-
-
-            if self.is_addr_builder_tile:
-                self.mu_rdrq_packet_build_in_w2e = self.input("mu_rdrq_packet_build_in_w2e", self.header.rdrq_packet_t)
-                self.mu_rdrq_packet_incr_out_w2e = self.output("mu_rdrq_packet_incr_out_w2e", self.header.rdrq_packet_t)
-                self.mu_rdrq_packet_build_out = self.var("mu_rdrq_packet_build_out", self.header.rdrq_packet_t)
-
-                self.glb_addr_builder = GlbAddrBuilder(_params=self._params)
-                self.add_child("glb_addr_builder",
-                       self.glb_addr_builder,
-                       clk=self.clk,
-                       reset=self.reset,
-                       glb_tile_id=self.glb_tile_id,
-                       rdrq_packet_build_in=self.mu_rdrq_packet_build_in_w2e,
-                       rdrq_packet_incr_out=self.mu_rdrq_packet_incr_out_w2e,
-                       rdrq_packet_build_out=self.mu_rdrq_packet_build_out)
 
         # Configuration interface
         self.if_cfg = GlbTileInterface(addr_width=self._params.axi_addr_width,

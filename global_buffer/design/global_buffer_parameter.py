@@ -98,7 +98,6 @@ class GlobalBufferParams:
     include_E64_hw: bool = False
     include_multi_bank_hw: bool = False
     include_mu_glb_hw: bool = False
-    num_mu_addr_builder_tiles: int = 4
     mu_word_num_tiles: int = 2
     mu_switch_num_tracks: int = 4
     mu_word_width: int = 256
@@ -227,7 +226,6 @@ def gen_global_buffer_params(**kwargs):
     cfg_addr_width = kwargs.pop('cfg_addr_width', 32)
     cfg_data_width = kwargs.pop('cfg_data_width', 32)
     is_sram_stub = kwargs.pop('is_sram_stub', 0)
-    num_mu_addr_builder_tiles = kwargs.pop('num_mu_addr_builder_tiles', 4)
 
     # config_port_pipeline not used by TSMC (yet)
     # pop() returns True if config_port_pipeline not exists
@@ -277,8 +275,7 @@ def gen_global_buffer_params(**kwargs):
                                 config_port_pipeline_depth=config_port_pipeline_depth,
                                 include_E64_hw=include_E64_hw,
                                 include_multi_bank_hw=include_multi_bank_hw,
-                                include_mu_glb_hw=include_mu_glb_hw,
-                                num_mu_addr_builder_tiles=num_mu_addr_builder_tiles)
+                                include_mu_glb_hw=include_mu_glb_hw)
                                                               
     return params
 
