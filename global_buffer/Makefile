@@ -82,6 +82,9 @@ GENERATE_TV = \
     python testvectors/gen_glb_test.py --data testvectors/100_v0_b5.dat --num_data 100 --seed 0 --num_blocks 5;\
     python testvectors/gen_glb_test.py --data testvectors/100_v0_b5_seg.dat --num_data 100 --seed 0 --num_blocks 5 --seg_mode 1;
 
+GENERATE_TV_MU = \
+	python testvectors/gen_glb_test.py --data testvectors/512_v1.dat --num_data 512 --seed 1; \
+
 XRUN = xrun \
 	   -64bit \
 	   -sv \
@@ -216,9 +219,8 @@ run:
 	$(RUN) $(DUMP_ARGS) $(RUN_ARGS)
 
 .PHONY: run_mu
-# run_mu:
-# 	$(RUN) $(RUN_ARGS)
 run_mu:
+	$(GENERATE_TV_MU)
 	$(RUN) $(DUMP_ARGS_MU) $(RUN_ARGS)
 
 .PHONY: sim

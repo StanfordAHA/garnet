@@ -15,9 +15,9 @@ program glb_mu_test #(
 );
     int err = 0;
     const int MAX_NUM_ERRORS = 20;
-    const int GLB_TILE_BASE = 6;
+    const int GLB_TILE_BASE = 4;
     const int BURST_SIZE = 4;
-    const int ADD_INPUT_BUBBLES = 1;
+    const int ADD_INPUT_BUBBLES = 0;
     const int RANDOM_SHIFT = 2;
     int x = 0;
 
@@ -27,7 +27,12 @@ program glb_mu_test #(
     initial mu_lock = new(1);
 
     initial begin
+        // Declare signals
         logic [CGRA_DATA_WIDTH-1:0] data_arr16 [];
+        logic [CGRA_DATA_WIDTH-1:0] data_arr16_seg0[];
+        logic [CGRA_DATA_WIDTH-1:0] data_arr16_seg1[];
+        logic [CGRA_DATA_WIDTH-1:0] data_arr16_seg2[];
+        logic [CGRA_DATA_WIDTH-1:0] data_arr16_seg3[];
         logic [CGRA_DATA_WIDTH-1:0] data_arr16_out [];
         logic [GLB_ADDR_WIDTH-1:0] start_addr;
         logic [MU_ADDR_WIDTH-MU_ADDR_NUM_BURST_BITS-1:0] mu_rd_start_addr;  
@@ -36,62 +41,77 @@ program glb_mu_test #(
         logic [TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES) - 1:0] mu_rd_group_sel;
         logic [MU_ADDR_WIDTH-1:0] mu_addr_in;
 
-        // Split data_arr16 into 4 even segments
-        logic [CGRA_DATA_WIDTH-1:0] data_arr16_seg0[128];
-        logic [CGRA_DATA_WIDTH-1:0] data_arr16_seg1[128];
-        logic [CGRA_DATA_WIDTH-1:0] data_arr16_seg2[128];
-        logic [CGRA_DATA_WIDTH-1:0] data_arr16_seg3[128];
+
+        logic [CGRA_DATA_WIDTH-1:0] data_arr16_pt2_seg0[];
+        logic [CGRA_DATA_WIDTH-1:0] data_arr16_pt2_seg1[];
+        logic [CGRA_DATA_WIDTH-1:0] data_arr16_pt2_seg2[];
+        logic [CGRA_DATA_WIDTH-1:0] data_arr16_pt2_seg3[];
+        logic [CGRA_DATA_WIDTH-1:0] data_arr16_pt2_seg4[];
+        logic [CGRA_DATA_WIDTH-1:0] data_arr16_pt2_seg5[];
+        logic [CGRA_DATA_WIDTH-1:0] data_arr16_pt2_seg6[];
+        logic [CGRA_DATA_WIDTH-1:0] data_arr16_pt2_seg7[];
+        
 
         // Load data
         data_arr16 = new[512];
-        $readmemh("testvectors/512_v1.dat", data_arr16);
-        for (int i = 0; i < 128; i++) begin
-            x = int'(i/4) * 16 + (i % 4);
-            data_arr16_seg0[i] = data_arr16[x];
-            data_arr16_seg1[i] = data_arr16[x + 4];
-            data_arr16_seg2[i] = data_arr16[x + 8];
-            data_arr16_seg3[i] = data_arr16[x + 12];
+        data_arr16_out = new[512]; 
+        data_arr16_seg0 = new[128];
+        data_arr16_seg1 = new[128];
+        data_arr16_seg2 = new[128];
+        data_arr16_seg3 = new[128];
+        load_data("testvectors/512_v1.dat", data_arr16, data_arr16_seg0, data_arr16_seg1, data_arr16_seg2, data_arr16_seg3);
+
+        for (int glb_tile_base = 0; glb_tile_base < NUM_GLB_TILES; glb_tile_base += MU_WORD_NUM_TILES) begin 
+                // Max offset is 4096 * 2 = 8192 (2 4096x64 macros per bank) to stay within a bank
+                for (int offset = 0; offset < 8192; offset += 32) begin
+                    $display("\n---RUNNING BASIC RAW TEST WITH BASE %0d---", glb_tile_base);    
+
+                    // Initialize
+                    initialize(); 
+                    
+                    // Write data to 4 consecutive BANKS, starting from base tile
+                    write_data_to_banks(glb_tile_base, offset, start_addr, data_arr16_seg0, data_arr16_seg1, data_arr16_seg2, data_arr16_seg3);
+
+                    repeat (10) @(posedge p_ifc.clk);
+
+                    // Read data using MU-GLB read-path
+                    MU_read_data_from_banks(glb_tile_base, offset, BURST_SIZE, data_arr16_out);
+                
+                    // Compare data
+                    compare_data(data_arr16, data_arr16_out);
+            end
         end
 
-        // Initiialize
+        $display("\n---RUNNING OVERLAP TEST---"); 
+        // Load data custom for pt2
+        data_arr16_pt2_seg0 = new[72];
+        data_arr16_pt2_seg1 = new[72];
+        data_arr16_pt2_seg2 = new[72];
+        data_arr16_pt2_seg3 = new[72];
+        data_arr16_pt2_seg4 = new[56];
+        data_arr16_pt2_seg5 = new[56];
+        data_arr16_pt2_seg6 = new[56];
+        data_arr16_pt2_seg7 = new[56];
+        load_data_custom("testvectors/512_v1.dat", data_arr16, data_arr16_pt2_seg0, data_arr16_pt2_seg1, data_arr16_pt2_seg2, data_arr16_pt2_seg3,
+                           data_arr16_pt2_seg4, data_arr16_pt2_seg5, data_arr16_pt2_seg6, data_arr16_pt2_seg7);
+
+        // Initialize
         initialize(); 
-        
+
         // Write data to 4 consecutive BANKS, starting from base tile
-        start_addr = GLB_TILE_BASE << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH);
-        ProcDriver_write_data(start_addr, data_arr16_seg0);
+        write_data_to_banks(0, 8174, start_addr, data_arr16_pt2_seg0, data_arr16_pt2_seg1, data_arr16_pt2_seg2, data_arr16_pt2_seg3);
 
-        start_addr = ((GLB_TILE_BASE) << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) | 
-                      (1 << BANK_ADDR_WIDTH);
-        ProcDriver_write_data(start_addr, data_arr16_seg1);
-
-        start_addr = (GLB_TILE_BASE + 1) << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH);
-        ProcDriver_write_data(start_addr, data_arr16_seg2);
-
-        start_addr =  ((GLB_TILE_BASE + 1) << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) | 
-                      (1 << BANK_ADDR_WIDTH);
-        ProcDriver_write_data(start_addr, data_arr16_seg3);
+        // Write data to 4 consecutive BANKS, starting from base tile
+        write_data_to_banks(2, 0, start_addr, data_arr16_pt2_seg4, data_arr16_pt2_seg5, data_arr16_pt2_seg6, data_arr16_pt2_seg7);
 
 
         repeat (10) @(posedge p_ifc.clk);
 
-        // Read data
-        data_arr16_out = new[512]; 
-        // Mask away uncessary bits from tile ID
-        tile_sel = GLB_TILE_BASE;
-        mu_rd_group_sel = tile_sel[TILE_SEL_ADDR_WIDTH - 1 : $clog2(MU_WORD_NUM_TILES)];
-        // mu_rd_start_addr = mu_rd_group_sel << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH); // TODO: Remove bank bit from here eventually (and in the addr transl HW)
-        mu_rd_start_addr = mu_rd_group_sel << (BANK_ADDR_WIDTH);
-        mu_rd_burst_size = BURST_SIZE;
-        mu_addr_in = {mu_rd_burst_size, mu_rd_start_addr};
-        MUDriver_read_data(mu_addr_in, data_arr16_out);
-
+        // Read data using MU-GLB read-path
+        MU_read_data_from_banks(0, 8174, BURST_SIZE, data_arr16_out);
+    
         // Compare data
-        err = compare_16b_arr(data_arr16, data_arr16_out);
-        if (err == 0) begin
-            $display("Test passed!");
-        end else begin
-            $error("Test failed!");
-        end
+        compare_data(data_arr16, data_arr16_out);
 
         repeat (50) @(posedge clk);
 
@@ -119,6 +139,121 @@ program glb_mu_test #(
         wait (reset == 0);
         repeat (10) @(posedge clk);
     endtask
+
+    task automatic load_data(
+        input string file_name,
+        ref logic [CGRA_DATA_WIDTH-1:0] data_arr16[],
+        ref logic [CGRA_DATA_WIDTH-1:0] data_arr16_seg0[],
+        ref logic [CGRA_DATA_WIDTH-1:0] data_arr16_seg1[],
+        ref logic [CGRA_DATA_WIDTH-1:0] data_arr16_seg2[],
+        ref logic [CGRA_DATA_WIDTH-1:0] data_arr16_seg3[]
+    );
+        $readmemh(file_name, data_arr16);
+        for (int i = 0; i < 128; i++) begin
+            int x = int'(i / 4) * 16 + (i % 4);
+            data_arr16_seg0[i] = data_arr16[x];
+            data_arr16_seg1[i] = data_arr16[x + 4];
+            data_arr16_seg2[i] = data_arr16[x + 8];
+            data_arr16_seg3[i] = data_arr16[x + 12];
+        end
+    endtask
+
+    int x_max;
+    task automatic load_data_custom(
+        input string file_name,
+        ref logic [CGRA_DATA_WIDTH-1:0] data_arr16[],
+        ref logic [CGRA_DATA_WIDTH-1:0] data_arr16_seg0[],
+        ref logic [CGRA_DATA_WIDTH-1:0] data_arr16_seg1[],
+        ref logic [CGRA_DATA_WIDTH-1:0] data_arr16_seg2[],
+        ref logic [CGRA_DATA_WIDTH-1:0] data_arr16_seg3[],
+        ref logic [CGRA_DATA_WIDTH-1:0] data_arr16_seg4[],
+        ref logic [CGRA_DATA_WIDTH-1:0] data_arr16_seg5[],
+        ref logic [CGRA_DATA_WIDTH-1:0] data_arr16_seg6[],
+        ref logic [CGRA_DATA_WIDTH-1:0] data_arr16_seg7[]
+    );
+        $readmemh(file_name, data_arr16);
+        x_max = 0;
+        for (int i = 0; i < 72; i++) begin
+            int x = int'(i / 4) * 16 + (i % 4);
+            data_arr16_seg0[i] = data_arr16[x];
+            data_arr16_seg1[i] = data_arr16[x + 4];
+            data_arr16_seg2[i] = data_arr16[x + 8];
+            data_arr16_seg3[i] = data_arr16[x + 12];
+            x_max = x + 13;
+        end
+
+        for (int i = 0; i < 56; i++) begin
+            int x = int'(i / 4) * 16 + (i % 4) + x_max;
+            data_arr16_seg4[i] = data_arr16[x];
+            data_arr16_seg5[i] = data_arr16[x + 4];
+            data_arr16_seg6[i] = data_arr16[x + 8];
+            data_arr16_seg7[i] = data_arr16[x + 12];
+        end
+    endtask
+
+
+    task write_data_to_banks(
+        input logic [TILE_SEL_ADDR_WIDTH-1:0] tile_base,
+        input int offset,
+        input logic [GLB_ADDR_WIDTH-1:0] start_addr,
+        input logic [CGRA_DATA_WIDTH-1:0] data_arr16_seg0[],
+        input logic [CGRA_DATA_WIDTH-1:0] data_arr16_seg1[],
+        input logic [CGRA_DATA_WIDTH-1:0] data_arr16_seg2[],
+        input logic [CGRA_DATA_WIDTH-1:0] data_arr16_seg3[]
+    );
+        start_addr = (tile_base << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) + (offset * 8);
+        $display("Writing data starting at address %0h", start_addr);
+        ProcDriver_write_data(start_addr, data_arr16_seg0);
+
+        start_addr = (((tile_base) << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) | 
+                      (1 << BANK_ADDR_WIDTH)) + (offset * 8);
+        ProcDriver_write_data(start_addr, data_arr16_seg1);
+
+        start_addr = ((tile_base + 1) << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) + (offset * 8);
+        ProcDriver_write_data(start_addr, data_arr16_seg2);
+
+        start_addr =  (((tile_base + 1) << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) | 
+                      (1 << BANK_ADDR_WIDTH)) + (offset * 8);
+        ProcDriver_write_data(start_addr, data_arr16_seg3);
+    endtask
+
+
+    task MU_read_data_from_banks(
+        input logic [TILE_SEL_ADDR_WIDTH-1:0] tile_sel_base,
+        input int offset,
+        input int burst_size,
+        ref logic [CGRA_DATA_WIDTH-1:0] data_out[]
+    );
+        logic [TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES) - 1:0] mu_rd_group_sel;
+        logic [MU_ADDR_WIDTH-MU_ADDR_NUM_BURST_BITS-1:0] mu_rd_start_addr;
+        logic [MU_ADDR_NUM_BURST_BITS-1:0] mu_rd_burst_size;
+        logic [MU_ADDR_WIDTH-1:0] mu_addr_in;
+
+        // Mask away unnecessary bits from tile ID
+        mu_rd_group_sel = tile_sel_base[TILE_SEL_ADDR_WIDTH - 1 : $clog2(MU_WORD_NUM_TILES)];
+        mu_rd_start_addr = (mu_rd_group_sel << (BANK_ADDR_WIDTH)) + (offset * 8);
+        mu_rd_burst_size = burst_size;
+        mu_addr_in = {mu_rd_burst_size, mu_rd_start_addr};
+        $display("Reading data starting at MU (untranslated) input address %0h.", mu_addr_in);
+        MUDriver_read_data(mu_addr_in, data_out);
+    endtask
+
+
+       
+    task compare_data(
+        input logic [CGRA_DATA_WIDTH-1:0] data_arr16[],
+        input logic [CGRA_DATA_WIDTH-1:0] data_arr16_out[]
+    );
+        int err;
+        // Compare data
+        err = compare_16b_arr(data_arr16, data_arr16_out);
+        if (err == 0) begin
+            $display("Test passed!");
+        end else begin
+            $error("Test failed!");
+        end
+    endtask
+
 
     int size;
     bit [BANK_DATA_WIDTH-1:0] bdata;
