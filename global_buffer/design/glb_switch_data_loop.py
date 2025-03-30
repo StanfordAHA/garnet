@@ -55,12 +55,6 @@ class GlbSwitchDataLoop(Generator):
         # local variables
         self.if_wst_s_wr_clk_en_d = self.var("if_wst_s_wr_clk_en_d", 1)
         self.if_wst_s_rd_clk_en_d = self.var("if_wst_s_rd_clk_en_d", 1)
-        self.if_est_m_wr_clk_en_sel_first_cycle = self.var("if_est_m_wr_clk_en_sel_first_cycle", 1)
-        self.if_est_m_rd_clk_en_sel_first_cycle = self.var("if_est_m_rd_clk_en_sel_first_cycle", 1)
-        self.if_est_m_wr_clk_en_sel_latch = self.var("if_est_m_wr_clk_en_sel_latch", 1)
-        self.if_est_m_rd_clk_en_sel_latch = self.var("if_est_m_rd_clk_en_sel_latch", 1)
-        self.if_est_m_wr_clk_en_sel = self.var("if_est_m_wr_clk_en_sel", 1)
-        self.if_est_m_rd_clk_en_sel = self.var("if_est_m_rd_clk_en_sel", 1)
         self.clk_en_wst_s_d = self.var("clk_en_wst_s_d", 1)
         self.clk_en_est_m = self.var("clk_en_est_m", 1)
         self.if_est_m_wr_en_w = self.var("if_est_m_wr_en_w", 1)
@@ -103,16 +97,10 @@ class GlbSwitchDataLoop(Generator):
             self.add_always(self.rd_data_logic_e2w)
         self.add_always(self.pipeline)
         self.add_always(self.clk_en_pipeline)
-        self.add_always(self.est_m_clk_en_sel_first_cycle_comb)
         if self.wr_channel:
-            self.add_always(self.est_m_wr_clk_en_sel_latch)
-        if self.rd_channel: 
-            self.add_always(self.est_m_rd_clk_en_sel_latch)
-        self.add_always(self.est_m_clk_en_sel_comb)
-        if self.wr_channel:
-            self.add_always(self.est_m_wr_clk_en_mux)
+            self.add_always(self.est_m_wr_clk_en_comb)
         if self.rd_channel:
-            self.add_always(self.est_m_rd_clk_en_mux)
+            self.add_always(self.est_m_rd_clk_en_comb)
         self.add_sw2bank_clk_en()
         if self.rd_channel:
             self.add_always(self.mu_sub_packet_logic)
@@ -132,8 +120,7 @@ class GlbSwitchDataLoop(Generator):
                                        depth=(self._params.sram_macro_read_latency + self._params.glb_bank2sw_pipeline_depth + 1))
         self.add_child("pipeline_sub_packet_idx",
                        self.pipeline_sub_packet_idx,
-                       # TODO: Figure out if this should be mclk or gclk. Using mclk for now. 
-                       clk=self.mclk,
+                       clk=self.gclk,
                        clk_en=const(1, 1),
                        reset=self.reset,
                        in_=self.if_wst_s.sub_packet_idx,
@@ -159,65 +146,16 @@ class GlbSwitchDataLoop(Generator):
                 self.if_wst_s_rd_clk_en_d = self.if_wst_s.rd_clk_en
 
     @always_comb
-    def est_m_clk_en_sel_first_cycle_comb(self):
-        if self.wr_channel:
-            self.if_est_m_wr_clk_en_sel_first_cycle = self.if_wst_s.wr_en & (~self.wr_tile_id_match)
-        if self.rd_channel:
-            self.if_est_m_rd_clk_en_sel_first_cycle = self.if_wst_s.rd_en & (~self.last_sub_packet)
-
-    @always_ff((posedge, "mclk"), (posedge, "reset"))
-    def est_m_wr_clk_en_sel_latch(self):
-        if self.reset:
-            self.if_est_m_wr_clk_en_sel_latch = 0
-        else:
-            if self.if_wst_s.wr_en == 1:
-                # If tile id matches, it does not feedthrough clk_en to the east
-                if self.wr_tile_id_match:
-                    self.if_est_m_wr_clk_en_sel_latch = 0
-                else:
-                    self.if_est_m_wr_clk_en_sel_latch = 1
-            else:
-                if self.if_wst_s.wr_clk_en == 0:
-                    self.if_est_m_wr_clk_en_sel_latch = 0
-
-    @always_ff((posedge, "mclk"), (posedge, "reset"))
-    def est_m_rd_clk_en_sel_latch(self):
-        if self.reset:
-            self.if_est_m_rd_clk_en_sel_latch = 0
-        else:
-            if self.if_wst_s.rd_en == 1:
-                # If reading the last sub-packet, it does not feedthrough clk_en to the east 
-                # if self.rd_tile_id_match:
-                if self.last_sub_packet:
-                    self.if_est_m_rd_clk_en_sel_latch = 0
-                else:
-                    self.if_est_m_rd_clk_en_sel_latch = 1
-            else:
-                if self.if_wst_s.rd_clk_en == 0:
-                    self.if_est_m_rd_clk_en_sel_latch = 0
+    def est_m_wr_clk_en_comb(self):
+        # Always feed clk_en east 
+        self.if_est_m.wr_clk_en = self.if_wst_s_wr_clk_en_d
+       
 
     @always_comb
-    def est_m_clk_en_sel_comb(self):
-        if self.wr_channel:
-            self.if_est_m_wr_clk_en_sel = (
-                self.if_est_m_wr_clk_en_sel_first_cycle | self.if_est_m_wr_clk_en_sel_latch)
-        if self.rd_channel:
-            self.if_est_m_rd_clk_en_sel = (
-                self.if_est_m_rd_clk_en_sel_first_cycle | self.if_est_m_rd_clk_en_sel_latch)
-
-    @always_comb
-    def est_m_wr_clk_en_mux(self):
-        if self.if_est_m_wr_clk_en_sel:
-            self.if_est_m.wr_clk_en = self.if_wst_s_wr_clk_en_d
-        else:
-            self.if_est_m.wr_clk_en = 0
-
-    @always_comb
-    def est_m_rd_clk_en_mux(self):
-        if self.if_est_m_rd_clk_en_sel:
-            self.if_est_m.rd_clk_en = self.if_wst_s_rd_clk_en_d
-        else:
-            self.if_est_m.rd_clk_en = 0
+    def est_m_rd_clk_en_comb(self):
+        # Always feed clk_en east
+        self.if_est_m.rd_clk_en = self.if_wst_s_rd_clk_en_d  
+            
 
     def add_sw2bank_clk_en(self):
         if self.wr_channel:
@@ -398,9 +336,7 @@ class GlbSwitchDataLoop(Generator):
                        out_=self.bank_rd_addr_sel_d)
 
 
-    # TODO: Potentially change this gclk to mclk for now till I figure out how clock gating will work with the loop 
-    # @ always_ff((posedge, "gclk"), (posedge, "reset"))
-    @ always_ff((posedge, "mclk"), (posedge, "reset"))
+    @ always_ff((posedge, "gclk"), (posedge, "reset"))
     def pipeline(self):
         if self.reset:
             if self.wr_channel:

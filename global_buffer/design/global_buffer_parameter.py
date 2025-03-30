@@ -195,6 +195,7 @@ class GlobalBufferParams:
     rd_clk_en_margin: int = 3
     wr_clk_en_margin: int = 3
     proc_clk_en_margin: int = 4
+    mu_clk_en_margin: int = 5
 
     is_sram_stub: int = 0
 

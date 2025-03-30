@@ -470,15 +470,14 @@ class GlobalBuffer(Generator):
 
     def add_mu_clk_en(self):
         self.mu_rd_clk_en_gen = GlbClkEnGen(cnt=2 * self._params.num_glb_tiles
-                                         + self._params.tile2sram_rd_delay + self._params.proc_clk_en_margin)
+                                         + self._params.tile2sram_rd_delay + self._params.mu_clk_en_margin)
         self.mu_rd_clk_en_gen.p_cnt.value = 2 * self._params.num_glb_tiles + \
-            self._params.tile2sram_rd_delay + self._params.proc_clk_en_margin
+            self._params.tile2sram_rd_delay + self._params.mu_clk_en_margin
         self.mu_rd_clk_en = self.var("mu_rd_clk_en", 1)
         self.add_child("mu_rd_clk_en_gen",
                        self.mu_rd_clk_en_gen,
                        clk=self.clk,
                        reset=self.reset,
-                    #    enable=self.mu_rd_en_d,
                        enable=self.mu_rd_en,
                        clk_en=self.mu_rd_clk_en
                        )

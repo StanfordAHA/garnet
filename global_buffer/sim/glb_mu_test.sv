@@ -120,12 +120,11 @@ program glb_mu_test #(
 
                 // Read data using MU-GLB read-path
                 MU_read_data_from_banks(glb_tile_base, BANK_DEPTH - (OVERLAP_TEST_SIZE_1 / 4), BURST_SIZE, data_arr16_out);
+
+                // Compare data
+                compare_data(data_arr16, data_arr16_out);
         end
     
-
-        // Compare data
-        compare_data(data_arr16, data_arr16_out);
-
         repeat (50) @(posedge clk);
 
         $display("Time: %0t", $time);
