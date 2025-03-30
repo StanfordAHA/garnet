@@ -96,12 +96,12 @@ module top;
 
 
     //============================================================================//
-    // instantiate dut
+    // instantiate dut: with E64 signals 
     //============================================================================//
     logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0] strm_ctrl_f2g;
-    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_DATA_WIDTH-1:0] strm_data_f2g;
-    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0] strm_data_f2g_vld;
-    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0]  strm_data_g2f_rdy;
+    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][3:0][CGRA_DATA_WIDTH-1:0] strm_data_f2g;
+    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][3:0] strm_data_f2g_vld;
+    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][3:0]  strm_data_g2f_rdy;
     logic [NUM_GLB_TILES-1:0] pcfg_broadcast_stall;
 
 
@@ -130,10 +130,12 @@ module top;
             flush_crossbar_sel[2*i] = 1'b0;
             flush_crossbar_sel[2*i+1] = 1'b0;
             for (int j = 0; j < CGRA_PER_GLB; j++) begin
-                strm_data_f2g[i][j] = 16'b0;
                 strm_ctrl_f2g[i][j] = 1'b0;
-                strm_data_f2g_vld[i][j] = 1'b0;
-                strm_data_g2f_rdy[i][j] = 1'b0;
+                for (int e64_packet = 0; e64_packet < 4; e64_packet++) begin
+                    strm_data_f2g[i][j][e64_packet] = 16'b0;
+                    strm_data_g2f_rdy[i][j][e64_packet] = 1'b0;
+                    strm_data_f2g_vld[i][j][e64_packet] = 1'b0;
+                end
             end
         end
     end
