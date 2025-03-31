@@ -153,7 +153,7 @@ if [ "$use_container" == True ]; then
       if [ "$use_local_garnet" == True ]; then
         docker exec $container_name /bin/bash -c "rm -rf /aha/garnet"
         # Clone local garnet repo to prevent copying untracked files
-        test -e ./garnet || git clone $GARNET_HOME ./garnet
+        git clone $GARNET_HOME ./garnet
         docker cp ./garnet $container_name:/aha/garnet
       fi
       
@@ -256,17 +256,8 @@ if [ "$use_container" == True ]; then
            cat global_buffer/systemRDL/output/glb_jrdl_decode.sv >> design.v
            cat global_buffer/systemRDL/output/glb_jrdl_logic.sv >> design.v
            cat global_controller/systemRDL/output/*.sv >> design.v
-
-           # For details about this anti-pohan/intel hack hack
-           # see garnet pull request #1123 ~ March 2025
-           if [ '$WHICH_SOC' == 'amber' ]; then
-             echo '--- BEGIN egregious anti-pohan-hack hack'
-             cp design.v design.v.orig
-             sed -i 's|// \(clk.*Are we stalling.*\)|\1|' design.v
-             sed -i '/.*CG Hack/,/[)][;]/s,^,// ,' design.v
-             diff design.v.orig design.v || printf '\n\n'
-           fi
          fi"
+
 
       echo '--- gen_rtl docker cleanup BEGIN' `date +%H:%M`
 
