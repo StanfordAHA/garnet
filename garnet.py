@@ -861,6 +861,7 @@ def parse_args():
     parser.add_argument("--mu-oc-0", type=int, default=32)
     parser.add_argument('--include-E64-hw', action="store_true")
     parser.add_argument('--include-multi-bank-hw', action="store_true")
+    parser.add_argument('--use-non-split-fifos', action="store_true")
 
     # Daemon choices are maybe ['help', 'launch', 'use', 'kill', 'force', 'status', 'wait']
     parser.add_argument('--daemon', type=str, choices=GarnetDaemon.choices, default=None)
@@ -883,6 +884,9 @@ def parse_args():
 
     if args.include_E64_hw:
         os.environ["INCLUDE_E64_HW"] = "1"
+
+    if args.use_non_split_fifos:
+        os.environ["USE_NON_SPLIT_FIFOS"] = "1"
 
     # If using MU, South and North have IO, else only north side has IO
     from canal.util import IOSide
