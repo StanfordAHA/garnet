@@ -258,7 +258,7 @@ if [ "$use_container" == True ]; then
            cat global_controller/systemRDL/output/*.sv >> design.v
 
            # For details about this anti-pohan/intel hack hack
-           # see garnet pull request #TBD ~ March 2025
+           # see garnet pull request #1123 ~ March 2025
            if [ '$WHICH_SOC' == 'amber' ]; then
              echo '--- BEGIN egregious anti-pohan-hack hack'
              cp design.v design.v.orig
