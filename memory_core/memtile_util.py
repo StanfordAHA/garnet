@@ -194,16 +194,14 @@ class LakeCoreBase(ConfigurableCore):
         )
 
         # put a 1-bit register and a mux to select the control signals
-  
         for control_signal, width in control_signals:
             if control_signal == "flush" and not self.__gate_flush:
                 continue
-            
-            # Skip these steps for MU2F IO Core 
+            # Skip these steps for MU2F IO Core
             if width == 1:
                 if skip_control_signals:
                     self.wire(self.convert(self.ports[control_signal], magma.Bits[1]), self.underlying.ports[control_signal])
-                else: 
+                else:
                     mux = MuxWrapper(2, 1, name=f"{control_signal}_sel")
                     reg_value_name = f"{control_signal}_reg_value"
                     reg_sel_name = f"{control_signal}_reg_sel"
@@ -215,8 +213,7 @@ class LakeCoreBase(ConfigurableCore):
                     # 0 is the default wire, which takes from the routing network
                     self.wire(mux.ports.O[0], self.underlying.ports[control_signal][0])
 
-                
-            else: 
+            else:
                 for i in range(width):
                     if skip_control_signals:
                         self.wire(self.underlying.ports[control_signal][i], self.convert(self.ports[f"{control_signal}_{i}"], magma.Bits[1]))

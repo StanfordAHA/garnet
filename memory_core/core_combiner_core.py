@@ -241,11 +241,20 @@ class CoreCombinerCore(LakeCoreBase):
                 is_constant_pe = 1
 
             if self.ready_valid:
+                pe_op = None
+                # parse the pe instruction out...
+                if isinstance(config_tuple[0], dict):
+                    pe_op = int(config_tuple[0]["pe_inst"])
+                else:
+                    pe_op = int(config_tuple[0])
+
+                assert pe_op is not None, "PE op must be set either through a metadata dictionary or a list"
+
                 config_kwargs = {
                     'mode': 'alu',
                     'bypass_rv': not(dense_ready_valid),
                     'active_inputs': active_inputs,
-                    'op': int(config_tuple[0]),
+                    'op': pe_op,
                     # pe in dense mode always accept inputs that are external
                     # to the cluster
                     'pe_in_external': 1,
@@ -290,8 +299,8 @@ class CoreCombinerCore(LakeCoreBase):
                                            (f"PE_output_width_17_num_1_fifo_bogus_init_num", output_bogus_init_num[1]),
                                            (f"PE_output_width_17_num_2_fifo_bogus_init_num", output_bogus_init_num[2])]
                 for name, v in config_output_bogus_init:
-                    configs = [self.get_config_data(name, v)] + configs    
-     
+                    configs = [self.get_config_data(name, v)] + configs
+
             # END BLOCK COMMENT
             #print(configs)
             return configs

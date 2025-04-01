@@ -1384,13 +1384,30 @@ def create_netlist_info(
         else:
             info["id_to_instrs"][id] = nodes_to_instrs[node]
 
+
     info["instance_to_instrs"] = {
         info["id_to_name"][id]: instr
         for id, instr in info["id_to_instrs"].items()
         if ("p" in id or "m" in id or "I" in id or "i" in id or "U" in id or "u" in id)
     }
     for node, md in node_to_metadata.items():
-        info["instance_to_instrs"][node] = md
+        if node in info["instance_to_instrs"]:
+            og_info = info["instance_to_instrs"][node]
+            is_bitvector = False
+            if isinstance(og_info, BitVector):
+                is_bitvector = True
+
+            # Merge the metadata in...
+            if is_bitvector:
+                info["instance_to_instrs"][node] = {
+                    **{"pe_inst": og_info},
+                    **md,
+                    }
+            else:
+                info["instance_to_instrs"][node] = md
+        else:
+            info["instance_to_instrs"][node] = md
+        # print(info["instance_to_instrs"][node])
 
     node_info = {t: fc.Py.input_t for t, fc in tile_info.items()}
     bus_info, netlist = CreateBuses(node_info, ready_valid).doit(pdag)
