@@ -225,18 +225,10 @@ always @ (*) begin
     clk_domain = (sys_clk_activated) ? clk_in : tck;//Are we running the GC/CGRA on sys clk or test clk?
     all_stalled_tck = delay_sel[1] ? all_stalled_tck_fall : all_stalled_tck_rise;
     all_stalled_sys = delay_sel[0] ? all_stalled_sys_fall : all_stalled_sys_rise;
-    // clk = ((all_stalled_tck & !sys_clk_activated) | (all_stalled_sys & sys_clk_activated )) ? 0 : clk_domain; //Are we stalling both GC and CGRA during clk domain switch?
+    clk = ((all_stalled_tck & !sys_clk_activated) | (all_stalled_sys & sys_clk_activated )) ? 0 : clk_domain; //Are we stalling both GC and CGRA during clk domain switch?
     clk_out = clk;
     reset_out = (state==resetting) ? 1 : reset_in;
 end
-
-// CG Hack by pohan
-b0mcilb05hn1n16x5 u_icg_hack (
-        .te                     (1'b0),
-        .en                     (!((all_stalled_tck & !sys_clk_activated) | (all_stalled_sys & sys_clk_activated ))),
-        .clk                    (clk_domain),
-        .clkout                 (clk)
-);
 
 //Clock switch counter block (Always on test_clk)
 always @ (posedge tck or posedge reset_in) begin
