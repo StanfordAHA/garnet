@@ -214,8 +214,9 @@ class CreateMetaData(Visitor):
 
 
 class CreateIDs(Visitor):
-    def __init__(self, inst_info):
+    def __init__(self, inst_info, mu_io_startX):
         self.inst_info = inst_info
+        self.mu_io_startX = mu_io_startX
 
     def doit(self, dag: IODag):
         self.tile_types = set()
@@ -254,8 +255,23 @@ class CreateIDs(Visitor):
                 id = f"i"
             elif node.type == BitVector[16]:
                 if "MU" in child.iname:
-                    id = f"U"
-                    self.tile_types.add("U")
+                    node_name_parse_list = child.iname.split("stencil_")[2].split("_read")
+                    if len(node_name_parse_list) > 1:
+                        oc0_index = int(node_name_parse_list[0])  
+                    else:
+                        oc0_index = 0
+
+                    channels_per_mu_io_tile = 2
+                    pe_mem_tile_ratio = 3
+                    mu_io_col = self.mu_io_startX + oc0_index // channels_per_mu_io_tile
+                    isInMemColumn = (mu_io_col + 1) % (pe_mem_tile_ratio + 1) == 0
+                    # isInMemColumn = (oc0_index % (channels_per_mu_io_tile * (pe_mem_tile_ratio + 1)))//channels_per_mu_io_tile == pe_mem_tile_ratio 
+                    if isInMemColumn:
+                        id = f"V"
+                        self.tile_types.add("V")
+                    else:
+                        id = f"U"
+                        self.tile_types.add("U")
                 else:
                     id = f"I"
             else:
@@ -1275,6 +1291,10 @@ def create_netlist_info(
     input_broadcast_branch_factor=4,
     input_broadcast_max_leaves=16,
     ready_valid=True,
+    orig_cgra_width=16,
+    orig_cgra_height=28,
+    mu_oc_0=32,
+    num_fabric_cols_removed=8
 ):
     if load_only:
         packed_file = os.path.join(app_dir, "design.packed")
@@ -1307,8 +1327,11 @@ def create_netlist_info(
             return "i"
 
     node_info = {t: tile_to_char(t) for t in tile_info}
-    nodes_to_ids = CreateIDs(node_info).doit(pdag)
 
+    num_mu_io_tiles = int(mu_oc_0/2)
+    mu_io_startX = int(((orig_cgra_width - num_fabric_cols_removed) - num_mu_io_tiles)/2) + num_fabric_cols_removed
+    nodes_to_ids = CreateIDs(node_info, mu_io_startX).doit(pdag)
+    
     if load_only:
         names_to_ids = {name: id_ for id_, name in id_to_name.items()}
     else:
@@ -1364,8 +1387,8 @@ def create_netlist_info(
             node_config_kwargs['exchange_64_mode'] = 1
 
         # MO: MU IO tile HACK for now. Hardcoding it to use tracks T0 and T1 for now
-        # TODO: In the future, find a way to let the PnR tool choose the tracks
-        if "U" in id or "u" in id:
+        # TODO: In the future, find a way to let the PnR tool choose the tracks 
+        if "U" in id or "u" in id or "V" in id or "v" in id:
             node_name_parse_list = node.split("stencil_")[2].split("_read")
             if len(node_name_parse_list) > 1:
                 oc0_index = int(node_name_parse_list[0])
@@ -1379,8 +1402,8 @@ def create_netlist_info(
                 node_config_kwargs['track_active_T1'] = 1
 
 
-        if ((dense_ready_valid or exchange_64_mode) and ("I" in id or "i" in id)) or "U" in id or "u" in id:
-            info["id_to_instrs"][id] = (1, node_config_kwargs)
+        if ((dense_ready_valid or exchange_64_mode) and ("I" in id or "i" in id)) or "U" in id or "u" in id or "V" in id or "v" in id:  
+            info["id_to_instrs"][id] = (1, node_config_kwargs) 
         else:
             info["id_to_instrs"][id] = nodes_to_instrs[node]
 
@@ -1388,7 +1411,7 @@ def create_netlist_info(
     info["instance_to_instrs"] = {
         info["id_to_name"][id]: instr
         for id, instr in info["id_to_instrs"].items()
-        if ("p" in id or "m" in id or "I" in id or "i" in id or "U" in id or "u" in id)
+        if ("p" in id or "m" in id or "I" in id or "i" in id or "U" in id or "u" in id or "V" in id or "v" in id)
     }
     for node, md in node_to_metadata.items():
         if node in info["instance_to_instrs"]:

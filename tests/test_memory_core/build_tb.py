@@ -2058,6 +2058,7 @@ if __name__ == "__main__":
     parser.add_argument('--give-north-io-sbs', action="store_true")
     parser.add_argument("--num-fabric-cols-removed", default=0, type=int)
     parser.add_argument('--include-E64-hw', action="store_true")
+    parser.add_argument('--use-non-split-fifos', action="store_true")
 
     args = parser.parse_args()
     bespoke = args.bespoke
@@ -2104,6 +2105,14 @@ if __name__ == "__main__":
     give_north_io_sbs = args.give_north_io_sbs
     num_fabric_cols_removed = args.num_fabric_cols_removed
     include_E64_hw = args.include_E64_hw
+    use_non_split_fifos = args.use_non_split_fifos
+
+
+    if include_E64_hw:
+        os.environ["INCLUDE_E64_HW"] = "1"
+
+    if use_non_split_fifos:
+        os.environ["USE_NON_SPLIT_FIFOS"] = "1"
 
     if using_matrix_unit:
         if num_fabric_cols_removed == 0:
@@ -2237,7 +2246,7 @@ if __name__ == "__main__":
 
         time_0 = time.time()
 
-        interconnect = create_cgra(width=chip_width, height=chip_height,
+        interconnect = create_cgra(input_width=chip_width, input_height=chip_height,
                                    io_sides=io_sides,
                                    using_matrix_unit=using_matrix_unit,
                                    num_tracks=num_tracks,

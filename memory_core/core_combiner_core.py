@@ -301,6 +301,16 @@ class CoreCombinerCore(LakeCoreBase):
                 for name, v in config_output_bogus_init:
                     configs = [self.get_config_data(name, v)] + configs
 
+
+                fine_grained_input_fifo_bypass = [0, 0, 0]
+                fine_grained_output_fifo_bypass = 0
+
+                config_fine_grained_input_fifo_bypass = [(f"{self.get_port_remap()['alu']['data0']}_fine_grain_fifo_bypass", fine_grained_input_fifo_bypass[0]),
+                                                          (f"{self.get_port_remap()['alu']['data1']}_fine_grain_fifo_bypass", fine_grained_input_fifo_bypass[1]),
+                                                          (f"{self.get_port_remap()['alu']['data2']}_fine_grain_fifo_bypass", fine_grained_input_fifo_bypass[2]),
+                                                          (f"{self.get_port_remap()['alu']['res']}_fine_grain_fifo_bypass", fine_grained_output_fifo_bypass)]
+                for name, v in config_fine_grained_input_fifo_bypass:
+                    configs = [self.get_config_data(name, v)] + configs
             # END BLOCK COMMENT
             #print(configs)
             return configs

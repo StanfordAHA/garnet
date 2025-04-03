@@ -62,7 +62,7 @@ def parse_glb_bank_config(app_dir, id_to_name, inputs, outputs, valid, placement
                 placement[blk_id] = coord
     return placement
 
-def place_io_blk(id_to_name, app_dir, io_sides, num_fabric_cols_removed): 
+def place_io_blk(id_to_name, app_dir, io_sides, orig_cgra_width, orig_cgra_height, mu_oc_0, num_fabric_cols_removed): 
     """Hacky function to place the IO blocks"""
 
     if IOSide.West in io_sides:
@@ -90,7 +90,7 @@ def place_io_blk(id_to_name, app_dir, io_sides, num_fabric_cols_removed):
         if blk_id[0] in {"i", "I"}:
             assert blk_id not in ios
             ios.append(blk_id)
-        elif blk_id[0] in {"u", "U"}:
+        elif blk_id[0] in {"u", "U", "v", "V"}:
             assert blk_id not in inputs_from_MU
             inputs_from_MU.append(blk_id)
 
@@ -131,10 +131,17 @@ def place_io_blk(id_to_name, app_dir, io_sides, num_fabric_cols_removed):
 
     # If operating in exchange_64 mode, place IOs in a denser way (4x denser)
     exchange_64_mode = "E64_MODE_ON" in os.environ and os.environ.get("E64_MODE_ON") == "1"
+
+    # If operating in multi-bank mode, place IOs 8x denser and with all inputs placed first and then outputs
+    multi_bank_mode = "E64_MULTI_BANK_MODE_ON" in os.environ and os.environ.get("E64_MULTI_BANK_MODE_ON") == "1"
+    x_coord = -1
     group_index = 0
     for idx, input_blk in enumerate(inputs):
         if exchange_64_mode:
-            x_coord = int((group_index * 2 ) / 8) * 2 + io_tile_shift_right_index
+            if multi_bank_mode:
+                x_coord = int((group_index * 2 ) / 8) + io_tile_shift_right_index
+            else:
+                x_coord = int((group_index * 2 ) / 8) * 2 + io_tile_shift_right_index
             placement[input_blk] = (x_coord, 0) 
         else:
             placement[input_blk] = (group_index * 2 + io_tile_shift_right_index, 0)
@@ -143,11 +150,15 @@ def place_io_blk(id_to_name, app_dir, io_sides, num_fabric_cols_removed):
         placement[en_blk] = (group_index * 2 + io_tile_shift_right_index, 0)
         group_index += 1
 
+    last_input_x_pos = x_coord
     group_index = 0
     for idx, output_blk in enumerate(outputs):
         if exchange_64_mode:
-              x_coord = int((group_index * 2 ) / 8) * 2 + 1 + io_tile_shift_right_index
-              placement[output_blk] = (x_coord, 0) 
+            if multi_bank_mode:
+                x_coord = int((group_index * 2 ) / 8) + last_input_x_pos + 1 + io_tile_shift_right_index
+            else:
+                x_coord = int((group_index * 2 ) / 8) * 2 + 1 + io_tile_shift_right_index
+            placement[output_blk] = (x_coord, 0) 
         else:
             placement[output_blk] = (group_index * 2 + 1 + io_tile_shift_right_index, 0)
       
@@ -162,16 +173,15 @@ def place_io_blk(id_to_name, app_dir, io_sides, num_fabric_cols_removed):
 
 
     # Place MU I/O tiles if needed
-    mu_io_tile_column = num_fabric_cols_removed - 1
+    num_mu_io_tiles = int(mu_oc_0/2)
+    mu_io_startX = int(((orig_cgra_width - num_fabric_cols_removed) - num_mu_io_tiles)/2) + num_fabric_cols_removed
+    mu_io_tile_row = orig_cgra_height + 1
+
     for idx, input_blk in enumerate(inputs_from_MU):
-        placement[input_blk] = (mu_io_tile_column, int(idx / 2) + 1)
+        placement[input_blk] = (mu_io_startX + idx//2, mu_io_tile_row)
 
     # manual placement of PE/MEM tiles if needed
     if "MANUAL_PLACER" in os.environ and os.environ.get("MANUAL_PLACER") == "1" and os.path.isfile(app_dir + "/manual.place"):
-    # MO: Matrix unit HACK for manual placement
-    # manual_place_filepath = os.path.join(app_dir, "../manual.place")
-    # os.system(f"cp {manual_place_filepath} {app_dir}")
-    # if (("MANUAL_PLACER" in os.environ and os.environ.get("MANUAL_PLACER") == "1") or ("MU_APP_MANUAL_PLACER" in os.environ and os.environ.get("MU_APP_MANUAL_PLACER") == "1")) and os.path.isfile(app_dir + "/manual.place"):
         with open(app_dir + "/manual.place", "r") as f:
             data = f.readlines()
             for dat in data:

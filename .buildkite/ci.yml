@@ -8,8 +8,12 @@ steps:
 
 # ------------------------------------------------------------------------
 - label: "Get latest docker"
-  agents:
-    docker: "true"
+
+  # Agents must have tag hostname=<hostname>
+  # And then this will guarantee that all steps run on the same host, see?
+  # BUT ONLY IF agent actually has a hostname tag, see? So we also require a docker tag.
+  agents: { hostname: $BUILDKITE_AGENT_META_DATA_HOSTNAME, docker: true }
+
   commands:
   - docker pull $IMAGE
 
@@ -22,8 +26,7 @@ steps:
   # For now at least; set soft_fail so failing lint does not fail pipeline
   soft_fail: true
 
-  agents:
-    docker: "true"
+  agents: { hostname: $BUILDKITE_AGENT_META_DATA_HOSTNAME, docker: true }
 
   commands:
 
@@ -46,50 +49,11 @@ steps:
 
 - wait: { continue_on_failure: true }
 
-# ------------------------------------------------------------------------
-- label: ":wrench: Verilator"
-  agents: { docker: "true" }
-  commands:
-
-  # Container setup
-  - docker run -id --name $VCONTAINER --rm -v /cad:/cad $IMAGE bash
-  - docker exec $VCONTAINER /bin/bash -c "rm -rf /aha/garnet"
-  - docker cp . $VCONTAINER:/aha/garnet
-
-  # Run the test
-  - docker exec $VCONTAINER /bin/bash -c "
-      source /aha/bin/activate;
-      source /cad/modules/tcl/init/sh;
-      echo '+++ SETUP';
-      make -f garnet/tests/test_app/Makefile setup-verilator;
-      echo '+++ GAUSSIAN TEST 4x16';
-      make -f garnet/tests/test_app/Makefile gaussian
-    "
-
-# ------------------------------------------------------------------------
-- label: ":wrench: Verilator 2"
-  agents: { docker: "true" }
-  commands:
-  - echo "This test disabled b/c takes too long (2.5hr)"; exit
-
-  # Container setup
-  - docker run -id --name $VCONTAINER2 --rm -v /cad:/cad $IMAGE bash
-  - docker exec $VCONTAINER2 /bin/bash -c "rm -rf /aha/garnet"
-  - docker cp . $VCONTAINER2:/aha/garnet
-
-  # Run the test
-  - docker exec $VCONTAINER2 /bin/bash -c "
-      source /aha/bin/activate;
-      source /cad/modules/tcl/init/sh;
-      echo '+++ SETUP';
-      make -f garnet/tests/test_app/Makefile setup-verilator;
-      echo '+++ POINTWISE TEST 28x16';
-      make -f garnet/tests/test_app/Makefile pointwise
-    "
+# [ Verilator tests deleted Mar 2025 in favor of github workflow-action equivalent(s) ]
 
 # ------------------------------------------------------------------------
 - label: ":wrench: Aha regressions"
-  agents: { docker: "true" }
+  agents: { hostname: $BUILDKITE_AGENT_META_DATA_HOSTNAME, docker: true }
   commands:
 
   # In case Lint step failed to clean up correctly
@@ -117,7 +81,7 @@ steps:
 # 3. Delete any and all unused docker images.
 
 - label: "Delete container"
-  agents: { docker: "true" }
+  agents: { hostname: $BUILDKITE_AGENT_META_DATA_HOSTNAME, docker: true }
   commands:
   - set -x; docker kill $CONTAINER || true
   - set -x; docker kill $VCONTAINER || true
