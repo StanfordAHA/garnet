@@ -1003,7 +1003,7 @@ def pnr(garnet, args, app):
     if args.pipeline_pnr and not args.generate_bitstream_only:
         reschedule_pipelined_app(app)
 
-        placement, routing, id_to_name, instance_to_instr, netlist, bus, active_core_ports = \
+        placement, routing, id_to_name, instance_to_instr, netlist, bus, active_core_ports, id_to_metadata = \
             garnet.place_and_route(args, load_only=True)
 
     bitstream, iorved_tuple = garnet.generate_bitstream(
