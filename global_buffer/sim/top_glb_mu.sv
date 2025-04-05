@@ -44,8 +44,8 @@ module top;
 
     // max cycle set
     initial begin
-        repeat (10000000) @(posedge clk);
-        $display("\n%0t\tERROR: The 10000000 cycles marker has passed!", $time);
+        repeat (1000000) @(posedge clk);
+        $display("\n%0t\tERROR: The 1000000 cycles marker has passed!", $time);
         $finish(2);
     end
 
@@ -222,12 +222,13 @@ module top;
 
 
         // matrix unit ifc
-        .mu_addr_in (glb_mu_ifc.mu_addr_in),
-        .mu_addr_in_vld (glb_mu_ifc.mu_addr_in_vld),
-        .mu_addr_in_rdy (glb_mu_ifc.mu_addr_in_rdy),
-        .mu_rd_data_out (glb_mu_ifc.mu_rd_data),
-        .mu_rd_data_out_vld (glb_mu_ifc.mu_rd_data_valid),
-        .mu_rd_data_out_rdy (glb_mu_ifc.mu_rd_data_ready)
+        .mu_tl_addr_in (glb_mu_ifc.mu_tl_addr_in),
+        .mu_tl_in_vld (glb_mu_ifc.mu_tl_in_vld),
+        .mu_tl_in_rdy (glb_mu_ifc.mu_tl_in_rdy),
+        .mu_tl_size_in (glb_mu_ifc.mu_tl_size_in),
+        .mu_tl_data_out (glb_mu_ifc.mu_rd_data),
+        .mu_tl_data_out_vld (glb_mu_ifc.mu_rd_data_valid),
+        .mu_tl_data_out_rdy (glb_mu_ifc.mu_rd_data_ready)
     `ifdef PWR
             .VDD(VDD),
             .VSS(VSS),

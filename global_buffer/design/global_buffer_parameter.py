@@ -28,6 +28,10 @@ class GlobalBufferParams:
     @property
     def bank_byte_offset(self):
         return math.ceil(math.log(self.bank_data_width / 8, 2))
+    
+    @property
+    def mu_word_byte_offset(self):
+        return math.ceil(math.log(self.mu_word_width / 8, 2))
 
     @property
     def glb_addr_width(self):
@@ -35,11 +39,16 @@ class GlobalBufferParams:
     
     @property
     def mu_addr_width(self):
-        return self.glb_addr_width - math.ceil(math.log(self.mu_word_num_tiles, 2)) + self.mu_addr_num_burst_bits - self.bank_sel_addr_width
+        return self.glb_addr_width
+        # return self.glb_addr_width - math.ceil(math.log(self.mu_word_num_tiles, 2)) - self.bank_sel_addr_width
+    
+    @property
+    def mu_rd_max_num_glb_reqs(self):
+        return self.mu_rd_max_burst_size // (self.mu_word_width // 8) 
     
     @property
     def mu_data_out_fifo_depth(self):
-        return self.mu_addr_fifo_depth * self.mu_read_max_burst
+        return self.mu_tl_req_fifo_depth * self.mu_rd_max_num_glb_reqs
 
     @property
     def cgra_byte_offset(self):
@@ -101,13 +110,15 @@ class GlobalBufferParams:
     mu_word_num_tiles: int = 2
     mu_switch_num_tracks: int = 4
     mu_word_width: int = 256
-    mu_addr_num_burst_bits: int = 3
+    mu_tl_num_burst_bits: int = 4
+    mu_tl_req_fifo_depth: int = 4
+
+    # MU rd max burst (in bytes) = max(ic, oc) * 2. For 64x32 array, it is 64 * 2 = 128
+    mu_rd_max_burst_size: int = 128
 
     # Not used by TSMC (yet)
     load_dma_fifo_depth: int = 16
     store_dma_fifo_depth: int = 4
-    mu_addr_fifo_depth: int = 4
-    mu_read_max_burst: int = 4
     max_num_chain: int = 8
 
     # cell parameters
@@ -149,6 +160,7 @@ class GlobalBufferParams:
     glb_addr_width: int = field(init=False, default=glb_addr_width)
     mu_addr_width: int = field(init=False, default=mu_addr_width)
     mu_data_out_fifo_depth: int = field(init=False, default=mu_data_out_fifo_depth)
+    mu_rd_max_num_glb_reqs: int = field(init=False, default=mu_rd_max_num_glb_reqs)
     cgra_byte_offset: int = field(init=False, default=cgra_byte_offset)
     axi_addr_width: int = field(init=False, default=axi_addr_width)
     axi_addr_reg_width: int = field(init=False, default=axi_addr_reg_width)

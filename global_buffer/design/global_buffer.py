@@ -39,12 +39,18 @@ class GlobalBuffer(Generator):
 
 
         if self._params.include_mu_glb_hw:
-            self.mu_addr_in = self.input("mu_addr_in", self._params.mu_addr_width)
-            self.mu_addr_in_vld = self.input("mu_addr_in_vld", 1)
-            self.mu_addr_in_rdy = self.output("mu_addr_in_rdy", 1)
-            self.mu_rd_data_out = self.output("mu_rd_data_out", self._params.mu_word_width)
-            self.mu_rd_data_out_vld = self.output("mu_rd_data_out_vld", 1)
-            self.mu_rd_data_out_rdy = self.input("mu_rd_data_out_rdy", 1)
+            # Tilelink address
+            self.mu_tl_addr_in = self.input("mu_tl_addr_in", self._params.mu_addr_width)
+            self.mu_tl_in_vld = self.input("mu_tl_in_vld", 1)
+            self.mu_tl_in_rdy = self.output("mu_tl_in_rdy", 1)
+
+            # Tilelink request size
+            self.mu_tl_size_in = self.input("mu_tl_size_in", self._params.mu_tl_num_burst_bits)
+
+            # Tilelink data
+            self.mu_tl_data_out = self.output("mu_tl_data_out", self._params.mu_word_width)
+            self.mu_tl_data_out_vld = self.output("mu_tl_data_out_vld", 1)
+            self.mu_tl_data_out_rdy = self.input("mu_tl_data_out_rdy", 1)
 
 
         self.if_cfg_wr_en = self.input("if_cfg_wr_en", 1)
@@ -310,16 +316,17 @@ class GlobalBuffer(Generator):
                            self.glb_mu_addr_transl,
                            clk=self.clk,
                            reset=self.reset,
-                           addr_in=self.mu_addr_in,
-                           addr_in_vld=self.mu_addr_in_vld,
-                           addr_in_rdy=self.mu_addr_in_rdy,
+                           addr_in=self.mu_tl_addr_in,
+                           rq_in_vld=self.mu_tl_in_vld,
+                           rq_in_rdy=self.mu_tl_in_rdy,
+                           size_in=self.mu_tl_size_in,
                            addr2glb=self.mu_rd_addr,
                            rd_en2glb=self.mu_rd_en,
                            rd_data_in=self.mu_rd_data_w,
                            rd_data_in_vld=self.mu_rd_data_valid_w,
-                           rd_data_out=self.mu_rd_data_out,
-                           rd_data_out_vld=self.mu_rd_data_out_vld,
-                           rd_data_out_rdy=self.mu_rd_data_out_rdy)     
+                           rd_data_out=self.mu_tl_data_out,
+                           rd_data_out_vld=self.mu_tl_data_out_vld,
+                           rd_data_out_rdy=self.mu_tl_data_out_rdy)     
 
         self.wire(self.if_proc_list[-1].rd_data, 0)
         self.wire(self.if_proc_list[-1].rd_data_valid, 0)
