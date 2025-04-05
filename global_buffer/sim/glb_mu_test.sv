@@ -63,10 +63,8 @@ program glb_mu_test #(
         data_arr16_seg3 = new[INPUT_DATA_SIZE/NUM_SEGMENTS];
         load_data("testvectors/512_v1.dat", data_arr16, data_arr16_seg0, data_arr16_seg1, data_arr16_seg2, data_arr16_seg3);
 
-        // for (int glb_tile_base = 0; glb_tile_base < NUM_GLB_TILES; glb_tile_base += MU_WORD_NUM_TILES) begin 
-                // for (int offset = 0; offset < BANK_DEPTH; offset += 32) begin
-        for (int glb_tile_base = 0; glb_tile_base < 2; glb_tile_base += MU_WORD_NUM_TILES) begin 
-                for (int offset = 0; offset < 32; offset += 32) begin
+        for (int glb_tile_base = 0; glb_tile_base < NUM_GLB_TILES; glb_tile_base += MU_WORD_NUM_TILES) begin 
+                for (int offset = 0; offset < BANK_DEPTH; offset += 32) begin
                     $display("\n---RUNNING BASIC RAW TEST WITH BASE %0d---", glb_tile_base);    
 
                     // Initialize
@@ -102,26 +100,26 @@ program glb_mu_test #(
         load_data_custom("testvectors/512_v1.dat", data_arr16, data_arr16_pt2_seg0, data_arr16_pt2_seg1, data_arr16_pt2_seg2, data_arr16_pt2_seg3,
                            data_arr16_pt2_seg4, data_arr16_pt2_seg5, data_arr16_pt2_seg6, data_arr16_pt2_seg7);
 
-        // for (int glb_tile_base = 0; glb_tile_base < NUM_GLB_TILES-2; glb_tile_base+=2) begin
-        //         // Initialize
-        //         initialize(); 
+        for (int glb_tile_base = 0; glb_tile_base < NUM_GLB_TILES-2; glb_tile_base+=2) begin
+                // Initialize
+                initialize(); 
 
-        //         $display("\n---RUNNING OVERLAP TEST ACROSS TILES %0d and %0d---", glb_tile_base, glb_tile_base + 2); 
+                $display("\n---RUNNING OVERLAP TEST ACROSS TILES %0d and %0d---", glb_tile_base, glb_tile_base + 2); 
 
-        //         // Write all of the first group to the tail end of base tile 
-        //         write_data_to_banks(glb_tile_base, BANK_DEPTH - (OVERLAP_TEST_SIZE_1 / 4), start_addr, data_arr16_pt2_seg0, data_arr16_pt2_seg1, data_arr16_pt2_seg2, data_arr16_pt2_seg3);
+                // Write all of the first group to the tail end of base tile 
+                write_data_to_banks(glb_tile_base, BANK_DEPTH - (OVERLAP_TEST_SIZE_1 / 4), start_addr, data_arr16_pt2_seg0, data_arr16_pt2_seg1, data_arr16_pt2_seg2, data_arr16_pt2_seg3);
 
-        //         // Write 2nd group at beginning of neighboring tiles
-        //         write_data_to_banks(glb_tile_base + 2, 0, start_addr, data_arr16_pt2_seg4, data_arr16_pt2_seg5, data_arr16_pt2_seg6, data_arr16_pt2_seg7);
+                // Write 2nd group at beginning of neighboring tiles
+                write_data_to_banks(glb_tile_base + 2, 0, start_addr, data_arr16_pt2_seg4, data_arr16_pt2_seg5, data_arr16_pt2_seg6, data_arr16_pt2_seg7);
 
-        //         repeat (10) @(posedge p_ifc.clk);
+                repeat (10) @(posedge p_ifc.clk);
 
-        //         // Read data using MU-GLB read-path
-        //         MU_read_data_from_banks(glb_tile_base, BANK_DEPTH - (OVERLAP_TEST_SIZE_1 / 4), BURST_SIZE, data_arr16_out);
+                // Read data using MU-GLB read-path
+                MU_read_data_from_banks(glb_tile_base, BANK_DEPTH - (OVERLAP_TEST_SIZE_1 / 4), BURST_SIZE, data_arr16_out);
 
-        //         // Compare data
-        //         compare_data(data_arr16, data_arr16_out);
-        // end
+                // Compare data
+                compare_data(data_arr16, data_arr16_out);
+        end
     
         repeat (50) @(posedge clk);
 

@@ -12,7 +12,8 @@
 // Genesis parameter declaration
 //============================================================================//
 //; use POSIX;
-//; my $using_matrix_unit = parameter(NAME => 'using_matrix_unit', VAL => 0, DOC => 'Indicates if matrix unit ifc should be included');
+//; my $using_matrix_unit = parameter(NAME => 'using_matrix_unit', VAL => 0, DOC => 'Indicates if matrix unit-cgra tile array ifc should be included');
+//; my $include_mu_glb_hw = parameter(NAME => 'include_mu_glb_hw', VAL => 0, DOC => 'Indicates if matrix unit-global buffer ifc should be included');
 
 \`define DBG_TBTOP 0 // Set to '1' for debugging
 
@@ -91,6 +92,12 @@ module top;
     logic [MU_DATAWIDTH-1:0] mu2cgra [MU_OC_0-1:0];
     logic mu2cgra_valid;
     logic cgra2mu_ready; 
+
+    //; if ($include_mu_glb_hw) {
+    logic [GLB_ADDR_WIDTH-1:0] mu_tl_addr_in;
+    assign mu_tl_addr_in = 0;
+
+    //; }
 
     behavioral_matrix_unit #(
         .MU_DATAWIDTH(MU_DATAWIDTH),
@@ -177,16 +184,30 @@ module top;
     //; if ($using_matrix_unit) {
         .jtag_trst_n(  /*unused*/),
 
-        // matrix unit ifc
+
+        //; if ($include_mu_glb_hw) {
+        // matrix unit-glb ifc 
+        .mu_tl_addr_in(mu_tl_addr_in),
+        .mu_tl_rq_in_vld(1'b0),
+        .mu_tl_rq_in_rdy( /*unused*/ ),
+        .mu_tl_size_in(4'b0),
+        .mu_tl_source_in(6'b0),
+        .mu_tl_data_out( /*unused*/) ,
+        .mu_tl_data_out_vld( /*unused*/ ),
+        .mu_tl_data_out_rdy(1'b0),
+        .mu_tl_size_out( /*unused*/ ),
+        .mu_tl_source_out( /*unused*/ ),
+        .mu_tl_opcode_out( /*unused*/ ),
+            
+    //;    }
+
+        // matrix unit-cgra tile array ifc
         .mu2cgra_valid (mu2cgra_valid),
         .cgra2mu_ready (cgra2mu_ready),
-
-        // MO: Temporary HACK
-        //.cgra2mu_ready_row0(cgra2mu_ready_row0),
         .mu2cgra(mu2cgra)
 
     //; } else {
-        .jtag_trst_n(  /*unused*/)
+        .jtag_trst_n( /*unused*/ )
 
     //; }
      );
