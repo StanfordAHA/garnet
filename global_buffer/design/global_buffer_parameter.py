@@ -45,9 +45,13 @@ class GlobalBufferParams:
     @property
     def mu_rd_max_num_glb_reqs(self):
         return self.mu_rd_max_burst_size // (self.mu_word_width // 8) 
+
+    @property
+    def mu_glb_rd_latency(self):
+        return ((2*self.num_glb_tiles) - 1) + self.mu_rd_addr2tile0_delay + self.mu_sw2bank_mux_delay + self.bankmux2sram_rd_delay  + self.mu_sw2track_out_delay + self.mu_rd_data_tile0_2out_delay
     
     @property
-    def mu_data_out_fifo_depth(self):
+    def mu_tl_resp_fifo_depth(self):
         return self.mu_tl_req_fifo_depth * self.mu_rd_max_num_glb_reqs
 
     @property
@@ -111,7 +115,10 @@ class GlobalBufferParams:
     mu_switch_num_tracks: int = 4
     mu_word_width: int = 256
     mu_tl_num_burst_bits: int = 4
+    mu_tl_source_width: int = 7
     mu_tl_req_fifo_depth: int = 4
+    mu_tl_opcode_width: int = 3
+    mu_tl_rd_resp_opcode: int = 1
 
     # MU rd max burst (in bytes) = max(ic, oc) * 2. For 64x32 array, it is 64 * 2 = 128
     mu_rd_max_burst_size: int = 128
@@ -159,8 +166,9 @@ class GlobalBufferParams:
     bank_byte_offset: int = field(init=False, default=bank_byte_offset)
     glb_addr_width: int = field(init=False, default=glb_addr_width)
     mu_addr_width: int = field(init=False, default=mu_addr_width)
-    mu_data_out_fifo_depth: int = field(init=False, default=mu_data_out_fifo_depth)
+    mu_tl_resp_fifo_depth: int = field(init=False, default=mu_tl_resp_fifo_depth)
     mu_rd_max_num_glb_reqs: int = field(init=False, default=mu_rd_max_num_glb_reqs)
+    mu_glb_rd_latency: int = field(init=False, default=mu_glb_rd_latency)
     cgra_byte_offset: int = field(init=False, default=cgra_byte_offset)
     axi_addr_width: int = field(init=False, default=axi_addr_width)
     axi_addr_reg_width: int = field(init=False, default=axi_addr_reg_width)
@@ -200,6 +208,10 @@ class GlobalBufferParams:
                                   + glb_bank2sw_pipeline_depth + sram_gen_output_pipeline_depth
                                   + sram_macro_read_latency
                                   )
+    mu_rd_addr2tile0_delay: int = 2
+    mu_rd_data_tile0_2out_delay: int = 1
+    mu_sw2bank_mux_delay: int = 1
+    mu_sw2track_out_delay: int = 1
 
     # Not used by TSMC (yet)
     flush_crossbar_pipeline_depth: int = 1

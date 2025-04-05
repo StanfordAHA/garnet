@@ -220,12 +220,15 @@ module top;
         .strm_f2g_interrupt_pulse(),
         .strm_g2f_interrupt_pulse(),
 
-
         // matrix unit ifc
         .mu_tl_addr_in (glb_mu_ifc.mu_tl_addr_in),
-        .mu_tl_in_vld (glb_mu_ifc.mu_tl_in_vld),
-        .mu_tl_in_rdy (glb_mu_ifc.mu_tl_in_rdy),
+        .mu_tl_rq_in_vld (glb_mu_ifc.mu_tl_rq_in_vld),
+        .mu_tl_rq_in_rdy (glb_mu_ifc.mu_tl_rq_in_rdy),
         .mu_tl_size_in (glb_mu_ifc.mu_tl_size_in),
+        .mu_tl_size_out (glb_mu_ifc.mu_tl_size_out),
+        .mu_tl_source_in (glb_mu_ifc.mu_tl_source_in),
+        .mu_tl_source_out (glb_mu_ifc.mu_tl_source_out),
+        .mu_tl_opcode_out (glb_mu_ifc.mu_tl_opcode_out),
         .mu_tl_data_out (glb_mu_ifc.mu_rd_data),
         .mu_tl_data_out_vld (glb_mu_ifc.mu_rd_data_valid),
         .mu_tl_data_out_rdy (glb_mu_ifc.mu_rd_data_ready)

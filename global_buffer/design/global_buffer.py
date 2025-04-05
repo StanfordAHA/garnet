@@ -39,15 +39,18 @@ class GlobalBuffer(Generator):
 
 
         if self._params.include_mu_glb_hw:
-            # Tilelink address
+            # Tilelink request collateral
             self.mu_tl_addr_in = self.input("mu_tl_addr_in", self._params.mu_addr_width)
-            self.mu_tl_in_vld = self.input("mu_tl_in_vld", 1)
-            self.mu_tl_in_rdy = self.output("mu_tl_in_rdy", 1)
-
-            # Tilelink request size
+            self.mu_tl_rq_in_vld = self.input("mu_tl_rq_in_vld", 1)
+            self.mu_tl_rq_in_rdy = self.output("mu_tl_rq_in_rdy", 1)
             self.mu_tl_size_in = self.input("mu_tl_size_in", self._params.mu_tl_num_burst_bits)
+            self.mu_tl_source_in = self.input("mu_tl_source_in", self._params.mu_tl_source_width)
 
-            # Tilelink data
+
+            # Tilelink response collateral
+            self.mu_tl_size_out = self.output("mu_tl_size_out", self._params.mu_tl_num_burst_bits)
+            self.mu_tl_source_out = self.output("mu_tl_source_out", self._params.mu_tl_source_width)
+            self.mu_tl_opcode_out = self.output("mu_tl_opcode_out", self._params.mu_tl_opcode_width)
             self.mu_tl_data_out = self.output("mu_tl_data_out", self._params.mu_word_width)
             self.mu_tl_data_out_vld = self.output("mu_tl_data_out_vld", 1)
             self.mu_tl_data_out_rdy = self.input("mu_tl_data_out_rdy", 1)
@@ -309,21 +312,25 @@ class GlobalBuffer(Generator):
              self.glb_tile.append(GlbTile(_params=self._params))
 
 
-        # GLB-MU Address translator
+        # GLB-MU translator
         if self._params.include_mu_glb_hw:
-            self.glb_mu_addr_transl = GlbMUTransl(_params=self._params)
-            self.add_child("glb_mu_addr_transl",
-                           self.glb_mu_addr_transl,
+            self.glb_mu_transl = GlbMUTransl(_params=self._params)
+            self.add_child("glb_mu_transl",
+                           self.glb_mu_transl,
                            clk=self.clk,
                            reset=self.reset,
                            addr_in=self.mu_tl_addr_in,
-                           rq_in_vld=self.mu_tl_in_vld,
-                           rq_in_rdy=self.mu_tl_in_rdy,
+                           rq_in_vld=self.mu_tl_rq_in_vld,
+                           rq_in_rdy=self.mu_tl_rq_in_rdy,
                            size_in=self.mu_tl_size_in,
+                           source_in=self.mu_tl_source_in,
                            addr2glb=self.mu_rd_addr,
                            rd_en2glb=self.mu_rd_en,
                            rd_data_in=self.mu_rd_data_w,
                            rd_data_in_vld=self.mu_rd_data_valid_w,
+                           size_out=self.mu_tl_size_out,
+                           source_out=self.mu_tl_source_out,
+                           opcode_out=self.mu_tl_opcode_out,
                            rd_data_out=self.mu_tl_data_out,
                            rd_data_out_vld=self.mu_tl_data_out_vld,
                            rd_data_out_rdy=self.mu_tl_data_out_rdy)     

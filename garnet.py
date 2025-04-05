@@ -176,12 +176,14 @@ class Garnet(Generator):
             if self.include_mu_glb_hw:
                 self.add_ports(
                     mu_tl_addr_in=magma.In(magma.Bits[glb_params.mu_addr_width]),
-                    mu_tl_in_vld=magma.In(magma.Bit),
-                    mu_tl_in_rdy=magma.Out(magma.Bit),
-
-
+                    mu_tl_rq_in_vld=magma.In(magma.Bit),
+                    mu_tl_rq_in_rdy=magma.Out(magma.Bit),
                     mu_tl_size_in=magma.In(magma.Bits[glb_params.mu_tl_num_burst_bits]),
+                    mu_tl_source_in=magma.In(magma.Bits[glb_params.mu_tl_source_width]),
 
+                    mu_tl_size_out=magma.Out(magma.Bits[glb_params.mu_tl_num_burst_bits]),
+                    mu_tl_opcode_out=magma.Out(magma.Bits[glb_params.mu_tl_opcode_width]),
+                    mu_tl_source_out=magma.Out(magma.Bits[glb_params.mu_tl_source_width]),
                     mu_tl_data_out=magma.Out(magma.Bits[glb_params.mu_word_width]),
                     mu_tl_data_out_vld=magma.Out(magma.Bit),
                     mu_tl_data_out_rdy=magma.In(magma.Bit)
@@ -223,11 +225,14 @@ class Garnet(Generator):
             # Matrix unit <-> GLB ports connection 
             if self.include_mu_glb_hw:
                 self.wire(self.global_buffer.ports.mu_tl_addr_in, self.ports.mu_tl_addr_in)
-                self.wire(self.global_buffer.ports.mu_tl_in_vld[0], self.ports.mu_tl_in_vld)
-                self.wire(self.ports.mu_tl_in_rdy, self.global_buffer.ports.mu_tl_in_rdy[0])
-
+                self.wire(self.global_buffer.ports.mu_tl_rq_in_vld[0], self.ports.mu_tl_rq_in_vld)
+                self.wire(self.ports.mu_tl_rq_in_rdy, self.global_buffer.ports.mu_tl_rq_in_rdy[0])
                 self.wire(self.global_buffer.ports.mu_tl_size_in, self.ports.mu_tl_size_in)
+                self.wire(self.global_buffer.ports.mu_tl_source_in, self.ports.mu_tl_source_in)
 
+                self.wire(self.ports.mu_tl_size_out, self.global_buffer.ports.mu_tl_size_out)
+                self.wire(self.ports.mu_tl_opcode_out, self.global_buffer.ports.mu_tl_opcode_out)
+                self.wire(self.ports.mu_tl_source_out, self.global_buffer.ports.mu_tl_source_out)
                 self.wire(self.ports.mu_tl_data_out, self.global_buffer.ports.mu_tl_data_out)
                 self.wire(self.ports.mu_tl_data_out_vld, self.global_buffer.ports.mu_tl_data_out_vld[0])
                 self.wire(self.ports.mu_tl_data_out_rdy, self.global_buffer.ports.mu_tl_data_out_rdy[0])
