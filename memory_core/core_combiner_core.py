@@ -218,32 +218,58 @@ class CoreCombinerCore(LakeCoreBase):
             # It's a PE then...
             active_core_ports = config_tuple[1]
             active_inputs = list("000")
+            active_bit_inputs = list("000")
+            active_outputs = list("00")
             is_constant_pe = 0
 
             input_count = 0
+            input_bit_count = 0
             output_count = 0
+            output_bit_count = 0
 
             #breakpoint()
             for port_name in active_core_ports:
+                port_width = int(port_name.split("width_")[1].split("_")[0])
                 if 'input' in port_name:
-                    input_count += 1
                     input_num = port_name.split('num_')[1]
-                    active_inputs[2 - int(input_num)] = '1'
+
+                    if port_width > 1:
+                        input_count += 1
+                        active_inputs[2 - int(input_num)] = '1'
+                    else:
+                        input_bit_count += 1
+                        active_bit_inputs[2 - int(input_num)] = '1'
+
                 if 'output' in port_name:
-                    output_count += 1
+                    if port_width > 1:
+                        output_count += 1
+                        active_outputs[1] = '1'
+                    else:
+                        output_bit_count += 1
+                        active_outputs[0] = '1'
+                     
+
+
             active_inputs = int("".join(active_inputs), 2)
+            active_bit_inputs = int("".join(active_bit_inputs), 2)
+            active_outputs = int("".join(active_outputs), 2)
+            # print(f"active_inputs: {active_inputs}, active_bit_inputs: {active_bit_inputs}, active_outputs: {active_outputs}")
 
             if not(dense_ready_valid):
                 active_inputs = 0
+                active_bit_inputs = 0
+                active_outputs = 0
 
-            if input_count == 0 and output_count > 0:
+            if input_count == 0 and ((output_count > 0) or (output_bit_count)):
                 is_constant_pe = 1
-                            
+
             if self.ready_valid:
                 config_kwargs = {
                     'mode': 'alu',
                     'bypass_rv': not(dense_ready_valid),
                     'active_inputs': active_inputs,
+                    'active_bit_inputs': active_bit_inputs,
+                    'active_outputs': active_outputs,
                     'op': int(config_tuple[0]),
                     # pe in dense mode always accept inputs that are external
                     # to the cluster
@@ -273,6 +299,12 @@ class CoreCombinerCore(LakeCoreBase):
                 for name, v in config_rv_bypass:
                     configs = [self.get_config_data(name, v)] + configs
 
+                config_rv_bypass_bit = [(f"{self.get_port_remap()['alu']['bit0']}_bypass_rv", rv_bypass_value),
+                                       (f"{self.get_port_remap()['alu']['bit1']}_bypass_rv", rv_bypass_value),
+                                       (f"{self.get_port_remap()['alu']['bit2']}_bypass_rv", rv_bypass_value),
+                                       (f"{self.get_port_remap()['alu']['res_p']}_bypass_rv", rv_bypass_value)]
+                for name, v in config_rv_bypass_bit:
+                    configs = [self.get_config_data(name, v)] + configs    
 
                 fine_grained_input_fifo_bypass = [0, 0, 0]
                 fine_grained_output_fifo_bypass = 0

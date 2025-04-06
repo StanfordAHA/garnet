@@ -287,8 +287,12 @@ class Garnet(Generator):
             if instance not in instrs:
                 continue
             instr = instrs[instance]
+            # Parse the node name for the pnr tag and its node number
+            node_pnr_tag = node[0]
+            node_node_num = int(node[1:])
+
             result += self.interconnect.configure_placement(x, y, instr,
-                                                            node[0], node[1], active_core_ports)
+                                                            node_pnr_tag, node_node_num, active_core_ports)
             if node in self.pes_with_packed_ponds:
                 print(f"pond {self.pes_with_packed_ponds[node]} being packed with {node} in {x},{y}")
                 node = self.pes_with_packed_ponds[node]
@@ -297,7 +301,7 @@ class Garnet(Generator):
                     continue
                 instr = instrs[instance]
                 result += self.interconnect.configure_placement(x, y, instr,
-                                                                node[0], node[1], active_core_ports)
+                                                               node_pnr_tag, node_node_num, active_core_ports)
         return result
 
     def convert_mapped_to_netlist(self, mapped):
