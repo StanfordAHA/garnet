@@ -296,6 +296,8 @@ class Garnet(Generator):
             if node in self.pes_with_packed_ponds:
                 print(f"pond {self.pes_with_packed_ponds[node]} being packed with {node} in {x},{y}")
                 node = self.pes_with_packed_ponds[node]
+                node_pnr_tag = node[0]
+                node_node_num = int(node[1:])
                 instance = id_to_name[node]
                 if instance not in instrs:
                     continue

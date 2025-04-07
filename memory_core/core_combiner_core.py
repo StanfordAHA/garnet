@@ -146,11 +146,11 @@ class CoreCombinerCore(LakeCoreBase):
         assert runtime_mode in self.get_modes_supported()
         self.runtime_mode = runtime_mode
 
-    def get_config_bitstream(self, config_tuple):
+    def get_config_bitstream(self, config_tuple, active_core_ports=None):
         # print(self.runtime_mode)
         # assert self.runtime_mode is not None
         configs = []
-
+    
         # Basically this means we are doing a dense app
         if isinstance(config_tuple, dict):
             instr = config_tuple
@@ -216,7 +216,8 @@ class CoreCombinerCore(LakeCoreBase):
         elif not isinstance(config_tuple, tuple):
             dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1"
             # It's a PE then...
-            active_core_ports = config_tuple[1]
+            if active_core_ports is None:
+                raise ValueError("Error: 'active_core_ports' cannot be None for a PE.")
             active_inputs = list("000")
             active_bit_inputs = list("000")
             active_16b_output = 0
@@ -271,7 +272,7 @@ class CoreCombinerCore(LakeCoreBase):
                     'active_bit_inputs': active_bit_inputs,
                     'active_16b_output': active_16b_output,
                     'active_1b_output': active_1b_output,
-                    'op': int(config_tuple[0]),
+                    'op': int(config_tuple),
                     # pe in dense mode always accept inputs that are external
                     # to the cluster
                     'pe_in_external': 1,
@@ -282,7 +283,7 @@ class CoreCombinerCore(LakeCoreBase):
             else:
                 config_kwargs = {
                     'mode': 'alu',
-                    'op': int(config_tuple[0])
+                    'op': int(config_tuple)
                 }
             instr = config_kwargs
             config_pre = self.dut.get_bitstream(instr)
