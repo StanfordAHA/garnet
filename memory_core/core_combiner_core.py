@@ -219,7 +219,8 @@ class CoreCombinerCore(LakeCoreBase):
             active_core_ports = config_tuple[1]
             active_inputs = list("000")
             active_bit_inputs = list("000")
-            active_outputs = list("00")
+            active_16b_output = 0
+            active_1b_output = 0
             is_constant_pe = 0
 
             input_count = 0
@@ -227,7 +228,6 @@ class CoreCombinerCore(LakeCoreBase):
             output_count = 0
             output_bit_count = 0
 
-            #breakpoint()
             for port_name in active_core_ports:
                 port_width = int(port_name.split("width_")[1].split("_")[0])
                 if 'input' in port_name:
@@ -243,22 +243,22 @@ class CoreCombinerCore(LakeCoreBase):
                 if 'output' in port_name:
                     if port_width > 1:
                         output_count += 1
-                        active_outputs[1] = '1'
+                        active_16b_output = 1
                     else:
                         output_bit_count += 1
-                        active_outputs[0] = '1'
+                        active_1b_output = 1
                      
 
 
             active_inputs = int("".join(active_inputs), 2)
             active_bit_inputs = int("".join(active_bit_inputs), 2)
-            active_outputs = int("".join(active_outputs), 2)
-            # print(f"active_inputs: {active_inputs}, active_bit_inputs: {active_bit_inputs}, active_outputs: {active_outputs}")
+            # print(f"active_inputs: {active_inputs}, active_bit_inputs: {active_bit_inputs}, active_16b_output: {active_16b_output}, active_1b_output: {active_1b_output}")
 
             if not(dense_ready_valid):
                 active_inputs = 0
                 active_bit_inputs = 0
-                active_outputs = 0
+                active_16b_output = 0
+                active_1b_output = 0
 
             if input_count == 0 and ((output_count > 0) or (output_bit_count)):
                 is_constant_pe = 1
@@ -269,7 +269,8 @@ class CoreCombinerCore(LakeCoreBase):
                     'bypass_rv': not(dense_ready_valid),
                     'active_inputs': active_inputs,
                     'active_bit_inputs': active_bit_inputs,
-                    'active_outputs': active_outputs,
+                    'active_16b_output': active_16b_output,
+                    'active_1b_output': active_1b_output,
                     'op': int(config_tuple[0]),
                     # pe in dense mode always accept inputs that are external
                     # to the cluster
