@@ -20,9 +20,9 @@ else:
 class CoreCombinerCore(LakeCoreBase):
 
     if os.getenv('WHICH_SOC') == "amber":
-        mem_width_default=16
+        mem_width_default = 16
     else:
-        mem_width_default=64
+        mem_width_default = 64
 
     def __init__(self,
                  data_width=16,  # CGRA Params
@@ -59,7 +59,7 @@ class CoreCombinerCore(LakeCoreBase):
 
         cc_core_name = "CoreCombiner"
 
-        #assert controllers_list is not None and len(controllers_list) > 0
+        # assert controllers_list is not None and len(controllers_list) > 0
         for controller in controllers_list:
             cc_core_name += f"_{str(controller)}"
 
@@ -114,7 +114,7 @@ class CoreCombinerCore(LakeCoreBase):
 
             self.dut = self.CC.dut
 
-            #print(self.dut)
+            # print(self.dut)
 
             circ = kts.util.to_magma(self.dut,
                                      flatten_array=True,
@@ -146,7 +146,7 @@ class CoreCombinerCore(LakeCoreBase):
         assert runtime_mode in self.get_modes_supported()
         self.runtime_mode = runtime_mode
 
-    def get_config_bitstream(self, config_tuple):
+    def get_config_bitstream(self, config_tuple, active_core_ports=None):
         # print(self.runtime_mode)
         # assert self.runtime_mode is not None
         configs = []
@@ -204,58 +204,84 @@ class CoreCombinerCore(LakeCoreBase):
                         # And also transform this based on memory depth
                         addr = (addr % 256)
                         configs.append((addr, feat_addr, data))
-                #print(configs)
+                # print(configs)
                 return configs
             elif self.pnr_tag == 'p':
                 instr['mode'] = 'alu'
                 config_pre = self.dut.get_bitstream(instr)
                 for name, v in config_pre:
                     configs = [self.get_config_data(name, v)] + configs
-                #print(configs)
+                # print(configs)
                 return configs
         elif not isinstance(config_tuple, tuple):
             dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1"
             # It's a PE then...
-            active_core_ports = config_tuple[1]
+            if active_core_ports is None:
+                raise ValueError("Error: 'active_core_ports' cannot be None for a PE.")
             active_inputs = list("000")
+            active_bit_inputs = list("000")
+            active_16b_output = 0
+            active_1b_output = 0
             is_constant_pe = 0
 
             input_count = 0
+            input_bit_count = 0
             output_count = 0
+            output_bit_count = 0
 
-            #breakpoint()
             for port_name in active_core_ports:
+                port_width = int(port_name.split("width_")[1].split("_")[0])
                 if 'input' in port_name:
-                    input_count += 1
                     input_num = port_name.split('num_')[1]
-                    active_inputs[2 - int(input_num)] = '1'
+
+                    if port_width > 1:
+                        input_count += 1
+                        active_inputs[2 - int(input_num)] = '1'
+                    else:
+                        input_bit_count += 1
+                        active_bit_inputs[2 - int(input_num)] = '1'
+
                 if 'output' in port_name:
-                    output_count += 1
+                    if port_width > 1:
+                        output_count += 1
+                        active_16b_output = 1
+                    else:
+                        output_bit_count += 1
+                        active_1b_output = 1
+
             active_inputs = int("".join(active_inputs), 2)
+            active_bit_inputs = int("".join(active_bit_inputs), 2)
+            # print(f"active_inputs: {active_inputs}, active_bit_inputs: {active_bit_inputs}, active_16b_output: {active_16b_output}, active_1b_output: {active_1b_output}")
 
-            if not(dense_ready_valid):
+            if not (dense_ready_valid):
                 active_inputs = 0
+                active_bit_inputs = 0
+                active_16b_output = 0
+                active_1b_output = 0
 
-            if input_count == 0 and output_count > 0:
+            if input_count == 0 and ((output_count > 0) or (output_bit_count)):
                 is_constant_pe = 1
-                            
+
             if self.ready_valid:
                 config_kwargs = {
                     'mode': 'alu',
-                    'bypass_rv': not(dense_ready_valid),
+                    'bypass_rv': not (dense_ready_valid),
                     'active_inputs': active_inputs,
-                    'op': int(config_tuple[0]),
+                    'active_bit_inputs': active_bit_inputs,
+                    'active_16b_output': active_16b_output,
+                    'active_1b_output': active_1b_output,
+                    'op': int(config_tuple),
                     # pe in dense mode always accept inputs that are external
                     # to the cluster
                     'pe_in_external': 1,
-                    'is_constant_pe': is_constant_pe, 
+                    'is_constant_pe': is_constant_pe,
                     # only configure pe within the cluster
                     'pe_only': True
                 }
             else:
                 config_kwargs = {
                     'mode': 'alu',
-                    'op': int(config_tuple[0])
+                    'op': int(config_tuple)
                 }
             instr = config_kwargs
             config_pre = self.dut.get_bitstream(instr)
@@ -263,28 +289,39 @@ class CoreCombinerCore(LakeCoreBase):
                 configs = [self.get_config_data(name, v)] + configs
 
             # BEGIN BLOCK COMMENT
-            #TODO: Fix this and name it better. ready_valid really means include RV interconnect in this context
+            # TODO: Fix this and name it better. ready_valid really means include RV interconnect in this context
             if self.ready_valid:
                 rv_bypass_value = 0 if dense_ready_valid else 1
                 config_rv_bypass = [(f"{self.get_port_remap()['alu']['data0']}_bypass_rv", rv_bypass_value),
-                                       (f"{self.get_port_remap()['alu']['data1']}_bypass_rv", rv_bypass_value),
-                                       (f"{self.get_port_remap()['alu']['data2']}_bypass_rv", rv_bypass_value),
-                                       (f"{self.get_port_remap()['alu']['res']}_bypass_rv", rv_bypass_value)]
+                                    (f"{self.get_port_remap()['alu']['data1']}_bypass_rv", rv_bypass_value),
+                                    (f"{self.get_port_remap()['alu']['data2']}_bypass_rv", rv_bypass_value),
+                                    (f"{self.get_port_remap()['alu']['res']}_bypass_rv", rv_bypass_value)]
                 for name, v in config_rv_bypass:
                     configs = [self.get_config_data(name, v)] + configs
 
+                config_rv_bypass_bit = [(f"{self.get_port_remap()['alu']['bit0']}_bypass_rv", rv_bypass_value),
+                                        (f"{self.get_port_remap()['alu']['bit1']}_bypass_rv", rv_bypass_value),
+                                        (f"{self.get_port_remap()['alu']['bit2']}_bypass_rv", rv_bypass_value),
+                                        (f"{self.get_port_remap()['alu']['res_p']}_bypass_rv", rv_bypass_value)]
+                for name, v in config_rv_bypass_bit:
+                    configs = [self.get_config_data(name, v)] + configs
 
                 fine_grained_input_fifo_bypass = [0, 0, 0]
                 fine_grained_output_fifo_bypass = 0
 
-                config_fine_grained_input_fifo_bypass = [(f"{self.get_port_remap()['alu']['data0']}_fine_grain_fifo_bypass", fine_grained_input_fifo_bypass[0]),
-                                                          (f"{self.get_port_remap()['alu']['data1']}_fine_grain_fifo_bypass", fine_grained_input_fifo_bypass[1]),
-                                                          (f"{self.get_port_remap()['alu']['data2']}_fine_grain_fifo_bypass", fine_grained_input_fifo_bypass[2]),
-                                                          (f"{self.get_port_remap()['alu']['res']}_fine_grain_fifo_bypass", fine_grained_output_fifo_bypass)]
+                config_fine_grained_input_fifo_bypass = [
+                    (f"{self.get_port_remap()['alu']['data0']}_fine_grain_fifo_bypass",
+                     fine_grained_input_fifo_bypass[0]),
+                    (f"{self.get_port_remap()['alu']['data1']}_fine_grain_fifo_bypass",
+                     fine_grained_input_fifo_bypass[1]),
+                    (f"{self.get_port_remap()['alu']['data2']}_fine_grain_fifo_bypass",
+                     fine_grained_input_fifo_bypass[2]),
+                    (f"{self.get_port_remap()['alu']['res']}_fine_grain_fifo_bypass",
+                     fine_grained_output_fifo_bypass)]
                 for name, v in config_fine_grained_input_fifo_bypass:
                     configs = [self.get_config_data(name, v)] + configs
             # END BLOCK COMMENT
-            #print(configs)
+            # print(configs)
             return configs
         else:
             _, config_kwargs = config_tuple
