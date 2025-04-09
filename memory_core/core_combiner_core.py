@@ -154,8 +154,11 @@ class CoreCombinerCore(LakeCoreBase):
         print("CORE_COMBINER_CORE_CONFIG")
         print(config_tuple)
 
+        # Check if PE, ready_valid, and dict
+        use_pe_rv_config = self.ready_valid and isinstance(config_tuple, dict) and self.pnr_tag == "p"
+
         # Basically this means we are doing a dense app
-        if isinstance(config_tuple, dict):
+        if isinstance(config_tuple, dict) and not use_pe_rv_config:
             instr = config_tuple
             # Check if mem or PE
             if self.pnr_tag == 'm':
@@ -217,7 +220,7 @@ class CoreCombinerCore(LakeCoreBase):
                     configs = [self.get_config_data(name, v)] + configs
                 # print(configs)
                 return configs
-        elif not isinstance(config_tuple, tuple):
+        elif not isinstance(config_tuple, tuple) or use_pe_rv_config:
             dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1"
             # It's a PE then...
             if active_core_ports is None:
@@ -255,7 +258,8 @@ class CoreCombinerCore(LakeCoreBase):
 
             active_inputs = int("".join(active_inputs), 2)
             active_bit_inputs = int("".join(active_bit_inputs), 2)
-            # print(f"active_inputs: {active_inputs}, active_bit_inputs: {active_bit_inputs}, active_16b_output: {active_16b_output}, active_1b_output: {active_1b_output}")
+            # print(f"active_inputs: {active_inputs}, active_bit_inputs: {active_bit_inputs},
+            #       active_16b_output: {active_16b_output}, active_1b_output: {active_1b_output}")
 
             if not (dense_ready_valid):
                 active_inputs = 0
@@ -272,10 +276,9 @@ class CoreCombinerCore(LakeCoreBase):
             p_remap = self.get_port_remap()
             if self.ready_valid:
                 pe_op = None
-
                 # parse the pe instruction out...
-                if isinstance(config_tuple[0], dict):
-                    pe_op = int(config_tuple[0]["pe_inst"])
+                if isinstance(config_tuple, dict):
+                    pe_op = int(config_tuple["pe_inst"])
                     # Check for num_input_fifo, num_output_fifo to load them in...
                     # For now, should be safe to add any input fifo stuff to all input fifos since we already
                     # check that there are no real streams joining here (should be a constant)
@@ -283,8 +286,9 @@ class CoreCombinerCore(LakeCoreBase):
                     # The rest is ports that have fifo
                     # print("PRINT PE REMAP")
                     # print(p_remap)
-                    # print(config_tuple[0])
-                    for port_name_with_p, fifo_info in config_tuple[0].items():
+
+                    # for port_name_with_p, fifo_info in config_tuple[0].items():
+                    for port_name_with_p, fifo_info in config_tuple.items():
                         if port_name_with_p == "pe_inst":
                             continue
                         port_name_stripped = port_name_with_p.strip(".")
@@ -294,11 +298,6 @@ class CoreCombinerCore(LakeCoreBase):
                             print("ADDING BOGUS DATA")
                             input_bogus[port_name_remapped] = int(fifo_info["num_input_fifo"])
                             output_bogus = int(fifo_info["num_output_fifo"])
-
-                    # if "num_input_fifo" in config_tuple[0]:
-                    #     input_bogus = int(config_tuple[0]["num_input_fifo"])
-                    # if "num_output_fifo" in config_tuple[0]:
-                    #     output_bogus = int(config_tuple[0]["num_output_fifo"])
                 else:
                     pe_op = int(config_tuple)
 
@@ -347,7 +346,8 @@ class CoreCombinerCore(LakeCoreBase):
                     input_num = int(port_name.split('_num_')[1])
                     input_bogus_init_num[input_num] = num_in
 
-                assert all(0 <= num <= 2 for num in input_bogus_init_num), "All elements in input_bogus_init_num must be between 0 and 2 inclusive"
+                assert all(0 <= num <= 2 for num in input_bogus_init_num), \
+                    "All elements in input_bogus_init_num must be between 0 and 2 inclusive"
                 config_input_bogus_init = [(f"PE_input_width_17_num_0_fifo_bogus_init_num", input_bogus_init_num[0]),
                                            (f"PE_input_width_17_num_1_fifo_bogus_init_num", input_bogus_init_num[1]),
                                            (f"PE_input_width_17_num_2_fifo_bogus_init_num", input_bogus_init_num[2]),
@@ -358,16 +358,19 @@ class CoreCombinerCore(LakeCoreBase):
                 output_bogus_init_num = [0, 0, 0]
                 # Iterate through the active core ports (inputs) and assign them the output_bogus
                 # Currently assume only one output - which has to be true given that the ALU has only one data output...
-                assert output_count == 1, "Must be one output for bogus data fifos..."
+                # If we are putting data in the output fifo, assert that we are using a single 16b output...
+                if output_bogus > 0:
+                    assert output_count == 1, "Must be one output for bogus data fifos..."
                 for port_name in active_core_ports:
                     if "output" in port_name:
                         output_num = int(port_name.split('_num_')[1])
                         output_bogus_init_num[output_num] = output_bogus
 
-                assert all(0 <= num <= 2 for num in output_bogus_init_num), "All elements in output_bogus_init_num must be between 0 and 2 inclusive"
+                assert all(0 <= num <= 2 for num in output_bogus_init_num), \
+                    "All elements in output_bogus_init_num must be between 0 and 2 inclusive"
                 config_output_bogus_init = [(f"PE_output_width_17_num_0_fifo_bogus_init_num", output_bogus_init_num[0]),
-                                           (f"PE_output_width_17_num_1_fifo_bogus_init_num", output_bogus_init_num[1]),
-                                           (f"PE_output_width_17_num_2_fifo_bogus_init_num", output_bogus_init_num[2])]
+                                            (f"PE_output_width_17_num_1_fifo_bogus_init_num", output_bogus_init_num[1]),
+                                            (f"PE_output_width_17_num_2_fifo_bogus_init_num", output_bogus_init_num[2])]
 
                 print("PE bogus init...")
                 for it_ in config_input_bogus_init:
@@ -406,14 +409,6 @@ class CoreCombinerCore(LakeCoreBase):
         else:
             _, config_kwargs = config_tuple
         assert 'mode' in config_kwargs
-
-        # print(config_kwargs)
-
-        # config_dict = {}
-        # config_dict[self.runtime_mode] = config_kwargs
-
-        # op = config_tuple
-        # config_pe = [("tile_en", 1)]
         configs_cc = []
         configs_cc += self.dut.get_bitstream(config_kwargs)
 
