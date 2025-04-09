@@ -87,6 +87,7 @@ import json
 import toml
 from typing import Tuple, Dict, List, Tuple
 
+
 class SparseTBBuilder(m.Generator2):
     def __init__(self, nlb: NetlistBuilder = None, graph: Graph = None, bespoke=False,
                  input_dir=None, output_dir=None, local_mems=True,
@@ -159,7 +160,7 @@ class SparseTBBuilder(m.Generator2):
             # CGRA Path
             self.register_cores()
             self.connect_cores()
-        
+
             print("Balancing SAM Graph with FIFOs")
             # ### Balance SAM graph with interconnect FIFOs #####
             new_netlist = copy.deepcopy(self.nlb._netlist)
@@ -173,20 +174,19 @@ class SparseTBBuilder(m.Generator2):
                 dest = connections[1][0]
                 src_name = self.nlb._core_names[src]
                 dest_name = self.nlb._core_names[dest]
-                if not (any (edge in src_name for edge in remove_edges) or any (edge in dest_name for edge in remove_edges)):
+                if not (any(edge in src_name for edge in remove_edges) or any(edge in dest_name for edge in remove_edges)):
                     G.add_edge(src, dest, name=edge)
                 if "buffer_passthrough" in src_name or "buffer_passthrough" in dest_name:
                     G.add_edge(src, dest, name=edge)
 
-            
             # break cycles
             cycles = list(nx.simple_cycles(G))
-            while cycles: 
+            while cycles:
                 for cycle in cycles:
                     G.remove_edge(cycle[0], cycle[1])
                     break
                 cycles = list(nx.simple_cycles(G))
-            
+
             # Get first node and initialize dictionary
             first_nodes = [node for node in G.nodes if len(list(G.predecessors(node))) == 0]
             dist = {}
@@ -194,7 +194,7 @@ class SparseTBBuilder(m.Generator2):
             dist = {node: None for node in G.nodes}
             for node in first_nodes:
                 dist[node] = 0
-            
+
             # longest path from source to any other node
             for node in G.nodes:
                 for parent_node in first_nodes:
@@ -202,8 +202,8 @@ class SparseTBBuilder(m.Generator2):
                         all_paths = list(nx.all_simple_paths(G, source=parent_node, target=node))
                         # check all_paths is not empty list
                         if all_paths:
-                            dist[node] = max(len(arr)-1 for arr in all_paths)
-            
+                            dist[node] = max(len(arr) - 1 for arr in all_paths)
+
             edge_add = {}
 
             # add to refs coming out of fiberlookups
@@ -234,12 +234,12 @@ class SparseTBBuilder(m.Generator2):
                                 prev_edge_add = edge_add[name]
                             else:
                                 prev_edge_add = 0
-                            edge_add[name] = 2*(max_length - dist[src] - 1) + prev_edge_add
+                            edge_add[name] = 2 * (max_length - dist[src] - 1) + prev_edge_add
 
             # max edge_add 8
             for edge in edge_add:
-               if edge_add[edge] > 8:
-                   edge_add[edge] = 8
+                if edge_add[edge] > 8:
+                    edge_add[edge] = 8
             print("Edges Added: ", edge_add)
 
             reg_num = 0
@@ -262,7 +262,7 @@ class SparseTBBuilder(m.Generator2):
                 new_bus[f"e{edge_num}"] = 17
                 edge_num += 1
 
-                for i in range(2*num_fifo-1):
+                for i in range(2 * num_fifo - 1):
                     new_netlist[f"e{edge_num}"] = [(f"r{reg_num}", "reg"), (f"r{reg_num+1}", "reg")]
                     new_bus[f"e{edge_num}"] = 17
                     edge_num += 1
@@ -272,7 +272,7 @@ class SparseTBBuilder(m.Generator2):
                 new_bus[f"e{edge_num}"] = 17
                 edge_num += 1
                 reg_num += 1
-            
+
             self.nlb._netlist = new_netlist
             self.nlb._bus = new_bus
 
@@ -863,7 +863,6 @@ class SparseTBBuilder(m.Generator2):
                 data_h = f"io2glb_17_X{glb_out:02X}_Y00"
                 suffix = str(data_h)[10:]
 
-
                 ready_h = f"io2glb_17_{suffix}_ready"
                 valid_h = f"io2glb_17_{suffix}_valid"
 
@@ -937,7 +936,8 @@ class SparseTBBuilder(m.Generator2):
 
             return
 
-        glb_nodes = [node for node in self.core_nodes.values() if type(node) == GLBNode]
+        # glb_nodes = [node for node in self.core_nodes.values() if type(node) == GLBNode]
+        glb_nodes = [node for node in self.core_nodes.values() if isinstance(node, GLBNode)]
         for node in glb_nodes:
             # Now we can realize and connect the glb nodes based on the placement
             glb_data = node.get_data()
@@ -1138,7 +1138,7 @@ class SparseTBBuilder(m.Generator2):
                             index = None
                         else:
                             index = node.get_attributes()['index'].strip('"')
-                    else: 
+                    else:
                         index = node.get_attributes()['index'].strip('"')
                     format = node.get_attributes()['format'].strip('"')
                 else:
@@ -1169,7 +1169,7 @@ class SparseTBBuilder(m.Generator2):
             elif hw_node_type == f"{HWNodeType.Reduce}":
                 new_node_type = ReduceNode
                 # Both pe and reduce sit in reduce_pe_cluster
-                # Give them the same core tag so reduce_pe_cluster.get_bitstream is called 
+                # Give them the same core tag so reduce_pe_cluster.get_bitstream is called
                 # for both pe and reduce
                 core_tag = "alu"
             elif hw_node_type == f"{HWNodeType.Lookup}":
@@ -1184,7 +1184,7 @@ class SparseTBBuilder(m.Generator2):
                     mode = int(node.get_attributes()['mode'].strip('"'))
                 else:
                     # if not specified, mode is set to crddrop mode
-                    mode = 1 
+                    mode = 1
                 kwargs = {
                     "outer": outer,
                     "inner": inner,
@@ -1266,7 +1266,7 @@ class SparseTBBuilder(m.Generator2):
                     direction = "write"
                     num_blocks = 1
                     tx_size = 7
-                    seg_mode = 0 # placeholder
+                    seg_mode = 0  # placeholder
                     if node.get_attributes()['mode'].strip('"') == 1 or node.get_attributes()['mode'].strip('"') == '1':
                         tx_size = 12
                 elif glb_type_ == 'fiberwrite' or glb_type_ == 'spaccumulator':
@@ -1285,7 +1285,7 @@ class SparseTBBuilder(m.Generator2):
                     direction = "write"
                     num_blocks = 1
                     tx_size = 7
-                    seg_mode = 0 # placeholder
+                    seg_mode = 0  # placeholder
                 else:
                     raise NotImplementedError
 
@@ -1364,10 +1364,10 @@ class SparseTBBuilder(m.Generator2):
                         tensor = node_attr['tensor'].strip('"')
                         stream_id = str(node_attr['stream_id'])
                         if 'mode' in node_attr:
-                            mode = node_attr['mode'].strip('"') 
+                            mode = node_attr['mode'].strip('"')
                         else:
                             mode = 'vals'
-                        color =  tensor + mode + stream_id
+                        color = tensor + mode + stream_id
                     else:
                         color = node_attr['fa_color']
                     if color not in self.color_to_fa:
@@ -1671,9 +1671,10 @@ def prepare_glb_collateral(glb_dir=None, bitstream=None, matrices_in=None, desig
     with open(f"{glb_dir}/bin/design_meta.json", "w+") as metafile:
         json.dump(design_meta_json, metafile)
 
+
 def write_glb_file(file_list, out_dir, out_name, use_fp=False):
     output_lines = []
-    # for seed flow 
+    # for seed flow
     if not give_tensor:
         output_lines.append(f"{0:04X}\n")
 
@@ -1713,7 +1714,7 @@ def coalesce_files(in_dir, out_dir, hack_files=None, unroll=1, give_tensor=None,
     tensors = {}
     all_in_files = os.listdir(in_dir)
     for fname in all_in_files:
-        if not "vals" in fname:
+        if "vals" not in fname:
             continue
         tname = fname.replace("tensor_", "").replace("_mode_vals", "")
         if tname not in tensors:
@@ -1727,7 +1728,7 @@ def coalesce_files(in_dir, out_dir, hack_files=None, unroll=1, give_tensor=None,
             done = False
             while done is False:
                 if f'tensor_{tname}_mode_{mode_num}_seg' in all_in_files and \
-                    f'tensor_{tname}_mode_{mode_num}_crd' in all_in_files:
+                        f'tensor_{tname}_mode_{mode_num}_crd' in all_in_files:
                     # Now coalesce the seg/crd into a single file
                     write_glb_file([f'{in_dir}/tensor_{tname}_mode_{mode_num}_seg',
                                    f'{in_dir}/tensor_{tname}_mode_{mode_num}_crd'],
@@ -1742,17 +1743,17 @@ def coalesce_files(in_dir, out_dir, hack_files=None, unroll=1, give_tensor=None,
         # Now do vals
         for copy_ in range(unroll):
             if f'tensor_{tname}_mode_vals' in all_in_files:
-                # TODO: This is a hack for now, get rid of this 
+                # TODO: This is a hack for now, get rid of this
                 if tname not in ['fp_exp', 'fp_div']:
                     write_glb_file([f'{in_dir}/tensor_{tname}_mode_vals'],
-                                out_dir=out_dir, out_name=f'tensor_{tname}_mode_vals', 
-                                use_fp=use_fp)
+                                   out_dir=out_dir, out_name=f'tensor_{tname}_mode_vals',
+                                   use_fp=use_fp)
                 else:
                     # the luts are dumped in bfloat16, transform it to hex for the sim by
                     # setting use_fp to True
                     write_glb_file([f'{in_dir}/tensor_{tname}_mode_vals'],
-                                out_dir=out_dir, out_name=f'tensor_{tname}_mode_vals',
-                                use_fp=True)
+                                   out_dir=out_dir, out_name=f'tensor_{tname}_mode_vals',
+                                   use_fp=True)
 
 
 def lego_generate_inputs(app_name):
@@ -1762,32 +1763,32 @@ def lego_generate_inputs(app_name):
     tensor_file = os.path.join(input_file_dir, "tensor.txt")
     try:
         print(f"=== Lego Generating CPP Code ===")
-        tile = subprocess.run(["python", "main.py", 
-                                "--program", program_file, 
-                                "--tensor", tensor_file, 
-                                "--output_dir" , "/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR",
-                                "--mode", "rtl"], 
-                                cwd="/aha/Lego_v0")
+        tile = subprocess.run(["python", "main.py",
+                               "--program", program_file,
+                               "--tensor", tensor_file,
+                               "--output_dir", "/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR",
+                               "--mode", "rtl"],
+                              cwd="/aha/Lego_v0")
         tile.check_returncode()
     except subprocess.CalledProcessError as e:
         print(e.stderr)
         raise RuntimeError("Lego failed to generate input matrices")
 
-    try: 
+    try:
         print(f"=== Lego Compiling CPP Code ===")
-        tile = subprocess.run(["g++", "-o", "main", "main.cpp", 
-                               "src/data_parser.cpp", 
-                               "src/mem_op.cpp", 
+        tile = subprocess.run(["g++", "-o", "main", "main.cpp",
+                               "src/data_parser.cpp",
+                               "src/mem_op.cpp",
                                "src/activation.cpp",
-                               "src/bf16_op.cpp", 
+                               "src/bf16_op.cpp",
                                "src/gen_lut.cpp"],
-                                cwd="/aha/Lego_v0")   
+                              cwd="/aha/Lego_v0")
         tile.check_returncode()
     except subprocess.CalledProcessError as e:
         print(e.stderr)
         raise RuntimeError("Lego failed to generate input matrices")
 
-    try: 
+    try:
         print(f"=== Lego Tiling ===")
         tile = subprocess.run(["./main", "tiling"], cwd="/aha/Lego_v0")
         tile.check_returncode()
@@ -1800,78 +1801,80 @@ def lego_generate_inputs(app_name):
         tile_pairs_dict = toml.load(f)
         data_tile_pairs = tile_pairs_dict["sam_config"]["sam_path"]
         # FIXME: for now, only supports testing a single tile
-        assert(len(data_tile_pairs) == 1)
+        assert len(data_tile_pairs) == 1
     matrix_tmp_dir = os.path.join("/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR", app_name, data_tile_pairs[0])
 
     return matrix_tmp_dir
 
+
 def hardcode_generate_intpus(app_name, matrix_tmp_dir, give_tensor=False, tensor_orderings=None, clean=True, suffix=""):
-    # these application does not have an einsum expression, falling back to the old flow to 
+    # these application does not have an einsum expression, falling back to the old flow to
     os.makedirs(matrix_tmp_dir, exist_ok=True)
     use_fp = False
 
     if app_name == "trans_masked_broadcast":
         B_mat = get_tensor(input_name='B', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                        dump= matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                        sparsity=0.5)
+                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+                           sparsity=0.5)
         c_mat = get_tensor(input_name='c', shapes=[10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                        dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['c'], 
-                        sparsity=0.0)
+                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['c'],
+                           sparsity=0.0)
         assert c_mat.shape[0] == B_mat.shape[0]
 
         output_matrix = numpy.zeros((10, 10), dtype=numpy.uint16)
         for i in range(0, output_matrix.shape[0]):
             for j in range(0, output_matrix.shape[1]):
-                if B_mat[i][j] != 0:   
+                if B_mat[i][j] != 0:
                     output_matrix[i][j] = c_mat[i]
         output_format = "CSF"
         output_name = "X"
     elif app_name == "masked_broadcast":
         B_mat = get_tensor(input_name='B', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                        dump= matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                        sparsity=0.5)
+                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+                           sparsity=0.5)
         c_mat = get_tensor(input_name='c', shapes=[10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                        dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['c'], 
-                        sparsity=0.0)
+                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['c'],
+                           sparsity=0.0)
         assert c_mat.shape[0] == B_mat.shape[0]
 
         output_matrix = numpy.zeros((10, 10), dtype=numpy.uint16)
         for i in range(0, output_matrix.shape[0]):
             for j in range(0, output_matrix.shape[1]):
-                if B_mat[i][j] != 0:   
+                if B_mat[i][j] != 0:
                     output_matrix[i][j] = c_mat[j]
         output_format = "CSF"
         output_name = "X"
-    elif app_name == "mat_mattransmul": # remove this special case once lego is fixed
+    elif app_name == "mat_mattransmul":  # remove this special case once lego is fixed
         vec_ordering = ((1, (0, 's')),)
         b_mat = get_tensor(input_name='b', shapes=[1], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                            dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['b'],
-                            sparsity=0)
+                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['b'],
+                           sparsity=0)
         C_mat = get_tensor(input_name='C', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
-                            sparsity=0.8)
+                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+                           sparsity=0.8)
         d_mat = get_tensor(input_name='d', shapes=[10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['d'],
-                            sparsity=0.9)
+                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['d'],
+                           sparsity=0.9)
         e_mat = get_tensor(input_name='e', shapes=[1], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['e'],
-                            sparsity=0)
+                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['e'],
+                           sparsity=0)
         f_mat = get_tensor(input_name='f', shapes=[10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['f'],
-                            sparsity=0.8)
+                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['f'],
+                           sparsity=0.8)
 
         output_matrix = numpy.add(numpy.multiply(e_mat, f_mat, dtype=numpy.uint16, casting='unsafe'),
-                                    numpy.multiply(b_mat,
-                                                    numpy.matmul(C_mat, d_mat,
-                                                                dtype=numpy.uint16,
-                                                                casting='unsafe'),
-                                                    dtype=numpy.uint16,
-                                                    casting='unsafe'),
-                                    dtype=numpy.uint16, casting='unsafe')
+                                  numpy.multiply(b_mat,
+                                                 numpy.matmul(C_mat, d_mat,
+                                                              dtype=numpy.uint16,
+                                                              casting='unsafe'),
+                                                 dtype=numpy.uint16,
+                                                 casting='unsafe'),
+                                  dtype=numpy.uint16, casting='unsafe')
         output_format = "CSF"
         output_name = "x"
 
     return output_matrix, output_format, output_name, use_fp
+
 
 def read_lego_gold(matrix_tmp_dir, tensor_orderings):
     # Read the gold matrix
@@ -1886,14 +1889,14 @@ def read_lego_gold(matrix_tmp_dir, tensor_orderings):
     output_name = None
     # vector outputs have the name 'x'
     # tensors of 2 or higher dimensions have the name 'X'
-    if len(output_dims) == 1: 
+    if len(output_dims) == 1:
         output_name = "x"
     else:
         output_name = "X"
 
     output_matrix = numpy.zeros(output_dims, dtype=numpy.float32)
 
-    # Transpose since the gold matrix may be filled in column order if the 
+    # Transpose since the gold matrix may be filled in column order if the
     # tensor ordering is 10
     rearrng_axis = []
     output_mode_map = tensor_orderings[output_name]
@@ -1910,13 +1913,14 @@ def read_lego_gold(matrix_tmp_dir, tensor_orderings):
     if not is_scalar:
         output_matrix = numpy.transpose(output_matrix, rearrng_axis)
 
-    #parse the data type of the input and the output
+    # parse the data type of the input and the output
     with open(f"{matrix_tmp_dir}/dtype", "r") as f:
         dtype = f.readline().strip()
     if dtype == "bf16":
         use_fp = True
-    
+
     return output_matrix, output_format, output_name, use_fp
+
 
 def generate_inputs_and_gold(app_name, give_tensor=False, print_inputs=None,
                              tensor_orderings=None, clean=True, suffix=""):
@@ -1944,18 +1948,18 @@ def generate_inputs_and_gold(app_name, give_tensor=False, print_inputs=None,
     if app_name in lego_unsupported_apps:
         if give_tensor:
             matrix_tmp_dir = os.path.join(tensor_locs, kernel_name, seed)
-        else: 
+        else:
             matrix_tmp_dir = os.path.join("/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR", app_name, "tile_0")
         output_matrix, output_format, output_name, use_fp = hardcode_generate_intpus(app_name,
                                                                                      matrix_tmp_dir,
-                                                                                     give_tensor=give_tensor, 
-                                                                                     tensor_orderings=tensor_orderings, 
+                                                                                     give_tensor=give_tensor,
+                                                                                     tensor_orderings=tensor_orderings,
                                                                                      clean=clean, suffix=suffix)
     else:
         if give_tensor:
             matrix_tmp_dir = os.path.join(tensor_locs, kernel_name, seed)
         else:
-            matrix_tmp_dir = lego_generate_inputs(app_name) 
+            matrix_tmp_dir = lego_generate_inputs(app_name)
         output_matrix, output_format, output_name, use_fp = read_lego_gold(matrix_tmp_dir, tensor_orderings)
     if print_inputs is not None:
         if b_mat is not None:
@@ -2106,7 +2110,6 @@ if __name__ == "__main__":
     num_fabric_cols_removed = args.num_fabric_cols_removed
     include_E64_hw = args.include_E64_hw
     use_non_split_fifos = args.use_non_split_fifos
-
 
     if include_E64_hw:
         os.environ["INCLUDE_E64_HW"] = "1"
@@ -2316,7 +2319,7 @@ if __name__ == "__main__":
 
             if give_tensor:
                 use_seeds = data_tile_pairs
-            
+
             for seed in use_seeds:
 
                 output_matrices = []
@@ -2336,7 +2339,7 @@ if __name__ == "__main__":
 
                 output_dir = prep_test_dir(f"{base_dir}/{sam_graph_name}_{seed_id}", args.output_dir, "OUTPUT_DIR")
                 input_dir = prep_test_dir(f"{base_dir}/{sam_graph_name}_{seed_id}", args.input_dir, "INPUT_DIR")
-                        
+
                 gold_dir = prep_test_dir(f"{base_dir}/{sam_graph_name}_{seed_id}", args.gold_dir, "GOLD_DIR")
                 glb_dir = prep_test_dir(f"{base_dir}/{sam_graph_name}_{seed_id}", args.glb_dir, "GLB_DIR")
                 collat_dir = prep_test_dir(f"{base_dir}/{sam_graph_name}_{seed_id}", args.glb_dir, "COLLAT_DIR")
@@ -2375,7 +2378,7 @@ if __name__ == "__main__":
                             edges_to_edit.append(edge)
                         if dst_node_type == '"crddrop"' and 'outer' in comment_type.strip('"'):
                             edges_to_edit.append(edge)
-                    
+
                     # graph.write_png("/aha/before.png")
                     # Add node to edges
                     for edge in edges_to_edit:
@@ -2392,7 +2395,7 @@ if __name__ == "__main__":
                             del attrs['fa_color']
                         edge_attrs = copy.deepcopy(edge.get_attributes())
                         del edge_attrs['label']
-                        edge_type =  edge_attrs['type'].strip('"')
+                        edge_type = edge_attrs['type'].strip('"')
 
                         node_exists = graph.get_node(f"passthrough_buffer_{src}_{edge_type}")
                         if node_exists == []:
@@ -2435,24 +2438,24 @@ if __name__ == "__main__":
                 # Assume we are unrolling 'B' for now... Update, change it to const 1
                 for i in range(1):
                     ##### Handling app level file stuff #####
-                    output_matrix, output_format, output_name, input_dims, use_fp, matrix_tmp_dir = generate_inputs_and_gold(sam_graph_name, 
-                                                                                                             give_tensor, 
-                                                                                                             print_inputs,
-                                                                                                             tensor_orderings=mode_map,
-                                                                                                             clean=clean,
-                                                                                                             suffix=f"")
+                    output_matrix, output_format, output_name, input_dims, use_fp, matrix_tmp_dir = generate_inputs_and_gold(sam_graph_name,
+                                                                                                                             give_tensor,
+                                                                                                                             print_inputs,
+                                                                                                                             tensor_orderings=mode_map,
+                                                                                                                             clean=clean,
+                                                                                                                             suffix=f"")
                     if clean:
                         clean = False
 
                     output_matrices.append(output_matrix)
                     output_formats.append(output_format)
-                    output_names.append(output_name)    
-                
+                    output_names.append(output_name)
+
                 clean = True
 
-                for i in range(1): # change unroll to const 1
+                for i in range(1):  # change unroll to const 1
                     out_mat = MatrixGenerator(name=output_names[i], shape=None, sparsity=0.5,
-                                              format=output_formats[i], dump_dir=gold_dir, 
+                                              format=output_formats[i], dump_dir=gold_dir,
                                               tensor=output_matrices[i], clean=clean, use_fp=use_fp)
 
                     if clean:
@@ -2461,7 +2464,6 @@ if __name__ == "__main__":
                     out_mat.dump_outputs()
 
                     out_mats.append(out_mat)
-
 
                 if sam_graph not in stbs:
                     ##### Create the actual testbench mapping based on the SAM graph #####
@@ -2506,7 +2508,7 @@ if __name__ == "__main__":
                     if not os.path.isdir(full_test_glb_dir):
                         os.mkdir(full_test_glb_dir)
 
-                    for i in range(1): # change unroll to const 1
+                    for i in range(1):  # change unroll to const 1
                         out_mats[i].dump_outputs(glb_override=True, glb_dump_dir=full_test_glb_dir, suffix=f"_{i}")
                         numpy.save(f"{full_test_glb_dir}/output_gold_{i}.npy", out_mats[i].get_matrix())
                         numpy.save(f"{glb_dir}/output_gold_{i}.npy", out_mats[i].get_matrix())
@@ -2533,7 +2535,7 @@ if __name__ == "__main__":
                 # hack_in_files = ['./tensor_b_mode_0', './tensor_b_mode_vals']
                 hack_in_files = None
                 coalesce_files(in_dir=matrix_tmp_dir, out_dir=input_dir,
-                               hack_files=hack_in_files, unroll=unroll, 
+                               hack_files=hack_in_files, unroll=unroll,
                                give_tensor=give_tensor, use_fp=use_fp)
 
                 # Clean up output dir...
@@ -2605,7 +2607,7 @@ if __name__ == "__main__":
                 print(test_mem_core_dir)
                 exit()
 
-        if just_glb: # ss regress flow ends here
+        if just_glb:  # ss regress flow ends here
             print("Only generating glb collateral and leaving...")
             exit()
 
