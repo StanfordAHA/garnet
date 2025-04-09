@@ -1,5 +1,6 @@
 from gemstone.generator.generator import Generator
-import os, sys
+import os
+import sys
 if os.getenv('WHICH_SOC') == "amber":
     import garnet_amber
     if __name__ == "__main__":
@@ -53,15 +54,13 @@ class Garnet(Generator):
         # size
         self.width = args.width
         self.height = args.height
-        
+
         self.mu_oc_0 = args.mu_oc_0
         self.num_fabric_cols_removed = args.num_fabric_cols_removed
 
         self.pe_fc = args.pe_fc
         self.harden_flush = args.harden_flush
         self.pipeline_config_interval = args.pipeline_config_interval
-
-
 
         self.io_sides = io_sides
         self.include_E64_hw = args.include_E64_hw
@@ -103,7 +102,13 @@ class Garnet(Generator):
         # GLB ports (or not)
 
         if not args.interconnect_only:
-            self.build_glb_ports(args.glb_params, args.using_matrix_unit, args.mu_datawidth, args.dense_only, args.num_fabric_cols_removed, args.mu_oc_0)
+            self.build_glb_ports(
+                args.glb_params,
+                args.using_matrix_unit,
+                args.mu_datawidth,
+                args.dense_only,
+                args.num_fabric_cols_removed,
+                args.mu_oc_0)
         else:
             self.lift_ports(self.width, self.config_data_width, self.harden_flush)
 
@@ -127,7 +132,6 @@ class Garnet(Generator):
 
         glb_tile_mem_size = 2 ** ((glb_params.bank_addr_width - 10)
                                   + math.ceil(math.log(glb_params.banks_per_tile, 2)))
-
 
         self.global_controller = GlobalController(
             addr_width=self.config_addr_width,
@@ -200,24 +204,32 @@ class Garnet(Generator):
             assert mu_datawidth < cgra_track_width, "Matrix unit datawidth must be < CGRA track width"
             width_difference = cgra_track_width - mu_datawidth
 
-            num_mu_io_tiles = int(num_output_channels/2)
-            mu_io_startX = int(((self.width - num_fabric_cols_removed) - num_mu_io_tiles)/2) + num_fabric_cols_removed
-            mu_io_endX = mu_io_startX + num_mu_io_tiles-1
+            num_mu_io_tiles = int(num_output_channels / 2)
+            mu_io_startX = int(((self.width - num_fabric_cols_removed) - num_mu_io_tiles) / 2) + num_fabric_cols_removed
+            mu_io_endX = mu_io_startX + num_mu_io_tiles - 1
 
             for i in range(num_output_channels):
                 io_num = i % 2
 
                 mu_io_tile_row = self.height + 1
-                cgra_col_num = mu_io_startX + i//2
+                cgra_col_num = mu_io_startX + i // 2
 
                 # Tie MSB(s) not driven by MU to GND
                 if (width_difference > 0):
-                   self.wire(Const(0), self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{cgra_col_num:02X}_Y{mu_io_tile_row:02X}"][cgra_track_width-width_difference:cgra_track_width])
+                    self.wire(Const(
+                        0), self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{cgra_col_num:02X}_Y{mu_io_tile_row:02X}"][cgra_track_width - width_difference:cgra_track_width])
 
-                self.wire(self.ports.mu2cgra[i], self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{cgra_col_num:02X}_Y{mu_io_tile_row:02X}"][:cgra_track_width-width_difference])
-                self.wire(self.ports.mu2cgra_valid, self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{cgra_col_num:02X}_Y{mu_io_tile_row:02X}_valid"])
+                self.wire(
+                    self.ports.mu2cgra[i], self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{cgra_col_num:02X}_Y{mu_io_tile_row:02X}"][:cgra_track_width - width_difference])
+                self.wire(
+                    self.ports.mu2cgra_valid,
+                    self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{cgra_col_num:02X}_Y{mu_io_tile_row:02X}_valid"])
 
-                self.wire(self.cgra2mu_ready_and.ports[f"I{i}"], self.convert(self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{cgra_col_num:02X}_Y{mu_io_tile_row:02X}_ready"], magma.Bits[1]))
+                self.wire(
+                    self.cgra2mu_ready_and.ports[f"I{i}"],
+                    self.convert(
+                        self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{cgra_col_num:02X}_Y{mu_io_tile_row:02X}_ready"],
+                        magma.Bits[1]))
 
             self.wire(self.convert(self.cgra2mu_ready_and.ports.O, magma.bit), self.ports.cgra2mu_ready)
 
@@ -282,7 +294,7 @@ class Garnet(Generator):
             self.add_port(name, self.interconnect.ports[name].type())
             self.wire(self.ports[name], self.interconnect.ports[name])
 
-        #from gemstone.common.configurable import ConfigurationType
+        # from gemstone.common.configurable import ConfigurationType
         self.add_ports(
             clk=magma.In(magma.Clock),
             reset=magma.In(magma.AsyncReset),
@@ -321,17 +333,23 @@ class Garnet(Generator):
             if instance not in instrs:
                 continue
             instr = instrs[instance]
+            # Parse the node name for the pnr tag and its node number
+            node_pnr_tag = node[0]
+            node_node_num = int(node[1:])
+
             result += self.interconnect.configure_placement(x, y, instr,
-                                                            node[0], node[1], active_core_ports)
+                                                            node_pnr_tag, node_node_num, active_core_ports)
             if node in self.pes_with_packed_ponds:
                 print(f"pond {self.pes_with_packed_ponds[node]} being packed with {node} in {x},{y}")
                 node = self.pes_with_packed_ponds[node]
+                node_pnr_tag = node[0]
+                node_node_num = int(node[1:])
                 instance = id_to_name[node]
                 if instance not in instrs:
                     continue
                 instr = instrs[instance]
                 result += self.interconnect.configure_placement(x, y, instr,
-                                                                node[0], node[1], active_core_ports)
+                                                                node_pnr_tag, node_node_num, active_core_ports)
         return result
 
     def convert_mapped_to_netlist(self, mapped):
@@ -586,7 +604,6 @@ class Garnet(Generator):
                     else:
                         netlist_info["active_core_ports"][tag_] = [pin_remap]
 
-
             netlist_info['netlist'][netlist_id] = connections_list
 
         pond_remap = {}
@@ -636,7 +653,7 @@ class Garnet(Generator):
         unconstrained_io = load_only or args.unconstrained_io
         pipeline_input_broadcasts = not args.no_input_broadcast_pipelining
         input_broadcast_branch_factor = args.input_broadcast_branch_factor
-        input_broadcast_max_leaves    = args.input_broadcast_max_leaves
+        input_broadcast_max_leaves = args.input_broadcast_max_leaves
 
         id_to_name, instance_to_instr, netlist, bus, active_core_ports = \
             self.load_netlist(halide_src,
@@ -644,7 +661,7 @@ class Garnet(Generator):
                               pipeline_input_broadcasts,
                               input_broadcast_branch_factor,
                               input_broadcast_max_leaves)
-        
+
         app_dir = os.path.dirname(halide_src)
         if unconstrained_io:
             fixed_io = None
@@ -653,8 +670,8 @@ class Garnet(Generator):
             fixed_io = place_io_blk(id_to_name, app_dir, self.io_sides, self.width, self.height, args.mu_oc_0, args.num_fabric_cols_removed)
 
         west_in_io_sides = IOSide.West in self.io_sides
-        dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1" 
-    
+        dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1"
+
         placement, routing, id_to_name = \
             archipelago.pnr(self.interconnect, (netlist, bus),
                             load_only=load_only,
@@ -727,7 +744,7 @@ class Garnet(Generator):
                         #     print(tile.instance_name, feature.name() + "_inst0", child.instance_name, "none")
                         # else:
                         #     print(tile.instance_name, feature.instance_name, child.instance_name)
-                        if feature.instance_name: # write zeros to all config registers of interconnect
+                        if feature.instance_name:  # write zeros to all config registers of interconnect
                             feature_addr = tile.features().index(feature)
                             child_addr = child.addr
                             tile_id_width = tile.tile_id_width
@@ -738,8 +755,7 @@ class Garnet(Generator):
                                 | (child_addr << slice_start)
                                 | (feature_addr << tile_id_width)
                             )
-                            bitstream.append((addr,0))
-
+                            bitstream.append((addr, 0))
 
     def generate_bitstream(self, halide_src, placement, routing, id_to_name, instance_to_instr, netlist, bus,
                            compact=False, end_to_end=False, active_core_ports=None):
@@ -749,11 +765,11 @@ class Garnet(Generator):
         routing.update(routing_fix)
 
         bitstream = []
-        if end_to_end: self.write_zero_to_config_regs(bitstream)
-        
-        dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1" 
-        bitstream += self.interconnect.get_route_bitstream(routing, use_fifo=dense_ready_valid)
+        if end_to_end:
+            self.write_zero_to_config_regs(bitstream)
 
+        dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1"
+        bitstream += self.interconnect.get_route_bitstream(routing, use_fifo=dense_ready_valid)
 
         bitstream += self.fix_pond_flush_bug(placement, routing)
         bitstream += self.get_placement_bitstream(placement, id_to_name,
@@ -829,7 +845,7 @@ def write_out_bitstream(filename, bitstream):
 def parse_args():
 
     # Early-out for deprecated arguments
-    for a in ['--rv', '--sparse-cgra', '--sparse-cgra-combined' ]:
+    for a in ['--rv', '--sparse-cgra', '--sparse-cgra-combined']:
         assert a not in sys.argv, \
             f'Command-line arg "{a}" no longer exists, by default the sparse + dense CGRA is generated'
 
@@ -845,8 +861,7 @@ def parse_args():
     parser.add_argument("--output-file", type=str, default="", dest="output")
     parser.add_argument("--gold-file", type=str, default="", dest="gold")
     parser.add_argument("--end-to-end", action="store_true", default=False,
-                    help="Enable end-to-end configuration for bitstream generation")
-
+                        help="Enable end-to-end configuration for bitstream generation")
 
     parser.add_argument("-v", "--verilog", action="store_true")
     parser.add_argument("--no-pd", "--no-power-domain", action="store_true")
@@ -916,7 +931,6 @@ def parse_args():
         arch = read_arch(args.pe)
         args.pe_fc = wrapped_peak_class(arch, debug=True)
 
-
     if args.include_E64_hw:
         os.environ["INCLUDE_E64_HW"] = "1"
 
@@ -942,7 +956,7 @@ def parse_args():
     args.glb_params = gen_global_buffer_params(
         num_glb_tiles=args.width // 2,
         num_cgra_cols=args.width,
-        
+
         num_cgra_cols_including_io=num_cgra_cols_including_io,
 
         # NOTE: We assume num_prr is same as num_glb_tiles
@@ -1007,7 +1021,7 @@ def build_verilog(args, garnet):
         gen_rdl_header(top_name="glc",
                        rdl_file=os.path.join(garnet_home, "global_controller/systemRDL/rdl_models/glc.rdl.final"),
                        output_folder=os.path.join(garnet_home, "global_controller/header"))
-    
+
     garnet_home = os.getenv('GARNET_HOME')
     if not garnet_home:
         garnet_home = os.path.dirname(os.path.abspath(__file__))
@@ -1016,8 +1030,9 @@ def build_verilog(args, garnet):
     matrix_unit_params["MU_DATAWIDTH"] = args.mu_datawidth
     matrix_unit_params["MU_OC_0"] = args.mu_oc_0
     gen_param_header(top_name="matrix_unit_param",
-                        params=matrix_unit_params,
-                        output_folder=os.path.join(garnet_home, "matrix_unit/header"))
+                     params=matrix_unit_params,
+                     output_folder=os.path.join(garnet_home, "matrix_unit/header"))
+
 
 def pnr(garnet, args, app):
 
@@ -1085,6 +1100,7 @@ def reschedule_pipelined_app(app):
         env=env,
         cwd=cwd
     )
+
 
 def main():
     args, io_sides = parse_args()
