@@ -207,7 +207,7 @@ class GlbBankMux_MB(Generator):
         if ((self.rdrq_packet_mu_rd_sw2bank['rd_en'] == 1)
                 # READ if tileID matches or sub_packet_idx not 0 
                 & ((self.rdrq_packet_mu_rd_sw2bank['rd_addr'][self.tile_sel_msb, self.tile_sel_lsb] == self.glb_tile_id) | (self.rdrq_packet_mu_rd_sw2bank['sub_packet_idx'] != 0))
-                & ((self.rdrq_packet_mu_rd_sw2bank['rd_addr'][self.bank_sel_msb, self.bank_sel_lsb] == i) | self.cfg_multi_bank_mode )
+                # & ((self.rdrq_packet_mu_rd_sw2bank['rd_addr'][self.bank_sel_msb, self.bank_sel_lsb] == i) | self.cfg_multi_bank_mode )
                 ): 
             self.rdrq_packet_sw2bankarr_w[i]['rd_en'] = self.rdrq_packet_mu_rd_sw2bank['rd_en']
             self.rdrq_packet_sw2bankarr_w[i]['rd_addr'] = self.rdrq_packet_mu_rd_sw2bank['rd_addr'][(
