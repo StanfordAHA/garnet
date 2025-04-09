@@ -31,7 +31,34 @@ module Zircon (
     input [63:0] proc_packet_wr_data,
     input proc_packet_wr_en,
     input [7:0] proc_packet_wr_strb,
-    input reset_in
+    input reset_in,
+
+    // Axi for matrix unit
+    output         auto_axi_in_aw_ready,
+    input          auto_axi_in_aw_valid,
+    input          auto_axi_in_aw_bits_id,
+    input  [29:0]  auto_axi_in_aw_bits_addr,
+    input  [7:0]   auto_axi_in_aw_bits_len,
+    input  [2:0]   auto_axi_in_aw_bits_size,
+    output         auto_axi_in_w_ready,
+    input          auto_axi_in_w_valid,
+    input  [63:0]  auto_axi_in_w_bits_data,
+    input  [7:0]   auto_axi_in_w_bits_strb,
+    input          auto_axi_in_w_bits_last,
+    input          auto_axi_in_b_ready,
+    output         auto_axi_in_b_valid,
+    output         auto_axi_in_ar_ready,
+    input          auto_axi_in_ar_valid,
+    input          auto_axi_in_ar_bits_id,
+    input  [29:0]  auto_axi_in_ar_bits_addr,
+    input  [7:0]   auto_axi_in_ar_bits_len,
+    input  [2:0]   auto_axi_in_ar_bits_size,
+    input          auto_axi_in_r_ready,
+    output         auto_axi_in_r_valid,
+    output         auto_axi_in_r_bits_id,
+    output [63:0]  auto_axi_in_r_bits_data,
+    output [1:0]   auto_axi_in_r_bits_resp,
+    output         auto_axi_in_r_bits_last
 );
 
 	// Interconnect declarations
@@ -97,58 +124,58 @@ module Zircon (
 		end
 	endgenerate
 
-    MatrixUnit matrixUnit_1 (
-        .clk(1'b0),
-        .rstn(1'b0),
-
-        .serialMatrixParamsIn_vld(1'b0),
-        .serialMatrixParamsIn_rdy( /*NO CONN*/ ),
-        .serialMatrixParamsIn_dat(32'b0),
-
-        .inputAddressRequest_vld( /*NO CONN*/ ),
-        .inputAddressRequest_rdy(1'b0),
-        .inputAddressRequest_dat( /*NO CONN*/ ),
-        .inputDataResponse_vld(1'b0),
-        .inputDataResponse_rdy( /*NO CONN*/ ),
-        .inputDataResponse_dat(512'b0),
-
-        .inputScaleAddressRequest_vld( /*NO CONN*/ ),
-        .inputScaleAddressRequest_rdy(1'b0),
-        .inputScaleAddressRequest_dat( /*NO CONN*/ ),
-        .inputScaleDataResponse_vld(1'b0),
-        .inputScaleDataResponse_rdy( /*NO CONN*/ ),
-        .inputScaleDataResponse_dat(8'b0),
-
-        .weightAddressRequest_vld( /*NO CONN*/ ),
-        .weightAddressRequest_rdy(1'b0),
-        .weightAddressRequest_dat( /*NO CONN*/ ),
-        .weightDataResponse_vld(1'b0),
-        .weightDataResponse_rdy( /*NO CONN*/ ),
-        .weightDataResponse_dat(256'b0),
-
-        .biasAddressRequest_vld( /*NO CONN*/ ),
-        .biasAddressRequest_rdy(1'b0),
-        .biasAddressRequest_dat( /*NO CONN*/ ),
-        .biasDataResponse_vld(1'b0),
-        .biasDataResponse_rdy( /*NO CONN*/ ),
-        .biasDataResponse_dat(256'b0),
-
-        .weightScaleAddressRequest_vld( /*NO CONN*/ ),
-        .weightScaleAddressRequest_rdy(1'b0),
-        .weightScaleAddressRequest_dat( /*NO CONN*/ ),
-        .weightScaleDataResponse_vld(1'b0),
-        .weightScaleDataResponse_rdy( /*NO CONN*/ ),
-        .weightScaleDataResponse_dat(256'b0),
-
-        .outputsFromSystolicArray_vld(mu2cgra_valid),
-        .outputsFromSystolicArray_rdy(cgra2mu_ready),
-        .outputsFromSystolicArray_dat(outputsFromSystolicArray_dat),
-
-        .startSignal_vld( /*NO CONN*/ ),
-        .startSignal_rdy(1'b0),
-        .doneSignal_vld( /*NO CONN*/ ),
-        .doneSignal_rdy(1'b0)
-        );
 
 
+    MatrixUnitWrapper matrixUnit_1 (
+        // clk /reset
+        .auto_clock_in_clock(clk_in),
+        .auto_clock_in_reset(reset_in),
+
+        // Unified MU-GLB ifc
+        .auto_unified_out_a_ready(1'b0),
+        .auto_unified_out_a_valid( /* NO CONN */ ),
+        .auto_unified_out_a_bits_opcode( /* NO CONN */ ),
+        .auto_unified_out_a_bits_size( /* NO CONN */ ),
+        .auto_unified_out_a_bits_source( /* NO CONN */ ),
+        .auto_unified_out_a_bits_address( /* NO CONN */ ),
+        .auto_unified_out_a_bits_mask( /* NO CONN */ ),
+        .auto_unified_out_d_ready( /* NO CONN */ ),
+        .auto_unified_out_d_valid(1'b0),
+        .auto_unified_out_d_bits_opcode(3'b0),
+        .auto_unified_out_d_bits_size(4'b0),
+        .auto_unified_out_d_bits_source(7'b0),
+        .auto_unified_out_d_bits_data(256'b0),
+
+        // MU-CGRA tile array ifc (fused outputs)
+        .io_outputsFromSystolicArray_vld(mu2cgra_valid),
+        .io_outputsFromSystolicArray_rdy(cgra2mu_ready),
+        .io_outputsFromSystolicArray_dat(outputsFromSystolicArray_dat),
+
+        // MU Axi ifc
+        .auto_axi_in_aw_ready(auto_axi_in_aw_ready),
+        .auto_axi_in_aw_valid(auto_axi_in_aw_valid),
+        .auto_axi_in_aw_bits_id(auto_axi_in_aw_bits_id),
+        .auto_axi_in_aw_bits_addr(auto_axi_in_aw_bits_addr),
+        .auto_axi_in_aw_bits_len(auto_axi_in_aw_bits_len),
+        .auto_axi_in_aw_bits_size(auto_axi_in_aw_bits_size),
+        .auto_axi_in_w_ready(auto_axi_in_w_ready),
+        .auto_axi_in_w_valid(auto_axi_in_w_valid),
+        .auto_axi_in_w_bits_data(auto_axi_in_w_bits_data),
+        .auto_axi_in_w_bits_strb(auto_axi_in_w_bits_strb),
+        .auto_axi_in_w_bits_last(auto_axi_in_w_bits_last),
+        .auto_axi_in_b_ready(auto_axi_in_b_ready),
+        .auto_axi_in_b_valid(auto_axi_in_b_valid),
+        .auto_axi_in_ar_ready(auto_axi_in_ar_ready),
+        .auto_axi_in_ar_valid(auto_axi_in_ar_valid),
+        .auto_axi_in_ar_bits_id(auto_axi_in_ar_bits_id),
+        .auto_axi_in_ar_bits_addr(auto_axi_in_ar_bits_addr),
+        .auto_axi_in_ar_bits_len(auto_axi_in_ar_bits_len),
+        .auto_axi_in_ar_bits_size(auto_axi_in_ar_bits_size),
+        .auto_axi_in_r_ready(auto_axi_in_r_ready),
+        .auto_axi_in_r_valid(auto_axi_in_r_valid),
+        .auto_axi_in_r_bits_id(auto_axi_in_r_bits_id),
+        .auto_axi_in_r_bits_data(auto_axi_in_r_bits_data),
+        .auto_axi_in_r_bits_resp(auto_axi_in_r_bits_resp),
+        .auto_axi_in_r_bits_last(auto_axi_in_r_bits_last)
+    );
 endmodule 
