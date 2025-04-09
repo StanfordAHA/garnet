@@ -40,10 +40,10 @@ class PassThroughCore(LakeCoreBase):
             # query for information. The circuit representation will be cached and retrieved
             # in the following steps.
             self.dut = PassThrough(data_width=self.data_width,
-                                 fifo_depth=fifo_depth,
-                                 defer_fifos=False,
-                                 add_flush=True,
-                                 add_clk_enable=True)
+                                   fifo_depth=fifo_depth,
+                                   defer_fifos=False,
+                                   add_flush=True,
+                                   add_clk_enable=True)
 
             circ = kts.util.to_magma(self.dut,
                                      flatten_array=True,

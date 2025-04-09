@@ -14,13 +14,10 @@ from gemstone.common.mux_wrapper import MuxWrapper
 from gemstone.generator.const import Const
 from gemstone.generator.from_magma import FromMagma
 from typing import List
-# from memory_core.intersect_core import IntersectCore
 from gemstone.common.util import compress_config_data
-# from memory_core.scanner_core import ScannerCore
 from lake.top.extract_tile_info import *
 from archipelago import pnr
 import time
-#from mu2f_io_core_rv import MU2F_IOCoreReadyValid
 
 
 ONYX_PORT_REMAP = {
@@ -216,7 +213,8 @@ class LakeCoreBase(ConfigurableCore):
             else:
                 for i in range(width):
                     if skip_control_signals:
-                        self.wire(self.underlying.ports[control_signal][i], self.convert(self.ports[f"{control_signal}_{i}"], magma.Bits[1]))
+                        self.wire(self.underlying.ports[control_signal][i],
+                                  self.convert(self.ports[f"{control_signal}_{i}"], magma.Bits[1]))
                     else:
                         mux = MuxWrapper(2, 1, name=f"{control_signal}_{i}_sel")
                         reg_value_name = f"{control_signal}_{i}_reg_value"
@@ -334,7 +332,7 @@ class LakeCoreBase(ConfigurableCore):
         if os.getenv('WHICH_SOC') == "amber":
             for config_reg_name, width in configurations:
                 main_feature.add_config(config_reg_name, width)
-                if(width == 1):
+                if width == 1:
                     self.wire(main_feature.registers[config_reg_name].ports.O[0],
                               self.underlying.ports[config_reg_name][0])
                 else:
@@ -380,8 +378,6 @@ class LakeCoreBase(ConfigurableCore):
                     else:
                         self.wire(main_feature.registers[config_reg_name].ports.O,
                                   self.underlying.ports[config_reg_name])
-
-
 
         # SRAM
         # These should also account for num features
@@ -566,7 +562,6 @@ class NetlistBuilder():
             data structure and return unique ID
         '''
 
-
         if core == "scanner":
             core = "read_scanner"
 
@@ -590,7 +585,6 @@ class NetlistBuilder():
                         self.core_to_tag[mode_] = pnr_tag
 
             self.remapping_built = True
-
 
         core_remapping = None
 
@@ -659,7 +653,7 @@ class NetlistBuilder():
 
     def add_connections_dict(self, connection_dict, defer_placement=False):
         for conn_block_name, connections_list in connection_dict.items():
-            #print(f"Adding connection block: {conn_block_name}")
+            # print(f"Adding connection block: {conn_block_name}")
             assert isinstance(connections_list, list), f"Expecting list of connections at: {conn_block_name}"
             self.add_connections(connections_list, defer_placement=defer_placement)
 
@@ -765,11 +759,9 @@ class NetlistBuilder():
         #                 self._netlist[input_broadcast_name].append(connection_list_inner[1])
         #                 conns_to_remove.append(conn_name_inner)
 
-
         # for conn in conns_to_remove:
         #     del self._netlist[conn]
         #     del self._bus[conn]
-
 
         self._placement, self._routing, _ = pnr(self._interconnect,
                                                 (self._netlist, self._bus),

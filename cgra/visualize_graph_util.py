@@ -4,6 +4,7 @@ import sys
 from graphviz import Digraph
 import argparse
 
+
 def node_to_tile_from_place(design_place_file):
     node_to_tile = {}
     with open(design_place_file, 'r') as f:
@@ -19,6 +20,7 @@ def node_to_tile_from_place(design_place_file):
             print("Tile Y: ", tile_y)
             node_to_tile[node_name] = (tile_x, tile_y)
     return node_to_tile
+
 
 def emit_signal_rc(ports_to_print, rc_file, node_to_tile, fsdb_file_path="cgra.fsdb"):
 
@@ -83,7 +85,6 @@ def emit_signal_rc(ports_to_print, rc_file, node_to_tile, fsdb_file_path="cgra.f
 
         if "m" in prim:
             # Deal with memory... (lakespec)
-            # boilerplate += f"addSignal -h 15 /top/dut/Interconnect_inst0/Tile_X{tile_x}_Y{tile_y}/PE_inst0/PE_inner_W_inst0/PE_inner/clk\n"
             boilerplate += f"addSignal -h 15 /top/dut/Interconnect_inst0/Tile_X{tile_x}_Y{tile_y}/MemCore_inst0/MemCore_inner_W_inst0/MemCore_inner/clk\n"
             for port, _other_info_list in port_dict.items():
                 boilerplate += f"addSignal -h 15 -holdScope flush\n"
@@ -102,6 +103,7 @@ def emit_signal_rc(ports_to_print, rc_file, node_to_tile, fsdb_file_path="cgra.f
     with open(rc_file, 'w') as rc:
         rc.write(boilerplate)
 
+
 if __name__ == "__main__":
 
     # Parse command line arguments
@@ -114,7 +116,6 @@ if __name__ == "__main__":
     label_edges = parser.add_argument('--label_edges', action='store_true', help='Label edges with source and destination ports')
     args = parser.parse_args()
 
-
     # Map
     ports_to_print = {}
 
@@ -126,12 +127,12 @@ if __name__ == "__main__":
     fsdb = args.fsdb
 
     colors = {
-    "p": "blue",
-    "m": "orange",
-    "M": "purple",
-    "I": "green",
-    "i": "green",
-    "r": "red",
+        "p": "blue",
+        "m": "orange",
+        "M": "purple",
+        "I": "green",
+        "i": "green",
+        "r": "red",
     }
 
     design_packed_file = open(design_packed_file, 'r')
@@ -198,4 +199,3 @@ if __name__ == "__main__":
         print("Skipping rc file emit...")
 
     graph.render(output_file)
-

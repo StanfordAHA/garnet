@@ -53,20 +53,20 @@ class IOCoreReadyValid(LakeCoreBase):
 
             if include_E64_HW:
                 self.dut = IOCore_64(data_width=data_width,
-                              tracks_supported=self.tracks_supported,
-                              fifo_depth=fifo_depth,
-                              use_17_to_16_hack=False,
-                              allow_bypass=self.allow_bypass,
-                              use_almost_full=self.use_almost_full,
-                              add_flush=True)
+                                     tracks_supported=self.tracks_supported,
+                                     fifo_depth=fifo_depth,
+                                     use_17_to_16_hack=False,
+                                     allow_bypass=self.allow_bypass,
+                                     use_almost_full=self.use_almost_full,
+                                     add_flush=True)
             else:
                 self.dut = IOCore(data_width=data_width,
-                              tracks_supported=self.tracks_supported,
-                              fifo_depth=fifo_depth,
-                              use_17_to_16_hack=False,
-                              allow_bypass=self.allow_bypass,
-                              use_almost_full=self.use_almost_full,
-                              add_flush=True)
+                                  tracks_supported=self.tracks_supported,
+                                  fifo_depth=fifo_depth,
+                                  use_17_to_16_hack=False,
+                                  allow_bypass=self.allow_bypass,
+                                  use_almost_full=self.use_almost_full,
+                                  add_flush=True)
 
             circ = kts.util.to_magma(self.dut,
                                      flatten_array=True,
@@ -108,8 +108,8 @@ class IOCoreReadyValid(LakeCoreBase):
         if 'ready_valid_mode' in config_kwargs:
             configs_pre = []
 
-        elif self.include_E64_HW: 
-             configs_pre = [
+        elif self.include_E64_HW:
+            configs_pre = [
                 ('glb2io_17_0_valid_reg_sel', 1),
                 ('glb2io_17_0_valid_reg_value', 1),
 
@@ -122,8 +122,8 @@ class IOCoreReadyValid(LakeCoreBase):
                 ('io2glb_1_0_ready_reg_sel', 1),
                 ('io2glb_1_0_ready_reg_value', 1),
             ]
-             if 'exchange_64_mode' in config_kwargs and config_kwargs['exchange_64_mode'] == 1:
-                 configs_pre += [
+            if 'exchange_64_mode' in config_kwargs and config_kwargs['exchange_64_mode'] == 1:
+                configs_pre += [
                     ('glb2io_17_1_valid_reg_sel', 1),
                     ('glb2io_17_1_valid_reg_value', 1),
 
@@ -140,8 +140,8 @@ class IOCoreReadyValid(LakeCoreBase):
                     ('io2glb_17_2_ready_reg_value', 1),
 
                     ('io2glb_17_3_ready_reg_sel', 1),
-                    ('io2glb_17_3_ready_reg_value', 1),   
-                 ]
+                    ('io2glb_17_3_ready_reg_value', 1),
+                ]
         else:
             configs_pre = [
                 ('glb2io_17_valid_reg_sel', 1),
