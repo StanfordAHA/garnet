@@ -157,7 +157,7 @@ class GlbTile(Generator):
             self.strm_data_f2g_rdy = self.output("strm_data_f2g_rdy", 1, size=[self._params.cgra_per_glb, 4], packed=True)
 
             self.strm_data_g2f = self.output("strm_data_g2f", self._params.cgra_data_width,
-                                            size=[self._params.cgra_per_glb, 4], packed=True)
+                                             size=[self._params.cgra_per_glb, 4], packed=True)
             self.strm_data_g2f_vld = self.output("strm_data_g2f_vld", 1, size=[self._params.cgra_per_glb, 4], packed=True)
             self.strm_data_g2f_rdy = self.input("strm_data_g2f_rdy", 1, size=[self._params.cgra_per_glb, 4], packed=True)
         else:
@@ -167,10 +167,9 @@ class GlbTile(Generator):
             self.strm_data_f2g_rdy = self.output("strm_data_f2g_rdy", 1, size=[self._params.cgra_per_glb], packed=True)
 
             self.strm_data_g2f = self.output("strm_data_g2f", self._params.cgra_data_width,
-                                            size=[self._params.cgra_per_glb], packed=True)
+                                             size=[self._params.cgra_per_glb], packed=True)
             self.strm_data_g2f_vld = self.output("strm_data_g2f_vld", 1, size=[self._params.cgra_per_glb], packed=True)
             self.strm_data_g2f_rdy = self.input("strm_data_g2f_rdy", 1, size=[self._params.cgra_per_glb], packed=True)
-
 
         self.strm_ctrl_f2g = self.input("strm_ctrl_f2g", 1, size=self._params.cgra_per_glb, packed=True)
 
@@ -257,14 +256,14 @@ class GlbTile(Generator):
         self.flush_emitted = self.var("flush_emitted", 1)
         self.add_always(self.flush_emitted_ff)
 
-        # Mode == 4 is emit flush only mode for ld_dma. Currently used by MU2CGRA apps. 
-        self.wire(self.clk_n_en_ld_dma, (self.cfg_ld_dma_ctrl['mode'] == 0) | ((self.cfg_ld_dma_ctrl['mode'] == 4) & self.flush_emitted)) 
+        # Mode == 4 is emit flush only mode for ld_dma. Currently used by MU2CGRA apps.
+        self.wire(self.clk_n_en_ld_dma, (self.cfg_ld_dma_ctrl['mode'] == 0) | ((self.cfg_ld_dma_ctrl['mode'] == 4) & self.flush_emitted))
 
         self.clk_en_lddma2bank = self.var("clk_en_lddma2bank", 1)
         self.add_child("glb_clk_gate_ld_dma",
                        ClkGate(_params=self._params),
                        clk=self.clk,
-                       enable= (~self.clk_n_en_ld_dma) | self.clk_en_master,
+                       enable=(~self.clk_n_en_ld_dma) | self.clk_en_master,
                        gclk=self.gclk_ld_dma)
 
         # Clock gating - st_dma
@@ -377,7 +376,7 @@ class GlbTile(Generator):
         if self._params.include_E64_hw:
             if self._params.include_multi_bank_hw:
                 self.glb_store_dma = GlbStoreDma_E64_MB(_params=self._params)
-                self.glb_load_dma = GlbLoadDma_E64_MB(_params=self._params)  
+                self.glb_load_dma = GlbLoadDma_E64_MB(_params=self._params)
             else:
                 self.glb_store_dma = GlbStoreDma_E64(_params=self._params)
                 self.glb_load_dma = GlbLoadDma_E64(_params=self._params)
@@ -410,7 +409,7 @@ class GlbTile(Generator):
                        cfg_data_network_f2g_mux=self.cfg_st_dma_ctrl['data_mux'],
                        cfg_st_dma_num_blocks=self.cfg_st_dma_num_blocks,
                        cfg_st_dma_rv_seg_mode=self.cfg_st_dma_rv_seg_mode)
-                
+
         if self._params.include_E64_hw:
             self.wire(self.glb_store_dma.cfg_exchange_64_mode, self.cfg_st_dma_exchange_64_mode)
 
@@ -441,8 +440,7 @@ class GlbTile(Generator):
                        cfg_data_network_g2f_mux=self.cfg_ld_dma_ctrl['data_mux'],
                        ld_dma_start_pulse=self.strm_g2f_start_pulse,
                        ld_dma_done_interrupt=self.strm_g2f_interrupt_pulse)
-        
-        
+
         if self._params.include_E64_hw:
             self.wire(self.glb_load_dma.cfg_exchange_64_mode, self.cfg_ld_dma_exchange_64_mode)
 
@@ -501,9 +499,9 @@ class GlbTile(Generator):
                        cfg_tile_connected_next=self.cfg_tile_connected_next,
                        cfg_pcfg_tile_connected_prev=self.cfg_pcfg_tile_connected_prev,
                        cfg_pcfg_tile_connected_next=self.cfg_pcfg_tile_connected_next)
-        
+
         if self._params.include_multi_bank_hw:
-            self.wire(self.glb_bank_mux.cfg_multi_bank_mode, self.cfg_bank_mux_multi_bank_mode)        
+            self.wire(self.glb_bank_mux.cfg_multi_bank_mode, self.cfg_bank_mux_multi_bank_mode)
 
         self.glb_proc_switch = GlbSwitch(self._params, ifc=self.if_proc)
         self.add_child("glb_proc_switch",
@@ -613,8 +611,7 @@ class GlbTile(Generator):
 
         self.pcfg_wiring()
 
-
-    @ always_ff((posedge, "clk"), (posedge, "reset"))
+    @always_ff((posedge, "clk"), (posedge, "reset"))
     def flush_emitted_ff(self):
         if self.reset:
             self.flush_emitted = 0

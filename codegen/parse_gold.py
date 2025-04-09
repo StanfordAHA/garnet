@@ -4,6 +4,7 @@ import glob
 from textwrap import dedent
 import sys
 
+
 def parse_gold(app_name, data):
 
     tilefiles = glob.glob("tiles_chip_test/tile*")
@@ -12,7 +13,6 @@ def parse_gold(app_name, data):
     for i in range(0, len(tilefiles)):
         name_list.append(f"tile{i}")
 
-
     counter = 0
     # TODO assumes all tiles are same size and square
 
@@ -20,21 +20,20 @@ def parse_gold(app_name, data):
 
     for gold in name_list:
         gold_list.append(np.load(f"tiles_chip_test/{gold}/output_gold_0.npy"))
-    
+
     f.write("#define AHASOC_CGRA_DATA_BASE    (0x20400000UL)  /*!< (CGRA DATA ) Base Address */\n")
 
     for idx, gold in enumerate(gold_list):
-        if(not np.any(gold)):
+        if (not np.any(gold)):
             counter += 1
-        
+
         f_str = f'''
-        const uint16_t gold_{idx}_[{gold.shape[0] * gold.shape[1]}] = 
+        const uint16_t gold_{idx}_[{gold.shape[0] * gold.shape[1]}] =
         {{
         '''
 
         f.write(dedent(f_str))
 
-        
         # print(gold)
 
         for i in range(gold_list[0].shape[0]):
@@ -44,7 +43,7 @@ def parse_gold(app_name, data):
         f.write("\n};")
 
     f_str = f'''
-    uint16_t check_0_[{gold.shape[0] * gold.shape[1]}] = 
+    uint16_t check_0_[{gold.shape[0] * gold.shape[1]}] =
     {{
     '''
 
@@ -56,13 +55,12 @@ def parse_gold(app_name, data):
 
     f.write("\n};\n")
 
-
     # TODO assumes dimension of {gold_list[0].shape[0]}, safe to assume all tiles same?
 
     f_str = f'''
     uint16_t check_gold_data(){{
 
-    uint16_t size; 
+    uint16_t size;
     uint16_t err = 0;
     uint16_t mode0_idx = 0;
     uint16_t mode1_idx = 0;
@@ -81,7 +79,6 @@ def parse_gold(app_name, data):
     '''
     f.write(dedent(f_str))
 
-
     f.write(dedent(f"       switch(run){{"))
     for idx, gold in enumerate(gold_list):
         f_str = f'''
@@ -92,12 +89,11 @@ def parse_gold(app_name, data):
                     '''
         f.write(dedent(f_str))
 
-    f.write(dedent(f'''        
-                    default: 
+    f.write(dedent(f'''
+                    default:
                         // assert(1 == 0);
                         break;}}
             '''))
-
 
     f_str = f'''
         size = read_base[mode0_idx];
@@ -108,13 +104,13 @@ def parse_gold(app_name, data):
         size = read_base2[mode1_idx];
         uint16_t mode1_base = size + 1 + 1;
         uint16_t mode1_size = size + 1 + read_base2[mode1_idx + size + 1] + 1;
-        
+
         uint16_t vals_size = read_base3[vals_idx] + 1;
 
         uint16_t x;
         uint16_t y;
         uint16_t y_dim;
-        uint16_t y_idx = 0; 
+        uint16_t y_idx = 0;
 
         // reset check matrix
         for(uint16_t i = 0; i < {gold_list[0].shape[0]}; i++){{
@@ -132,7 +128,7 @@ def parse_gold(app_name, data):
             check_ptr[{gold_list[0].shape[0]}*x+y] = read_base3[vals_idx + y_idx + j + 1];
         }}
         y_idx += y_dim;
-        }}  
+        }}
 
         // compare with gold dense matrix
         for(uint16_t i = 0; i < {gold_list[0].shape[0]}; i++){{
@@ -158,5 +154,3 @@ def parse_gold(app_name, data):
 
 if __name__ == '__main__':
     parse_gold(app_name, data)
-
-

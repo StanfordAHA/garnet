@@ -34,9 +34,9 @@ class GlbStoreDma(Generator):
         self.cfg_tile_connected_prev = self.input("cfg_tile_connected_prev", 1)
         self.cfg_tile_connected_next = self.input("cfg_tile_connected_next", 1)
         self.cfg_st_dma_num_repeat = self.input("cfg_st_dma_num_repeat", clog2(self._params.queue_depth) + 1)
-        self.cfg_st_dma_ctrl_mode = self.input("cfg_st_dma_ctrl_mode", 2) 
+        self.cfg_st_dma_ctrl_mode = self.input("cfg_st_dma_ctrl_mode", 2)
         self.cfg_st_dma_ctrl_valid_mode = self.input("cfg_st_dma_ctrl_valid_mode", 2)
-        self.cfg_data_network_latency = self.input("cfg_data_network_latency", self._params.latency_width) 
+        self.cfg_data_network_latency = self.input("cfg_data_network_latency", self._params.latency_width)
         self.cfg_st_dma_header = self.input("cfg_st_dma_header", self.header.cfg_store_dma_header_t,
                                             size=self._params.queue_depth, explicit_array=True)
         self.cfg_data_network_f2g_mux = self.input("cfg_data_network_f2g_mux", self._params.cgra_per_glb)
@@ -91,7 +91,6 @@ class GlbStoreDma(Generator):
         self.data_current_addr_pre = self.var("data_current_addr_pre", self._params.glb_addr_width + 1)
         self.loop_mux_sel = self.var("loop_mux_sel", clog2(self._params.store_dma_loop_level))
         self.repeat_cnt = self.var("repeat_cnt", clog2(self._params.queue_depth) + 1)
-        
 
         # ready_valid controller
         self.block_done = self.var("block_done", 1)
@@ -215,7 +214,7 @@ class GlbStoreDma(Generator):
         for i in range(self._params.store_dma_loop_level):
             self.wire(self.loop_iter.ranges[i], self.current_dma_header[f"range_{i}"])
 
-        # INFO: The purpose of these two below is to output valid on cycles when writes should occur 
+        # INFO: The purpose of these two below is to output valid on cycles when writes should occur
         # Cycle stride
         self.wire(self.static_mode_on, self.cfg_st_dma_ctrl_valid_mode == self._params.st_dma_valid_mode_static)
 
@@ -223,7 +222,7 @@ class GlbStoreDma(Generator):
         self.add_child("cycle_stride_sched_gen",
                        self.cycle_stride_sched_gen,
                        clk=self.clk,
-                       # MO: STENCIL VALID CHANGE 
+                       # MO: STENCIL VALID CHANGE
                        clk_en=clock_en(self.static_mode_on | self.dense_rv_mode_on),
                        reset=self.reset,
                        restart=self.st_dma_start_pulse_r,
@@ -231,7 +230,7 @@ class GlbStoreDma(Generator):
                        current_addr=self.cycle_current_addr,
                        finished=self.loop_done_muxed,
                        valid_output=self.stencil_valid)
-        
+
         self.wire(self.qualified_iter_step_valid, self.stencil_valid & self.iter_step_valid)
 
         self.cycle_stride_addr_gen = GlbAddrGen(self._params, loop_level=self._params.store_dma_loop_level)
@@ -262,7 +261,7 @@ class GlbStoreDma(Generator):
                        clk=self.clk,
                        clk_en=const(1, 1),
                        reset=self.reset,
-                       restart=self.st_dma_start_pulse_r | self.rv_is_addrdata, 
+                       restart=self.st_dma_start_pulse_r | self.rv_is_addrdata,
                        step=kts.ternary(self.dense_rv_mode_on, self.qualified_iter_step_valid, self.iter_step_valid),
                        mux_sel=self.loop_mux_sel,
                        addr_out=self.data_current_addr)
@@ -273,16 +272,14 @@ class GlbStoreDma(Generator):
         for i in range(self._params.store_dma_loop_level):
             self.wire(self.data_stride_addr_gen.strides[i], self.current_dma_header[f"stride_{i}"])
 
-
-        # Last & with iter_step_valid is a to ensure that the cycle counter is tokenized on RV transactions 
+        # Last & with iter_step_valid is a to ensure that the cycle counter is tokenized on RV transactions
         self.wire(self.cycle_counter_en, kts.ternary(self.static_mode_on, self.strm_run, self.strm_run & self.iter_step_valid))
-
 
     @always_comb
     def block_done_logic(self):
         if self.sparse_rv_mode_on:
             self.block_done = self.strm_run & ~self.rv_is_metadata & ~self.rv_is_addrdata & self.seg_done &\
-            (((self.rv_num_seg_cnt == 1) & self.fifo_pop_ready) | (self.rv_num_seg_cnt == 0))
+                (((self.rv_num_seg_cnt == 1) & self.fifo_pop_ready) | (self.rv_num_seg_cnt == 0))
         else:
             self.block_done = 0
 
@@ -294,7 +291,7 @@ class GlbStoreDma(Generator):
         else:
             self.seg_done = 0
 
-    # This is the key difference between dense and sparse RV modes 
+    # This is the key difference between dense and sparse RV modes
     @always_comb
     def loop_done_muxed_logic(self):
         if self.sparse_rv_mode_on:
@@ -316,14 +313,13 @@ class GlbStoreDma(Generator):
     def rv_is_last_block_comb(self):
         self.is_last_block = self.rv_num_blocks_cnt == 1
 
-
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def rv_metadata_ff(self):
         if self.reset:
             self.rv_is_metadata = 0
         elif self.sparse_rv_mode_on:
             if (self.rv_is_addrdata & self.fifo_pop_ready) |\
-                ((self.rv_num_seg_cnt != 1) & (self.rv_num_data_cnt == 1) & self.fifo_pop_ready):
+                    ((self.rv_num_seg_cnt != 1) & (self.rv_num_data_cnt == 1) & self.fifo_pop_ready):
                 self.rv_is_metadata = 1
             elif self.rv_is_metadata & self.fifo_pop_ready:
                 self.rv_is_metadata = 0
@@ -396,7 +392,7 @@ class GlbStoreDma(Generator):
             elif self.bank_wr_en:
                 self.is_last = 0
 
-    # Strm_run goes high when the start pulse goes high, then comes back down when loop_done_muxed is detected 
+    # Strm_run goes high when the start pulse goes high, then comes back down when loop_done_muxed is detected
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def strm_run_ff(self):
         if self.reset:
@@ -441,7 +437,7 @@ class GlbStoreDma(Generator):
                 self.cycle_count = 0
             # MO: STENCIL VALID CHANGE
             # In dense RV mode, cycle counter is tokenized on every ready/valid data transaction
-            elif(self.cycle_counter_en):
+            elif self.cycle_counter_en:
                 self.cycle_count = self.cycle_count + 1
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
@@ -480,10 +476,9 @@ class GlbStoreDma(Generator):
                 self.strm_data_valid = self.strm_data_valid
                 self.data_f2g_rdy[i] = 0
 
-
     @always_comb
     def qualified_iter_step_valid_comb(self):
-        # STATIC MODE 
+        # STATIC MODE
         if self.static_mode_on:
             self.iter_step_valid = self.stencil_valid
 
@@ -493,13 +488,13 @@ class GlbStoreDma(Generator):
         elif self.sparse_rv_mode_on | self.dense_rv_mode_on:
             self.iter_step_valid = self.strm_run & self.fifo_pop_ready & ~self.rv_is_addrdata
 
-        # VALID MODE 
+        # VALID MODE
         else:
             self.iter_step_valid = self.strm_data_valid
 
     @always_comb
     def strm_wr_packet_comb(self):
-        # MO: STENCIL VALID CHANGE - qualify incoming valids with RV tokenized stencil valid 
+        # MO: STENCIL VALID CHANGE - qualify incoming valids with RV tokenized stencil valid
         self.strm_wr_en_w = kts.ternary(self.dense_rv_mode_on, self.qualified_iter_step_valid, self.iter_step_valid)
         if self.sparse_rv_mode_on | self.dense_rv_mode_on:
             self.strm_wr_addr_w = resize(self.data_current_addr, self._params.glb_addr_width)
@@ -680,7 +675,7 @@ class GlbStoreDma(Generator):
             self.data_base_addr = ext(self.rv_base_addr, self._params.glb_addr_width + 1)
         else:
             self.data_base_addr = ext(self.current_dma_header["start_addr"],
-                                                       self._params.glb_addr_width + 1)
+                                      self._params.glb_addr_width + 1)
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def rv_num_seg_cnt_ff(self):

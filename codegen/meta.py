@@ -13,8 +13,7 @@ def meta_scrape(meta_file_name):
     output_files = []
     output_order_list = []
 
-
-    # inputs 
+    # inputs
     for input in meta["IOs"]["inputs"]:
         input_files.append(input["datafile"])
         input_order = []
@@ -30,9 +29,7 @@ def meta_scrape(meta_file_name):
             output_order.append(io["x_pos"] // 2)
         output_order_list.append(output_order)
 
-    return input_files, output_files, input_order_list, output_order_list,  meta["testing"]["bitstream"]
-
-    
+    return input_files, output_files, input_order_list, output_order_list, meta["testing"]["bitstream"]
 
 
 if __name__ == '__main__':

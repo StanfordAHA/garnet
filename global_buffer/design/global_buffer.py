@@ -61,7 +61,7 @@ class GlobalBuffer(Generator):
 
         if self._params.include_E64_hw:
             self.strm_data_f2g = self.input("strm_data_f2g", self._params.cgra_data_width, size=[
-                self._params.num_glb_tiles, self._params.cgra_per_glb, 4], packed=True)  
+                self._params.num_glb_tiles, self._params.cgra_per_glb, 4], packed=True)
             self.strm_data_f2g_vld = self.input("strm_data_f2g_vld", 1, size=[
                 self._params.num_glb_tiles, self._params.cgra_per_glb, 4], packed=True)
             self.strm_data_f2g_rdy = self.output("strm_data_f2g_rdy", 1, size=[
@@ -75,20 +75,18 @@ class GlobalBuffer(Generator):
                 self._params.num_glb_tiles, self._params.cgra_per_glb, 4], packed=True)
         else:
             self.strm_data_f2g = self.input("strm_data_f2g", self._params.cgra_data_width, size=[
-                self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)  
+                self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
             self.strm_data_f2g_vld = self.input("strm_data_f2g_vld", 1, size=[
                 self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
             self.strm_data_f2g_rdy = self.output("strm_data_f2g_rdy", 1, size=[
                 self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
-            
+
             self.strm_data_g2f = self.output("strm_data_g2f", self._params.cgra_data_width, size=[
                 self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
             self.strm_data_g2f_vld = self.output("strm_data_g2f_vld", 1, size=[
                 self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
             self.strm_data_g2f_rdy = self.input("strm_data_g2f_rdy", 1, size=[
                 self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
-            
-
 
         self.strm_ctrl_f2g = self.input("strm_ctrl_f2g", 1, size=[
             self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
@@ -346,7 +344,7 @@ class GlobalBuffer(Generator):
             self.proc_rd_en_d = self.proc_rd_en
             self.proc_rd_addr_d = self.proc_rd_addr
 
-    @ always_ff((posedge, "clk"), (posedge, "reset"))
+    @always_ff((posedge, "clk"), (posedge, "reset"))
     def sram_cfg_pipeline(self):
         if self.reset:
             self.sram_cfg_wr_en_d = 0
@@ -398,7 +396,7 @@ class GlobalBuffer(Generator):
                        )
         self.wire(self.if_proc_list[0].rd_clk_en, self.proc_rd_clk_en)
 
-    @ always_ff((posedge, "clk"), (posedge, "reset"))
+    @always_ff((posedge, "clk"), (posedge, "reset"))
     def left_edge_proc_wr_ff(self):
         if self.reset:
             self.if_proc_list[0].wr_en = 0
@@ -481,7 +479,7 @@ class GlobalBuffer(Generator):
             self.if_sram_cfg_rd_data = self.if_sram_cfg_rd_data_w
             self.if_sram_cfg_rd_data_valid = self.if_sram_cfg_rd_data_valid_w
 
-    @ always_ff((posedge, "clk"), (posedge, "reset"))
+    @always_ff((posedge, "clk"), (posedge, "reset"))
     def left_edge_cfg_ff(self):
         if self.reset:
             self.if_cfg_list[0].wr_en = 0
@@ -500,7 +498,7 @@ class GlobalBuffer(Generator):
             self.if_cfg_list[0].rd_clk_en = self.if_cfg_rd_clk_en
             self.if_cfg_list[0].rd_addr = self.if_cfg_rd_addr
 
-    @ always_ff((posedge, "clk"), (posedge, "reset"))
+    @always_ff((posedge, "clk"), (posedge, "reset"))
     def left_edge_cgra_cfg_ff(self):
         if self.reset:
             self.cgra_cfg_jtag_gc2glb_wr_en_d = 0
@@ -528,7 +526,7 @@ class GlobalBuffer(Generator):
             self.wire(self.strm_packet_w2e_wsti[i], self.strm_packet_w2e_esto[i - 1])
             self.wire(self.pcfg_packet_w2e_wsti[i], self.pcfg_packet_w2e_esto[i - 1])
 
-    @ always_comb
+    @always_comb
     def tile2tile_e2w_cfg_wiring(self):
         for i in range(self._params.num_glb_tiles):
             if i == self._params.num_glb_tiles - 1:
@@ -542,7 +540,7 @@ class GlobalBuffer(Generator):
                 self.cgra_cfg_pcfg_addr_e2w_esti[i] = self.cgra_cfg_pcfg_addr_e2w_wsto[i + 1]
                 self.cgra_cfg_pcfg_data_e2w_esti[i] = self.cgra_cfg_pcfg_data_e2w_wsto[i + 1]
 
-    @ always_comb
+    @always_comb
     def tile2tile_w2e_cfg_wiring(self):
         for i in range(0, self._params.num_glb_tiles):
             if i == 0:
@@ -747,7 +745,7 @@ class GlobalBuffer(Generator):
                            strm_g2f_interrupt_pulse=self.strm_g2f_interrupt_pulse_w[i],
                            pcfg_g2f_interrupt_pulse=self.pcfg_g2f_interrupt_pulse_w[i])
 
-    @ always_ff((posedge, "clk"), (posedge, "reset"))
+    @always_ff((posedge, "clk"), (posedge, "reset"))
     def interrupt_pipeline(self):
         if self.reset:
             for i in range(self._params.num_glb_tiles):

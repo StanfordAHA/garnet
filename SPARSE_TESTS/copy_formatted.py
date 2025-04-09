@@ -2,10 +2,10 @@ import shutil
 import glob
 import os
 
-test = "rel5" 
+test = "rel5"
 # test = "mk9-b1"
 app_name = "mat_mattransmul"
-const_val = 2 # only for mat_mattransmul
+const_val = 2  # only for mat_mattransmul
 
 b_tensors = glob.glob(f"/aha/garnet/tiles_{app_name}_{test}/{app_name}/formatted/tensor_B*")
 c_tensors = glob.glob(f"/aha/garnet/tiles_{app_name}_{test}/{app_name}/formatted/tensor_C*")
@@ -40,11 +40,11 @@ if app_name == "matmul_ijk":
             c_loc = c[-7:]
             b_loc = b_loc.split("_")
             c_loc = c_loc.split("_")
-            if(b_loc[1] == c_loc[0] and b_loc[3] == c_loc[2]):
+            if (b_loc[1] == c_loc[0] and b_loc[3] == c_loc[2]):
                 print(b, c)
                 if not os.path.exists(f"./MAT_TMP_DIR/{tile_str}"):
                     os.mkdir(f"./MAT_TMP_DIR/{tile_str}")
-                
+
                 shutil.copy(f"{b}/B0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_crd")
                 shutil.copy(f"{b}/B0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_seg")
 
@@ -74,7 +74,7 @@ elif app_name == "mat_elemadd" or app_name == "mat_elemmul":
             c_loc = c[-7:]
             b_loc = b_loc.split("_")
             c_loc = c_loc.split("_")
-            if(b_loc == c_loc):
+            if (b_loc == c_loc):
                 print(b, c)
                 if not os.path.exists(f"./MAT_TMP_DIR/{tile_str}"):
                     os.mkdir(f"./MAT_TMP_DIR/{tile_str}")
@@ -120,18 +120,18 @@ elif app_name == "mat_mattransmul":
                 c_loc = c_loc.split("_")
                 d_loc = d_loc.split("_")
 
-                if(b_loc[1] == c_loc[0] and b_loc[3] == c_loc[1] and b_loc[0] == d_loc[0] and b_loc[2] == d_loc[1]):
                 # if(b_loc[1] == d_loc[0] and b_loc[3] == d_loc[1] and b_loc[0] == c_loc[0] and b_loc[2] == c_loc[1]):
+                if (b_loc[1] == c_loc[0] and b_loc[3] == c_loc[1] and b_loc[0] == d_loc[0] and b_loc[2] == d_loc[1]):
                     d_loc_paired.append(d_loc)
 
                     print(f"\n ----- TILE {tile} ----- \n")
-                    print("B is: ", b) #in build_tb, B == C, c == d, d == f. (#FIXME: change build_tb)
+                    print("B is: ", b)  # in build_tb, B == C, c == d, d == f. (#FIXME: change build_tb)
                     print("C is: ", c)
                     print("d is: ", d)
                     print(f"\n ----- TILE {tile} ----- \n")
                     if not os.path.exists(f"./MAT_TMP_DIR/{tile_str}"):
                         os.mkdir(f"./MAT_TMP_DIR/{tile_str}")
-                        
+
                     shutil.copy(f"{b}/B0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_crd")
                     shutil.copy(f"{b}/B0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_seg")
 
@@ -162,23 +162,23 @@ elif app_name == "mat_mattransmul":
 
                     with open(f"./MAT_TMP_DIR/{tile_str}/tensor_b_mode_vals", 'w') as file:
                         file.write(str(const_val))
-                    
+
                     with open(f"./MAT_TMP_DIR/{tile_str}/tensor_e_mode_vals", 'w') as file:
                         file.write(str(const_val))
-                    
+
                     tile = tile + 1
                 elif d_loc not in d_loc_paired:
                     # case: B and c tiles are zero but d is nonzero. We have all d tiles. Just take a B and c tile, copy it and make it zero.'
                     d_loc_paired.append(d_loc)
                     print(f"\n ----- TILE D-unpaired {tile} ----- \n")
-                    print("B (zero tile) is: ", b) #in build_tb, B == C, c == d, d == f. (#FIXME: change build_tb)
+                    print("B (zero tile) is: ", b)  # in build_tb, B == C, c == d, d == f. (#FIXME: change build_tb)
                     print("C (zero tile) is: ", c)
                     print("d is: ", d)
                     print(f"\n ----- TILE D-unpaired {tile} ----- \n")
 
                     if not os.path.exists(f"./MAT_TMP_DIR/{tile_str}"):
                         os.mkdir(f"./MAT_TMP_DIR/{tile_str}")
-                        
+
                     shutil.copy(f"{b}/B0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_crd")
                     shutil.copy(f"{b}/B0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_seg")
 
@@ -224,7 +224,7 @@ elif app_name == "mat_mattransmul":
 
                     with open(f"./MAT_TMP_DIR/{tile_str}/tensor_b_mode_vals", 'w') as file:
                         file.write(str(const_val))
-                    
+
                     with open(f"./MAT_TMP_DIR/{tile_str}/tensor_e_mode_vals", 'w') as file:
                         file.write(str(const_val))
 
@@ -241,11 +241,11 @@ elif app_name == "mat_vecmul_ij":
             c_loc = c_loc.split("_")
 
             # if(b_loc[1] == c_loc[0] and b_loc[3] == c_loc[1] and b_loc[0] == d_loc[0] and b_loc[2] == d_loc[1]):
-            if(b_loc[1] == c_loc[0] and b_loc[3] == c_loc[1]):
-                print(b,c)
+            if (b_loc[1] == c_loc[0] and b_loc[3] == c_loc[1]):
+                print(b, c)
                 if not os.path.exists(f"./MAT_TMP_DIR/{tile_str}"):
                     os.mkdir(f"./MAT_TMP_DIR/{tile_str}")
-                    
+
                 shutil.copy(f"{b}/B0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_crd")
                 shutil.copy(f"{b}/B0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_seg")
 
@@ -280,11 +280,11 @@ elif app_name == "mat_residual":
                 d_loc = d_loc.split("_")
 
                 # if(b_loc[1] == c_loc[0] and b_loc[3] == c_loc[1] and b_loc[0] == d_loc[0] and b_loc[2] == d_loc[1]):
-                if(c_loc[0] == b_loc[0] and c_loc[2] == b_loc[1] and c_loc[1] == d_loc[0] and c_loc[3] == d_loc[1]):
+                if (c_loc[0] == b_loc[0] and c_loc[2] == b_loc[1] and c_loc[1] == d_loc[0] and c_loc[3] == d_loc[1]):
                     print(b, c, d)
                     if not os.path.exists(f"./MAT_TMP_DIR/{tile_str}"):
                         os.mkdir(f"./MAT_TMP_DIR/{tile_str}")
-                        
+
                     shutil.copy(f"{c}/C0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_crd")
                     shutil.copy(f"{c}/C0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_seg")
 
@@ -329,11 +329,11 @@ elif app_name == "mat_sddmm":
                 d_loc = d_loc.split("_")
 
                 # first j, then i (k is a free coordinate)
-                if(b_loc[0] == d_loc[1] and b_loc[2] == d_loc[3] and b_loc[1] == c_loc[0] and b_loc[3] == c_loc[2]):
+                if (b_loc[0] == d_loc[1] and b_loc[2] == d_loc[3] and b_loc[1] == c_loc[0] and b_loc[3] == c_loc[2]):
                     print(b, c, d)
                     if not os.path.exists(f"./MAT_TMP_DIR/{tile_str}"):
                         os.mkdir(f"./MAT_TMP_DIR/{tile_str}")
-                    
+
                     shutil.copy(f"{b}/B0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_crd")
                     shutil.copy(f"{b}/B0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_seg")
 

@@ -152,6 +152,7 @@ class CoreCombinerCore(LakeCoreBase):
         configs = []
 
         print("CORE_COMBINER_CORE_CONFIG")
+        print(self.instance_name)
         print(config_tuple)
 
         # Check if PE, ready_valid, and dict
@@ -267,8 +268,11 @@ class CoreCombinerCore(LakeCoreBase):
                 active_16b_output = 0
                 active_1b_output = 0
 
-            if input_count == 0 and ((output_count > 0) or (output_bit_count)):
+            if input_bit_count == 0 and input_count == 0 and ((output_count > 0) or (output_bit_count)):
+                print("CONSTANT PE")
                 is_constant_pe = 1
+            else:
+                print("Not set to constant")
 
             # These should be maps from a port to how much data it needs...
             input_bogus = {}

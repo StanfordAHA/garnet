@@ -3,7 +3,6 @@ import math
 import os
 
 
-
 def gen_param_header(top_name, params, output_folder):
     h_filename = os.path.join(output_folder, f"{top_name}.h")
     svh_filename = os.path.join(output_folder, f"{top_name}.svh")
@@ -11,6 +10,7 @@ def gen_param_header(top_name, params, output_folder):
                      svh_filename=svh_filename,
                      h_filename=h_filename,
                      header_name="matrix_unit")
+
 
 def gen_header_files(params, svh_filename, h_filename, header_name):
     # mod_params = asdict(params)

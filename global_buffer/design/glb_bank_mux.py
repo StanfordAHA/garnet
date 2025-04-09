@@ -163,7 +163,7 @@ class GlbBankMux(Generator):
         else:
             self.wr_packet_sw2bankarr_w[i] = 0
 
-    @ always_comb
+    @always_comb
     def rdrq_sw2bankarr_logic(self, i):
         if ((self.rdrq_packet_procsw2bank['rd_en'] == 1)
                 & (self.rdrq_packet_procsw2bank['rd_addr'][self.tile_sel_msb, self.tile_sel_lsb] == self.glb_tile_id)
@@ -206,7 +206,7 @@ class GlbBankMux(Generator):
             self.rdrq_packet_sw2bankarr_w[i] = 0
             self.rd_type[i] = self.rd_type_e.none
 
-    @ always_comb
+    @always_comb
     def rdrs_sw2dma_logic(self):
         self.rdrs_packet_bank2dma = 0
         if ((~self.cfg_tile_connected_next) & (~self.cfg_tile_connected_prev)):
@@ -214,7 +214,7 @@ class GlbBankMux(Generator):
                 if self.rd_type_d[i] == self.rd_type_e.strm:
                     self.rdrs_packet_bank2dma = self.rdrs_packet_bankarr2sw_d[i]
 
-    @ always_comb
+    @always_comb
     def rdrs_sw2sr_logic(self):
         self.rdrs_packet_bank2ring = 0
         if (self.cfg_tile_connected_next | self.cfg_tile_connected_prev):
@@ -222,14 +222,14 @@ class GlbBankMux(Generator):
                 if self.rd_type_d[i] == self.rd_type_e.strm:
                     self.rdrs_packet_bank2ring = self.rdrs_packet_bankarr2sw_d[i]
 
-    @ always_comb
+    @always_comb
     def rdrs_sw2pr_logic(self):
         self.rdrs_packet_bank2procsw = 0
         for i in range(self._params.banks_per_tile):
             if self.rd_type_d[i] == self.rd_type_e.proc:
                 self.rdrs_packet_bank2procsw = self.rdrs_packet_bankarr2sw_d[i]
 
-    @ always_comb
+    @always_comb
     def rdrs_sw2pcfgdma_logic(self):
         self.rdrs_packet_bank2pcfgdma = 0
         if (~self.cfg_pcfg_tile_connected_next) & (~self.cfg_pcfg_tile_connected_prev):
@@ -237,7 +237,7 @@ class GlbBankMux(Generator):
                 if self.rd_type_d[i] == self.rd_type_e.pcfg:
                     self.rdrs_packet_bank2pcfgdma = self.rdrs_packet_bankarr2sw_d[i]
 
-    @ always_comb
+    @always_comb
     def rdrs_sw2pcfgr_logic(self):
         self.rdrs_packet_bank2pcfgring = 0
         if (self.cfg_pcfg_tile_connected_next | self.cfg_pcfg_tile_connected_prev):

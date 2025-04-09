@@ -35,9 +35,9 @@ class GlbStoreDma_E64(Generator):
         self.cfg_tile_connected_prev = self.input("cfg_tile_connected_prev", 1)
         self.cfg_tile_connected_next = self.input("cfg_tile_connected_next", 1)
         self.cfg_st_dma_num_repeat = self.input("cfg_st_dma_num_repeat", clog2(self._params.queue_depth) + 1)
-        self.cfg_st_dma_ctrl_mode = self.input("cfg_st_dma_ctrl_mode", 2) 
+        self.cfg_st_dma_ctrl_mode = self.input("cfg_st_dma_ctrl_mode", 2)
         self.cfg_st_dma_ctrl_valid_mode = self.input("cfg_st_dma_ctrl_valid_mode", 2)
-        self.cfg_data_network_latency = self.input("cfg_data_network_latency", self._params.latency_width) 
+        self.cfg_data_network_latency = self.input("cfg_data_network_latency", self._params.latency_width)
         self.cfg_st_dma_header = self.input("cfg_st_dma_header", self.header.cfg_store_dma_header_t,
                                             size=self._params.queue_depth, explicit_array=True)
         self.cfg_data_network_f2g_mux = self.input("cfg_data_network_f2g_mux", self._params.cgra_per_glb)
@@ -95,7 +95,6 @@ class GlbStoreDma_E64(Generator):
         self.data_current_addr_pre = self.var("data_current_addr_pre", self._params.glb_addr_width + 1)
         self.loop_mux_sel = self.var("loop_mux_sel", clog2(self._params.store_dma_loop_level))
         self.repeat_cnt = self.var("repeat_cnt", clog2(self._params.queue_depth) + 1)
-        
 
         # ready_valid controller
         self.block_done = self.var("block_done", 1)
@@ -110,7 +109,7 @@ class GlbStoreDma_E64(Generator):
         self.fifo_almost_full_diff = self.var("fifo_almost_full_diff", clog2(self._params.store_dma_fifo_depth))
         self.iter_step_valid = self.var("iter_step_valid", 1)
         self.packet_64_pop = self.var("packet_64_pop", 1)
-        self.packet_64_pop_ready = self.var("packet_64_pop_ready", 1) 
+        self.packet_64_pop_ready = self.var("packet_64_pop_ready", 1)
         self.fifo_pop_ready = self.var("fifo_pop_ready", 1, size=[self.num_packets], packed=True)
         self.data_cgra2fifo = self.var("data_cgra2fifo", self._params.cgra_data_width, size=[self.num_packets], packed=True)
         self.data_fifo2dma = self.var("data_fifo2dma", self._params.cgra_data_width, size=[self.num_packets], packed=True)
@@ -186,45 +185,39 @@ class GlbStoreDma_E64(Generator):
         for packet_16 in range(self.num_packets):
             self.data_g2f_fifo = FIFO(self._params.cgra_data_width, self._params.store_dma_fifo_depth)
             self.add_child(f"data_f2g_fifo_{packet_16}",
-                        self.data_g2f_fifo,
-                        clk=self.clk,
-                        clk_en=clock_en(self.sparse_rv_mode_on | self.dense_rv_mode_on),
-                        reset=self.reset,
-                        flush=self.st_dma_start_pulse_r,
-                        data_in=self.data_cgra2fifo[packet_16],
-                        data_out=self.data_fifo2dma[packet_16],
-                        push=self.fifo_push[packet_16],
-                        pop=self.fifo_pop[packet_16],
-                        full=self.fifo_full[packet_16],
-                        empty=self.fifo_empty[packet_16],
-                        almost_full=self.fifo_almost_full[packet_16],
-                        almost_full_diff=const(2, clog2(self._params.store_dma_fifo_depth)),
-                        almost_empty_diff=const(2, clog2(self._params.store_dma_fifo_depth)))
-            
-
-            
+                           self.data_g2f_fifo,
+                           clk=self.clk,
+                           clk_en=clock_en(self.sparse_rv_mode_on | self.dense_rv_mode_on),
+                           reset=self.reset,
+                           flush=self.st_dma_start_pulse_r,
+                           data_in=self.data_cgra2fifo[packet_16],
+                           data_out=self.data_fifo2dma[packet_16],
+                           push=self.fifo_push[packet_16],
+                           pop=self.fifo_pop[packet_16],
+                           full=self.fifo_full[packet_16],
+                           empty=self.fifo_empty[packet_16],
+                           almost_full=self.fifo_almost_full[packet_16],
+                           almost_full_diff=const(2, clog2(self._params.store_dma_fifo_depth)),
+                           almost_empty_diff=const(2, clog2(self._params.store_dma_fifo_depth)))
 
             self.wire(self.data_cgra2fifo[packet_16], self.strm_data[packet_16])
 
             self.wire(self.fifo_pop_ready[packet_16], ~self.fifo_empty[packet_16])
-            
+
             if packet_16 == 0:
                 self.wire(self.fifo_pop[packet_16], kts.ternary(self.cfg_exchange_64_mode, self.packet_64_pop, ~self.fifo_empty[packet_16] & self.strm_run))
             else:
                 self.wire(self.fifo_pop[packet_16], self.packet_64_pop)
 
-
             self.wire(self.fifo_push[packet_16], ~self.fifo_full[packet_16] & self.strm_data_valid[packet_16])
-            
+
             # self.wire(self.fifo2cgra_ready[packet_16], ~self.fifo_almost_full[packet_16])
             self.wire(self.fifo2cgra_ready[packet_16], ~self.fifo_full[packet_16])
 
-
-        # Write packet synchronization for E64 write 
+        # Write packet synchronization for E64 write
         self.wire(self.packet_64_pop, ~self.fifo_empty[0] & ~self.fifo_empty[1] & ~self.fifo_empty[2] & ~self.fifo_empty[3] & self.strm_run)
-        
-        self.wire(self.packet_64_pop_ready, self.fifo_pop_ready[0] & self.fifo_pop_ready[1] & self.fifo_pop_ready[2] & self.fifo_pop_ready[3])
 
+        self.wire(self.packet_64_pop_ready, self.fifo_pop_ready[0] & self.fifo_pop_ready[1] & self.fifo_pop_ready[2] & self.fifo_pop_ready[3])
 
         # Loop iteration shared for cycle and data
         self.loop_iter = GlbLoopIter(self._params, loop_level=self._params.store_dma_loop_level)
@@ -241,7 +234,7 @@ class GlbStoreDma_E64(Generator):
         for i in range(self._params.store_dma_loop_level):
             self.wire(self.loop_iter.ranges[i], self.current_dma_header[f"range_{i}"])
 
-        # INFO: The purpose of these two below is to output valid on cycles when writes should occur 
+        # INFO: The purpose of these two below is to output valid on cycles when writes should occur
         # Cycle stride
         self.wire(self.static_mode_on, self.cfg_st_dma_ctrl_valid_mode == self._params.st_dma_valid_mode_static)
 
@@ -249,7 +242,7 @@ class GlbStoreDma_E64(Generator):
         self.add_child("cycle_stride_sched_gen",
                        self.cycle_stride_sched_gen,
                        clk=self.clk,
-                       # MO: STENCIL VALID CHANGE 
+                       # MO: STENCIL VALID CHANGE
                        clk_en=clock_en(self.static_mode_on | self.dense_rv_mode_on),
                        reset=self.reset,
                        restart=self.st_dma_start_pulse_r,
@@ -257,7 +250,7 @@ class GlbStoreDma_E64(Generator):
                        current_addr=self.cycle_current_addr,
                        finished=self.loop_done_muxed,
                        valid_output=self.stencil_valid)
-        
+
         self.wire(self.qualified_iter_step_valid, self.stencil_valid & self.iter_step_valid)
 
         self.cycle_stride_addr_gen = GlbAddrGen(self._params, loop_level=self._params.store_dma_loop_level)
@@ -288,7 +281,7 @@ class GlbStoreDma_E64(Generator):
                        clk=self.clk,
                        clk_en=const(1, 1),
                        reset=self.reset,
-                       restart=self.st_dma_start_pulse_r | self.rv_is_addrdata, 
+                       restart=self.st_dma_start_pulse_r | self.rv_is_addrdata,
                        step=kts.ternary(self.dense_rv_mode_on, self.qualified_iter_step_valid, self.iter_step_valid),
                        mux_sel=self.loop_mux_sel,
                        addr_out=self.data_current_addr)
@@ -299,16 +292,14 @@ class GlbStoreDma_E64(Generator):
         for i in range(self._params.store_dma_loop_level):
             self.wire(self.data_stride_addr_gen.strides[i], self.current_dma_header[f"stride_{i}"])
 
-
-        # Last & with iter_step_valid is a to ensure that the cycle counter is tokenized on RV transactions 
+        # Last & with iter_step_valid is a to ensure that the cycle counter is tokenized on RV transactions
         self.wire(self.cycle_counter_en, kts.ternary(self.static_mode_on, self.strm_run, self.strm_run & self.iter_step_valid))
-
 
     @always_comb
     def block_done_logic(self):
         if self.sparse_rv_mode_on:
             self.block_done = self.strm_run & ~self.rv_is_metadata & ~self.rv_is_addrdata & self.seg_done &\
-            (((self.rv_num_seg_cnt == 1) & self.fifo_pop_ready[0]) | (self.rv_num_seg_cnt == 0))
+                (((self.rv_num_seg_cnt == 1) & self.fifo_pop_ready[0]) | (self.rv_num_seg_cnt == 0))
         else:
             self.block_done = 0
 
@@ -320,7 +311,7 @@ class GlbStoreDma_E64(Generator):
         else:
             self.seg_done = 0
 
-    # This is the key difference between dense and sparse RV modes 
+    # This is the key difference between dense and sparse RV modes
     @always_comb
     def loop_done_muxed_logic(self):
         if self.sparse_rv_mode_on:
@@ -342,14 +333,13 @@ class GlbStoreDma_E64(Generator):
     def rv_is_last_block_comb(self):
         self.is_last_block = self.rv_num_blocks_cnt == 1
 
-
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def rv_metadata_ff(self):
         if self.reset:
             self.rv_is_metadata = 0
         elif self.sparse_rv_mode_on:
             if (self.rv_is_addrdata & self.fifo_pop_ready[0]) |\
-                ((self.rv_num_seg_cnt != 1) & (self.rv_num_data_cnt == 1) & self.fifo_pop_ready[0]):
+                    ((self.rv_num_seg_cnt != 1) & (self.rv_num_data_cnt == 1) & self.fifo_pop_ready[0]):
                 self.rv_is_metadata = 1
             elif self.rv_is_metadata & self.fifo_pop_ready[0]:
                 self.rv_is_metadata = 0
@@ -422,7 +412,7 @@ class GlbStoreDma_E64(Generator):
             elif self.bank_wr_en:
                 self.is_last = 0
 
-    # Strm_run goes high when the start pulse goes high, then comes back down when loop_done_muxed is detected 
+    # Strm_run goes high when the start pulse goes high, then comes back down when loop_done_muxed is detected
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def strm_run_ff(self):
         if self.reset:
@@ -467,7 +457,7 @@ class GlbStoreDma_E64(Generator):
                 self.cycle_count = 0
             # MO: STENCIL VALID CHANGE
             # In dense RV mode, cycle counter is tokenized on every ready/valid data transaction
-            elif(self.cycle_counter_en):
+            elif self.cycle_counter_en:
                 self.cycle_count = self.cycle_count + 1
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
@@ -499,7 +489,7 @@ class GlbStoreDma_E64(Generator):
             for i in range(self._params.cgra_per_glb):
                 if self.cfg_data_network_f2g_mux[i] == 1:
 
-                    # MO: Removing reg in-between FIFOs in E64 mode b/c it causes issues with RV synchronization 
+                    # MO: Removing reg in-between FIFOs in E64 mode b/c it causes issues with RV synchronization
                     # TODO: Avoid adding this mux here. Use another FIFO instead
                     # self.strm_data[packet_16] = self.data_f2g_r[i][packet_16]
                     self.strm_data[packet_16] = kts.ternary(self.cfg_exchange_64_mode, self.data_f2g[i][packet_16], self.data_f2g_r[i][packet_16])
@@ -507,7 +497,7 @@ class GlbStoreDma_E64(Generator):
                     # self.data_f2g_rdy[i] = self.data_ready_g2f_w
                     self.data_f2g_rdy[i][packet_16] = self.data_ready_g2f_w[packet_16]
                     if self.sparse_rv_mode_on | self.dense_rv_mode_on:
-                        #self.strm_data_valid[packet_16] = self.data_f2g_vld_r[i][packet_16]
+                        # self.strm_data_valid[packet_16] = self.data_f2g_vld_r[i][packet_16]
                         self.strm_data_valid[packet_16] = kts.ternary(self.cfg_exchange_64_mode, self.data_f2g_vld[i][packet_16], self.data_f2g_vld_r[i][packet_16])
                     else:
                         # self.strm_data_valid[packet_16] = self.ctrl_f2g_r[i]
@@ -520,24 +510,23 @@ class GlbStoreDma_E64(Generator):
                     self.strm_data_valid[packet_16] = self.strm_data_valid[packet_16]
                     self.data_f2g_rdy[i][packet_16] = 0
 
-
     @always_comb
     def qualified_iter_step_valid_comb(self):
-        # STATIC MODE 
+        # STATIC MODE
         if self.static_mode_on:
             self.iter_step_valid = self.stencil_valid
 
         # RV (SPARSE/DENSE) MODE AND E64 ENABLED
         # This is really self.fifo_pop & ~self.rv_is_addrdata
         # So in RV mode, iter_step everytime new (non-addr) data is popped from FIFO
-        # rv_is_addrdata should always be low in non sparse-rv-mode  
+        # rv_is_addrdata should always be low in non sparse-rv-mode
         elif self.cfg_exchange_64_mode & (self.sparse_rv_mode_on | self.dense_rv_mode_on):
             self.iter_step_valid = self.strm_run & self.packet_64_pop_ready & ~self.rv_is_addrdata
 
         elif self.sparse_rv_mode_on | self.dense_rv_mode_on:
             self.iter_step_valid = self.strm_run & self.fifo_pop_ready[0] & ~self.rv_is_addrdata
 
-        # VALID MODE 
+        # VALID MODE
         else:
             # Can use just 0th element because they are all the same (ctrl_f2g)
             self.iter_step_valid = self.strm_data_valid[0]
@@ -548,7 +537,7 @@ class GlbStoreDma_E64(Generator):
 
     @always_comb
     def strm_wr_packet_comb(self):
-        # MO: STENCIL VALID CHANGE - qualify incoming valids with RV tokenized stencil valid 
+        # MO: STENCIL VALID CHANGE - qualify incoming valids with RV tokenized stencil valid
         self.strm_wr_en_w = kts.ternary(self.dense_rv_mode_on, self.qualified_iter_step_valid, self.iter_step_valid)
         if self.sparse_rv_mode_on | self.dense_rv_mode_on:
             self.strm_wr_addr_w = resize(self.data_current_addr, self._params.glb_addr_width)
@@ -577,27 +566,27 @@ class GlbStoreDma_E64(Generator):
         if self.cfg_exchange_64_mode:
             if self.strm_wr_en_w:
                 self.bank_wr_strb_cache_w[self.cgra_strb_width - 1,
-                                            0] = const(self.cgra_strb_value, self.cgra_strb_width)
+                                          0] = const(self.cgra_strb_value, self.cgra_strb_width)
                 self.bank_wr_strb_cache_w[self.cgra_strb_width * 2 - 1,
-                                            self.cgra_strb_width] = const(self.cgra_strb_value,
-                                                                            self.cgra_strb_width)
+                                          self.cgra_strb_width] = const(self.cgra_strb_value,
+                                                                        self.cgra_strb_width)
                 self.bank_wr_strb_cache_w[self.cgra_strb_width * 3 - 1,
-                                            self.cgra_strb_width * 2] = const(self.cgra_strb_value,
-                                                                                self.cgra_strb_width)
+                                          self.cgra_strb_width * 2] = const(self.cgra_strb_value,
+                                                                            self.cgra_strb_width)
                 self.bank_wr_strb_cache_w[self.cgra_strb_width * 4 - 1,
-                                            self.cgra_strb_width * 3] = const(self.cgra_strb_value,
-                                                                                self.cgra_strb_width)
-        
-                # Assuming 4 packets    
+                                          self.cgra_strb_width * 3] = const(self.cgra_strb_value,
+                                                                            self.cgra_strb_width)
+
+                # Assuming 4 packets
                 self.bank_wr_data_cache_w[(0 * self._params.cgra_data_width + self._params.cgra_data_width - 1,
-                                            0 * self._params.cgra_data_width)] = self.strm_wr_data_w[0]
+                                           0 * self._params.cgra_data_width)] = self.strm_wr_data_w[0]
                 self.bank_wr_data_cache_w[(1 * self._params.cgra_data_width + self._params.cgra_data_width - 1,
-                                        1 * self._params.cgra_data_width)] = self.strm_wr_data_w[1]
+                                           1 * self._params.cgra_data_width)] = self.strm_wr_data_w[1]
                 self.bank_wr_data_cache_w[(2 * self._params.cgra_data_width + self._params.cgra_data_width - 1,
-                                        2 * self._params.cgra_data_width)] = self.strm_wr_data_w[2]
+                                           2 * self._params.cgra_data_width)] = self.strm_wr_data_w[2]
                 self.bank_wr_data_cache_w[(3 * self._params.cgra_data_width + self._params.cgra_data_width - 1,
-                                        3 * self._params.cgra_data_width)] = self.strm_wr_data_w[3]
-        else: 
+                                           3 * self._params.cgra_data_width)] = self.strm_wr_data_w[3]
+        else:
             # First, if cached data is written to memory, clear it.
             if self.bank_wr_en:
                 self.bank_wr_strb_cache_w = 0
@@ -606,26 +595,26 @@ class GlbStoreDma_E64(Generator):
             if self.strm_wr_en_w:
                 if self.strm_data_sel == 0:
                     self.bank_wr_strb_cache_w[self.cgra_strb_width - 1,
-                                            0] = const(self.cgra_strb_value, self.cgra_strb_width)
+                                              0] = const(self.cgra_strb_value, self.cgra_strb_width)
                     self.bank_wr_data_cache_w[self._params.cgra_data_width - 1, 0] = self.strm_wr_data_w[0]
                 elif self.strm_data_sel == 1:
                     self.bank_wr_strb_cache_w[self.cgra_strb_width * 2 - 1,
-                                            self.cgra_strb_width] = const(self.cgra_strb_value,
+                                              self.cgra_strb_width] = const(self.cgra_strb_value,
                                                                             self.cgra_strb_width)
                     self.bank_wr_data_cache_w[self._params.cgra_data_width * 2 - 1,
-                                            self._params.cgra_data_width] = self.strm_wr_data_w[0]
+                                              self._params.cgra_data_width] = self.strm_wr_data_w[0]
                 elif self.strm_data_sel == 2:
                     self.bank_wr_strb_cache_w[self.cgra_strb_width * 3 - 1,
-                                            self.cgra_strb_width * 2] = const(self.cgra_strb_value,
+                                              self.cgra_strb_width * 2] = const(self.cgra_strb_value,
                                                                                 self.cgra_strb_width)
                     self.bank_wr_data_cache_w[self._params.cgra_data_width * 3 - 1,
-                                            self._params.cgra_data_width * 2] = self.strm_wr_data_w[0]
+                                              self._params.cgra_data_width * 2] = self.strm_wr_data_w[0]
                 elif self.strm_data_sel == 3:
                     self.bank_wr_strb_cache_w[self.cgra_strb_width * 4 - 1,
-                                            self.cgra_strb_width * 3] = const(self.cgra_strb_value,
+                                              self.cgra_strb_width * 3] = const(self.cgra_strb_value,
                                                                                 self.cgra_strb_width)
                     self.bank_wr_data_cache_w[self._params.cgra_data_width * 4 - 1,
-                                            self._params.cgra_data_width * 3] = self.strm_wr_data_w[0]
+                                              self._params.cgra_data_width * 3] = self.strm_wr_data_w[0]
                 else:
                     self.bank_wr_strb_cache_w = self.bank_wr_strb_cache_r
                     self.bank_wr_data_cache_w = self.bank_wr_data_cache_r
@@ -754,7 +743,7 @@ class GlbStoreDma_E64(Generator):
             self.data_base_addr = ext(self.rv_base_addr, self._params.glb_addr_width + 1)
         else:
             self.data_base_addr = ext(self.current_dma_header["start_addr"],
-                                                       self._params.glb_addr_width + 1)
+                                      self._params.glb_addr_width + 1)
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def rv_num_seg_cnt_ff(self):

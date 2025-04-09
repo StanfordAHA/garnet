@@ -1,4 +1,6 @@
-import os, math, re
+import os
+import math
+import re
 from graphviz import Digraph
 from collections import defaultdict
 from hwtypes import Bit, BitVector
@@ -27,7 +29,7 @@ import pulp
 class CreateBuses(Visitor):
     def __init__(self, inst_info, ready_valid=True):
         self.inst_info = inst_info
-        self.ready_valid=ready_valid
+        self.ready_valid = ready_valid
 
         self.include_E64_HW = "INCLUDE_E64_HW" in os.environ and os.environ.get("INCLUDE_E64_HW") == "1"
         self.exchange_64_mode = "E64_MODE_ON" in os.environ and os.environ.get("E64_MODE_ON") == "1"
@@ -257,7 +259,7 @@ class CreateIDs(Visitor):
                 if "MU" in child.iname:
                     node_name_parse_list = child.iname.split("stencil_")[2].split("_read")
                     if len(node_name_parse_list) > 1:
-                        oc0_index = int(node_name_parse_list[0])  
+                        oc0_index = int(node_name_parse_list[0])
                     else:
                         oc0_index = 0
 
@@ -265,7 +267,7 @@ class CreateIDs(Visitor):
                     pe_mem_tile_ratio = 3
                     mu_io_col = self.mu_io_startX + oc0_index // channels_per_mu_io_tile
                     isInMemColumn = (mu_io_col + 1) % (pe_mem_tile_ratio + 1) == 0
-                    # isInMemColumn = (oc0_index % (channels_per_mu_io_tile * (pe_mem_tile_ratio + 1)))//channels_per_mu_io_tile == pe_mem_tile_ratio 
+                    # isInMemColumn = (oc0_index % (channels_per_mu_io_tile * (pe_mem_tile_ratio + 1)))//channels_per_mu_io_tile == pe_mem_tile_ratio
                     if isInMemColumn:
                         id = f"V"
                         self.tile_types.add("V")
@@ -279,7 +281,6 @@ class CreateIDs(Visitor):
             self.node_to_type[child.iname] = id
             self.tile_types.add("I")
             self.tile_types.add("i")
-
 
     def visit_Combine(self, node):
         Visitor.generic_visit(self, node)
@@ -341,6 +342,7 @@ class IO_Input_t(Product):
     io2f_16 = BitVector[16]
     io2f_1 = Bit
 
+
 class IO_Input_t_rv(Product):
     io2f_17 = BitVector[16]
     io2f_17_0 = BitVector[16]
@@ -353,7 +355,6 @@ class IO_Input_t_rv(Product):
     io2f_17_T3 = BitVector[16]
     io2f_17_T4 = BitVector[16]
     io2f_1 = Bit
-
 
 
 class IO_Output_t(Product):
@@ -380,10 +381,10 @@ class FlattenIO(Visitor):
             elif ready_valid:
                 # MO: FIXME for E64 conns if FlattenIO is ever used
                 return "io2f_17"
-                #return "io2f_17_0"
+                # return "io2f_17_0"
             else:
                 return "io2f_16"
-        #isel = lambda t: "io2f_1" if t == Bit else "io2f_16"
+        # isel = lambda t: "io2f_1" if t == Bit else "io2f_16"
         if self.ready_valid:
             real_inputs = [
                 Input(type=IO_Input_t_rv, iname="_".join(str(field) for field in path))
@@ -903,7 +904,6 @@ class FixInputsOutputAndPipeline(Visitor):
                 else:
                     new_node = new_children[0].select("io2f_17_T1")
 
-
             elif "io16in" in io_child.iname:
                 if self.ready_valid:
                     if self.include_E64_HW:
@@ -920,8 +920,6 @@ class FixInputsOutputAndPipeline(Visitor):
                             new_node = new_children[0].select("io2f_17_0")
                     else:
                         new_node = new_children[0].select("io2f_17")
-
-
 
                 else:
                     new_node = new_children[0].select("io2f_16")
@@ -1045,7 +1043,7 @@ class FixInputsOutputAndPipeline(Visitor):
                     self.node_map[new_reg_sink] = new_reg_sink
                     self.added_regs += 1
 
-                    if not(dense_ready_valid):
+                    if not dense_ready_valid:
                         new_children.append(new_reg_source)
 
                     # MO: DRV HACK: Insert another register to make even number of regs (b/c of FIFOs)
@@ -1328,10 +1326,10 @@ def create_netlist_info(
 
     node_info = {t: tile_to_char(t) for t in tile_info}
 
-    num_mu_io_tiles = int(mu_oc_0/2)
-    mu_io_startX = int(((orig_cgra_width - num_fabric_cols_removed) - num_mu_io_tiles)/2) + num_fabric_cols_removed
+    num_mu_io_tiles = int(mu_oc_0 / 2)
+    mu_io_startX = int(((orig_cgra_width - num_fabric_cols_removed) - num_mu_io_tiles) / 2) + num_fabric_cols_removed
     nodes_to_ids = CreateIDs(node_info, mu_io_startX).doit(pdag)
-    
+
     if load_only:
         names_to_ids = {name: id_ for id_, name in id_to_name.items()}
     else:
@@ -1387,7 +1385,7 @@ def create_netlist_info(
             node_config_kwargs['exchange_64_mode'] = 1
 
         # MO: MU IO tile HACK for now. Hardcoding it to use tracks T0 and T1 for now
-        # TODO: In the future, find a way to let the PnR tool choose the tracks 
+        # TODO: In the future, find a way to let the PnR tool choose the tracks
         if "U" in id or "u" in id or "V" in id or "v" in id:
             node_name_parse_list = node.split("stencil_")[2].split("_read")
             if len(node_name_parse_list) > 1:
@@ -1401,12 +1399,10 @@ def create_netlist_info(
                 node_config_kwargs['track_select_T1'] = 1
                 node_config_kwargs['track_active_T1'] = 1
 
-
-        if ((dense_ready_valid or exchange_64_mode) and ("I" in id or "i" in id)) or "U" in id or "u" in id or "V" in id or "v" in id:  
-            info["id_to_instrs"][id] = (1, node_config_kwargs) 
+        if ((dense_ready_valid or exchange_64_mode) and ("I" in id or "i" in id)) or "U" in id or "u" in id or "V" in id or "v" in id:
+            info["id_to_instrs"][id] = (1, node_config_kwargs)
         else:
             info["id_to_instrs"][id] = nodes_to_instrs[node]
-
 
     info["instance_to_instrs"] = {
         info["id_to_name"][id]: instr
@@ -1424,8 +1420,7 @@ def create_netlist_info(
             if is_bitvector:
                 info["instance_to_instrs"][node] = {
                     **{"pe_inst": og_info},
-                    **md,
-                    }
+                    **md, }
             else:
                 info["instance_to_instrs"][node] = md
         else:
@@ -1463,7 +1458,7 @@ def create_netlist_info(
         graph.manualy_place_resnet(app_dir=app_dir)
 
     # # MO: Matrix unit HACK
-    #breakpoint()
+    # breakpoint()
     # if "MU_APP_MANUAL_PLACER" in os.environ and os.environ.get("MU_APP_MANUAL_PLACER") == "1":
     #     #breakpoint()
     #     manual_place_filepath = os.path.join(app_dir, "../hardcoded_bin/manual.place")
