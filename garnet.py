@@ -732,7 +732,6 @@ class Garnet(Generator):
         routing.update(routing_fix)
 
         bitstream = []
-<<<<<<< HEAD
         if end_to_end: self.write_zero_to_config_regs(bitstream)
 
         dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1"
@@ -744,13 +743,6 @@ class Garnet(Generator):
 
         bitstream += self.interconnect.get_route_bitstream(routing, use_fifo=dense_ready_valid, id_to_name=id_to_name,
                                                            reg_loc_to_id=reg_loc_to_id, id_to_metadata=id_to_metadata)
-=======
-        if end_to_end:
-            self.write_zero_to_config_regs(bitstream)
-
-        dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1"
-        bitstream += self.interconnect.get_route_bitstream(routing, use_fifo=dense_ready_valid)
->>>>>>> master
 
         bitstream += self.fix_pond_flush_bug(placement, routing)
         bitstream += self.get_placement_bitstream(placement, id_to_name,
