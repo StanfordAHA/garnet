@@ -67,6 +67,18 @@ module Zircon (
     logic mu2cgra_valid;
     logic cgra2mu_ready;
 
+    logic [20:0] auto_unified_out_a_bits_address;
+    logic auto_unified_out_a_valid;
+    logic auto_unified_out_a_ready;
+    logic [3:0] auto_unified_out_a_bits_size;
+    logic [6:0] auto_unified_out_a_bits_source;
+    logic auto_unified_out_d_ready;
+    logic auto_unified_out_d_valid;
+    logic [2:0] auto_unified_out_d_bits_opcode;
+    logic [3:0] auto_unified_out_d_bits_size;
+    logic [6:0] auto_unified_out_d_bits_source;
+    logic [255:0] auto_unified_out_d_bits_data;
+
     Garnet garnet_1 (
         // clk/reset/interrupt
         .clk_in              (clk_in),
@@ -109,11 +121,23 @@ module Zircon (
         .jtag_tms   (jtag_tms),
         .jtag_trst_n(jtag_trst_n),
 
-        // matrix unit ifc 
+        // matrix unit-global buffer ifc
+        .mu_tl_addr_in(auto_unified_out_a_bits_address),
+        .mu_tl_rq_in_vld(auto_unified_out_a_valid),
+        .mu_tl_rq_in_rdy(auto_unified_out_a_ready),
+        .mu_tl_size_in(auto_unified_out_a_bits_size),
+        .mu_tl_source_in(auto_unified_out_a_bits_source),
+        .mu_tl_data_out(auto_unified_out_d_bits_data),
+        .mu_tl_resp_out_vld(auto_unified_out_d_valid),
+        .mu_tl_resp_out_rdy(auto_unified_out_d_ready),
+        .mu_tl_size_out(auto_unified_out_d_bits_size),
+        .mu_tl_source_out(auto_unified_out_d_bits_source),
+        .mu_tl_opcode_out(auto_unified_out_d_bits_opcode),
+    
+        // matrix unit-cgra tile array ifc 
         .mu2cgra_valid (mu2cgra_valid),
         .cgra2mu_ready (cgra2mu_ready),
         .mu2cgra(mu2cgra)
-
     );
 
 	// interconnect 
@@ -125,26 +149,25 @@ module Zircon (
 	endgenerate
 
 
-
     MatrixUnitWrapper matrixUnit_1 (
         // clk /reset
         .auto_clock_in_clock(clk_in),
         .auto_clock_in_reset(reset_in),
 
         // Unified MU-GLB ifc
-        .auto_unified_out_a_ready(1'b0),
-        .auto_unified_out_a_valid( /* NO CONN */ ),
-        .auto_unified_out_a_bits_opcode( /* NO CONN */ ),
-        .auto_unified_out_a_bits_size( /* NO CONN */ ),
-        .auto_unified_out_a_bits_source( /* NO CONN */ ),
-        .auto_unified_out_a_bits_address( /* NO CONN */ ),
-        .auto_unified_out_a_bits_mask( /* NO CONN */ ),
-        .auto_unified_out_d_ready( /* NO CONN */ ),
-        .auto_unified_out_d_valid(1'b0),
-        .auto_unified_out_d_bits_opcode(3'b0),
-        .auto_unified_out_d_bits_size(4'b0),
-        .auto_unified_out_d_bits_source(7'b0),
-        .auto_unified_out_d_bits_data(256'b0),
+        .auto_unified_out_a_ready(auto_unified_out_a_ready),
+        .auto_unified_out_a_valid(auto_unified_out_a_valid),
+        .auto_unified_out_a_bits_opcode( /* UNUSED */ ),
+        .auto_unified_out_a_bits_size(auto_unified_out_a_bits_size),
+        .auto_unified_out_a_bits_source(auto_unified_out_a_bits_source),
+        .auto_unified_out_a_bits_address(auto_unified_out_a_bits_address),
+        .auto_unified_out_a_bits_mask( /* UNUSED */ ),
+        .auto_unified_out_d_ready(auto_unified_out_d_ready),
+        .auto_unified_out_d_valid(auto_unified_out_d_valid),
+        .auto_unified_out_d_bits_opcode(auto_unified_out_d_bits_opcode),
+        .auto_unified_out_d_bits_size(auto_unified_out_d_bits_size),
+        .auto_unified_out_d_bits_source(auto_unified_out_d_bits_source),
+        .auto_unified_out_d_bits_data(auto_unified_out_d_bits_data),
 
         // MU-CGRA tile array ifc (fused outputs)
         .io_outputsFromSystolicArray_vld(mu2cgra_valid),

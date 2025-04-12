@@ -9,7 +9,7 @@ typedef enum int {
 
 typedef enum int {
     ST_MODE_VALID = ST_DMA_VALID_MODE_VALID,
-    ST_MODE_RV = ST_DMA_VALID_MODE_READY_VALID,
+    ST_MODE_RV = ST_DMA_VALID_MODE_SPARSE_READY_VALID,
     ST_MODE_STATIC = ST_DMA_VALID_MODE_STATIC
 } st_valid_type;
 

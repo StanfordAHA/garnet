@@ -20,6 +20,7 @@ export WAVEFORM_GLB_ONLY ?= 0
 export SAIF ?= 0
 
 export USING_MATRIX_UNIT ?= 0
+export INCLUDE_MU_GLB_HW ?= 0
 
 # -------------------------------------------------------------------
 # Compile Parameters
@@ -216,7 +217,7 @@ endif
 
 generate:
 	echo '##[endgroup]'; echo '##[group]make generate (genesis testbench/top.svp)' `date +%H:%M`
-	Genesis2.pl -parse -generate -top top -input $(genesis_tb_dir)/top.svp -parameter top.using_matrix_unit=$(USING_MATRIX_UNIT)
+	Genesis2.pl -parse -generate -top top -input $(genesis_tb_dir)/top.svp -parameter top.using_matrix_unit=$(USING_MATRIX_UNIT) top.include_mu_glb_hw=$(INCLUDE_MU_GLB_HW)
 	mv genesis_verif/top.sv tb/top.sv
 	echo '##[endgroup]'
 
