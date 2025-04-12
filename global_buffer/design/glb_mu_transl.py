@@ -2,6 +2,7 @@ from kratos import Generator, always_comb, always_ff, clog2, clock_en, const, po
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from global_buffer.design.fifo import FIFO
 from global_buffer.design.pipeline import Pipeline
+from global_buffer.design.mux import Mux
 
 
 class GlbMUTransl(Generator):
@@ -28,8 +29,8 @@ class GlbMUTransl(Generator):
         self.source_out = self.output("source_out", self._params.mu_tl_source_width)
 
         self.rd_data_out = self.output("rd_data_out", self._params.mu_word_width)
-        self.rd_data_out_vld = self.output("rd_data_out_vld", 1)
-        self.rd_data_out_rdy = self.input("rd_data_out_rdy", 1) 
+        self.resp_out_vld = self.output("resp_out_vld", 1)
+        self.resp_out_rdy = self.input("resp_out_rdy", 1) 
 
         # To/From GLB
         self.addr2glb = self.output("addr2glb", self._params.glb_addr_width)
@@ -42,6 +43,7 @@ class GlbMUTransl(Generator):
         self.num_tile_id_bits_in_mu_addr = self._params.tile_sel_addr_width - clog2(self._params.mu_word_num_tiles)
         self.addr_incr_value = pow(2, self._params.mu_word_byte_offset)
         self.num_glb_reqs_bitwidth = int(clog2(self._params.mu_rd_max_num_glb_reqs)) + 1
+        self.byte_mask_bitwidth = clog2(self._params.mu_word_num_tiles) + self._params.bank_sel_addr_width + self._params.bank_byte_offset
 
         # Local vars
         self.glb_req_counter = self.var("glb_req_counter",self.num_glb_reqs_bitwidth)
@@ -55,6 +57,18 @@ class GlbMUTransl(Generator):
         self.size_cached = self.var("size_cached", self._params.mu_tl_num_burst_bits)
         self.next_source_cached = self.var("next_source_cached", self._params.mu_tl_source_width)
         self.source_cached = self.var("source_cached", self._params.mu_tl_source_width)
+        self.rd_data_in_masked = self.var("rd_data_in_masked", self._params.mu_word_width)
+        self.selected_byte = self.var("selected_byte", 8)
+
+        # Pipeline signals
+        self.size_resp_pipeline_in = self.var("size_resp_pipeline_in", self._params.mu_tl_num_burst_bits)
+        self.source_resp_pipeline_in = self.var("source_resp_pipeline_in", self._params.mu_tl_source_width)
+
+        self.size_resp_pipeline_out = self.var("size_resp_pipeline_out", self._params.mu_tl_num_burst_bits)
+        self.source_resp_pipeline_out = self.var("source_resp_pipeline_out", self._params.mu_tl_source_width)
+
+        self.byte_mask_pipeline_in = self.var("byte_mask_pipeline_in", self.byte_mask_bitwidth)
+        self.byte_mask_pipeline_out = self.var("byte_mask_pipeline_out", self.byte_mask_bitwidth)
 
         # FIFO signals
         self.addr_fifo_full = self.var("addr_fifo_full", 1)
@@ -64,23 +78,24 @@ class GlbMUTransl(Generator):
         self.addr_fifo_out = self.var("addr_fifo_out", self._params.mu_addr_width)  
         self.addr_fifo_out_valid = self.var("addr_fifo_out_valid", 1)
         self.addr_fifo_pop = self.var("addr_fifo_pop", 1)
+        self.data_out_fifo_full = self.var("data_out_fifo_full", 1)
+        self.data_out_fifo_empty = self.var("data_out_fifo_empty", 1)
+        self.data_out_fifo_almost_full = self.var("data_out_fifo_almost_full", 1)
 
         self.size_req_fifo_out = self.var("size_req_fifo_out", self._params.mu_tl_num_burst_bits)  
         self.source_req_fifo_out = self.var("source_req_fifo_out", self._params.mu_tl_source_width)
 
-        self.size_resp_pipeline_in = self.var("size_resp_pipeline_in", self._params.mu_tl_num_burst_bits)
-        self.source_resp_pipeline_in = self.var("source_resp_pipeline_in", self._params.mu_tl_source_width)
-
-        self.data_out_fifo_full = self.var("data_out_fifo_full", 1)
-        self.data_out_fifo_empty = self.var("data_out_fifo_empty", 1)
-        self.data_out_fifo_almost_full = self.var("data_out_fifo_almost_full", 1)
+        self.rd_data_out_to_fifo = self.var("rd_data_out_to_fifo", self._params.mu_word_width)
 
         self.add_addr_in_fifo_logic()
         self.add_data_out_fifo_logic()
         self.add_size_in_fifo_logic()
         self.add_source_in_fifo_logic()
+        self.add_size_out_fifo_logic()
+        self.add_source_out_fifo_logic()
         self.add_size_out_pipeline()
         self.add_source_out_pipeline()
+        self.add_byte_mask_pipeline()
         self.add_always(self.burst_addr_incr_ff)
         self.add_always(self.glb_req_counter_ff)
         self.add_always(self.size_cache_ff)
@@ -88,6 +103,9 @@ class GlbMUTransl(Generator):
         self.add_always(self.output_logic)
         self.add_always(self.address_adjustment_logic)
         self.add_always(self.size_in_to_num_glb_reqs_logic)
+        self.add_always(self.byte_mask_extraction_logic)
+        self.add_always(self.byte_select_mux_logic)
+        self.add_always(self.data_out_mux_logic)
         
 
 
@@ -207,7 +225,7 @@ class GlbMUTransl(Generator):
 
     def add_size_out_pipeline(self):
         self.size_out_pipeline = Pipeline(width=self._params.mu_tl_num_burst_bits,
-                                                   depth=self._params.mu_glb_rd_latency - 1, # -1 b/c we have already gone through the input FIFO
+                                                   depth=self._params.mu_glb_rd_latency - 2, # -2 to remove both the input FIFO and output FIFO
                                                    flatten_output=False) 
         self.add_child("size_out_pipeline",
                        self.size_out_pipeline,
@@ -215,11 +233,11 @@ class GlbMUTransl(Generator):
                        clk_en=const(1, 1),
                        reset=self.reset,
                        in_=self.size_resp_pipeline_in,
-                       out_=self.size_out)
+                       out_=self.size_resp_pipeline_out)
         
     def add_source_out_pipeline(self):
         self.source_out_pipeline = Pipeline(width=self._params.mu_tl_source_width,
-                                                   depth=self._params.mu_glb_rd_latency - 1, # -1 b/c we have already gone through the input FIFO
+                                                   depth=self._params.mu_glb_rd_latency - 2, # -2 to remove both the input FIFO and output FIFO 
                                                    flatten_output=False) 
         self.add_child("source_out_pipeline",
                        self.source_out_pipeline,
@@ -227,7 +245,20 @@ class GlbMUTransl(Generator):
                        clk_en=const(1, 1),
                        reset=self.reset,
                        in_=self.source_resp_pipeline_in,
-                       out_=self.source_out)    
+                       out_=self.source_resp_pipeline_out)    
+        
+    def add_byte_mask_pipeline(self):
+        self.byte_mask_pipeline = Pipeline(width=self.byte_mask_bitwidth,
+                                                   depth=self._params.mu_glb_rd_latency - 2, # -2 to remove both the input FIFO and output FIFO 
+                                                   flatten_output=False) 
+        self.add_child("byte_mask_pipeline",
+                       self.byte_mask_pipeline,
+                       clk=self.clk,
+                       clk_en=const(1, 1),
+                       reset=self.reset,
+                       in_=self.byte_mask_pipeline_in,
+                       out_=self.byte_mask_pipeline_out)    
+        
     
     def add_data_out_fifo_logic(self):
         self.data_out_fifo = FIFO(self._params.mu_word_width, self._params.mu_tl_resp_fifo_depth)
@@ -239,17 +270,51 @@ class GlbMUTransl(Generator):
                     #    flush=self.st_dma_start_pulse_r,
                         # TODO: Figure out what to put here for flush
                        flush=const(0, 1), 
-                       data_in=self.rd_data_in,
+                       data_in=self.rd_data_out_to_fifo,
                        data_out=self.rd_data_out,
                        push=self.rd_data_in_vld,
-                       pop=self.rd_data_out_rdy,
+                       pop=self.resp_out_rdy,
                        full=self.data_out_fifo_full,
                        empty=self.data_out_fifo_empty,
                        almost_full=self.data_out_fifo_almost_full,
                        almost_full_diff=const(2, clog2(self._params.mu_tl_resp_fifo_depth)),
                        almost_empty_diff=const(2, clog2(self._params.mu_tl_resp_fifo_depth)))
         
-        self.wire(self.rd_data_out_vld, ~self.data_out_fifo_empty)    
+        self.wire(self.resp_out_vld, ~self.data_out_fifo_empty)    
+
+    def add_size_out_fifo_logic(self):
+        self.size_resp_fifo = FIFO(self._params.mu_tl_num_burst_bits, self._params.mu_tl_resp_fifo_depth)
+        self.add_child("size_resp_fifo",
+                       self.size_resp_fifo,
+                       clk=self.clk,
+                       clk_en=const(1, 1),
+                       reset=self.reset,
+                    #    flush=self.st_dma_start_pulse_r,
+                        # TODO: Figure out what to put here for flush
+                       flush=const(0, 1), 
+                       data_in=self.size_resp_pipeline_out,
+                       data_out=self.size_out,
+                       push=self.rd_data_in_vld,
+                       pop=self.resp_out_rdy,
+                       almost_full_diff=const(2, clog2(self._params.mu_tl_req_fifo_depth)),
+                       almost_empty_diff=const(2, clog2(self._params.mu_tl_req_fifo_depth)))
+        
+    def add_source_out_fifo_logic(self):
+        self.source_resp_fifo = FIFO(self._params.mu_tl_source_width, self._params.mu_tl_resp_fifo_depth)
+        self.add_child("source_resp_fifo",
+                        self.source_resp_fifo,
+                        clk=self.clk,
+                        clk_en=const(1, 1),
+                        reset=self.reset,
+                    #    flush=self.st_dma_start_pulse_r,
+                        # TODO: Figure out what to put here for flush
+                        flush=const(0, 1), 
+                        data_in=self.source_resp_pipeline_out,
+                        data_out=self.source_out,
+                        push=self.rd_data_in_vld,
+                        pop=self.resp_out_rdy,
+                        almost_full_diff=const(2, clog2(self._params.mu_tl_req_fifo_depth)),
+                        almost_empty_diff=const(2, clog2(self._params.mu_tl_req_fifo_depth)))  
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def glb_req_counter_ff(self):
@@ -282,7 +347,6 @@ class GlbMUTransl(Generator):
 
     @always_comb
     def size_in_to_num_glb_reqs_logic(self):
-
         # 2^7 = 128 bytes = 4 requests (MAXIMUM)
         if self.size_req_fifo_out == 7:
             self.num_glb_reqs = 4
@@ -305,15 +369,103 @@ class GlbMUTransl(Generator):
     # 1. The tileID bits provided by MU, referring to a group of GLB tiles 
     # 2. Inserted 0s at MSBs of tileID, to refer to base tile of that group
     # 3. Inserted 0 for the bank ID
-    # 4. Rest of address (ignoring bottom 2 bits. These are the bits that are replaced by 0s above for tileID and bank ID)
+    # 4. Rest of address (ignoring addr[4] and addr[3]. These are the bits that are replaced by 0s above for tileID and bank ID)
     @always_comb
     def address_adjustment_logic(self):
         if self.num_tile_id_bits_in_mu_addr > 0:
             self.addr_to_glb_w = concat(self.addr_to_adjuster[self._params.mu_addr_width - 1, self._params.mu_addr_width - 1 - (self.num_tile_id_bits_in_mu_addr - 1)], 
                                                 const(0, clog2(self._params.mu_word_num_tiles)),
                                                 const(0, self._params.bank_sel_addr_width),
-                                                self.addr_to_adjuster[self._params.mu_addr_width - 1 - (self.num_tile_id_bits_in_mu_addr), clog2(self._params.mu_word_num_tiles) + self._params.bank_sel_addr_width])
+                                                self.addr_to_adjuster[self._params.mu_addr_width - 1 - (self.num_tile_id_bits_in_mu_addr), clog2(self._params.mu_word_num_tiles) + self._params.bank_sel_addr_width + self._params.bank_byte_offset],
+                                                self.addr_to_adjuster[self._params.bank_byte_offset - 1, 0])
         else:
             self.addr_to_glb_w = concat(const(0, clog2(self._params.mu_word_num_tiles)),
                                                  const(0, self._params.bank_sel_addr_width),
-                                                 self.addr_to_adjuster[self._params.mu_addr_width - (self.num_tile_id_bits_in_mu_addr), clog2(self._params.mu_word_num_tiles) + self._params.bank_sel_addr_width])
+                                                 self.addr_to_adjuster[self._params.mu_addr_width - 1 - (self.num_tile_id_bits_in_mu_addr), clog2(self._params.mu_word_num_tiles) + self._params.bank_sel_addr_width + self._params.bank_byte_offset],
+                                                 self.addr_to_adjuster[self._params.bank_byte_offset - 1, 0])
+
+
+    @always_comb
+    def byte_mask_extraction_logic(self):
+        self.byte_mask_pipeline_in = self.addr_to_adjuster[self.byte_mask_bitwidth - 1, 0]       
+
+
+    # TODO: May need to pipeline this path for timing closure 
+    @always_comb
+    def byte_select_mux_logic(self):
+        if self.byte_mask_pipeline_out == 0:
+            self.selected_byte = self.rd_data_in[7, 0]
+        elif self.byte_mask_pipeline_out == 1:
+            self.selected_byte = self.rd_data_in[15, 8]
+        elif self.byte_mask_pipeline_out == 2:
+            self.selected_byte = self.rd_data_in[23, 16]
+        elif self.byte_mask_pipeline_out == 3:
+            self.selected_byte = self.rd_data_in[31, 24]
+        elif self.byte_mask_pipeline_out == 4:
+            self.selected_byte = self.rd_data_in[39, 32]
+        elif self.byte_mask_pipeline_out == 5:
+            self.selected_byte = self.rd_data_in[47, 40]
+        elif self.byte_mask_pipeline_out == 6:
+            self.selected_byte = self.rd_data_in[55, 48]
+        elif self.byte_mask_pipeline_out == 7:
+            self.selected_byte = self.rd_data_in[63, 56]
+        elif self.byte_mask_pipeline_out == 8:
+            self.selected_byte = self.rd_data_in[71, 64]
+        elif self.byte_mask_pipeline_out == 9:
+            self.selected_byte = self.rd_data_in[79, 72]
+        elif self.byte_mask_pipeline_out == 10:
+            self.selected_byte = self.rd_data_in[87, 80]
+        elif self.byte_mask_pipeline_out == 11:
+            self.selected_byte = self.rd_data_in[95, 88]
+        elif self.byte_mask_pipeline_out == 12:
+            self.selected_byte = self.rd_data_in[103, 96]
+        elif self.byte_mask_pipeline_out == 13:
+            self.selected_byte = self.rd_data_in[111, 104]
+        elif self.byte_mask_pipeline_out == 14:
+            self.selected_byte = self.rd_data_in[119, 112]
+        elif self.byte_mask_pipeline_out == 15:
+            self.selected_byte = self.rd_data_in[127, 120]
+        elif self.byte_mask_pipeline_out == 16:
+            self.selected_byte = self.rd_data_in[135, 128]
+        elif self.byte_mask_pipeline_out == 17:
+            self.selected_byte = self.rd_data_in[143, 136]
+        elif self.byte_mask_pipeline_out == 18:
+            self.selected_byte = self.rd_data_in[151, 144]
+        elif self.byte_mask_pipeline_out == 19:
+            self.selected_byte = self.rd_data_in[159, 152]
+        elif self.byte_mask_pipeline_out == 20:
+            self.selected_byte = self.rd_data_in[167, 160]
+        elif self.byte_mask_pipeline_out == 21:
+            self.selected_byte = self.rd_data_in[175, 168]
+        elif self.byte_mask_pipeline_out == 22:
+            self.selected_byte = self.rd_data_in[183, 176]
+        elif self.byte_mask_pipeline_out == 23:
+            self.selected_byte = self.rd_data_in[191, 184]
+        elif self.byte_mask_pipeline_out == 24:
+            self.selected_byte = self.rd_data_in[199, 192]
+        elif self.byte_mask_pipeline_out == 25:
+            self.selected_byte = self.rd_data_in[207, 200]
+        elif self.byte_mask_pipeline_out == 26:
+            self.selected_byte = self.rd_data_in[215, 208]
+        elif self.byte_mask_pipeline_out == 27:
+            self.selected_byte = self.rd_data_in[223, 216]
+        elif self.byte_mask_pipeline_out == 28:
+            self.selected_byte = self.rd_data_in[231, 224]
+        elif self.byte_mask_pipeline_out == 29:
+            self.selected_byte = self.rd_data_in[239, 232]
+        elif self.byte_mask_pipeline_out == 30:
+            self.selected_byte = self.rd_data_in[247, 240]
+        elif self.byte_mask_pipeline_out == 31:
+            self.selected_byte = self.rd_data_in[255, 248]
+        else:
+            self.selected_byte = 0
+
+
+    @always_comb
+    def data_out_mux_logic(self):
+        self.rd_data_in_masked = concat(const(0, self._params.mu_word_width - 8), self.selected_byte)
+
+        if self.source_resp_pipeline_out == self._params.input_scale_req_src_code:
+            self.rd_data_out_to_fifo = self.rd_data_in_masked
+        else:
+            self.rd_data_out_to_fifo = self.rd_data_in
