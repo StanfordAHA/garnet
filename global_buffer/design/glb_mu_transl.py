@@ -2,7 +2,6 @@ from kratos import Generator, always_comb, always_ff, clog2, clock_en, const, po
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from global_buffer.design.fifo import FIFO
 from global_buffer.design.pipeline import Pipeline
-from global_buffer.design.mux import Mux
 
 
 class GlbMUTransl(Generator):

@@ -176,7 +176,7 @@ class Garnet(Generator):
                 mu2cgra_valid=magma.In(magma.Bit),
                 cgra2mu_ready=magma.Out(magma.Bit)
             )
-            
+
             if self.include_mu_glb_hw:
                 self.add_ports(
                     mu_tl_addr_in=magma.In(magma.Bits[glb_params.mu_addr_width]),
@@ -233,8 +233,7 @@ class Garnet(Generator):
 
             self.wire(self.convert(self.cgra2mu_ready_and.ports.O, magma.bit), self.ports.cgra2mu_ready)
 
-
-            # Matrix unit <-> GLB ports connection 
+            # Matrix unit <-> GLB ports connection
             if self.include_mu_glb_hw:
                 self.wire(self.global_buffer.ports.mu_tl_addr_in, self.ports.mu_tl_addr_in)
                 self.wire(self.global_buffer.ports.mu_tl_rq_in_vld[0], self.ports.mu_tl_rq_in_vld)
@@ -971,7 +970,6 @@ def parse_args():
         include_E64_hw=args.include_E64_hw,
         include_multi_bank_hw=args.include_multi_bank_hw,
         include_mu_glb_hw=args.include_mu_glb_hw)
-        
 
     # for a in vars(args).items(): print(f'arg {a} has type {type(a)}')
     return args, io_sides
