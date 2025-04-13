@@ -33,12 +33,12 @@ class GlbLoadDma_E64_MB(Generator):
         self.data_flush = self.output("data_flush", 1)
 
         self.rdrq_packet_dma2bank = self.output("rdrq_packet_dma2bank", self.header.rdrq_packet_t)
-        self.rdrq_packet_dma2ring = self.output("rdrq_packet_dma2ring", self.header.rdrq_packet_t)
+        # self.rdrq_packet_dma2ring = self.output("rdrq_packet_dma2ring", self.header.rdrq_packet_t)
         self.rdrs_packet_bank2dma = self.input("rdrs_packet_bank2dma", self.header.rdrs_packet_t, size=_params.banks_per_tile)
-        self.rdrs_packet_ring2dma = self.input("rdrs_packet_ring2dma", self.header.rdrs_packet_t)
+        # self.rdrs_packet_ring2dma = self.input("rdrs_packet_ring2dma", self.header.rdrs_packet_t)
 
-        self.cfg_tile_connected_prev = self.input("cfg_tile_connected_prev", 1)
-        self.cfg_tile_connected_next = self.input("cfg_tile_connected_next", 1)
+        # self.cfg_tile_connected_prev = self.input("cfg_tile_connected_prev", 1)
+        # self.cfg_tile_connected_next = self.input("cfg_tile_connected_next", 1)
         self.cfg_ld_dma_num_repeat = self.input("cfg_ld_dma_num_repeat", clog2(self._params.queue_depth) + 1)
         self.cfg_ld_dma_ctrl_valid_mode = self.input("cfg_ld_dma_ctrl_valid_mode", 2)
         self.cfg_ld_dma_ctrl_flush_mode = self.input("cfg_ld_dma_ctrl_flush_mode", 1)
@@ -49,7 +49,7 @@ class GlbLoadDma_E64_MB(Generator):
             "cfg_ld_dma_header", self.header.cfg_load_dma_header_t, size=self._params.queue_depth)
         self.cfg_data_network_g2f_mux = self.input("cfg_data_network_g2f_mux", self._params.cgra_per_glb)
 
-        # Exchange 64 (configuration). Contains info about multi-bank mode as well 
+        # Exchange 64 (configuration). Contains info about multi-bank mode as well
         self.cfg_exchange_64_mode = self.input("cfg_exchange_64_mode", 2)
 
         self.clk_en_dma2bank = self.output("clk_en_dma2bank", 1)
@@ -59,7 +59,7 @@ class GlbLoadDma_E64_MB(Generator):
         # local variables
         self.data_flush_w = self.var("data_flush_w", 1)
         self.rdrq_packet_dma2bank_w = self.var("rdrq_packet_dma2bank_w", self.header.rdrq_packet_t)
-        self.rdrq_packet_dma2ring_w = self.var("rdrq_packet_dma2ring_w", self.header.rdrq_packet_t)
+        # self.rdrq_packet_dma2ring_w = self.var("rdrq_packet_dma2ring_w", self.header.rdrq_packet_t)
         self.rdrs_packet = self.var("rdrs_packet", self.header.rdrs_packet_t, size=_params.banks_per_tile)
         self.data_g2f_w = self.var("data_g2f_w", width=self._params.cgra_data_width,
                                    size=self._params.cgra_per_glb, packed=True)
@@ -109,7 +109,7 @@ class GlbLoadDma_E64_MB(Generator):
             self.queue_sel_r = self.var("queue_sel_r", max(1, clog2(self.repeat_cnt.width)))
 
         self.exchange_64_mode_on = self.var("exchange_64_mode_on", 1)
-        self.multi_bank_mode_on = self.var("multi_bank_mode_on", 1)        
+        self.multi_bank_mode_on = self.var("multi_bank_mode_on", 1)
 
         # ready_valid controller
         self.cycle_counter_en = self.var("cycle_counter_en", 1)
@@ -150,10 +150,10 @@ class GlbLoadDma_E64_MB(Generator):
         self.add_always(self.all_skid_empty_logic)
         self.add_always(self.all_skid_empty_muxed_logic)
 
-        # E64/mutli-bank control 
+        # E64/mutli-bank control
         self.wire(self.exchange_64_mode_on, self.cfg_exchange_64_mode[0])
         self.wire(self.multi_bank_mode_on, self.cfg_exchange_64_mode == self._params.exchange_64_multibank_mode)
-        
+
         # Current dma header
         self.current_dma_header = self.var("current_dma_header", self.header.cfg_load_dma_header_t)
         if self._params.queue_depth == 1:
@@ -281,8 +281,8 @@ class GlbLoadDma_E64_MB(Generator):
                             almost_full_diff=self.fifo_almost_full_diff,
                             almost_empty_diff=const(2, clog2(self.fifo_depth)))
 
-                # TODO: Using almost full here may cause issues 
-                # TODO: Maybe revisit this and make sure it isn't causing any unnecessary bubbles 
+                # TODO: Using almost full here may cause issues
+                # TODO: Maybe revisit this and make sure it isn't causing any unnecessary bubbles
                 self.wire(self.fifo_push_ready[i][packet_16], ~self.fifo_almost_full[i][packet_16])
                 self.wire(self.data_dma2fifo[i][packet_16], self.strm_data[i][packet_16])
 
@@ -296,7 +296,7 @@ class GlbLoadDma_E64_MB(Generator):
 
                 if (packet_16 == 0) & (i == 0):
                     self.wire(self.fifo_pop[i][packet_16], kts.ternary(self.multi_bank_mode_on, self.packet_128_pop,
-                                                                kts.ternary(self.exchange_64_mode_on, self.packet_64_pop[i], 
+                                                                kts.ternary(self.exchange_64_mode_on, self.packet_64_pop[i],
                                                                             self.fifo_pop_cond[i][packet_16])))
                 else:
                     self.wire(self.fifo_pop[i][packet_16], kts.ternary(self.multi_bank_mode_on, self.packet_128_pop, self.packet_64_pop[i]))
@@ -304,7 +304,7 @@ class GlbLoadDma_E64_MB(Generator):
             # Synchronization
             self.wire(self.packet_64_pop[i], self.fifo_pop_cond[i][0] & self.fifo_pop_cond[i][1] & self.fifo_pop_cond[i][2] & self.fifo_pop_cond[i][3])
             self.wire(self.packet_64_push_ready[i], self.fifo_push_ready[i][0] & self.fifo_push_ready[i][1] & self.fifo_push_ready[i][2] & self.fifo_push_ready[i][3])
-        
+
         # Synchonization
         self.wire(self.packet_128_pop, self.packet_64_pop[0] & self.packet_64_pop[1])
         self.wire(self.packet_128_push_ready, self.packet_64_push_ready[0] & self.packet_64_push_ready[1])
@@ -379,13 +379,13 @@ class GlbLoadDma_E64_MB(Generator):
 
     @ always_comb
     def iter_step_logic(self):
-        # Cycle_counter_en is a proxy for NOT in RV mode 
+        # Cycle_counter_en is a proxy for NOT in RV mode
         if self.cycle_counter_en:
             self.iter_step_valid = self.cycle_valid
         else:
-            # synchronization logic here 
+            # synchronization logic here
             self.iter_step_valid = kts.ternary(self.multi_bank_mode_on, self.strm_run & self.packet_128_push_ready,
-                                        kts.ternary(self.exchange_64_mode_on, self.strm_run & self.packet_64_push_ready[0], 
+                                        kts.ternary(self.exchange_64_mode_on, self.strm_run & self.packet_64_push_ready[0],
                                                     self.strm_run & self.fifo_push_ready[0][0]))
 
     @ always_ff((posedge, "clk"), (posedge, "reset"))
@@ -440,7 +440,7 @@ class GlbLoadDma_E64_MB(Generator):
         if (self.cfg_ld_dma_ctrl_mode == 0):
             self.ld_dma_start_pulse_next = 0
 
-        # ctrl_mode == 4 is emit flush only mode     
+        # ctrl_mode == 4 is emit flush only mode
         elif ((self.cfg_ld_dma_ctrl_mode == 1) | (self.cfg_ld_dma_ctrl_mode == 4)):
             self.ld_dma_start_pulse_next = (~self.strm_run) & self.ld_dma_start_pulse
 
@@ -567,25 +567,30 @@ class GlbLoadDma_E64_MB(Generator):
         self.bank_rdrq_rd_en = self.strm_rd_en_w & (self.is_first | (~self.is_cached))
         self.bank_rdrq_rd_addr = self.strm_rd_addr_w
 
+    # @ always_comb
+    # def rdrq_packet_logic(self):
+    #     if self.cfg_tile_connected_next | self.cfg_tile_connected_prev:
+    #         self.rdrq_packet_dma2bank_w = 0
+    #         self.rdrq_packet_dma2ring_w['rd_en'] = self.bank_rdrq_rd_en
+    #         self.rdrq_packet_dma2ring_w['rd_addr'] = self.bank_rdrq_rd_addr
+    #     else:
+    #         self.rdrq_packet_dma2bank_w['rd_en'] = self.bank_rdrq_rd_en
+    #         self.rdrq_packet_dma2bank_w['rd_addr'] = self.bank_rdrq_rd_addr
+    #         self.rdrq_packet_dma2ring_w = 0
+
     @ always_comb
     def rdrq_packet_logic(self):
-        if self.cfg_tile_connected_next | self.cfg_tile_connected_prev:
-            self.rdrq_packet_dma2bank_w = 0
-            self.rdrq_packet_dma2ring_w['rd_en'] = self.bank_rdrq_rd_en
-            self.rdrq_packet_dma2ring_w['rd_addr'] = self.bank_rdrq_rd_addr
-        else:
-            self.rdrq_packet_dma2bank_w['rd_en'] = self.bank_rdrq_rd_en
-            self.rdrq_packet_dma2bank_w['rd_addr'] = self.bank_rdrq_rd_addr
-            self.rdrq_packet_dma2ring_w = 0
+        self.rdrq_packet_dma2bank_w['rd_en'] = self.bank_rdrq_rd_en
+        self.rdrq_packet_dma2bank_w['rd_addr'] = self.bank_rdrq_rd_addr
 
     @ always_ff((posedge, "clk"), (posedge, "reset"))
     def rdrq_packet_ff(self):
         if self.reset:
             self.rdrq_packet_dma2bank = 0
-            self.rdrq_packet_dma2ring = 0
+            # self.rdrq_packet_dma2ring = 0
         else:
             self.rdrq_packet_dma2bank = self.rdrq_packet_dma2bank_w
-            self.rdrq_packet_dma2ring = self.rdrq_packet_dma2ring_w
+            # self.rdrq_packet_dma2ring = self.rdrq_packet_dma2ring_w
 
     def add_dma2bank_clk_en(self):
         self.clk_en_gen = GlbClkEnGen(cnt=self._params.tile2sram_rd_delay + self._params.rd_clk_en_margin)
@@ -600,28 +605,33 @@ class GlbLoadDma_E64_MB(Generator):
                        )
         self.wire(self.clk_en_dma2bank, self.dma2bank_clk_en)
 
+    # @ always_comb
+    # def rdrs_packet_logic(self):
+    #     #Not including multi-bank for ring path
+    #     self.rdrs_packet = 0
+    #     if self.cfg_tile_connected_next | self.cfg_tile_connected_prev:
+    #         self.rdrs_packet[0] = self.rdrs_packet_ring2dma
+    #     else:
+    #         self.rdrs_packet = self.rdrs_packet_bank2dma
+
+
     @ always_comb
     def rdrs_packet_logic(self):
-        #Not including multi-bank for ring path
-        self.rdrs_packet = 0
-        if self.cfg_tile_connected_next | self.cfg_tile_connected_prev:
-            self.rdrs_packet[0] = self.rdrs_packet_ring2dma
-        else:
-            self.rdrs_packet = self.rdrs_packet_bank2dma
+        self.rdrs_packet = self.rdrs_packet_bank2dma
 
     @ always_ff((posedge, "clk"), (posedge, "reset"))
     def bank_rdrs_data_cache_ff(self):
         if self.reset:
             self.bank_rdrs_data_cache_r = 0
         else:
-            # Kratos won't support this for loop. Hard wire for now. 
+            # Kratos won't support this for loop. Hard wire for now.
             # for i in range(self._params.cgra_per_glb):
             #     if self.rdrs_packet[i]['rd_data_valid']:
             #         self.bank_rdrs_data_cache_r[i] = self.rdrs_packet[i]['rd_data']
 
                 if self.rdrs_packet[0]['rd_data_valid']:
                     self.bank_rdrs_data_cache_r[0] = self.rdrs_packet[0]['rd_data']
-                
+
                 if self.rdrs_packet[1]['rd_data_valid']:
                     self.bank_rdrs_data_cache_r[1] = self.rdrs_packet[1]['rd_data']
 
@@ -630,8 +640,8 @@ class GlbLoadDma_E64_MB(Generator):
         # Assign strm_data[0]
         for i in range(self._params.cgra_per_glb):
             if self.exchange_64_mode_on:
-                self.strm_data[i][0] = self.bank_rdrs_data_cache_r[i][self._params.cgra_data_width - 1, 0] 
-            else: 
+                self.strm_data[i][0] = self.bank_rdrs_data_cache_r[i][self._params.cgra_data_width - 1, 0]
+            else:
                 if self.strm_data_sel == 0:
                     self.strm_data[i][0] = self.bank_rdrs_data_cache_r[i][self._params.cgra_data_width - 1, 0]
                 elif self.strm_data_sel == 1:
@@ -646,7 +656,7 @@ class GlbLoadDma_E64_MB(Generator):
                 else:
                     self.strm_data[i][0] = self.bank_rdrs_data_cache_r[i][self._params.cgra_data_width - 1, 0]
 
-            # Assign rest of strm_data packet 
+            # Assign rest of strm_data packet
             if self.exchange_64_mode_on:
                 self.strm_data[i][1] = self.bank_rdrs_data_cache_r[i][self._params.cgra_data_width * 2 - 1,
                                                                     self._params.cgra_data_width * 1]
