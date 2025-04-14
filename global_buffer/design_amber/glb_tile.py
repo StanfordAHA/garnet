@@ -615,50 +615,50 @@ class GlbTile(Generator):
             self.pcfg_rdrs_packet_e2w_esti = self.var("pcfg_rdrs_packet_e2w_esti", self.header.rdrs_packet_t)
             self.pcfg_rdrs_packet_w2e_esto = self.var("pcfg_rdrs_packet_w2e_esto", self.header.rdrs_packet_t)
 
-        for port, _ in self.header.wr_packet_ports:
-            self.wire(self.strm_wr_packet_w2e_wsti[port], self.strm_w2e_wsti_dict[port])
-        for port, _ in self.header.wr_packet_ports:
-            self.wire(self.strm_wr_packet_w2e_esto[port], self.strm_w2e_esto_dict[port])
-        for port, _ in self.header.wr_packet_ports:
-            self.wire(self.strm_wr_packet_e2w_esti[port], self.strm_e2w_esti_dict[port])
-        for port, _ in self.header.wr_packet_ports:
-            self.wire(self.strm_wr_packet_e2w_wsto[port], self.strm_e2w_wsto_dict[port])
+            for port, _ in self.header.wr_packet_ports:
+                self.wire(self.strm_wr_packet_w2e_wsti[port], self.strm_w2e_wsti_dict[port])
+            for port, _ in self.header.wr_packet_ports:
+                self.wire(self.strm_wr_packet_w2e_esto[port], self.strm_w2e_esto_dict[port])
+            for port, _ in self.header.wr_packet_ports:
+                self.wire(self.strm_wr_packet_e2w_esti[port], self.strm_e2w_esti_dict[port])
+            for port, _ in self.header.wr_packet_ports:
+                self.wire(self.strm_wr_packet_e2w_wsto[port], self.strm_e2w_wsto_dict[port])
 
-        for port, _ in self.header.rdrq_packet_ports:
-            self.wire(self.strm_rdrq_packet_w2e_wsti[port], self.strm_w2e_wsti_dict[port])
-        for port, _ in self.header.rdrq_packet_ports:
-            self.wire(self.strm_rdrq_packet_w2e_esto[port], self.strm_w2e_esto_dict[port])
-        for port, _ in self.header.rdrq_packet_ports:
-            self.wire(self.strm_rdrq_packet_e2w_esti[port], self.strm_e2w_esti_dict[port])
-        for port, _ in self.header.rdrq_packet_ports:
-            self.wire(self.strm_rdrq_packet_e2w_wsto[port], self.strm_e2w_wsto_dict[port])
+            for port, _ in self.header.rdrq_packet_ports:
+                self.wire(self.strm_rdrq_packet_w2e_wsti[port], self.strm_w2e_wsti_dict[port])
+            for port, _ in self.header.rdrq_packet_ports:
+                self.wire(self.strm_rdrq_packet_w2e_esto[port], self.strm_w2e_esto_dict[port])
+            for port, _ in self.header.rdrq_packet_ports:
+                self.wire(self.strm_rdrq_packet_e2w_esti[port], self.strm_e2w_esti_dict[port])
+            for port, _ in self.header.rdrq_packet_ports:
+                self.wire(self.strm_rdrq_packet_e2w_wsto[port], self.strm_e2w_wsto_dict[port])
 
-        for port, _ in self.header.rdrs_packet_ports:
-            self.wire(self.strm_rdrs_packet_e2w_wsto[port], self.strm_e2w_wsto_dict[port])
-        for port, _ in self.header.rdrs_packet_ports:
-            self.wire(self.strm_rdrs_packet_e2w_esti[port], self.strm_e2w_esti_dict[port])
-        for port, _ in self.header.rdrs_packet_ports:
-            self.wire(self.strm_rdrs_packet_w2e_wsti[port], self.strm_w2e_wsti_dict[port])
-        for port, _ in self.header.rdrs_packet_ports:
-            self.wire(self.strm_rdrs_packet_w2e_esto[port], self.strm_w2e_esto_dict[port])
+            for port, _ in self.header.rdrs_packet_ports:
+                self.wire(self.strm_rdrs_packet_e2w_wsto[port], self.strm_e2w_wsto_dict[port])
+            for port, _ in self.header.rdrs_packet_ports:
+                self.wire(self.strm_rdrs_packet_e2w_esti[port], self.strm_e2w_esti_dict[port])
+            for port, _ in self.header.rdrs_packet_ports:
+                self.wire(self.strm_rdrs_packet_w2e_wsti[port], self.strm_w2e_wsti_dict[port])
+            for port, _ in self.header.rdrs_packet_ports:
+                self.wire(self.strm_rdrs_packet_w2e_esto[port], self.strm_w2e_esto_dict[port])
 
-        for port, _ in self.header.rdrq_packet_ports:
-            self.wire(self.pcfg_rdrq_packet_w2e_wsti[port], self.pcfg_w2e_wsti_dict[port])
-        for port, _ in self.header.rdrq_packet_ports:
-            self.wire(self.pcfg_rdrq_packet_w2e_esto[port], self.pcfg_w2e_esto_dict[port])
-        for port, _ in self.header.rdrq_packet_ports:
-            self.wire(self.pcfg_rdrq_packet_e2w_esti[port], self.pcfg_e2w_esti_dict[port])
-        for port, _ in self.header.rdrq_packet_ports:
-            self.wire(self.pcfg_rdrq_packet_e2w_wsto[port], self.pcfg_e2w_wsto_dict[port])
+            for port, _ in self.header.rdrq_packet_ports:
+                self.wire(self.pcfg_rdrq_packet_w2e_wsti[port], self.pcfg_w2e_wsti_dict[port])
+            for port, _ in self.header.rdrq_packet_ports:
+                self.wire(self.pcfg_rdrq_packet_w2e_esto[port], self.pcfg_w2e_esto_dict[port])
+            for port, _ in self.header.rdrq_packet_ports:
+                self.wire(self.pcfg_rdrq_packet_e2w_esti[port], self.pcfg_e2w_esti_dict[port])
+            for port, _ in self.header.rdrq_packet_ports:
+                self.wire(self.pcfg_rdrq_packet_e2w_wsto[port], self.pcfg_e2w_wsto_dict[port])
 
-        for port, _ in self.header.rdrs_packet_ports:
-            self.wire(self.pcfg_rdrs_packet_e2w_wsto[port], self.pcfg_e2w_wsto_dict[port])
-        for port, _ in self.header.rdrs_packet_ports:
-            self.wire(self.pcfg_rdrs_packet_e2w_esti[port], self.pcfg_e2w_esti_dict[port])
-        for port, _ in self.header.rdrs_packet_ports:
-            self.wire(self.pcfg_rdrs_packet_w2e_wsti[port], self.pcfg_w2e_wsti_dict[port])
-        for port, _ in self.header.rdrs_packet_ports:
-            self.wire(self.pcfg_rdrs_packet_w2e_esto[port], self.pcfg_w2e_esto_dict[port])
+            for port, _ in self.header.rdrs_packet_ports:
+                self.wire(self.pcfg_rdrs_packet_e2w_wsto[port], self.pcfg_e2w_wsto_dict[port])
+            for port, _ in self.header.rdrs_packet_ports:
+                self.wire(self.pcfg_rdrs_packet_e2w_esti[port], self.pcfg_e2w_esti_dict[port])
+            for port, _ in self.header.rdrs_packet_ports:
+                self.wire(self.pcfg_rdrs_packet_w2e_wsti[port], self.pcfg_w2e_wsti_dict[port])
+            for port, _ in self.header.rdrs_packet_ports:
+                self.wire(self.pcfg_rdrs_packet_w2e_esto[port], self.pcfg_w2e_esto_dict[port])
 
     def pcfg_wiring(self):
         cgra_cfg_g2f_w = self.var("cgra_cfg_g2f_cfg_w", self.header.cgra_cfg_t,
