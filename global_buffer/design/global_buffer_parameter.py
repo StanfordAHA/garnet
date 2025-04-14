@@ -28,7 +28,7 @@ class GlobalBufferParams:
     @property
     def bank_byte_offset(self):
         return math.ceil(math.log(self.bank_data_width / 8, 2))
-    
+
     @property
     def mu_word_byte_offset(self):
         return math.ceil(math.log(self.mu_word_width / 8, 2))
@@ -36,20 +36,20 @@ class GlobalBufferParams:
     @property
     def glb_addr_width(self):
         return self.bank_addr_width + self.bank_sel_addr_width + self.tile_sel_addr_width
-    
+
     @property
     def mu_addr_width(self):
         return self.glb_addr_width
         # return self.glb_addr_width - math.ceil(math.log(self.mu_word_num_tiles, 2)) - self.bank_sel_addr_width
-    
+
     @property
     def mu_rd_max_num_glb_reqs(self):
-        return self.mu_rd_max_burst_size // (self.mu_word_width // 8) 
+        return self.mu_rd_max_burst_size // (self.mu_word_width // 8)
 
     @property
     def mu_glb_rd_latency(self):
         return ((2*self.num_glb_tiles) - 1) + self.mu_rd_addr2tile0_delay + self.mu_sw2bank_mux_delay + self.bankmux2sram_rd_delay  + self.mu_sw2track_out_delay + self.mu_rd_data_tile0_2out_delay
-    
+
     @property
     def mu_tl_resp_fifo_depth(self):
         return self.mu_tl_req_fifo_depth * self.mu_rd_max_num_glb_reqs
@@ -106,11 +106,12 @@ class GlobalBufferParams:
     cgra_axi_data_width: int = 32
     cgra_cfg_addr_width: int = 32
     cgra_cfg_data_width: int = 32
-   
+
     # zircon parameters
     include_E64_hw: bool = False
     include_multi_bank_hw: bool = False
     include_mu_glb_hw: bool = False
+    include_glb_ring_switch: bool = False
     mu_word_num_tiles: int = 2
     mu_switch_num_tracks: int = 4
     mu_word_width: int = 256
@@ -259,6 +260,7 @@ def gen_global_buffer_params(**kwargs):
     include_E64_hw = kwargs.pop('include_E64_hw', False)
     include_multi_bank_hw = kwargs.pop('include_multi_bank_hw', False)
     include_mu_glb_hw = kwargs.pop('include_mu_glb_hw', False)
+    include_glb_ring_switch = kwargs.pop('include_glb_ring_switch', False)
 
     if config_port_pipeline is True:
         config_port_pipeline_depth = 1
@@ -300,8 +302,9 @@ def gen_global_buffer_params(**kwargs):
                                 config_port_pipeline_depth=config_port_pipeline_depth,
                                 include_E64_hw=include_E64_hw,
                                 include_multi_bank_hw=include_multi_bank_hw,
-                                include_mu_glb_hw=include_mu_glb_hw)
-                                                              
+                                include_mu_glb_hw=include_mu_glb_hw,
+                                include_glb_ring_switch=include_glb_ring_switch)
+
     return params
 
 

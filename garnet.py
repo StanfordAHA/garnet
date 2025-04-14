@@ -176,7 +176,7 @@ class Garnet(Generator):
                 mu2cgra_valid=magma.In(magma.Bit),
                 cgra2mu_ready=magma.Out(magma.Bit)
             )
-            
+
             if self.include_mu_glb_hw:
                 self.add_ports(
                     mu_tl_addr_in=magma.In(magma.Bits[glb_params.mu_addr_width]),
@@ -234,7 +234,7 @@ class Garnet(Generator):
             self.wire(self.convert(self.cgra2mu_ready_and.ports.O, magma.bit), self.ports.cgra2mu_ready)
 
 
-            # Matrix unit <-> GLB ports connection 
+            # Matrix unit <-> GLB ports connection
             if self.include_mu_glb_hw:
                 self.wire(self.global_buffer.ports.mu_tl_addr_in, self.ports.mu_tl_addr_in)
                 self.wire(self.global_buffer.ports.mu_tl_rq_in_vld[0], self.ports.mu_tl_rq_in_vld)
@@ -912,6 +912,7 @@ def parse_args():
     parser.add_argument('--include-multi-bank-hw', action="store_true")
     parser.add_argument('--include-mu-glb-hw', action="store_true")
     parser.add_argument('--use-non-split-fifos', action="store_true")
+    parser.add_argument('--include-glb-ring-switch', action="store_true")
 
     # Daemon choices are maybe ['help', 'launch', 'use', 'kill', 'force', 'status', 'wait']
     parser.add_argument('--daemon', type=str, choices=GarnetDaemon.choices, default=None)
@@ -970,8 +971,9 @@ def parse_args():
         config_port_pipeline=args.config_port_pipeline,
         include_E64_hw=args.include_E64_hw,
         include_multi_bank_hw=args.include_multi_bank_hw,
-        include_mu_glb_hw=args.include_mu_glb_hw)
-        
+        include_mu_glb_hw=args.include_mu_glb_hw,
+        include_glb_ring_switch=args.include_glb_ring_switch)
+
 
     # for a in vars(args).items(): print(f'arg {a} has type {type(a)}')
     return args, io_sides

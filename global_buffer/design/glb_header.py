@@ -7,19 +7,18 @@ class GlbHeader():
     def __init__(self, _params: GlobalBufferParams):
         self._params = _params
 
-        # self.cfg_data_network_t = PackedStruct("cfg_data_network_t",
-        #                                        [("tile_connected", 1),
-        #                                         ("latency", self._params.latency_width)])
-
-        self.cfg_data_network_t = PackedStruct("cfg_data_network_t",
-                                               [("latency", self._params.latency_width)])
-
-        # self.cfg_pcfg_network_t = PackedStruct("cfg_pcfg_network_t",
-        #                                        [("tile_connected", 1),
-        #                                         ("latency", self._params.pcfg_latency_width)])
-
-        self.cfg_pcfg_network_t = PackedStruct("cfg_pcfg_network_t",
-                                               [("latency", self._params.pcfg_latency_width)])
+        if self._params.include_glb_ring_switch:
+            self.cfg_data_network_t = PackedStruct("cfg_data_network_t",
+                                                   [("tile_connected", 1),
+                                                    ("latency", self._params.latency_width)])
+            self.cfg_pcfg_network_t = PackedStruct("cfg_pcfg_network_t",
+                                                   [("tile_connected", 1),
+                                                    ("latency", self._params.pcfg_latency_width)])
+        else:
+            self.cfg_data_network_t = PackedStruct("cfg_data_network_t",
+                                                [("latency", self._params.latency_width)])
+            self.cfg_pcfg_network_t = PackedStruct("cfg_pcfg_network_t",
+                                                [("latency", self._params.pcfg_latency_width)])
 
         if os.getenv('WHICH_SOC') == "amber":
             self.cfg_store_dma_ctrl_t = PackedStruct("store_dma_ctrl_t",

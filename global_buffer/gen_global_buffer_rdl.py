@@ -162,19 +162,22 @@ class Rdl:
 def gen_global_buffer_rdl(name, params: GlobalBufferParams):
     addr_map = AddrMap(name)
 
-    # Data Network Ctrl Register
-    # data_network_ctrl = Reg("data_network_ctrl")
-    # data_network_ctrl.add_child(Field("connected", 1))
-    # addr_map.add_child(data_network_ctrl)
+
+    if params.include_glb_ring_switch:
+        # Data Network Ctrl Register
+        data_network_ctrl = Reg("data_network_ctrl")
+        data_network_ctrl.add_child(Field("connected", 1))
+        addr_map.add_child(data_network_ctrl)
 
     data_network_latency = Reg("data_network_latency")
     data_network_latency.add_child(Field("value", params.latency_width))
     addr_map.add_child(data_network_latency)
 
-    # Pcfg Network Ctrl Register
-    # pcfg_network_ctrl = Reg("pcfg_network_ctrl")
-    # pcfg_network_ctrl.add_child(Field("connected", 1))
-    # addr_map.add_child(pcfg_network_ctrl)
+    if params.include_glb_ring_switch:
+        # Pcfg Network Ctrl Register
+        pcfg_network_ctrl = Reg("pcfg_network_ctrl")
+        pcfg_network_ctrl.add_child(Field("connected", 1))
+        addr_map.add_child(pcfg_network_ctrl)
 
     pcfg_network_latency = Reg("pcfg_network_latency")
     pcfg_network_latency.add_child(Field("value", params.pcfg_latency_width))

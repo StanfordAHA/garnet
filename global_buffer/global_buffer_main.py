@@ -36,7 +36,8 @@ def main():
     parser.add_argument("--include_E64_hw", action="store_true")
     parser.add_argument("--include_multi_bank_hw", action="store_true")
     parser.add_argument("--include_mu_glb_hw", action="store_true")
-    
+    parser.add_argument("--include_glb_ring_switch", action="store_true")
+
 
     args = parser.parse_args()
     cfg_port_pipeline = not args.no_cfg_port_pipeline
@@ -55,7 +56,8 @@ def main():
                                       config_port_pipeline=cfg_port_pipeline,
                                       include_E64_hw=args.include_E64_hw,
                                       include_multi_bank_hw=args.include_multi_bank_hw,
-                                      include_mu_glb_hw=args.include_mu_glb_hw)
+                                      include_mu_glb_hw=args.include_mu_glb_hw,
+                                      include_glb_ring_switch=args.include_glb_ring_switch)
 
     glb = GlobalBuffer(_params=params)
 

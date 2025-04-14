@@ -30,10 +30,12 @@ class GlbStoreDma_E64_MB(Generator):
         self.ctrl_f2g = self.input("ctrl_f2g", 1, size=self._params.cgra_per_glb, packed=True)
 
         self.wr_packet_dma2bank = self.output("wr_packet_dma2bank", self.header.wr_packet_t, size=self._params.cgra_per_glb)
-        # self.wr_packet_dma2ring = self.output("wr_packet_dma2ring", self.header.wr_packet_t)
 
-        # self.cfg_tile_connected_prev = self.input("cfg_tile_connected_prev", 1)
-        # self.cfg_tile_connected_next = self.input("cfg_tile_connected_next", 1)
+        if self._params.include_glb_ring_switch:
+            self.wr_packet_dma2ring = self.output("wr_packet_dma2ring", self.header.wr_packet_t)
+            self.cfg_tile_connected_prev = self.input("cfg_tile_connected_prev", 1)
+            self.cfg_tile_connected_next = self.input("cfg_tile_connected_next", 1)
+
         self.cfg_st_dma_num_repeat = self.input("cfg_st_dma_num_repeat", clog2(self._params.queue_depth) + 1)
         self.cfg_st_dma_ctrl_mode = self.input("cfg_st_dma_ctrl_mode", 2)
         self.cfg_st_dma_ctrl_valid_mode = self.input("cfg_st_dma_ctrl_valid_mode", 2)
@@ -56,7 +58,8 @@ class GlbStoreDma_E64_MB(Generator):
 
         # local variables
         self.wr_packet_dma2bank_w = self.var("wr_packet_dma2bank_w", self.header.wr_packet_t, size=self._params.cgra_per_glb)
-        # self.wr_packet_dma2ring_w = self.var("wr_packet_dma2ring_w", self.header.wr_packet_t)
+        if self._params.include_glb_ring_switch:
+            self.wr_packet_dma2ring_w = self.var("wr_packet_dma2ring_w", self.header.wr_packet_t)
         self.data_f2g_r = self.var("data_f2g_r", width=self._params.cgra_data_width,
                                    size=[self._params.cgra_per_glb, self.num_packets], packed=True)
         self.data_f2g_vld_r = self.var("data_f2g_vld_r", 1, size=[self._params.cgra_per_glb, self.num_packets], packed=True)
@@ -678,58 +681,58 @@ class GlbStoreDma_E64_MB(Generator):
         self.bank_wr_en = ((self.strm_wr_en_w & (~self.bank_addr_match) & (~self.is_first)) | self.is_last)
         self.bank_wr_addr = self.last_strm_wr_addr_r
 
-    # @always_comb
-    # def wr_packet_logic(self):
-    #     if self.cfg_tile_connected_next | self.cfg_tile_connected_prev:
-    #         self.wr_packet_dma2bank_w = 0
-    #         self.wr_packet_dma2ring_w['wr_en'] = self.bank_wr_en
-    #         self.wr_packet_dma2ring_w['wr_strb'] = self.bank_wr_strb_cache_r
-    #         self.wr_packet_dma2ring_w['wr_data'] = self.bank_wr_data_cache_r[0] #Not including multi-bank for ring path
-    #         self.wr_packet_dma2ring_w['wr_addr'] = self.bank_wr_addr
-    #     else:
-    #         self.wr_packet_dma2bank_w = 0
-
-    #         self.wr_packet_dma2bank_w[0]['wr_en'] = self.bank_wr_en
-    #         self.wr_packet_dma2bank_w[0]['wr_strb'] = self.bank_wr_strb_cache_r
-    #         self.wr_packet_dma2bank_w[0]['wr_data'] = self.bank_wr_data_cache_r[0]
-    #         self.wr_packet_dma2bank_w[0]['wr_addr'] = self.bank_wr_addr
-
-    #         if self.multi_bank_mode_on:
-    #             # Kratos won't support this for loop. Hard wire for now.
-    #             #for i in range(1, self._params.cgra_per_glb):
-    #             self.wr_packet_dma2bank_w[1]['wr_en'] = self.bank_wr_en
-    #             self.wr_packet_dma2bank_w[1]['wr_strb'] = self.bank_wr_strb_cache_r
-    #             self.wr_packet_dma2bank_w[1]['wr_data'] = self.bank_wr_data_cache_r[1]
-    #             self.wr_packet_dma2bank_w[1]['wr_addr'] = self.bank_wr_addr
-
-    #         self.wr_packet_dma2ring_w = 0
-
     @always_comb
     def wr_packet_logic(self):
-        self.wr_packet_dma2bank_w = 0
+        if self._params.include_glb_ring_switch:
+            if self.cfg_tile_connected_next | self.cfg_tile_connected_prev:
+                self.wr_packet_dma2bank_w = 0
+                self.wr_packet_dma2ring_w['wr_en'] = self.bank_wr_en
+                self.wr_packet_dma2ring_w['wr_strb'] = self.bank_wr_strb_cache_r
+                self.wr_packet_dma2ring_w['wr_data'] = self.bank_wr_data_cache_r[0] #Not including multi-bank for ring path
+                self.wr_packet_dma2ring_w['wr_addr'] = self.bank_wr_addr
+            else:
+                self.wr_packet_dma2bank_w = 0
 
-        self.wr_packet_dma2bank_w[0]['wr_en'] = self.bank_wr_en
-        self.wr_packet_dma2bank_w[0]['wr_strb'] = self.bank_wr_strb_cache_r
-        self.wr_packet_dma2bank_w[0]['wr_data'] = self.bank_wr_data_cache_r[0]
-        self.wr_packet_dma2bank_w[0]['wr_addr'] = self.bank_wr_addr
+                self.wr_packet_dma2bank_w[0]['wr_en'] = self.bank_wr_en
+                self.wr_packet_dma2bank_w[0]['wr_strb'] = self.bank_wr_strb_cache_r
+                self.wr_packet_dma2bank_w[0]['wr_data'] = self.bank_wr_data_cache_r[0]
+                self.wr_packet_dma2bank_w[0]['wr_addr'] = self.bank_wr_addr
 
-        if self.multi_bank_mode_on:
-            # Kratos won't support this for loop. Hard wire for now.
-            #for i in range(1, self._params.cgra_per_glb):
-            self.wr_packet_dma2bank_w[1]['wr_en'] = self.bank_wr_en
-            self.wr_packet_dma2bank_w[1]['wr_strb'] = self.bank_wr_strb_cache_r
-            self.wr_packet_dma2bank_w[1]['wr_data'] = self.bank_wr_data_cache_r[1]
-            self.wr_packet_dma2bank_w[1]['wr_addr'] = self.bank_wr_addr
+                if self.multi_bank_mode_on:
+                    # Kratos won't support this for loop. Hard wire for now.
+                    #for i in range(1, self._params.cgra_per_glb):
+                    self.wr_packet_dma2bank_w[1]['wr_en'] = self.bank_wr_en
+                    self.wr_packet_dma2bank_w[1]['wr_strb'] = self.bank_wr_strb_cache_r
+                    self.wr_packet_dma2bank_w[1]['wr_data'] = self.bank_wr_data_cache_r[1]
+                    self.wr_packet_dma2bank_w[1]['wr_addr'] = self.bank_wr_addr
 
+                self.wr_packet_dma2ring_w = 0
+        else:
+            self.wr_packet_dma2bank_w = 0
+
+            self.wr_packet_dma2bank_w[0]['wr_en'] = self.bank_wr_en
+            self.wr_packet_dma2bank_w[0]['wr_strb'] = self.bank_wr_strb_cache_r
+            self.wr_packet_dma2bank_w[0]['wr_data'] = self.bank_wr_data_cache_r[0]
+            self.wr_packet_dma2bank_w[0]['wr_addr'] = self.bank_wr_addr
+
+            if self.multi_bank_mode_on:
+                # Kratos won't support this for loop. Hard wire for now.
+                #for i in range(1, self._params.cgra_per_glb):
+                self.wr_packet_dma2bank_w[1]['wr_en'] = self.bank_wr_en
+                self.wr_packet_dma2bank_w[1]['wr_strb'] = self.bank_wr_strb_cache_r
+                self.wr_packet_dma2bank_w[1]['wr_data'] = self.bank_wr_data_cache_r[1]
+                self.wr_packet_dma2bank_w[1]['wr_addr'] = self.bank_wr_addr
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def wr_packet_ff(self):
         if self.reset:
             self.wr_packet_dma2bank = 0
-            # self.wr_packet_dma2ring = 0
+            if self._params.include_glb_ring_switch:
+                self.wr_packet_dma2ring = 0
         else:
             self.wr_packet_dma2bank = self.wr_packet_dma2bank_w
-            # self.wr_packet_dma2ring = self.wr_packet_dma2ring_w
+            if self._params.include_glb_ring_switch:
+                self.wr_packet_dma2ring = self.wr_packet_dma2ring_w
 
     def add_dma2bank_clk_en(self):
         self.clk_en_gen = GlbClkEnGen(cnt=self._params.tile2sram_wr_delay + self._params.wr_clk_en_margin)
