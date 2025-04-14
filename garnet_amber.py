@@ -541,6 +541,7 @@ def main():
     parser.add_argument("--sb-option", type=str, default="Imran")
     parser.add_argument("--pipeline-regs-density", nargs="+", type=int, default=None)
     parser.add_argument("--port-conn-option", nargs="+", type=int, default=None)
+    parser.add_argument('--exclude-glb-ring-switch', action="store_true")
     args = parser.parse_args()
 
     if not args.interconnect_only:
@@ -553,6 +554,8 @@ def main():
     if args.pe:
         arch = read_arch(args.pe)
         pe_fc = wrapped_peak_class(arch, debug=True)
+
+    include_glb_ring_switch = not(args.exclude_glb_ring_switch)
     glb_params = gen_global_buffer_params(num_glb_tiles=args.width // 2,
                                           num_cgra_cols=args.width,
                                           # NOTE: We assume num_prr is same as num_glb_tiles
@@ -562,7 +565,8 @@ def main():
                                           cfg_addr_width=32,
                                           cfg_data_width=32,
                                           cgra_axi_addr_width=13,
-                                          axi_data_width=32)
+                                          axi_data_width=32,
+                                          include_glb_ring_switch=include_glb_ring_switch)
 
     garnet = Garnet(width=args.width, height=args.height,
                     glb_params=glb_params,
