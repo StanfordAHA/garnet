@@ -52,8 +52,8 @@ class GlobalBuffer(Generator):
             self.mu_tl_source_out = self.output("mu_tl_source_out", self._params.mu_tl_source_width)
             self.mu_tl_opcode_out = self.output("mu_tl_opcode_out", self._params.mu_tl_opcode_width)
             self.mu_tl_data_out = self.output("mu_tl_data_out", self._params.mu_word_width)
-            self.mu_tl_data_out_vld = self.output("mu_tl_data_out_vld", 1)
-            self.mu_tl_data_out_rdy = self.input("mu_tl_data_out_rdy", 1)
+            self.mu_tl_resp_out_vld = self.output("mu_tl_resp_out_vld", 1)
+            self.mu_tl_resp_out_rdy = self.input("mu_tl_resp_out_rdy", 1)
 
 
         self.if_cfg_wr_en = self.input("if_cfg_wr_en", 1)
@@ -333,8 +333,8 @@ class GlobalBuffer(Generator):
                            source_out=self.mu_tl_source_out,
                            opcode_out=self.mu_tl_opcode_out,
                            rd_data_out=self.mu_tl_data_out,
-                           rd_data_out_vld=self.mu_tl_data_out_vld,
-                           rd_data_out_rdy=self.mu_tl_data_out_rdy)
+                           resp_out_vld=self.mu_tl_resp_out_vld,
+                           resp_out_rdy=self.mu_tl_resp_out_rdy)
 
         self.wire(self.if_proc_list[-1].rd_data, 0)
         self.wire(self.if_proc_list[-1].rd_data_valid, 0)

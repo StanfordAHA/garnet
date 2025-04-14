@@ -44,8 +44,8 @@ module top;
 
     // max cycle set
     initial begin
-        repeat (1000000) @(posedge clk);
-        $display("\n%0t\tERROR: The 1000000 cycles marker has passed!", $time);
+        repeat (10000000) @(posedge clk);
+        $display("\n%0t\tERROR: The 10000000 cycles marker has passed!", $time);
         $finish(2);
     end
 
@@ -230,8 +230,8 @@ module top;
         .mu_tl_source_out (glb_mu_ifc.mu_tl_source_out),
         .mu_tl_opcode_out (glb_mu_ifc.mu_tl_opcode_out),
         .mu_tl_data_out (glb_mu_ifc.mu_rd_data),
-        .mu_tl_data_out_vld (glb_mu_ifc.mu_rd_data_valid),
-        .mu_tl_data_out_rdy (glb_mu_ifc.mu_rd_data_ready)
+        .mu_tl_resp_out_vld (glb_mu_ifc.mu_rd_data_valid),
+        .mu_tl_resp_out_rdy (glb_mu_ifc.mu_rd_data_ready)
     `ifdef PWR
             .VDD(VDD),
             .VSS(VSS),

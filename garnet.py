@@ -189,8 +189,8 @@ class Garnet(Generator):
                     mu_tl_opcode_out=magma.Out(magma.Bits[glb_params.mu_tl_opcode_width]),
                     mu_tl_source_out=magma.Out(magma.Bits[glb_params.mu_tl_source_width]),
                     mu_tl_data_out=magma.Out(magma.Bits[glb_params.mu_word_width]),
-                    mu_tl_data_out_vld=magma.Out(magma.Bit),
-                    mu_tl_data_out_rdy=magma.In(magma.Bit)
+                    mu_tl_resp_out_vld=magma.Out(magma.Bit),
+                    mu_tl_resp_out_rdy=magma.In(magma.Bit)
                 )
 
             # Matrix unit <-> interconnnect ports connection
@@ -233,7 +233,6 @@ class Garnet(Generator):
 
             self.wire(self.convert(self.cgra2mu_ready_and.ports.O, magma.bit), self.ports.cgra2mu_ready)
 
-
             # Matrix unit <-> GLB ports connection
             if self.include_mu_glb_hw:
                 self.wire(self.global_buffer.ports.mu_tl_addr_in, self.ports.mu_tl_addr_in)
@@ -246,8 +245,8 @@ class Garnet(Generator):
                 self.wire(self.ports.mu_tl_opcode_out, self.global_buffer.ports.mu_tl_opcode_out)
                 self.wire(self.ports.mu_tl_source_out, self.global_buffer.ports.mu_tl_source_out)
                 self.wire(self.ports.mu_tl_data_out, self.global_buffer.ports.mu_tl_data_out)
-                self.wire(self.ports.mu_tl_data_out_vld, self.global_buffer.ports.mu_tl_data_out_vld[0])
-                self.wire(self.ports.mu_tl_data_out_rdy, self.global_buffer.ports.mu_tl_data_out_rdy[0])
+                self.wire(self.ports.mu_tl_resp_out_vld, self.global_buffer.ports.mu_tl_resp_out_vld[0])
+                self.wire(self.ports.mu_tl_resp_out_rdy, self.global_buffer.ports.mu_tl_resp_out_rdy[0])
 
         # top <-> global controller ports connection
         self.wire(self.ports.clk_in, self.global_controller.ports.clk_in)
