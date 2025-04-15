@@ -113,13 +113,15 @@ class GlbCfg(Generator):
     def wire_config_signals(self):
         self.wire(self.gclk, self.glb_pio_wrapper.ports["clk"])
         self.wire(self.reset, self.glb_pio_wrapper.ports["reset"])
-        self.wire(self.cfg_data_network['tile_connected'],
-                  self.glb_pio_wrapper.ports["l2h_data_network_ctrl_connected_r"])
+        if self._params.include_glb_ring_switch:
+            self.wire(self.cfg_data_network['tile_connected'],
+                      self.glb_pio_wrapper.ports["l2h_data_network_ctrl_connected_r"])
         self.wire(self.cfg_data_network['latency'],
                   self.glb_pio_wrapper.ports["l2h_data_network_latency_value_r"])
 
-        self.wire(self.cfg_pcfg_network['tile_connected'],
-                  self.glb_pio_wrapper.ports["l2h_pcfg_network_ctrl_connected_r"])
+        if self._params.include_glb_ring_switch:
+            self.wire(self.cfg_pcfg_network['tile_connected'],
+                      self.glb_pio_wrapper.ports["l2h_pcfg_network_ctrl_connected_r"])
         self.wire(self.cfg_pcfg_network['latency'],
                   self.glb_pio_wrapper.ports["l2h_pcfg_network_latency_value_r"])
 

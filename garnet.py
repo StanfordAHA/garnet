@@ -911,6 +911,7 @@ def parse_args():
     parser.add_argument('--include-multi-bank-hw', action="store_true")
     parser.add_argument('--include-mu-glb-hw', action="store_true")
     parser.add_argument('--use-non-split-fifos', action="store_true")
+    parser.add_argument('--exclude-glb-ring-switch', action="store_true")
 
     # Daemon choices are maybe ['help', 'launch', 'use', 'kill', 'force', 'status', 'wait']
     parser.add_argument('--daemon', type=str, choices=GarnetDaemon.choices, default=None)
@@ -952,6 +953,7 @@ def parse_args():
     if IOSide.West in io_sides:
         num_cgra_cols_including_io += 1
 
+    include_glb_ring_switch = not(args.exclude_glb_ring_switch)
     args.glb_params = gen_global_buffer_params(
         num_glb_tiles=args.width // 2,
         num_cgra_cols=args.width,
@@ -969,7 +971,9 @@ def parse_args():
         config_port_pipeline=args.config_port_pipeline,
         include_E64_hw=args.include_E64_hw,
         include_multi_bank_hw=args.include_multi_bank_hw,
-        include_mu_glb_hw=args.include_mu_glb_hw)
+        include_mu_glb_hw=args.include_mu_glb_hw,
+        include_glb_ring_switch=include_glb_ring_switch)
+
 
     # for a in vars(args).items(): print(f'arg {a} has type {type(a)}')
     return args, io_sides

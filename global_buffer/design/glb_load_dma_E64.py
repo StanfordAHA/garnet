@@ -33,12 +33,14 @@ class GlbLoadDma_E64(Generator):
         self.data_flush = self.output("data_flush", 1)
 
         self.rdrq_packet_dma2bank = self.output("rdrq_packet_dma2bank", self.header.rdrq_packet_t)
-        self.rdrq_packet_dma2ring = self.output("rdrq_packet_dma2ring", self.header.rdrq_packet_t)
         self.rdrs_packet_bank2dma = self.input("rdrs_packet_bank2dma", self.header.rdrs_packet_t)
-        self.rdrs_packet_ring2dma = self.input("rdrs_packet_ring2dma", self.header.rdrs_packet_t)
+        if self._params.include_glb_ring_switch:
+            self.rdrq_packet_dma2ring = self.output("rdrq_packet_dma2ring", self.header.rdrq_packet_t)
+            self.rdrs_packet_ring2dma = self.input("rdrs_packet_ring2dma", self.header.rdrs_packet_t)
 
-        self.cfg_tile_connected_prev = self.input("cfg_tile_connected_prev", 1)
-        self.cfg_tile_connected_next = self.input("cfg_tile_connected_next", 1)
+            self.cfg_tile_connected_prev = self.input("cfg_tile_connected_prev", 1)
+            self.cfg_tile_connected_next = self.input("cfg_tile_connected_next", 1)
+
         self.cfg_ld_dma_num_repeat = self.input("cfg_ld_dma_num_repeat", clog2(self._params.queue_depth) + 1)
         self.cfg_ld_dma_ctrl_valid_mode = self.input("cfg_ld_dma_ctrl_valid_mode", 2)
         self.cfg_ld_dma_ctrl_flush_mode = self.input("cfg_ld_dma_ctrl_flush_mode", 1)
@@ -59,7 +61,8 @@ class GlbLoadDma_E64(Generator):
         # local variables
         self.data_flush_w = self.var("data_flush_w", 1)
         self.rdrq_packet_dma2bank_w = self.var("rdrq_packet_dma2bank_w", self.header.rdrq_packet_t)
-        self.rdrq_packet_dma2ring_w = self.var("rdrq_packet_dma2ring_w", self.header.rdrq_packet_t)
+        if self._params.include_glb_ring_switch:
+            self.rdrq_packet_dma2ring_w = self.var("rdrq_packet_dma2ring_w", self.header.rdrq_packet_t)
         self.rdrs_packet = self.var("rdrs_packet", self.header.rdrs_packet_t)
         self.data_g2f_w = self.var("data_g2f_w", width=self._params.cgra_data_width,
                                    size=self._params.cgra_per_glb, packed=True)
@@ -271,8 +274,8 @@ class GlbLoadDma_E64(Generator):
                         almost_full_diff=self.fifo_almost_full_diff,
                         almost_empty_diff=const(2, clog2(self.fifo_depth)))
 
-            # TODO: Using almost full here may cause issues 
-            # TODO: Maybe revisit this and make sure it isn't causing any unnecessary bubbles 
+            # TODO: Using almost full here may cause issues
+            # TODO: Maybe revisit this and make sure it isn't causing any unnecessary bubbles
             self.wire(self.fifo_push_ready[packet_16], ~self.fifo_almost_full[packet_16])
             self.wire(self.data_dma2fifo[packet_16], self.strm_data[packet_16])
 
@@ -357,11 +360,11 @@ class GlbLoadDma_E64(Generator):
 
     @ always_comb
     def iter_step_logic(self):
-        # Cycle_counter_en is a proxy for NOT in RV mode 
+        # Cycle_counter_en is a proxy for NOT in RV mode
         if self.cycle_counter_en:
             self.iter_step_valid = self.cycle_valid
         else:
-            # synchronization logic here 
+            # synchronization logic here
             self.iter_step_valid = kts.ternary(self.cfg_exchange_64_mode, self.strm_run & self.packet_64_push_ready, self.strm_run & self.fifo_push_ready[0])
 
     @ always_ff((posedge, "clk"), (posedge, "reset"))
@@ -416,7 +419,7 @@ class GlbLoadDma_E64(Generator):
         if (self.cfg_ld_dma_ctrl_mode == 0):
             self.ld_dma_start_pulse_next = 0
 
-        # ctrl_mode == 4 is emit flush only mode     
+        # ctrl_mode == 4 is emit flush only mode
         elif ((self.cfg_ld_dma_ctrl_mode == 1) | (self.cfg_ld_dma_ctrl_mode == 4)):
             self.ld_dma_start_pulse_next = (~self.strm_run) & self.ld_dma_start_pulse
 
@@ -545,23 +548,29 @@ class GlbLoadDma_E64(Generator):
 
     @ always_comb
     def rdrq_packet_logic(self):
-        if self.cfg_tile_connected_next | self.cfg_tile_connected_prev:
-            self.rdrq_packet_dma2bank_w = 0
-            self.rdrq_packet_dma2ring_w['rd_en'] = self.bank_rdrq_rd_en
-            self.rdrq_packet_dma2ring_w['rd_addr'] = self.bank_rdrq_rd_addr
+        if self._params.include_glb_ring_switch:
+            if self.cfg_tile_connected_next | self.cfg_tile_connected_prev:
+                self.rdrq_packet_dma2bank_w = 0
+                self.rdrq_packet_dma2ring_w['rd_en'] = self.bank_rdrq_rd_en
+                self.rdrq_packet_dma2ring_w['rd_addr'] = self.bank_rdrq_rd_addr
+            else:
+                self.rdrq_packet_dma2bank_w['rd_en'] = self.bank_rdrq_rd_en
+                self.rdrq_packet_dma2bank_w['rd_addr'] = self.bank_rdrq_rd_addr
+                self.rdrq_packet_dma2ring_w = 0
         else:
             self.rdrq_packet_dma2bank_w['rd_en'] = self.bank_rdrq_rd_en
             self.rdrq_packet_dma2bank_w['rd_addr'] = self.bank_rdrq_rd_addr
-            self.rdrq_packet_dma2ring_w = 0
 
     @ always_ff((posedge, "clk"), (posedge, "reset"))
     def rdrq_packet_ff(self):
         if self.reset:
             self.rdrq_packet_dma2bank = 0
-            self.rdrq_packet_dma2ring = 0
+            if self._params.include_glb_ring_switch:
+                self.rdrq_packet_dma2ring = 0
         else:
             self.rdrq_packet_dma2bank = self.rdrq_packet_dma2bank_w
-            self.rdrq_packet_dma2ring = self.rdrq_packet_dma2ring_w
+            if self._params.include_glb_ring_switch:
+                self.rdrq_packet_dma2ring = self.rdrq_packet_dma2ring_w
 
     def add_dma2bank_clk_en(self):
         self.clk_en_gen = GlbClkEnGen(cnt=self._params.tile2sram_rd_delay + self._params.rd_clk_en_margin)
@@ -578,8 +587,11 @@ class GlbLoadDma_E64(Generator):
 
     @ always_comb
     def rdrs_packet_logic(self):
-        if self.cfg_tile_connected_next | self.cfg_tile_connected_prev:
-            self.rdrs_packet = self.rdrs_packet_ring2dma
+        if self._params.include_glb_ring_switch:
+            if self.cfg_tile_connected_next | self.cfg_tile_connected_prev:
+                self.rdrs_packet = self.rdrs_packet_ring2dma
+            else:
+                self.rdrs_packet = self.rdrs_packet_bank2dma
         else:
             self.rdrs_packet = self.rdrs_packet_bank2dma
 
@@ -595,8 +607,8 @@ class GlbLoadDma_E64(Generator):
     def strm_data_logic(self):
         # Assign strm_data[0]
         if self.cfg_exchange_64_mode:
-            self.strm_data[0] = self.bank_rdrs_data_cache_r[self._params.cgra_data_width - 1, 0] 
-        else: 
+            self.strm_data[0] = self.bank_rdrs_data_cache_r[self._params.cgra_data_width - 1, 0]
+        else:
             if self.strm_data_sel == 0:
                 self.strm_data[0] = self.bank_rdrs_data_cache_r[self._params.cgra_data_width - 1, 0]
             elif self.strm_data_sel == 1:
@@ -611,7 +623,7 @@ class GlbLoadDma_E64(Generator):
             else:
                 self.strm_data[0] = self.bank_rdrs_data_cache_r[self._params.cgra_data_width - 1, 0]
 
-        # Assign rest of strm_data packet 
+        # Assign rest of strm_data packet
         if self.cfg_exchange_64_mode:
             self.strm_data[1] = self.bank_rdrs_data_cache_r[self._params.cgra_data_width * 2 - 1,
                                                                 self._params.cgra_data_width * 1]
