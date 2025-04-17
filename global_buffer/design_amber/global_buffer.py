@@ -110,28 +110,29 @@ class GlobalBuffer(Generator):
         self.cgra_cfg_jtag_gc2glb_addr_d = self.var("cgra_cfg_jtag_gc2glb_addr_d", self._params.cgra_cfg_addr_width)
         self.cgra_cfg_jtag_gc2glb_data_d = self.var("cgra_cfg_jtag_gc2glb_data_d", self._params.cgra_cfg_data_width)
 
-        self.strm_packet_e2w_esti = self.var(
-            "strm_packet_e2w_esti", self.header.packet_t, size=self._params.num_glb_tiles, packed=True)
-        self.strm_packet_w2e_wsti = self.var(
-            "strm_packet_w2e_wsti", self.header.packet_t, size=self._params.num_glb_tiles, packed=True)
-        self.strm_packet_e2w_wsto = self.var(
-            "strm_packet_e2w_wsto", self.header.packet_t, size=self._params.num_glb_tiles, packed=True)
-        self.strm_packet_w2e_esto = self.var(
-            "strm_packet_w2e_esto", self.header.packet_t, size=self._params.num_glb_tiles, packed=True)
+        if self._params.include_glb_ring_switch:
+            self.strm_packet_e2w_esti = self.var(
+                "strm_packet_e2w_esti", self.header.packet_t, size=self._params.num_glb_tiles, packed=True)
+            self.strm_packet_w2e_wsti = self.var(
+                "strm_packet_w2e_wsti", self.header.packet_t, size=self._params.num_glb_tiles, packed=True)
+            self.strm_packet_e2w_wsto = self.var(
+                "strm_packet_e2w_wsto", self.header.packet_t, size=self._params.num_glb_tiles, packed=True)
+            self.strm_packet_w2e_esto = self.var(
+                "strm_packet_w2e_esto", self.header.packet_t, size=self._params.num_glb_tiles, packed=True)
 
-        self.pcfg_packet_e2w_esti = self.var(
-            "pcfg_packet_e2w_esti", self.header.rd_packet_t, size=self._params.num_glb_tiles, packed=True)
-        self.pcfg_packet_w2e_wsti = self.var(
-            "pcfg_packet_w2e_wsti", self.header.rd_packet_t, size=self._params.num_glb_tiles, packed=True)
-        self.pcfg_packet_e2w_wsto = self.var(
-            "pcfg_packet_e2w_wsto", self.header.rd_packet_t, size=self._params.num_glb_tiles, packed=True)
-        self.pcfg_packet_w2e_esto = self.var(
-            "pcfg_packet_w2e_esto", self.header.rd_packet_t, size=self._params.num_glb_tiles, packed=True)
+            self.pcfg_packet_e2w_esti = self.var(
+                "pcfg_packet_e2w_esti", self.header.rd_packet_t, size=self._params.num_glb_tiles, packed=True)
+            self.pcfg_packet_w2e_wsti = self.var(
+                "pcfg_packet_w2e_wsti", self.header.rd_packet_t, size=self._params.num_glb_tiles, packed=True)
+            self.pcfg_packet_e2w_wsto = self.var(
+                "pcfg_packet_e2w_wsto", self.header.rd_packet_t, size=self._params.num_glb_tiles, packed=True)
+            self.pcfg_packet_w2e_esto = self.var(
+                "pcfg_packet_w2e_esto", self.header.rd_packet_t, size=self._params.num_glb_tiles, packed=True)
 
-        self.cfg_tile_connected = self.var("cfg_tile_connected", self._params.num_glb_tiles + 1)
-        self.cfg_pcfg_tile_connected = self.var("cfg_pcfg_tile_connected", self._params.num_glb_tiles + 1)
-        self.wire(self.cfg_tile_connected[0], 0)
-        self.wire(self.cfg_pcfg_tile_connected[0], 0)
+            self.cfg_tile_connected = self.var("cfg_tile_connected", self._params.num_glb_tiles + 1)
+            self.cfg_pcfg_tile_connected = self.var("cfg_pcfg_tile_connected", self._params.num_glb_tiles + 1)
+            self.wire(self.cfg_tile_connected[0], 0)
+            self.wire(self.cfg_pcfg_tile_connected[0], 0)
 
         self.cgra_cfg_jtag_wr_en_wsti = self.var(
             "cgra_cfg_jtag_wr_en_wsti", 1, size=self._params.num_glb_tiles, packed=True)
@@ -266,8 +267,9 @@ class GlobalBuffer(Generator):
         self.add_proc_clk_en()
         self.add_always(self.left_edge_cfg_ff)
         self.add_always(self.left_edge_cgra_cfg_ff)
-        self.tile2tile_e2w_struct_wiring()
-        self.tile2tile_w2e_struct_wiring()
+        if self._params.include_glb_ring_switch:
+            self.tile2tile_e2w_struct_wiring()
+            self.tile2tile_w2e_struct_wiring()
         self.add_always(self.tile2tile_w2e_cfg_wiring)
         self.add_always(self.tile2tile_e2w_cfg_wiring)
         self.add_always(self.interrupt_pipeline)
@@ -556,64 +558,6 @@ class GlobalBuffer(Generator):
                            if_proc_wst_s_rd_data=self.if_proc_list[i].rd_data,
                            if_proc_wst_s_rd_data_valid=self.if_proc_list[i].rd_data_valid,
 
-                           # strm
-                           strm_wr_en_e2w_esti=self.strm_packet_e2w_esti[i]["wr"]['wr_en'],
-                           strm_wr_strb_e2w_esti=self.strm_packet_e2w_esti[i]["wr"]['wr_strb'],
-                           strm_wr_addr_e2w_esti=self.strm_packet_e2w_esti[i]["wr"]['wr_addr'],
-                           strm_wr_data_e2w_esti=self.strm_packet_e2w_esti[i]["wr"]['wr_data'],
-                           strm_rd_en_e2w_esti=self.strm_packet_e2w_esti[i]["rdrq"]['rd_en'],
-                           strm_rd_addr_e2w_esti=self.strm_packet_e2w_esti[i]["rdrq"]['rd_addr'],
-                           strm_rd_data_e2w_esti=self.strm_packet_e2w_esti[i]["rdrs"]['rd_data'],
-                           strm_rd_data_valid_e2w_esti=self.strm_packet_e2w_esti[i]["rdrs"]['rd_data_valid'],
-
-                           strm_wr_en_w2e_esto=self.strm_packet_w2e_esto[i]["wr"]['wr_en'],
-                           strm_wr_strb_w2e_esto=self.strm_packet_w2e_esto[i]["wr"]['wr_strb'],
-                           strm_wr_addr_w2e_esto=self.strm_packet_w2e_esto[i]["wr"]['wr_addr'],
-                           strm_wr_data_w2e_esto=self.strm_packet_w2e_esto[i]["wr"]['wr_data'],
-                           strm_rd_en_w2e_esto=self.strm_packet_w2e_esto[i]["rdrq"]['rd_en'],
-                           strm_rd_addr_w2e_esto=self.strm_packet_w2e_esto[i]["rdrq"]['rd_addr'],
-                           strm_rd_data_w2e_esto=self.strm_packet_w2e_esto[i]["rdrs"]['rd_data'],
-                           strm_rd_data_valid_w2e_esto=self.strm_packet_w2e_esto[i]["rdrs"]['rd_data_valid'],
-
-                           strm_wr_en_w2e_wsti=self.strm_packet_w2e_wsti[i]["wr"]['wr_en'],
-                           strm_wr_strb_w2e_wsti=self.strm_packet_w2e_wsti[i]["wr"]['wr_strb'],
-                           strm_wr_addr_w2e_wsti=self.strm_packet_w2e_wsti[i]["wr"]['wr_addr'],
-                           strm_wr_data_w2e_wsti=self.strm_packet_w2e_wsti[i]["wr"]['wr_data'],
-                           strm_rd_en_w2e_wsti=self.strm_packet_w2e_wsti[i]["rdrq"]['rd_en'],
-                           strm_rd_addr_w2e_wsti=self.strm_packet_w2e_wsti[i]["rdrq"]['rd_addr'],
-                           strm_rd_data_w2e_wsti=self.strm_packet_w2e_wsti[i]["rdrs"]['rd_data'],
-                           strm_rd_data_valid_w2e_wsti=self.strm_packet_w2e_wsti[i]["rdrs"]['rd_data_valid'],
-
-                           strm_wr_en_e2w_wsto=self.strm_packet_e2w_wsto[i]["wr"]['wr_en'],
-                           strm_wr_strb_e2w_wsto=self.strm_packet_e2w_wsto[i]["wr"]['wr_strb'],
-                           strm_wr_addr_e2w_wsto=self.strm_packet_e2w_wsto[i]["wr"]['wr_addr'],
-                           strm_wr_data_e2w_wsto=self.strm_packet_e2w_wsto[i]["wr"]['wr_data'],
-                           strm_rd_en_e2w_wsto=self.strm_packet_e2w_wsto[i]["rdrq"]['rd_en'],
-                           strm_rd_addr_e2w_wsto=self.strm_packet_e2w_wsto[i]["rdrq"]['rd_addr'],
-                           strm_rd_data_e2w_wsto=self.strm_packet_e2w_wsto[i]["rdrs"]['rd_data'],
-                           strm_rd_data_valid_e2w_wsto=self.strm_packet_e2w_wsto[i]["rdrs"]['rd_data_valid'],
-
-                           # pcfg
-                           pcfg_rd_en_e2w_esti=self.pcfg_packet_e2w_esti[i]["rdrq"]['rd_en'],
-                           pcfg_rd_addr_e2w_esti=self.pcfg_packet_e2w_esti[i]["rdrq"]['rd_addr'],
-                           pcfg_rd_data_e2w_esti=self.pcfg_packet_e2w_esti[i]["rdrs"]['rd_data'],
-                           pcfg_rd_data_valid_e2w_esti=self.pcfg_packet_e2w_esti[i]["rdrs"]['rd_data_valid'],
-
-                           pcfg_rd_en_w2e_esto=self.pcfg_packet_w2e_esto[i]["rdrq"]['rd_en'],
-                           pcfg_rd_addr_w2e_esto=self.pcfg_packet_w2e_esto[i]["rdrq"]['rd_addr'],
-                           pcfg_rd_data_w2e_esto=self.pcfg_packet_w2e_esto[i]["rdrs"]['rd_data'],
-                           pcfg_rd_data_valid_w2e_esto=self.pcfg_packet_w2e_esto[i]["rdrs"]['rd_data_valid'],
-
-                           pcfg_rd_en_w2e_wsti=self.pcfg_packet_w2e_wsti[i]["rdrq"]['rd_en'],
-                           pcfg_rd_addr_w2e_wsti=self.pcfg_packet_w2e_wsti[i]["rdrq"]['rd_addr'],
-                           pcfg_rd_data_w2e_wsti=self.pcfg_packet_w2e_wsti[i]["rdrs"]['rd_data'],
-                           pcfg_rd_data_valid_w2e_wsti=self.pcfg_packet_w2e_wsti[i]["rdrs"]['rd_data_valid'],
-
-                           pcfg_rd_en_e2w_wsto=self.pcfg_packet_e2w_wsto[i]["rdrq"]['rd_en'],
-                           pcfg_rd_addr_e2w_wsto=self.pcfg_packet_e2w_wsto[i]["rdrq"]['rd_addr'],
-                           pcfg_rd_data_e2w_wsto=self.pcfg_packet_e2w_wsto[i]["rdrs"]['rd_data'],
-                           pcfg_rd_data_valid_e2w_wsto=self.pcfg_packet_e2w_wsto[i]["rdrs"]['rd_data_valid'],
-
                            # cfg
                            if_cfg_est_m_wr_en=self.if_cfg_list[i + 1].wr_en,
                            if_cfg_est_m_wr_clk_en=self.if_cfg_list[i + 1].wr_clk_en,
@@ -634,11 +578,6 @@ class GlobalBuffer(Generator):
                            if_cfg_wst_s_rd_addr=self.if_cfg_list[i].rd_addr,
                            if_cfg_wst_s_rd_data=self.if_cfg_list[i].rd_data,
                            if_cfg_wst_s_rd_data_valid=self.if_cfg_list[i].rd_data_valid,
-
-                           cfg_tile_connected_wsti=self.cfg_tile_connected[i],
-                           cfg_tile_connected_esto=self.cfg_tile_connected[i + 1],
-                           cfg_pcfg_tile_connected_wsti=self.cfg_pcfg_tile_connected[i],
-                           cfg_pcfg_tile_connected_esto=self.cfg_pcfg_tile_connected[i + 1],
 
                            strm_data_f2g=self.strm_data_f2g[i],
                            strm_data_valid_f2g=self.strm_data_valid_f2g[i],
@@ -692,6 +631,71 @@ class GlobalBuffer(Generator):
                            strm_f2g_interrupt_pulse=self.strm_f2g_interrupt_pulse_w[i],
                            strm_g2f_interrupt_pulse=self.strm_g2f_interrupt_pulse_w[i],
                            pcfg_g2f_interrupt_pulse=self.pcfg_g2f_interrupt_pulse_w[i])
+
+            if self._params.include_glb_ring_switch:
+                # strm
+                self.wire(self.glb_tile[i].ports.strm_wr_en_e2w_esti, self.strm_packet_e2w_esti[i]["wr"]['wr_en'])
+                self.wire(self.glb_tile[i].ports.strm_wr_strb_e2w_esti, self.strm_packet_e2w_esti[i]["wr"]['wr_strb'])
+                self.wire(self.glb_tile[i].ports.strm_wr_addr_e2w_esti, self.strm_packet_e2w_esti[i]["wr"]['wr_addr'])
+                self.wire(self.glb_tile[i].ports.strm_wr_data_e2w_esti, self.strm_packet_e2w_esti[i]["wr"]['wr_data'])
+                self.wire(self.glb_tile[i].ports.strm_rd_en_e2w_esti, self.strm_packet_e2w_esti[i]["rdrq"]['rd_en'])
+                self.wire(self.glb_tile[i].ports.strm_rd_addr_e2w_esti, self.strm_packet_e2w_esti[i]["rdrq"]['rd_addr'])
+                self.wire(self.glb_tile[i].ports.strm_rd_data_e2w_esti, self.strm_packet_e2w_esti[i]["rdrs"]['rd_data'])
+                self.wire(self.glb_tile[i].ports.strm_rd_data_valid_e2w_esti, self.strm_packet_e2w_esti[i]["rdrs"]['rd_data_valid'])
+
+                self.wire(self.glb_tile[i].ports.strm_wr_en_w2e_wsti, self.strm_packet_w2e_wsti[i]["wr"]['wr_en'])
+                self.wire(self.glb_tile[i].ports.strm_wr_strb_w2e_wsti, self.strm_packet_w2e_wsti[i]["wr"]['wr_strb'])
+                self.wire(self.glb_tile[i].ports.strm_wr_addr_w2e_wsti, self.strm_packet_w2e_wsti[i]["wr"]['wr_addr'])
+                self.wire(self.glb_tile[i].ports.strm_wr_data_w2e_wsti, self.strm_packet_w2e_wsti[i]["wr"]['wr_data'])
+                self.wire(self.glb_tile[i].ports.strm_rd_en_w2e_wsti, self.strm_packet_w2e_wsti[i]["rdrq"]['rd_en'])
+                self.wire(self.glb_tile[i].ports.strm_rd_addr_w2e_wsti, self.strm_packet_w2e_wsti[i]["rdrq"]['rd_addr'])
+                self.wire(self.glb_tile[i].ports.strm_rd_data_w2e_wsti, self.strm_packet_w2e_wsti[i]["rdrs"]['rd_data'])
+                self.wire(self.glb_tile[i].ports.strm_rd_data_valid_w2e_wsti, self.strm_packet_w2e_wsti[i]["rdrs"]['rd_data_valid'])
+
+                self.wire(self.strm_packet_w2e_esto[i]["wr"]['wr_en'], self.glb_tile[i].ports.strm_wr_en_w2e_esto)
+                self.wire(self.strm_packet_w2e_esto[i]["wr"]['wr_strb'], self.glb_tile[i].ports.strm_wr_strb_w2e_esto)
+                self.wire(self.strm_packet_w2e_esto[i]["wr"]['wr_addr'], self.glb_tile[i].ports.strm_wr_addr_w2e_esto)
+                self.wire(self.strm_packet_w2e_esto[i]["wr"]['wr_data'], self.glb_tile[i].ports.strm_wr_data_w2e_esto)
+                self.wire(self.strm_packet_w2e_esto[i]["rdrq"]['rd_en'], self.glb_tile[i].ports.strm_rd_en_w2e_esto)
+                self.wire(self.strm_packet_w2e_esto[i]["rdrq"]['rd_addr'], self.glb_tile[i].ports.strm_rd_addr_w2e_esto)
+                self.wire(self.strm_packet_w2e_esto[i]["rdrs"]['rd_data'], self.glb_tile[i].ports.strm_rd_data_w2e_esto)
+                self.wire(self.strm_packet_w2e_esto[i]["rdrs"]['rd_data_valid'], self.glb_tile[i].ports.strm_rd_data_valid_w2e_esto)
+
+                self.wire(self.strm_packet_e2w_wsto[i]["wr"]['wr_en'], self.glb_tile[i].ports.strm_wr_en_e2w_wsto)
+                self.wire(self.strm_packet_e2w_wsto[i]["wr"]['wr_strb'], self.glb_tile[i].ports.strm_wr_strb_e2w_wsto)
+                self.wire(self.strm_packet_e2w_wsto[i]["wr"]['wr_addr'], self.glb_tile[i].ports.strm_wr_addr_e2w_wsto)
+                self.wire(self.strm_packet_e2w_wsto[i]["wr"]['wr_data'], self.glb_tile[i].ports.strm_wr_data_e2w_wsto)
+                self.wire(self.strm_packet_e2w_wsto[i]["rdrq"]['rd_en'], self.glb_tile[i].ports.strm_rd_en_e2w_wsto)
+                self.wire(self.strm_packet_e2w_wsto[i]["rdrq"]['rd_addr'], self.glb_tile[i].ports.strm_rd_addr_e2w_wsto)
+                self.wire(self.strm_packet_e2w_wsto[i]["rdrs"]['rd_data'], self.glb_tile[i].ports.strm_rd_data_e2w_wsto)
+                self.wire(self.strm_packet_e2w_wsto[i]["rdrs"]['rd_data_valid'], self.glb_tile[i].ports.strm_rd_data_valid_e2w_wsto)
+
+                # pcfg
+                self.wire(self.glb_tile[i].ports.pcfg_rd_en_e2w_esti, self.pcfg_packet_e2w_esti[i]["rdrq"]['rd_en'])
+                self.wire(self.glb_tile[i].ports.pcfg_rd_addr_e2w_esti, self.pcfg_packet_e2w_esti[i]["rdrq"]['rd_addr'])
+                self.wire(self.glb_tile[i].ports.pcfg_rd_data_e2w_esti, self.pcfg_packet_e2w_esti[i]["rdrs"]['rd_data'])
+                self.wire(self.glb_tile[i].ports.pcfg_rd_data_valid_e2w_esti, self.pcfg_packet_e2w_esti[i]["rdrs"]['rd_data_valid'])
+
+                self.wire(self.glb_tile[i].ports.pcfg_rd_en_w2e_wsti, self.pcfg_packet_w2e_wsti[i]["rdrq"]['rd_en'])
+                self.wire(self.glb_tile[i].ports.pcfg_rd_addr_w2e_wsti, self.pcfg_packet_w2e_wsti[i]["rdrq"]['rd_addr'])
+                self.wire(self.glb_tile[i].ports.pcfg_rd_data_w2e_wsti, self.pcfg_packet_w2e_wsti[i]["rdrs"]['rd_data'])
+                self.wire(self.glb_tile[i].ports.pcfg_rd_data_valid_w2e_wsti, self.pcfg_packet_w2e_wsti[i]["rdrs"]['rd_data_valid'])
+
+                self.wire(self.pcfg_packet_w2e_esto[i]["rdrq"]['rd_en'], self.glb_tile[i].ports.pcfg_rd_en_w2e_esto)
+                self.wire(self.pcfg_packet_w2e_esto[i]["rdrq"]['rd_addr'], self.glb_tile[i].ports.pcfg_rd_addr_w2e_esto)
+                self.wire(self.pcfg_packet_w2e_esto[i]["rdrs"]['rd_data'], self.glb_tile[i].ports.pcfg_rd_data_w2e_esto)
+                self.wire(self.pcfg_packet_w2e_esto[i]["rdrs"]['rd_data_valid'], self.glb_tile[i].ports.pcfg_rd_data_valid_w2e_esto)
+
+                self.wire(self.pcfg_packet_e2w_wsto[i]["rdrq"]['rd_en'], self.glb_tile[i].ports.pcfg_rd_en_e2w_wsto)
+                self.wire(self.pcfg_packet_e2w_wsto[i]["rdrq"]['rd_addr'], self.glb_tile[i].ports.pcfg_rd_addr_e2w_wsto)
+                self.wire(self.pcfg_packet_e2w_wsto[i]["rdrs"]['rd_data'], self.glb_tile[i].ports.pcfg_rd_data_e2w_wsto)
+                self.wire(self.pcfg_packet_e2w_wsto[i]["rdrs"]['rd_data_valid'], self.glb_tile[i].ports.pcfg_rd_data_valid_e2w_wsto)
+
+                # tile connected cfg
+                self.wire(self.glb_tile[i].ports.cfg_tile_connected_wsti, self.cfg_tile_connected[i])
+                self.wire(self.glb_tile[i].ports.cfg_pcfg_tile_connected_wsti, self.cfg_pcfg_tile_connected[i])
+                self.wire(self.cfg_tile_connected[i + 1], self.glb_tile[i].ports.cfg_tile_connected_esto)
+                self.wire(self.cfg_pcfg_tile_connected[i + 1], self.glb_tile[i].ports.cfg_pcfg_tile_connected_esto)
 
     @ always_ff((posedge, "clk"), (posedge, "reset"))
     def interrupt_pipeline(self):

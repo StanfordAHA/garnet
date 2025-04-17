@@ -7,13 +7,18 @@ class GlbHeader():
     def __init__(self, _params: GlobalBufferParams):
         self._params = _params
 
-        self.cfg_data_network_t = PackedStruct("cfg_data_network_t",
-                                               [("tile_connected", 1),
-                                                ("latency", self._params.latency_width)])
-
-        self.cfg_pcfg_network_t = PackedStruct("cfg_pcfg_network_t",
-                                               [("tile_connected", 1),
-                                                ("latency", self._params.pcfg_latency_width)])
+        if self._params.include_glb_ring_switch:
+            self.cfg_data_network_t = PackedStruct("cfg_data_network_t",
+                                                   [("tile_connected", 1),
+                                                    ("latency", self._params.latency_width)])
+            self.cfg_pcfg_network_t = PackedStruct("cfg_pcfg_network_t",
+                                                   [("tile_connected", 1),
+                                                    ("latency", self._params.pcfg_latency_width)])
+        else:
+            self.cfg_data_network_t = PackedStruct("cfg_data_network_t",
+                                                [("latency", self._params.latency_width)])
+            self.cfg_pcfg_network_t = PackedStruct("cfg_pcfg_network_t",
+                                                [("latency", self._params.pcfg_latency_width)])
 
         if os.getenv('WHICH_SOC') == "amber":
             self.cfg_store_dma_ctrl_t = PackedStruct("store_dma_ctrl_t",
@@ -94,6 +99,9 @@ class GlbHeader():
                                 ("wr_data", self._params.bank_data_width), ]
         self.rdrq_packet_ports = [("rd_en", 1),
                                   ("rd_addr", self._params.glb_addr_width), ]
+        self.mu_rdrq_packet_ports = [("rd_en", 1),
+                                  ("rd_addr", self._params.glb_addr_width),
+                                  ("sub_packet_idx", clog2(self._params.mu_word_num_tiles)),]
         self.rdrs_packet_ports = [("rd_data", self._params.bank_data_width),
                                   ("rd_data_valid", 1), ]
 
@@ -103,6 +111,7 @@ class GlbHeader():
         self.wr_bank_packet_t = PackedStruct("wr_bank_packet_t", self.wr_bank_packet_ports)
         self.rdrq_bank_packet_t = PackedStruct("rdrq_bank_packet_t", self.rdrq_bank_packet_ports)
         self.wr_packet_t = PackedStruct("wr_packet_t", self.wr_packet_ports)
+        self.mu_rdrq_packet_t = PackedStruct("mu_rdrq_packet_t", self.mu_rdrq_packet_ports)
         self.rdrq_packet_t = PackedStruct("rdrq_packet_t", self.rdrq_packet_ports)
         self.rdrs_packet_t = PackedStruct("rdrs_packet_t", self.rdrs_packet_ports)
         self.packet_t = PackedStruct("packet_t")

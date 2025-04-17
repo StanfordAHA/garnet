@@ -17,9 +17,9 @@ CLK_PERIOD_TIMEUNIT = $(shell echo "scale=2; $(CLK_PERIOD_NUMBER_ONLY) / $(TIMEU
 CLK_SRC_LATENCY_TIMEUNIT = $(shell echo "scale=2; $(CLK_SRC_LATENCY_NUMBER_ONLY) / $(TIMEUNIT_NUMBER_ONLY)" | bc) 
 
 # architecture
-CGRA_WIDTH ?= 32
+CGRA_WIDTH ?= 28
 NUM_GLB_TILES ?= $(shell expr $(CGRA_WIDTH) / 2 )
-GLB_TILE_MEM_SIZE ?= 256
+GLB_TILE_MEM_SIZE ?= 128
 
 # tool chain
 TOOL ?= VCS
@@ -64,6 +64,7 @@ ifeq ($(WHICH_SOC), amber)
 endif
 
 TB_FILES ?= -F $(SIM)/tb_global_buffer.f 
+TB_MU_FILES ?= -F $(SIM)/tb_global_buffer_mu.f 
 
 # -------------------------------------------------------------------
 # Commands
@@ -80,6 +81,9 @@ GENERATE_TV = \
     python testvectors/gen_glb_test.py --data testvectors/3844_v0_b5.dat --num_data 3844 --seed 0 --num_blocks 5; \
     python testvectors/gen_glb_test.py --data testvectors/100_v0_b5.dat --num_data 100 --seed 0 --num_blocks 5;\
     python testvectors/gen_glb_test.py --data testvectors/100_v0_b5_seg.dat --num_data 100 --seed 0 --num_blocks 5 --seg_mode 1;
+
+GENERATE_TV_MU = \
+	python testvectors/gen_glb_test.py --data testvectors/512_v1.dat --num_data 512 --seed 1; \
 
 XRUN = xrun \
 	   -64bit \
@@ -135,6 +139,23 @@ rtl: export PYTHONPATH = $(GARNET_HOME):$$PYTHONPATH
 rtl: 
 	python global_buffer_main.py -r -v -p --num_cgra_cols=$(CGRA_WIDTH) --num_glb_tiles=$(NUM_GLB_TILES) --glb_tile_mem_size=$(GLB_TILE_MEM_SIZE) $(SRAM_STUB_ARG)
 
+
+
+# -------------------------------------------------------------------
+# RTL Zircon 
+# -------------------------------------------------------------------
+.PHONY: rtl_zircon
+ifneq ($(SRAM_STUB), 0)
+    SRAM_STUB_ARG = --sram_stub
+else
+    SRAM_STUB_ARG =
+endif
+rtl_zircon: export GARNET_HOME := $(current_dir)/..
+rtl_zircon: export PYTHONPATH = $(GARNET_HOME):$$PYTHONPATH
+rtl_zircon: 
+	python global_buffer_main.py -r -v -p --num_cgra_cols=$(CGRA_WIDTH) --num_glb_tiles=$(NUM_GLB_TILES) --glb_tile_mem_size=$(GLB_TILE_MEM_SIZE) $(SRAM_STUB_ARG) --include_E64_hw --include_multi_bank_hw --include_mu_glb_hw
+
+
 # -------------------------------------------------------------------
 # Compile & Run
 # -------------------------------------------------------------------
@@ -160,8 +181,10 @@ endif
 
 ifeq ($(TOOL), XCELIUM)
 	DUMP_ARGS = -input $(SIM)/dump_shm.tcl
+	DUMP_ARGS_MU = -input $(SIM)/dump_shm.tcl
 else ifeq ($(TOOL), VCS)
 	DUMP_ARGS = -ucli -i $(SIM)/dump_fsdb.tcl
+	DUMP_ARGS_MU = -ucli -i $(SIM)/dump_fsdb_mu.tcl
 endif
 
 ifneq ($(SDF), 0)
@@ -183,13 +206,28 @@ compile: INPUT_ARGS = $(HEADER_FILES) $(DESIGN_FILES) $(TB_FILES)
 compile:
 	$(COMPILE)
 
+
+.PHONY: compile_mu
+compile_mu: COMPILE_ARGS = $(COMPILE_RTL_ARGS)
+compile_mu: INPUT_ARGS = $(HEADER_FILES) $(DESIGN_FILES) $(TB_MU_FILES)
+compile_mu:
+	$(COMPILE)
+
 .PHONY: run
 run:
 	$(GENERATE_TV)
 	$(RUN) $(DUMP_ARGS) $(RUN_ARGS)
 
+.PHONY: run_mu
+run_mu:
+	$(GENERATE_TV_MU)
+	$(RUN) $(DUMP_ARGS_MU) $(RUN_ARGS)
+
 .PHONY: sim
 sim: compile run
+
+.PHONY: sim_mu
+sim_mu: compile_mu run_mu
 
 # -------------------------------------------------------------------
 # GLS Compile

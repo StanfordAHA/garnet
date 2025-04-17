@@ -17,12 +17,16 @@ class GlbPcfgDma(Generator):
         self.cgra_cfg_pcfg = self.output("cgra_cfg_pcfg", self.header.cgra_cfg_t)
 
         self.rdrq_packet_dma2bank = self.output("rdrq_packet_dma2bank", self.header.rdrq_packet_t)
-        self.rdrq_packet_dma2ring = self.output("rdrq_packet_dma2ring", self.header.rdrq_packet_t)
-        self.rdrs_packet_bank2dma = self.input("rdrs_packet_bank2dma", self.header.rdrs_packet_t)
-        self.rdrs_packet_ring2dma = self.input("rdrs_packet_ring2dma", self.header.rdrs_packet_t)
 
-        self.cfg_pcfg_tile_connected_prev = self.input("cfg_pcfg_tile_connected_prev", 1)
-        self.cfg_pcfg_tile_connected_next = self.input("cfg_pcfg_tile_connected_next", 1)
+        self.rdrs_packet_bank2dma = self.input("rdrs_packet_bank2dma", self.header.rdrs_packet_t)
+
+        if self._params.include_glb_ring_switch:
+            self.rdrq_packet_dma2ring = self.output("rdrq_packet_dma2ring", self.header.rdrq_packet_t)
+            self.rdrs_packet_ring2dma = self.input("rdrs_packet_ring2dma", self.header.rdrs_packet_t)
+
+            self.cfg_pcfg_tile_connected_prev = self.input("cfg_pcfg_tile_connected_prev", 1)
+            self.cfg_pcfg_tile_connected_next = self.input("cfg_pcfg_tile_connected_next", 1)
+
         self.cfg_pcfg_dma_ctrl_mode = self.input("cfg_pcfg_dma_ctrl_mode", 1)
         self.cfg_pcfg_dma_ctrl_relocation_value = self.input(
             "cfg_pcfg_dma_ctrl_relocation_value", self._params.cgra_cfg_addr_width // 2)
@@ -40,7 +44,10 @@ class GlbPcfgDma(Generator):
 
         # local variables
         self.rdrq_packet_dma2bank_w = self.var("rdrq_packet_dma2bank_w", self.header.rdrq_packet_t)
-        self.rdrq_packet_dma2ring_w = self.var("rdrq_packet_dma2ring_w", self.header.rdrq_packet_t)
+
+        if self._params.include_glb_ring_switch:
+            self.rdrq_packet_dma2ring_w = self.var("rdrq_packet_dma2ring_w", self.header.rdrq_packet_t)
+
         self.rdrs_packet = self.var("rdrs_packet", self.header.rdrs_packet_t)
         self.pcfg_done_pulse = self.var("pcfg_done_pulse", 1)
         self.pcfg_done_pulse_last = self.var("pcfg_done_pulse_last", 1)
@@ -134,24 +141,31 @@ class GlbPcfgDma(Generator):
 
     @always_comb
     def rdrq_packet_logic(self):
-        if self.cfg_pcfg_tile_connected_next | self.cfg_pcfg_tile_connected_prev:
-            self.rdrq_packet_dma2ring_w['rd_en'] = self.rdrq_packet_rd_en_next
-            self.rdrq_packet_dma2ring_w['rd_addr'] = self.rdrq_packet_rd_addr_next
-            self.rdrq_packet_dma2bank_w['rd_en'] = 0
-            self.rdrq_packet_dma2bank_w['rd_addr'] = 0
+        if self._params.include_glb_ring_switch:
+            if self.cfg_pcfg_tile_connected_next | self.cfg_pcfg_tile_connected_prev:
+                self.rdrq_packet_dma2ring_w['rd_en'] = self.rdrq_packet_rd_en_next
+                self.rdrq_packet_dma2ring_w['rd_addr'] = self.rdrq_packet_rd_addr_next
+                self.rdrq_packet_dma2bank_w['rd_en'] = 0
+                self.rdrq_packet_dma2bank_w['rd_addr'] = 0
+            else:
+                self.rdrq_packet_dma2ring_w['rd_en'] = 0
+                self.rdrq_packet_dma2ring_w['rd_addr'] = 0
+                self.rdrq_packet_dma2bank_w['rd_en'] = self.rdrq_packet_rd_en_next
+                self.rdrq_packet_dma2bank_w['rd_addr'] = self.rdrq_packet_rd_addr_next
         else:
-            self.rdrq_packet_dma2ring_w['rd_en'] = 0
-            self.rdrq_packet_dma2ring_w['rd_addr'] = 0
             self.rdrq_packet_dma2bank_w['rd_en'] = self.rdrq_packet_rd_en_next
             self.rdrq_packet_dma2bank_w['rd_addr'] = self.rdrq_packet_rd_addr_next
+
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def rdrq_packet_ff(self):
         if self.reset:
-            self.rdrq_packet_dma2ring = 0
+            if self._params.include_glb_ring_switch:
+                self.rdrq_packet_dma2ring = 0
             self.rdrq_packet_dma2bank = 0
         else:
-            self.rdrq_packet_dma2ring = self.rdrq_packet_dma2ring_w
+            if self._params.include_glb_ring_switch:
+                self.rdrq_packet_dma2ring = self.rdrq_packet_dma2ring_w
             self.rdrq_packet_dma2bank = self.rdrq_packet_dma2bank_w
 
     def add_dma2bank_clk_en(self):
@@ -169,8 +183,11 @@ class GlbPcfgDma(Generator):
 
     @always_comb
     def rdrs_packet_logic(self):
-        if self.cfg_pcfg_tile_connected_next | self.cfg_pcfg_tile_connected_prev:
-            self.rdrs_packet = self.rdrs_packet_ring2dma
+        if self._params.include_glb_ring_switch:
+            if self.cfg_pcfg_tile_connected_next | self.cfg_pcfg_tile_connected_prev:
+                self.rdrs_packet = self.rdrs_packet_ring2dma
+            else:
+                self.rdrs_packet = self.rdrs_packet_bank2dma
         else:
             self.rdrs_packet = self.rdrs_packet_bank2dma
 
