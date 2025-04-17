@@ -21,7 +21,7 @@ task one_cy_delay_if_verilator();
     @(posedge axil_ifc.clk);
 `endif
 endtask // one_cy_delay_if_verilator
-    
+
 task one_cy_delay_if_vcs();
 `ifndef verilator
     // $display("WARNING adding one extra cycle for vcs run");
@@ -44,7 +44,7 @@ task Env_write_bs();
     bet0 = kernel.bitstream_data[0];
     betaddr0 = kernel.bitstream_data[0].addr;
     betdata0 = kernel.bitstream_data[0].data;
-    
+
     start_addr = kernel.bs_start_addr;
     bs_q = kernel.bitstream_data;
     ProcDriver_write_bs();
@@ -216,9 +216,9 @@ task MU_write_to_cgra();
         end
 
         begin
-            // ERROR if we go MAX_WAIT cycles without finishing streaming the MU inputs 
+            // ERROR if we go MAX_WAIT cycles without finishing streaming the MU inputs
             for (int i=0; i<MAX_WAIT; i++) @(posedge mu_ifc.clk);
-            $error("@%0t: %m ERROR: MU stream wait timeout, waited %0d cy to finish streaming MU inputs", 
+            $error("@%0t: %m ERROR: MU stream wait timeout, waited %0d cy to finish streaming MU inputs",
                    $time, MAX_WAIT);
             $finish(2);  // The "2" prints more information about when/where/why
         end
@@ -255,8 +255,8 @@ task Env_kernel_test();
     // FORK BRANCH 1: MU writes data to CGRA
     fork
         begin
-            //TODO: Explain this magic number 7 from the RTL. Possibly add regs to solve this in real design.  
-            if (kernel.app_type != GLB2CGRA) begin 
+            //TODO: Explain this magic number 7 from the RTL. Possibly add regs to solve this in real design.
+            if (kernel.app_type != GLB2CGRA) begin
                 repeat (7) @(posedge mu_ifc.clk);
                 MU_write_to_cgra();
 
@@ -279,7 +279,7 @@ task Env_kernel_test();
                 g2f_end_time = $realtime;
                 $display("[%s] GLB-to-CGRA streaming done at %0t", kernel.name, g2f_end_time);
             end
-            
+
             // Wait for an interrupt to tell us when output streaming is done
             // Then wait until interrupt mask contains ALL TILES listed in tile_mask
             // Then clear the interrupt(s)
@@ -369,7 +369,7 @@ task Env_wait_interrupt();
 
             // repeat (MAX_WAIT) @(posedge...);  // "repeat" confuses verilator:(
             for (int i=0; i<MAX_WAIT; i++) @(posedge axil_ifc.clk);
-            $error("@%0t: %m ERROR: Interrupt wait timeout, waited %0d cy for reg %s", 
+            $error("@%0t: %m ERROR: Interrupt wait timeout, waited %0d cy for reg %s",
                    $time, MAX_WAIT, reg_name);
             $finish(2);  // The "2" prints more information about when/where/why
         end
@@ -403,8 +403,8 @@ task Env_set_interrupt_on();
     addr = `GLC_GLOBAL_IER_R;      data = 3'b111; AxilDriver_write();
     addr = `GLC_PAR_CFG_G2F_IER_R; data =   1'b1; AxilDriver_write();
 
-    // G2F interrupt enable for relevant GLB tiles 
-    addr = `GLC_STRM_G2F_IER_R;    
+    // G2F interrupt enable for relevant GLB tiles
+    addr = `GLC_STRM_G2F_IER_R;
     data = 32'b0;
     foreach (kernel.inputs[i]) begin
         foreach (kernel.inputs[i].io_tiles[j]) begin
@@ -415,9 +415,9 @@ task Env_set_interrupt_on();
     AxilDriver_write();
 
 
-    // F2G interrupt enable for relevant GLB tiles 
-    addr = `GLC_STRM_F2G_IER_R;    
-    data = 32'b0; 
+    // F2G interrupt enable for relevant GLB tiles
+    addr = `GLC_STRM_F2G_IER_R;
+    data = 32'b0;
     foreach (kernel.outputs[i]) begin
         foreach (kernel.outputs[i].io_tiles[j]) begin
             data |= 1 << kernel.outputs[i].io_tiles[j].tile;
@@ -426,6 +426,12 @@ task Env_set_interrupt_on();
     $display("F2G interrupt enable : %0x\n", data);
     AxilDriver_write();
 endtask
+
+
+task Env_write_network_data();
+    DnnLayer dnn_layer = new(); // TODO: Refine dnn layer support
+
+endtask // Env_write_network_data
 
 
 task Env_run();
@@ -452,10 +458,14 @@ task Env_run();
                 $display("[%0t] turn on interrupt", $time);  // 120ps?
                 Env_set_interrupt_on();
                 Env_write_bs();
+
+                // TODO: Add an IF statement here is this is a kernel that involves the REAL MU
+                Env_write_network_data();
+
                 Env_glb_configure();
                 Env_cgra_configure();
 
-                // TODO: Add an IF statement here to skip this is MU-only kernel 
+                // TODO: Add an IF statement here to skip this is MU-only kernel
                 Env_write_data();
 
 

@@ -24,6 +24,7 @@ program garnet_test #(
     // local variables
     //============================================================================//
     Kernel kernels[$]; // use dynamic array for potential glb tiling
+    // DnnLayer dnn_layer; // TODO: refine dnn layer support
 
     // Incorrect timescale gave me no end of problems, so now I'm adding this to help future me.
     function static void time_check(bit cond);
@@ -36,7 +37,7 @@ program garnet_test #(
     // Time check. For test to PASS, must have timescale == 1ps/1ps
     //   First  check succeeds iff timeunit == 1ps
     //   Second check succeeds iff timeprecision == 1ps
-    int irt; real rrt; 
+    int irt; real rrt;
     initial begin
         #1;  // Advance one timestep
         irt = real'(int'($realtime)); rrt = real'($realtime);
@@ -53,6 +54,10 @@ program garnet_test #(
         #100 initialize(dpr);  // So...I guess this is supposed to happen at 100ps not 100ns...
 
         map(kernels);
+
+        // TODO: Add a pass to map dnn layers here as well.
+        // for now just instantiated it in local variables
+        // In the map, choose things like the start addresss to write data to the GLB
 
         test_toggle = 1;
         Env_run();
