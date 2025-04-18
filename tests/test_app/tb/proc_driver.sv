@@ -1,9 +1,9 @@
 `define DBG_PROCDRIVER 0  // Set to '1' for debugging
 
-semaphore proc_lock; 
+semaphore proc_lock;
 initial proc_lock = new(1);
 
-semaphore mu_ifc_lock; 
+semaphore mu_ifc_lock;
 initial mu_ifc_lock = new(1);
 import "DPI-C" function int get_MU_input_bubble_mode();
 
@@ -45,6 +45,8 @@ task ProcDriver_write_bs();
 endtask
 
 
+byte_array_t data_q_8b;
+half_array_t data_q_16b;
 data_array_t mu_data_q[MU_OC_0];
 data_array_t data_q;
 bit [BANK_DATA_WIDTH-1:0] bdata;
@@ -76,11 +78,73 @@ task ProcDriver_write_data();
 endtask
 
 
+task ProcDriver_write_8b_network_data();
+    cur_addr = start_addr;
+    proc_lock.get(1);
+    assert (BANK_DATA_WIDTH == 64);
+    size = data_q_8b.size();
+
+    // Write data in little endian format
+    for (int i = 0; i < size; i += 8) begin
+        if ((i + 1) == size) begin
+            bdata = data_q_8b[i];
+        end else if ((i + 2) == size) begin
+            bdata = {data_q_8b[i+1], data_q_8b[i]};
+        end else if ((i + 3) == size) begin
+            bdata = {data_q_8b[i+2], data_q_8b[i+1], data_q_8b[i]};
+        end else if ((i + 4) == size) begin
+            bdata = {data_q_8b[i+3], data_q_8b[i+2], data_q_8b[i+1], data_q_8b[i]};
+        end else if ((i + 5) == size) begin
+            bdata = {data_q_8b[i+4], data_q_8b[i+3], data_q_8b[i+2], data_q_8b[i+1], data_q_8b[i]};
+        end else if ((i + 6) == size) begin
+            bdata = {data_q_8b[i+5], data_q_8b[i+4], data_q_8b[i+3], data_q_8b[i+2], data_q_8b[i+1], data_q_8b[i]};
+        end else if ((i + 7) == size) begin
+            bdata = {data_q_8b[i+6], data_q_8b[i+5], data_q_8b[i+4], data_q_8b[i+3], data_q_8b[i+2], data_q_8b[i+1], data_q_8b[i]};
+        end else begin
+            bdata = {data_q_8b[i+7], data_q_8b[i+6], data_q_8b[i+5], data_q_8b[i+4], data_q_8b[i+3], data_q_8b[i+2], data_q_8b[i+1], data_q_8b[i]};
+        end
+        ProcDriver_write_waddr = cur_addr;
+        ProcDriver_write_wdata = bdata;
+        ProcDriver_write();
+        cur_addr += 8;  // Counts hex 8,10,18,20...(8x2^10 == 0x1000
+    end
+    repeat (10) @(posedge p_ifc.clk);
+    proc_lock.put(1);
+endtask
+
+
+task ProcDriver_write_16b_network_data();
+    cur_addr = start_addr;
+    proc_lock.get(1);
+    assert (BANK_DATA_WIDTH == 64);
+    size = data_q_16b.size();
+
+    // Write data in little endian format
+    for (int i = 0; i < size; i += 4) begin
+        if ((i + 1) == size) begin
+            bdata = data_q_16b[i];
+        end else if ((i + 2) == size) begin
+            bdata = {data_q_16b[i+1], data_q_16b[i]};
+        end else if ((i + 3) == size) begin
+            bdata = {data_q_16b[i+2], data_q_16b[i+1], data_q_16b[i]};
+        end else begin
+            bdata = {data_q_16b[i+3], data_q_16b[i+2], data_q_16b[i+1], data_q_16b[i]};
+        end
+        ProcDriver_write_waddr = cur_addr;
+        ProcDriver_write_wdata = bdata;
+        ProcDriver_write();
+        cur_addr += 8;  // Counts hex 8,10,18,20...(8x2^10 == 0x1000
+    end
+    repeat (10) @(posedge p_ifc.clk);
+    proc_lock.put(1);
+endtask
+
+
 int i;
 task MU_driver_write_data();
     cur_addr = start_addr;
     mu_ifc_lock.get(1);
-    size = mu_data_q[0].size(); 
+    size = mu_data_q[0].size();
     i = 0;
     while (i < size) begin
         for (int oc_0 = 0; oc_0 < MU_OC_0; oc_0++) begin

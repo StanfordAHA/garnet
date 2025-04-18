@@ -431,6 +431,42 @@ endtask
 task Env_write_network_data();
     DnnLayer dnn_layer = new(); // TODO: Refine dnn layer support
 
+    realtime start_time, end_time;
+    $timeformat(-9, 2, " ns", 0);
+    repeat (10) @(posedge p_ifc.clk);
+    start_time = $realtime;
+    $display("[%s] write network params to glb start at %0t", kernel.name, start_time);
+
+    // inputActivation (INT8)
+    start_addr = dnn_layer.inputActivation_start_addr;
+    data_q_8b = dnn_layer.inputActivation;
+    ProcDriver_write_8b_network_data();
+
+    // inputScale (E8M0)
+    start_addr = dnn_layer.inputScale_start_addr;
+    data_q_8b = dnn_layer.inputScale;
+    ProcDriver_write_8b_network_data();
+
+    // weight INT8
+    start_addr = dnn_layer.weight_start_addr;
+    data_q_8b = dnn_layer.weight;
+    ProcDriver_write_8b_network_data();
+
+    // weightScale (E8M0)
+    start_addr = dnn_layer.weightScale_start_addr;
+    data_q_8b = dnn_layer.weightScale;
+    ProcDriver_write_8b_network_data();
+
+    // bias (bFloat16)
+    start_addr = dnn_layer.bias_start_addr;
+    data_q_16b = dnn_layer.bias;
+    ProcDriver_write_16b_network_data();
+
+    end_time = $realtime;
+    $display("[%s] write network params to glb end at %0t", kernel.name, end_time);
+    $display("[%s] It takes %0t time to write network params to glb.", kernel.name, end_time - start_time);
+
+
 endtask // Env_write_network_data
 
 
