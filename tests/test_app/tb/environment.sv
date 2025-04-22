@@ -1,7 +1,8 @@
 // This is a garnet_test.sv "include" file
 
 // How long to wait for streaming; can be as little as 6K for pointwise, 80K for camera pipeline etc.
-int MAX_WAIT = 6_000_000;
+// int MAX_WAIT = 6_000_000;
+int MAX_WAIT = 1_000_000;
 
 typedef enum int {
     GLB_PCFG_CTRL,
@@ -113,6 +114,37 @@ task Env_glb_configure();
     AxilDriver_cfg = kernel.kernel_cfg; AxilDriver_config_write();
     end_time = $realtime;
     $display("[%s] glb configuration end at %0t\n", kernel.name, end_time);  // 647.5ns
+endtask
+
+
+task Env_mu_configure();
+    realtime start_time, end_time;
+    $timeformat(-9, 2, " ns", 0);
+    start_time = $realtime;
+    $display("[%s] MU configuration start at %0t", kernel.name, start_time);
+    mu_serialized_params = dnn_layer.serialized_matrix_params;
+    MU_AxilDriver_serialized_params_write();
+
+    // TODO: Configure the base addresses here. Set them all to 0.
+    // TODO: Make these all constants in glb.h
+    // input base address
+    mu_axi_addr = 29'h8;
+    mu_axi_data = 0;
+    MU_AxilDriver_write();
+
+   // weight base address
+    mu_axi_addr = 29'h10;
+    mu_axi_data = 0;
+    MU_AxilDriver_write();
+
+    // bias base address
+    mu_axi_addr = 29'h18;
+    mu_axi_data = 0;
+    MU_AxilDriver_write();
+
+
+    end_time = $realtime;
+    $display("[%s] MU configuration end at %0t\n", kernel.name, end_time);
 endtask
 
 
@@ -256,7 +288,7 @@ task Env_kernel_test();
     fork
         begin
             //TODO: Explain this magic number 7 from the RTL. Possibly add regs to solve this in real design.
-            if (kernel.app_type != GLB2CGRA) begin
+            if (kernel.app_type != GLB2CGRA && !real_mu) begin
                 repeat (7) @(posedge mu_ifc.clk);
                 MU_write_to_cgra();
 
@@ -429,8 +461,6 @@ endtask
 
 
 task Env_write_network_data();
-    DnnLayer dnn_layer = new(); // TODO: Refine dnn layer support
-
     realtime start_time, end_time;
     $timeformat(-9, 2, " ns", 0);
     repeat (10) @(posedge p_ifc.clk);
@@ -495,15 +525,23 @@ task Env_run();
                 Env_set_interrupt_on();
                 Env_write_bs();
 
-                // TODO: Add an IF statement here is this is a kernel that involves the REAL MU
-                Env_write_network_data();
+                // TODO: Add an IF statement here if this is a kernel that involves the REAL MU
+                if (real_mu) begin
+                    Env_write_network_data();
+                end
 
                 Env_glb_configure();
                 Env_cgra_configure();
 
+
                 // TODO: Add an IF statement here to skip this is MU-only kernel
                 Env_write_data();
 
+                // TODO: Add an IF statement here if this is a kernel that involves the REAL MU.
+                // TODO: Also think about the order of all these. Make sure MU doesn't start producing valid data until cgra has been unstalled and flushed
+                if (real_mu) begin
+                    Env_mu_configure();
+                end
 
                 Env_kernel_test();
                 Env_read_data();      $display("[%0t] read_data DONE", $time);

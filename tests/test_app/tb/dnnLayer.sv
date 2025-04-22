@@ -12,7 +12,7 @@
 typedef bit [7:0] byte_array_t[];
 typedef bit [15:0] half_array_t[];
 
-typedef bit[31:0] matrix_params_array_t[];
+typedef bit[63:0] matrix_params_array_t[];
 
 class DnnLayer;
 
@@ -47,7 +47,7 @@ class DnnLayer;
     extern function new();
     extern function byte_array_t parse_8b_data(string filename, int size);
     extern function half_array_t parse_16b_data(string filename, int size);
-    extern function matrix_params_array_t parse_32b_data(string filename, int size);
+    extern function matrix_params_array_t parse_64b_data(string filename, int size);
     extern function void assertion(bit cond, string msg);
 
 
@@ -86,9 +86,9 @@ function DnnLayer::new();
     bias = parse_16b_data(bias_filename, bias_size);
 
     // Hardcoding this for now. In the future, it should be set appropriately
-    matrix_params_size = 20;
+    matrix_params_size = 10;
     matrix_params_filename = "/aha/network_params/serialized_matrix_params.txt";
-    serialized_matrix_params = parse_32b_data(matrix_params_filename, matrix_params_size);
+    serialized_matrix_params = parse_64b_data(matrix_params_filename, matrix_params_size);
 
     $display("\nDnnLayer object successfully created\n");
 
@@ -188,7 +188,7 @@ function half_array_t DnnLayer::parse_16b_data(string filename, int size);
 endfunction
 
 
-function matrix_params_array_t DnnLayer::parse_32b_data(string filename, int size);
+function matrix_params_array_t DnnLayer::parse_64b_data(string filename, int size);
     int cnt = 0;
     matrix_params_array_t result = new[size];
 
@@ -198,16 +198,16 @@ function matrix_params_array_t DnnLayer::parse_32b_data(string filename, int siz
     while (!$feof(
         fp
     )) begin
-        int unsigned data;
+        longint unsigned data;
         int code;
 
 `ifdef verilator
         code = $fscanf(fp, "%x", data);
 `else
-        code = $fscanf(fp, "%08x", data);
+        code = $fscanf(fp, "%016x", data);
 `endif
         // Quick check to see if it's working at all, can compare to contents of file
-        if (cnt<4) $display(" - got data %08x", data);
+        if (cnt<4) $display(" - got data %016x", data);
         if (code == -1) continue;
         assertion(code == 1, $sformatf(
                 "Incorrect data format. Expected 1 entry, got: %0d. Current entires: %0d",

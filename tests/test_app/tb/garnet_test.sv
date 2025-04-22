@@ -14,6 +14,7 @@ program garnet_test #(
     reset,
     proc_ifc p_ifc,
     axil_ifc axil_ifc,
+    axil_ifc mu_axil_ifc,
     behavioral_matrix_unit mu_ifc
 );
     int test_toggle = 0;
@@ -24,7 +25,8 @@ program garnet_test #(
     // local variables
     //============================================================================//
     Kernel kernels[$]; // use dynamic array for potential glb tiling
-    // DnnLayer dnn_layer; // TODO: refine dnn layer support
+    int real_mu = 1; // FIXME: Do this in a better way
+    DnnLayer dnn_layer = new(); // TODO: refine dnn layer support. Only do this if using real mu
 
     // Incorrect timescale gave me no end of problems, so now I'm adding this to help future me.
     function static void time_check(bit cond);

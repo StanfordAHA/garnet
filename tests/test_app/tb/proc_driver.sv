@@ -103,7 +103,8 @@ task ProcDriver_write_8b_network_data();
         end else begin
             bdata = {data_q_8b[i+7], data_q_8b[i+6], data_q_8b[i+5], data_q_8b[i+4], data_q_8b[i+3], data_q_8b[i+2], data_q_8b[i+1], data_q_8b[i]};
         end
-        ProcDriver_write_waddr = cur_addr;
+        // Addr adjustment for physical data layout across 4 consecutive banks
+        ProcDriver_write_waddr = {cur_addr[20:18], cur_addr[4:3], cur_addr[17:5], cur_addr[2:0]};
         ProcDriver_write_wdata = bdata;
         ProcDriver_write();
         cur_addr += 8;  // Counts hex 8,10,18,20...(8x2^10 == 0x1000
@@ -130,7 +131,9 @@ task ProcDriver_write_16b_network_data();
         end else begin
             bdata = {data_q_16b[i+3], data_q_16b[i+2], data_q_16b[i+1], data_q_16b[i]};
         end
-        ProcDriver_write_waddr = cur_addr;
+
+        // Addr adjustment for physical data layout across 4 consecutive banks
+        ProcDriver_write_waddr = {cur_addr[20:18], cur_addr[4:3], cur_addr[17:5], cur_addr[2:0]};
         ProcDriver_write_wdata = bdata;
         ProcDriver_write();
         cur_addr += 8;  // Counts hex 8,10,18,20...(8x2^10 == 0x1000
