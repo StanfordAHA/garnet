@@ -30,10 +30,12 @@ class GlbStoreDma_E64(Generator):
         self.ctrl_f2g = self.input("ctrl_f2g", 1, size=self._params.cgra_per_glb, packed=True)
 
         self.wr_packet_dma2bank = self.output("wr_packet_dma2bank", self.header.wr_packet_t)
-        self.wr_packet_dma2ring = self.output("wr_packet_dma2ring", self.header.wr_packet_t)
 
-        self.cfg_tile_connected_prev = self.input("cfg_tile_connected_prev", 1)
-        self.cfg_tile_connected_next = self.input("cfg_tile_connected_next", 1)
+        if self._params.include_glb_ring_switch:
+            self.wr_packet_dma2ring = self.output("wr_packet_dma2ring", self.header.wr_packet_t)
+            self.cfg_tile_connected_prev = self.input("cfg_tile_connected_prev", 1)
+            self.cfg_tile_connected_next = self.input("cfg_tile_connected_next", 1)
+
         self.cfg_st_dma_num_repeat = self.input("cfg_st_dma_num_repeat", clog2(self._params.queue_depth) + 1)
         self.cfg_st_dma_ctrl_mode = self.input("cfg_st_dma_ctrl_mode", 2)
         self.cfg_st_dma_ctrl_valid_mode = self.input("cfg_st_dma_ctrl_valid_mode", 2)
@@ -56,7 +58,8 @@ class GlbStoreDma_E64(Generator):
 
         # local variables
         self.wr_packet_dma2bank_w = self.var("wr_packet_dma2bank_w", self.header.wr_packet_t)
-        self.wr_packet_dma2ring_w = self.var("wr_packet_dma2ring_w", self.header.wr_packet_t)
+        if self._params.include_glb_ring_switch:
+            self.wr_packet_dma2ring_w = self.var("wr_packet_dma2ring_w", self.header.wr_packet_t)
         self.data_f2g_r = self.var("data_f2g_r", width=self._params.cgra_data_width,
                                    size=[self._params.cgra_per_glb, self.num_packets], packed=True)
         self.data_f2g_vld_r = self.var("data_f2g_vld_r", 1, size=[self._params.cgra_per_glb, self.num_packets], packed=True)
@@ -185,20 +188,23 @@ class GlbStoreDma_E64(Generator):
         for packet_16 in range(self.num_packets):
             self.data_g2f_fifo = FIFO(self._params.cgra_data_width, self._params.store_dma_fifo_depth)
             self.add_child(f"data_f2g_fifo_{packet_16}",
-                           self.data_g2f_fifo,
-                           clk=self.clk,
-                           clk_en=clock_en(self.sparse_rv_mode_on | self.dense_rv_mode_on),
-                           reset=self.reset,
-                           flush=self.st_dma_start_pulse_r,
-                           data_in=self.data_cgra2fifo[packet_16],
-                           data_out=self.data_fifo2dma[packet_16],
-                           push=self.fifo_push[packet_16],
-                           pop=self.fifo_pop[packet_16],
-                           full=self.fifo_full[packet_16],
-                           empty=self.fifo_empty[packet_16],
-                           almost_full=self.fifo_almost_full[packet_16],
-                           almost_full_diff=const(2, clog2(self._params.store_dma_fifo_depth)),
-                           almost_empty_diff=const(2, clog2(self._params.store_dma_fifo_depth)))
+                        self.data_g2f_fifo,
+                        clk=self.clk,
+                        clk_en=clock_en(self.sparse_rv_mode_on | self.dense_rv_mode_on),
+                        reset=self.reset,
+                        flush=self.st_dma_start_pulse_r,
+                        data_in=self.data_cgra2fifo[packet_16],
+                        data_out=self.data_fifo2dma[packet_16],
+                        push=self.fifo_push[packet_16],
+                        pop=self.fifo_pop[packet_16],
+                        full=self.fifo_full[packet_16],
+                        empty=self.fifo_empty[packet_16],
+                        almost_full=self.fifo_almost_full[packet_16],
+                        almost_full_diff=const(2, clog2(self._params.store_dma_fifo_depth)),
+                        almost_empty_diff=const(2, clog2(self._params.store_dma_fifo_depth)))
+
+
+
 
             self.wire(self.data_cgra2fifo[packet_16], self.strm_data[packet_16])
 
@@ -214,8 +220,11 @@ class GlbStoreDma_E64(Generator):
             # self.wire(self.fifo2cgra_ready[packet_16], ~self.fifo_almost_full[packet_16])
             self.wire(self.fifo2cgra_ready[packet_16], ~self.fifo_full[packet_16])
 
+
         # Write packet synchronization for E64 write
         self.wire(self.packet_64_pop, ~self.fifo_empty[0] & ~self.fifo_empty[1] & ~self.fifo_empty[2] & ~self.fifo_empty[3] & self.strm_run)
+
+        self.wire(self.packet_64_pop_ready, self.fifo_pop_ready[0] & self.fifo_pop_ready[1] & self.fifo_pop_ready[2] & self.fifo_pop_ready[3])
 
         self.wire(self.packet_64_pop_ready, self.fifo_pop_ready[0] & self.fifo_pop_ready[1] & self.fifo_pop_ready[2] & self.fifo_pop_ready[3])
 
@@ -574,8 +583,8 @@ class GlbStoreDma_E64(Generator):
                                           self.cgra_strb_width * 2] = const(self.cgra_strb_value,
                                                                             self.cgra_strb_width)
                 self.bank_wr_strb_cache_w[self.cgra_strb_width * 4 - 1,
-                                          self.cgra_strb_width * 3] = const(self.cgra_strb_value,
-                                                                            self.cgra_strb_width)
+                                            self.cgra_strb_width * 3] = const(self.cgra_strb_value,
+                                                                                self.cgra_strb_width)
 
                 # Assuming 4 packets
                 self.bank_wr_data_cache_w[(0 * self._params.cgra_data_width + self._params.cgra_data_width - 1,
@@ -585,7 +594,7 @@ class GlbStoreDma_E64(Generator):
                 self.bank_wr_data_cache_w[(2 * self._params.cgra_data_width + self._params.cgra_data_width - 1,
                                            2 * self._params.cgra_data_width)] = self.strm_wr_data_w[2]
                 self.bank_wr_data_cache_w[(3 * self._params.cgra_data_width + self._params.cgra_data_width - 1,
-                                           3 * self._params.cgra_data_width)] = self.strm_wr_data_w[3]
+                                        3 * self._params.cgra_data_width)] = self.strm_wr_data_w[3]
         else:
             # First, if cached data is written to memory, clear it.
             if self.bank_wr_en:
@@ -638,27 +647,36 @@ class GlbStoreDma_E64(Generator):
 
     @always_comb
     def wr_packet_logic(self):
-        if self.cfg_tile_connected_next | self.cfg_tile_connected_prev:
-            self.wr_packet_dma2bank_w = 0
-            self.wr_packet_dma2ring_w['wr_en'] = self.bank_wr_en
-            self.wr_packet_dma2ring_w['wr_strb'] = self.bank_wr_strb_cache_r
-            self.wr_packet_dma2ring_w['wr_data'] = self.bank_wr_data_cache_r
-            self.wr_packet_dma2ring_w['wr_addr'] = self.bank_wr_addr
+        if self._params.include_glb_ring_switch:
+            if self.cfg_tile_connected_next | self.cfg_tile_connected_prev:
+                self.wr_packet_dma2bank_w = 0
+                self.wr_packet_dma2ring_w['wr_en'] = self.bank_wr_en
+                self.wr_packet_dma2ring_w['wr_strb'] = self.bank_wr_strb_cache_r
+                self.wr_packet_dma2ring_w['wr_data'] = self.bank_wr_data_cache_r
+                self.wr_packet_dma2ring_w['wr_addr'] = self.bank_wr_addr
+            else:
+                self.wr_packet_dma2bank_w['wr_en'] = self.bank_wr_en
+                self.wr_packet_dma2bank_w['wr_strb'] = self.bank_wr_strb_cache_r
+                self.wr_packet_dma2bank_w['wr_data'] = self.bank_wr_data_cache_r
+                self.wr_packet_dma2bank_w['wr_addr'] = self.bank_wr_addr
+                self.wr_packet_dma2ring_w = 0
         else:
             self.wr_packet_dma2bank_w['wr_en'] = self.bank_wr_en
             self.wr_packet_dma2bank_w['wr_strb'] = self.bank_wr_strb_cache_r
             self.wr_packet_dma2bank_w['wr_data'] = self.bank_wr_data_cache_r
             self.wr_packet_dma2bank_w['wr_addr'] = self.bank_wr_addr
-            self.wr_packet_dma2ring_w = 0
+
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def wr_packet_ff(self):
         if self.reset:
             self.wr_packet_dma2bank = 0
-            self.wr_packet_dma2ring = 0
+            if self._params.include_glb_ring_switch:
+                self.wr_packet_dma2ring = 0
         else:
             self.wr_packet_dma2bank = self.wr_packet_dma2bank_w
-            self.wr_packet_dma2ring = self.wr_packet_dma2ring_w
+            if self._params.include_glb_ring_switch:
+                self.wr_packet_dma2ring = self.wr_packet_dma2ring_w
 
     def add_dma2bank_clk_en(self):
         self.clk_en_gen = GlbClkEnGen(cnt=self._params.tile2sram_wr_delay + self._params.wr_clk_en_margin)

@@ -2,13 +2,14 @@ from kratos import Generator, always_ff, posedge, always_comb, clock_en, clog2, 
 from kratos.util import to_magma
 from global_buffer.design.glb_tile import GlbTile
 from global_buffer.design.glb_tile_ifc import GlbTileInterface
+from global_buffer.design.glb_tile_data_loop_ifc import GlbTileDataLoopInterface
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from global_buffer.design.glb_header import GlbHeader
 from global_buffer.design.pipeline import Pipeline
 from global_buffer.design.glb_clk_en_gen import GlbClkEnGen
 from global_buffer.design.glb_crossbar import GlbCrossbar
+from global_buffer.design.glb_mu_transl import GlbMUTransl
 from gemstone.generator.from_magma import FromMagma
-import os
 
 
 class GlobalBuffer(Generator):
@@ -35,6 +36,25 @@ class GlobalBuffer(Generator):
         self.proc_rd_addr = self.input("proc_rd_addr", self._params.glb_addr_width)
         self.proc_rd_data = self.output("proc_rd_data", self._params.bank_data_width)
         self.proc_rd_data_valid = self.output("proc_rd_data_valid", 1)
+
+
+        if self._params.include_mu_glb_hw:
+            # Tilelink request collateral
+            self.mu_tl_addr_in = self.input("mu_tl_addr_in", self._params.mu_addr_width)
+            self.mu_tl_rq_in_vld = self.input("mu_tl_rq_in_vld", 1)
+            self.mu_tl_rq_in_rdy = self.output("mu_tl_rq_in_rdy", 1)
+            self.mu_tl_size_in = self.input("mu_tl_size_in", self._params.mu_tl_num_burst_bits)
+            self.mu_tl_source_in = self.input("mu_tl_source_in", self._params.mu_tl_source_width)
+
+
+            # Tilelink response collateral
+            self.mu_tl_size_out = self.output("mu_tl_size_out", self._params.mu_tl_num_burst_bits)
+            self.mu_tl_source_out = self.output("mu_tl_source_out", self._params.mu_tl_source_width)
+            self.mu_tl_opcode_out = self.output("mu_tl_opcode_out", self._params.mu_tl_opcode_width)
+            self.mu_tl_data_out = self.output("mu_tl_data_out", self._params.mu_word_width)
+            self.mu_tl_resp_out_vld = self.output("mu_tl_resp_out_vld", 1)
+            self.mu_tl_resp_out_rdy = self.input("mu_tl_resp_out_rdy", 1)
+
 
         self.if_cfg_wr_en = self.input("if_cfg_wr_en", 1)
         self.if_cfg_wr_clk_en = self.input("if_cfg_wr_clk_en", 1)
@@ -88,6 +108,8 @@ class GlobalBuffer(Generator):
             self.strm_data_g2f_rdy = self.input("strm_data_g2f_rdy", 1, size=[
                 self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
 
+
+
         self.strm_ctrl_f2g = self.input("strm_ctrl_f2g", 1, size=[
             self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
 
@@ -130,6 +152,12 @@ class GlobalBuffer(Generator):
         self.proc_rd_data_w = self.var("proc_rd_data_w", self._params.bank_data_width)
         self.proc_rd_data_valid_w = self.var("proc_rd_data_valid_w", 1)
 
+        if self._params.include_mu_glb_hw:
+            self.mu_rd_en = self.var("mu_rd_en", 1)
+            self.mu_rd_addr = self.var("mu_rd_addr", self._params.glb_addr_width)
+            self.mu_rd_data_w = self.var("mu_rd_data_w", self._params.mu_word_width)
+            self.mu_rd_data_valid_w = self.var("mu_rd_data_valid_w", 1)
+
         self.sram_cfg_wr_en_d = self.var("sram_cfg_wr_en_d", 1)
         self.sram_cfg_wr_strb_d = self.var("sram_cfg_wr_strb_d", self._params.bank_strb_width)
         self.sram_cfg_wr_addr_d = self.var("sram_cfg_wr_addr_d", self._params.glb_addr_width)
@@ -144,28 +172,29 @@ class GlobalBuffer(Generator):
         self.cgra_cfg_jtag_gc2glb_addr_d = self.var("cgra_cfg_jtag_gc2glb_addr_d", self._params.cgra_cfg_addr_width)
         self.cgra_cfg_jtag_gc2glb_data_d = self.var("cgra_cfg_jtag_gc2glb_data_d", self._params.cgra_cfg_data_width)
 
-        self.strm_packet_e2w_esti = self.var(
-            "strm_packet_e2w_esti", self.header.packet_t, size=self._params.num_glb_tiles, packed=True)
-        self.strm_packet_w2e_wsti = self.var(
-            "strm_packet_w2e_wsti", self.header.packet_t, size=self._params.num_glb_tiles, packed=True)
-        self.strm_packet_e2w_wsto = self.var(
-            "strm_packet_e2w_wsto", self.header.packet_t, size=self._params.num_glb_tiles, packed=True)
-        self.strm_packet_w2e_esto = self.var(
-            "strm_packet_w2e_esto", self.header.packet_t, size=self._params.num_glb_tiles, packed=True)
+        if self._params.include_glb_ring_switch:
+            self.strm_packet_e2w_esti = self.var(
+                "strm_packet_e2w_esti", self.header.packet_t, size=self._params.num_glb_tiles, packed=True)
+            self.strm_packet_w2e_wsti = self.var(
+                "strm_packet_w2e_wsti", self.header.packet_t, size=self._params.num_glb_tiles, packed=True)
+            self.strm_packet_e2w_wsto = self.var(
+                "strm_packet_e2w_wsto", self.header.packet_t, size=self._params.num_glb_tiles, packed=True)
+            self.strm_packet_w2e_esto = self.var(
+                "strm_packet_w2e_esto", self.header.packet_t, size=self._params.num_glb_tiles, packed=True)
 
-        self.pcfg_packet_e2w_esti = self.var(
-            "pcfg_packet_e2w_esti", self.header.rd_packet_t, size=self._params.num_glb_tiles, packed=True)
-        self.pcfg_packet_w2e_wsti = self.var(
-            "pcfg_packet_w2e_wsti", self.header.rd_packet_t, size=self._params.num_glb_tiles, packed=True)
-        self.pcfg_packet_e2w_wsto = self.var(
-            "pcfg_packet_e2w_wsto", self.header.rd_packet_t, size=self._params.num_glb_tiles, packed=True)
-        self.pcfg_packet_w2e_esto = self.var(
-            "pcfg_packet_w2e_esto", self.header.rd_packet_t, size=self._params.num_glb_tiles, packed=True)
+            self.pcfg_packet_e2w_esti = self.var(
+                "pcfg_packet_e2w_esti", self.header.rd_packet_t, size=self._params.num_glb_tiles, packed=True)
+            self.pcfg_packet_w2e_wsti = self.var(
+                "pcfg_packet_w2e_wsti", self.header.rd_packet_t, size=self._params.num_glb_tiles, packed=True)
+            self.pcfg_packet_e2w_wsto = self.var(
+                "pcfg_packet_e2w_wsto", self.header.rd_packet_t, size=self._params.num_glb_tiles, packed=True)
+            self.pcfg_packet_w2e_esto = self.var(
+                "pcfg_packet_w2e_esto", self.header.rd_packet_t, size=self._params.num_glb_tiles, packed=True)
 
-        self.cfg_tile_connected = self.var("cfg_tile_connected", self._params.num_glb_tiles + 1)
-        self.cfg_pcfg_tile_connected = self.var("cfg_pcfg_tile_connected", self._params.num_glb_tiles + 1)
-        self.wire(self.cfg_tile_connected[0], 0)
-        self.wire(self.cfg_pcfg_tile_connected[0], 0)
+            self.cfg_tile_connected = self.var("cfg_tile_connected", self._params.num_glb_tiles + 1)
+            self.cfg_pcfg_tile_connected = self.var("cfg_pcfg_tile_connected", self._params.num_glb_tiles + 1)
+            self.wire(self.cfg_tile_connected[0], 0)
+            self.wire(self.cfg_pcfg_tile_connected[0], 0)
 
         self.cgra_cfg_jtag_wr_en_wsti = self.var(
             "cgra_cfg_jtag_wr_en_wsti", 1, size=self._params.num_glb_tiles, packed=True)
@@ -247,32 +276,72 @@ class GlobalBuffer(Generator):
         # interface
         if_proc_tile2tile = GlbTileInterface(addr_width=self._params.glb_addr_width,
                                              data_width=self._params.bank_data_width, is_clk_en=True, is_strb=True)
+
+        if self._params.include_mu_glb_hw:
+            if_mu_rd_tile2tile = GlbTileDataLoopInterface(addr_width=self._params.glb_addr_width,
+                                                data_width=self._params.bank_data_width, is_clk_en=True, is_strb=False, has_wr_ifc=False, num_tracks=self._params.mu_switch_num_tracks, mu_word_num_tiles=self._params.mu_word_num_tiles)
+
+
         if_cfg_tile2tile = GlbTileInterface(addr_width=self._params.axi_addr_width,
                                             data_width=self._params.axi_data_width, is_clk_en=True, is_strb=False)
         if_sram_cfg_tile2tile = GlbTileInterface(addr_width=self._params.glb_addr_width,
                                                  data_width=self._params.axi_data_width, is_clk_en=True, is_strb=False)
 
         self.if_proc_list = []
+        self.if_mu_rd_list = []
         self.if_cfg_list = []
         self.if_sram_cfg_list = []
         for i in range(self._params.num_glb_tiles + 1):
             self.if_proc_list.append(self.interface(
                 if_proc_tile2tile, f"if_proc_tile2tile_{i}"))
+
+            if self._params.include_mu_glb_hw:
+                self.if_mu_rd_list.append(self.interface(
+                    if_mu_rd_tile2tile, f"if_mu_rd_tile2tile_{i}"))
+
             self.if_cfg_list.append(self.interface(
                 if_cfg_tile2tile, f"if_cfg_tile2tile_{i}"))
             self.if_sram_cfg_list.append(self.interface(
                 if_sram_cfg_tile2tile, f"if_sram_cfg_tile2tile_{i}"))
 
-        # Passthrough cgar_stall signals
+        # Passthrough cgra_stall signals
         self.wire(self.cgra_stall_in, self.cgra_stall)
 
         # GLB Tiles
         self.glb_tile = []
         for i in range(self._params.num_glb_tiles):
-            self.glb_tile.append(GlbTile(_params=self._params))
+             self.glb_tile.append(GlbTile(_params=self._params))
+
+
+        # GLB-MU translator
+        if self._params.include_mu_glb_hw:
+            self.glb_mu_transl = GlbMUTransl(_params=self._params)
+            self.add_child("glb_mu_transl",
+                           self.glb_mu_transl,
+                           clk=self.clk,
+                           reset=self.reset,
+                           addr_in=self.mu_tl_addr_in,
+                           rq_in_vld=self.mu_tl_rq_in_vld,
+                           rq_in_rdy=self.mu_tl_rq_in_rdy,
+                           size_in=self.mu_tl_size_in,
+                           source_in=self.mu_tl_source_in,
+                           addr2glb=self.mu_rd_addr,
+                           rd_en2glb=self.mu_rd_en,
+                           rd_data_in=self.mu_rd_data_w,
+                           rd_data_in_vld=self.mu_rd_data_valid_w,
+                           size_out=self.mu_tl_size_out,
+                           source_out=self.mu_tl_source_out,
+                           opcode_out=self.mu_tl_opcode_out,
+                           rd_data_out=self.mu_tl_data_out,
+                           resp_out_vld=self.mu_tl_resp_out_vld,
+                           resp_out_rdy=self.mu_tl_resp_out_rdy)
 
         self.wire(self.if_proc_list[-1].rd_data, 0)
         self.wire(self.if_proc_list[-1].rd_data_valid, 0)
+        if self._params.include_mu_glb_hw:
+            self.wire(self.if_mu_rd_list[-1].rd_data_e2w, 0)
+            self.wire(self.if_mu_rd_list[-1].rd_data_e2w_valid, 0)
+            self.wire(self.if_mu_rd_list[0].sub_packet_idx, 0)
         self.wire(self.if_cfg_list[-1].rd_data, 0)
         self.wire(self.if_cfg_list[-1].rd_data_valid, 0)
         self.wire(self.if_sram_cfg_list[-1].rd_data, 0)
@@ -280,16 +349,25 @@ class GlobalBuffer(Generator):
 
         self.add_glb_tile()
         self.add_always(self.proc_pipeline)
+        # if self._params.include_mu_glb_hw:
+        #     self.add_always(self.mu_rd_addr_pipeline)
         self.add_always(self.sram_cfg_pipeline)
         self.add_always(self.left_edge_proc_wr_ff)
         self.add_always(self.left_edge_proc_rd_in_ff)
         self.add_always(self.left_edge_proc_rd_out_logic)
         self.add_always(self.left_edge_proc_rd_out_ff)
+        if self._params.include_mu_glb_hw:
+            self.add_always(self.left_edge_mu_rd_in_ff)
+            self.add_always(self.left_edge_mu_rd_out_logic)
+            # self.add_always(self.left_edge_mu_rd_out_ff)
         self.add_proc_clk_en()
+        if self._params.include_mu_glb_hw:
+            self.add_mu_clk_en()
         self.add_always(self.left_edge_cfg_ff)
         self.add_always(self.left_edge_cgra_cfg_ff)
-        self.tile2tile_e2w_struct_wiring()
-        self.tile2tile_w2e_struct_wiring()
+        if self._params.include_glb_ring_switch:
+            self.tile2tile_e2w_struct_wiring()
+            self.tile2tile_w2e_struct_wiring()
         self.add_always(self.tile2tile_w2e_cfg_wiring)
         self.add_always(self.tile2tile_e2w_cfg_wiring)
         self.add_always(self.interrupt_pipeline)
@@ -344,7 +422,17 @@ class GlobalBuffer(Generator):
             self.proc_rd_en_d = self.proc_rd_en
             self.proc_rd_addr_d = self.proc_rd_addr
 
-    @always_ff((posedge, "clk"), (posedge, "reset"))
+    # @always_ff((posedge, "clk"), (posedge, "reset"))
+    # def mu_rd_addr_pipeline(self):
+    #     if self.reset:
+    #         self.mu_rd_en_d = 0
+    #         self.mu_rd_addr_d = 0
+    #     else:
+    #         self.mu_rd_en_d = self.mu_rd_en
+    #         self.mu_rd_addr_d = self.mu_rd_addr
+
+
+    @ always_ff((posedge, "clk"), (posedge, "reset"))
     def sram_cfg_pipeline(self):
         if self.reset:
             self.sram_cfg_wr_en_d = 0
@@ -396,7 +484,22 @@ class GlobalBuffer(Generator):
                        )
         self.wire(self.if_proc_list[0].rd_clk_en, self.proc_rd_clk_en)
 
-    @always_ff((posedge, "clk"), (posedge, "reset"))
+    def add_mu_clk_en(self):
+        self.mu_rd_clk_en_gen = GlbClkEnGen(cnt=2 * self._params.num_glb_tiles
+                                         + self._params.tile2sram_rd_delay + self._params.mu_clk_en_margin)
+        self.mu_rd_clk_en_gen.p_cnt.value = 2 * self._params.num_glb_tiles + \
+            self._params.tile2sram_rd_delay + self._params.mu_clk_en_margin
+        self.mu_rd_clk_en = self.var("mu_rd_clk_en", 1)
+        self.add_child("mu_rd_clk_en_gen",
+                       self.mu_rd_clk_en_gen,
+                       clk=self.clk,
+                       reset=self.reset,
+                       enable=self.mu_rd_en,
+                       clk_en=self.mu_rd_clk_en
+                       )
+        self.wire(self.if_mu_rd_list[0].rd_clk_en, self.mu_rd_clk_en)
+
+    @ always_ff((posedge, "clk"), (posedge, "reset"))
     def left_edge_proc_wr_ff(self):
         if self.reset:
             self.if_proc_list[0].wr_en = 0
@@ -444,6 +547,16 @@ class GlobalBuffer(Generator):
                 self.proc_rd_type = self.proc_rd_type
                 self.proc_rd_addr_sel = self.proc_rd_addr_sel
 
+
+    @always_ff((posedge, "clk"), (posedge, "reset"))
+    def left_edge_mu_rd_in_ff(self):
+        if self.reset:
+            self.if_mu_rd_list[0].rd_en = 0
+            self.if_mu_rd_list[0].rd_addr = 0
+        else:
+            self.if_mu_rd_list[0].rd_en = self.mu_rd_en
+            self.if_mu_rd_list[0].rd_addr = self.mu_rd_addr
+
     @always_comb
     def left_edge_proc_rd_out_logic(self):
         if self.proc_rd_type == self.proc_rd_type_e.axi:
@@ -466,6 +579,22 @@ class GlobalBuffer(Generator):
             self.if_sram_cfg_rd_data_w = 0
             self.if_sram_cfg_rd_data_valid_w = 0
 
+    @always_comb
+    def left_edge_mu_rd_out_logic(self):
+
+        #FIXME: Kratos won't allow this. Need to figure out how to do this.
+        # for sub_packet in range(self._params.mu_switch_num_tracks):
+            # self.mu_rd_data_w[((sub_packet + 1) * self._params.bank_data_width) - 1, sub_packet * self._params.bank_data_width] = self.if_mu_rd_list[0].rd_data_e2w[sub_packet]
+
+        self.mu_rd_data_w[self._params.bank_data_width - 1, 0] = self.if_mu_rd_list[0].rd_data_e2w[0]
+        self.mu_rd_data_w[self._params.bank_data_width * 2 - 1, self._params.bank_data_width * 1] = self.if_mu_rd_list[0].rd_data_e2w[1]
+        self.mu_rd_data_w[self._params.bank_data_width * 3 - 1, self._params.bank_data_width * 2] = self.if_mu_rd_list[0].rd_data_e2w[2]
+        self.mu_rd_data_w[self._params.bank_data_width * 4 - 1, self._params.bank_data_width * 3] = self.if_mu_rd_list[0].rd_data_e2w[3]
+
+
+        # Just take 0th valid (entire packet should be moving in lock-step)
+        self.mu_rd_data_valid_w = self.if_mu_rd_list[0].rd_data_e2w_valid[0]
+
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def left_edge_proc_rd_out_ff(self):
         if self.reset:
@@ -479,7 +608,16 @@ class GlobalBuffer(Generator):
             self.if_sram_cfg_rd_data = self.if_sram_cfg_rd_data_w
             self.if_sram_cfg_rd_data_valid = self.if_sram_cfg_rd_data_valid_w
 
-    @always_ff((posedge, "clk"), (posedge, "reset"))
+    # @always_ff((posedge, "clk"), (posedge, "reset"))
+    # def left_edge_mu_rd_out_ff(self):
+    #     if self.reset:
+    #         self.mu_rd_data = 0
+    #         self.mu_rd_data_valid = 0
+    #     else:
+    #         self.mu_rd_data = self.mu_rd_data_w
+    #         self.mu_rd_data_valid = self.mu_rd_data_valid_w
+
+    @ always_ff((posedge, "clk"), (posedge, "reset"))
     def left_edge_cfg_ff(self):
         if self.reset:
             self.if_cfg_list[0].wr_en = 0
@@ -604,64 +742,6 @@ class GlobalBuffer(Generator):
                            if_proc_wst_s_rd_data=self.if_proc_list[i].rd_data,
                            if_proc_wst_s_rd_data_valid=self.if_proc_list[i].rd_data_valid,
 
-                           # strm
-                           strm_wr_en_e2w_esti=self.strm_packet_e2w_esti[i]["wr"]['wr_en'],
-                           strm_wr_strb_e2w_esti=self.strm_packet_e2w_esti[i]["wr"]['wr_strb'],
-                           strm_wr_addr_e2w_esti=self.strm_packet_e2w_esti[i]["wr"]['wr_addr'],
-                           strm_wr_data_e2w_esti=self.strm_packet_e2w_esti[i]["wr"]['wr_data'],
-                           strm_rd_en_e2w_esti=self.strm_packet_e2w_esti[i]["rdrq"]['rd_en'],
-                           strm_rd_addr_e2w_esti=self.strm_packet_e2w_esti[i]["rdrq"]['rd_addr'],
-                           strm_rd_data_e2w_esti=self.strm_packet_e2w_esti[i]["rdrs"]['rd_data'],
-                           strm_rd_data_valid_e2w_esti=self.strm_packet_e2w_esti[i]["rdrs"]['rd_data_valid'],
-
-                           strm_wr_en_w2e_esto=self.strm_packet_w2e_esto[i]["wr"]['wr_en'],
-                           strm_wr_strb_w2e_esto=self.strm_packet_w2e_esto[i]["wr"]['wr_strb'],
-                           strm_wr_addr_w2e_esto=self.strm_packet_w2e_esto[i]["wr"]['wr_addr'],
-                           strm_wr_data_w2e_esto=self.strm_packet_w2e_esto[i]["wr"]['wr_data'],
-                           strm_rd_en_w2e_esto=self.strm_packet_w2e_esto[i]["rdrq"]['rd_en'],
-                           strm_rd_addr_w2e_esto=self.strm_packet_w2e_esto[i]["rdrq"]['rd_addr'],
-                           strm_rd_data_w2e_esto=self.strm_packet_w2e_esto[i]["rdrs"]['rd_data'],
-                           strm_rd_data_valid_w2e_esto=self.strm_packet_w2e_esto[i]["rdrs"]['rd_data_valid'],
-
-                           strm_wr_en_w2e_wsti=self.strm_packet_w2e_wsti[i]["wr"]['wr_en'],
-                           strm_wr_strb_w2e_wsti=self.strm_packet_w2e_wsti[i]["wr"]['wr_strb'],
-                           strm_wr_addr_w2e_wsti=self.strm_packet_w2e_wsti[i]["wr"]['wr_addr'],
-                           strm_wr_data_w2e_wsti=self.strm_packet_w2e_wsti[i]["wr"]['wr_data'],
-                           strm_rd_en_w2e_wsti=self.strm_packet_w2e_wsti[i]["rdrq"]['rd_en'],
-                           strm_rd_addr_w2e_wsti=self.strm_packet_w2e_wsti[i]["rdrq"]['rd_addr'],
-                           strm_rd_data_w2e_wsti=self.strm_packet_w2e_wsti[i]["rdrs"]['rd_data'],
-                           strm_rd_data_valid_w2e_wsti=self.strm_packet_w2e_wsti[i]["rdrs"]['rd_data_valid'],
-
-                           strm_wr_en_e2w_wsto=self.strm_packet_e2w_wsto[i]["wr"]['wr_en'],
-                           strm_wr_strb_e2w_wsto=self.strm_packet_e2w_wsto[i]["wr"]['wr_strb'],
-                           strm_wr_addr_e2w_wsto=self.strm_packet_e2w_wsto[i]["wr"]['wr_addr'],
-                           strm_wr_data_e2w_wsto=self.strm_packet_e2w_wsto[i]["wr"]['wr_data'],
-                           strm_rd_en_e2w_wsto=self.strm_packet_e2w_wsto[i]["rdrq"]['rd_en'],
-                           strm_rd_addr_e2w_wsto=self.strm_packet_e2w_wsto[i]["rdrq"]['rd_addr'],
-                           strm_rd_data_e2w_wsto=self.strm_packet_e2w_wsto[i]["rdrs"]['rd_data'],
-                           strm_rd_data_valid_e2w_wsto=self.strm_packet_e2w_wsto[i]["rdrs"]['rd_data_valid'],
-
-                           # pcfg
-                           pcfg_rd_en_e2w_esti=self.pcfg_packet_e2w_esti[i]["rdrq"]['rd_en'],
-                           pcfg_rd_addr_e2w_esti=self.pcfg_packet_e2w_esti[i]["rdrq"]['rd_addr'],
-                           pcfg_rd_data_e2w_esti=self.pcfg_packet_e2w_esti[i]["rdrs"]['rd_data'],
-                           pcfg_rd_data_valid_e2w_esti=self.pcfg_packet_e2w_esti[i]["rdrs"]['rd_data_valid'],
-
-                           pcfg_rd_en_w2e_esto=self.pcfg_packet_w2e_esto[i]["rdrq"]['rd_en'],
-                           pcfg_rd_addr_w2e_esto=self.pcfg_packet_w2e_esto[i]["rdrq"]['rd_addr'],
-                           pcfg_rd_data_w2e_esto=self.pcfg_packet_w2e_esto[i]["rdrs"]['rd_data'],
-                           pcfg_rd_data_valid_w2e_esto=self.pcfg_packet_w2e_esto[i]["rdrs"]['rd_data_valid'],
-
-                           pcfg_rd_en_w2e_wsti=self.pcfg_packet_w2e_wsti[i]["rdrq"]['rd_en'],
-                           pcfg_rd_addr_w2e_wsti=self.pcfg_packet_w2e_wsti[i]["rdrq"]['rd_addr'],
-                           pcfg_rd_data_w2e_wsti=self.pcfg_packet_w2e_wsti[i]["rdrs"]['rd_data'],
-                           pcfg_rd_data_valid_w2e_wsti=self.pcfg_packet_w2e_wsti[i]["rdrs"]['rd_data_valid'],
-
-                           pcfg_rd_en_e2w_wsto=self.pcfg_packet_e2w_wsto[i]["rdrq"]['rd_en'],
-                           pcfg_rd_addr_e2w_wsto=self.pcfg_packet_e2w_wsto[i]["rdrq"]['rd_addr'],
-                           pcfg_rd_data_e2w_wsto=self.pcfg_packet_e2w_wsto[i]["rdrs"]['rd_data'],
-                           pcfg_rd_data_valid_e2w_wsto=self.pcfg_packet_e2w_wsto[i]["rdrs"]['rd_data_valid'],
-
                            # cfg
                            if_cfg_est_m_wr_en=self.if_cfg_list[i + 1].wr_en,
                            if_cfg_est_m_wr_clk_en=self.if_cfg_list[i + 1].wr_clk_en,
@@ -682,11 +762,6 @@ class GlobalBuffer(Generator):
                            if_cfg_wst_s_rd_addr=self.if_cfg_list[i].rd_addr,
                            if_cfg_wst_s_rd_data=self.if_cfg_list[i].rd_data,
                            if_cfg_wst_s_rd_data_valid=self.if_cfg_list[i].rd_data_valid,
-
-                           cfg_tile_connected_wsti=self.cfg_tile_connected[i],
-                           cfg_tile_connected_esto=self.cfg_tile_connected[i + 1],
-                           cfg_pcfg_tile_connected_wsti=self.cfg_pcfg_tile_connected[i],
-                           cfg_pcfg_tile_connected_esto=self.cfg_pcfg_tile_connected[i + 1],
 
                            strm_data_f2g=self.strm_data_f2g[i],
                            strm_data_f2g_vld=self.strm_data_f2g_vld[i],
@@ -745,7 +820,106 @@ class GlobalBuffer(Generator):
                            strm_g2f_interrupt_pulse=self.strm_g2f_interrupt_pulse_w[i],
                            pcfg_g2f_interrupt_pulse=self.pcfg_g2f_interrupt_pulse_w[i])
 
-    @always_ff((posedge, "clk"), (posedge, "reset"))
+
+            if self._params.include_glb_ring_switch:
+                # strm
+                self.wire(self.glb_tile[i].ports.strm_wr_en_e2w_esti, self.strm_packet_e2w_esti[i]["wr"]['wr_en'])
+                self.wire(self.glb_tile[i].ports.strm_wr_strb_e2w_esti, self.strm_packet_e2w_esti[i]["wr"]['wr_strb'])
+                self.wire(self.glb_tile[i].ports.strm_wr_addr_e2w_esti, self.strm_packet_e2w_esti[i]["wr"]['wr_addr'])
+                self.wire(self.glb_tile[i].ports.strm_wr_data_e2w_esti, self.strm_packet_e2w_esti[i]["wr"]['wr_data'])
+                self.wire(self.glb_tile[i].ports.strm_rd_en_e2w_esti, self.strm_packet_e2w_esti[i]["rdrq"]['rd_en'])
+                self.wire(self.glb_tile[i].ports.strm_rd_addr_e2w_esti, self.strm_packet_e2w_esti[i]["rdrq"]['rd_addr'])
+                self.wire(self.glb_tile[i].ports.strm_rd_data_e2w_esti, self.strm_packet_e2w_esti[i]["rdrs"]['rd_data'])
+                self.wire(self.glb_tile[i].ports.strm_rd_data_valid_e2w_esti, self.strm_packet_e2w_esti[i]["rdrs"]['rd_data_valid'])
+
+                self.wire(self.glb_tile[i].ports.strm_wr_en_w2e_wsti, self.strm_packet_w2e_wsti[i]["wr"]['wr_en'])
+                self.wire(self.glb_tile[i].ports.strm_wr_strb_w2e_wsti, self.strm_packet_w2e_wsti[i]["wr"]['wr_strb'])
+                self.wire(self.glb_tile[i].ports.strm_wr_addr_w2e_wsti, self.strm_packet_w2e_wsti[i]["wr"]['wr_addr'])
+                self.wire(self.glb_tile[i].ports.strm_wr_data_w2e_wsti, self.strm_packet_w2e_wsti[i]["wr"]['wr_data'])
+                self.wire(self.glb_tile[i].ports.strm_rd_en_w2e_wsti, self.strm_packet_w2e_wsti[i]["rdrq"]['rd_en'])
+                self.wire(self.glb_tile[i].ports.strm_rd_addr_w2e_wsti, self.strm_packet_w2e_wsti[i]["rdrq"]['rd_addr'])
+                self.wire(self.glb_tile[i].ports.strm_rd_data_w2e_wsti, self.strm_packet_w2e_wsti[i]["rdrs"]['rd_data'])
+                self.wire(self.glb_tile[i].ports.strm_rd_data_valid_w2e_wsti, self.strm_packet_w2e_wsti[i]["rdrs"]['rd_data_valid'])
+
+                self.wire(self.strm_packet_w2e_esto[i]["wr"]['wr_en'], self.glb_tile[i].ports.strm_wr_en_w2e_esto)
+                self.wire(self.strm_packet_w2e_esto[i]["wr"]['wr_strb'], self.glb_tile[i].ports.strm_wr_strb_w2e_esto)
+                self.wire(self.strm_packet_w2e_esto[i]["wr"]['wr_addr'], self.glb_tile[i].ports.strm_wr_addr_w2e_esto)
+                self.wire(self.strm_packet_w2e_esto[i]["wr"]['wr_data'], self.glb_tile[i].ports.strm_wr_data_w2e_esto)
+                self.wire(self.strm_packet_w2e_esto[i]["rdrq"]['rd_en'], self.glb_tile[i].ports.strm_rd_en_w2e_esto)
+                self.wire(self.strm_packet_w2e_esto[i]["rdrq"]['rd_addr'], self.glb_tile[i].ports.strm_rd_addr_w2e_esto)
+                self.wire(self.strm_packet_w2e_esto[i]["rdrs"]['rd_data'], self.glb_tile[i].ports.strm_rd_data_w2e_esto)
+                self.wire(self.strm_packet_w2e_esto[i]["rdrs"]['rd_data_valid'], self.glb_tile[i].ports.strm_rd_data_valid_w2e_esto)
+
+                self.wire(self.strm_packet_e2w_wsto[i]["wr"]['wr_en'], self.glb_tile[i].ports.strm_wr_en_e2w_wsto)
+                self.wire(self.strm_packet_e2w_wsto[i]["wr"]['wr_strb'], self.glb_tile[i].ports.strm_wr_strb_e2w_wsto)
+                self.wire(self.strm_packet_e2w_wsto[i]["wr"]['wr_addr'], self.glb_tile[i].ports.strm_wr_addr_e2w_wsto)
+                self.wire(self.strm_packet_e2w_wsto[i]["wr"]['wr_data'], self.glb_tile[i].ports.strm_wr_data_e2w_wsto)
+                self.wire(self.strm_packet_e2w_wsto[i]["rdrq"]['rd_en'], self.glb_tile[i].ports.strm_rd_en_e2w_wsto)
+                self.wire(self.strm_packet_e2w_wsto[i]["rdrq"]['rd_addr'], self.glb_tile[i].ports.strm_rd_addr_e2w_wsto)
+                self.wire(self.strm_packet_e2w_wsto[i]["rdrs"]['rd_data'], self.glb_tile[i].ports.strm_rd_data_e2w_wsto)
+                self.wire(self.strm_packet_e2w_wsto[i]["rdrs"]['rd_data_valid'], self.glb_tile[i].ports.strm_rd_data_valid_e2w_wsto)
+
+                # pcfg
+                self.wire(self.glb_tile[i].ports.pcfg_rd_en_e2w_esti, self.pcfg_packet_e2w_esti[i]["rdrq"]['rd_en'])
+                self.wire(self.glb_tile[i].ports.pcfg_rd_addr_e2w_esti, self.pcfg_packet_e2w_esti[i]["rdrq"]['rd_addr'])
+                self.wire(self.glb_tile[i].ports.pcfg_rd_data_e2w_esti, self.pcfg_packet_e2w_esti[i]["rdrs"]['rd_data'])
+                self.wire(self.glb_tile[i].ports.pcfg_rd_data_valid_e2w_esti, self.pcfg_packet_e2w_esti[i]["rdrs"]['rd_data_valid'])
+
+                self.wire(self.glb_tile[i].ports.pcfg_rd_en_w2e_wsti, self.pcfg_packet_w2e_wsti[i]["rdrq"]['rd_en'])
+                self.wire(self.glb_tile[i].ports.pcfg_rd_addr_w2e_wsti, self.pcfg_packet_w2e_wsti[i]["rdrq"]['rd_addr'])
+                self.wire(self.glb_tile[i].ports.pcfg_rd_data_w2e_wsti, self.pcfg_packet_w2e_wsti[i]["rdrs"]['rd_data'])
+                self.wire(self.glb_tile[i].ports.pcfg_rd_data_valid_w2e_wsti, self.pcfg_packet_w2e_wsti[i]["rdrs"]['rd_data_valid'])
+
+                self.wire(self.pcfg_packet_w2e_esto[i]["rdrq"]['rd_en'], self.glb_tile[i].ports.pcfg_rd_en_w2e_esto)
+                self.wire(self.pcfg_packet_w2e_esto[i]["rdrq"]['rd_addr'], self.glb_tile[i].ports.pcfg_rd_addr_w2e_esto)
+                self.wire(self.pcfg_packet_w2e_esto[i]["rdrs"]['rd_data'], self.glb_tile[i].ports.pcfg_rd_data_w2e_esto)
+                self.wire(self.pcfg_packet_w2e_esto[i]["rdrs"]['rd_data_valid'], self.glb_tile[i].ports.pcfg_rd_data_valid_w2e_esto)
+
+                self.wire(self.pcfg_packet_e2w_wsto[i]["rdrq"]['rd_en'], self.glb_tile[i].ports.pcfg_rd_en_e2w_wsto)
+                self.wire(self.pcfg_packet_e2w_wsto[i]["rdrq"]['rd_addr'], self.glb_tile[i].ports.pcfg_rd_addr_e2w_wsto)
+                self.wire(self.pcfg_packet_e2w_wsto[i]["rdrs"]['rd_data'], self.glb_tile[i].ports.pcfg_rd_data_e2w_wsto)
+                self.wire(self.pcfg_packet_e2w_wsto[i]["rdrs"]['rd_data_valid'], self.glb_tile[i].ports.pcfg_rd_data_valid_e2w_wsto)
+
+                # tile connected cfg
+                self.wire(self.glb_tile[i].ports.cfg_tile_connected_wsti, self.cfg_tile_connected[i])
+                self.wire(self.glb_tile[i].ports.cfg_pcfg_tile_connected_wsti, self.cfg_pcfg_tile_connected[i])
+                self.wire(self.cfg_tile_connected[i + 1], self.glb_tile[i].ports.cfg_tile_connected_esto)
+                self.wire(self.cfg_pcfg_tile_connected[i + 1], self.glb_tile[i].ports.cfg_pcfg_tile_connected_esto)
+
+            if self._params.include_mu_glb_hw:
+                # MU interface
+                self.wire(self.if_mu_rd_list[i + 1].rd_en, self.glb_tile[i].ports.if_mu_rd_est_m_rd_en)
+                self.wire(self.if_mu_rd_list[i + 1].rd_clk_en, self.glb_tile[i].ports.if_mu_rd_est_m_rd_clk_en)
+                self.wire(self.if_mu_rd_list[i + 1].rd_addr, self.glb_tile[i].ports.if_mu_rd_est_m_rd_addr)
+                self.wire(self.if_mu_rd_list[i + 1].sub_packet_idx, self.glb_tile[i].ports.if_mu_rd_est_m_sub_packet_idx)
+
+                # RIGHT EDGE: LOOP BACK
+                if i != self._params.num_glb_tiles - 1:
+                    self.wire(self.glb_tile[i].ports.if_mu_rd_est_m_rd_data_e2w, self.if_mu_rd_list[i + 1].rd_data_e2w)
+                    self.wire(self.glb_tile[i].ports.if_mu_rd_est_m_rd_data_e2w_valid, self.if_mu_rd_list[i + 1].rd_data_e2w_valid)
+                else:
+                    self.wire(self.glb_tile[i].ports.if_mu_rd_est_m_rd_data_e2w, self.glb_tile[i].ports.if_mu_rd_est_m_rd_data_w2e)
+                    self.wire(self.glb_tile[i].ports.if_mu_rd_est_m_rd_data_e2w_valid, self.glb_tile[i].ports.if_mu_rd_est_m_rd_data_w2e_valid)
+
+                self.wire(self.if_mu_rd_list[i].rd_data_w2e, self.glb_tile[i].ports.if_mu_rd_est_m_rd_data_w2e)
+                self.wire(self.if_mu_rd_list[i].rd_data_w2e_valid, self.glb_tile[i].ports.if_mu_rd_est_m_rd_data_w2e_valid)
+
+                self.wire(self.glb_tile[i].ports.if_mu_rd_wst_s_rd_en, self.if_mu_rd_list[i].rd_en)
+                self.wire(self.glb_tile[i].ports.if_mu_rd_wst_s_rd_clk_en, self.if_mu_rd_list[i].rd_clk_en)
+                self.wire(self.glb_tile[i].ports.if_mu_rd_wst_s_rd_addr, self.if_mu_rd_list[i].rd_addr)
+                self.wire(self.glb_tile[i].ports.if_mu_rd_wst_s_sub_packet_idx, self.if_mu_rd_list[i].sub_packet_idx)
+                self.wire(self.if_mu_rd_list[i].rd_data_e2w, self.glb_tile[i].ports.if_mu_rd_wst_s_rd_data_e2w)
+                self.wire(self.if_mu_rd_list[i].rd_data_e2w_valid, self.glb_tile[i].ports.if_mu_rd_wst_s_rd_data_e2w_valid)
+
+                # LEFT EDGE
+                if i != 0:
+                    self.wire(self.glb_tile[i].ports.if_mu_rd_wst_s_rd_data_w2e, self.if_mu_rd_list[i-1].rd_data_w2e)
+                    self.wire(self.glb_tile[i].ports.if_mu_rd_wst_s_rd_data_w2e_valid, self.if_mu_rd_list[i-1].rd_data_w2e_valid)
+                else:
+                    self.wire(self.glb_tile[i].ports.if_mu_rd_wst_s_rd_data_w2e, 0)
+                    self.wire(self.glb_tile[i].ports.if_mu_rd_wst_s_rd_data_w2e_valid, 0)
+
+    @ always_ff((posedge, "clk"), (posedge, "reset"))
     def interrupt_pipeline(self):
         if self.reset:
             for i in range(self._params.num_glb_tiles):
