@@ -138,17 +138,7 @@ if [ "$use_container" == True ]; then
       trap "docker kill $container_name" EXIT
 
       # aha/bashrc does important things in bg, but does not normally get invoked via 'docker exec'
-      # docker exec $container_name /bin/bash -c 'source /aha/aha/bin/docker-bashrc; wait'
-
-      docker exec $container_name /bin/bash -c 'source /aha/aha/bin/docker-bashrc' &
-      # Wait 60s for the essentials in bashrc to take effect, then continue
-      echo wait5-1/6; sleep 5
-      echo wait5-2/6; sleep 5
-      echo wait5-3/6; sleep 5
-      echo wait5-4/6; sleep 5
-      echo wait5-5/6; sleep 5
-      echo wait5-6/6; sleep 5
-
+      docker exec $container_name /bin/bash -c 'source /aha/aha/bin/docker-bashrc --fast'
 
       # Delete all dangling images created more than 6 hours ago.
       # Notice that we prune images *after* starting container (pruner
