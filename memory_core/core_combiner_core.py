@@ -39,7 +39,8 @@ class CoreCombinerCore(LakeCoreBase):
                  rf=False,
                  ready_valid=True,
                  mem_width=mem_width_default,
-                 mem_depth=512):
+                 mem_depth=512,
+                 new_pond=False):
 
         self.pnr_tag = pnr_tag
         self.input_prefix = input_prefix
@@ -52,6 +53,8 @@ class CoreCombinerCore(LakeCoreBase):
         self.fw = mem_width // data_width
 
         self.ready_valid = ready_valid
+
+        self.new_pond = new_pond
 
         self.read_delay = 1
         if self.rf:
@@ -87,7 +90,8 @@ class CoreCombinerCore(LakeCoreBase):
                      self.config_addr_width,
                      cc_core_name,
                      dual_port,
-                     rf)
+                     rf,
+                     new_pond)
 
         # Check for circuit caching
         if cache_key not in LakeCoreBase._circuit_cache:
@@ -110,7 +114,8 @@ class CoreCombinerCore(LakeCoreBase):
                                    read_delay=self.read_delay,
                                    fifo_depth=self.fifo_depth,
                                    tech_map_name=tech_map_name,
-                                   ready_valid=self.ready_valid)
+                                   ready_valid=self.ready_valid,
+                                   new_pond=self.new_pond)
 
             self.dut = self.CC.dut
 
