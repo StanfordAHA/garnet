@@ -705,8 +705,12 @@ class GlbTile(Generator):
     def flush_emitted_ff(self):
         if self.reset:
             self.flush_emitted = 0
-        elif self.data_flush:
-            self.flush_emitted = 1
+        else:
+            # Clear flush_emitted once the app ends
+            if self.strm_f2g_interrupt_pulse:
+                self.flush_emitted = 0
+            elif self.data_flush:
+                self.flush_emitted = 1
 
     def struct_wiring(self):
         self.wr_packet_sw2bankarr = self.var(
