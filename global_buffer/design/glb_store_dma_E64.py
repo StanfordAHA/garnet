@@ -226,8 +226,6 @@ class GlbStoreDma_E64(Generator):
 
         self.wire(self.packet_64_pop_ready, self.fifo_pop_ready[0] & self.fifo_pop_ready[1] & self.fifo_pop_ready[2] & self.fifo_pop_ready[3])
 
-        self.wire(self.packet_64_pop_ready, self.fifo_pop_ready[0] & self.fifo_pop_ready[1] & self.fifo_pop_ready[2] & self.fifo_pop_ready[3])
-
         # Loop iteration shared for cycle and data
         self.loop_iter = GlbLoopIter(self._params, loop_level=self._params.store_dma_loop_level)
         self.add_child("loop_iter",

@@ -629,8 +629,6 @@ class GlbLoadDma_E64_MB(Generator):
             # for i in range(self._params.cgra_per_glb):
             #     if self.rdrs_packet[i]['rd_data_valid']:
             #         self.bank_rdrs_data_cache_r[i] = self.rdrs_packet[i]['rd_data']
-            if self.rdrs_packet[0]['rd_data_valid']:
-                self.bank_rdrs_data_cache_r[0] = self.rdrs_packet[0]['rd_data']
 
                 if self.rdrs_packet[0]['rd_data_valid']:
                     self.bank_rdrs_data_cache_r[0] = self.rdrs_packet[0]['rd_data']

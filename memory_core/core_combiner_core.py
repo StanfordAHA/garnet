@@ -146,14 +146,14 @@ class CoreCombinerCore(LakeCoreBase):
         assert runtime_mode in self.get_modes_supported()
         self.runtime_mode = runtime_mode
 
-    def get_config_bitstream(self, config_tuple, active_core_ports=None, full_instance_name=None):
+    def get_config_bitstream(self, config_tuple, active_core_ports=None):
         # print(self.runtime_mode)
         # assert self.runtime_mode is not None
         configs = []
 
-        print("CORE_COMBINER_CORE_CONFIG")
-        print(self.instance_name)
-        print(config_tuple)
+        # print("CORE_COMBINER_CORE_CONFIG")
+        # print(self.instance_name)
+        # print(config_tuple)
 
         # Check if PE, ready_valid, and dict
         use_pe_rv_config = self.ready_valid and isinstance(config_tuple, dict) and self.pnr_tag == "p"
@@ -176,8 +176,8 @@ class CoreCombinerCore(LakeCoreBase):
                         instr['mode'] = 'stencil_valid'
                 elif 'mode' in instr and instr['mode'] == 'sram':
                     instr['mode'] = 'ROM'
-                    # config_extra_rom = [(f"{self.get_port_remap()['ROM']['wen']}_reg_sel", 1)]
-                    config_extra_rom = []
+                    config_extra_rom = [(f"{self.get_port_remap()['ROM']['wen']}_reg_sel", 1)]
+                    # config_extra_rom = []
                     for name, v in config_extra_rom:
                         configs = [self.get_config_data(name, v)] + configs
                 elif 'mode' not in instr and 'stencil_valid' in instr:
@@ -269,10 +269,7 @@ class CoreCombinerCore(LakeCoreBase):
                 active_1b_output = 0
 
             if input_bit_count == 0 and input_count == 0 and ((output_count > 0) or (output_bit_count)):
-                print("CONSTANT PE")
                 is_constant_pe = 1
-            else:
-                print("Not set to constant")
 
             # These should be maps from a port to how much data it needs...
             input_bogus = {}

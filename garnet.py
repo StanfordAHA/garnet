@@ -337,7 +337,7 @@ class Garnet(Generator):
             node_node_num = int(node[1:])
 
             result += self.interconnect.configure_placement(x, y, instr,
-                                                            node_pnr_tag, node_node_num, active_core_ports, instance)
+                                                            node_pnr_tag, node_node_num, active_core_ports)
             if node in self.pes_with_packed_ponds:
                 print(f"pond {self.pes_with_packed_ponds[node]} being packed with {node} in {x},{y}")
                 node = self.pes_with_packed_ponds[node]
@@ -348,7 +348,7 @@ class Garnet(Generator):
                     continue
                 instr = instrs[instance]
                 result += self.interconnect.configure_placement(x, y, instr,
-                                                                node_pnr_tag, node_node_num, active_core_ports, instance)
+                                                                node_pnr_tag, node_node_num, active_core_ports)
         return result
 
     def convert_mapped_to_netlist(self, mapped):
@@ -568,8 +568,7 @@ class Garnet(Generator):
                         mode = 'ROM'
                         # Actually use wr addr for rom mode...
                         hack_remap = {
-                            # 'addr_in_0': 'wr_addr_in',
-                            'addr_in_0': 'rd_addr_in',
+                            'addr_in_0': 'wr_addr_in',
                             'ren_in_0': 'ren',
                             'data_out_0': 'data_out'
                         }

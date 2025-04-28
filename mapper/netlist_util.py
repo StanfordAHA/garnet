@@ -991,30 +991,6 @@ class FixInputsOutputAndPipeline(Visitor):
     def generic_visit(self, node: DagNode):
         Visitor.generic_visit(self, node)
 
-        # HACK: Duplicate clockwork generated shift registers for dense RV apps
-        # This change is a temporary workaround to fix the delay as in RV mode two regs will be
-        # mapped to one fifo with delay of one
-        dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1"
-        if (dense_ready_valid):
-            if node.node_name == "Register" and "$d_reg" in node.iname:
-                original_children = list(node.children())
-                new_children = []
-                for child in original_children:
-                    mapped_child = self.node_map[child]
-                    new_reg_sink = RegisterSink(
-                        mapped_child,
-                        iname=node.iname + "$dup",
-                    )
-                    new_reg_source = RegisterSource(
-                        iname=node.iname + "$dup"
-                    )
-                    self.dag_sinks.append(new_reg_sink)
-                    self.dag_sources.append(new_reg_source)
-                    self.node_map[new_reg_sink] = new_reg_sink
-                    self.node_map[new_reg_source] = new_reg_source
-                    new_children.append(new_reg_source)
-                node.set_children(*new_children)
-
         if node.node_name == "global.IO" or node.node_name == "global.BitIO":
             dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1"
             if "write" in node.iname:
