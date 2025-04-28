@@ -25,6 +25,9 @@ from gemstone.generator.from_magma import FromMagma
 import mantle
 from gemstone.generator.const import Const
 from canal.util import IOSide
+from canal.logic import ReadyValidLoopBack
+from matrix_unit.cgra2mu_ready_and import cgra2mu_ready_and
+from kratos.util import to_magma
 
 # set the debug mode to false to speed up construction
 from gemstone.generator.generator import set_debug_mode
@@ -194,7 +197,9 @@ class Garnet(Generator):
                 )
 
             # Matrix unit <-> interconnnect ports connection
-            self.cgra2mu_ready_and = FromMagma(mantle.DefineAnd(height=num_output_channels, width=1))
+            self.cgra2mu_ready_and = FromMagma(to_magma(cgra2mu_ready_and(height=num_output_channels), flatten_array=True))
+
+            self.mu2cgra_rv_loopback_and = FromMagma(to_magma(ReadyValidLoopBack(), flatten_array=True))
 
             if dense_only:
                 cgra_track_width = 16
@@ -207,6 +212,10 @@ class Garnet(Generator):
             num_mu_io_tiles = int(num_output_channels / 2)
             mu_io_startX = int(((self.width - num_fabric_cols_removed) - num_mu_io_tiles) / 2) + num_fabric_cols_removed
             mu_io_endX = mu_io_startX + num_mu_io_tiles - 1
+
+            # Ready-valid loopback
+            self.wire(self.mu2cgra_rv_loopback_and.ports.valid_in, self.convert(self.ports.mu2cgra_valid, magma.Bits[1]))
+            self.wire(self.mu2cgra_rv_loopback_and.ports.ready_in, self.convert(self.cgra2mu_ready_and.ports.anded_ready_out, magma.Bits[1]))
 
             for i in range(num_output_channels):
                 io_num = i % 2
@@ -221,17 +230,18 @@ class Garnet(Generator):
 
                 self.wire(
                     self.ports.mu2cgra[i], self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{cgra_col_num:02X}_Y{mu_io_tile_row:02X}"][:cgra_track_width - width_difference])
+                # Gated valid goes into the tile array, broadcast to all I/O tiles
                 self.wire(
-                    self.ports.mu2cgra_valid,
+                    self.convert(self.mu2cgra_rv_loopback_and.ports.valid_out, magma.bit),
                     self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{cgra_col_num:02X}_Y{mu_io_tile_row:02X}_valid"])
 
                 self.wire(
-                    self.cgra2mu_ready_and.ports[f"I{i}"],
+                    self.cgra2mu_ready_and.ports[f"readys_in_{i}"],
                     self.convert(
                         self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{cgra_col_num:02X}_Y{mu_io_tile_row:02X}_ready"],
                         magma.Bits[1]))
 
-            self.wire(self.convert(self.cgra2mu_ready_and.ports.O, magma.bit), self.ports.cgra2mu_ready)
+            self.wire(self.convert(self.cgra2mu_ready_and.ports.anded_ready_out, magma.bit), self.ports.cgra2mu_ready)
 
             # Matrix unit <-> GLB ports connection
             if self.include_mu_glb_hw:
