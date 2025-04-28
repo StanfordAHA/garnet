@@ -8,7 +8,7 @@ class GlbMUTransl(Generator):
     def __init__(self, _params: GlobalBufferParams):
         self._params = _params
         super().__init__(f"glb_mu_transl")
-      
+
         # Clock and Reset
         self.clk = self.clock("clk")
         self.reset = self.reset("reset")
@@ -29,7 +29,7 @@ class GlbMUTransl(Generator):
 
         self.rd_data_out = self.output("rd_data_out", self._params.mu_word_width)
         self.resp_out_vld = self.output("resp_out_vld", 1)
-        self.resp_out_rdy = self.input("resp_out_rdy", 1) 
+        self.resp_out_rdy = self.input("resp_out_rdy", 1)
 
         # To/From GLB
         self.addr2glb = self.output("addr2glb", self._params.glb_addr_width)
@@ -46,7 +46,7 @@ class GlbMUTransl(Generator):
 
         # Local vars
         self.glb_req_counter = self.var("glb_req_counter",self.num_glb_reqs_bitwidth)
-        self.next_glb_req_counter = self.var("next_glb_req_counter",self.num_glb_reqs_bitwidth) 
+        self.next_glb_req_counter = self.var("next_glb_req_counter",self.num_glb_reqs_bitwidth)
         self.burst_addr_incr = self.var("burst_addr_incr", self._params.mu_addr_width)
         self.addr_to_adjuster = self.var("addr_to_adjuster", self._params.mu_addr_width)
         self.rd_en2glb_w = self.var("rd_en2glb_w", 1)
@@ -74,14 +74,14 @@ class GlbMUTransl(Generator):
         self.addr_fifo_empty = self.var("addr_fifo_empty", 1)
         self.addr_fifo_almost_full = self.var("addr_fifo_almost_full", 1)
 
-        self.addr_fifo_out = self.var("addr_fifo_out", self._params.mu_addr_width)  
+        self.addr_fifo_out = self.var("addr_fifo_out", self._params.mu_addr_width)
         self.addr_fifo_out_valid = self.var("addr_fifo_out_valid", 1)
         self.addr_fifo_pop = self.var("addr_fifo_pop", 1)
         self.data_out_fifo_full = self.var("data_out_fifo_full", 1)
         self.data_out_fifo_empty = self.var("data_out_fifo_empty", 1)
         self.data_out_fifo_almost_full = self.var("data_out_fifo_almost_full", 1)
 
-        self.size_req_fifo_out = self.var("size_req_fifo_out", self._params.mu_tl_num_burst_bits)  
+        self.size_req_fifo_out = self.var("size_req_fifo_out", self._params.mu_tl_num_burst_bits)
         self.source_req_fifo_out = self.var("source_req_fifo_out", self._params.mu_tl_source_width)
 
         self.rd_data_out_to_fifo = self.var("rd_data_out_to_fifo", self._params.mu_word_width)
@@ -105,7 +105,7 @@ class GlbMUTransl(Generator):
         self.add_always(self.byte_mask_extraction_logic)
         self.add_always(self.byte_select_mux_logic)
         self.add_always(self.data_out_mux_logic)
-        
+
 
 
         ###################
@@ -118,19 +118,19 @@ class GlbMUTransl(Generator):
         BUSY = self.read_req_fsm.add_state("BUSY")
         self.read_req_fsm.set_start_state(READY)
 
-        # Bind FSM outputs 
+        # Bind FSM outputs
         self.read_req_fsm.output(self.addr_fifo_pop)
-        self.read_req_fsm.output(self.rd_en2glb_w)    
+        self.read_req_fsm.output(self.rd_en2glb_w)
         self.read_req_fsm.output(self.addr_to_adjuster)
         self.read_req_fsm.output(self.next_glb_req_counter)
         self.read_req_fsm.output(self.next_size_cached)
         self.read_req_fsm.output(self.size_resp_pipeline_in)
         self.read_req_fsm.output(self.next_source_cached)
         self.read_req_fsm.output(self.source_resp_pipeline_in)
-       
-        # Next State Logic 
-        # Next sate is busy if the address is valid and number of glb requests > 1 
-        READY.next(BUSY, self.addr_fifo_out_valid & (self.num_glb_reqs[self.num_glb_reqs_bitwidth - 1, 1] != 0)) 
+
+        # Next State Logic
+        # Next sate is busy if the address is valid and number of glb requests > 1
+        READY.next(BUSY, self.addr_fifo_out_valid & (self.num_glb_reqs[self.num_glb_reqs_bitwidth - 1, 1] != 0))
         READY.next(READY, None)
 
         BUSY.next(READY, self.glb_req_counter == 1)
@@ -140,7 +140,7 @@ class GlbMUTransl(Generator):
         READY.output(self.addr_fifo_pop, 1)
         READY.output(self.rd_en2glb_w, self.addr_fifo_out_valid)
         READY.output(self.addr_to_adjuster, self.addr_fifo_out)
-        READY.output(self.next_glb_req_counter, self.num_glb_reqs - 1) 
+        READY.output(self.next_glb_req_counter, self.num_glb_reqs - 1)
         READY.output(self.next_size_cached, self.size_req_fifo_out)
         READY.output(self.size_resp_pipeline_in, self.size_req_fifo_out)
         READY.output(self.next_source_cached, self.source_req_fifo_out)
@@ -149,12 +149,12 @@ class GlbMUTransl(Generator):
         BUSY.output(self.addr_fifo_pop, 0)
         BUSY.output(self.rd_en2glb_w, 1)
         BUSY.output(self.addr_to_adjuster, self.burst_addr_incr)
-        BUSY.output(self.next_glb_req_counter, self.glb_req_counter - 1) 
+        BUSY.output(self.next_glb_req_counter, self.glb_req_counter - 1)
         BUSY.output(self.next_size_cached, self.size_cached)
         BUSY.output(self.size_resp_pipeline_in, self.size_cached)
         BUSY.output(self.next_source_cached, self.source_cached)
         BUSY.output(self.source_resp_pipeline_in, self.source_cached)
-       
+
         # Realize FSM
         self.read_req_fsm.realize()
 
@@ -173,7 +173,7 @@ class GlbMUTransl(Generator):
                        reset=self.reset,
                     #    flush=self.st_dma_start_pulse_r,
                         # TODO: Figure out what to put here for flush
-                       flush=const(0, 1), 
+                       flush=const(0, 1),
                        data_in=self.addr_in,
                        data_out=self.addr_fifo_out,
                        push=self.rq_in_vld,
@@ -183,7 +183,7 @@ class GlbMUTransl(Generator):
                        almost_full=self.addr_fifo_almost_full,
                        almost_full_diff=const(2, clog2(self._params.mu_tl_req_fifo_depth)),
                        almost_empty_diff=const(2, clog2(self._params.mu_tl_req_fifo_depth)))
-        
+
         self.wire(self.rq_in_rdy, ~self.addr_fifo_full)
         self.wire(self.addr_fifo_out_valid, ~self.addr_fifo_empty)
 
@@ -196,14 +196,14 @@ class GlbMUTransl(Generator):
                        reset=self.reset,
                     #    flush=self.st_dma_start_pulse_r,
                         # TODO: Figure out what to put here for flush
-                       flush=const(0, 1), 
+                       flush=const(0, 1),
                        data_in=self.size_in,
                        data_out=self.size_req_fifo_out,
                        push=self.rq_in_vld,
                        pop=self.addr_fifo_pop,
                        almost_full_diff=const(2, clog2(self._params.mu_tl_req_fifo_depth)),
                        almost_empty_diff=const(2, clog2(self._params.mu_tl_req_fifo_depth)))
-        
+
     def add_source_in_fifo_logic(self):
         self.source_req_fifo = FIFO(self._params.mu_tl_source_width, self._params.mu_tl_req_fifo_depth)
         self.add_child("source_req_fifo",
@@ -213,19 +213,19 @@ class GlbMUTransl(Generator):
                         reset=self.reset,
                     #    flush=self.st_dma_start_pulse_r,
                         # TODO: Figure out what to put here for flush
-                        flush=const(0, 1), 
+                        flush=const(0, 1),
                         data_in=self.source_in,
                         data_out=self.source_req_fifo_out,
                         push=self.rq_in_vld,
                         pop=self.addr_fifo_pop,
                         almost_full_diff=const(2, clog2(self._params.mu_tl_req_fifo_depth)),
-                        almost_empty_diff=const(2, clog2(self._params.mu_tl_req_fifo_depth)))  
+                        almost_empty_diff=const(2, clog2(self._params.mu_tl_req_fifo_depth)))
 
 
     def add_size_out_pipeline(self):
         self.size_out_pipeline = Pipeline(width=self._params.mu_tl_num_burst_bits,
                                                    depth=self._params.mu_glb_rd_latency - 2, # -2 to remove both the input FIFO and output FIFO
-                                                   flatten_output=False) 
+                                                   flatten_output=False)
         self.add_child("size_out_pipeline",
                        self.size_out_pipeline,
                        clk=self.clk,
@@ -233,32 +233,32 @@ class GlbMUTransl(Generator):
                        reset=self.reset,
                        in_=self.size_resp_pipeline_in,
                        out_=self.size_resp_pipeline_out)
-        
+
     def add_source_out_pipeline(self):
         self.source_out_pipeline = Pipeline(width=self._params.mu_tl_source_width,
-                                                   depth=self._params.mu_glb_rd_latency - 2, # -2 to remove both the input FIFO and output FIFO 
-                                                   flatten_output=False) 
+                                                   depth=self._params.mu_glb_rd_latency - 2, # -2 to remove both the input FIFO and output FIFO
+                                                   flatten_output=False)
         self.add_child("source_out_pipeline",
                        self.source_out_pipeline,
                        clk=self.clk,
                        clk_en=const(1, 1),
                        reset=self.reset,
                        in_=self.source_resp_pipeline_in,
-                       out_=self.source_resp_pipeline_out)    
-        
+                       out_=self.source_resp_pipeline_out)
+
     def add_byte_mask_pipeline(self):
         self.byte_mask_pipeline = Pipeline(width=self.byte_mask_bitwidth,
-                                                   depth=self._params.mu_glb_rd_latency - 2, # -2 to remove both the input FIFO and output FIFO 
-                                                   flatten_output=False) 
+                                                   depth=self._params.mu_glb_rd_latency - 2, # -2 to remove both the input FIFO and output FIFO
+                                                   flatten_output=False)
         self.add_child("byte_mask_pipeline",
                        self.byte_mask_pipeline,
                        clk=self.clk,
                        clk_en=const(1, 1),
                        reset=self.reset,
                        in_=self.byte_mask_pipeline_in,
-                       out_=self.byte_mask_pipeline_out)    
-        
-    
+                       out_=self.byte_mask_pipeline_out)
+
+
     def add_data_out_fifo_logic(self):
         self.data_out_fifo = FIFO(self._params.mu_word_width, self._params.mu_tl_resp_fifo_depth)
         self.add_child("data_out_fifo",
@@ -268,7 +268,7 @@ class GlbMUTransl(Generator):
                        reset=self.reset,
                     #    flush=self.st_dma_start_pulse_r,
                         # TODO: Figure out what to put here for flush
-                       flush=const(0, 1), 
+                       flush=const(0, 1),
                        data_in=self.rd_data_out_to_fifo,
                        data_out=self.rd_data_out,
                        push=self.rd_data_in_vld,
@@ -278,8 +278,8 @@ class GlbMUTransl(Generator):
                        almost_full=self.data_out_fifo_almost_full,
                        almost_full_diff=const(2, clog2(self._params.mu_tl_resp_fifo_depth)),
                        almost_empty_diff=const(2, clog2(self._params.mu_tl_resp_fifo_depth)))
-        
-        self.wire(self.resp_out_vld, ~self.data_out_fifo_empty)    
+
+        self.wire(self.resp_out_vld, ~self.data_out_fifo_empty)
 
     def add_size_out_fifo_logic(self):
         self.size_resp_fifo = FIFO(self._params.mu_tl_num_burst_bits, self._params.mu_tl_resp_fifo_depth)
@@ -290,14 +290,14 @@ class GlbMUTransl(Generator):
                        reset=self.reset,
                     #    flush=self.st_dma_start_pulse_r,
                         # TODO: Figure out what to put here for flush
-                       flush=const(0, 1), 
+                       flush=const(0, 1),
                        data_in=self.size_resp_pipeline_out,
                        data_out=self.size_out,
                        push=self.rd_data_in_vld,
                        pop=self.resp_out_rdy,
                        almost_full_diff=const(2, clog2(self._params.mu_tl_req_fifo_depth)),
                        almost_empty_diff=const(2, clog2(self._params.mu_tl_req_fifo_depth)))
-        
+
     def add_source_out_fifo_logic(self):
         self.source_resp_fifo = FIFO(self._params.mu_tl_source_width, self._params.mu_tl_resp_fifo_depth)
         self.add_child("source_resp_fifo",
@@ -307,20 +307,20 @@ class GlbMUTransl(Generator):
                         reset=self.reset,
                     #    flush=self.st_dma_start_pulse_r,
                         # TODO: Figure out what to put here for flush
-                        flush=const(0, 1), 
+                        flush=const(0, 1),
                         data_in=self.source_resp_pipeline_out,
                         data_out=self.source_out,
                         push=self.rd_data_in_vld,
                         pop=self.resp_out_rdy,
                         almost_full_diff=const(2, clog2(self._params.mu_tl_req_fifo_depth)),
-                        almost_empty_diff=const(2, clog2(self._params.mu_tl_req_fifo_depth)))  
+                        almost_empty_diff=const(2, clog2(self._params.mu_tl_req_fifo_depth)))
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def glb_req_counter_ff(self):
         if self.reset:
             self.glb_req_counter = 0
         else:
-            self.glb_req_counter = self.next_glb_req_counter 
+            self.glb_req_counter = self.next_glb_req_counter
 
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
@@ -328,21 +328,21 @@ class GlbMUTransl(Generator):
         if self.reset:
             self.size_cached = 0
         else:
-            self.size_cached = self.next_size_cached    
+            self.size_cached = self.next_size_cached
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def source_cache_ff(self):
         if self.reset:
             self.source_cached = 0
         else:
-            self.source_cached = self.next_source_cached                 
+            self.source_cached = self.next_source_cached
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def burst_addr_incr_ff(self):
         if self.reset:
             self.burst_addr_incr = 0
         else:
-            self.burst_addr_incr = self.addr_to_adjuster + self.addr_incr_value 
+            self.burst_addr_incr = self.addr_to_adjuster + self.addr_incr_value
 
     @always_comb
     def size_in_to_num_glb_reqs_logic(self):
@@ -350,11 +350,11 @@ class GlbMUTransl(Generator):
         if self.size_req_fifo_out == 7:
             self.num_glb_reqs = 4
 
-        # 2^6 = 64 bytes = 2 requests    
+        # 2^6 = 64 bytes = 2 requests
         elif self.size_req_fifo_out == 6:
             self.num_glb_reqs = 2
 
-        # Anything smaller only needs 1 request     
+        # Anything smaller only needs 1 request
         else:
             self.num_glb_reqs = 1
 
@@ -365,14 +365,14 @@ class GlbMUTransl(Generator):
         self.opcode_out = const(self._params.mu_tl_rd_resp_opcode, self._params.mu_tl_opcode_width)
 
     # Adjusted address consists of 3 components:
-    # 1. The tileID bits provided by MU, referring to a group of GLB tiles 
+    # 1. The tileID bits provided by MU, referring to a group of GLB tiles
     # 2. Inserted 0s at MSBs of tileID, to refer to base tile of that group
     # 3. Inserted 0 for the bank ID
     # 4. Rest of address (ignoring addr[4] and addr[3]. These are the bits that are replaced by 0s above for tileID and bank ID)
     @always_comb
     def address_adjustment_logic(self):
         if self.num_tile_id_bits_in_mu_addr > 0:
-            self.addr_to_glb_w = concat(self.addr_to_adjuster[self._params.mu_addr_width - 1, self._params.mu_addr_width - 1 - (self.num_tile_id_bits_in_mu_addr - 1)], 
+            self.addr_to_glb_w = concat(self.addr_to_adjuster[self._params.mu_addr_width - 1, self._params.mu_addr_width - 1 - (self.num_tile_id_bits_in_mu_addr - 1)],
                                                 const(0, clog2(self._params.mu_word_num_tiles)),
                                                 const(0, self._params.bank_sel_addr_width),
                                                 self.addr_to_adjuster[self._params.mu_addr_width - 1 - (self.num_tile_id_bits_in_mu_addr), clog2(self._params.mu_word_num_tiles) + self._params.bank_sel_addr_width + self._params.bank_byte_offset],
@@ -386,10 +386,10 @@ class GlbMUTransl(Generator):
 
     @always_comb
     def byte_mask_extraction_logic(self):
-        self.byte_mask_pipeline_in = self.addr_to_adjuster[self.byte_mask_bitwidth - 1, 0]       
+        self.byte_mask_pipeline_in = self.addr_to_adjuster[self.byte_mask_bitwidth - 1, 0]
 
 
-    # TODO: May need to pipeline this path for timing closure 
+    # TODO: May need to pipeline this path for timing closure
     @always_comb
     def byte_select_mux_logic(self):
         if self.byte_mask_pipeline_out == 0:
@@ -464,7 +464,8 @@ class GlbMUTransl(Generator):
     def data_out_mux_logic(self):
         self.rd_data_in_masked = concat(const(0, self._params.mu_word_width - 8), self.selected_byte)
 
-        if self.source_resp_pipeline_out == self._params.input_scale_req_src_code:
+        # The below checks if source_resp_pipeline_out[6, 4] == self._params.input_scale_req_src_code:
+        if self.source_resp_pipeline_out[self._params.mu_tl_source_width - 1, self._params.mu_tl_source_width - self._params.mu_tl_crossbar_source_id_width] == self._params.input_scale_req_src_code:
             self.rd_data_out_to_fifo = self.rd_data_in_masked
         else:
             self.rd_data_out_to_fifo = self.rd_data_in
