@@ -52,27 +52,33 @@ if __name__ == '__main__':
     debug_mode = False
 
     input = read_tensor('/aha/network_params/getitem_1.bin', (1, 64, 56, 56))
-    # Re-order it so ic0 is the innermost dimension
-    input_reordered = input.permute(0, 2, 3, 1)
+    # Re-order it so ic0 is the innermost dimension (Y, X, OC0, IC0)
+    input_reordered = input.permute(2, 3, 0, 1)
     input_int8 = input_reordered.to(torch.int8)
 
     weight = read_tensor('/aha/network_params/_param_constant2_weight_0.bin', (64, 64, 3, 3))
-    # Re-order it so oc0 is the innermost dimension
-    weight_reordered = weight.permute(1, 2, 3, 0)
+    # Re-order it so oc0 is the innermost dimension (FY, FX, IC0, OC0)
+    weight_reordered = weight.permute(2, 3, 1, 0)
     weight_int8 = weight_reordered.to(torch.int8)
 
     bias = read_tensor('/aha/network_params/_param_constant3.bin', (64))
     bias_bf16 = float32_to_bfloat16_bits(bias)
 
     inputScale = read_tensor('/aha/network_params/getitem.bin', (1, 1, 56, 56))
-    # Re-order it so ic0 is the innermost dimension
-    inputScale_reordered = inputScale.permute(0, 2, 3, 1)
+    # Re-order it so ic0 is the innermost dimension (Y, X, OC0, IC0)
+    inputScale_reordered = inputScale.permute(2, 3, 0, 1)
     inputScale_e8m0 = float_to_e8m0(inputScale_reordered)
 
     weightScale = read_tensor('/aha/network_params/_param_constant2_scale_0.bin', (64, 1, 3, 3))
-    # Re-order it so oc0 is the innermost dimension
-    weightScale_reordered = weightScale.permute(1, 2, 3, 0)
+    # Re-order it so oc0 is the innermost dimension (FY, FX, IC0, OC0)
+    weightScale_reordered = weightScale.permute(2, 3, 1, 0)
     weightScale_e8m0 = float_to_e8m0(weightScale_reordered)
+
+    conv2x_gold_output = read_tensor('/aha/network_params/conv2d_mx_default.bin', (1, 64, 56, 56))
+    # Re-order it so oc0 is the innermost dimension (Y, X, IC0, OC0)
+    conv2x_gold_output_reordered = conv2x_gold_output.permute(2, 3, 1, 0)
+    conv2x_gold_output_reordered_bf16 = float32_to_bfloat16_bits(conv2x_gold_output_reordered)
+    conv2x_gold_output_reordered_bf16_list = conv2x_gold_output_reordered_bf16.flatten().tolist()
 
     torch.set_printoptions(precision=10)
 
@@ -104,8 +110,10 @@ if __name__ == '__main__':
         print("First 10 elements of the weight tensor:", weight.flatten()[:10])
         print("Shape of the bytes object:", len(input_int8.numpy().tobytes()))
 
+
     write_list_to_hex(input_int8.numpy().tobytes(), '/aha/network_params/input_hex.txt')
     write_list_to_hex(weight_int8.numpy().tobytes(), '/aha/network_params/weight_hex.txt')
     write_list_to_hex(bias_bf16, '/aha/network_params/bias_hex.txt')
     write_list_to_hex(inputScale_e8m0, '/aha/network_params/inputScale_hex.txt')
     write_list_to_hex(weightScale_e8m0, '/aha/network_params/weightScale_hex.txt')
+    write_list_to_hex(conv2x_gold_output_reordered_bf16_list, '/aha/network_params/conv2x_gold_output_hex.txt')
