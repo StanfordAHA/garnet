@@ -121,6 +121,7 @@ class GlobalBufferParams:
     mu_tl_opcode_width: int = 3
     mu_tl_rd_resp_opcode: int = 1
     input_scale_req_src_code: int = 1
+    mu_tl_crossbar_source_id_width: int = 3
 
     # MU rd max burst (in bytes) = max(ic, oc) * 2. For 64x32 array, it is 64 * 2 = 128
     mu_rd_max_burst_size: int = 128
