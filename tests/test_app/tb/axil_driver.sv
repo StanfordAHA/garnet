@@ -13,9 +13,8 @@
 bit [CGRA_AXI_ADDR_WIDTH-1:0] addr;
 bit [CGRA_AXI_DATA_WIDTH-1:0] data;
 
-// TODO: Add these as params
-bit [29:0] mu_axi_addr;
-bit [63:0] mu_axi_data;
+bit [MU_AXI_ADDR_WIDTH-1:0] mu_axi_addr;
+bit [MU_AXI_DATA_WIDTH-1:0] mu_axi_data;
 
 Config AxilDriver_cfg[];
 task AxilDriver_config_write();
@@ -97,8 +96,8 @@ task MU_AxilDriver_write();
     @(posedge mu_axil_ifc.clk);
     mu_axil_ifc.awaddr  = mu_axi_addr;
     mu_axil_ifc.awvalid = 1'b1;
-    mu_axil_ifc.wdata  = mu_axi_data; // FIXME
-    mu_axil_ifc.wvalid = 1'b1; // FIXME
+    mu_axil_ifc.wdata  = mu_axi_data;
+    mu_axil_ifc.wvalid = 1'b1;
     // FIXME?? seems like this should happen BEFORE setting awvalid etc. above? First ready, then valid?
     for (int i = 0; i < `SLAVE_WAIT; i++) begin
         if ((mu_axil_ifc.awready == 1) && (mu_axil_ifc.wready == 1)) break; // FIXME
@@ -121,7 +120,7 @@ task MU_AxilDriver_write();
     //     if (i == (`SLAVE_WAIT-1)) $display("MU axi slave is not ready 2");  // ~152ns
     // end
     // @(posedge mu_axil_ifc.clk);  // Axi controller should now be in state 0 (WR_IDLE)   // 153ns
-    mu_axil_ifc.awvalid = 1'b0; // FIXME
+    mu_axil_ifc.awvalid = 1'b0;
     mu_axil_ifc.wvalid = 1'b0;
     @(posedge mu_axil_ifc.clk);
     mu_axil_ifc.bready = 1'b1;

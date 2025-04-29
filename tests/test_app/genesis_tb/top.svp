@@ -12,14 +12,17 @@
 // Genesis parameter declaration
 //============================================================================//
 //; use POSIX;
-//; my $using_matrix_unit = parameter(NAME => 'using_matrix_unit', VAL => 0, DOC => 'Indicates if matrix unit-cgra tile array ifc should be included');
+//; my $using_matrix_unit = parameter(NAME => 'using_matrix_unit', VAL => 0, DOC => 'Indicates if a matrix unit (behavioral or real) is in the testbench');
 //; my $include_mu_glb_hw = parameter(NAME => 'include_mu_glb_hw', VAL => 0, DOC => 'Indicates if matrix unit-global buffer ifc should be included');
+//; my $behavioral_matrix_unit = parameter(NAME => 'behavioral_matrix_unit', VAL => 0, DOC => 'Indicates if behaviroal matrix unit-cgra tile array ifc should be used, instead of the REAL matrix unit.');
 
 \`define DBG_TBTOP 0 // Set to '1' for debugging
 
 \`ifndef CLK_PERIOD
 \`define CLK_PERIOD 1ns
 \`endif
+
+\`define DEBUG_MATRIX_UNIT 0 // Set to '1' for debugging
 
 import global_buffer_param::*;
 import matrix_unit_param::*;
@@ -74,7 +77,7 @@ module top;
     end
 
     //============================================================================//
-    // Proc interface and axi interface 
+    // Proc interface and axi interface
     //============================================================================//
     proc_ifc p_ifc (.clk(clk));
     axil_ifc #(
@@ -84,14 +87,55 @@ module top;
         .clk(clk)
     );
 
-
-    //; if ($using_matrix_unit) {
+    //; if ($using_matrix_unit && !$behavioral_matrix_unit) {
     //============================================================================//
-    // Matrix unit ifc 
+    // Axi interface for MU
+    //============================================================================//
+    axil_ifc #(
+        .ADDR_WIDTH(MU_AXI_ADDR_WIDTH),
+        .DATA_WIDTH(MU_AXI_DATA_WIDTH)
+    ) mu_axil_ifc (
+        .clk(clk)
+    );
+
+    // This will only count when bvalid is high
+    assign mu_axil_ifc.bresp = 2'b00;
+
+    // Not using the MU axil ifc to read
+    assign mu_axil_ifc.rready = 1'b1;
+    assign mu_axil_ifc.araddr = 0;
+    assign mu_axil_ifc.arvalid = 0;
+
+    //; } else {
+    //============================================================================//
+    // Axi interface for MU: NOT IN USE (DUMMY)
+    //============================================================================//
+    axil_ifc #(
+        .ADDR_WIDTH(MU_AXI_ADDR_WIDTH),
+        .DATA_WIDTH(MU_AXI_DATA_WIDTH)
+    ) mu_axil_ifc (
+        .clk(clk)
+    );
+
+    // This will only count when bvalid is high
+    assign mu_axil_ifc.bresp = 2'b00;
+
+    // Not using the MU axil ifc to read
+    assign mu_axil_ifc.rready = 1'b1;
+    assign mu_axil_ifc.araddr = 0;
+    assign mu_axil_ifc.arvalid = 0;
+
+
+    //; }
+
+
+    //; if ($using_matrix_unit && $behavioral_matrix_unit) {
+    //============================================================================//
+    // Behavioral matrix unit ifc
     //============================================================================//
     logic [MU_DATAWIDTH-1:0] mu2cgra [MU_OC_0-1:0];
     logic mu2cgra_valid;
-    logic cgra2mu_ready; 
+    logic cgra2mu_ready;
 
     //; if ($include_mu_glb_hw) {
     logic [GLB_ADDR_WIDTH-1:0] mu_tl_addr_in;
@@ -102,7 +146,7 @@ module top;
     behavioral_matrix_unit #(
         .MU_DATAWIDTH(MU_DATAWIDTH),
         .MU_OC_0(MU_OC_0)
-    ) mu_ifc (
+    ) behavioral_mu_ifc (
         .clk(clk),
         .reset(reset),
         .cgra2mu_ready(cgra2mu_ready),
@@ -110,11 +154,13 @@ module top;
         .mu2cgra(mu2cgra)
     );
 //; } else {
-     // NOT IN USE 
-      behavioral_matrix_unit #(
+    //============================================================================//
+    // Behavioral matrix unit ifc: NOT IN USE (DUMMY)
+    //============================================================================//
+    behavioral_matrix_unit #(
         .MU_DATAWIDTH(MU_DATAWIDTH),
         .MU_OC_0(MU_OC_0)
-    ) mu_ifc (
+    ) behavioral_mu_ifc (
         .clk(clk),
         .reset(reset),
         .cgra2mu_ready(1'b0),
@@ -133,14 +179,16 @@ module top;
         .reset   (reset),
         .p_ifc   (p_ifc),
         .axil_ifc(axil_ifc),
-        .mu_ifc (mu_ifc)
+        .mu_axil_ifc(mu_axil_ifc),
+        .behavioral_mu_ifc (behavioral_mu_ifc)
     );
 
 
     //============================================================================//
     // instantiate dut
     //============================================================================//
-    Garnet dut (
+    //; if ($using_matrix_unit && !$behavioral_matrix_unit) {
+        Zircon dut (
         // clk/reset/interrupt
         .clk_in              (clk),
         .reset_in            (reset),
@@ -181,34 +229,185 @@ module top;
         .jtag_tdo   (  /*unused*/),
         .jtag_tms   (  /*unused*/),
 
-    //; if ($using_matrix_unit) {
         .jtag_trst_n(  /*unused*/),
 
+        // Axi for matrix unit
+        .auto_axi_in_aw_ready(mu_axil_ifc.awready),
+        .auto_axi_in_aw_valid(mu_axil_ifc.awvalid),
+        .auto_axi_in_aw_bits_id(1'b0),
+        .auto_axi_in_aw_bits_addr(mu_axil_ifc.awaddr),
+        .auto_axi_in_aw_bits_len(8'b0),
+        .auto_axi_in_aw_bits_size(3'd3), // 2^3 = 8 bytes per transfer
+        .auto_axi_in_w_ready(mu_axil_ifc.wready),
+        .auto_axi_in_w_valid(mu_axil_ifc.wvalid),
+        .auto_axi_in_w_bits_data(mu_axil_ifc.wdata),
+        .auto_axi_in_w_bits_strb(8'hFF), // Strb is all high
+        .auto_axi_in_w_bits_last(1'b1),
+        .auto_axi_in_b_ready(mu_axil_ifc.bready),
+        .auto_axi_in_b_valid(mu_axil_ifc.bvalid),
+        .auto_axi_in_ar_ready(mu_axil_ifc.arready),
+        .auto_axi_in_ar_valid(mu_axil_ifc.arvalid),
+        .auto_axi_in_ar_bits_id(1'b0),
+        .auto_axi_in_ar_bits_addr(mu_axil_ifc.araddr),
+        .auto_axi_in_ar_bits_len(8'b0),
+        .auto_axi_in_ar_bits_size(3'd3), // 2^3 = 8 bytes per transfer
+        .auto_axi_in_r_ready(mu_axil_ifc.rready),
+        .auto_axi_in_r_valid(mu_axil_ifc.rvalid),
+        .auto_axi_in_r_bits_id(/* NO CONN */),
+        .auto_axi_in_r_bits_data(mu_axil_ifc.rdata),
+        .auto_axi_in_r_bits_resp(mu_axil_ifc.rresp),
+        .auto_axi_in_r_bits_last(/* NO CONN */)
 
-        //; if ($include_mu_glb_hw) {
-        // matrix unit-glb ifc 
-        .mu_tl_addr_in(mu_tl_addr_in),
-        .mu_tl_rq_in_vld(1'b0),
-        .mu_tl_rq_in_rdy( /*unused*/ ),
-        .mu_tl_size_in(4'b0),
-        .mu_tl_source_in(6'b0),
-        .mu_tl_data_out( /*unused*/) ,
-        .mu_tl_resp_out_vld( /*unused*/ ),
-        .mu_tl_resp_out_rdy(1'b0),
-        .mu_tl_size_out( /*unused*/ ),
-        .mu_tl_source_out( /*unused*/ ),
-        .mu_tl_opcode_out( /*unused*/ ),
-            
-    //;    }
-
-        // matrix unit-cgra tile array ifc
-        .mu2cgra_valid (mu2cgra_valid),
-        .cgra2mu_ready (cgra2mu_ready),
-        .mu2cgra(mu2cgra)
+     );
 
     //; } else {
-        .jtag_trst_n( /*unused*/ )
+        Garnet dut (
+            // clk/reset/interrupt
+            .clk_in              (clk),
+            .reset_in            (reset),
+            .interrupt           (interrupt),
+            .cgra_running_clk_out(  /*unused*/),
 
-    //; }
+            // proc ifc
+            .proc_packet_wr_en        (p_ifc.wr_en),
+            .proc_packet_wr_strb      (p_ifc.wr_strb),
+            .proc_packet_wr_addr      (p_ifc.wr_addr),
+            .proc_packet_wr_data      (p_ifc.wr_data),
+            .proc_packet_rd_en        (p_ifc.rd_en),
+            .proc_packet_rd_addr      (p_ifc.rd_addr),
+            .proc_packet_rd_data      (p_ifc.rd_data),
+            .proc_packet_rd_data_valid(p_ifc.rd_data_valid),
+
+            // axi4-lite ifc
+            .axi4_slave_araddr (axil_ifc.araddr),
+            .axi4_slave_arready(axil_ifc.arready),
+            .axi4_slave_arvalid(axil_ifc.arvalid),
+            .axi4_slave_awaddr (axil_ifc.awaddr),
+            .axi4_slave_awready(axil_ifc.awready),
+            .axi4_slave_awvalid(axil_ifc.awvalid),
+            .axi4_slave_bready (axil_ifc.bready),
+            .axi4_slave_bresp  (axil_ifc.bresp),
+            .axi4_slave_bvalid (axil_ifc.bvalid),
+            .axi4_slave_rdata  (axil_ifc.rdata),
+            .axi4_slave_rready (axil_ifc.rready),
+            .axi4_slave_rresp  (axil_ifc.rresp),
+            .axi4_slave_rvalid (axil_ifc.rvalid),
+            .axi4_slave_wdata  (axil_ifc.wdata),
+            .axi4_slave_wready (axil_ifc.wready),
+            .axi4_slave_wvalid (axil_ifc.wvalid),
+
+            // jtag ifc
+            .jtag_tck   (  /*unused*/),
+            .jtag_tdi   (  /*unused*/),
+            .jtag_tdo   (  /*unused*/),
+            .jtag_tms   (  /*unused*/),
+
+        //; if ($using_matrix_unit) {
+            .jtag_trst_n(  /*unused*/),
+
+
+            //; if ($include_mu_glb_hw) {
+            // matrix unit-glb ifc
+            .mu_tl_addr_in(mu_tl_addr_in),
+            .mu_tl_rq_in_vld(1'b0),
+            .mu_tl_rq_in_rdy( /*unused*/ ),
+            .mu_tl_size_in(4'b0),
+            .mu_tl_source_in(6'b0),
+            .mu_tl_data_out( /*unused*/) ,
+            .mu_tl_resp_out_vld( /*unused*/ ),
+            .mu_tl_resp_out_rdy(1'b0),
+            .mu_tl_size_out( /*unused*/ ),
+            .mu_tl_source_out( /*unused*/ ),
+            .mu_tl_opcode_out( /*unused*/ ),
+
+        //;    }
+
+            // matrix unit-cgra tile array ifc
+            .mu2cgra_valid (mu2cgra_valid),
+            .cgra2mu_ready (cgra2mu_ready),
+            .mu2cgra(mu2cgra)
+
+        //; } else {
+            .jtag_trst_n( /*unused*/ )
+
+        //; }
      );
+    //; }
+
+     //; if ($using_matrix_unit && !$behavioral_matrix_unit) {
+        \`ifdef DEBUG_MATRIX_UNIT
+            // For debugging purposes: dump all data loaded into the systolic array
+            // and the data coming out of the systolic array
+            integer input_data_file;
+            integer weight_data_file;
+            integer bias_data_file;
+            integer inputScale_data_file;
+            integer weightScale_data_file;
+            integer systolic_array_output_data_file;
+            initial begin
+                input_data_file = $fopen("input_data_mu_in.txt", "w");
+                if (input_data_file == 0) begin
+                    $display("Error: Could not open input_data_mu_in.txt file.");
+                    $finish;
+                end
+
+                weight_data_file = $fopen("weight_data_mu_in.txt", "w");
+                if (weight_data_file == 0) begin
+                    $display("Error: Could not open weight_data_mu_in.txt file.");
+                    $finish;
+                end
+
+                bias_data_file = $fopen("bias_data_mu_in.txt", "w");
+                if (bias_data_file == 0) begin
+                    $display("Error: Could not open bias_data_mu_in.txt file.");
+                    $finish;
+                end
+
+                inputScale_data_file = $fopen("inputScale_data_mu_in.txt", "w");
+                if (inputScale_data_file == 0) begin
+                    $display("Error: Could not open inputScale_data_mu_in.txt file.");
+                    $finish;
+                end
+
+                weightScale_data_file = $fopen("weightScale_data_mu_in.txt", "w");
+                if (weightScale_data_file == 0) begin
+                    $display("Error: Could not open weightScale_data_mu_in.txt file.");
+                    $finish;
+                end
+
+                systolic_array_output_data_file = $fopen("systolic_array_output.txt", "w");
+                if (systolic_array_output_data_file == 0) begin
+                    $display("Error: Could not open systolic_array_mu.txt file.");
+                    $finish;
+                end
+            end
+
+            always @(posedge clk) begin
+                if (dut.matrixUnit_1.bb.inputScaleDataResponse_vld & dut.matrixUnit_1.bb.inputScaleDataResponse_rdy) begin
+                    $fwrite(inputScale_data_file, "[%0t] inputScaleDataResponse_dat = %02x\n", $time, dut.matrixUnit_1.bb.inputScaleDataResponse_dat);
+                end
+
+                if (dut.matrixUnit_1.bb.inputDataResponse_vld & dut.matrixUnit_1.bb.inputDataResponse_rdy) begin
+                    $fwrite(input_data_file, "[%0t] inputDataResponse_dat = %0128x\n", $time, dut.matrixUnit_1.bb.inputDataResponse_dat);
+                end
+
+                if (dut.matrixUnit_1.bb.weightDataResponse_vld & dut.matrixUnit_1.bb.weightDataResponse_rdy) begin
+                    $fwrite(weight_data_file, "[%0t] weightDataResponse_dat = %064x\n", $time, dut.matrixUnit_1.bb.weightDataResponse_dat);
+                end
+
+                if (dut.matrixUnit_1.bb.biasDataResponse_vld & dut.matrixUnit_1.bb.biasDataResponse_rdy) begin
+                    $fwrite(bias_data_file, "[%0t] biasDataResponse_dat = %064x\n", $time, dut.matrixUnit_1.bb.biasDataResponse_dat);
+                end
+
+                if (dut.matrixUnit_1.bb.weightScaleDataResponse_vld & dut.matrixUnit_1.bb.weightScaleDataResponse_rdy) begin
+                    $fwrite(weightScale_data_file, "[%0t] weightScaleDataResponse_dat = %064x\n", $time, dut.matrixUnit_1.bb.weightScaleDataResponse_dat);
+                end
+
+                if (dut.matrixUnit_1.bb.outputsFromSystolicArray_vld & dut.matrixUnit_1.bb.outputsFromSystolicArray_rdy) begin
+                    $fwrite(systolic_array_output_data_file, "[%0t] outputsFromSystolicArray_dat = %0128x\n", $time, dut.matrixUnit_1.bb.outputsFromSystolicArray_dat);
+                end
+            end
+    \`endif
+     //; }
+
 endmodule

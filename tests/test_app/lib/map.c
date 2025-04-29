@@ -23,6 +23,17 @@ struct Monitor {
 };
 
 static struct Monitor monitor;
+
+int get_external_MU_active_env_var() {
+    int external_MU_active = 0;
+    const char *external_MU_active_env_var = "EXTERNAL_MU_ACTIVE";
+    char *external_MU_active_value = getenv(external_MU_active_env_var);
+    if (external_MU_active_value != NULL && strcmp(external_MU_active_value, "1") == 0) {
+        external_MU_active = 1;
+    }
+    return external_MU_active;
+}
+
 int get_exchange_64_config() {
     int exchange_64_mode = 0;
     const char *exchange_64_env_var = "E64_MODE_ON";
@@ -30,7 +41,7 @@ int get_exchange_64_config() {
     if (exchange_64_value != NULL && strcmp(exchange_64_value, "1") == 0) {
         exchange_64_mode = 1;
     }
-    return exchange_64_mode; 
+    return exchange_64_mode;
 }
 
 int HW_supports_E64() {
@@ -40,7 +51,7 @@ int HW_supports_E64() {
     if (hw_support_E64_value != NULL && strcmp(hw_support_E64_value, "1") == 0) {
         hw_suports_E64 = 1;
     }
-    return hw_suports_E64; 
+    return hw_suports_E64;
 }
 
 int get_E64_multi_bank_mode_config() {
@@ -50,7 +61,7 @@ int get_E64_multi_bank_mode_config() {
     if (E64_multi_bank_mode_value != NULL && strcmp(E64_multi_bank_mode_value, "1") == 0) {
         E64_multi_bank_mode = 1;
     }
-    return E64_multi_bank_mode; 
+    return E64_multi_bank_mode;
 }
 
 int HW_supports_multi_bank() {
@@ -60,7 +71,7 @@ int HW_supports_multi_bank() {
     if (hw_support_multi_bank_value != NULL && strcmp(hw_support_multi_bank_value, "1") == 0) {
         hw_suports_multi_bank = 1;
     }
-    return hw_suports_multi_bank; 
+    return hw_suports_multi_bank;
 }
 
 int get_MU_input_bubble_mode() {
@@ -70,7 +81,7 @@ int get_MU_input_bubble_mode() {
     if (add_mu_input_bubbles_value != NULL && strcmp(add_mu_input_bubbles_value, "1") == 0) {
         add_mu_input_bubbles = 1;
     }
-    return add_mu_input_bubbles; 
+    return add_mu_input_bubbles;
 }
 
 int initialize_monitor(int num_cols) {
@@ -214,7 +225,7 @@ int glb_map(void *kernel_, int dpr_enabled) {
                 io_tile_info->start_addr =
                 (io_tile_info->start_addr << CGRA_BYTE_OFFSET) + ((tile * 2 + j%2) << BANK_ADDR_WIDTH);
             } else {
-                io_tile_info->start_addr = 
+                io_tile_info->start_addr =
                 (io_tile_info->start_addr << CGRA_BYTE_OFFSET) + ((tile * 2) << BANK_ADDR_WIDTH);
             }
 
@@ -242,7 +253,7 @@ int glb_map(void *kernel_, int dpr_enabled) {
             } else {
                 tile = (group_start * GROUP_SIZE + io_tile_info->pos.x) / 2;
             }
-           
+
             io_tile_info->tile = tile;
             if (get_E64_multi_bank_mode_config()) {
                 io_tile_info->start_addr =
@@ -251,7 +262,7 @@ int glb_map(void *kernel_, int dpr_enabled) {
                 io_tile_info->start_addr =
                 (io_tile_info->start_addr << CGRA_BYTE_OFFSET) + ((tile * 2 + 1) << BANK_ADDR_WIDTH);
             }
-           
+
             printf("Mapping output_%0d_block_%0d to global buffer\n", i, j);
             update_io_tile_configuration(io_tile_info, &kernel->config, kernel);
             if (i == 0 && j == 0) {
@@ -271,7 +282,7 @@ int glb_map(void *kernel_, int dpr_enabled) {
     int kernel_crossbar_config = 0;
     if (!kernel->opal_dense_scanner_workaround) {
         for (int i = group_start; i < group_start + num_groups; i++) {
-            
+
             // MO: Hack to emit flush from output tiles for MU2CGRA app
             if (kernel->app_type == mu2cgra) {
                 crossbar_config[i] = first_output_tile;
@@ -425,7 +436,7 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
 
 
     int bytes_written_per_cycle_non_E64_mode = 2;
-    
+
     // Writing 4x as many bytes in EXCHANGE_64_MODE mode; do -1 b/c addr is 0 indexed
     int E64_start_addr_increment = (4 - 1) * bytes_written_per_cycle_non_E64_mode;
 
@@ -440,7 +451,7 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
             } else {
                 dma_range[i] = extent[i];
             }
-        } else {    
+        } else {
             dma_range[i] = extent[i];
         }
 
@@ -458,7 +469,7 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         data_stride[i] = data_stride[i] << CGRA_BYTE_OFFSET;
     }
 
-    int modulo_check;  
+    int modulo_check;
     const char *west_io_env_var = "WEST_IN_IO_SIDES";
     char *west_io_value = getenv(west_io_env_var);
     if (west_io_value != NULL && strcmp(west_io_value, "1") == 0) {
@@ -473,8 +484,8 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
     else
         mux_sel = 0b10;
 
-  
-    
+
+
     if (io_tile_info->io == Input) {
 
         // Point to the other bank if the input is stored in GLB
@@ -526,12 +537,12 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         printf("Input block start addr: 0x%0x\n", start_addr);
         printf("Input block cycle start addr: %0d\n", cycle_start_addr);
         printf("Input block dimensionality: %0d\n", loop_dim);
-        
+
         for (int i = 0; i < loop_dim; i++) {
-            
-            // Count addr 4x faster b/c reading 8 bytes at once instead of 2 bytes 
+
+            // Count addr 4x faster b/c reading 8 bytes at once instead of 2 bytes
             if (exchange_64_mode) {
-                data_stride[i] = data_stride[i] * 4; 
+                data_stride[i] = data_stride[i] * 4;
             }
 
             add_config(config_info,
@@ -560,7 +571,7 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         }
     } else {
         if (strcmp(io_tile_info->mode, "RV") == 0) {
-            printf("\nIO tiles are in READY-VALID mode\n"); 
+            printf("\nIO tiles are in READY-VALID mode\n");
 
             const char *dense_rv_env_var = "DENSE_READY_VALID";
             char *dense_rv_value = getenv(dense_rv_env_var);
@@ -571,7 +582,7 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
             }
 
         } else {
-             printf("\nIO tiles are in STATIC mode\n"); 
+             printf("\nIO tiles are in STATIC mode\n");
             mode = ST_DMA_VALID_MODE_VALID;
         }
 
@@ -610,9 +621,9 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         add_config(config_info,
                    (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_ST_DMA_HEADER_0_DIM_R,
                    loop_dim);
-        
+
         if (exchange_64_mode) {
-            start_addr += E64_start_addr_increment; 
+            start_addr += E64_start_addr_increment;
         }
 
         add_config(
@@ -628,11 +639,11 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         printf("Output block cycle start addr: %0d\n", cycle_start_addr);
         printf("Output block dimensionality: %0d\n", loop_dim);
         for (int i = 0; i < loop_dim; i++) {
-            // Count 4x faster b/c writing 8 bytes at once instead of 2 bytes 
+            // Count 4x faster b/c writing 8 bytes at once instead of 2 bytes
             if (exchange_64_mode) {
                 data_stride[i] = data_stride[i] * 4;
             }
-            
+
             add_config(config_info,
                        (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) +
                            (GLB_ST_DMA_HEADER_0_RANGE_0_R + 0x0c * i),

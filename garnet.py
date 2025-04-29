@@ -1038,12 +1038,21 @@ def build_verilog(args, garnet):
     if not garnet_home:
         garnet_home = os.path.dirname(os.path.abspath(__file__))
     from matrix_unit.matrix_unit_main import gen_param_header
+    from matrix_unit.matrix_unit_main import gen_regspace_header
+    from matrix_unit.matrix_unit_main import Reg
     matrix_unit_params = {}
     matrix_unit_params["MU_DATAWIDTH"] = args.mu_datawidth
     matrix_unit_params["MU_OC_0"] = args.mu_oc_0
+    matrix_unit_params["MU_AXI_ADDR_WIDTH"] = 30
+    matrix_unit_params["MU_AXI_DATA_WIDTH"] = 64
     gen_param_header(top_name="matrix_unit_param",
                      params=matrix_unit_params,
                      output_folder=os.path.join(garnet_home, "matrix_unit/header"))
+    input_base_addr_reg = Reg(name="MU_AXI_INPUT_BASE_R", addr=8, lsb=0, msb=0)
+    weight_base_addr_reg = Reg(name="MU_AXI_WEIGHT_BASE_R", addr=16, lsb=0, msb=0)
+    bias_base_addr_reg = Reg(name="MU_AXI_BIAS_BASE_R", addr=24, lsb=0, msb=0)
+    header_list = [input_base_addr_reg, weight_base_addr_reg, bias_base_addr_reg]
+    gen_regspace_header(header_list, "matrix_unit/header/matrix_unit_regspace")
 
 
 def pnr(garnet, args, app):

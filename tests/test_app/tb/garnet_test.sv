@@ -6,6 +6,7 @@
 ** Change history:  10/14/2020 - Implement the first version
 **===========================================================================*/
 import "DPI-C" function int initialize_monitor(int num_cols);
+import "DPI-C" function int get_external_MU_active_env_var();
 
 program garnet_test #(
     parameter int MAX_NUM_APPS = 1000
@@ -15,7 +16,7 @@ program garnet_test #(
     proc_ifc p_ifc,
     axil_ifc axil_ifc,
     axil_ifc mu_axil_ifc,
-    behavioral_matrix_unit mu_ifc
+    behavioral_matrix_unit behavioral_mu_ifc
 );
     int test_toggle = 0;
     int value;
@@ -25,8 +26,8 @@ program garnet_test #(
     // local variables
     //============================================================================//
     Kernel kernels[$]; // use dynamic array for potential glb tiling
-    int real_mu = 1; // FIXME: Do this in a better way
-    DnnLayer dnn_layer = new(); // TODO: refine dnn layer support. Only do this if using real mu
+    int external_mu_active = get_external_MU_active_env_var();
+    DnnLayer dnn_layer;
 
     // Incorrect timescale gave me no end of problems, so now I'm adding this to help future me.
     function static void time_check(bit cond);
@@ -56,6 +57,10 @@ program garnet_test #(
         #100 initialize(dpr);  // So...I guess this is supposed to happen at 100ps not 100ns...
 
         map(kernels);
+
+        if (external_mu_active) begin
+            dnn_layer = new(); // TODO: refine dnn layer support. Only do this if using real mu
+        end
 
         // TODO: Add a pass to map dnn layers here as well.
         // for now just instantiated it in local variables

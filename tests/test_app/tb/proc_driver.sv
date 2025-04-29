@@ -3,8 +3,8 @@
 semaphore proc_lock;
 initial proc_lock = new(1);
 
-semaphore mu_ifc_lock;
-initial mu_ifc_lock = new(1);
+semaphore behavioral_mu_ifc_lock;
+initial behavioral_mu_ifc_lock = new(1);
 import "DPI-C" function int get_MU_input_bubble_mode();
 
 
@@ -22,6 +22,7 @@ integer RANDOM_DELAY;
 integer ADD_MU_INPUT_BUBBLES;
 integer mask;
 integer RANDOM_SHIFT;
+// integer (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES));
 
 // For adding random bubbles to matrix unit input
 initial begin
@@ -29,6 +30,10 @@ initial begin
     ADD_MU_INPUT_BUBBLES = get_MU_input_bubble_mode();
     mask = 32'd3 << RANDOM_SHIFT;
 end
+
+// initial begin
+//     (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES)) = TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES);
+// end
 
 
 task ProcDriver_write_bs();
@@ -104,7 +109,13 @@ task ProcDriver_write_8b_network_data();
             bdata = {data_q_8b[i+7], data_q_8b[i+6], data_q_8b[i+5], data_q_8b[i+4], data_q_8b[i+3], data_q_8b[i+2], data_q_8b[i+1], data_q_8b[i]};
         end
         // Addr adjustment for physical data layout across 4 consecutive banks
-        ProcDriver_write_waddr = {cur_addr[20:18], cur_addr[4:3], cur_addr[17:5], cur_addr[2:0]};
+        // ProcDriver_write_waddr = {cur_addr[20:18], cur_addr[4:3], cur_addr[17:5], cur_addr[2:0]};
+        // NOTE: This doesn't work on small CGRAs (e.g. fast regression)
+        ProcDriver_write_waddr = {  cur_addr[MU_ADDR_WIDTH - 1 : MU_ADDR_WIDTH - 1 - (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES) - 1)],
+                                    cur_addr[BANK_BYTE_OFFSET + (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES) - 1) - 1 : BANK_BYTE_OFFSET],
+                                    cur_addr[MU_ADDR_WIDTH - 1 - (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES)) : BANK_BYTE_OFFSET + (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES) - 1)],
+                                    cur_addr[BANK_BYTE_OFFSET - 1 : 0]
+                            };
         ProcDriver_write_wdata = bdata;
         ProcDriver_write();
         cur_addr += 8;  // Counts hex 8,10,18,20...(8x2^10 == 0x1000
@@ -133,7 +144,13 @@ task ProcDriver_write_16b_network_data();
         end
 
         // Addr adjustment for physical data layout across 4 consecutive banks
-        ProcDriver_write_waddr = {cur_addr[20:18], cur_addr[4:3], cur_addr[17:5], cur_addr[2:0]};
+        // ProcDriver_write_waddr = {cur_addr[20:18], cur_addr[4:3], cur_addr[17:5], cur_addr[2:0]};
+        // NOTE: This doesn't work on small CGRAs (e.g. fast regression)
+        ProcDriver_write_waddr = {  cur_addr[MU_ADDR_WIDTH - 1 : MU_ADDR_WIDTH - 1 - (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES) - 1)],
+                                    cur_addr[BANK_BYTE_OFFSET + (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES) - 1) - 1 : BANK_BYTE_OFFSET],
+                                    cur_addr[MU_ADDR_WIDTH - 1 - (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES)) : BANK_BYTE_OFFSET + (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES) - 1)],
+                                    cur_addr[BANK_BYTE_OFFSET - 1 : 0]
+                            };
         ProcDriver_write_wdata = bdata;
         ProcDriver_write();
         cur_addr += 8;  // Counts hex 8,10,18,20...(8x2^10 == 0x1000
@@ -144,39 +161,39 @@ endtask
 
 
 int i;
-task MU_driver_write_data();
+task Behavioral_MU_driver_write_data();
     cur_addr = start_addr;
-    mu_ifc_lock.get(1);
+    behavioral_mu_ifc_lock.get(1);
     size = mu_data_q[0].size();
     i = 0;
     while (i < size) begin
         for (int oc_0 = 0; oc_0 < MU_OC_0; oc_0++) begin
             mu2cgra_wdata[oc_0] = mu_data_q[oc_0][i];
         end
-        MU_driver_write();
-        if (mu_ifc.cgra2mu_ready) begin
+        Behavioral_MU_driver_write();
+        if (behavioral_mu_ifc.cgra2mu_ready) begin
             i += 1;
         end
     end
-    mu_ifc.mu2cgra_valid = 0;
-    repeat (10) @(posedge mu_ifc.clk);
-    mu_ifc_lock.put(1);
+    behavioral_mu_ifc.mu2cgra_valid = 0;
+    repeat (10) @(posedge behavioral_mu_ifc.clk);
+    behavioral_mu_ifc_lock.put(1);
 endtask
 
 
-task MU_driver_write();
-    mu_ifc.mu2cgra = mu2cgra_wdata;
+task Behavioral_MU_driver_write();
+    behavioral_mu_ifc.mu2cgra = mu2cgra_wdata;
 
-    mu_ifc.mu2cgra_valid = 0;
+    behavioral_mu_ifc.mu2cgra_valid = 0;
     RANDOM_DELAY = $urandom & mask;
     RANDOM_DELAY = RANDOM_DELAY >> RANDOM_SHIFT;
     while (RANDOM_DELAY > 0 & ADD_MU_INPUT_BUBBLES) begin
-        @(posedge mu_ifc.clk);
+        @(posedge behavioral_mu_ifc.clk);
         RANDOM_DELAY--;
     end
 
-    mu_ifc.mu2cgra_valid = 1;
-    @(posedge mu_ifc.clk);
+    behavioral_mu_ifc.mu2cgra_valid = 1;
+    @(posedge behavioral_mu_ifc.clk);
 endtask
 
 

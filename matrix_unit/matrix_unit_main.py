@@ -41,3 +41,33 @@ def gen_header_files(params, svh_filename, h_filename, header_name):
                 continue
             v = int(v)
             f.write(f"#define {k.upper()} {v}\n")
+
+@dataclass
+class Reg():
+    name: str
+    addr: int
+    lsb: int
+    msb: int
+
+
+def gen_regspace_header(header_list, path: str):
+    svh_path = path + '.svh'
+    with open(svh_path, "w") as f:
+        for header in header_list:
+            if isinstance(header, Reg):
+                f.write(f"`define {header.name} 'h{format(header.addr, 'x')}\n")
+                f.write(f"`define {header.name + '_LSB'} {header.lsb}\n")
+                f.write(f"`define {header.name + '_MSB'} {header.msb}\n")
+            else:
+                exception = f"Unknown header type: {type(header)}"
+                raise TypeError(exception)
+
+    h_path = path + '.h'
+    with open(h_path, "w") as f:
+        f.write(f"#pragma once\n")
+        for header in header_list:
+            if isinstance(header, Reg):
+                f.write(f"#define {header.name} {hex(header.addr)}\n")
+            else:
+                exception = f"Unknown header type: {type(header)}"
+                raise TypeError(exception)

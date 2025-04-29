@@ -1,8 +1,7 @@
 // This is a garnet_test.sv "include" file
 
 // How long to wait for streaming; can be as little as 6K for pointwise, 80K for camera pipeline etc.
-// int MAX_WAIT = 6_000_000;
-int MAX_WAIT = 1_000_000;
+int MAX_WAIT = 6_000_000;
 
 typedef enum int {
     GLB_PCFG_CTRL,
@@ -125,20 +124,18 @@ task Env_mu_configure();
     mu_serialized_params = dnn_layer.serialized_matrix_params;
     MU_AxilDriver_serialized_params_write();
 
-    // TODO: Configure the base addresses here. Set them all to 0.
-    // TODO: Make these all constants in glb.h
     // input base address
-    mu_axi_addr = 29'h8;
+    mu_axi_addr = `MU_AXI_INPUT_BASE_R;
     mu_axi_data = 0;
     MU_AxilDriver_write();
 
    // weight base address
-    mu_axi_addr = 29'h10;
+    mu_axi_addr = `MU_AXI_WEIGHT_BASE_R;
     mu_axi_data = 0;
     MU_AxilDriver_write();
 
     // bias base address
-    mu_axi_addr = 29'h18;
+    mu_axi_addr = `MU_AXI_BIAS_BASE_R;
     mu_axi_data = 0;
     MU_AxilDriver_write();
 
@@ -227,7 +224,7 @@ task Env_cgra_unstall();
 endtask // Env_cgra_unstall
 
 
-task MU_write_to_cgra();
+task Behavioral_MU_write_to_cgra();
     realtime start_time, end_time;
     fork
         begin
@@ -239,18 +236,18 @@ task MU_write_to_cgra();
             end
 
             start_time = $realtime;
-            $display("[%s] MU writes to CGRA starting at %0t", kernel.name, start_time);
-            MU_driver_write_data();
+            $display("[%s] Behavioral MU writes to CGRA starting at %0t", kernel.name, start_time);
+            Behavioral_MU_driver_write_data();
             end_time = $realtime;
-            $display("[%s] MU write to CGRA ends at %0t", kernel.name, end_time);
-            $display("[%s] It takes %0t time for MU to write %0d Byte data to CGRA.", kernel.name,
+            $display("[%s] Behavioral MU write to CGRA ends at %0t", kernel.name, end_time);
+            $display("[%s] It takes %0t time for behavioral MU to write %0d Byte data to CGRA.", kernel.name,
                     end_time - start_time, kernel.mu_inputs[0].io_tiles[0].num_data * 2);
         end
 
         begin
             // ERROR if we go MAX_WAIT cycles without finishing streaming the MU inputs
-            for (int i=0; i<MAX_WAIT; i++) @(posedge mu_ifc.clk);
-            $error("@%0t: %m ERROR: MU stream wait timeout, waited %0d cy to finish streaming MU inputs",
+            for (int i=0; i<MAX_WAIT; i++) @(posedge behavioral_mu_ifc.clk);
+            $error("@%0t: %m ERROR: Behavioral MU stream wait timeout, waited %0d cy to finish streaming MU inputs",
                    $time, MAX_WAIT);
             $finish(2);  // The "2" prints more information about when/where/why
         end
@@ -284,14 +281,13 @@ task Env_kernel_test();
     axil_drv.write(cfg.addr, cfg.data);
     */
 
-    // FORK BRANCH 1: MU writes data to CGRA
+    // FORK BRANCH 1: Behavioral MU writes data to CGRA
     fork
         begin
             //TODO: Explain this magic number 7 from the RTL. Possibly add regs to solve this in real design.
-            if (kernel.app_type != GLB2CGRA && !real_mu) begin
-                repeat (7) @(posedge mu_ifc.clk);
-                MU_write_to_cgra();
-
+            if (kernel.app_type != GLB2CGRA && !external_mu_active) begin
+                repeat (7) @(posedge behavioral_mu_ifc.clk);
+                Behavioral_MU_write_to_cgra();
                 mu2cgra_end_time = $realtime;
             end
         end
@@ -525,21 +521,16 @@ task Env_run();
                 Env_set_interrupt_on();
                 Env_write_bs();
 
-                // TODO: Add an IF statement here if this is a kernel that involves the REAL MU
-                if (real_mu) begin
+                if (external_mu_active) begin
                     Env_write_network_data();
                 end
 
                 Env_glb_configure();
                 Env_cgra_configure();
-
-
-                // TODO: Add an IF statement here to skip this is MU-only kernel
                 Env_write_data();
 
-                // TODO: Add an IF statement here if this is a kernel that involves the REAL MU.
-                // TODO: Also think about the order of all these. Make sure MU doesn't start producing valid data until cgra has been unstalled and flushed
-                if (real_mu) begin
+                // TODO: Think about the order of all these. Make sure MU doesn't start producing valid data until cgra has been unstalled and flushed
+                if (external_mu_active) begin
                     Env_mu_configure();
                 end
 
