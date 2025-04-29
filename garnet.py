@@ -578,7 +578,8 @@ class Garnet(Generator):
                         mode = 'ROM'
                         # Actually use wr addr for rom mode...
                         hack_remap = {
-                            'addr_in_0': 'wr_addr_in',
+                            # 'addr_in_0': 'wr_addr_in',
+                            'addr_in_0': 'rd_addr_in',
                             'ren_in_0': 'ren',
                             'data_out_0': 'data_out'
                         }

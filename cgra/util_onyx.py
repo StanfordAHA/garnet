@@ -48,6 +48,7 @@ from lake.modules.strg_ub_thin import StrgUBThin
 from lake.modules.crddrop import CrdDrop
 from lake.modules.crdhold import CrdHold
 from lake.modules.strg_RAM import StrgRAM
+from lake.modules.strg_RAM_rv import StrgRAMRV
 from lake.modules.stencil_valid import StencilValid
 from lake.modules.buffet_like import BuffetLike
 from lake.modules.stream_arbiter import StreamArbiter
@@ -59,6 +60,7 @@ from lake.top.reduce_pe_cluster import ReducePECluster
 from lassen.sim import PE_fc
 import magma as m
 from peak import family
+from lake.spec.spec_memory_controller import SpecMemoryController, build_four_port_wide_fetch_rv
 import os
 
 
@@ -225,7 +227,13 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
 
         wscan = WriteScanner(fifo_depth=fifo_depth, perf_debug=perf_debug)
 
-        strg_ub = StrgUBVec(mem_width=mem_width, mem_depth=mem_depth, comply_with_17=True)
+        # strg_ub = StrgUBVec(mem_width=mem_width, mem_depth=mem_depth, comply_with_17=True)
+        strg_cap = 4096
+        fw = 4
+        data_width = 16
+
+        spec = build_four_port_wide_fetch_rv(storage_capacity=strg_cap, data_width=data_width, vec_width=fw)
+        strg_ub = SpecMemoryController(spec=spec)
 
         fiber_access = FiberAccess(local_memory=False,
                                    use_pipelined_scanner=pipeline_scanner,
@@ -235,7 +243,8 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
 
         buffet = BuffetLike(mem_depth=mem_depth, local_memory=False, optimize_wide=True, fifo_depth=fifo_depth)
 
-        strg_ram = StrgRAM(memory_width=mem_width, memory_depth=mem_depth, comply_with_17=True)
+        # strg_ram = StrgRAM(memory_width=mem_width, memory_depth=mem_depth, comply_with_17=True)
+        strg_ram = StrgRAMRV(memory_width=mem_width, memory_depth=mem_depth, comply_with_17=True)
 
         stencil_valid = StencilValid()
 
@@ -329,7 +338,13 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
         controllers_2.append(pe)
 
         controllers = []
-        strg_ub = StrgUBVec(mem_width=mem_width, mem_depth=mem_depth, comply_with_17=False)
+        # strg_ub = StrgUBVec(mem_width=mem_width, mem_depth=mem_depth, comply_with_17=False)
+        strg_cap = 4096
+        fw = 4
+        data_width = 16
+
+        spec = build_four_port_wide_fetch_rv(storage_capacity=strg_cap, data_width=data_width, vec_width=fw)
+        strg_ub = SpecMemoryController(spec=spec)
 
         strg_ram = StrgRAM(memory_width=mem_width, memory_depth=mem_depth, comply_with_17=False)
         stencil_valid = StencilValid()
