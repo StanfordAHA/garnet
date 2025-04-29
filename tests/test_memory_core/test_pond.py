@@ -15,6 +15,7 @@ from peak.assembler import Assembler
 def io_sides():
     return IOSide.North | IOSide.East | IOSide.South | IOSide.West
 
+
 @pytest.mark.skip(reason="04/2023 skip for clean master branch, see garnet issue 924")
 def test_pond_rd_wr(run_tb, get_mapping):
 

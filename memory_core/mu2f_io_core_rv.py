@@ -26,8 +26,7 @@ class MU2F_IOCoreReadyValid(LakeCoreBase):
                          config_addr_width=config_addr_width,
                          data_width=16,
                          name="MU2F_IOCoreReadyValid",
-                         ready_valid=True 
-                        ) 
+                         ready_valid=True)
 
         # Capture everything to the tile object
         self.matrix_unit_data_width = matrix_unit_data_width
@@ -38,8 +37,7 @@ class MU2F_IOCoreReadyValid(LakeCoreBase):
         self.allow_bypass = allow_bypass
         self.use_almost_full = use_almost_full
 
-
-        cache_key = ( self.matrix_unit_data_width,
+        cache_key = (self.matrix_unit_data_width,
                      self.tile_array_data_width,
                      self.num_ios,
                      self.config_data_width,
@@ -54,12 +52,12 @@ class MU2F_IOCoreReadyValid(LakeCoreBase):
             # query for information. The circuit representation will be cached and retrieved
             # in the following steps.
             self.dut = IOCore_mu2f(matrix_unit_data_width=self.matrix_unit_data_width,
-                              tile_array_data_width=self.tile_array_data_width,
-                              fifo_depth=fifo_depth,
-                              allow_bypass=self.allow_bypass,
-                              use_almost_full=self.use_almost_full,
-                              add_flush=True,
-                              add_clk_en=True)
+                                   tile_array_data_width=self.tile_array_data_width,
+                                   fifo_depth=fifo_depth,
+                                   allow_bypass=self.allow_bypass,
+                                   use_almost_full=self.use_almost_full,
+                                   add_flush=True,
+                                   add_clk_en=True)
 
             circ = kts.util.to_magma(self.dut,
                                      flatten_array=True,
@@ -98,7 +96,6 @@ class MU2F_IOCoreReadyValid(LakeCoreBase):
         else:
             config_kwargs = config_tuple
 
-  
         configs = []
 
         tile_config = self.dut.get_bitstream(config_kwargs)

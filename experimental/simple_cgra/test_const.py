@@ -20,6 +20,6 @@ class Foo(gemstone.generator.Generator):
 if __name__ == "__main__":
     foo_gen = Foo()
     circ = foo_gen.circuit()
-    print (circ)
+    print(circ)
     magma.compile("foo", circ, output="coreir")
     print(open("foo.json").read())

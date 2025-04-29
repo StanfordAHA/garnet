@@ -3,13 +3,14 @@ import sys
 import argparse
 import subprocess
 import matplotlib
-matplotlib.use('pdf')  # resolve the subplot() stuck issue
 import matplotlib.pyplot as plt
 import pdb
 import pandas as pd
+matplotlib.use('pdf')  # resolve the subplot() stuck issue
 
 # might need the following package
 # apt-get install libnuma-dev
+
 
 # This version uses fsdbreport instead of fsdb2ns
 def get_signal_duration(report_f, start_index):
@@ -38,12 +39,12 @@ def get_signal_duration(report_f, start_index):
                     if int(line[start_index + 1]) == 1:
                         only_valid += 1
                 continue
-            
+
             # print(line[start_index], line[start_index + 1], line[start_index + 2])
             if not Started:
                 cur_seg.append(int(line[0]))
                 Started = True
-            
+
             if Started:  # May have an empty fiber
                 both_rv += 1
                 if termination in line[start_index + 2]:
@@ -124,16 +125,15 @@ def get_glb_duration(report_f, start_index, trx=1):
     return dur_list
 
 
-
 def get_signal_report(fsdb_file, signal_list, output_f="signal_report.txt"):
     signal = []
     remove_list = []
     # Remove vector reducer
-    #for s in signal_list:
-    #    if 'VectorReducer' in s[0]:
-    #        remove_list.append(s)
-    #for r in remove_list:
-    #    signal_list.remove(r)
+    # for s in signal_list:
+    #     if 'VectorReducer' in s[0]:
+    #         remove_list.append(s)
+    # for r in remove_list:
+    #     signal_list.remove(r)
     for s in signal_list:
         s_ = s[1:]
         for s_sub in s_:
@@ -144,12 +144,12 @@ def get_signal_report(fsdb_file, signal_list, output_f="signal_report.txt"):
 
     subprocess.run(cmd, shell=True)
 
-    #st_index = 1
+    # st_index = 1
     all_durs_f = []
-    #for s in signal_list:
+    # for s in signal_list:
     #    print(s[0])  # For debugging
     #    all_durs = []
-    #    
+    #
 
     #    if "glb" not in s[0]:
     #        for s_sub in s[1:]:
@@ -204,14 +204,14 @@ def get_signal_report(fsdb_file, signal_list, output_f="signal_report.txt"):
     #    all_durs_f.append([s[0], f_dur])
     return all_durs_f
 
-            
+
 def main():
     parser = argparse.ArgumentParser(description='Generates waveform_cmds.rc file for verdi.')
     parser.add_argument('bin_folder', help='bin folder with design files')
     parser.add_argument('--gantt', help='Generate Gantt Chart', action='store_true')
     args = parser.parse_args()
 
-    # Call with bin folder 
+    # Call with bin folder
     design_packed = args.bin_folder + 'design.packed'
     design_mapped = args.bin_folder + 'design.mapped'
 
@@ -232,7 +232,7 @@ def main():
 
     # Topologically sort the graph
     topological_order = list(nx.topological_sort(G))
-    #topological_order = G.nodes()
+    # topological_order = G.nodes()
 
     # Remove GLB nodes from the topological order
     topological_order = [node for node in topological_order if "I" not in node]
@@ -245,7 +245,7 @@ def main():
     tiles = []
 
     # Parse the lines to get the tile name, type, and location
-    for line in lines:  
+    for line in lines:
         tile_name = line.split("===>")[0].strip("\t").strip("\n")
         tile_type = line.split("===>")[1].strip("\t").strip("\n")
         tile_location = line.split("===>")[2].strip("\t").strip("\n")
@@ -287,7 +287,7 @@ def main():
                     group_cmd = f"addGroup {tile[0]}"
                     signal_cmds = [f"{cmd_prefix}{tile_path}{tile_name}_flat/{signal}_{suffix}_" for suffix in ("f", "ready_f", "valid_f")]
                     cmds.extend([group_cmd] + signal_cmds)
-                
+
     with open('waveform_cmds.rc', 'w') as file:
         for cmd in cmds:
             file.write(cmd + "\n")
@@ -317,10 +317,10 @@ def main():
     valid_color = [[1, 1, 1, 0.6] for c in colors]
     active_color = [[0, 0, 0, 0.8] for c in colors]
     # print(colors)
-    
+
     glb_write_signal = "fiber_access_16_inst/write_scanner/block_wr_in"
     glb_read_signal = "fiber_access_16_inst/read_scanner/block_rd_out"
-    
+
     clk = "/top/dut/clk_in"
     fsdb_file = "cgra.fsdb"
     report_f = "signal_report.txt"
@@ -339,7 +339,7 @@ def main():
                         for signal in signals_in[0]:
                             signal_rv = [f"{cmd_prefix}{tile_path}{tile_name}_flat/{signal}_{suffix}_" for suffix in ("ready_f", "valid_f", "f")]
                             sub_tracker.append(signal_rv)
-                        
+
                         for signal in signals_in[1]:  # Avoid the issue with Val mode
                             signal_rv = [f"{cmd_prefix}{tile_path}{tile_name}_flat/{signal}_{suffix}_" for suffix in ("ready_f", "valid_f", "f")]
                             sub_tracker.append(signal_rv)
@@ -347,10 +347,9 @@ def main():
                         tile_name_display = tile[0] + "_glb_write"
                         if "v" in tile[0] or "V" in tile[0]:
                             tile_name_display = tile[0] + "_glb_write_v"
-                            
+
                         glb_signal_rv = [f"{cmd_prefix}{tile_path}{tile_name}_flat/{glb_write_signal}{suffix}" for suffix in ("_ready", "_valid", "")]
                         signal_tracker.append([tile_name_display, glb_signal_rv])
-
 
                     else:  # Use only the read signals
                         for signal in signals_out:
@@ -360,7 +359,7 @@ def main():
                         tile_name_display = tile[0] + "_glb_read"
                         if "v" in tile[0] or "V" in tile[0]:
                             tile_name_display = tile[0] + "_glb_read_v"
-                        
+
                         glb_signal_rv = [f"{cmd_prefix}{tile_path}{tile_name}_flat/{glb_read_signal}{suffix}" for suffix in ("_ready", "_valid", "")]
                         signal_tracker.append([tile_name_display, glb_signal_rv])
 
@@ -378,7 +377,7 @@ def main():
     all_dur = get_signal_report(fsdb_file, signal_tracker, report_f)
     #
     ## write intersect performance to a file
-    #with open('/aha/garnet/intersect_perf.txt', 'w') as f:
+    # with open('/aha/garnet/intersect_perf.txt', 'w') as f:
     #    for dur in all_dur:
     #        if "intersect" in dur[0] or "union" in dur[0]:
     #            dur_num = dur[1][0]
@@ -389,13 +388,13 @@ def main():
     #            f.write(str((dur_num[3]+dur_num[4])/dur_num[1]))
     #            f.write("\n")
 
-    #height = int(0.3 * len(all_dur))
-    #fig, ax = plt.subplots(figsize=(30, height))
-    #y_ticks = [15 + 10 * i for i in range(len(all_dur))]
-    #y_labels = [i[0] for i in all_dur]
-    #y_labels.reverse()
-    #ax.set_yticks(y_ticks, labels=y_labels)
-    #for i, dur in enumerate(all_dur):
+    # height = int(0.3 * len(all_dur))
+    # fig, ax = plt.subplots(figsize=(30, height))
+    # y_ticks = [15 + 10 * i for i in range(len(all_dur))]
+    # y_labels = [i[0] for i in all_dur]
+    # y_labels.reverse()
+    # ax.set_yticks(y_ticks, labels=y_labels)
+    # for i, dur in enumerate(all_dur):
     #    for j, d in enumerate(dur[1]):
     #        if j < 6:
     #            # print(d)
@@ -405,11 +404,10 @@ def main():
     #            ax.broken_barh([(d[0] + d[2] + d[3], d[4])], (y_ticks[len(all_dur) - 1 - i] - 5, 4), facecolors=active_color[(j*3) % len(colors)])
     #        else:
     #            break
-    #plt.savefig("gantt.png")
-    #plt.cla()
-    #plt.clf()
-    #plt.close()
-
+    # plt.savefig("gantt.png")
+    # plt.cla()
+    # plt.clf()
+    # plt.close()
 
     file_path = '/aha/garnet/tests/test_app/signal_report.txt'
 
@@ -460,7 +458,6 @@ def main():
 
     streams = {}
 
-
     # preserve topological sort
     for tile in tiles:
         # Process each bundle
@@ -469,7 +466,7 @@ def main():
 
             # Filter rows where the first two columns are both 1
             filtered_df = bundle_df[(bundle_df.iloc[:, 0] == 1) & (bundle_df.iloc[:, 1] == 1)]
-            
+
             # Keep only the third column
             third_column = filtered_df.iloc[:, 2]
             hex_column = third_column.apply(lambda x: binary_to_special_format(str(x)))
@@ -480,7 +477,6 @@ def main():
                 port = bundle_name.split("/")[-1]
                 name = f"{tile[0]} {port}"
                 streams[name] = hex_column.tolist()
-
 
     # Write streams to file
     with open('streams.txt', 'w') as file:
@@ -496,7 +492,6 @@ def main():
                 else:
                     file.write(f'{value}, ')
             file.write('\n')
-
 
 
 if __name__ == "__main__":

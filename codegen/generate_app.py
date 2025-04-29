@@ -12,7 +12,7 @@ def gen_app(num_tiles, app_name, type_of_app, name_list):
     import raw_to_h_16
     import bs_to_h
     import meta
-    
+
     # for dense use the single app, for sparse we use the concatenation of inputs
     if type_of_app == "dense":
         dense = 1
@@ -34,10 +34,9 @@ def gen_app(num_tiles, app_name, type_of_app, name_list):
     shutil.copy(f"{first_tile_path}reg_write.h", "./")
     shutil.copy(f"{first_tile_path}script.h", "./")
 
-
     # need to generate image input/output per tile
     # combine inputs into one raw file
-    if not dense: 
+    if not dense:
         input_paths = []
         for input_file in inputs:
             for name in name_list:
@@ -49,13 +48,11 @@ def gen_app(num_tiles, app_name, type_of_app, name_list):
                         shutil.copyfileobj(partial, output)
             input_paths = []
 
-
     # get extents of all inputs
     # initialize dict
     extent_dict = {}
     for input in inputs:
         extent_dict[input] = []
-
 
     for name in name_list:
         meta_file_name = f"tiles_chip_test/{name}/design_meta.json"
@@ -66,7 +63,6 @@ def gen_app(num_tiles, app_name, type_of_app, name_list):
         for input in meta["IOs"]["inputs"]:
             extent_dict[input["datafile"]].append(input["shape"][0])
 
-
     # convert to input
     raw_to_h_16.convert_image(inputs, outputs, data_file_str, len(name_list), dense)
 
@@ -74,5 +70,7 @@ def gen_app(num_tiles, app_name, type_of_app, name_list):
     io_placement.unrolling(inputs, outputs, input_order, output_order, extent_dict, name_list, dense, app_name)
 
     return inputs, outputs, input_order, output_order
+
+
 if __name__ == "main":
     gen_app(num_tiles, app_name, type_of_app, name_list)

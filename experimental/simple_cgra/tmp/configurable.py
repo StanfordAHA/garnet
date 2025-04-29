@@ -50,17 +50,17 @@ class ConfigurationPortReference(PortReferenceBase):
 
 
 class Configurable(gemstone.generator.Generator):
-    def __init__(self): #, addr_width, data_width):
+    def __init__(self):  # addr_width, data_width):
         super().__init__()
 
         self.registers = {}
-        #self.addr_width = addr_width
-        #self.data_width = data_width
+        # self.addr_width = addr_width
+        # self.data_width = data_width
 
         self.add_ports(
-            #clk=magma.In(magma.Clock),
-            #config_addr=magma.In(magma.Bits(self.addr_width)),
-            #config_data=magma.In(magma.Bits(self.data_width)),
+            # clk=magma.In(magma.Clock),
+            # config_addr=magma.In(magma.Bits(self.addr_width)),
+            # config_data=magma.In(magma.Bits(self.data_width)),
         )
 
     def __getattr__(self, name):

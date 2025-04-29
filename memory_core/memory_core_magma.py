@@ -60,9 +60,9 @@ def lift_mem_core_ports(port, tile, tile_core):  # pragma: nocover
 class MemCore(LakeCoreBase):
 
     if os.getenv('WHICH_SOC') == "amber":
-        tech_map_default=TSMC_Tech_Map(depth=512, width=32)
+        tech_map_default = TSMC_Tech_Map(depth=512, width=32)
     else:
-        tech_map_default=  GF_Tech_Map(depth=512, width=32)
+        tech_map_default = GF_Tech_Map(depth=512, width=32)
 
     def __init__(self,
                  data_width=16,  # CGRA Params

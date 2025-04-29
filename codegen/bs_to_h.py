@@ -9,7 +9,7 @@ def convert_bs(bs_file_name, new_name):
         for bs_line in bs_file:
             bs_lines.append(bs_line)
 
-    f = open(bs_file_str+"script.h", "w")
+    f = open(bs_file_str + "script.h", "w")
     # defines
     f.write("#ifndef BITSTREAM_H\n")
     f.write("#define BITSTREAM_H\n\n")
@@ -21,7 +21,6 @@ def convert_bs(bs_file_name, new_name):
         strings = line.split()
         f.write("  0x" + strings[0] + ",\n")
     f.write("};\n\n")
-
 
     # data array
     f.write("uint32_t app_datas_script[] = {\n")

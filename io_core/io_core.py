@@ -15,7 +15,7 @@ def gen_io_core():
             self.io2f_1 = glb2io_1
             self.io2glb_16 = f2io_16
             self.io2glb_1 = f2io_1
-            return self.io2f_16, self.io2f_1,\
+            return self.io2f_16, self.io2f_1, \
                 self.io2glb_16, self.io2glb_1
 
     return _IOCore

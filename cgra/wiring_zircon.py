@@ -96,20 +96,19 @@ def glb_interconnect_wiring(garnet):
             cfg_addr_port_name = f"cgra_cfg_g2f_cfg_addr_{i}_{j}"
             cfg_rd_en_port_name = f"cgra_cfg_g2f_cfg_rd_en_{i}_{j}"
             cfg_wr_en_port_name = f"cgra_cfg_g2f_cfg_wr_en_{i}_{j}"
-   
+
             if IOSide.West in garnet.io_sides:
                 # Also wire I/O tile column to leftmost glb tile
                 if i == 0 and j == 0:
                     garnet.wire(garnet.global_buffer.ports[cfg_data_port_name],
-                            garnet.interconnect.ports.config[0].config_data)
+                                garnet.interconnect.ports.config[0].config_data)
                     garnet.wire(garnet.global_buffer.ports[cfg_addr_port_name],
-                            garnet.interconnect.ports.config[0].config_addr)
+                                garnet.interconnect.ports.config[0].config_addr)
                     garnet.wire(garnet.global_buffer.ports[cfg_rd_en_port_name],
-                            garnet.interconnect.ports.config[0].read)
+                                garnet.interconnect.ports.config[0].read)
                     garnet.wire(garnet.global_buffer.ports[cfg_wr_en_port_name],
-                            garnet.interconnect.ports.config[0].write)
+                                garnet.interconnect.ports.config[0].write)
 
-                    
                 garnet.wire(garnet.global_buffer.ports[cfg_data_port_name],
                             garnet.interconnect.ports.config[i * col_per_glb + j + 1].config_data)
                 garnet.wire(garnet.global_buffer.ports[cfg_addr_port_name],
@@ -118,25 +117,24 @@ def glb_interconnect_wiring(garnet):
                             garnet.interconnect.ports.config[i * col_per_glb + j + 1].read)
                 garnet.wire(garnet.global_buffer.ports[cfg_wr_en_port_name],
                             garnet.interconnect.ports.config[i * col_per_glb + j + 1].write)
-            else: 
+            else:
                 garnet.wire(garnet.global_buffer.ports[cfg_data_port_name],
-                        garnet.interconnect.ports.config[i * col_per_glb + j].config_data)
+                            garnet.interconnect.ports.config[i * col_per_glb + j].config_data)
                 garnet.wire(garnet.global_buffer.ports[cfg_addr_port_name],
-                        garnet.interconnect.ports.config[i * col_per_glb + j].config_addr)
+                            garnet.interconnect.ports.config[i * col_per_glb + j].config_addr)
                 garnet.wire(garnet.global_buffer.ports[cfg_rd_en_port_name],
-                        garnet.interconnect.ports.config[i * col_per_glb + j].read)
+                            garnet.interconnect.ports.config[i * col_per_glb + j].read)
                 garnet.wire(garnet.global_buffer.ports[cfg_wr_en_port_name],
-                        garnet.interconnect.ports.config[i * col_per_glb + j].write)
-
+                            garnet.interconnect.ports.config[i * col_per_glb + j].write)
 
     # input/output stream ports wiring
     for i in range(num_glb_tiles):
         data_bit_width = 17 if garnet.ready_valid else 16
-        for j in range(col_per_glb): 
+        for j in range(col_per_glb):
             if IOSide.West in garnet.io_sides:
-                x = i * col_per_glb + j + 1  
+                x = i * col_per_glb + j + 1
             else:
-                x = i * col_per_glb + j 
+                x = i * col_per_glb + j
 
             io2glb_16_port = f"io2glb_{data_bit_width}_X{x:02X}_Y{0:02X}"
             io2glb_1_port = f"io2glb_1_0_X{x:02X}_Y{0:02X}"
@@ -151,10 +149,10 @@ def glb_interconnect_wiring(garnet):
 
                 garnet.wire(garnet.global_buffer.ports[f"strm_data_f2g_{i}_{j}_{k}"],
                             garnet.interconnect.ports[io2glb_16_port][0:16])
-                
+
                 garnet.wire(garnet.global_buffer.ports[f"strm_data_g2f_{i}_{j}_{k}"],
                             garnet.interconnect.ports[glb2io_16_port][0:16])
-                
+
                 if garnet.ready_valid:
                     io2glb_16_rdy_port = f"io2glb_{data_bit_width}_{k}_X{x:02X}_Y{0:02X}_ready"
                     io2glb_16_vld_port = f"io2glb_{data_bit_width}_{k}_X{x:02X}_Y{0:02X}_valid"
@@ -184,11 +182,9 @@ def glb_interconnect_wiring(garnet):
                                 Const(0))
                     garnet.wire(garnet.global_buffer.ports[f"strm_data_g2f_rdy_{i}_{j}_{k}"][0],
                                 Const(0))
-                  
-            
 
             garnet.wire(garnet.global_buffer.ports[f"strm_ctrl_f2g_{i}_{j}"],
-                        garnet.interconnect.ports[io2glb_1_port])            
+                        garnet.interconnect.ports[io2glb_1_port])
             garnet.wire(garnet.global_buffer.ports[f"strm_ctrl_g2f_{i}_{j}"],
                         garnet.interconnect.ports[glb2io_1_port])
 

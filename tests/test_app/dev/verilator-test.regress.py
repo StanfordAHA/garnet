@@ -33,23 +33,19 @@ def buildkite_filter(s):
 
 def buildkite_call(command, env={}, return_output=False, out_file=None):
     env = {**os.environ.copy(), **env}
-    for retry in [1,2,3]:  # In case of SIGSEGV, retry up to three times
+    for retry in [1, 2, 3]:  # In case of SIGSEGV, retry up to three times
         try:
             if return_output:
-                app = subprocess.run(
-                    command,
-                    check=True,
-                    text=True,
-                    env=env,
-                    stdout=out_file,
-                )
-            else: 
-                app = subprocess.run(
-                    command,
-                    check=True,
-                    text=True,
-                    env=env,
-            )
+                app = subprocess.run(command,
+                                     check=True,
+                                     text=True,
+                                     env=env,
+                                     stdout=out_file,)
+            else:
+                app = subprocess.run(command,
+                                     check=True,
+                                     text=True,
+                                     env=env)
             break
         except subprocess.CalledProcessError as e:
             if 'SIGSEGV' in str(e):
@@ -66,45 +62,44 @@ def buildkite_call(command, env={}, return_output=False, out_file=None):
             else:
                 raise
 
+
 def gen_garnet(width, height, dense_only=False):
     print("--- Generating Garnet", flush=True)
     start = time.time()
     if not os.path.exists("/aha/garnet/garnet.v"):
         # Daemon is no good if/when we build new/different verilog
         buildkite_call("aha garnet --daemon kill".split())
-        
+
         # No garnet verilog yet, so build it now.
 
-        buildkite_args = [
-                            "aha",
-                            "garnet",
-                            "--width", str(width),
-                            "--height", str(height),
-                            "--verilog",
-                            "--use_sim_sram",
-                            "--glb_tile_mem_size", str(128),
-                         ]
+        buildkite_args = ["aha",
+                          "garnet",
+                          "--width", str(width),
+                          "--height", str(height),
+                          "--verilog",
+                          "--use_sim_sram",
+                          "--glb_tile_mem_size", str(128),]
 
         if dense_only:
             buildkite_args.append("--dense-only")
 
         buildkite_call(buildkite_args)
-        
+
     return time.time() - start
 
 
 def generate_sparse_bitstreams(sparse_tests, width, height, seed_flow, data_tile_pairs, kernel_name, opal_workaround=False, unroll=1):
     if len(sparse_tests) == 0:
         return 0
-    
+
     print(f"--- mapping all tests", flush=True)
     start = time.time()
-    env_vars = {"PYTHONPATH": "/aha/garnet/", "EXHAUSTIVE_PIPE":"1"}
+    env_vars = {"PYTHONPATH": "/aha/garnet/", "EXHAUSTIVE_PIPE": "1"}
     # env_vars = {"PYTHONPATH": "/aha/garnet/"}
     start = time.time()
     all_sam_graphs = [f"/aha/sam/compiler/sam-outputs/onyx-dot/{testname}.gv" for testname in sparse_tests]
 
-    if(seed_flow):
+    if seed_flow:
         build_tb_cmd = [
             "python",
             "/aha/garnet/tests/test_memory_core/build_tb.py",
@@ -129,7 +124,7 @@ def generate_sparse_bitstreams(sparse_tests, width, height, seed_flow, data_tile
             build_tb_cmd,
             env=env_vars,
         )
-    else: 
+    else:
         build_tb_cmd = [
             "python",
             "/aha/garnet/tests/test_memory_core/build_tb.py",
@@ -180,7 +175,7 @@ def format_concat_tiles(test, data_tile_pairs, kernel_name, pipeline_num=32, unr
         all_tiles.append(tile_format_t)
 
         if i + pipeline_num < len(test_l):
-            test_l_s = test_l[i:i+pipeline_num]
+            test_l_s = test_l[i:i + pipeline_num]
         else:
             test_l_s = test_l[i:]
         true_pipeline_num = len(test_l_s)
@@ -196,7 +191,7 @@ def format_concat_tiles(test, data_tile_pairs, kernel_name, pipeline_num=32, unr
                 str(unroll),
                 *test_l_s,
             ],
-            cwd = script_path
+            cwd=script_path
         )
 
     return all_tiles, num_list
@@ -219,7 +214,7 @@ def test_sparse_app(testname, seed_flow, data_tile_pairs, pipeline_num_l=None, o
         pass
 
     print(f"--- {test} - glb testing")
-    if(seed_flow):
+    if seed_flow:
         print("RUNNING SEED FLOW", flush=True)
         start = time.time()
         buildkite_call(
@@ -249,7 +244,7 @@ def test_sparse_app(testname, seed_flow, data_tile_pairs, pipeline_num_l=None, o
                 tile_pair_batches = [tile_pairs[i:i + 64] for i in range(0, len(tile_pairs), 64)]
                 for tile_pair in tile_pair_batches:
                     cmd_list.append(["aha", "test"] + tile_pair + ["--sparse", "--multiles", str(pipeline_num)])
-            
+
             if testname not in test_dataset_runtime_dict:
                 test_dataset_runtime_dict[testname] = defaultdict(float)
         else:
@@ -309,20 +304,18 @@ def test_dense_app(test, width, height, env_parameters, extra_args, layer=None, 
     use_daemon = []
     if (extra_args):
         if ('--daemon' in extra_args) and ('auto' in extra_args):
-            use_daemon = [ "--daemon", "auto" ]
+            use_daemon = ["--daemon", "auto"]
 
-    buildkite_args = [
-            "aha",
-            "pnr",
-            test,
-            "--width", str(width),
-            "--height", str(height),
-            "--env-parameters", env_parameters,
-        ] + use_daemon + layer_array
+    buildkite_args = ["aha",
+                      "pnr",
+                      test,
+                      "--width", str(width),
+                      "--height", str(height),
+                      "--env-parameters", env_parameters] + use_daemon + layer_array
 
     if dense_only:
         buildkite_args.append("--dense-only")
-    
+
     buildkite_call(buildkite_args)
 
     time_map = time.time() - start
@@ -372,32 +365,28 @@ def test_hardcoded_dense_app(test, width, height, env_parameters, extra_args, la
     use_daemon = []
     if (extra_args):
         if ('--daemon' in extra_args) and ('auto' in extra_args):
-            use_daemon = [ "--daemon", "auto" ]
+            use_daemon = ["--daemon", "auto"]
 
     try:
-        buildkite_args = [
-                "aha",
-                "pnr",
-                test,
-                "--width", str(width),
-                "--height", str(height),
-                "--env-parameters", env_parameters,
-            ] + use_daemon + layer_array
+        buildkite_args = ["aha",
+                          "pnr",
+                          test,
+                          "--width", str(width),
+                          "--height", str(height),
+                          "--env-parameters", env_parameters,] + use_daemon + layer_array
     except:
         print("[INFO] Finished PnR which is expected to fail", flush=True)
 
     print(f"[INFO] Re-copying design_top.json configuration", flush=True)
     shutil.copy(f"{app_path}/bin_hardcoded/design_top.json", f"{app_path}/bin/design_top.json")
 
-    buildkite_args = [
-                "aha",
-                "pnr",
-                test,
-                "--width", str(width),
-                "--height", str(height),
-                "--generate-bitstream-only",
-                "--env-parameters", env_parameters,
-            ] + use_daemon + layer_array
+    buildkite_args = ["aha",
+                      "pnr",
+                      test,
+                      "--width", str(width),
+                      "--height", str(height),
+                      "--generate-bitstream-only",
+                      "--env-parameters", env_parameters] + use_daemon + layer_array
 
     if dense_only:
         buildkite_args.append("--dense-only")
@@ -421,8 +410,10 @@ def dispatch(args, extra_args=None):
     unroll = args.unroll
 
     # Preserve backward compatibility
-    if args.config == "daily": args.config = "pr_aha"  # noqa
-    if args.config == "pr": args.config = "pr_submod"  # noqa
+    if args.config == "daily":
+        args.config = "pr_aha"  # noqa
+    if args.config == "pr":
+        args.config = "pr_submod"  # noqa
 
     from aha.util.regress_tests.tests import Tests
     imported_tests = None
@@ -441,12 +432,12 @@ def dispatch(args, extra_args=None):
         imported_tests = Tests("BLANK")
         imported_tests.glb_tests = ["apps/gaussian"]
         # Note conv2 here is actually *two* tests, one sparse and one dense
-        imported_tests.resnet_tests = [ 'conv2_x' ]
+        imported_tests.resnet_tests = ['conv2_x']
 
     elif args.config == "pr_aha3":
         imported_tests = Tests("BLANK")
         imported_tests.glb_tests = ["apps/gaussian"]
-        imported_tests.resnet_tests_fp = [ 'conv2_x_fp' ]
+        imported_tests.resnet_tests_fp = ['conv2_x_fp']
 
     # For configs 'fast', 'pr_aha', 'pr_submod', 'full', 'resnet', see regress_tests/tests.py
     else:
@@ -458,7 +449,6 @@ def dispatch(args, extra_args=None):
     imported_tests.glb_tests = ["apps/camera_pipeline_2x2"]
     imported_tests.sparse_tests = ["mat_elemadd"]
     print(f"--- Running regression: custom (pointwise,camera,elemadd)", flush=True)
-
 
     # Unpack imported_tests into convenient handles
     width, height = imported_tests.width, imported_tests.height
@@ -477,14 +467,14 @@ def dispatch(args, extra_args=None):
     data_tile_pairs = []
     kernel_name = ""
 
-    if not(seed_flow):
+    if not seed_flow:
         if os.path.exists("/aha/garnet/perf_stats.txt"):
             os.system("rm /aha/garnet/perf_stats.txt")
         with open("/aha/garnet/perf_stats.txt", 'w') as perf_out_file:
             perf_out_file.write("SPARSE TEST        SS DATASET        TOTAL RUNTIME (ns)\n\n")
 
         test_dataset_runtime_dict = {}
-        
+
         data_tile_pairs_lists = []
         for sparse_tile_pairs_list in args.sparse_tile_pairs_list:
             data_tile_pairs_lists.extend(glob.glob(sparse_tile_pairs_list))
@@ -517,22 +507,22 @@ def dispatch(args, extra_args=None):
         with open("/aha/garnet/perf_stats.txt", 'a') as perf_out_file:
             for testname, dataset_runtime_dict in test_dataset_runtime_dict.items():
                 for dataset, time_value in dataset_runtime_dict.items():
-                    perf_out_file.write(f"{testname}        {dataset}        {time_value}\n")   
+                    perf_out_file.write(f"{testname}        {dataset}        {time_value}\n")
     else:
         generate_sparse_bitstreams(sparse_tests, width, height, seed_flow, data_tile_pairs, kernel_name, opal_workaround=args.opal_workaround, unroll=unroll)
 
         for test in sparse_tests:
-            assert(not use_pipeline), "Pipeline mode is not supported with seed flow"
+            assert not use_pipeline, "Pipeline mode is not supported with seed flow"
             t0, t1, t2 = test_sparse_app(test, seed_flow, data_tile_pairs, opal_workaround=args.opal_workaround)
             info.append([test + "_glb", t0 + t1 + t2, t0, t1, t2])
 
     for test in glb_tests:
-        t0, t1, t2 = test_dense_app(test, 
+        t0, t1, t2 = test_dense_app(test,
                                     width, height, args.env_parameters, extra_args)
         info.append([test + "_glb", t0 + t1 + t2, t0, t1, t2])
 
     for test in glb_tests_fp:
-        t0, t1, t2 = test_dense_app(test, 
+        t0, t1, t2 = test_dense_app(test,
                                     width, height, args.env_parameters, extra_args, use_fp=True)
         info.append([test + "_glb", t0 + t1 + t2, t0, t1, t2])
 
@@ -558,16 +548,16 @@ def dispatch(args, extra_args=None):
 
     for test in hardcoded_dense_tests:
         t0, t1, t2 = test_hardcoded_dense_app(test,
-                                    width, height, args.env_parameters, extra_args)
+                                              width, height, args.env_parameters, extra_args)
         info.append([test + "_glb", t0 + t1 + t2, t0, t1, t2])
 
     if args.include_dense_only_tests:
         # DENSE ONLY TESTS
-        # Remove sparse+dense garnet.v first 
+        # Remove sparse+dense garnet.v first
         exit_status = os.system(f"rm /aha/garnet/garnet.v")
         if os.WEXITSTATUS(exit_status) != 0:
             raise RuntimeError(f"Command 'rm /aha/garnet/garnet.v' returned non-zero exit status {os.WEXITSTATUS(exit_status)}.")
-        
+
         t = gen_garnet(width, height, dense_only=True)
         info.append(["garnet with dense only", t])
 
@@ -575,7 +565,7 @@ def dispatch(args, extra_args=None):
         for test_index, test in enumerate(glb_tests):
             if test_index == num_dense_only_glb_tests:
                 break
-            t0, t1, t2 = test_dense_app(test, 
+            t0, t1, t2 = test_dense_app(test,
                                         width, height, args.env_parameters, extra_args, dense_only=True)
             info.append([test + "_glb dense only", t0 + t1 + t2, t0, t1, t2])
 
@@ -585,7 +575,7 @@ def dispatch(args, extra_args=None):
                 t0, t1, t2 = test_dense_app("apps/resnet_output_stationary",
                                             width, height, args.env_parameters, extra_args, layer=test)
                 info.append([test + "_glb dense only", t0 + t1 + t2, t0, t1, t2])
- 
+
     print(f"+++ TIMING INFO", flush=True)
     print(tabulate(info, headers=["step", "total", "compile", "map", "test"], floatfmt=".0f"), flush=True)
 

@@ -636,7 +636,7 @@ class GlobalBuffer(Generator):
             self.if_cfg_list[0].rd_clk_en = self.if_cfg_rd_clk_en
             self.if_cfg_list[0].rd_addr = self.if_cfg_rd_addr
 
-    @ always_ff((posedge, "clk"), (posedge, "reset"))
+    @always_ff((posedge, "clk"), (posedge, "reset"))
     def left_edge_cgra_cfg_ff(self):
         if self.reset:
             self.cgra_cfg_jtag_gc2glb_wr_en_d = 0
@@ -664,7 +664,7 @@ class GlobalBuffer(Generator):
             self.wire(self.strm_packet_w2e_wsti[i], self.strm_packet_w2e_esto[i - 1])
             self.wire(self.pcfg_packet_w2e_wsti[i], self.pcfg_packet_w2e_esto[i - 1])
 
-    @ always_comb
+    @always_comb
     def tile2tile_e2w_cfg_wiring(self):
         for i in range(self._params.num_glb_tiles):
             if i == self._params.num_glb_tiles - 1:
@@ -678,7 +678,7 @@ class GlobalBuffer(Generator):
                 self.cgra_cfg_pcfg_addr_e2w_esti[i] = self.cgra_cfg_pcfg_addr_e2w_wsto[i + 1]
                 self.cgra_cfg_pcfg_data_e2w_esti[i] = self.cgra_cfg_pcfg_data_e2w_wsto[i + 1]
 
-    @ always_comb
+    @always_comb
     def tile2tile_w2e_cfg_wiring(self):
         for i in range(0, self._params.num_glb_tiles):
             if i == 0:

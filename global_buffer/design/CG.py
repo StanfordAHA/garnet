@@ -58,4 +58,3 @@ class CG(Generator):
     def clk_en_latch_intel(self):
         if (~self.clk):
             self.enable_latch = self.en
-
