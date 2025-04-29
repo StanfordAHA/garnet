@@ -234,6 +234,7 @@ libgcc.a ( * )
 }"""
     f.write(string)
 
+
 def generate_data_location_content(data_list):
     result = ""
     increment = 0x00000
@@ -249,10 +250,12 @@ def generate_data_location_content(data_list):
 
     return result
 
+
 def write_sections(f, app_name, input_list):
     input_list = [input.strip(".raw") for input in input_list]
     string = generate_data_location_content(input_list)
     f.write(string)
+
 
 def generate_linker(linker_name, app_name, input_list):
     f = open(linker_name, "w")

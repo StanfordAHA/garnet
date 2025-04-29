@@ -94,7 +94,6 @@ class GlbStoreDma(Generator):
         self.loop_mux_sel = self.var("loop_mux_sel", clog2(self._params.store_dma_loop_level))
         self.repeat_cnt = self.var("repeat_cnt", clog2(self._params.queue_depth) + 1)
 
-
         # ready_valid controller
         self.block_done = self.var("block_done", 1)
         self.seg_done = self.var("seg_done", 1)
@@ -275,16 +274,14 @@ class GlbStoreDma(Generator):
         for i in range(self._params.store_dma_loop_level):
             self.wire(self.data_stride_addr_gen.strides[i], self.current_dma_header[f"stride_{i}"])
 
-
         # Last & with iter_step_valid is a to ensure that the cycle counter is tokenized on RV transactions
         self.wire(self.cycle_counter_en, kts.ternary(self.static_mode_on, self.strm_run, self.strm_run & self.iter_step_valid))
-
 
     @always_comb
     def block_done_logic(self):
         if self.sparse_rv_mode_on:
             self.block_done = self.strm_run & ~self.rv_is_metadata & ~self.rv_is_addrdata & self.seg_done &\
-            (((self.rv_num_seg_cnt == 1) & self.fifo_pop_ready) | (self.rv_num_seg_cnt == 0))
+                (((self.rv_num_seg_cnt == 1) & self.fifo_pop_ready) | (self.rv_num_seg_cnt == 0))
         else:
             self.block_done = 0
 
@@ -318,14 +315,13 @@ class GlbStoreDma(Generator):
     def rv_is_last_block_comb(self):
         self.is_last_block = self.rv_num_blocks_cnt == 1
 
-
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def rv_metadata_ff(self):
         if self.reset:
             self.rv_is_metadata = 0
         elif self.sparse_rv_mode_on:
             if (self.rv_is_addrdata & self.fifo_pop_ready) |\
-                ((self.rv_num_seg_cnt != 1) & (self.rv_num_data_cnt == 1) & self.fifo_pop_ready):
+                    ((self.rv_num_seg_cnt != 1) & (self.rv_num_data_cnt == 1) & self.fifo_pop_ready):
                 self.rv_is_metadata = 1
             elif self.rv_is_metadata & self.fifo_pop_ready:
                 self.rv_is_metadata = 0
@@ -443,7 +439,7 @@ class GlbStoreDma(Generator):
                 self.cycle_count = 0
             # MO: STENCIL VALID CHANGE
             # In dense RV mode, cycle counter is tokenized on every ready/valid data transaction
-            elif(self.cycle_counter_en):
+            elif self.cycle_counter_en:
                 self.cycle_count = self.cycle_count + 1
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
@@ -481,7 +477,6 @@ class GlbStoreDma(Generator):
                 self.strm_data = self.strm_data
                 self.strm_data_valid = self.strm_data_valid
                 self.data_f2g_rdy[i] = 0
-
 
     @always_comb
     def qualified_iter_step_valid_comb(self):
@@ -690,7 +685,7 @@ class GlbStoreDma(Generator):
             self.data_base_addr = ext(self.rv_base_addr, self._params.glb_addr_width + 1)
         else:
             self.data_base_addr = ext(self.current_dma_header["start_addr"],
-                                                       self._params.glb_addr_width + 1)
+                                      self._params.glb_addr_width + 1)
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def rv_num_seg_cnt_ff(self):

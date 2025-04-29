@@ -293,7 +293,7 @@ class GlbBankMux(Generator):
                 self.rd_type[i] = self.rd_type_e.none
 
 
-    @ always_comb
+    @always_comb
     def rdrq_sw2bankarr_logic(self, i):
         # WITH RING SWITCH
         if self._params.include_glb_ring_switch:
@@ -365,7 +365,7 @@ class GlbBankMux(Generator):
                 self.rd_type[i] = self.rd_type_e.none
 
 
-    @ always_comb
+    @always_comb
     def rdrs_sw2dma_logic(self):
         self.rdrs_packet_bank2dma = 0
         if self._params.include_glb_ring_switch:
@@ -378,7 +378,7 @@ class GlbBankMux(Generator):
                 if self.rd_type_d[i] == self.rd_type_e.strm:
                     self.rdrs_packet_bank2dma = self.rdrs_packet_bankarr2sw_d[i]
 
-    @ always_comb
+    @always_comb
     def rdrs_sw2sr_logic(self):
         self.rdrs_packet_bank2ring = 0
         if (self.cfg_tile_connected_next | self.cfg_tile_connected_prev):
@@ -386,7 +386,7 @@ class GlbBankMux(Generator):
                 if self.rd_type_d[i] == self.rd_type_e.strm:
                     self.rdrs_packet_bank2ring = self.rdrs_packet_bankarr2sw_d[i]
 
-    @ always_comb
+    @always_comb
     def rdrs_sw2pr_logic(self):
         self.rdrs_packet_bank2procsw = 0
         for i in range(self._params.banks_per_tile):
@@ -413,7 +413,7 @@ class GlbBankMux(Generator):
                 if self.rd_type_d[i] == self.rd_type_e.pcfg:
                     self.rdrs_packet_bank2pcfgdma = self.rdrs_packet_bankarr2sw_d[i]
 
-    @ always_comb
+    @always_comb
     def rdrs_sw2pcfgr_logic(self):
         self.rdrs_packet_bank2pcfgring = 0
         if (self.cfg_pcfg_tile_connected_next | self.cfg_pcfg_tile_connected_prev):

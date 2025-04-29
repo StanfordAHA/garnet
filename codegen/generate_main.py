@@ -1,10 +1,9 @@
 def generate_main(app_name, input_list, output_list):
     f = open("main.c", "w")
-    
-    
+
     input_list = [input.strip("tensor_").strip(".raw") for input in input_list]
     output_list = [output.strip("tensor_").strip(".raw") for output in output_list]
-    
+
     string = f'''#include <assert.h>
 #include <inttypes.h>
 #include <stdint.h>
@@ -29,51 +28,51 @@ def generate_main(app_name, input_list, output_list):
 int main(int argc, char* argv[])
 {{
 
-  AHASOC_PCTRL_TypeDef* pctrl = AHASOC_PCTRL;
+    AHASOC_PCTRL_TypeDef* pctrl = AHASOC_PCTRL;
 
-  // Enable UART0 and CGRA.
-  uint32_t mask = (1 << AHASOC_PCTRL_UART0_Pos) | (1 << AHASOC_PCTRL_DMA0_Pos) | (1 << AHASOC_PCTRL_CGRA_Pos);
-  AHASOC_pctrl_SelectClock(pctrl, mask, 0x0);
-  AHASOC_pctrl_DisableCG(pctrl, mask);
-  AHASOC_pctrl_ClearReset(pctrl, mask);
+    // Enable UART0 and CGRA.
+    uint32_t mask = (1 << AHASOC_PCTRL_UART0_Pos) | (1 << AHASOC_PCTRL_DMA0_Pos) | (1 << AHASOC_PCTRL_CGRA_Pos);
+    AHASOC_pctrl_SelectClock(pctrl, mask, 0x0);
+    AHASOC_pctrl_DisableCG(pctrl, mask);
+    AHASOC_pctrl_ClearReset(pctrl, mask);
 
-  uint32_t sys_mask = (1 << AHASOC_PCTRL_SYS_Pos);
-  AHASOC_pctrl_SelectClock(pctrl, sys_mask, 0x0);
+    uint32_t sys_mask = (1 << AHASOC_PCTRL_SYS_Pos);
+    AHASOC_pctrl_SelectClock(pctrl, sys_mask, 0x0);
 
-  // UART init.
-  UartStdOutInit();
+    // UART init.
+    UartStdOutInit();
 
-  // Test banner message and revision number.
-  puts("\\nAHASOC - App Test\\n");
-
-
-  glc_reg_write(GLC_CGRA_STALL_R, 0xFFFF);
-
-  printf(\"Config App\\n\");
-
-  for (int config = 0; config < app_size; config++){{
-	  write_cgra_reg(app_addrs_script[config], app_datas_script[config]);
-  }}
+    // Test banner message and revision number.
+    puts("\\nAHASOC - App Test\\n");
 
 
-  printf(\"\\nCheck Config\\n\");
-  for (int config = 0; config < app_size; config++){{
-	  uint32_t read_data = read_cgra_reg(app_addrs_script[config]);
-	  uint32_t addr = app_addrs_script[config];
-	  uint32_t gold = app_datas_script[config];
+    glc_reg_write(GLC_CGRA_STALL_R, 0xFFFF);
 
-	  if ( read_data != gold){{
-		  printf(\"config error: %d \", config);
-		  printf(\"address: %lx \", addr);
-		  printf(\"read_data %lx \", read_data);
-		  printf(\"gold data %lx\\n\", gold);
-	  }}
-  }}
+    printf(\"Config App\\n\");
 
-  move_input_data();
+    for (int config = 0; config < app_size; config++){{
+        write_cgra_reg(app_addrs_script[config], app_datas_script[config]);
+    }}
 
-  // Check if inputs look alright
-  uint16_t* input_read_base = AHASOC_CGRA_DATA_BASE;
+
+    printf(\"\\nCheck Config\\n\");
+    for (int config = 0; config < app_size; config++){{
+        uint32_t read_data = read_cgra_reg(app_addrs_script[config]);
+        uint32_t addr = app_addrs_script[config];
+        uint32_t gold = app_datas_script[config];
+
+        if ( read_data != gold){{
+            printf(\"config error: %d \", config);
+            printf(\"address: %lx \", addr);
+            printf(\"read_data %lx \", read_data);
+            printf(\"gold data %lx\\n\", gold);
+        }}
+    }}
+
+    move_input_data();
+
+    // Check if inputs look alright
+    uint16_t* input_read_base = AHASOC_CGRA_DATA_BASE;
 '''
 
     f.write(string)
@@ -82,7 +81,7 @@ int main(int argc, char* argv[])
         f.write(f'  input_read_base = AHASOC_CGRA_DATA_BASE + 0x20000*{i};\n')
         f.write(f'  printf("first location: %lx\\n", input_read_base[0]);\n')
 
-    string = f'''  
+    string = f'''
   printf(\"\\nCONFIG GLB\\n\");
   app_glb_config();
 
@@ -127,10 +126,10 @@ int main(int argc, char* argv[])
 
   for(int run=0; run < runs; run++){{
 
-	// Start Input/Output GLB Tiles
-	glc_reg_write(GLC_STREAM_START_PULSE_R, stream_pulse_f2g << 16 | stream_pulse_g2f); // pulsed reg.
+    // Start Input/Output GLB Tiles
+    glc_reg_write(GLC_STREAM_START_PULSE_R, stream_pulse_f2g << 16 | stream_pulse_g2f); // pulsed reg.
 
-	// Wait for inputs to finish sending
+    // Wait for inputs to finish sending
     while(glc_read_reg(GLC_STRM_G2F_ISR_R) != stream_pulse_g2f){{
         //cnt++;
     }}
@@ -154,7 +153,7 @@ int main(int argc, char* argv[])
       break;
     }}
 
-	// Updating output pointers
+    // Updating output pointers
     int size;
 
 '''
@@ -179,10 +178,8 @@ int main(int argc, char* argv[])
 '''
     f.write(string)
 
-
     for i, output in enumerate(output_list):
         f.write(f'    glb_reg_write(0x100 * {i} + GLB_ST_DMA_HEADER_0_START_ADDR_R, 0x20000 + 0x20000*{i} + {output}_idx*2);\n')
-
 
     string = f'''
   }}

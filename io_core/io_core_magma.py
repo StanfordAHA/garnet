@@ -124,7 +124,6 @@ class IOCore(IOCoreBase):
         self.wire(self.ports.f2io_16, f2io_16_reg.ports.I)
         self.wire(self.ports.f2io_1, f2io_1_reg.ports.I)
 
-
         self.wire(glb2io_16_reg.ports.O, self.ports.io2f_16)
         self.wire(glb2io_1_reg.ports.O, self.ports.io2f_1)
         self.wire(f2io_16_reg.ports.O, self.ports.io2glb_16)

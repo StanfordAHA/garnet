@@ -91,7 +91,6 @@ def get_cc_args(width, height, io_sides, garnet_args):
     args.input_height = height
     args.io_sides = io_sides
 
-
     # Derive cc_args from relevant garnet_args
     args.reg_addr_width = args.config_addr_reg_width
     args.config_data_width = args.config_data_width
@@ -331,6 +330,7 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
 
         controllers = []
         strg_ub = StrgUBVec(mem_width=mem_width, mem_depth=mem_depth, comply_with_17=False)
+
         strg_ram = StrgRAM(memory_width=mem_width, memory_depth=mem_depth, comply_with_17=False)
         stencil_valid = StencilValid()
         controllers.append(strg_ub)
@@ -408,10 +408,10 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
 
     remove_fabric_cols = num_fabric_cols_removed > 0
 
-    # Try to center the MU IO tiles 
-    num_mu_io_tiles = int(mu_oc_0/2)
-    mu_io_startX = int(((input_width - num_fabric_cols_removed) - num_mu_io_tiles)/2) + num_fabric_cols_removed
-    mu_io_endX = mu_io_startX + num_mu_io_tiles-1
+    # Try to center the MU IO tiles
+    num_mu_io_tiles = int(mu_oc_0 / 2)
+    mu_io_startX = int(((input_width - num_fabric_cols_removed) - num_mu_io_tiles) / 2) + num_fabric_cols_removed
+    mu_io_endX = mu_io_startX + num_mu_io_tiles - 1
 
     for x in range(width):
         # Only update the altcore if it had been used actually.
@@ -431,7 +431,7 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
                 core = None
             elif x in range(x_max + 1, width) and y in range(y_max + 1, height):
                 core = None
-            
+
             elif using_matrix_unit and y in range(y_max + 1, height):
                 if x in range(mu_io_startX, mu_io_endX + 1):
                     isMemTileColumn = (x + 1) % (mem_tile_ratio + 1) == 0
@@ -440,10 +440,10 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
                     else:
                         core = MU2F_IOCoreReadyValid(matrix_unit_data_width=17, tile_array_data_width=17, num_ios=2, allow_bypass=False)
                 else:
-                    core = None 
+                    core = None
 
-            elif remove_fabric_cols and x in range(num_fabric_cols_removed) and not(y in range(y_min)):
-                 core = None
+            elif remove_fabric_cols and x in range(num_fabric_cols_removed) and not (y in range(y_min)):
+                core = None
 
             elif x in range(x_min) \
                     or x in range(x_max + 1, width) \
@@ -536,14 +536,13 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
 
         for i in core.inputs():
             # If giving north I/O SBs, don't connect glb ifc to switch box (still a point-to-point connection)
-            if not(give_north_io_sbs) or not("glb2io" in i.qualified_name()):
+            if not give_north_io_sbs or not ("glb2io" in i.qualified_name()):
                 inputs |= {i.qualified_name()}
 
         for o in core.outputs():
             # If giving north I/O SBs, don't connect glb ifc to switch box (still a point-to-point connection)
-            if not(give_north_io_sbs) or not("io2glb" in o.qualified_name()):
+            if not give_north_io_sbs or not ("io2glb" in o.qualified_name()):
                 outputs |= {o.qualified_name()}
-
 
     # inputs.remove("glb2io_1")
     # inputs.remove("glb2io_16")
@@ -620,8 +619,7 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
 
     io_in = {"f2io_1": [0], f"f2io_{bit_width_str}": [0], "f2io_1_0": [0], f"f2io_{bit_width_str}_0": [0], f"f2io_{bit_width_str}_1": [0], f"f2io_{bit_width_str}_2": [0], f"f2io_{bit_width_str}_3": [0]}
     io_out = {"io2f_1": track_list, f"io2f_{bit_width_str}": track_list, f"io2f_{bit_width_str}_T0": [0], f"io2f_{bit_width_str}_T1": [1],
-                                                    f"io2f_{bit_width_str}_T2": [2], f"io2f_{bit_width_str}_T3": [3], f"io2f_{bit_width_str}_T4": [4]}
-
+              f"io2f_{bit_width_str}_T2": [2], f"io2f_{bit_width_str}_T3": [3], f"io2f_{bit_width_str}_T4": [4]}
 
     for bit_width in bit_widths:
         if IOSide.None_ in io_sides:

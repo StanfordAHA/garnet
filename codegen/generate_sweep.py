@@ -8,9 +8,9 @@ import generate_app
 import parse_gold
 import generate_main
 
-# python3 generate_sweep.py <app_name> <data> 
+# python3 generate_sweep.py <app_name> <data>
 
-#PARAMS
+# PARAMS
 app_name = sys.argv[1]
 data = sys.argv[2]
 
@@ -56,9 +56,9 @@ with open(reg_write, 'r') as file:
 # with open(reg_write, 'w') as file:
 #     file.write(modified_content)
 
-# generate linker 
+# generate linker
 # inputs should be in order
-if generate_linker_flag == True:
+if generate_linker_flag is True:
     generate_linker.generate_linker("sections.ld", app_name, inputs)
 
 generate_main.generate_main(f"{app_name}_{data}", inputs, outputs)
@@ -78,5 +78,4 @@ for file in files:
 
 # can we gold check?
 if num_tiles <= 75:
-   parse_gold.parse_gold(app_name, data)
-
+    parse_gold.parse_gold(app_name, data)
