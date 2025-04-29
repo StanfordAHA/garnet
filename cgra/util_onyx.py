@@ -554,14 +554,14 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
                     intercore_mapping["data1"],
                     intercore_mapping["data2"]],
                 intercore_mapping["res"]: [
-                    f"PondTop_input_width_{bit_width_str}_num_0",
-                    f"PondTop_input_width_{bit_width_str}_num_1"]}
+                    # f"PondTop_input_width_{bit_width_str}_num_1"]}
+                    f"PondTop_input_width_{bit_width_str}_num_0"]}
         else:
             # inter_core_connection_1 = {"PondTop_output_width_1_num_0": ["bit0"]}
             inter_core_connection_1 = {}
             inter_core_connection_16 = {f"PondTop_output_width_{bit_width_str}_num_0": ["data0", "data1", "data2"],
-                                        "res": [f"PondTop_input_width_{bit_width_str}_num_0",
-                                                f"PondTop_input_width_{bit_width_str}_num_1"]}
+                                        # f"PondTop_input_width_{bit_width_str}_num_1"]}
+                                        "res": [f"PondTop_input_width_{bit_width_str}_num_0"]}
     else:
         inter_core_connection_1 = {}
         inter_core_connection_16 = {}
