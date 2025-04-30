@@ -145,13 +145,14 @@ if [ "$use_container" == True ]; then
 #           docker cp $ddd/genrtl/$f $container_name:/aha/aha/bin/$f
 #       done
 
+      echo '--- FOO this is the new stuff'
+      set -x
       updatefoo='cd /aha/aha && git fetch origin && git checkout origin/better-git-restore'
       docker exec $container_name /bin/bash -c "$updatefoo"
 
-      echo 'FOO this is the new stuff'
       # aha/bashrc does important things in bg, but does not normally get invoked via 'docker exec'
-      docker exec $container_name /bin/bash -c 'source /aha/aha/bin/docker-bashrc'
-      echo 'FOO new stuff be done maybe'
+      docker exec $container_name /bin/bash -c 'set -x; source /aha/aha/bin/docker-bashrc; wait'
+      echo '--- FOO new stuff be done maybe'
 
       # Delete all dangling images created more than 6 hours ago.
       # Notice that we prune images *after* starting container (pruner
