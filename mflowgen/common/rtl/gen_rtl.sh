@@ -138,17 +138,20 @@ if [ "$use_container" == True ]; then
       # MAKE SURE the docker container gets killed when this script dies.
       trap "docker kill $container_name" EXIT
 
+#       # docker cp /tmp/genrtl/docker-bashrc $container_name:/aha/aha/bin/docker-bashrc
+#       ddd=/home/steveri/tmpdir
+#       for f in docker-bashrc restore-dotgit.sh restore-halide-distrib.sh; do
+#           echo docker cp $ddd/genrtl/$f $container_name:/aha/aha/bin/$f
+#           docker cp $ddd/genrtl/$f $container_name:/aha/aha/bin/$f
+#       done
+
+      updatefoo='cd /aha/aha && git fetch origin && git checkout origin/better-git-restore'
+      docker exec $container_name /bin/bash -c "$updatefoo"
+
+      echo 'FOO this is the new stuff'
       # aha/bashrc does important things in bg, but does not normally get invoked via 'docker exec'
-      docker exec $container_name /bin/bash -c 'source /aha/aha/bin/docker-bashrc' &
-
-      # Wait 30s for the essentials in bashrc to take effect, then continue
-      echo wait5-1/6; sleep 5
-      echo wait5-2/6; sleep 5
-      echo wait5-3/6; sleep 5
-      echo wait5-4/6; sleep 5
-      echo wait5-5/6; sleep 5
-      echo wait5-6/6; sleep 5
-
+      docker exec $container_name /bin/bash -c 'source /aha/aha/bin/docker-bashrc'
+      echo 'FOO new stuff be done maybe'
 
       # Delete all dangling images created more than 6 hours ago.
       # Notice that we prune images *after* starting container (pruner
