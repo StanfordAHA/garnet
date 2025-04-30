@@ -58,31 +58,23 @@ rm -rf $GARNET_HOME/genesis_verif
 rm -f  $GARNET_HOME/garnet.v
 
 # Build up the flags we want to pass to python garnet.v
-flags="--width $array_width --height $array_height"
+flags=""
+flags+=" --width $array_width"
+flags+=" --height $array_height"
 flags+=" --pipeline_config_interval $pipeline_config_interval"
-flags+=" -v --glb_tile_mem_size $glb_tile_mem_size"
-
-# [ "$WHICH_SOC" == "amber" ] && flags+=" --dense-only"
-# ------------------------------------------------------------ 
-# garnet.py does this:
-#    if os.getenv('WHICH_SOC') == "amber": garnet_amber.main()
-# ...so even though garnet.py switches changed, garnet_amber.py did not,
-# so we still use the old --include-sparse switch here
-# TODO someone needs to unify garnet.py and garnet_amber.py but not me, not today haha
-
-# sparsity flags for onyx
-# [pohan] It seems like the latest garnet.py doesn't support --include-sparse either
-# [ "$WHICH_SOC" != "amber" ] && flags+=" --include-sparse"
-
-
-# Default is power-aware, but can be turned off
-[ "$PWR_AWARE" == False ] && flags+=" --no-pd"
-
-# Where/when is this used?
-[ "$interconnect_only" == True ] && flags+=" --interconnect-only"
-
-# Include Matrix Unit (Zircon)
-[ "$include_matrix_unit" == True ] && flags+=" --using-matrix-unit --mu-datawidth 16 --give-north-io-sbs --num-fabric-cols-removed 8 --include-E64-hw"
+flags+=" --glb_tile_mem_size $glb_tile_mem_size"
+flags+=" --no-pd"
+flags+=" -v"
+[ "$include_matrix_unit" == True ] && flags+=" --using-matrix-unit"
+[ "$include_matrix_unit" == True ] && flags+=" --mu-datawidth 16"
+[ "$include_matrix_unit" == True ] && flags+=" --give-north-io-sbs"
+[ "$include_matrix_unit" == True ] && flags+=" --num-fabric-cols-removed 8"
+[ "$include_matrix_unit" == True ] && flags+=" --mu-oc-0 32"
+[ "$include_matrix_unit" == True ] && flags+=" --include-E64-hw"
+[ "$include_matrix_unit" == True ] && flags+=" --include-multi-bank-hw"
+[ "$include_matrix_unit" == True ] && flags+=" --include-mu-glb-hw"
+[ "$include_matrix_unit" == True ] && flags+=" --use-non-split-fifos"
+[ "$include_matrix_unit" == True ] && flags+=" --exclude-glb-ring-switch"
 
 # Use aha docker container for all dependencies
 if [ "$use_container" == True ]; then
@@ -142,7 +134,19 @@ if [ "$use_container" == True ]; then
       trap "docker kill $container_name" EXIT
 
       # aha/bashrc does important things in bg, but does not normally get invoked via 'docker exec'
-      docker exec $container_name /bin/bash -c 'source /aha/aha/bin/docker-bashrc; wait'
+      # [pohan] this step takes forever... but it seems like rebuilding clockwork/halide/clang is not necessary for RTL generation'
+      # [pohan] comment out for now
+      # docker exec $container_name /bin/bash -c 'source /aha/aha/bin/docker-bashrc; wait'
+           # docker exec $container_name /bin/bash -c 'source /aha/aha/bin/docker-bashrc; wait'
+
+      docker exec $container_name /bin/bash -c 'source /aha/aha/bin/docker-bashrc' &
+      # Wait 60s for the essentials in bashrc to take effect, then continue
+      echo wait5-1/6; sleep 5
+      echo wait5-2/6; sleep 5
+      echo wait5-3/6; sleep 5
+      echo wait5-4/6; sleep 5
+      echo wait5-5/6; sleep 5
+      echo wait5-6/6; sleep 5
 
       # Delete all dangling images created more than 6 hours ago.
       # Notice that we prune images *after* starting container (pruner
@@ -268,15 +272,18 @@ if [ "$use_container" == True ]; then
 
       # Copy the concatenated design.v output out of the container
       if [ "$include_matrix_unit" == True ]; then
-        docker cp $container_name:/aha/garnet/design.v ../outputs/garnet.v
-        docker cp $container_name:/aha/garnet/zircon_wrapper/zircon.v ../outputs/zircon.v
-        # cp /nsim/mcoduoza/zircon_matrix_unit/Accelerator/build-MXINT8-64x32-1024x1024x2048-1.0ns/15-hls/outputs/design.v ../outputs/mu.v
-        cp /nsim/mcoduoza/zircon_matrix_unit/Accelerator/Feb-2025-build/design.v ../outputs/mu.v
-        cat ../outputs/garnet.v > ../outputs/design.v
-        echo "" >> ../outputs/design.v
-        cat ../outputs/zircon.v >> ../outputs/design.v
-        echo "" >> ../outputs/design.v
-        cat ../outputs/mu.v >> ../outputs/design.v
+        docker cp $container_name:/aha/garnet/design.v                         ../outputs/garnet.v
+        docker cp $container_name:/aha/garnet/zircon_wrapper/zircon.v          ../outputs/zircon.v
+        cp /nsim/mcoduoza/zircon_matrix_unit/zircon_mu_rtl/MatrixUnitWrapper.v ../outputs/mu_wrapper.v
+        cp /nsim/mcoduoza/zircon_matrix_unit/zircon_mu_rtl/design.v            ../outputs/mu.v
+        # concat all the files into one
+        cat ../outputs/garnet.v      > ../outputs/design.v
+        echo ""                     >> ../outputs/design.v
+        cat ../outputs/zircon.v     >> ../outputs/design.v
+        echo ""                     >> ../outputs/design.v
+        cat ../outputs/mu_wrapper.v >> ../outputs/design.v
+        echo ""                     >> ../outputs/design.v
+        cat ../outputs/mu.v         >> ../outputs/design.v
       else
         docker cp $container_name:/aha/garnet/design.v ../outputs/design.v
       fi
