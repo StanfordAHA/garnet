@@ -16,12 +16,12 @@ from global_buffer.design.global_buffer_parameter import GlobalBufferParams, gen
 from global_buffer.global_buffer_main import gen_param_header
 from systemRDL.util import gen_rdl_header
 
-# This seems to be misbehaving; move it to 'not interconnect_only' clause
-# so as to match (presumably working) non-amber version
+# These seem to be misbehaving; I will move them to 'not interconnect_only'
+# clause(s) so as to match (presumably working) non-amber version
 # 
 # from global_controller.global_controller_magma import GlobalController
+# from cgra.ifc_struct import AXI4LiteIfc, ProcPacketIfc
 
-from cgra.ifc_struct import AXI4LiteIfc, ProcPacketIfc
 from canal.global_signal import GlobalSignalWiring
 from mini_mapper import map_app, get_total_cycle_from_app
 from cgra import glb_glc_wiring, glb_interconnect_wiring, glc_interconnect_wiring, create_cgra, compress_config_data
@@ -179,6 +179,7 @@ class Garnet(Generator):
         config_port_pass(self.interconnect, pipeline=True)
 
         if not interconnect_only:
+            from cgra.ifc_struct import AXI4LiteIfc, ProcPacketIfc
             self.add_ports(
                 jtag=JTAGType,
                 clk_in=magma.In(magma.Clock),
