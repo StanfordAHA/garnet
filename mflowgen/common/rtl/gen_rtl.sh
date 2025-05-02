@@ -147,11 +147,11 @@ if [ "$use_container" == True ]; then
 
       echo '--- FOO this is the new stuff'
       set -x
-      updatefoo='cd /aha/aha && git fetch origin && git checkout origin/better-git-restore'
-      docker exec $container_name /bin/bash -c "$updatefoo"
+      docker exec $container_name /bin/bash -c 'cd aha && git fetch origin' || echo okay
+      docker exec $container_name /bin/bash -c 'cd aha && git checkout origin/better-git-restore -- bin'
 
       # aha/bashrc does important things in bg, but does not normally get invoked via 'docker exec'
-      docker exec $container_name /bin/bash -c 'set -x; source /aha/aha/bin/docker-bashrc; wait'
+      docker exec $container_name /bin/bash -c 'source /aha/aha/bin/docker-bashrc; wait'
       echo '--- FOO new stuff be done maybe'
 
       # Delete all dangling images created more than 6 hours ago.
