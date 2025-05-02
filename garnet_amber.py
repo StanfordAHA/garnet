@@ -15,18 +15,11 @@ else:
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams, gen_global_buffer_params
 from global_buffer.global_buffer_main import gen_param_header
 from systemRDL.util import gen_rdl_header
-
-# These seem to be misbehaving; I will move them to 'not interconnect_only'
-# clause(s) so as to match (presumably working) non-amber version
-# 
-# from global_controller.global_controller_magma import GlobalController
-# from cgra.ifc_struct import AXI4LiteIfc, ProcPacketIfc
-# from cgra import glb_glc_wiring, glb_interconnect_wiring, glc_interconnect_wiring, create_cgra, compress_config_data
-
-
+from global_controller.global_controller_magma import GlobalController
+from cgra.ifc_struct import AXI4LiteIfc, ProcPacketIfc
 from canal.global_signal import GlobalSignalWiring
 from mini_mapper import map_app, get_total_cycle_from_app
-
+from cgra import glb_glc_wiring, glb_interconnect_wiring, glc_interconnect_wiring, create_cgra, compress_config_data
 import json
 from passes_amber.collateral_pass.config_register import get_interconnect_regs, get_core_registers
 from passes_amber.interconnect_port_pass import stall_port_pass, config_port_pass
@@ -112,8 +105,6 @@ class Garnet(Generator):
         self.pe_fc = pe_fc
 
         if not interconnect_only:
-            from global_controller.global_controller_magma import GlobalController
-
             # width must be even number
             assert (self.width % 2) == 0
 
@@ -145,7 +136,6 @@ class Garnet(Generator):
             "Wilton": SwitchBoxType.Wilton
         }
 
-        from cgra import create_cgra
         interconnect = create_cgra(width, height, io_side,
                                    reg_addr_width=config_addr_reg_width,
                                    config_data_width=config_data_width,
@@ -182,8 +172,6 @@ class Garnet(Generator):
         config_port_pass(self.interconnect, pipeline=True)
 
         if not interconnect_only:
-            from cgra import glb_glc_wiring, glb_interconnect_wiring, glc_interconnect_wiring
-            from cgra.ifc_struct import AXI4LiteIfc, ProcPacketIfc
             self.add_ports(
                 jtag=JTAGType,
                 clk_in=magma.In(magma.Clock),
@@ -439,7 +427,6 @@ class Garnet(Generator):
 
     def generate_bitstream(self, halide_src, placement, routing, id_to_name, instance_to_instr, netlist, bus,
                            compact=False):
-        from cgra import compress_config_data
         routing_fix = archipelago.power.reduce_switching(routing, self.interconnect,
                                                          compact=compact)
         routing.update(routing_fix)
