@@ -15,7 +15,12 @@ else:
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams, gen_global_buffer_params
 from global_buffer.global_buffer_main import gen_param_header
 from systemRDL.util import gen_rdl_header
-from global_controller.global_controller_magma import GlobalController
+
+# This seems to be misbehaving; move it to 'not interconnect_only' clause
+# so as to match (presumably working) non-amber version
+# 
+# from global_controller.global_controller_magma import GlobalController
+
 from cgra.ifc_struct import AXI4LiteIfc, ProcPacketIfc
 from canal.global_signal import GlobalSignalWiring
 from mini_mapper import map_app, get_total_cycle_from_app
@@ -105,6 +110,8 @@ class Garnet(Generator):
         self.pe_fc = pe_fc
 
         if not interconnect_only:
+            from global_controller.global_controller_magma import GlobalController
+
             # width must be even number
             assert (self.width % 2) == 0
 
