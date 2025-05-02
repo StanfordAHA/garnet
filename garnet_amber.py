@@ -24,7 +24,10 @@ from systemRDL.util import gen_rdl_header
 
 from canal.global_signal import GlobalSignalWiring
 from mini_mapper import map_app, get_total_cycle_from_app
-from cgra import glb_glc_wiring, glb_interconnect_wiring, glc_interconnect_wiring, create_cgra, compress_config_data
+
+# from cgra import glb_glc_wiring, glb_interconnect_wiring, glc_interconnect_wiring, create_cgra, compress_config_data
+from cgra import glb_glc_wiring, glb_interconnect_wiring, glc_interconnect_wiring
+
 import json
 from passes_amber.collateral_pass.config_register import get_interconnect_regs, get_core_registers
 from passes_amber.interconnect_port_pass import stall_port_pass, config_port_pass
