@@ -15,6 +15,7 @@ from passes_amber.tile_id_pass.tile_id_pass import tile_id_physical
 from passes_amber.clk_pass.clk_pass import clk_physical
 from passes_amber.pipeline_global_pass.pipeline_global_pass import pipeline_global_signals
 from passes_amber.interconnect_port_pass import wire_core_flush_pass
+from gemstone.common.util import compress_config_data
 
 
 def get_actual_size(width: int, height: int, io_sides: IOSide):
