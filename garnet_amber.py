@@ -21,12 +21,11 @@ from systemRDL.util import gen_rdl_header
 # 
 # from global_controller.global_controller_magma import GlobalController
 # from cgra.ifc_struct import AXI4LiteIfc, ProcPacketIfc
+# from cgra import glb_glc_wiring, glb_interconnect_wiring, glc_interconnect_wiring, create_cgra, compress_config_data
+
 
 from canal.global_signal import GlobalSignalWiring
 from mini_mapper import map_app, get_total_cycle_from_app
-
-# from cgra import glb_glc_wiring, glb_interconnect_wiring, glc_interconnect_wiring, create_cgra, compress_config_data
-from cgra import glb_glc_wiring, glb_interconnect_wiring, glc_interconnect_wiring
 
 import json
 from passes_amber.collateral_pass.config_register import get_interconnect_regs, get_core_registers
@@ -146,6 +145,7 @@ class Garnet(Generator):
             "Wilton": SwitchBoxType.Wilton
         }
 
+        from cgra import create_cgra
         interconnect = create_cgra(width, height, io_side,
                                    reg_addr_width=config_addr_reg_width,
                                    config_data_width=config_data_width,
@@ -182,6 +182,7 @@ class Garnet(Generator):
         config_port_pass(self.interconnect, pipeline=True)
 
         if not interconnect_only:
+            from cgra import glb_glc_wiring, glb_interconnect_wiring, glc_interconnect_wiring
             from cgra.ifc_struct import AXI4LiteIfc, ProcPacketIfc
             self.add_ports(
                 jtag=JTAGType,
@@ -438,6 +439,7 @@ class Garnet(Generator):
 
     def generate_bitstream(self, halide_src, placement, routing, id_to_name, instance_to_instr, netlist, bus,
                            compact=False):
+        from cgra import compress_config_data
         routing_fix = archipelago.power.reduce_switching(routing, self.interconnect,
                                                          compact=compact)
         routing.update(routing_fix)
