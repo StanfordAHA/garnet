@@ -214,7 +214,6 @@ def gen_global_buffer_rdl(name, params: GlobalBufferParams):
         st_dma_rv_seg_mode_r.add_child(st_dma_rv_seg_mode_f)
         addr_map.add_child(st_dma_rv_seg_mode_r)
 
-
     if params.include_E64_hw:
         dma_exchange_64_mode_r = Reg("dma_exchange_64_mode")
         if params.include_multi_bank_hw:

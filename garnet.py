@@ -25,6 +25,9 @@ from gemstone.generator.from_magma import FromMagma
 import mantle
 from gemstone.generator.const import Const
 from canal.util import IOSide
+from canal.logic import ReadyValidLoopBack
+from matrix_unit.cgra2mu_ready_and import cgra2mu_ready_and
+from kratos.util import to_magma
 
 # set the debug mode to false to speed up construction
 from gemstone.generator.generator import set_debug_mode
@@ -194,7 +197,9 @@ class Garnet(Generator):
                 )
 
             # Matrix unit <-> interconnnect ports connection
-            self.cgra2mu_ready_and = FromMagma(mantle.DefineAnd(height=num_output_channels, width=1))
+            self.cgra2mu_ready_and = FromMagma(to_magma(cgra2mu_ready_and(height=num_output_channels), flatten_array=True))
+
+            self.mu2cgra_rv_loopback_and = FromMagma(to_magma(ReadyValidLoopBack(), flatten_array=True))
 
             if dense_only:
                 cgra_track_width = 16
@@ -207,6 +212,10 @@ class Garnet(Generator):
             num_mu_io_tiles = int(num_output_channels / 2)
             mu_io_startX = int(((self.width - num_fabric_cols_removed) - num_mu_io_tiles) / 2) + num_fabric_cols_removed
             mu_io_endX = mu_io_startX + num_mu_io_tiles - 1
+
+            # Ready-valid loopback
+            self.wire(self.mu2cgra_rv_loopback_and.ports.valid_in, self.convert(self.ports.mu2cgra_valid, magma.Bits[1]))
+            self.wire(self.mu2cgra_rv_loopback_and.ports.ready_in, self.convert(self.cgra2mu_ready_and.ports.anded_ready_out, magma.Bits[1]))
 
             for i in range(num_output_channels):
                 io_num = i % 2
@@ -221,17 +230,18 @@ class Garnet(Generator):
 
                 self.wire(
                     self.ports.mu2cgra[i], self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{cgra_col_num:02X}_Y{mu_io_tile_row:02X}"][:cgra_track_width - width_difference])
+                # Gated valid goes into the tile array, broadcast to all I/O tiles
                 self.wire(
-                    self.ports.mu2cgra_valid,
+                    self.convert(self.mu2cgra_rv_loopback_and.ports.valid_out, magma.bit),
                     self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{cgra_col_num:02X}_Y{mu_io_tile_row:02X}_valid"])
 
                 self.wire(
-                    self.cgra2mu_ready_and.ports[f"I{i}"],
+                    self.cgra2mu_ready_and.ports[f"readys_in_{i}"],
                     self.convert(
                         self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{cgra_col_num:02X}_Y{mu_io_tile_row:02X}_ready"],
                         magma.Bits[1]))
 
-            self.wire(self.convert(self.cgra2mu_ready_and.ports.O, magma.bit), self.ports.cgra2mu_ready)
+            self.wire(self.convert(self.cgra2mu_ready_and.ports.anded_ready_out, magma.bit), self.ports.cgra2mu_ready)
 
             # Matrix unit <-> GLB ports connection
             if self.include_mu_glb_hw:
@@ -639,7 +649,7 @@ class Garnet(Generator):
         print_netlist_info(netlist_info, self.pes_with_packed_ponds, app_dir + "/netlist_info.txt")
 
         return (netlist_info["id_to_name"], netlist_info["instance_to_instrs"], netlist_info["netlist"],
-                netlist_info["buses"], netlist_info["active_core_ports"])
+                netlist_info["buses"], netlist_info["active_core_ports"], netlist_info["id_to_metadata"])
 
     def place_and_route(self, args, load_only=False):
 
@@ -654,7 +664,7 @@ class Garnet(Generator):
         input_broadcast_branch_factor = args.input_broadcast_branch_factor
         input_broadcast_max_leaves = args.input_broadcast_max_leaves
 
-        id_to_name, instance_to_instr, netlist, bus, active_core_ports = \
+        id_to_name, instance_to_instr, netlist, bus, active_core_ports, id_to_metadata = \
             self.load_netlist(halide_src,
                               load_only,
                               pipeline_input_broadcasts,
@@ -684,7 +694,7 @@ class Garnet(Generator):
                             west_in_io_sides=west_in_io_sides,
                             sparse=dense_ready_valid)
 
-        return placement, routing, id_to_name, instance_to_instr, netlist, bus, active_core_ports
+        return placement, routing, id_to_name, instance_to_instr, netlist, bus, active_core_ports, id_to_metadata
 
     def fix_pond_flush_bug(self, placement, routing):
         from collections import defaultdict
@@ -757,18 +767,24 @@ class Garnet(Generator):
                             bitstream.append((addr, 0))
 
     def generate_bitstream(self, halide_src, placement, routing, id_to_name, instance_to_instr, netlist, bus,
-                           compact=False, end_to_end=False, active_core_ports=None):
+                           compact=False, end_to_end=False, active_core_ports=None, id_to_metadata=None):
         from cgra import compress_config_data
         routing_fix = archipelago.power.reduce_switching(routing, self.interconnect,
                                                          compact=compact)
         routing.update(routing_fix)
 
         bitstream = []
-        if end_to_end:
-            self.write_zero_to_config_regs(bitstream)
+        if end_to_end: self.write_zero_to_config_regs(bitstream)
 
         dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1"
-        bitstream += self.interconnect.get_route_bitstream(routing, use_fifo=dense_ready_valid)
+
+        reg_loc_to_id = {}
+        for id, loc in placement.items():
+            if 'r' in id:
+                reg_loc_to_id.setdefault(loc, []).append(id)
+
+        bitstream += self.interconnect.get_route_bitstream(routing, use_fifo=dense_ready_valid, id_to_name=id_to_name,
+                                                           reg_loc_to_id=reg_loc_to_id, id_to_metadata=id_to_metadata)
 
         bitstream += self.fix_pond_flush_bug(placement, routing)
         bitstream += self.get_placement_bitstream(placement, id_to_name,
@@ -1038,7 +1054,7 @@ def build_verilog(args, garnet):
 
 def pnr(garnet, args, app):
 
-    placement, routing, id_to_name, instance_to_instr, netlist, bus, active_core_ports = \
+    placement, routing, id_to_name, instance_to_instr, netlist, bus, active_core_ports, id_to_metadata = \
         garnet.place_and_route(args, load_only=args.generate_bitstream_only)
 
     # When 'generate_bitstream_only' is set, we do not actually do any NEW pnr;
@@ -1047,7 +1063,7 @@ def pnr(garnet, args, app):
     if args.pipeline_pnr and not args.generate_bitstream_only:
         reschedule_pipelined_app(app)
 
-        placement, routing, id_to_name, instance_to_instr, netlist, bus, active_core_ports = \
+        placement, routing, id_to_name, instance_to_instr, netlist, bus, active_core_ports, id_to_metadata = \
             garnet.place_and_route(args, load_only=True)
 
     bitstream, iorved_tuple = garnet.generate_bitstream(
@@ -1055,7 +1071,8 @@ def pnr(garnet, args, app):
         placement, routing, id_to_name, instance_to_instr, netlist, bus,
         compact=args.compact,
         end_to_end=args.end_to_end,
-        active_core_ports=active_core_ports
+        active_core_ports=active_core_ports,
+        id_to_metadata=id_to_metadata
     )
     (inputs, outputs, reset, valid, en, delay) = iorved_tuple
 

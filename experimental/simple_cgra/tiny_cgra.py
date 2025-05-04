@@ -59,7 +59,7 @@ class SBGenerator(FeatureGenerator):
         self.num_tracks = num_tracks
         assert core_inputs == 1
         self.core_inputs = core_inputs
-        self.muxs = [MuxWrapper(self.num_tracks, self.width) \
+        self.muxs = [MuxWrapper(self.num_tracks, self.width)
                      for _ in range(self.num_tracks)]
         T = magma.Array(self.num_tracks, magma.Bits(self.width))
         bits_per_sel = math.ceil(math.log(self.num_tracks, 2))
@@ -71,7 +71,7 @@ class SBGenerator(FeatureGenerator):
         )
         for i in range(self.num_tracks):
             self.add_config(f"sel_{i}", bits_per_sel)
-        self.selects = [getattr(self, f"sel_{i}") \
+        self.selects = [getattr(self, f"sel_{i}")
                         for i in range(self.num_tracks)]
 
         for i in range(self.num_tracks):
@@ -186,7 +186,7 @@ class TileGenerator(Configurable):
         self.core = core
         self.sb = SBGenerator(
             self.width, self.num_tracks, len(self.core.outputs()))
-        self.cbs = [CBGenerator(self.width, self.num_tracks) \
+        self.cbs = [CBGenerator(self.width, self.num_tracks)
                     for _ in range(len(self.core.inputs()))]
         T = magma.Array(self.num_tracks, magma.Bits(self.width))
 
@@ -236,9 +236,9 @@ class TopGenerator(Configurable):
         self.wire(self.I, self.tiles[0].I)
         self.wire(self.tiles[-1].O, self.O)
         for i in range(1, len(self.tiles)):
-           t0 = self.tiles[i - 1]
-           t1 = self.tiles[i]
-           self.wire(t0.O, t1.I)
+            t0 = self.tiles[i - 1]
+            t1 = self.tiles[i]
+            self.wire(t0.O, t1.I)
 
     def name(self):
         return "Top"

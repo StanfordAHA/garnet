@@ -121,6 +121,7 @@ class GlobalBufferParams:
     mu_tl_opcode_width: int = 3
     mu_tl_rd_resp_opcode: int = 1
     input_scale_req_src_code: int = 1
+    mu_tl_crossbar_source_id_width: int = 3
 
     # MU rd max burst (in bytes) = max(ic, oc) * 2. For 64x32 array, it is 64 * 2 = 128
     mu_rd_max_burst_size: int = 128
@@ -134,7 +135,7 @@ class GlobalBufferParams:
     process: str = "INTEL"
     tsmc_icg_name: str = "CKLNQD1BWP16P90"
     gf_icg_name: str = "SC7P5T_CKGPRELATNX1_SSC14R"
-    intel_icg_name: str = "b0mcilb05hn1n16x5" # b0mcilb05hn1n16x5 (nom), b0mcilb05as1n16x5 (ulvt)
+    intel_icg_name: str = "b0mcilb05hn1n16x5"  # b0mcilb05hn1n16x5 (nom), b0mcilb05as1n16x5 (ulvt)
     tsmc_sram_macro_prefix: str = "TS1N16FFCLLSBLVTC2048X64M8SW"
     gf_sram_macro_prefix: str = "IN12LP_S1DB_"
 

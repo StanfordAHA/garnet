@@ -1,5 +1,5 @@
 from canal.cyclone import SwitchBoxSide, SwitchBoxIO
-from canal.global_signal import GlobalSignalWiring, apply_global_meso_wiring,\
+from canal.global_signal import GlobalSignalWiring, apply_global_meso_wiring, \
     apply_global_fanout_wiring, apply_global_parallel_meso_wiring
 from canal.util import IOSide, get_array_size, create_uniform_interconnect, \
     SwitchBoxType
@@ -15,9 +15,6 @@ from passes_amber.tile_id_pass.tile_id_pass import tile_id_physical
 from passes_amber.clk_pass.clk_pass import clk_physical
 from passes_amber.pipeline_global_pass.pipeline_global_pass import pipeline_global_signals
 from passes_amber.interconnect_port_pass import wire_core_flush_pass
-from gemstone.common.util import compress_config_data
-from peak_gen.peak_wrapper import wrapped_peak_class
-from peak_gen.arch import read_arch
 
 
 def get_actual_size(width: int, height: int, io_sides: IOSide):

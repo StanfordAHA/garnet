@@ -3,6 +3,7 @@ import re
 import json
 import glob
 
+
 class Node:
     def __init__(self, node_type, node_name, node_id):
         self.node_type = node_type
@@ -12,15 +13,19 @@ class Node:
         self.sources = []
         self.x = None
         self.y = None
+
     def add_sink(self, node):
         if node not in self.sinks:
             self.sinks.append(node)
+
     def add_source(self, node):
         if node not in self.sources:
             self.sources.append(node)
+
     def remove_sink(self, node):
         if node in self.sinks:
             self.sinks.remove(node)
+
     def remove_source(self, node):
         if node in self.sources:
             self.sources.remove(node)
@@ -30,7 +35,7 @@ class NetlistGraph:
     def __init__(self, info):
         self.nodes = []
         self.name_to_node = {}
-        self.pe_nodes= []
+        self.pe_nodes = []
         self.mem_nodes = []
         self.pond_nodes = []
         self.reg_nodes = []
@@ -68,14 +73,14 @@ class NetlistGraph:
                 node.add_source(source_node)
         # merge pond connections into pe
         for node in self.pond_nodes:
-            assert(len(node.sources) == 1)
+            assert len(node.sources) == 1
             pond_source = node.sources[0]
             pond_sink = node.sinks[0]
             pond_source.remove_sink(node)
             pond_source.add_sink(pond_sink)
             pond_sink.remove_source(node)
             pond_sink.add_source(pond_source)
-    
+
     def generate_tile_conn(self, app_dir):
         with open(app_dir + "/tile_conn.txt", "w") as f:
             for node in self.nodes:
@@ -107,7 +112,7 @@ class NetlistGraph:
                 ub_latency[node_ub_name][ub_bank_id] = {"bank": int(ub_bank_id), "latency": ub_bank_latency}
         if "IO2MEM_REG_CHAIN" in os.environ or "MEM2PE_REG_CHAIN" in os.environ:
             with open(app_dir + "/ub_latency.json", "w") as f:
-                f.write(json.dumps(ub_latency, indent=4))    
+                f.write(json.dumps(ub_latency, indent=4))
 
     # count the number of register sources until the first non-reg node
     # assume node isn't connected by multiple regs
@@ -119,7 +124,6 @@ class NetlistGraph:
                 num_reg_sources += self.count_reg_sources(source_node)
         return num_reg_sources
 
-        
     def count_input_latencies(self, output_mem, pe_node):
         def dfs_out_mem_to_pe(current_node, target_node):
             if current_node.node_id not in visited1:
@@ -134,14 +138,14 @@ class NetlistGraph:
                             return result
                 visited1.remove(current_node.node_id)
                 path1.pop()
-                
+
         def dfs_pe_to_in_mem(current_node):
             if current_node.node_id not in visited2:
                 visited2.add(current_node.node_id)
                 path2.append(current_node)
 
                 if "input_cgra_stencil" in current_node.node_id and "m" in current_node.node_name:
-                    return len(path2) - 2 
+                    return len(path2) - 2
 
                 for source_node in current_node.sources:
                     result = dfs_pe_to_in_mem(source_node)
@@ -156,7 +160,7 @@ class NetlistGraph:
                 path3.append(current_node)
 
                 if "output_cgra_stencil" in current_node.node_id and "m" in current_node.node_name:
-                    return len(path3) - 2 
+                    return len(path3) - 2
 
                 for source_node in current_node.sources:
                     result = dfs_pe_to_out_mem(source_node)
@@ -306,7 +310,7 @@ class NetlistGraph:
             (node.x, node.y) = (input_mem_x, input_mem_y)
             input_mem_y -= 1
 
-        # extract output mem 
+        # extract output mem
         # check whether have mem chaining
         mem_chain = False
         for node in self.mem_nodes:
@@ -461,7 +465,7 @@ class NetlistGraph:
                 output_IO.append(node)
             else:
                 stencil_IO.append(node)
-        
+
         for _ in range(len(weight_IO)):
             weight_IO[_].x = weight_IO_idx[_]
             weight_IO[_].y = 0
@@ -473,7 +477,7 @@ class NetlistGraph:
             output_IO[_].y = 0
         for _ in range(len(stencil_IO)):
             stencil_IO[_].x = output_IO_idx[_]
-            stencil_IO[_].y = 0 
+            stencil_IO[_].y = 0
 
         # write position info into file
         with open(app_dir + "/manual.place", "w") as f:

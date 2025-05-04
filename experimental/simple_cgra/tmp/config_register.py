@@ -26,6 +26,7 @@ class ConfigRegister(gemstone.generator.Generator):
 
     def circuit(self):
         assert self.addr is not None
+
         class _ConfigRegisterCircuit(magma.Circuit):
             name = self.name()
             IO = self.decl()

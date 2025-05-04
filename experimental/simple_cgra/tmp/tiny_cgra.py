@@ -1,6 +1,5 @@
 from abc import abstractmethod
 import math
-import generator
 import magma
 import mantle
 from from_magma import FromMagma
@@ -43,7 +42,7 @@ class SBGenerator(FeatureGenerator):
         )
         for i in range(self.num_tracks):
             self.add_config(f"sel_{i}", bits_per_sel)
-        self.selects = [getattr(self, f"sel_{i}") \
+        self.selects = [getattr(self, f"sel_{i}")
                         for i in range(self.num_tracks)]
 
         for i in range(self.num_tracks):
@@ -183,7 +182,7 @@ class TopGenerator(Configurable):
         num_tiles = 10
         T = magma.Array(num_tracks, magma.Bits(width))
 
-        self.tiles = [TileGenerator(width, num_tracks) \
+        self.tiles = [TileGenerator(width, num_tracks)
                       for _ in range(num_tiles)]
 
         self.add_ports(
@@ -197,9 +196,9 @@ class TopGenerator(Configurable):
         self.wire(self.I, self.tiles[0].I)
         self.wire(self.tiles[-1].O, self.O)
         for i in range(1, len(self.tiles)):
-           t0 = self.tiles[i - 1]
-           t1 = self.tiles[i]
-           self.wire(t0.O, t1.I)
+            t0 = self.tiles[i - 1]
+            t1 = self.tiles[i]
+            self.wire(t0.O, t1.I)
 
     def name(self):
         return "Top"
@@ -221,7 +220,7 @@ if __name__ == "__main__":
                 if qualified_name in addr_map:
                     continue
                 addr_map[qualified_name] = BV(reg_idx, 8)
-    print (addr_map)
+    print(addr_map)
     exit()
 
     def top_to_tile(top, tile, tile_idx):

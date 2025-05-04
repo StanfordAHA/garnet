@@ -293,7 +293,7 @@ class GlobalBuffer(Generator):
                        sel_=self.flush_crossbar_sel_w,
                        out_=self.strm_data_flush_g2f)
 
-    @ always_ff((posedge, "clk"), (posedge, "reset"))
+    @always_ff((posedge, "clk"), (posedge, "reset"))
     def proc_pipeline(self):
         if self.reset:
             self.proc_wr_en_d = 0
@@ -310,7 +310,7 @@ class GlobalBuffer(Generator):
             self.proc_rd_en_d = self.proc_rd_en
             self.proc_rd_addr_d = self.proc_rd_addr
 
-    @ always_ff((posedge, "clk"), (posedge, "reset"))
+    @always_ff((posedge, "clk"), (posedge, "reset"))
     def sram_cfg_pipeline(self):
         if self.reset:
             self.sram_cfg_wr_en_d = 0
@@ -363,7 +363,7 @@ class GlobalBuffer(Generator):
                        )
         self.wire(self.if_proc_list[0].rd_clk_en, self.proc_rd_clk_en)
 
-    @ always_ff((posedge, "clk"), (posedge, "reset"))
+    @always_ff((posedge, "clk"), (posedge, "reset"))
     def left_edge_proc_wr_ff(self):
         if self.reset:
             self.if_proc_list[0].wr_en = 0
@@ -387,7 +387,7 @@ class GlobalBuffer(Generator):
                 self.if_proc_list[0].wr_addr = self.proc_wr_addr_d
                 self.if_proc_list[0].wr_data = self.proc_wr_data_d
 
-    @ always_ff((posedge, "clk"), (posedge, "reset"))
+    @always_ff((posedge, "clk"), (posedge, "reset"))
     def left_edge_proc_rd_ff(self):
         if self.reset:
             self.if_proc_list[0].rd_en = 0
@@ -411,7 +411,7 @@ class GlobalBuffer(Generator):
                 self.proc_rd_type = self.proc_rd_type
                 self.proc_rd_addr_sel = self.proc_rd_addr_sel
 
-    @ always_comb
+    @always_comb
     def left_edge_proc_rd_out(self):
         if self.proc_rd_type == self.proc_rd_type_e.axi:
             self.proc_rd_data = self.if_proc_list[0].rd_data
@@ -433,7 +433,7 @@ class GlobalBuffer(Generator):
             self.if_sram_cfg_rd_data = 0
             self.if_sram_cfg_rd_data_valid = 0
 
-    @ always_ff((posedge, "clk"), (posedge, "reset"))
+    @always_ff((posedge, "clk"), (posedge, "reset"))
     def left_edge_cfg_ff(self):
         if self.reset:
             self.if_cfg_list[0].wr_en = 0
@@ -452,7 +452,7 @@ class GlobalBuffer(Generator):
             self.if_cfg_list[0].rd_clk_en = self.if_cfg_rd_clk_en
             self.if_cfg_list[0].rd_addr = self.if_cfg_rd_addr
 
-    @ always_ff((posedge, "clk"), (posedge, "reset"))
+    @always_ff((posedge, "clk"), (posedge, "reset"))
     def left_edge_cgra_cfg_ff(self):
         if self.reset:
             self.cgra_cfg_jtag_gc2glb_wr_en_d = 0
@@ -480,7 +480,7 @@ class GlobalBuffer(Generator):
             self.wire(self.strm_packet_w2e_wsti[i], self.strm_packet_w2e_esto[i - 1])
             self.wire(self.pcfg_packet_w2e_wsti[i], self.pcfg_packet_w2e_esto[i - 1])
 
-    @ always_comb
+    @always_comb
     def tile2tile_e2w_cfg_wiring(self):
         for i in range(self._params.num_glb_tiles):
             if i == self._params.num_glb_tiles - 1:
@@ -494,7 +494,7 @@ class GlobalBuffer(Generator):
                 self.cgra_cfg_pcfg_addr_e2w_esti[i] = self.cgra_cfg_pcfg_addr_e2w_wsto[i + 1]
                 self.cgra_cfg_pcfg_data_e2w_esti[i] = self.cgra_cfg_pcfg_data_e2w_wsto[i + 1]
 
-    @ always_comb
+    @always_comb
     def tile2tile_w2e_cfg_wiring(self):
         for i in range(0, self._params.num_glb_tiles):
             if i == 0:

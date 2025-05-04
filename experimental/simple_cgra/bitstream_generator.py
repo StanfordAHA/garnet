@@ -12,4 +12,4 @@ class BitstreamGenerator:
     def generate(self):
         for register, value in self.configuration:
             addr = register._owner.addr
-            print (addr, value)
+            print(addr, value)

@@ -185,7 +185,7 @@ class GlbTile(Generator):
             self.strm_data_f2g_rdy = self.output("strm_data_f2g_rdy", 1, size=[self._params.cgra_per_glb, 4], packed=True)
 
             self.strm_data_g2f = self.output("strm_data_g2f", self._params.cgra_data_width,
-                                            size=[self._params.cgra_per_glb, 4], packed=True)
+                                             size=[self._params.cgra_per_glb, 4], packed=True)
             self.strm_data_g2f_vld = self.output("strm_data_g2f_vld", 1, size=[self._params.cgra_per_glb, 4], packed=True)
             self.strm_data_g2f_rdy = self.input("strm_data_g2f_rdy", 1, size=[self._params.cgra_per_glb, 4], packed=True)
         else:
@@ -195,10 +195,9 @@ class GlbTile(Generator):
             self.strm_data_f2g_rdy = self.output("strm_data_f2g_rdy", 1, size=[self._params.cgra_per_glb], packed=True)
 
             self.strm_data_g2f = self.output("strm_data_g2f", self._params.cgra_data_width,
-                                            size=[self._params.cgra_per_glb], packed=True)
+                                             size=[self._params.cgra_per_glb], packed=True)
             self.strm_data_g2f_vld = self.output("strm_data_g2f_vld", 1, size=[self._params.cgra_per_glb], packed=True)
             self.strm_data_g2f_rdy = self.input("strm_data_g2f_rdy", 1, size=[self._params.cgra_per_glb], packed=True)
-
 
         self.strm_ctrl_f2g = self.input("strm_ctrl_f2g", 1, size=self._params.cgra_per_glb, packed=True)
 
@@ -293,7 +292,7 @@ class GlbTile(Generator):
         self.add_child("glb_clk_gate_ld_dma",
                        ClkGate(_params=self._params),
                        clk=self.clk,
-                       enable= (~self.clk_n_en_ld_dma) | self.clk_en_master,
+                       enable=(~self.clk_n_en_ld_dma) | self.clk_en_master,
                        gclk=self.gclk_ld_dma)
 
         # Clock gating - st_dma
@@ -700,13 +699,16 @@ class GlbTile(Generator):
 
         self.pcfg_wiring()
 
-
-    @ always_ff((posedge, "clk"), (posedge, "reset"))
+    @always_ff((posedge, "clk"), (posedge, "reset"))
     def flush_emitted_ff(self):
         if self.reset:
             self.flush_emitted = 0
-        elif self.data_flush:
-            self.flush_emitted = 1
+        else:
+            # Clear flush_emitted once the app ends
+            if self.strm_f2g_interrupt_pulse:
+                self.flush_emitted = 0
+            elif self.data_flush:
+                self.flush_emitted = 1
 
     def struct_wiring(self):
         self.wr_packet_sw2bankarr = self.var(

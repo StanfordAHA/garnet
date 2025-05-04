@@ -57,16 +57,16 @@ def gen_data_sample(filename, width, num_data, num_blocks, seg_mode):
                         block_size = num_data // num_blocks + num_data % num_blocks
                     else:
                         block_size = num_data // num_blocks
-                    
+
                     if seg_mode == 0:
                         input_list[i].append(addr_list[i])
                         input_list[i].append(block_size)
                         gold_f.write(f"{hex(block_size)[2:]} ")
                         for j in range(block_size):
                             x = random.randrange(0, 2**width)
-                            input_list[i].append(i+1)
-                            gold_f.write(f"{hex(i+1)[2:]} ")
-                        for j in range(stride//2 - block_size - 1):
+                            input_list[i].append(i + 1)
+                            gold_f.write(f"{hex(i + 1)[2:]} ")
+                        for j in range(stride // 2 - block_size - 1):
                             gold_f.write(f"{hex(0)[2:]} ")
                     else:
                         seg_size = random.randrange(1, block_size)
@@ -77,16 +77,16 @@ def gen_data_sample(filename, width, num_data, num_blocks, seg_mode):
                         gold_f.write(f"{hex(seg_size)[2:]} ")
                         for j in range(seg_size):
                             x = random.randrange(0, 2**width)
-                            input_list[i].append(i+1)
-                            gold_f.write(f"{hex(i+1)[2:]} ")
-                        
+                            input_list[i].append(i + 1)
+                            gold_f.write(f"{hex(i + 1)[2:]} ")
+
                         input_list[i].append(crd_size)
                         gold_f.write(f"{hex(crd_size)[2:]} ")
                         for j in range(crd_size):
                             x = random.randrange(0, 2**width)
-                            input_list[i].append(i+17)
-                            gold_f.write(f"{hex(i+17)[2:]} ")
-                        for j in range(stride//2 - block_size - 2):
+                            input_list[i].append(i + 17)
+                            gold_f.write(f"{hex(i + 17)[2:]} ")
+                        for j in range(stride // 2 - block_size - 2):
                             gold_f.write(f"{hex(4095)[2:]} ")  # padding
 
             random.shuffle(input_list)

@@ -26,6 +26,7 @@ def get_tensor(input_name=None, shapes=None, give_tensor=False,
 
     return ret_mat
 
+
 def get_lut_tensor(dump=None, suffix="", clean=False, func=None):
     assert func is not None, "Please specify the complex ops function to load into memory"
     assert dump is not None, "Please specify the directory to dump the matrix"
@@ -48,5 +49,3 @@ def get_lut_tensor(dump=None, suffix="", clean=False, func=None):
     ret_mat = matrix_gen.get_matrix()
 
     return ret_mat
-
-

@@ -279,7 +279,7 @@ class GlbSwitch(Generator):
             self.bank_wr_data = 0
             self.bank_wr_strb = 0
 
-    @ always_comb
+    @always_comb
     def rdrq_logic(self):
         if self.if_wst_s.rd_en:
             if self.rd_tile_id_match:
@@ -301,7 +301,7 @@ class GlbSwitch(Generator):
             self.bank_rd_en = 0
             self.bank_rd_addr = 0
 
-    @ always_comb
+    @always_comb
     def rdrs_logic(self, is_partial: bool):
         self.rd_data_w = 0
         self.rd_data_valid_w = 0
@@ -331,7 +331,7 @@ class GlbSwitch(Generator):
                        in_=self.bank_rd_addr[self._params.bank_byte_offset - 1],
                        out_=self.bank_rd_addr_sel_d)
 
-    @ always_ff((posedge, "gclk"), (posedge, "reset"))
+    @always_ff((posedge, "gclk"), (posedge, "reset"))
     def pipeline(self):
         if self.reset:
             if self.wr_channel:
