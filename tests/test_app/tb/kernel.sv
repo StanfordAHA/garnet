@@ -40,6 +40,10 @@ import "DPI-C" function int get_num_io_tiles(
     chandle info,
     int index
 );
+import "DPI-C" function int get_io_tile_x(
+    chandle info,
+    int index
+);
 import "DPI-C" function int get_num_outputs(chandle info);
 import "DPI-C" function string get_placement_filename(chandle info);
 import "DPI-C" function string get_bitstream_filename(chandle info);
@@ -229,6 +233,7 @@ class Kernel;
     extern function void add_offset_bitstream(ref bitstream_t bitstream_data, input int offset);
     extern function void print_input(int idx);
     extern function void print_input_block(int idx, int block_idx);
+    extern function void write_input_block(int idx, int block_idx, int io_tile_x_pos, int file_out);
     extern function void print_output(int idx);
     extern function void print_output_block(int idx, int block_idx);
     extern function void print_gold(int idx);
@@ -248,6 +253,8 @@ function Kernel::new(string app_dir, int dpr);
     int num_io_tiles;
     int num_pixels;
     int loop_dim;
+    int x_pos;
+    int input_data_file_out;
 
     dpr_enabled = dpr;
 
@@ -307,6 +314,7 @@ function Kernel::new(string app_dir, int dpr);
     output_size = new[num_outputs];
     gold_data = new[num_outputs];
 
+    input_data_file_out = $fopen("/aha/garnet/tests/test_app/input_data.txt", "w");
     for (int i = 0; i < num_inputs; i++) begin
         input_filenames[i] = get_input_filename(kernel_info, i);
 
@@ -338,7 +346,17 @@ function Kernel::new(string app_dir, int dpr);
                 end
             end
         end
+
+        input_data_file_out = $fopen("/aha/garnet/tests/test_app/input_data.txt", "a");
+        // Write out input data
+        for (int j = 0; j < num_io_tiles; j++) begin
+            x_pos = get_io_tile_x(io_info, j);
+            write_input_block(i, j, x_pos, input_data_file_out);
+        end
+        $fclose(input_data_file_out);
     end
+
+
 
     for (int i = 0; i < num_mu_inputs; i++) begin
         mu_input_filenames[i] = get_mu_input_filename(kernel_info, i);
@@ -357,7 +375,7 @@ function Kernel::new(string app_dir, int dpr);
 
         $display("MU input_%0d has %0d input blocks", i, num_io_tiles);
 
-        // parse the mu input data by the number of ios 
+        // parse the mu input data by the number of ios
         if (num_io_tiles == 1) begin
             mu_inputs[i].io_tiles[0].num_data = mu_input_data[i].size;
             mu_inputs[i].io_tiles[0].io_block_data = mu_input_data[i];
@@ -372,11 +390,6 @@ function Kernel::new(string app_dir, int dpr);
                 end
             end
         end
-
-
-
-        
-        
     end
 
     for (int i = 0; i < num_outputs; i++) begin
@@ -415,6 +428,7 @@ function Kernel::new(string app_dir, int dpr);
 
     bs_size = get_bs_size(bs_info);
     bitstream_data = parse_bitstream();
+
 endfunction
 
 function bitstream_t Kernel::parse_bitstream();
@@ -726,7 +740,7 @@ function void Kernel::compare();
                 num_pixels = outputs[i].io_tiles[j].io_block_data.size;
                 for (int k = 0; k < num_pixels; k++) begin
 
-                    // Deinterleaving is different for MU if operating in E64 mode 
+                    // Deinterleaving is different for MU if operating in E64 mode
                     if ((app_type == MU2CGRA || app_type == MU2CGRA_GLB2CGRA) && get_exchange_64_config() == 1) begin
                         output_data_index = (int'(k/4) * 4) * num_io_tiles + j * 4 + (k % 4);
                         output_data[i][output_data_index] = outputs[i].io_tiles[j].io_block_data[k];
@@ -764,7 +778,7 @@ function void Kernel::compare();
         end
         $fclose(file_out);
     end
-    // turn off pixels check since we already have offsite close check for dense fp and bit accurate check for dense int 
+    // turn off pixels check since we already have offsite close check for dense fp and bit accurate check for dense int
     // result = 0;
     // for (int i = 0; i < num_outputs; i++) begin
     //     result += compare_(i);
@@ -813,6 +827,20 @@ function void Kernel::print_input_block(int idx, int block_idx);
     end
     $display("\n");
 endfunction
+
+function void Kernel::write_input_block(int idx, int block_idx, int io_tile_x_pos, int file_out);
+    $fwrite(file_out, "IO: %0d\n", io_tile_x_pos);
+    foreach (inputs[idx].io_tiles[block_idx].io_block_data[i]) begin
+        $fwrite(file_out, "%02X ", inputs[idx].io_tiles[block_idx].io_block_data[i]);
+        if (i % 4 == 3) begin
+            $fwrite(file_out, "\n");
+        end
+    end
+    if (inputs[idx].io_tiles[block_idx].io_block_data.size() % 4 != 0) begin
+        $fwrite(file_out, "\n");
+    end
+endfunction
+
 
 function void Kernel::print_gold(int idx);
     foreach (gold_data[idx][i]) begin

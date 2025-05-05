@@ -45,7 +45,7 @@ DESIGN_FILES += $(garnet_dir)/global_buffer/header/global_buffer_param.svh \
 ifeq ($(USING_MATRIX_UNIT), 1)
 	ifneq ($(BEHAVIORAL_MATRIX_UNIT), 1)
 		DESIGN_FILES +=	$(garnet_dir)/design_sim_sram.v \
-						$(garnet_dir)/MatrixUnitWrapper.v \
+						$(garnet_dir)/MatrixUnitWrapper_sim.v \
 						$(garnet_dir)/zircon_wrapper/zircon.v
 	endif
 endif
