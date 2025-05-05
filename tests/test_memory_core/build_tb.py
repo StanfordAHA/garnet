@@ -40,6 +40,7 @@ from sam.onyx.hw_nodes.repsiggen_node import RepSigGenNode
 from sam.onyx.hw_nodes.fiberaccess_node import FiberAccessNode
 from sam.onyx.hw_nodes.stream_arbiter_node import StreamArbiterNode
 from sam.onyx.hw_nodes.pass_through_node import PassThroughNode
+from sam.onyx.hw_nodes.locator_node import LocatorNode
 import magma as m
 import kratos
 import _kratos
@@ -60,6 +61,7 @@ from lake.modules.strg_RAM import StrgRAM
 from lake.modules.stencil_valid import StencilValid
 from lake.modules.stream_arbiter import StreamArbiter
 from lake.modules.pass_through import PassThrough
+from lake.modules.locator import Locator
 import os
 from canal.util import IOSide
 from sam.onyx.generate_matrices import MatrixGenerator, get_tensor_from_files
@@ -609,6 +611,16 @@ class SparseTBBuilder(m.Generator2):
                 new_node_type = PassThroughNode
                 core_name = "pass_through"
                 core_inst = PassThrough()
+            elif hw_node_type == f"{HWNodeType.Locator}":
+                new_node_type = LocatorNode
+                core_name = "locator"
+                locate_lvl = int(node.get_attributes()['lvl'].strip('"'))
+                locate_dim_size = int(node.get_attributes()['dim_size'].strip('"'))
+                kwargs = {
+                    "locate_lvl": locate_lvl,
+                    "locate_dim_size": locate_dim_size
+                }
+                core_inst = Locator()
             else:
                 raise NotImplementedError(f"{hw_node_type} not supported....")
 
@@ -1239,7 +1251,15 @@ class SparseTBBuilder(m.Generator2):
                     kwargs = {'conn_to_tensor': conn_to_tensor}
                 else:
                     kwargs = {}
-
+            elif hw_node_type == f"{HWNodeType.Locator}":
+                new_node_type = LocatorNode
+                core_tag = "locator"
+                locate_lvl = int(node.get_attributes()['lvl'].strip('"'))
+                locate_dim_size = int(node.get_attributes()['dim_size'].strip('"'))
+                kwargs = {
+                    "locate_lvl": locate_lvl,
+                    "locate_dim_size": locate_dim_size
+                }
             else:
                 raise NotImplementedError(f"{hw_node_type} not supported....")
 
