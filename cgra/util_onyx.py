@@ -479,6 +479,8 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
                 pond_dims = 4
                 pond_use_sim_sram = True
                 pond_use_rf = True
+                # Set the pond fifo depth to 0 for accumulation loop
+                pond_fifo_depth = 0
                 pond_depth = pond_cap // (pond_data_width // 8)
 
                 print("Adding pond spec...")
@@ -492,7 +494,7 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
                                                                 pnr_tag="M",
                                                                 name="PondCore",
                                                                 input_prefix="PondTop_",
-                                                                fifo_depth=fifo_depth,
+                                                                fifo_depth=pond_fifo_depth,
                                                                 dual_port=False,
                                                                 rf=pond_use_rf,
                                                                 mem_width=pond_data_width,
