@@ -478,7 +478,7 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
                 pond_data_width = 16
                 pond_dims = 4
                 pond_use_sim_sram = True
-                pond_use_rf = False
+                pond_use_rf = True
                 pond_depth = pond_cap // (pond_data_width // 8)
 
                 print("Adding pond spec...")
