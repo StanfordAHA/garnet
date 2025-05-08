@@ -62,8 +62,8 @@ if __name__ == "__main__":
     inputScale_data_mu_in = read_bytes_from_waveform("/aha/garnet/tests/test_app/inputScale_data_mu_in.txt")
     weightScale_data_mu_in = read_bytes_from_waveform("/aha/garnet/tests/test_app/weightScale_data_mu_in.txt")
 
-    systolic_array_data_out = read_bytes_from_waveform("/aha/garnet/tests/test_app/systolic_array_output.txt")
-    print(len(systolic_array_data_out))
+    # systolic_array_data_out = read_bytes_from_waveform("/aha/garnet/tests/test_app/systolic_array_output.txt")
+    # print(len(systolic_array_data_out))
 
 
     input_data_systemC = read_bytes_from_systemC("/aha/network_params/input_data_systemC.txt")
@@ -72,7 +72,7 @@ if __name__ == "__main__":
     inputScale_data_systemC = read_bytes_from_systemC("/aha/network_params/inputScale_data_systemC.txt")
     weightScale_data_systemC = read_bytes_from_systemC("/aha/network_params/weightScale_data_systemC.txt")
 
-    glb_hw_output = read_bytes_from_hw_output_txt("/aha/garnet/tests/test_app/hw_output.txt")
+    # glb_hw_output = read_bytes_from_hw_output_txt("/aha/garnet/tests/test_app/hw_output.txt")
 
 
     compare_data(input_data_mu_in, input_data_systemC, "input_data")
@@ -81,7 +81,7 @@ if __name__ == "__main__":
     compare_data(inputScale_data_mu_in, inputScale_data_systemC, "inputScale_data")
     compare_data(weightScale_data_mu_in, weightScale_data_systemC, "weightScale_data")
 
-    compare_data(systolic_array_data_out, glb_hw_output, "systolic_array_output")
+    # compare_data(systolic_array_data_out, glb_hw_output, "systolic_array_output")
 
 
 
