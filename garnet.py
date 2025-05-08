@@ -335,7 +335,26 @@ class Garnet(Generator):
     def map(self, halide_src):
         return map_app(halide_src, retiming=True)
 
-    def get_placement_bitstream(self, placement, id_to_name, instrs, active_core_ports=None):
+    def get_placement_bitstream(self, placement, id_to_name, instrs, active_core_ports=None, PE_fifos_bypass_config=None):
+        # Replace partial tile name with coordinate in PE_fifos_bypass_config
+        if PE_fifos_bypass_config is not None:
+            updates = {}
+            deletes = []
+            for partial_tile_name, bypass_config in PE_fifos_bypass_config.items():
+                found_tile = False
+                for tile_id, coord in placement.items():
+                    if id_to_name[tile_id].startswith(partial_tile_name):
+                        updates[coord] = bypass_config
+                        deletes.append(partial_tile_name)
+                        found_tile = True
+                        break
+                assert found_tile, f"Could not configure fifos bypassing for {partial_tile_name}: not found in placement"
+
+            for k in deletes:
+                del PE_fifos_bypass_config[k]
+            PE_fifos_bypass_config.update(updates)
+
+
         result = []
         for node, (x, y) in placement.items():
             instance = id_to_name[node]
@@ -347,7 +366,7 @@ class Garnet(Generator):
             node_node_num = int(node[1:])
 
             result += self.interconnect.configure_placement(x, y, instr,
-                                                            node_pnr_tag, node_node_num, active_core_ports)
+                                                            node_pnr_tag, node_node_num, active_core_ports, PE_fifos_bypass_config=PE_fifos_bypass_config)
             if node in self.pes_with_packed_ponds:
                 print(f"pond {self.pes_with_packed_ponds[node]} being packed with {node} in {x},{y}")
                 node = self.pes_with_packed_ponds[node]
@@ -358,7 +377,7 @@ class Garnet(Generator):
                     continue
                 instr = instrs[instance]
                 result += self.interconnect.configure_placement(x, y, instr,
-                                                                node_pnr_tag, node_node_num, active_core_ports)
+                                                                node_pnr_tag, node_node_num, active_core_ports, PE_fifos_bypass_config=PE_fifos_bypass_config)
         return result
 
     def convert_mapped_to_netlist(self, mapped):
@@ -768,7 +787,13 @@ class Garnet(Generator):
                             bitstream.append((addr, 0))
 
     def generate_bitstream(self, halide_src, placement, routing, id_to_name, instance_to_instr, netlist, bus,
-                           compact=False, end_to_end=False, active_core_ports=None, id_to_metadata=None):
+                           compact=False, end_to_end=False, active_core_ports=None, id_to_metadata=None, PE_fifos_bypass_config=None):
+        '''
+        halide_src: string path of design_top.json
+        placement: dict of tile ID: (x, y) pairs, e.g. {'I1': (1, 0)}
+        id_to_name: dict of tile ID: name pairs, e.g. {'I1': 'io16in_input_host_stencil_clkwrk_0_op_hcompute_input_glb_stencil_read_0'}
+        '''
+
         from cgra import compress_config_data
         routing_fix = archipelago.power.reduce_switching(routing, self.interconnect,
                                                          compact=compact)
@@ -788,8 +813,20 @@ class Garnet(Generator):
                                                            reg_loc_to_id=reg_loc_to_id, id_to_metadata=id_to_metadata)
 
         bitstream += self.fix_pond_flush_bug(placement, routing)
+
+        # Generate placement bitstream, including RV config and fifo bypass
+        bin_path = os.path.dirname(halide_src)
+        test_name = os.path.basename(os.path.dirname(bin_path))
+        os.environ["TEST_NAME_FOR_HACKING_CHECK"] = test_name
+
+        if os.path.exists(os.path.join(bin_path, "PE_fifos_bypass_config.json")):
+            with open(os.path.join(bin_path, "PE_fifos_bypass_config.json"), "r") as f:
+                PE_fifos_bypass_config = json.load(f)
+        else:
+            PE_fifos_bypass_config = None
+
         bitstream += self.get_placement_bitstream(placement, id_to_name,
-                                                  instance_to_instr, active_core_ports)
+                                                  instance_to_instr, active_core_ports, PE_fifos_bypass_config=PE_fifos_bypass_config)
 
         skip_addr = self.interconnect.get_skip_addr()
         bitstream = compress_config_data(bitstream, skip_compression=skip_addr)

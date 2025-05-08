@@ -1311,6 +1311,9 @@ def create_netlist_info(
     else:
         names_to_ids = nodes_to_ids
 
+    dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1"
+    exchange_64_mode = "E64_MODE_ON" in os.environ and os.environ.get("E64_MODE_ON") == "1"
+
     info = {}
     info["id_to_name"] = {id: node for node, id in names_to_ids.items()}
 
@@ -1341,15 +1344,13 @@ def create_netlist_info(
 
             info["id_to_metadata"][nodes_to_ids[node]]["config"] = new_config
 
-        if node in pond_reg_skipped:
-            info["id_to_metadata"][nodes_to_ids[node]]["config"]["regfile2out_0"][
-                "cycle_starting_addr"
-            ][0] += pond_reg_skipped[node]
+        if not dense_ready_valid:
+            if node in pond_reg_skipped:
+                info["id_to_metadata"][nodes_to_ids[node]]["config"]["regfile2out_0"][
+                    "cycle_starting_addr"
+                ][0] += pond_reg_skipped[node]
 
     nodes_to_instrs = CreateInstrs(node_info).doit(pdag)
-
-    dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1"
-    exchange_64_mode = "E64_MODE_ON" in os.environ and os.environ.get("E64_MODE_ON") == "1"
 
     info["id_to_instrs"] = {}
     for node, id in nodes_to_ids.items():
