@@ -66,8 +66,8 @@ endclass
 function DnnLayer::new();
 
    // Hardcoded for my fake conv2d layer. In the future, these should be set in a more streamlined way
-   layer_X = 16;
-   layer_Y = 16;
+   layer_X = 8;
+   layer_Y = 8;
    layer_IC = 128;
    layer_OC = 64;
    layer_FX = 3;

@@ -324,6 +324,9 @@ int glb_map(void *kernel_, int dpr_enabled) {
         if((&kernel->config)->config[i].addr >= 0x1000){
             fprintf(fptr, "glb_reg_write(0x%lx", (&kernel->config)->config[i].addr - 0x1000);
             fprintf(fptr, ", 0x%lx);\n", (&kernel->config)->config[i].data);
+        } else {
+            fprintf(fptr, "glc_reg_write(0x%lx", (&kernel->config)->config[i].addr);
+            fprintf(fptr, ", 0x%lx);\n", (&kernel->config)->config[i].data);
         }
     }
     fprintf(fptr, "}\n");

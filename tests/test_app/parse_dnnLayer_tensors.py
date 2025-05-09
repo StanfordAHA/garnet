@@ -54,8 +54,8 @@ if __name__ == '__main__':
     debug_mode = False
 
     # LAYER PARAMS
-    layer_X = 16
-    layer_Y = 16
+    layer_X = 8
+    layer_Y = 8
     layer_IC = 128
     layer_OC = 64
     layer_FX = 3
