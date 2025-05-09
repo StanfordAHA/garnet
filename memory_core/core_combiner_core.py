@@ -236,6 +236,7 @@ class CoreCombinerCore(LakeCoreBase):
             active_16b_output = 0
             active_1b_output = 0
             is_constant_pe = 0
+            bypass_prim_outfifo = 0 #TODO: Set this appropriately based on the application 
 
             input_count = 0
             input_bit_count = 0
@@ -322,6 +323,7 @@ class CoreCombinerCore(LakeCoreBase):
                     # to the cluster
                     'pe_in_external': 1,
                     'is_constant_pe': is_constant_pe,
+                    'bypass_prim_outfifo': bypass_prim_outfifo,
                     # only configure pe within the cluster
                     'pe_only': True
                 }
