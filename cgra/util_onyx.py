@@ -46,6 +46,7 @@ from lake.modules.reg_cr import Reg
 from lake.modules.strg_ub_vec import StrgUBVec
 from lake.modules.strg_ub_thin import StrgUBThin
 from lake.modules.crddrop import CrdDrop
+from lake.modules.locator import Locator
 from lake.modules.crdhold import CrdHold
 from lake.modules.strg_RAM import StrgRAM
 from lake.modules.strg_RAM_rv import StrgRAMRV
@@ -263,6 +264,8 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
 
         crd_drop = CrdDrop(fifo_depth=fifo_depth, lift_config=True, perf_debug=perf_debug)
 
+        locator = Locator(fifo_depth=fifo_depth, perf_debug=perf_debug)
+
         # crd_hold = CrdHold( fifo_depth=fifo_depth, lift_config=True, perf_debug=perf_debug)
 
         reduce_pe_cluster = ReducePECluster(fifo_depth=fifo_depth, perf_debug=perf_debug, pe_prefix=pe_prefix)
@@ -280,6 +283,7 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
         controllers_2.append(isect)
         controllers_2.append(crd_drop)
         # controllers_2.append(crd_hold)
+        controllers_2.append(locator)
         controllers_2.append(repeat)
         controllers_2.append(rsg)
         controllers_2.append(reduce_pe_cluster)
