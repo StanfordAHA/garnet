@@ -236,7 +236,12 @@ class CoreCombinerCore(LakeCoreBase):
             active_16b_output = 0
             active_1b_output = 0
             is_constant_pe = 0
-            bypass_prim_outfifo = 0 #TODO: Set this appropriately based on the application 
+
+            # HACK: for now we only bypass the PE prim outfifo when bypassing PE tile outfifo for pond reduction apps
+            if PE_fifos_bypass_config is not None:
+                bypass_prim_outfifo = PE_fifos_bypass_config[(x, y)]['output_fifo_bypass']
+            else:
+                bypass_prim_outfifo = 0
 
             input_count = 0
             input_bit_count = 0
@@ -403,6 +408,15 @@ class CoreCombinerCore(LakeCoreBase):
 
                 # Bypassing PE tile level fifos according to the bypass config
                 if self.pnr_tag == 'p' and isinstance(PE_fifos_bypass_config, type({})) and (x, y) in PE_fifos_bypass_config:
+                    '''
+                    PE_fifos_bypass_config example:
+                    {
+                        (x, y): {
+                            input_fifo_bypass: [1, 0, 0],
+                            output_fifo_bypass: 1
+                        }
+                    }
+                    '''
                     print(f"Bypassing input and output fifos for PE ({x}, {y})")
                     fine_grained_input_fifo_bypass = PE_fifos_bypass_config[(x, y)]['input_fifo_bypass']
                     fine_grained_output_fifo_bypass = PE_fifos_bypass_config[(x, y)]['output_fifo_bypass']
