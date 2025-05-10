@@ -27,6 +27,7 @@ from gemstone.generator.const import Const
 from canal.util import IOSide
 from canal.logic import ReadyValidLoopBack
 from matrix_unit.cgra2mu_ready_and import cgra2mu_ready_and
+from matrix_unit.mu2cgra_pipeline_unit import mu2cgra_pipeline_unit
 from kratos.util import to_magma
 
 # set the debug mode to false to speed up construction
@@ -69,6 +70,7 @@ class Garnet(Generator):
         self.include_E64_hw = args.include_E64_hw
         self.include_multi_bank_hw = args.include_multi_bank_hw
         self.include_mu_glb_hw = args.include_mu_glb_hw
+        self.pipeline_mu2cgra = args.pipeline_mu2cgra
 
         # Build GLB unless interconnect_only (CGRA-only) requested
 
@@ -197,9 +199,11 @@ class Garnet(Generator):
                 )
 
             # Matrix unit <-> interconnnect ports connection
-            self.cgra2mu_ready_and = FromMagma(to_magma(cgra2mu_ready_and(height=num_output_channels), flatten_array=True))
-
+            self.cgra2mu_ready_and = FromMagma(to_magma(cgra2mu_ready_and(height=int(num_output_channels/2)), flatten_array=True))
             self.mu2cgra_rv_loopback_and = FromMagma(to_magma(ReadyValidLoopBack(), flatten_array=True))
+
+            if self.pipeline_mu2cgra:
+                self.mu2cgra_pipeline_unit = FromMagma(to_magma(mu2cgra_pipeline_unit(num_output_channels=num_output_channels, mu_datawidth=mu_datawidth), flatten_array=True))
 
             if dense_only:
                 cgra_track_width = 16
@@ -214,12 +218,19 @@ class Garnet(Generator):
             mu_io_endX = mu_io_startX + num_mu_io_tiles - 1
 
             # Ready-valid loopback
-            self.wire(self.mu2cgra_rv_loopback_and.ports.valid_in, self.convert(self.ports.mu2cgra_valid, magma.Bits[1]))
+            if self.pipeline_mu2cgra:
+                self.wire(self.mu2cgra_rv_loopback_and.ports.valid_in, self.convert(self.mu2cgra_pipeline_unit.ports.mu2cgra_valid_d, magma.Bits[1]))
+            else:
+                self.wire(self.mu2cgra_rv_loopback_and.ports.valid_in, self.convert(self.ports.mu2cgra_valid, magma.Bits[1]))
             self.wire(self.mu2cgra_rv_loopback_and.ports.ready_in, self.convert(self.cgra2mu_ready_and.ports.anded_ready_out, magma.Bits[1]))
+
+            if self.pipeline_mu2cgra:
+                self.wire(self.ports.clk_in, self.mu2cgra_pipeline_unit.ports.clk)
+                self.wire(self.ports.reset_in, self.mu2cgra_pipeline_unit.ports.reset)
+                self.wire(self.convert(self.ports.mu2cgra_valid, magma.Bits[1]), self.mu2cgra_pipeline_unit.ports[f"mu2cgra_valid"])
 
             for i in range(num_output_channels):
                 io_num = i % 2
-
                 mu_io_tile_row = self.height + 1
                 cgra_col_num = mu_io_startX + i // 2
 
@@ -228,20 +239,29 @@ class Garnet(Generator):
                     self.wire(Const(
                         0), self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{cgra_col_num:02X}_Y{mu_io_tile_row:02X}"][cgra_track_width - width_difference:cgra_track_width])
 
-                self.wire(
-                    self.ports.mu2cgra[i], self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{cgra_col_num:02X}_Y{mu_io_tile_row:02X}"][:cgra_track_width - width_difference])
+                if self.pipeline_mu2cgra:
+                    self.wire(self.ports.mu2cgra[i], self.mu2cgra_pipeline_unit.ports[f"mu2cgra_{i}"])
+                    self.wire(self.mu2cgra_pipeline_unit.ports[f"mu2cgra_d_{i}"], self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{cgra_col_num:02X}_Y{mu_io_tile_row:02X}"][:cgra_track_width - width_difference])
+                else:
+                    self.wire(self.ports.mu2cgra[i], self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{cgra_col_num:02X}_Y{mu_io_tile_row:02X}"][:cgra_track_width - width_difference])
                 # Gated valid goes into the tile array, broadcast to all I/O tiles
                 self.wire(
                     self.convert(self.mu2cgra_rv_loopback_and.ports.valid_out, magma.bit),
                     self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{cgra_col_num:02X}_Y{mu_io_tile_row:02X}_valid"])
 
-                self.wire(
-                    self.cgra2mu_ready_and.ports[f"readys_in_{i}"],
-                    self.convert(
-                        self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{cgra_col_num:02X}_Y{mu_io_tile_row:02X}_ready"],
-                        magma.Bits[1]))
+                if (i % 2) == 0:
+                    self.wire(
+                        self.cgra2mu_ready_and.ports[f"readys_in_{int(i/2)}"],
+                        self.convert(
+                            self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{cgra_col_num:02X}_Y{mu_io_tile_row:02X}_ready"],
+                            magma.Bits[1]))
 
-            self.wire(self.convert(self.cgra2mu_ready_and.ports.anded_ready_out, magma.bit), self.ports.cgra2mu_ready)
+            if self.pipeline_mu2cgra:
+                self.wire(self.convert(self.cgra2mu_ready_and.ports.anded_ready_out, magma.Bits[1]), self.mu2cgra_pipeline_unit.ports.cgra2mu_ready_d)
+                self.wire(self.ports.cgra2mu_ready, self.convert(self.mu2cgra_pipeline_unit.ports.cgra2mu_ready, magma.bit))
+            else:
+                self.wire(self.ports.cgra2mu_ready, self.convert(self.cgra2mu_ready_and.ports.anded_ready_out, magma.bit))
+
 
             # Matrix unit <-> GLB ports connection
             if self.include_mu_glb_hw:
@@ -966,6 +986,7 @@ def parse_args():
     parser.add_argument('--include-mu-glb-hw', action="store_true")
     parser.add_argument('--use-non-split-fifos', action="store_true")
     parser.add_argument('--exclude-glb-ring-switch', action="store_true")
+    parser.add_argument('--pipeline-mu2cgra', action="store_true")
 
     # Daemon choices are maybe ['help', 'launch', 'use', 'kill', 'force', 'status', 'wait']
     parser.add_argument('--daemon', type=str, choices=GarnetDaemon.choices, default=None)
@@ -1082,12 +1103,21 @@ def build_verilog(args, garnet):
     if not garnet_home:
         garnet_home = os.path.dirname(os.path.abspath(__file__))
     from matrix_unit.matrix_unit_main import gen_param_header
+    from matrix_unit.matrix_unit_main import gen_regspace_header
+    from matrix_unit.matrix_unit_main import Reg
     matrix_unit_params = {}
     matrix_unit_params["MU_DATAWIDTH"] = args.mu_datawidth
     matrix_unit_params["MU_OC_0"] = args.mu_oc_0
+    matrix_unit_params["MU_AXI_ADDR_WIDTH"] = 30
+    matrix_unit_params["MU_AXI_DATA_WIDTH"] = 64
     gen_param_header(top_name="matrix_unit_param",
                      params=matrix_unit_params,
                      output_folder=os.path.join(garnet_home, "matrix_unit/header"))
+    input_base_addr_reg = Reg(name="MU_AXI_INPUT_BASE_R", addr=8, lsb=0, msb=0)
+    weight_base_addr_reg = Reg(name="MU_AXI_WEIGHT_BASE_R", addr=16, lsb=0, msb=0)
+    bias_base_addr_reg = Reg(name="MU_AXI_BIAS_BASE_R", addr=24, lsb=0, msb=0)
+    header_list = [input_base_addr_reg, weight_base_addr_reg, bias_base_addr_reg]
+    gen_regspace_header(header_list, "matrix_unit/header/matrix_unit_regspace")
 
 
 def pnr(garnet, args, app):
