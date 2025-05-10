@@ -238,7 +238,8 @@ class CoreCombinerCore(LakeCoreBase):
             is_constant_pe = 0
 
             # HACK: for now we only bypass the PE prim outfifo when bypassing PE tile outfifo for pond reduction apps
-            if PE_fifos_bypass_config is not None:
+            if self.pnr_tag == 'p' and isinstance(PE_fifos_bypass_config, type({})) and (x, y) in PE_fifos_bypass_config:
+                print(f"Bypassing PE prim outfifo for PE ({x}, {y})")
                 bypass_prim_outfifo = PE_fifos_bypass_config[(x, y)]['output_fifo_bypass']
             else:
                 bypass_prim_outfifo = 0
