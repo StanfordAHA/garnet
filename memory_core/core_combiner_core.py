@@ -155,6 +155,7 @@ class CoreCombinerCore(LakeCoreBase):
         # print(self.runtime_mode)
         # assert self.runtime_mode is not None
         configs = []
+        dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1"
 
         print("CORE_COMBINER_CORE_CONFIG")
         print(self.instance_name)
@@ -181,8 +182,10 @@ class CoreCombinerCore(LakeCoreBase):
                         instr['mode'] = 'stencil_valid'
                 elif 'mode' in instr and instr['mode'] == 'sram':
                     instr['mode'] = 'ROM'
-                    # config_extra_rom = [(f"{self.get_port_remap()['ROM']['wen']}_reg_sel", 1)]
-                    config_extra_rom = []
+                    if dense_ready_valid:
+                        config_extra_rom = []
+                    else:
+                        config_extra_rom = [(f"{self.get_port_remap()['ROM']['wen']}_reg_sel", 1)]
                     for name, v in config_extra_rom:
                         configs = [self.get_config_data(name, v)] + configs
                 elif 'mode' not in instr and 'stencil_valid' in instr:
@@ -227,7 +230,6 @@ class CoreCombinerCore(LakeCoreBase):
                 # print(configs)
                 return configs
         elif not isinstance(config_tuple, tuple) or use_pe_rv_config:
-            dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1"
             # It's a PE then...
             if active_core_ports is None:
                 raise ValueError("Error: 'active_core_ports' cannot be None for a PE.")

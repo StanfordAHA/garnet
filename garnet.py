@@ -486,7 +486,7 @@ class Garnet(Generator):
         self.pes_with_packed_ponds = {pe: pond for pond, pe in packed_ponds.items()}
 
     def load_netlist(self, app, load_only, pipeline_input_broadcasts,
-                     input_broadcast_branch_factor, input_broadcast_max_leaves):
+                     input_broadcast_branch_factor, input_broadcast_max_leaves, use_dense_ready_valid=False):
 
         import metamapper.peak_util as putil
         from mapper.netlist_util import create_netlist_info, print_netlist_info
@@ -616,12 +616,18 @@ class Garnet(Generator):
                     elif 'mode' in metadata and metadata['mode'] == 'sram':
                         mode = 'ROM'
                         # Actually use wr addr for rom mode...
-                        hack_remap = {
-                            # 'addr_in_0': 'wr_addr_in',
-                            'addr_in_0': 'rd_addr_in',
-                            'ren_in_0': 'ren',
-                            'data_out_0': 'data_out'
-                        }
+                        if use_dense_ready_valid:
+                            hack_remap = {
+                                'addr_in_0': 'rd_addr_in',
+                                'ren_in_0': 'ren',
+                                'data_out_0': 'data_out'
+                            }
+                        else:
+                            hack_remap = {
+                                'addr_in_0': 'wr_addr_in',
+                                'ren_in_0': 'ren',
+                                'data_out_0': 'data_out'
+                            }
                         assert pin_ in hack_remap
                         pin_ = hack_remap[pin_]
                     print(mem_remap)
@@ -703,13 +709,15 @@ class Garnet(Generator):
         pipeline_input_broadcasts = not args.no_input_broadcast_pipelining
         input_broadcast_branch_factor = args.input_broadcast_branch_factor
         input_broadcast_max_leaves = args.input_broadcast_max_leaves
+        dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1"
 
         id_to_name, instance_to_instr, netlist, bus, active_core_ports, id_to_metadata = \
             self.load_netlist(halide_src,
                               load_only,
                               pipeline_input_broadcasts,
                               input_broadcast_branch_factor,
-                              input_broadcast_max_leaves)
+                              input_broadcast_max_leaves,
+                              use_dense_ready_valid=dense_ready_valid)
 
         app_dir = os.path.dirname(halide_src)
         if unconstrained_io:
@@ -719,7 +727,6 @@ class Garnet(Generator):
             fixed_io = place_io_blk(id_to_name, app_dir, self.io_sides, self.width, self.height, args.mu_oc_0, args.num_fabric_cols_removed)
 
         west_in_io_sides = IOSide.West in self.io_sides
-        dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1"
 
         placement, routing, id_to_name = \
             archipelago.pnr(self.interconnect, (netlist, bus),
