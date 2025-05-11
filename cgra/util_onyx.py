@@ -526,7 +526,7 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
                         core = core_type(**core_kwargs)
                         if add_pond and core_type == CoreCombinerCore and "alu" in core.get_modes_supported():
                             intercore_mapping = core.get_port_remap()['alu']
-                            if use_rv_mem_pond
+                            if use_rv_mem_pond:
                                 additional_core[(x, y)] = pond_core_core_combiner_core
                             else:
                                 additional_core[(x, y)] = PondCore(gate_flush=not harden_flush, ready_valid=ready_valid)
