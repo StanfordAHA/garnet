@@ -237,10 +237,10 @@ class CoreCombinerCore(LakeCoreBase):
             active_1b_output = 0
             is_constant_pe = 0
 
-            # HACK: for now we only bypass the PE prim outfifo when bypassing PE tile outfifo for pond reduction apps
-            if self.pnr_tag == 'p' and isinstance(PE_fifos_bypass_config, type({})) and (x, y) in PE_fifos_bypass_config:
-                print(f"Bypassing PE prim outfifo for PE ({x}, {y})")
-                bypass_prim_outfifo = PE_fifos_bypass_config[(x, y)]['output_fifo_bypass']
+            # TODO: we still keep prim outfifo for sparse, but this could be fixed by looking at sparse fifo pop logic
+            if dense_ready_valid:
+                print(f"Bypassing prim outfifo for tile ({x}, {y})")
+                bypass_prim_outfifo = 1
             else:
                 bypass_prim_outfifo = 0
 
