@@ -606,20 +606,6 @@ class Garnet(Generator):
             'data_out_2': 'port_5',
         }
 
-        # lakespec_pin_remap = {
-        #     'data_in_0': 'port_0',
-        #     'data_in_1': 'port_1',
-        #     'data_out_0': 'port_2',
-        #     'data_out_1': 'port_3'
-        # }
-
-        lakespec_pin_remap = {
-            'data_in_0': 'port_0',
-            'data_in_1': 'port_1',
-            'data_out_0': 'port_2',
-            'data_out_1': 'port_3'
-        }
-
         for netlist_id, connections_list in netlist_info['netlist'].items():
             for idx, connection in enumerate(connections_list):
                 tag_, pin_ = connection
