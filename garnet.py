@@ -600,6 +600,22 @@ class Garnet(Generator):
         lakespec_pin_remap = {
             'data_in_0': 'port_0',
             'data_in_1': 'port_1',
+            'data_in_2': 'port_2',
+            'data_out_0': 'port_3',
+            'data_out_1': 'port_4',
+            'data_out_2': 'port_5',
+        }
+
+        # lakespec_pin_remap = {
+        #     'data_in_0': 'port_0',
+        #     'data_in_1': 'port_1',
+        #     'data_out_0': 'port_2',
+        #     'data_out_1': 'port_3'
+        # }
+
+        lakespec_pin_remap = {
+            'data_in_0': 'port_0',
+            'data_in_1': 'port_1',
             'data_out_0': 'port_2',
             'data_out_1': 'port_3'
         }
