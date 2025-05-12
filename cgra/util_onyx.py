@@ -498,7 +498,7 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
                     pond_fifo_depth = 0
                     pond_depth = pond_cap // (pond_data_width // 8)
 
-                    print("Adding pond spec...")
+                    # print("Adding pond spec...")
                     pond_spec = build_pond_rv(storage_capacity=pond_cap, data_width=pond_data_width, dims=pond_dims, physical=not pond_use_sim_sram,
                                             reg_file=pond_use_rf, opt_rv=True)
 
