@@ -1,4 +1,4 @@
-from kratos import Generator, RawStringStmt, always_ff, posedge
+from kratos import Generator, RawStringStmt, always_ff, posedge, const
 from kratos.util import clock
 from global_buffer.design.glb_store_dma import GlbStoreDma
 from global_buffer.design.glb_store_dma_E64 import GlbStoreDma_E64
@@ -243,6 +243,7 @@ class GlbTile(Generator):
                 self.cfg_bank_mux_multi_bank_mode = self.var("cfg_bank_mux_multi_bank_mode", 1)
                 self.cfg_st_dma_exchange_64_mode = self.var("cfg_st_dma_exchange_64_mode", 2)
                 self.cfg_ld_dma_exchange_64_mode = self.var("cfg_ld_dma_exchange_64_mode", 2)
+                self.cfg_bank_toggle_mode = self.var("cfg_bank_toggle_mode", 1)
             else:
                 self.cfg_st_dma_exchange_64_mode = self.var("cfg_st_dma_exchange_64_mode", 1)
                 self.cfg_ld_dma_exchange_64_mode = self.var("cfg_ld_dma_exchange_64_mode", 1)
@@ -418,6 +419,7 @@ class GlbTile(Generator):
         if self._params.include_E64_hw:
             if self._params.include_multi_bank_hw:
                 self.wire(self.cfg_bank_mux_multi_bank_mode, self.glb_cfg.cfg_exchange_64_mode == self._params.exchange_64_multibank_mode)
+                self.wire(self.cfg_bank_toggle_mode, self.glb_cfg.cfg_bank_toggle_mode)
             self.wire(self.cfg_st_dma_exchange_64_mode, self.glb_cfg.cfg_exchange_64_mode)
             self.wire(self.cfg_ld_dma_exchange_64_mode, self.glb_cfg.cfg_exchange_64_mode)
 
@@ -469,6 +471,12 @@ class GlbTile(Generator):
 
         if self._params.include_E64_hw:
             self.wire(self.glb_store_dma.cfg_exchange_64_mode, self.cfg_st_dma_exchange_64_mode)
+
+        # TEMPORARY HACK. FIXME
+        if self._params.include_E64_hw:
+            if self._params.include_multi_bank_hw:
+                self.wire(self.glb_store_dma.cfg_bank_toggle_mode, self.cfg_bank_toggle_mode)
+
 
         self.add_child("glb_load_dma",
                        self.glb_load_dma,

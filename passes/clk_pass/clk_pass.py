@@ -13,9 +13,9 @@ from memory_core.mu2f_io_core_rv_clk_rcv import MU2F_IOCoreReadyValid_clk_rcv
 
 # Transformations:
 # 1. PE tile pass throughs:
-# Creates an extra input port on pe tiles called clk_pass_through 
-# which is used only to pass clock signals through to adjacent 
-# CGRA tiles in the interconnect. 
+# Creates an extra input port on pe tiles called clk_pass_through
+# which is used only to pass clock signals through to adjacent
+# CGRA tiles in the interconnect.
 # This allows us to pass the clock signal through the tile without going
 # through the tile's clock tree.
 #
@@ -33,7 +33,7 @@ from memory_core.mu2f_io_core_rv_clk_rcv import MU2F_IOCoreReadyValid_clk_rcv
 #      |       |     |         /      |      ----|   |
 #      |       |     |        /       |      |   |   |
 #      ---------------                ----------------
-#           clk_out                    clk_out  pt_clk_out_bot  
+#           clk_out                    clk_out  pt_clk_out_bot
 #
 #
 #
@@ -50,7 +50,7 @@ def clk_physical(interconnect: Interconnect, tile_layout_option):
         # We only want to do this on PE and memory tiles
         if tile_core is None or isinstance(tile_core, IOCoreBase) or isinstance(tile_core, IOCoreReadyValid):
             continue
-        elif (isinstance(tile_core, MemCore) or (isinstance(tile_core, CoreCombinerCore) and "UB" in tile_core.get_modes_supported()) or isinstance(tile_core, MU2F_IOCoreReadyValid_clk_rcv)) and tile_layout_option==0:
+        elif (isinstance(tile_core, MemCore) or (isinstance(tile_core, CoreCombinerCore) and "ROM" in tile_core.get_modes_supported()) or isinstance(tile_core, MU2F_IOCoreReadyValid_clk_rcv)) and tile_layout_option==0:
             if (x, y+1) in interconnect.tile_circuits:
                 tile_below = interconnect.tile_circuits[(x, y+1)]
                 if isinstance(tile_below.core, MemCore):
@@ -58,7 +58,7 @@ def clk_physical(interconnect: Interconnect, tile_layout_option):
                                              tile_below.ports.clk)
             # Get the PE tile to the left of this mem tile
             tile_left = interconnect.tile_circuits[(x-1, y)]
-            # Connect the clk input of this mem tile to the right clk 
+            # Connect the clk input of this mem tile to the right clk
             # output of the neighboring PE tile
             interconnect.wire(tile_left.ports.clk_pass_through_out_right,
                               tile.ports.clk)
@@ -88,11 +88,11 @@ def clk_physical(interconnect: Interconnect, tile_layout_option):
                 interconnect_clk_as_bit = interconnect.convert(
                     interconnect.ports.clk, magma.bit)
                 interconnect.wire(interconnect_clk_as_bit, pass_through_input)
-            # For other tiles, connect new clk input to 
+            # For other tiles, connect new clk input to
             # pass through output of tile above.
             else:
                 tile_above = interconnect.tile_circuits[(x, y-1)]
                 interconnect.wire(tile_above.ports.clk_pass_through_out_bot,
                                   pass_through_input)
 
-    
+
