@@ -243,6 +243,7 @@ class GlbTile(Generator):
                 self.cfg_bank_mux_multi_bank_mode = self.var("cfg_bank_mux_multi_bank_mode", 1)
                 self.cfg_st_dma_exchange_64_mode = self.var("cfg_st_dma_exchange_64_mode", 2)
                 self.cfg_ld_dma_exchange_64_mode = self.var("cfg_ld_dma_exchange_64_mode", 2)
+                self.cfg_bank_toggle_mode = self.var("cfg_bank_toggle_mode", 1)
             else:
                 self.cfg_st_dma_exchange_64_mode = self.var("cfg_st_dma_exchange_64_mode", 1)
                 self.cfg_ld_dma_exchange_64_mode = self.var("cfg_ld_dma_exchange_64_mode", 1)
@@ -418,6 +419,7 @@ class GlbTile(Generator):
         if self._params.include_E64_hw:
             if self._params.include_multi_bank_hw:
                 self.wire(self.cfg_bank_mux_multi_bank_mode, self.glb_cfg.cfg_exchange_64_mode == self._params.exchange_64_multibank_mode)
+                self.wire(self.cfg_bank_toggle_mode, self.glb_cfg.cfg_bank_toggle_mode)
             self.wire(self.cfg_st_dma_exchange_64_mode, self.glb_cfg.cfg_exchange_64_mode)
             self.wire(self.cfg_ld_dma_exchange_64_mode, self.glb_cfg.cfg_exchange_64_mode)
 
@@ -473,7 +475,7 @@ class GlbTile(Generator):
         # TEMPORARY HACK. FIXME
         if self._params.include_E64_hw:
             if self._params.include_multi_bank_hw:
-                self.wire(self.glb_store_dma.cfg_bank_toggle_mode, const(0, 1))
+                self.wire(self.glb_store_dma.cfg_bank_toggle_mode, self.cfg_bank_toggle_mode)
 
 
         self.add_child("glb_load_dma",

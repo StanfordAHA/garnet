@@ -13,6 +13,7 @@ class GlbStepCounter(Generator):
         self.clk_en = self.clock_en("clk_en")
         self.reset = self.reset("reset")
         self.step = self.input("step", 1)
+        self.restart = self.input("restart", 1)
         self.mod_8_step = self.output("mod_8_step", 1)
 
         # local variables
@@ -25,8 +26,11 @@ class GlbStepCounter(Generator):
     def step_count_ff(self):
         if self.reset:
             self.step_count = 0
-        elif self.step:
-           self.step_count = self.step_count + 1
+        elif self.clk_en:
+            if self.restart:
+                self.step_count = 0
+            elif self.step:
+                self.step_count = self.step_count + 1
 
     @always_comb
     def mod_8_step_logic(self):

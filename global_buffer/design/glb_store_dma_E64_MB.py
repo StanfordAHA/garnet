@@ -288,10 +288,10 @@ class GlbStoreDma_E64_MB(Generator):
         self.add_child("step_counter",
                        self.step_counter,
                        clk=self.clk,
-                       # TODO: Make this clock_en based on bank_toggle_mode
                        clk_en=clock_en(self.cfg_bank_toggle_mode),
                        reset=self.reset,
                        step=self.qualified_iter_step_valid,
+                       restart=self.st_dma_start_pulse_r,
                        mod_8_step=self.mod_8_step)
 
         self.cycle_stride_addr_gen = GlbAddrGen(self._params, loop_level=self._params.store_dma_loop_level)
@@ -699,7 +699,8 @@ class GlbStoreDma_E64_MB(Generator):
         self.bank_addr_match = (self.strm_wr_addr_w[self._params.glb_addr_width - 1, self._params.bank_byte_offset]
                                 == self.last_strm_wr_addr_r[self._params.glb_addr_width - 1,
                                                             self._params.bank_byte_offset])
-        self.bank_toggle_mode_write_step = self.last_strm_wr_addr_r[2, 0] == const(6, 3)
+        # Equal 6 b/c addr pattern is 0 2 4 6 (WRITE) 8 10 12 14 (WRITE)
+        self.bank_toggle_mode_write_step = self.last_strm_wr_addr_r[self._params.bank_byte_offset - 1, 0] == const(6, self._params.bank_byte_offset)
         if self.cfg_bank_toggle_mode:
             self.bank_wr_en = ((self.strm_wr_en_w & (self.bank_toggle_mode_write_step) & (~self.is_first)) | self.is_last)
         else:
@@ -768,6 +769,8 @@ class GlbStoreDma_E64_MB(Generator):
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def bank_toggle_ff(self):
         if self.reset:
+            self.bank_toggle_bit = 0
+        elif self.st_dma_start_pulse_r:
             self.bank_toggle_bit = 0
         elif self.cfg_bank_toggle_mode & self.bank_wr_en:
             self.bank_toggle_bit = ~self.bank_toggle_bit
