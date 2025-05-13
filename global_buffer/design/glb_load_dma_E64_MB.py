@@ -236,6 +236,8 @@ class GlbLoadDma_E64_MB(Generator):
                        clk_en=clock_en(self.cycle_counter_en),
                        reset=self.reset,
                        restart=self.ld_dma_start_pulse_r,
+                       bank_toggle_mode=const(0, 1),
+                       mod_8_step=const(0, 1),
                        step=self.iter_step_valid,
                        mux_sel=self.loop_mux_sel,
                        addr_out=self.cycle_current_addr)
@@ -254,6 +256,8 @@ class GlbLoadDma_E64_MB(Generator):
                        clk_en=const(1, 1),
                        reset=self.reset,
                        restart=self.ld_dma_start_pulse_r,
+                       bank_toggle_mode=const(0, 1),
+                       mod_8_step=const(0, 1),
                        step=self.iter_step_valid,
                        mux_sel=self.loop_mux_sel,
                        addr_out=self.data_current_addr)

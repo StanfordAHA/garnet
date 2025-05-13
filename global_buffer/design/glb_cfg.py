@@ -62,6 +62,7 @@ class GlbCfg(Generator):
         if self._params.include_E64_hw:
             if self._params.include_multi_bank_hw:
                 self.cfg_exchange_64_mode = self.output("cfg_exchange_64_mode", 2)
+                self.cfg_bank_toggle_mode = self.output("cfg_bank_toggle_mode", 1)
             else:
                 self.cfg_exchange_64_mode = self.output("cfg_exchange_64_mode", 1)
 
@@ -142,6 +143,8 @@ class GlbCfg(Generator):
             self.wire(self.cfg_st_dma_rv_seg_mode, self.glb_pio_wrapper.ports["l2h_st_dma_rv_seg_mode_value_r"])
             if self._params.include_E64_hw:
                 self.wire(self.cfg_exchange_64_mode, self.glb_pio_wrapper.ports["l2h_dma_exchange_64_mode_value_r"])
+                if self._params.include_multi_bank_hw:
+                    self.wire(self.cfg_bank_toggle_mode, self.glb_pio_wrapper.ports["l2h_dma_bank_toggle_mode_value_r"])
 
         for i in range(self._params.queue_depth):
             if self._params.queue_depth == 1:

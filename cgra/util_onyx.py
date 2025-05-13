@@ -49,6 +49,7 @@ from lake.modules.crddrop import CrdDrop
 from lake.modules.locator import Locator
 from lake.modules.crdhold import CrdHold
 from lake.modules.strg_RAM import StrgRAM
+from lake.modules.strg_RAM_rv import StrgRAMRV
 from lake.modules.stencil_valid import StencilValid
 from lake.modules.buffet_like import BuffetLike
 from lake.modules.stream_arbiter import StreamArbiter
@@ -60,6 +61,7 @@ from lake.top.reduce_pe_cluster import ReducePECluster
 from lassen.sim import PE_fc
 import magma as m
 from peak import family
+from lake.spec.spec_memory_controller import SpecMemoryController, build_four_port_wide_fetch_rv, build_pond_rv
 import os
 
 
@@ -178,6 +180,10 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
                 perf_debug: bool = False,
                 tech_map='Intel'):
 
+    # TODO: We now use using_matrix_unit to determine if we are using rv mem and pond or not
+    #       But we can use rv mem and pond without matrix unit if we want
+    use_rv_mem_pond = using_matrix_unit
+
     # currently only add 16bit io cores
     # bit_widths = [1, 16, 17]
     ready_valid = scgra
@@ -226,7 +232,16 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
 
         wscan = WriteScanner(fifo_depth=fifo_depth, perf_debug=perf_debug)
 
-        strg_ub = StrgUBVec(mem_width=mem_width, mem_depth=mem_depth, comply_with_17=True)
+        if use_rv_mem_pond:
+            # strg_ub = StrgUBVec(mem_width=mem_width, mem_depth=mem_depth, comply_with_17=True)
+            strg_cap = 4096
+            fw = 4
+            data_width = 16
+
+            spec = build_four_port_wide_fetch_rv(storage_capacity=strg_cap, data_width=data_width, vec_width=fw)
+            strg_ub = SpecMemoryController(spec=spec)
+        else:
+            strg_ub = StrgUBVec(mem_width=mem_width, mem_depth=mem_depth, comply_with_17=True)
 
         fiber_access = FiberAccess(local_memory=False,
                                    use_pipelined_scanner=pipeline_scanner,
@@ -236,7 +251,10 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
 
         buffet = BuffetLike(mem_depth=mem_depth, local_memory=False, optimize_wide=True, fifo_depth=fifo_depth)
 
-        strg_ram = StrgRAM(memory_width=mem_width, memory_depth=mem_depth, comply_with_17=True)
+        if use_rv_mem_pond:
+            strg_ram = StrgRAMRV(memory_width=mem_width, memory_depth=mem_depth, comply_with_17=True)
+        else:
+            strg_ram = StrgRAM(memory_width=mem_width, memory_depth=mem_depth, comply_with_17=True)
 
         stencil_valid = StencilValid()
 
@@ -333,7 +351,15 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
         controllers_2.append(pe)
 
         controllers = []
-        strg_ub = StrgUBVec(mem_width=mem_width, mem_depth=mem_depth, comply_with_17=False)
+        if use_rv_mem_pond:
+            strg_cap = 4096
+            fw = 4
+            data_width = 16
+
+            spec = build_four_port_wide_fetch_rv(storage_capacity=strg_cap, data_width=data_width, vec_width=fw)
+            strg_ub = SpecMemoryController(spec=spec)
+        else:
+            strg_ub = StrgUBVec(mem_width=mem_width, mem_depth=mem_depth, comply_with_17=False)
 
         strg_ram = StrgRAM(memory_width=mem_width, memory_depth=mem_depth, comply_with_17=False)
         stencil_valid = StencilValid()
@@ -462,6 +488,34 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
                     core = IOCore()
 
             else:
+                if use_rv_mem_pond:
+                    pond_cap = 64
+                    pond_data_width = 16
+                    pond_dims = 4
+                    pond_use_sim_sram = True
+                    pond_use_rf = True
+                    # Set the pond fifo depth to 0 for accumulation loop
+                    pond_fifo_depth = 0
+                    pond_depth = pond_cap // (pond_data_width // 8)
+
+                    # print("Adding pond spec...")
+                    pond_spec = build_pond_rv(storage_capacity=pond_cap, data_width=pond_data_width, dims=pond_dims, physical=not pond_use_sim_sram,
+                                            reg_file=pond_use_rf, opt_rv=True)
+
+                    pond_core_core_combiner_core = CoreCombinerCore(data_width=16,
+                                                                    controllers_list=[SpecMemoryController(spec=pond_spec)],
+                                                                    use_sim_sram=True,
+                                                                    tech_map_name=tm,
+                                                                    pnr_tag="M",
+                                                                    name="PondCore",
+                                                                    input_prefix="PondTop_",
+                                                                    fifo_depth=pond_fifo_depth,
+                                                                    dual_port=False,
+                                                                    rf=pond_use_rf,
+                                                                    mem_width=pond_data_width,
+                                                                    mem_depth=pond_depth,
+                                                                    new_pond=True)
+
                 # now override this...to just use the altcore list to not waste space
                 if altcore is not None:
                     altcore_used = True
@@ -472,10 +526,17 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
                         core = core_type(**core_kwargs)
                         if add_pond and core_type == CoreCombinerCore and "alu" in core.get_modes_supported():
                             intercore_mapping = core.get_port_remap()['alu']
-                            additional_core[(x, y)] = PondCore(gate_flush=not harden_flush, ready_valid=ready_valid)
+                            if use_rv_mem_pond:
+                                additional_core[(x, y)] = pond_core_core_combiner_core
+                            else:
+                                additional_core[(x, y)] = PondCore(gate_flush=not harden_flush, ready_valid=ready_valid)
+
                         # Try adding pond?
                         elif add_pond and altcore[altcore_ind][0] == OnyxPECore:
-                            additional_core[(x, y)] = PondCore(gate_flush=not harden_flush, ready_valid=ready_valid)
+                            if use_rv_mem_pond:
+                                additional_core[(x, y)] = pond_core_core_combiner_core
+                            else:
+                                additional_core[(x, y)] = PondCore(gate_flush=not harden_flush, ready_valid=ready_valid)
                 else:
                     if tile_layout_option == 0:
                         use_mem_core = (x - x_min) % tile_max >= mem_tile_ratio
@@ -487,7 +548,10 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
                     else:
                         core = PeakCore(pe_fc, ready_valid=ready_valid)
                         if add_pond:
-                            additional_core[(x, y)] = PondCore(gate_flush=not harden_flush, ready_valid=ready_valid)
+                            if use_rv_mem_pond:
+                                additional_core[(x, y)] = pond_core_core_combiner_core
+                            else:
+                                additional_core[(x, y)] = PondCore(gate_flush=not harden_flush, ready_valid=ready_valid)
 
             cores[(x, y)] = core
 
@@ -506,20 +570,37 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
         bit_width_str = 17 if ready_valid else 16
         # remap
         if intercore_mapping is not None:
-            inter_core_connection_1 = {f"PondTop_output_width_1_num_0": [intercore_mapping["bit0"]]}
-            inter_core_connection_16 = {
-                f"PondTop_output_width_{bit_width_str}_num_0": [
-                    intercore_mapping["data0"],
-                    intercore_mapping["data1"],
-                    intercore_mapping["data2"]],
-                intercore_mapping["res"]: [
-                    f"PondTop_input_width_{bit_width_str}_num_0",
-                    f"PondTop_input_width_{bit_width_str}_num_1"]}
+            if use_rv_mem_pond:
+                # inter_core_connection_1 = {f"PondTop_output_width_1_num_0": [intercore_mapping["bit0"]]}
+                inter_core_connection_1 = {}
+                inter_core_connection_16 = {
+                    f"PondTop_output_width_{bit_width_str}_num_0": [
+                        intercore_mapping["data0"],
+                        intercore_mapping["data1"],
+                        intercore_mapping["data2"]],
+                    intercore_mapping["res"]: [
+                        f"PondTop_input_width_{bit_width_str}_num_0"]}
+            else:
+                inter_core_connection_1 = {f"PondTop_output_width_1_num_0": [intercore_mapping["bit0"]]}
+                inter_core_connection_16 = {
+                    f"PondTop_output_width_{bit_width_str}_num_0": [
+                        intercore_mapping["data0"],
+                        intercore_mapping["data1"],
+                        intercore_mapping["data2"]],
+                    intercore_mapping["res"]: [
+                        f"PondTop_input_width_{bit_width_str}_num_0",
+                        f"PondTop_input_width_{bit_width_str}_num_1"]}
         else:
-            inter_core_connection_1 = {"PondTop_output_width_1_num_0": ["bit0"]}
-            inter_core_connection_16 = {f"PondTop_output_width_{bit_width_str}_num_0": ["data0", "data1", "data2"],
-                                        "res": [f"PondTop_input_width_{bit_width_str}_num_0",
-                                                f"PondTop_input_width_{bit_width_str}_num_1"]}
+            if use_rv_mem_pond:
+                # inter_core_connection_1 = {"PondTop_output_width_1_num_0": ["bit0"]}
+                inter_core_connection_1 = {}
+                inter_core_connection_16 = {f"PondTop_output_width_{bit_width_str}_num_0": ["data0", "data1", "data2"],
+                                            "res": [f"PondTop_input_width_{bit_width_str}_num_0"]}
+            else:
+                inter_core_connection_1 = {"PondTop_output_width_1_num_0": ["bit0"]}
+                inter_core_connection_16 = {f"PondTop_output_width_{bit_width_str}_num_0": ["data0", "data1", "data2"],
+                                            "res": [f"PondTop_input_width_{bit_width_str}_num_0",
+                                                    f"PondTop_input_width_{bit_width_str}_num_1"]}
     else:
         inter_core_connection_1 = {}
         inter_core_connection_16 = {}

@@ -39,7 +39,8 @@ class CoreCombinerCore(LakeCoreBase):
                  rf=False,
                  ready_valid=True,
                  mem_width=mem_width_default,
-                 mem_depth=512):
+                 mem_depth=512,
+                 new_pond=False):
 
         self.pnr_tag = pnr_tag
         self.input_prefix = input_prefix
@@ -52,6 +53,8 @@ class CoreCombinerCore(LakeCoreBase):
         self.fw = mem_width // data_width
 
         self.ready_valid = ready_valid
+
+        self.new_pond = new_pond
 
         self.read_delay = 1
         if self.rf:
@@ -87,7 +90,8 @@ class CoreCombinerCore(LakeCoreBase):
                      self.config_addr_width,
                      cc_core_name,
                      dual_port,
-                     rf)
+                     rf,
+                     new_pond)
 
         # Check for circuit caching
         if cache_key not in LakeCoreBase._circuit_cache:
@@ -110,7 +114,8 @@ class CoreCombinerCore(LakeCoreBase):
                                    read_delay=self.read_delay,
                                    fifo_depth=self.fifo_depth,
                                    tech_map_name=tech_map_name,
-                                   ready_valid=self.ready_valid)
+                                   ready_valid=self.ready_valid,
+                                   new_pond=self.new_pond)
 
             self.dut = self.CC.dut
 
@@ -146,14 +151,15 @@ class CoreCombinerCore(LakeCoreBase):
         assert runtime_mode in self.get_modes_supported()
         self.runtime_mode = runtime_mode
 
-    def get_config_bitstream(self, config_tuple, active_core_ports=None):
+    def get_config_bitstream(self, config_tuple, active_core_ports=None, x=None, y=None, PE_fifos_bypass_config=None):
         # print(self.runtime_mode)
         # assert self.runtime_mode is not None
         configs = []
+        dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1"
 
-        # print("CORE_COMBINER_CORE_CONFIG")
-        # print(self.instance_name)
-        # print(config_tuple)
+        print("CORE_COMBINER_CORE_CONFIG")
+        print(self.instance_name)
+        print(config_tuple)
 
         # Check if PE, ready_valid, and dict
         use_pe_rv_config = self.ready_valid and isinstance(config_tuple, dict) and self.pnr_tag == "p"
@@ -162,7 +168,7 @@ class CoreCombinerCore(LakeCoreBase):
         if isinstance(config_tuple, dict) and not use_pe_rv_config:
             instr = config_tuple
             # Check if mem or PE
-            if self.pnr_tag == 'm':
+            if self.pnr_tag == 'm' or self.pnr_tag == 'M':
                 if 'config' in instr:
                     instr_new = instr['config']
                     for k, v in instr.items():
@@ -176,8 +182,10 @@ class CoreCombinerCore(LakeCoreBase):
                         instr['mode'] = 'stencil_valid'
                 elif 'mode' in instr and instr['mode'] == 'sram':
                     instr['mode'] = 'ROM'
-                    config_extra_rom = [(f"{self.get_port_remap()['ROM']['wen']}_reg_sel", 1)]
-                    # config_extra_rom = []
+                    if dense_ready_valid:
+                        config_extra_rom = []
+                    else:
+                        config_extra_rom = [(f"{self.get_port_remap()['ROM']['wen']}_reg_sel", 1)]
                     for name, v in config_extra_rom:
                         configs = [self.get_config_data(name, v)] + configs
                 elif 'mode' not in instr and 'stencil_valid' in instr:
@@ -222,7 +230,6 @@ class CoreCombinerCore(LakeCoreBase):
                 # print(configs)
                 return configs
         elif not isinstance(config_tuple, tuple) or use_pe_rv_config:
-            dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1"
             # It's a PE then...
             if active_core_ports is None:
                 raise ValueError("Error: 'active_core_ports' cannot be None for a PE.")
@@ -231,6 +238,13 @@ class CoreCombinerCore(LakeCoreBase):
             active_16b_output = 0
             active_1b_output = 0
             is_constant_pe = 0
+
+            # TODO: we still keep prim outfifo for sparse, but this could be fixed by looking at sparse fifo pop logic
+            if dense_ready_valid:
+                print(f"Bypassing prim outfifo for tile ({x}, {y})")
+                bypass_prim_outfifo = 1
+            else:
+                bypass_prim_outfifo = 0
 
             input_count = 0
             input_bit_count = 0
@@ -270,6 +284,7 @@ class CoreCombinerCore(LakeCoreBase):
 
             if input_bit_count == 0 and input_count == 0 and ((output_count > 0) or (output_bit_count)):
                 is_constant_pe = 1
+                print("CONSTANT PE")
 
             # These should be maps from a port to how much data it needs...
             input_bogus = {}
@@ -316,6 +331,7 @@ class CoreCombinerCore(LakeCoreBase):
                     # to the cluster
                     'pe_in_external': 1,
                     'is_constant_pe': is_constant_pe,
+                    'bypass_prim_outfifo': bypass_prim_outfifo,
                     # only configure pe within the cluster
                     'pe_only': True
                 }
@@ -392,6 +408,21 @@ class CoreCombinerCore(LakeCoreBase):
 
                 fine_grained_input_fifo_bypass = [0, 0, 0]
                 fine_grained_output_fifo_bypass = 0
+
+                # Bypassing PE tile level fifos according to the bypass config
+                if self.pnr_tag == 'p' and isinstance(PE_fifos_bypass_config, type({})) and (x, y) in PE_fifos_bypass_config:
+                    '''
+                    PE_fifos_bypass_config example:
+                    {
+                        (x, y): {
+                            input_fifo_bypass: [1, 0, 0],
+                            output_fifo_bypass: 1
+                        }
+                    }
+                    '''
+                    print(f"Bypassing input and output fifos for PE ({x}, {y})")
+                    fine_grained_input_fifo_bypass = PE_fifos_bypass_config[(x, y)]['input_fifo_bypass']
+                    fine_grained_output_fifo_bypass = PE_fifos_bypass_config[(x, y)]['output_fifo_bypass']
 
                 config_fine_grained_input_fifo_bypass = [
                     (f"{self.get_port_remap()['alu']['data0']}_fine_grain_fifo_bypass",
