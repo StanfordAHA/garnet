@@ -54,24 +54,26 @@ if __name__ == '__main__':
     debug_mode = False
 
     # LAYER PARAMS
-    layer_X = 8
-    layer_Y = 8
-    layer_IC = 128
+    layer_X = 56
+    layer_Y = 56
+    layer_IC = 64
     layer_OC = 64
     layer_FX = 3
     layer_FY = 3
     layer_BLOCK_SIZE = 64
 
+    has_residual = True
+
     # Base path for the binary files
-    base_path = '/aha/network_params_fake_conv2d/'
+    base_path = '/aha/submodule_2/tensor_files/'
 
     # FIXME: These should not be hardcoded
-    input_path = base_path + 'getitem_1.bin'
-    weight_path = base_path + '_param_constant0_weight_0.bin'
-    bias_path = base_path + '_param_constant1.bin'
-    inputScale_path = base_path + 'getitem.bin'
-    weightScale_path = base_path + '_param_constant0_scale_0.bin'
-
+    input_path = base_path + 'getitem_3.bin'
+    weight_path = base_path + '_param_constant4_weight_0.bin'
+    bias_path = base_path + '_param_constant5.bin'
+    inputScale_path = base_path + 'getitem_2.bin'
+    weightScale_path = base_path + '_param_constant4_scale_0.bin'
+    residual_path = base_path + 'max_pool2d.bin'
 
     input = read_tensor(input_path, (1, layer_IC, layer_Y, layer_X))
     # Re-order it so ic0 is the innermost dimension (Y, X, OC0, IC0)
@@ -95,6 +97,22 @@ if __name__ == '__main__':
     # Re-order it so oc0 is the innermost dimension (FY, FX, IC0, OC0)
     weightScale_reordered = weightScale.permute(2, 3, 1, 0)
     weightScale_e8m0 = float_to_e8m0(weightScale_reordered)
+
+    if has_residual:
+        residual = read_tensor(residual_path, (1, layer_IC, layer_Y, layer_X))
+        # TEMPORARY HACK. Need to use GLB LD DMA controller to read things out in the correct order
+        residual = residual.reshape(2, 32, 4, 14, 8, 7)
+        residual_reordered = residual.permute(0, 2, 4, 3, 5, 1)
+
+        # residual = residual.reshape(2, 32, 8, 7, 4, 14)
+        # residual_reordered = residual.permute(4, 2, 0, 5, 3, 1)
+        residual_bf16 = float32_to_bfloat16_bits(residual_reordered)
+        residual_bf16_be = residual_bf16.byteswap().newbyteorder('>')
+        residual_bf16_be.tofile('/aha/submodule_2/tensor_files/hw_residual_input_stencil.raw')
+        # residual_bf16.tofile('/aha/submodule_2/tensor_files/hw_residual_input_stencil.raw')
+        # Flatten residual_bf16 and convert to a python list
+        residual_bf16 = residual_bf16.flatten().tolist()
+
 
     # conv2x_gold_output = read_tensor('/aha/network_params/conv2d_mx_default.bin', (1, 64, 56, 56))
     # # Re-order it so oc0 is the innermost dimension (Y, X, IC0, OC0)
@@ -132,7 +150,7 @@ if __name__ == '__main__':
         print("First 10 elements of the weight tensor:", weight.flatten()[:10])
         print("Shape of the bytes object:", len(input_int8.numpy().tobytes()))
 
-    output_dir = '/aha/network_params_fake_conv2d/'
+    output_dir = '/aha/submodule_2/tensor_files/'
     # Create output dir if it doesn't exist
     import os
     if not os.path.exists(output_dir):
@@ -143,4 +161,6 @@ if __name__ == '__main__':
     write_list_to_hex(bias_bf16, output_dir + 'bias_hex.txt')
     write_list_to_hex(inputScale_e8m0, output_dir + 'inputScale_hex.txt')
     write_list_to_hex(weightScale_e8m0, output_dir + 'weightScale_hex.txt')
+    if has_residual:
+        write_list_to_hex(residual_bf16, output_dir + 'residual_hex.txt')
     # write_list_to_hex(conv2x_gold_output_reordered_bf16_list, '/aha/network_params/conv2x_gold_output_hex.txt')

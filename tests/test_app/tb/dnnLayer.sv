@@ -39,6 +39,15 @@ class DnnLayer;
     int weightScale_size;
     int matrix_params_size;
 
+    // Start addresses must be 32B aligned b/c 32 is the channel unrolling
+    real inputActivation_size_aligned;
+    real weight_size_aligned;
+    real bias_size_aligned;
+    real inputScale_size_aligned;
+    real weightScale_size_aligned;
+
+    int glb_base_addr;
+
     int inputActivation_start_addr;
     int weight_start_addr;
     int bias_start_addr;
@@ -65,46 +74,50 @@ endclass
 
 function DnnLayer::new();
 
-   // Hardcoded for my fake conv2d layer. In the future, these should be set in a more streamlined way
-   layer_X = 8;
-   layer_Y = 8;
-   layer_IC = 128;
+   // Hardcoded for now. In the future, these should be set in a more streamlined way
+   layer_X = 56;
+   layer_Y = 56;
+   layer_IC = 64;
    layer_OC = 64;
    layer_FX = 3;
    layer_FY = 3;
    layer_BLOCK_SIZE = 64;
 
-    // FIXME: Provide the correct path to the input data
-    inputActivation_filename = "/aha/network_params_fake_conv2d/input_hex.txt";
-    // Hardcoding for conv2_x for now. In the future, this should be set by reading the model.txt file
-    inputActivation_size = layer_X * layer_Y * layer_IC;
-    inputActivation_start_addr = 1310720;
-    inputActivation = parse_8b_data(inputActivation_filename, inputActivation_size);
+   glb_base_addr = 0;
 
-    inputScale_size = layer_IC/layer_BLOCK_SIZE * layer_X * layer_Y;
-    inputScale_start_addr = inputActivation_start_addr + inputActivation_size;
-    inputScale_filename = "/aha/network_params_fake_conv2d/inputScale_hex.txt";
-    inputScale = parse_8b_data(inputScale_filename, inputScale_size);
+    // FIXME: These paths are hardcoded for now. In the future, they should be set in a more streamlined way
+   inputActivation_filename = "/aha/submodule_2/tensor_files/input_hex.txt";
+   inputActivation_size = layer_X * layer_Y * layer_IC;
+   inputActivation_size_aligned = $ceil(real'(inputActivation_size)/32.0) * 32.0;
+   inputActivation_start_addr = glb_base_addr;
+   inputActivation = parse_8b_data(inputActivation_filename, inputActivation_size);
 
-    weight_size = layer_OC * layer_IC * layer_FX * layer_FY;
-    weight_start_addr = inputScale_start_addr + inputScale_size;
-    weight_filename = "/aha/network_params_fake_conv2d/weight_hex.txt";
-    weight = parse_8b_data(weight_filename, weight_size);
+   inputScale_size = layer_IC/layer_BLOCK_SIZE * layer_X * layer_Y;
+   inputScale_size_aligned = $ceil(real'(inputScale_size)/32.0) * 32.0;
+   inputScale_start_addr = inputActivation_start_addr + int'(inputActivation_size_aligned);
+   inputScale_filename = "/aha/submodule_2/tensor_files/inputScale_hex.txt";
+   inputScale = parse_8b_data(inputScale_filename, inputScale_size);
 
+   weight_size = layer_OC * layer_IC * layer_FX * layer_FY;
+   weight_size_aligned = $ceil(real'(weight_size)/32.0) * 32.0;
+   weight_start_addr = inputScale_start_addr + int'(inputScale_size_aligned);
+   weight_filename = "/aha/submodule_2/tensor_files/weight_hex.txt";
+   weight = parse_8b_data(weight_filename, weight_size);
 
-    weightScale_size = layer_OC * layer_IC/layer_BLOCK_SIZE * layer_FX * layer_FY;
-    weightScale_start_addr = weight_start_addr + weight_size;
-    weightScale_filename = "/aha/network_params_fake_conv2d/weightScale_hex.txt";
-    weightScale = parse_8b_data(weightScale_filename, weightScale_size);
+   weightScale_size = layer_OC * layer_IC/layer_BLOCK_SIZE * layer_FX * layer_FY;
+   weightScale_size_aligned = $ceil(real'(weightScale_size)/32.0) * 32.0;
+   weightScale_start_addr = weight_start_addr + int'(weight_size_aligned);
+   weightScale_filename = "/aha/submodule_2/tensor_files/weightScale_hex.txt";
+   weightScale = parse_8b_data(weightScale_filename, weightScale_size);
 
-    bias_size = layer_OC;
-    bias_start_addr = weightScale_start_addr + weightScale_size;
-    bias_filename = "/aha/network_params_fake_conv2d/bias_hex.txt";
-    bias = parse_16b_data(bias_filename, bias_size);
+   bias_size = layer_OC;
+   bias_start_addr = weightScale_start_addr + int'(weightScale_size_aligned);
+   bias_filename = "/aha/submodule_2/tensor_files/bias_hex.txt";
+   bias = parse_16b_data(bias_filename, bias_size);
 
     // Hardcoding this for now. In the future, it should be set appropriately
     matrix_params_size = 20;
-    matrix_params_filename = "/aha/network_params_fake_conv2d/serialized_matrix_params.txt";
+    matrix_params_filename = "/aha/submodule_2/serialized_matrix_params.txt";
     serialized_matrix_params = parse_32b_data(matrix_params_filename, matrix_params_size);
 
     $display("\nDnnLayer object successfully created\n");

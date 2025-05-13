@@ -255,6 +255,7 @@ function Kernel::new(string app_dir, int dpr);
     int loop_dim;
     int x_pos;
     int input_data_file_out;
+    int input_data_index;
 
     dpr_enabled = dpr;
 
@@ -342,7 +343,13 @@ function Kernel::new(string app_dir, int dpr);
                 inputs[i].io_tiles[j].io_block_data = new[num_pixels];
                 // NOTE: We assume only innermost loop is unrolled.
                 for (int k = 0; k < num_pixels; k++) begin
-                    inputs[i].io_tiles[j].io_block_data[k] = input_data[i][j+num_io_tiles*k];
+                    // Interleaving is different for MU if operating in E64 mode
+                    if ((app_type == MU2CGRA_GLB2CGRA) && get_exchange_64_config() == 1) begin
+                        input_data_index = (int'(k/4) * 4) * num_io_tiles + j * 4 + (k % 4);
+                        inputs[i].io_tiles[j].io_block_data[k] = input_data[i][input_data_index];
+                    end else begin
+                        inputs[i].io_tiles[j].io_block_data[k] = input_data[i][j+num_io_tiles*k];
+                    end
                 end
             end
         end

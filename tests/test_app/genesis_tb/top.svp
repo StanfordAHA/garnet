@@ -22,7 +22,7 @@
 \`define CLK_PERIOD 1ns
 \`endif
 
-\`define DEBUG_MATRIX_UNIT 0 // Set to '1' for debugging
+\`define DEBUG_MATRIX_UNIT 1 // Set to '1' for debugging
 
 import global_buffer_param::*;
 import matrix_unit_param::*;

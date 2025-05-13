@@ -66,11 +66,11 @@ if __name__ == "__main__":
     # print(len(systolic_array_data_out))
 
 
-    input_data_systemC = read_bytes_from_systemC("/aha/network_params/input_data_systemC.txt")
-    weight_data_systemC = read_bytes_from_systemC("/aha/network_params/weight_data_systemC.txt")
-    bias_data_systemC = read_bytes_from_systemC("/aha/network_params/bias_data_systemC.txt")
-    inputScale_data_systemC = read_bytes_from_systemC("/aha/network_params/inputScale_data_systemC.txt")
-    weightScale_data_systemC = read_bytes_from_systemC("/aha/network_params/weightScale_data_systemC.txt")
+    input_data_systemC = read_bytes_from_systemC("/aha/submodule_2/input_data_systemC.txt")
+    weight_data_systemC = read_bytes_from_systemC("/aha/submodule_2/weight_data_systemC.txt")
+    bias_data_systemC = read_bytes_from_systemC("/aha/submodule_2/bias_data_systemC.txt")
+    inputScale_data_systemC = read_bytes_from_systemC("/aha/submodule_2/inputScale_data_systemC.txt")
+    weightScale_data_systemC = read_bytes_from_systemC("/aha/submodule_2/weightScale_data_systemC.txt")
 
     # glb_hw_output = read_bytes_from_hw_output_txt("/aha/garnet/tests/test_app/hw_output.txt")
 

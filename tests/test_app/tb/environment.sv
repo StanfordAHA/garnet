@@ -465,26 +465,31 @@ task Env_write_network_data();
 
     // inputActivation (INT8)
     start_addr = dnn_layer.inputActivation_start_addr;
+    $display("inputActivation_start_addr = 0x%0h", start_addr);
     data_q_8b = dnn_layer.inputActivation;
     ProcDriver_write_8b_network_data();
 
     // inputScale (E8M0)
     start_addr = dnn_layer.inputScale_start_addr;
+    $display("inputScale_start_addr = 0x%0h", start_addr);
     data_q_8b = dnn_layer.inputScale;
     ProcDriver_write_8b_network_data();
 
     // weight INT8
     start_addr = dnn_layer.weight_start_addr;
+    $display("weight_start_addr = 0x%0h", start_addr);
     data_q_8b = dnn_layer.weight;
     ProcDriver_write_8b_network_data();
 
     // weightScale (E8M0)
     start_addr = dnn_layer.weightScale_start_addr;
+    $display("weightScale_start_addr = 0x%0h", start_addr);
     data_q_8b = dnn_layer.weightScale;
     ProcDriver_write_8b_network_data();
 
     // bias (bFloat16)
     start_addr = dnn_layer.bias_start_addr;
+    $display("bias_start_addr = 0x%0h", start_addr);
     data_q_16b = dnn_layer.bias;
     ProcDriver_write_16b_network_data();
 
@@ -520,14 +525,13 @@ task Env_run();
                 $display("[%0t] turn on interrupt", $time);  // 120ps?
                 Env_set_interrupt_on();
                 Env_write_bs();
+                Env_glb_configure();
+                Env_cgra_configure();
+                Env_write_data();
 
                 if (external_mu_active) begin
                     Env_write_network_data();
                 end
-
-                Env_glb_configure();
-                Env_cgra_configure();
-                Env_write_data();
 
                 // TODO: Think about the order of all these. Make sure MU doesn't start producing valid data until cgra has been unstalled and flushed
                 if (external_mu_active) begin
