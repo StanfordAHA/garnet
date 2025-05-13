@@ -199,7 +199,7 @@ class Garnet(Generator):
                 )
 
             # Matrix unit <-> interconnnect ports connection
-            self.cgra2mu_ready_and = FromMagma(to_magma(cgra2mu_ready_and(height=int(num_output_channels/2)), flatten_array=True))
+            self.cgra2mu_ready_and = FromMagma(to_magma(cgra2mu_ready_and(height=int(num_output_channels)), flatten_array=True))
             self.mu2cgra_rv_loopback_and = FromMagma(to_magma(ReadyValidLoopBack(), flatten_array=True))
 
             if self.pipeline_mu2cgra:
@@ -249,12 +249,11 @@ class Garnet(Generator):
                     self.convert(self.mu2cgra_rv_loopback_and.ports.valid_out, magma.bit),
                     self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{cgra_col_num:02X}_Y{mu_io_tile_row:02X}_valid"])
 
-                if (i % 2) == 0:
-                    self.wire(
-                        self.cgra2mu_ready_and.ports[f"readys_in_{int(i/2)}"],
-                        self.convert(
-                            self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{cgra_col_num:02X}_Y{mu_io_tile_row:02X}_ready"],
-                            magma.Bits[1]))
+                self.wire(
+                    self.cgra2mu_ready_and.ports[f"readys_in_{i}"],
+                    self.convert(
+                        self.interconnect.ports[f"mu2io_{cgra_track_width}_{io_num}_X{cgra_col_num:02X}_Y{mu_io_tile_row:02X}_ready"],
+                        magma.Bits[1]))
 
             if self.pipeline_mu2cgra:
                 self.wire(self.convert(self.cgra2mu_ready_and.ports.anded_ready_out, magma.Bits[1]), self.mu2cgra_pipeline_unit.ports.cgra2mu_ready_d)
