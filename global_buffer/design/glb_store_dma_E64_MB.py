@@ -1,8 +1,9 @@
-from kratos import Generator, always_ff, always_comb, posedge, const, resize, ext, clog2, clock_en
+from kratos import Generator, always_ff, always_comb, posedge, const, resize, ext, clog2, clock_en, concat
 import kratos as kts
 from global_buffer.design.glb_loop_iter import GlbLoopIter
 from global_buffer.design.glb_sched_gen import GlbSchedGen
 from global_buffer.design.glb_addr_gen import GlbAddrGen
+from global_buffer.design.glb_step_counter import GlbStepCounter
 from global_buffer.design.pipeline import Pipeline
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from global_buffer.design.glb_header import GlbHeader
@@ -48,6 +49,9 @@ class GlbStoreDma_E64_MB(Generator):
 
         # Exchange 64 (configuration). Contains info about multi-bank mode as well
         self.cfg_exchange_64_mode = self.input("cfg_exchange_64_mode", 2)
+
+        # Bank toggle mode (configuration)
+        self.cfg_bank_toggle_mode = self.input("cfg_bank_toggle_mode", 1)
 
         self.st_dma_start_pulse = self.input("st_dma_start_pulse", 1)
         self.st_dma_done_interrupt = self.output("st_dma_done_interrupt", 1)
@@ -98,6 +102,8 @@ class GlbStoreDma_E64_MB(Generator):
         self.data_current_addr_pre = self.var("data_current_addr_pre", self._params.glb_addr_width + 1)
         self.loop_mux_sel = self.var("loop_mux_sel", clog2(self._params.store_dma_loop_level))
         self.repeat_cnt = self.var("repeat_cnt", clog2(self._params.queue_depth) + 1)
+        self.bank_toggle_bit = self.var("bank_toggle_bit", 1)
+        self.bank_toggle_mode_write_step = self.var("bank_toggle_mode_write_step", 1)
 
         self.exchange_64_mode_on = self.var("exchange_64_mode_on", 1)
         self.multi_bank_mode_on = self.var("multi_bank_mode_on", 1)
@@ -184,6 +190,7 @@ class GlbStoreDma_E64_MB(Generator):
         self.add_always(self.data_addr_gen_start_addr_comb)
         self.add_always(self.rv_num_seg_cnt_ff)
         self.add_always(self.rv_num_seg_cnt_total_comb)
+        self.add_always(self.bank_toggle_ff)
 
         # E64/mutli-bank control
         self.wire(self.exchange_64_mode_on, self.cfg_exchange_64_mode[0])
@@ -274,6 +281,19 @@ class GlbStoreDma_E64_MB(Generator):
 
         self.wire(self.qualified_iter_step_valid, self.stencil_valid & self.iter_step_valid)
 
+
+        self.mod_8_step = self.var("mod_8_step", 1)
+        # Step counter
+        self.step_counter = GlbStepCounter(self._params)
+        self.add_child("step_counter",
+                       self.step_counter,
+                       clk=self.clk,
+                       # TODO: Make this clock_en based on bank_toggle_mode
+                       clk_en=clock_en(self.cfg_bank_toggle_mode),
+                       reset=self.reset,
+                       step=self.qualified_iter_step_valid,
+                       mod_8_step=self.mod_8_step)
+
         self.cycle_stride_addr_gen = GlbAddrGen(self._params, loop_level=self._params.store_dma_loop_level)
         self.cycle_stride_addr_gen.p_addr_width.value = self._params.cycle_count_width
         self.cycle_stride_addr_gen.p_loop_level.value = self._params.store_dma_loop_level
@@ -284,6 +304,8 @@ class GlbStoreDma_E64_MB(Generator):
                        clk_en=clock_en(self.static_mode_on | self.dense_rv_mode_on),
                        reset=self.reset,
                        restart=self.st_dma_start_pulse_r,
+                       bank_toggle_mode=const(0, 1),
+                       mod_8_step=const(0, 1),
                        # MO: STENCIL VALID CHANGE
                        step=kts.ternary(self.dense_rv_mode_on, self.qualified_iter_step_valid, self.iter_step_valid),
                        mux_sel=self.loop_mux_sel)
@@ -302,6 +324,8 @@ class GlbStoreDma_E64_MB(Generator):
                        clk=self.clk,
                        clk_en=const(1, 1),
                        reset=self.reset,
+                       bank_toggle_mode=self.cfg_bank_toggle_mode,
+                       mod_8_step=self.mod_8_step,
                        restart=self.st_dma_start_pulse_r | self.rv_is_addrdata,
                        step=kts.ternary(self.dense_rv_mode_on, self.qualified_iter_step_valid, self.iter_step_valid),
                        mux_sel=self.loop_mux_sel,
@@ -669,12 +693,17 @@ class GlbStoreDma_E64_MB(Generator):
             self.bank_wr_strb_cache_r = self.bank_wr_strb_cache_w
             self.bank_wr_data_cache_r = self.bank_wr_data_cache_w
 
+    # TODO: Figure out bank wr_en logic in bank_toggle mode
     @always_comb
     def bank_wr_packet_logic(self):
         self.bank_addr_match = (self.strm_wr_addr_w[self._params.glb_addr_width - 1, self._params.bank_byte_offset]
                                 == self.last_strm_wr_addr_r[self._params.glb_addr_width - 1,
                                                             self._params.bank_byte_offset])
-        self.bank_wr_en = ((self.strm_wr_en_w & (~self.bank_addr_match) & (~self.is_first)) | self.is_last)
+        self.bank_toggle_mode_write_step = self.last_strm_wr_addr_r[2, 0] == const(6, 3)
+        if self.cfg_bank_toggle_mode:
+            self.bank_wr_en = ((self.strm_wr_en_w & (self.bank_toggle_mode_write_step) & (~self.is_first)) | self.is_last)
+        else:
+            self.bank_wr_en = ((self.strm_wr_en_w & (~self.bank_addr_match) & (~self.is_first)) | self.is_last)
         self.bank_wr_addr = self.last_strm_wr_addr_r
 
     @always_comb
@@ -685,6 +714,12 @@ class GlbStoreDma_E64_MB(Generator):
                 self.wr_packet_dma2ring_w['wr_en'] = self.bank_wr_en
                 self.wr_packet_dma2ring_w['wr_strb'] = self.bank_wr_strb_cache_r
                 self.wr_packet_dma2ring_w['wr_data'] = self.bank_wr_data_cache_r[0] #Not including multi-bank for ring path
+                if self.cfg_bank_toggle_mode:
+                    self.wr_packet_dma2ring_w[0]['wr_addr'] = concat(self.bank_wr_addr[self._params.glb_addr_width - 1, self._params.glb_addr_width - self._params.tile_sel_addr_width],
+                                                                 self.bank_toggle_bit,
+                                                                 self.bank_wr_addr[self._params.glb_addr_width - self._params.tile_sel_addr_width - 2, 0])
+                else:
+                    self.wr_packet_dma2ring_w[0]['wr_addr'] = self.bank_wr_addr
                 self.wr_packet_dma2ring_w['wr_addr'] = self.bank_wr_addr
             else:
                 self.wr_packet_dma2bank_w = 0
@@ -692,7 +727,12 @@ class GlbStoreDma_E64_MB(Generator):
                 self.wr_packet_dma2bank_w[0]['wr_en'] = self.bank_wr_en
                 self.wr_packet_dma2bank_w[0]['wr_strb'] = self.bank_wr_strb_cache_r
                 self.wr_packet_dma2bank_w[0]['wr_data'] = self.bank_wr_data_cache_r[0]
-                self.wr_packet_dma2bank_w[0]['wr_addr'] = self.bank_wr_addr
+                if self.cfg_bank_toggle_mode:
+                    self.wr_packet_dma2bank_w[0]['wr_addr'] = concat(self.bank_wr_addr[self._params.glb_addr_width - 1, self._params.glb_addr_width - self._params.tile_sel_addr_width],
+                                                                 self.bank_toggle_bit,
+                                                                 self.bank_wr_addr[self._params.glb_addr_width - self._params.tile_sel_addr_width - 2, 0])
+                else:
+                    self.wr_packet_dma2bank_w[0]['wr_addr'] = self.bank_wr_addr
 
                 if self.multi_bank_mode_on:
                     # Kratos won't support this for loop. Hard wire for now.
@@ -709,7 +749,12 @@ class GlbStoreDma_E64_MB(Generator):
             self.wr_packet_dma2bank_w[0]['wr_en'] = self.bank_wr_en
             self.wr_packet_dma2bank_w[0]['wr_strb'] = self.bank_wr_strb_cache_r
             self.wr_packet_dma2bank_w[0]['wr_data'] = self.bank_wr_data_cache_r[0]
-            self.wr_packet_dma2bank_w[0]['wr_addr'] = self.bank_wr_addr
+            if self.cfg_bank_toggle_mode:
+                self.wr_packet_dma2bank_w[0]['wr_addr'] = concat(self.bank_wr_addr[self._params.glb_addr_width - 1, self._params.glb_addr_width - self._params.tile_sel_addr_width],
+                                                                 self.bank_toggle_bit,
+                                                                 self.bank_wr_addr[self._params.glb_addr_width - self._params.tile_sel_addr_width - 2, 0])
+            else:
+                self.wr_packet_dma2bank_w[0]['wr_addr'] = self.bank_wr_addr
 
             if self.multi_bank_mode_on:
                 # Kratos won't support this for loop. Hard wire for now.
@@ -718,6 +763,14 @@ class GlbStoreDma_E64_MB(Generator):
                 self.wr_packet_dma2bank_w[1]['wr_strb'] = self.bank_wr_strb_cache_r
                 self.wr_packet_dma2bank_w[1]['wr_data'] = self.bank_wr_data_cache_r[1]
                 self.wr_packet_dma2bank_w[1]['wr_addr'] = self.bank_wr_addr
+
+
+    @always_ff((posedge, "clk"), (posedge, "reset"))
+    def bank_toggle_ff(self):
+        if self.reset:
+            self.bank_toggle_bit = 0
+        elif self.cfg_bank_toggle_mode & self.bank_wr_en:
+            self.bank_toggle_bit = ~self.bank_toggle_bit
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def wr_packet_ff(self):

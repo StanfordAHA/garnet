@@ -31,6 +31,8 @@ class GlbAddrGen(Generator):
         self.start_addr = self.input("start_addr", self.p_addr_width)
         self.step = self.input("step", 1)
         self.mux_sel = self.input("mux_sel", max(clog2(self.loop_level), 1))
+        self.mod_8_step = self.input("mod_8_step", 1)
+        self.bank_toggle_mode = self.input("bank_toggle_mode", 1)
         self.addr_out = self.output("addr_out", self.p_addr_width)
 
         # local variables
@@ -48,4 +50,7 @@ class GlbAddrGen(Generator):
             if self.restart:
                 self.current_addr = 0
             elif self.step:
-                self.current_addr = self.current_addr + self.strides[self.mux_sel]
+                if self.bank_toggle_mode & self.mod_8_step:
+                    self.current_addr = self.current_addr + self.strides[0]
+                else:
+                    self.current_addr = self.current_addr + self.strides[self.mux_sel]

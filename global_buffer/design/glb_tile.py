@@ -1,4 +1,4 @@
-from kratos import Generator, RawStringStmt, always_ff, posedge
+from kratos import Generator, RawStringStmt, always_ff, posedge, const
 from kratos.util import clock
 from global_buffer.design.glb_store_dma import GlbStoreDma
 from global_buffer.design.glb_store_dma_E64 import GlbStoreDma_E64
@@ -469,6 +469,12 @@ class GlbTile(Generator):
 
         if self._params.include_E64_hw:
             self.wire(self.glb_store_dma.cfg_exchange_64_mode, self.cfg_st_dma_exchange_64_mode)
+
+        # TEMPORARY HACK. FIXME
+        if self._params.include_E64_hw:
+            if self._params.include_multi_bank_hw:
+                self.wire(self.glb_store_dma.cfg_bank_toggle_mode, const(0, 1))
+
 
         self.add_child("glb_load_dma",
                        self.glb_load_dma,
