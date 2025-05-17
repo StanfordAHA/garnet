@@ -466,9 +466,9 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
                 if x in range(mu_io_startX, mu_io_endX + 1):
                     isMemTileColumn = (x + 1) % (mem_tile_ratio + 1) == 0
                     if isMemTileColumn:
-                        core = MU2F_IOCoreReadyValid_clk_rcv(matrix_unit_data_width=17, tile_array_data_width=17, num_ios=2, allow_bypass=False)
+                        core = MU2F_IOCoreReadyValid_clk_rcv(matrix_unit_data_width=17, tile_array_data_width=17, num_ios=2, fifo_depth=8, allow_bypass=False)
                     else:
-                        core = MU2F_IOCoreReadyValid(matrix_unit_data_width=17, tile_array_data_width=17, num_ios=2, allow_bypass=False)
+                        core = MU2F_IOCoreReadyValid(matrix_unit_data_width=17, tile_array_data_width=17, num_ios=2, fifo_depth=8, allow_bypass=False)
                 else:
                     core = None
 
