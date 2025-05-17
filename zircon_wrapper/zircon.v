@@ -62,10 +62,9 @@ module Zircon (
 );
 
 	// Interconnect declarations
-    logic [15:0] mu2cgra [31:0];
-	  logic [511:0] outputsFromSystolicArray_dat;
-    logic mu2cgra_valid;
-    logic cgra2mu_ready;
+    logic [511:0] outputsFromSystolicArray_dat;
+    logic outputsFromSystolicArray_vld;
+    logic outputsFromSystolicArray_rdy;
 
     logic [20:0] auto_unified_out_a_bits_address;
     logic auto_unified_out_a_valid;
@@ -80,6 +79,11 @@ module Zircon (
     logic [255:0] auto_unified_out_d_bits_data;
 
     // pipelined interconnect declarations
+    logic [511:0] outputsFromSystolicArray_dat_pipelined;
+    logic [15:0] mu2cgra [31:0];
+    logic mu2cgra_valid;
+    logic cgra2mu_ready;
+
     logic [20:0] auto_unified_out_a_bits_address_pipelined;
     logic auto_unified_out_a_valid_pipelined;
     logic auto_unified_out_a_ready_pipelined;
@@ -159,7 +163,7 @@ module Zircon (
 	genvar i;
 	generate
 		for (i = 0; i < 32; i = i + 1) begin : assign_mu2cgra
-			assign mu2cgra[i] = outputsFromSystolicArray_dat[(i+1)*16-1:i*16];
+			assign mu2cgra[i] = outputsFromSystolicArray_dat_pipelined[(i+1)*16-1:i*16];
 		end
 	endgenerate
 
@@ -185,8 +189,8 @@ module Zircon (
         .auto_unified_out_d_bits_data(auto_unified_out_d_bits_data_pipelined),
 
         // MU-CGRA tile array ifc (fused outputs)
-        .io_outputsFromSystolicArray_vld(mu2cgra_valid),
-        .io_outputsFromSystolicArray_rdy(cgra2mu_ready),
+        .io_outputsFromSystolicArray_vld(outputsFromSystolicArray_vld),
+        .io_outputsFromSystolicArray_rdy(outputsFromSystolicArray_rdy),
         .io_outputsFromSystolicArray_dat(outputsFromSystolicArray_dat),
 
         // MU Axi ifc
@@ -216,6 +220,22 @@ module Zircon (
         .auto_axi_in_r_bits_resp(auto_axi_in_r_bits_resp),
         .auto_axi_in_r_bits_last(auto_axi_in_r_bits_last)
     );
+
+    systolic_array_output_pipeline_fifo_d_2_w_512 #(
+        .data_width(512)
+    ) systolic_array_output_pipeline (
+        .clk(clk_in),
+        .data_in(outputsFromSystolicArray_dat),
+        .pop(cgra2mu_ready),
+        .push(outputsFromSystolicArray_vld),
+        .reset(reset_in),
+        .data_out(outputsFromSystolicArray_dat_pipelined),
+        .empty(systolic_array_output_pipeline_empty),
+        .full(systolic_array_output_pipeline_full)
+    );
+
+    assign outputsFromSystolicArray_rdy = ~systolic_array_output_pipeline_full;
+    assign mu2cgra_valid = ~systolic_array_output_pipeline_empty;
 
     mu_glb_pipeline_fifo_d_2_w_21 zircon_addr_req_pipeline (
         .clk(clk_in),
@@ -300,6 +320,84 @@ module Zircon (
         .full(/* UNUSED */)
     );
 endmodule
+
+
+module systolic_array_output_pipeline_fifo_d_2_w_512 #(
+  parameter data_width = 16'h200
+)
+(
+  input logic clk,
+  input logic [data_width-1:0] data_in,
+  input logic pop,
+  input logic push,
+  input logic reset,
+  output logic [data_width-1:0] data_out,
+  output logic empty,
+  output logic full
+);
+
+logic [1:0] num_items;
+logic rd_ptr;
+logic read;
+logic [1:0][data_width-1:0] reg_array;
+logic wr_ptr;
+logic write;
+assign full = num_items == 2'h2;
+assign empty = num_items == 2'h0;
+assign read = pop & (~empty);
+assign write = push & (~full);
+
+always_ff @(posedge clk, posedge reset) begin
+  if (reset) begin
+    num_items <= 2'h0;
+  end
+  else if (write & (~read)) begin
+    num_items <= num_items + 2'h1;
+  end
+  else if ((~write) & read) begin
+    num_items <= num_items - 2'h1;
+  end
+  else num_items <= num_items;
+end
+
+always_ff @(posedge clk, posedge reset) begin
+  if (reset) begin
+    reg_array <= 1024'h0;
+  end
+  else if (write) begin
+    reg_array[wr_ptr] <= data_in;
+  end
+end
+
+always_ff @(posedge clk, posedge reset) begin
+  if (reset) begin
+    wr_ptr <= 1'h0;
+  end
+  else if (write) begin
+    if (wr_ptr == 1'h1) begin
+      wr_ptr <= 1'h0;
+    end
+    else wr_ptr <= wr_ptr + 1'h1;
+  end
+end
+
+always_ff @(posedge clk, posedge reset) begin
+  if (reset) begin
+    rd_ptr <= 1'h0;
+  end
+  else if (read) begin
+    if (rd_ptr == 1'h1) begin
+      rd_ptr <= 1'h0;
+    end
+    else rd_ptr <= rd_ptr + 1'h1;
+  end
+end
+always_comb begin
+  data_out = reg_array[rd_ptr];
+end
+endmodule   // systolic_array_output_pipeline_fifo_d_2_w_512
+
+
 
 
 module mu_glb_pipeline_fifo_d_2_w_21 #(
