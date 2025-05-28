@@ -83,6 +83,10 @@ function DnnLayer::new();
    layer_FY = 3;
    layer_BLOCK_SIZE = 64;
 
+   // Fake conv2d
+//    glb_base_addr = 1310720;
+
+   // submodule_2 (residual relu), conv2d_mx_default_11
    glb_base_addr = 0;
 
     // FIXME: These paths are hardcoded for now. In the future, they should be set in a more streamlined way
