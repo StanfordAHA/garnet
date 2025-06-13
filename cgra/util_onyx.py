@@ -6,7 +6,7 @@ from canal.util import IOSide, get_array_size, create_uniform_interconnect, \
 from canal.interconnect import Interconnect
 from memory_core.buffet_core import BuffetCore
 from memory_core.crddrop_core import CrdDropCore
-from memory_core.crdhold_core import CrdHoldCore
+# from memory_core.crdhold_core import CrdHoldCore
 from memory_core.fake_pe_core import FakePECore
 from memory_core.io_core_rv import IOCoreReadyValid
 from memory_core.mu2f_io_core_rv import MU2F_IOCoreReadyValid
