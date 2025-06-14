@@ -2568,7 +2568,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
                             sparsity=0.7, use_fp=True)
         # for seed: gets a C has ss01 then transposes it to make it a valid ss10
         # for suitesparse: reads in C (ss10) transposed and then we transpose again to match the files we got in python to get gold
-        c_mat = get_tensor(input_name='C', shapes=[3, 32], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+        c_mat = get_tensor(input_name='C', shapes=[32, 32], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                             dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
                             sparsity=0.0, use_fp=True, format="UNC")
         c_mat_trans = numpy.transpose(c_mat)
@@ -2645,7 +2645,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
                             sparsity=0.7, use_fp=True)
         # for seed: gets a C has ss01 then transposes it to make it a valid ss10
         # for suitesparse: reads in C (ss10) transposed and then we transpose again to match the files we got in python to get gold
-        c_mat = get_tensor(input_name='C', shapes=[192, 3], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+        c_mat = get_tensor(input_name='C', shapes=[32, 32], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                             dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
                             sparsity=0.0, use_fp=True, format="UNC")
 
@@ -3018,6 +3018,14 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         output_matrix = b_mat
         output_format = "CSF"
         output_name = "x"
+    elif 'mat_dn2sp.gv' in app_name:
+        b_mat = get_tensor(input_name='B', shapes=[32, 32], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+                           sparsity=0.0, use_fp=True)
+        input_dims['B'] = tuple(b_mat.shape)
+        output_matrix = b_mat
+        output_format = "CSF"
+        output_name = "X"
     elif 'vec_scalar_mul.gv' in app_name:
         # PASSES
         # separate
