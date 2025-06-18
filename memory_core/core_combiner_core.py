@@ -151,7 +151,7 @@ class CoreCombinerCore(LakeCoreBase):
         assert runtime_mode in self.get_modes_supported()
         self.runtime_mode = runtime_mode
 
-    def get_config_bitstream(self, config_tuple, active_core_ports=None, x=None, y=None, PE_fifos_bypass_config=None):
+    def get_config_bitstream(self, config_tuple, active_core_ports=None, x=None, y=None, node_name=None, PE_fifos_bypass_config=None):
         # print(self.runtime_mode)
         # assert self.runtime_mode is not None
         configs = []
@@ -194,7 +194,7 @@ class CoreCombinerCore(LakeCoreBase):
                     # Default to UB mode since we get varying consistency in controller indication
                     instr['mode'] = 'UB'
 
-                config_pre = self.dut.get_bitstream(instr)
+                config_pre = self.dut.get_bitstream(instr, node_name=node_name)
 
                 # Add the runtime configuration to the final config
                 for name, v in config_pre:

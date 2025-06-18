@@ -384,7 +384,7 @@ class Garnet(Generator):
             node_pnr_tag = node[0]
             node_node_num = int(node[1:])
 
-            result += self.interconnect.configure_placement(x, y, instr,
+            result += self.interconnect.configure_placement(x, y, instr, instance,
                                                             node_pnr_tag, node_node_num, active_core_ports, PE_fifos_bypass_config=PE_fifos_bypass_config)
             if node in self.pes_with_packed_ponds:
                 print(f"pond {self.pes_with_packed_ponds[node]} being packed with {node} in {x},{y}")
@@ -395,7 +395,7 @@ class Garnet(Generator):
                 if instance not in instrs:
                     continue
                 instr = instrs[instance]
-                result += self.interconnect.configure_placement(x, y, instr,
+                result += self.interconnect.configure_placement(x, y, instr, instance,
                                                                 node_pnr_tag, node_node_num, active_core_ports, PE_fifos_bypass_config=PE_fifos_bypass_config)
         return result
 
