@@ -12,7 +12,9 @@ APP_ARGS ?= +APP0=app0
 
 # I.e. if APP_ARGS="+APP0=/aha/Halide-to-Hardware/apps/hardware_benchmarks/apps/pointwise"
 # then APP0_NAME="/aha/Halide-to-Hardware/apps/hardware_benchmarks/apps/pointwise"
-APP0_NAME = $(shell echo $(APP_ARGS) | awk '{print $1}' | sed 's/.*=//')
+# APP0_NAME = $(shell echo $(APP_ARGS) | awk '{print $1}' | sed 's/.*=//')
+APP0_NAME = $(shell echo $(APP_ARGS) | sed -n 's/.*APP0=\([^ ]*\).*/\1/p')
+
 
 TOOL ?= VCS
 export WAVEFORM ?= 0
@@ -44,7 +46,7 @@ DESIGN_FILES += $(garnet_dir)/global_buffer/header/global_buffer_param.svh \
 
 ifeq ($(USING_MATRIX_UNIT), 1)
 	ifneq ($(BEHAVIORAL_MATRIX_UNIT), 1)
-		DESIGN_FILES +=	$(garnet_dir)/design_sim_sram.v \
+		DESIGN_FILES +=	$(garnet_dir)/MatrixUnit_sim_sram.v \
 						$(garnet_dir)/MatrixUnitWrapper_sim.v \
 						$(garnet_dir)/zircon_wrapper/zircon.v
 	endif
@@ -203,6 +205,8 @@ else ifeq ($(TOOL), VCS)
 endif
 
 $(APP0_NAME)/bin/design_meta.json:
+	@echo $(APP_ARGS)
+	@echo 'ERROR oops cannot find design_meta.json in $(APP0_NAME)/bin'
 	@echo ERROR oops cannot find design_meta.json
 	@echo Suggest you do something like
 	@echo '  test=apps/pointwise'

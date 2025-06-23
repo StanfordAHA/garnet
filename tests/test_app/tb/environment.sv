@@ -14,6 +14,8 @@ typedef enum int {
 
 // Kernel kernels[];  // Declared upstream in enclosing scope 'garnet_test.sv'
 Kernel kernel;
+DnnLayer dnn_layer;
+int external_mu_active;
 
 task one_cy_delay_if_verilator();
 `ifdef verilator
@@ -521,6 +523,8 @@ task Env_run();
             begin
                 $display("[%0t] Processing kernel %0d BEGIN", $time, j);
                 kernel = kernels[j];
+                dnn_layer = dnn_layers[j];
+                external_mu_active = external_mu_active_arr[j];
                  // turn on interrupt
                 $display("[%0t] turn on interrupt", $time);  // 120ps?
                 Env_set_interrupt_on();

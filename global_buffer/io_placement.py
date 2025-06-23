@@ -135,30 +135,26 @@ def place_io_blk(id_to_name, app_dir, io_sides, orig_cgra_width, orig_cgra_heigh
     # If operating in multi-bank mode, place IOs 8x denser and with all inputs placed first and then outputs
     multi_bank_mode = "E64_MULTI_BANK_MODE_ON" in os.environ and os.environ.get("E64_MULTI_BANK_MODE_ON") == "1"
 
+    multi_bank_offset = 0
+    if "MB_IO_OFFSET" in os.environ:
+        multi_bank_offset = int(os.environ.get("MB_IO_OFFSET"))
+
     # # MO: Temporary HACK for zircon hello world testbench
-
-    # default
-    io_tile_shift_right_index = 0
-    hack_offset = 0
-
+    
     # # hello_world/hello_world_fake_conv2d
     # io_tile_shift_right_index = 12
-    # hack_offset = 0
-
-    # # conv2d_mx_default_11
-    # io_tile_shift_right_index = 12
-    # hack_offset = 0
+    # multi_bank_offset = 0
 
     # # Residual relu
     # io_tile_shift_right_index = 0
-    # hack_offset = 12
+    # multi_bank_offset = 12
 
     x_coord = -1
     group_index = 0
     for idx, input_blk in enumerate(inputs):
         if exchange_64_mode:
             if multi_bank_mode:
-                x_coord = int((group_index * 2 ) / 8) + io_tile_shift_right_index + hack_offset
+                x_coord = int((group_index * 2 ) / 8) + io_tile_shift_right_index + multi_bank_offset
             else:
                 x_coord = int((group_index * 2 ) / 8) * 2 + io_tile_shift_right_index
             placement[input_blk] = (x_coord, 0)
@@ -169,7 +165,7 @@ def place_io_blk(id_to_name, app_dir, io_sides, orig_cgra_width, orig_cgra_heigh
         placement[en_blk] = (group_index * 2 + io_tile_shift_right_index, 0)
         group_index += 1
 
-    last_input_x_pos = x_coord
+    last_input_x_pos = multi_bank_offset-1 if len(inputs) == 0 else x_coord
     group_index = 0
     for idx, output_blk in enumerate(outputs):
         if exchange_64_mode:
