@@ -26,7 +26,6 @@ program garnet_test #(
     // local variables
     //============================================================================//
     Kernel kernels[$]; // use dynamic array for potential glb tiling
-    // int external_mu_active_arr = get_external_mu_active_arr_env_var();
     int external_mu_active_arr[$]; // use dynamic array for potential glb tiling
     DnnLayer dnn_layers[$]; // use dynamic array for potential glb tiling
 

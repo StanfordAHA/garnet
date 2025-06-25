@@ -22,7 +22,6 @@ integer RANDOM_DELAY;
 integer ADD_MU_INPUT_BUBBLES;
 integer mask;
 integer RANDOM_SHIFT;
-// integer (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES));
 
 // For adding random bubbles to matrix unit input
 initial begin
@@ -30,11 +29,6 @@ initial begin
     ADD_MU_INPUT_BUBBLES = get_MU_input_bubble_mode();
     mask = 32'd3 << RANDOM_SHIFT;
 end
-
-// initial begin
-//     (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES)) = TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES);
-// end
-
 
 task ProcDriver_write_bs();
     cur_addr = start_addr;
@@ -109,6 +103,7 @@ task ProcDriver_write_8b_network_data();
             bdata = {data_q_8b[i+7], data_q_8b[i+6], data_q_8b[i+5], data_q_8b[i+4], data_q_8b[i+3], data_q_8b[i+2], data_q_8b[i+1], data_q_8b[i]};
         end
         // Addr adjustment for physical data layout across 4 consecutive banks
+        // This will write data to Bank 0, Bank 1, Bank 2, Bank 3...Bank 0 Bank 1 Bank 2 Bank 3 in a cycle
         // ProcDriver_write_waddr = {cur_addr[20:18], cur_addr[4:3], cur_addr[17:5], cur_addr[2:0]};
         // NOTE: This doesn't work on small CGRAs (e.g. fast regression)
         ProcDriver_write_waddr = {  cur_addr[MU_ADDR_WIDTH - 1 : MU_ADDR_WIDTH - 1 - (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES) - 1)],
@@ -144,6 +139,7 @@ task ProcDriver_write_16b_network_data();
         end
 
         // Addr adjustment for physical data layout across 4 consecutive banks
+        // This will write data to Bank 0, Bank 1, Bank 2, Bank 3...Bank 0 Bank 1 Bank 2 Bank 3 in a cycle
         // ProcDriver_write_waddr = {cur_addr[20:18], cur_addr[4:3], cur_addr[17:5], cur_addr[2:0]};
         // NOTE: This doesn't work on small CGRAs (e.g. fast regression)
         ProcDriver_write_waddr = {  cur_addr[MU_ADDR_WIDTH - 1 : MU_ADDR_WIDTH - 1 - (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES) - 1)],

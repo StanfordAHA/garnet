@@ -24,16 +24,6 @@ struct Monitor {
 
 static struct Monitor monitor;
 
-int get_external_MU_active_env_var() {
-    int external_MU_active = 0;
-    const char *external_MU_active_env_var = "EXTERNAL_MU_ACTIVE";
-    char *external_MU_active_value = getenv(external_MU_active_env_var);
-    if (external_MU_active_value != NULL && strcmp(external_MU_active_value, "1") == 0) {
-        external_MU_active = 1;
-    }
-    return external_MU_active;
-}
-
 int get_exchange_64_config() {
     int exchange_64_mode = 0;
     const char *exchange_64_env_var = "E64_MODE_ON";
