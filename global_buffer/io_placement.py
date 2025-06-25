@@ -139,16 +139,6 @@ def place_io_blk(id_to_name, app_dir, io_sides, orig_cgra_width, orig_cgra_heigh
     if "MB_IO_OFFSET" in os.environ:
         multi_bank_offset = int(os.environ.get("MB_IO_OFFSET"))
 
-    # # MO: Temporary HACK for zircon hello world testbench
-    
-    # # hello_world/hello_world_fake_conv2d
-    # io_tile_shift_right_index = 12
-    # multi_bank_offset = 0
-
-    # # Residual relu
-    # io_tile_shift_right_index = 0
-    # multi_bank_offset = 12
-
     x_coord = -1
     group_index = 0
     for idx, input_blk in enumerate(inputs):

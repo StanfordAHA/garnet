@@ -79,11 +79,6 @@ endfunction
 
 
 function DnnLayer::read_params(string app_dir);
-   // Fake conv2d
-   //    glb_base_addr = 1310720;
-
-   // submodule_2 (residual relu), conv2d_mx_default_11
-   //    glb_base_addr = 0;
 
    inputActivation_filename = {app_dir, "/tensor_files/input_hex.txt"};
    inputActivation_info = parse_8b_data(inputActivation_filename);
