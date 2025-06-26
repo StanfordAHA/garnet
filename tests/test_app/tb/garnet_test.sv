@@ -6,6 +6,7 @@
 ** Change history:  10/14/2020 - Implement the first version
 **===========================================================================*/
 import "DPI-C" function int initialize_monitor(int num_cols);
+import "DPI-C" function int get_external_mu_active_arr_env_var();
 
 program garnet_test #(
     parameter int MAX_NUM_APPS = 1000
@@ -14,7 +15,8 @@ program garnet_test #(
     reset,
     proc_ifc p_ifc,
     axil_ifc axil_ifc,
-    behavioral_matrix_unit mu_ifc
+    axil_ifc mu_axil_ifc,
+    behavioral_matrix_unit behavioral_mu_ifc
 );
     int test_toggle = 0;
     int value;
@@ -24,6 +26,8 @@ program garnet_test #(
     // local variables
     //============================================================================//
     Kernel kernels[$]; // use dynamic array for potential glb tiling
+    int external_mu_active_arr[$]; // use dynamic array for potential glb tiling
+    DnnLayer dnn_layers[$]; // use dynamic array for potential glb tiling
 
     // Incorrect timescale gave me no end of problems, so now I'm adding this to help future me.
     function static void time_check(bit cond);
@@ -36,7 +40,7 @@ program garnet_test #(
     // Time check. For test to PASS, must have timescale == 1ps/1ps
     //   First  check succeeds iff timeunit == 1ps
     //   Second check succeeds iff timeprecision == 1ps
-    int irt; real rrt; 
+    int irt; real rrt;
     initial begin
         #1;  // Advance one timestep
         irt = real'(int'($realtime)); rrt = real'($realtime);
@@ -74,7 +78,9 @@ program garnet_test #(
         int num_app;
         int result;
         string app_dirs[$], temp_str;
+        string mu_app_dirs[$];
         Kernel temp_kernel, kernel;
+        DnnLayer tmp_dnn_layer;
         int kernel_glb_tiling_cnt = 0;
 
         num_cols = NUM_CGRA_COLS;
@@ -90,10 +96,34 @@ program garnet_test #(
         num_app = 0;
         for (int i = 0; i < MAX_NUM_APPS; i++) begin
             automatic string arg_name = {$sformatf("APP%0d", i), "=%s"};
+            automatic string mu_arg_name;
             if ($value$plusargs(arg_name, temp_str)) begin
                 // we have it
                 app_dirs.push_back(temp_str);
                 $display("Found app '%s'", temp_str);
+
+                // MU test can be specified as a real test or as "inactive"
+                // Or if not specified, MU is assumed inactive
+                mu_arg_name = {$sformatf("MU_TEST%0d", i), "=%s"};
+                if ($value$plusargs(mu_arg_name, temp_str)) begin
+                    if (temp_str != "inactive") begin
+                         // we have it and it is active
+                        $display("Found MU test '%s'", temp_str);
+                        mu_app_dirs.push_back(temp_str);
+                        external_mu_active_arr.push_back(1);
+                        $display("External MU active for app %0d", i);
+                    end else begin
+                        mu_app_dirs.push_back("");
+                        external_mu_active_arr.push_back(0);
+                        $display("External MU inactive for app %0d", i);
+                    end
+                end else begin
+                    // no mu test
+                    mu_app_dirs.push_back("");
+                    external_mu_active_arr.push_back(0);
+                    $display("External MU inactive for app %0d", i);
+                end
+
             end else begin
                 num_app = i;
                 break;
@@ -124,6 +154,15 @@ program garnet_test #(
                 kernels.push_back(temp_kernel);
             end
         end
+
+        foreach (mu_app_dirs[i]) begin
+            tmp_dnn_layer = new();
+            if (mu_app_dirs[i] != "") begin
+                tmp_dnn_layer.read_params(mu_app_dirs[i]);
+            end
+            dnn_layers.push_back(tmp_dnn_layer);
+        end
+
         $display("End function 'initialize'\n");
     endfunction
 
