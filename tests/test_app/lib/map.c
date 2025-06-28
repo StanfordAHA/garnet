@@ -23,6 +23,7 @@ struct Monitor {
 };
 
 static struct Monitor monitor;
+
 int get_exchange_64_config() {
     int exchange_64_mode = 0;
     const char *exchange_64_env_var = "E64_MODE_ON";
@@ -313,6 +314,9 @@ int glb_map(void *kernel_, int dpr_enabled) {
         if((&kernel->config)->config[i].addr >= 0x1000){
             fprintf(fptr, "glb_reg_write(0x%lx", (&kernel->config)->config[i].addr - 0x1000);
             fprintf(fptr, ", 0x%lx);\n", (&kernel->config)->config[i].data);
+        } else {
+            fprintf(fptr, "glc_reg_write(0x%lx", (&kernel->config)->config[i].addr);
+            fprintf(fptr, ", 0x%lx);\n", (&kernel->config)->config[i].data);
         }
     }
     fprintf(fptr, "}\n");
@@ -408,8 +412,7 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
     int cycle_stride[LOOP_LEVEL];
     int mux_sel;
     int mode;
-    printf("DEBUG: pos x: %d\n", io_tile_info->pos.x);
-    printf("DEBUG: E64_packed: %d\n", E64_packed);
+    bool hacked_for_mu_tiling = io_tile_info->hacked_for_mu_tiling;
 
     // If pad_o in env var call hacky padding function
     bool use_padding = output_padding_config(io_tile_info, &start_addr, &cycle_start_addr);
@@ -458,6 +461,22 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
                 data_stride[i] -= io_tile_info->data_stride[j] * (io_tile_info->extent[j] - 1);
             }
         }
+
+        // Skip this adjustment if the addr gen config has already been modified to account for matrix unit's tiling
+        if (!hacked_for_mu_tiling){
+            for (int j = 0; j < i; j++) {
+                if (exchange_64_mode && j == 0) {
+                    cycle_stride[i] -= io_tile_info->cycle_stride[j] * (io_tile_info->extent[j]/4 - 1);
+                    data_stride[i] -= io_tile_info->data_stride[j] * (io_tile_info->extent[j]/4 - 1);
+                } else {
+                    cycle_stride[i] -= io_tile_info->cycle_stride[j] * (io_tile_info->extent[j] - 1);
+                    data_stride[i] -= io_tile_info->data_stride[j] * (io_tile_info->extent[j] - 1);
+                }
+            }
+        } else {
+            printf("INFO: Addr gen config hacked for MU tiling for IO tile at (%d, %d), skipping stride adjustment\n", io_tile_info->pos.x, io_tile_info->pos.y);
+        }
+
         data_stride[i] = data_stride[i] << CGRA_BYTE_OFFSET;
     }
 

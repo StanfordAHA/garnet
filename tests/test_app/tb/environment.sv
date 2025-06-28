@@ -14,6 +14,8 @@ typedef enum int {
 
 // Kernel kernels[];  // Declared upstream in enclosing scope 'garnet_test.sv'
 Kernel kernel;
+DnnLayer dnn_layer;
+int external_mu_active;
 
 task one_cy_delay_if_verilator();
 `ifdef verilator
@@ -21,7 +23,7 @@ task one_cy_delay_if_verilator();
     @(posedge axil_ifc.clk);
 `endif
 endtask // one_cy_delay_if_verilator
-    
+
 task one_cy_delay_if_vcs();
 `ifndef verilator
     // $display("WARNING adding one extra cycle for vcs run");
@@ -44,7 +46,7 @@ task Env_write_bs();
     bet0 = kernel.bitstream_data[0];
     betaddr0 = kernel.bitstream_data[0].addr;
     betdata0 = kernel.bitstream_data[0].data;
-    
+
     start_addr = kernel.bs_start_addr;
     bs_q = kernel.bitstream_data;
     ProcDriver_write_bs();
@@ -113,6 +115,35 @@ task Env_glb_configure();
     AxilDriver_cfg = kernel.kernel_cfg; AxilDriver_config_write();
     end_time = $realtime;
     $display("[%s] glb configuration end at %0t\n", kernel.name, end_time);  // 647.5ns
+endtask
+
+
+task Env_mu_configure();
+    realtime start_time, end_time;
+    $timeformat(-9, 2, " ns", 0);
+    start_time = $realtime;
+    $display("[%s] MU configuration start at %0t", kernel.name, start_time);
+    mu_serialized_params = dnn_layer.serialized_matrix_params;
+    MU_AxilDriver_serialized_params_write();
+
+    // input base address
+    mu_axi_addr = `MU_AXI_INPUT_BASE_R;
+    mu_axi_data = 0;
+    MU_AxilDriver_write();
+
+   // weight base address
+    mu_axi_addr = `MU_AXI_WEIGHT_BASE_R;
+    mu_axi_data = 0;
+    MU_AxilDriver_write();
+
+    // bias base address
+    mu_axi_addr = `MU_AXI_BIAS_BASE_R;
+    mu_axi_data = 0;
+    MU_AxilDriver_write();
+
+
+    end_time = $realtime;
+    $display("[%s] MU configuration end at %0t\n", kernel.name, end_time);
 endtask
 
 
@@ -195,7 +226,7 @@ task Env_cgra_unstall();
 endtask // Env_cgra_unstall
 
 
-task MU_write_to_cgra();
+task Behavioral_MU_write_to_cgra();
     realtime start_time, end_time;
     fork
         begin
@@ -207,18 +238,18 @@ task MU_write_to_cgra();
             end
 
             start_time = $realtime;
-            $display("[%s] MU writes to CGRA starting at %0t", kernel.name, start_time);
-            MU_driver_write_data();
+            $display("[%s] Behavioral MU writes to CGRA starting at %0t", kernel.name, start_time);
+            Behavioral_MU_driver_write_data();
             end_time = $realtime;
-            $display("[%s] MU write to CGRA ends at %0t", kernel.name, end_time);
-            $display("[%s] It takes %0t time for MU to write %0d Byte data to CGRA.", kernel.name,
+            $display("[%s] Behavioral MU write to CGRA ends at %0t", kernel.name, end_time);
+            $display("[%s] It takes %0t time for behavioral MU to write %0d Byte data to CGRA.", kernel.name,
                     end_time - start_time, kernel.mu_inputs[0].io_tiles[0].num_data * 2);
         end
 
         begin
-            // ERROR if we go MAX_WAIT cycles without finishing streaming the MU inputs 
-            for (int i=0; i<MAX_WAIT; i++) @(posedge mu_ifc.clk);
-            $error("@%0t: %m ERROR: MU stream wait timeout, waited %0d cy to finish streaming MU inputs", 
+            // ERROR if we go MAX_WAIT cycles without finishing streaming the MU inputs
+            for (int i=0; i<MAX_WAIT; i++) @(posedge behavioral_mu_ifc.clk);
+            $error("@%0t: %m ERROR: Behavioral MU stream wait timeout, waited %0d cy to finish streaming MU inputs",
                    $time, MAX_WAIT);
             $finish(2);  // The "2" prints more information about when/where/why
         end
@@ -252,14 +283,13 @@ task Env_kernel_test();
     axil_drv.write(cfg.addr, cfg.data);
     */
 
-    // FORK BRANCH 1: MU writes data to CGRA
+    // FORK BRANCH 1: Behavioral MU writes data to CGRA
     fork
         begin
-            //TODO: Explain this magic number 7 from the RTL. Possibly add regs to solve this in real design.  
-            if (kernel.app_type != GLB2CGRA) begin 
-                repeat (7) @(posedge mu_ifc.clk);
-                MU_write_to_cgra();
-
+            //TODO: Explain this magic number 7 from the RTL. Possibly add regs to solve this in real design.
+            if (kernel.app_type != GLB2CGRA && !external_mu_active) begin
+                repeat (7) @(posedge behavioral_mu_ifc.clk);
+                Behavioral_MU_write_to_cgra();
                 mu2cgra_end_time = $realtime;
             end
         end
@@ -279,7 +309,7 @@ task Env_kernel_test();
                 g2f_end_time = $realtime;
                 $display("[%s] GLB-to-CGRA streaming done at %0t", kernel.name, g2f_end_time);
             end
-            
+
             // Wait for an interrupt to tell us when output streaming is done
             // Then wait until interrupt mask contains ALL TILES listed in tile_mask
             // Then clear the interrupt(s)
@@ -369,7 +399,7 @@ task Env_wait_interrupt();
 
             // repeat (MAX_WAIT) @(posedge...);  // "repeat" confuses verilator:(
             for (int i=0; i<MAX_WAIT; i++) @(posedge axil_ifc.clk);
-            $error("@%0t: %m ERROR: Interrupt wait timeout, waited %0d cy for reg %s", 
+            $error("@%0t: %m ERROR: Interrupt wait timeout, waited %0d cy for reg %s",
                    $time, MAX_WAIT, reg_name);
             $finish(2);  // The "2" prints more information about when/where/why
         end
@@ -403,8 +433,8 @@ task Env_set_interrupt_on();
     addr = `GLC_GLOBAL_IER_R;      data = 3'b111; AxilDriver_write();
     addr = `GLC_PAR_CFG_G2F_IER_R; data =   1'b1; AxilDriver_write();
 
-    // G2F interrupt enable for relevant GLB tiles 
-    addr = `GLC_STRM_G2F_IER_R;    
+    // G2F interrupt enable for relevant GLB tiles
+    addr = `GLC_STRM_G2F_IER_R;
     data = 32'b0;
     foreach (kernel.inputs[i]) begin
         foreach (kernel.inputs[i].io_tiles[j]) begin
@@ -415,9 +445,9 @@ task Env_set_interrupt_on();
     AxilDriver_write();
 
 
-    // F2G interrupt enable for relevant GLB tiles 
-    addr = `GLC_STRM_F2G_IER_R;    
-    data = 32'b0; 
+    // F2G interrupt enable for relevant GLB tiles
+    addr = `GLC_STRM_F2G_IER_R;
+    data = 32'b0;
     foreach (kernel.outputs[i]) begin
         foreach (kernel.outputs[i].io_tiles[j]) begin
             data |= 1 << kernel.outputs[i].io_tiles[j].tile;
@@ -426,6 +456,51 @@ task Env_set_interrupt_on();
     $display("F2G interrupt enable : %0x\n", data);
     AxilDriver_write();
 endtask
+
+
+task Env_write_network_data();
+    realtime start_time, end_time;
+    $timeformat(-9, 2, " ns", 0);
+    repeat (10) @(posedge p_ifc.clk);
+    start_time = $realtime;
+    $display("[%s] write network params to glb start at %0t", kernel.name, start_time);
+
+    // inputActivation (INT8)
+    start_addr = dnn_layer.inputActivation_start_addr;
+    $display("inputActivation_start_addr = 0x%0h", start_addr);
+    data_q_8b = dnn_layer.inputActivation;
+    ProcDriver_write_8b_network_data();
+
+    // inputScale (E8M0)
+    start_addr = dnn_layer.inputScale_start_addr;
+    $display("inputScale_start_addr = 0x%0h", start_addr);
+    data_q_8b = dnn_layer.inputScale;
+    ProcDriver_write_8b_network_data();
+
+    // weight INT8
+    start_addr = dnn_layer.weight_start_addr;
+    $display("weight_start_addr = 0x%0h", start_addr);
+    data_q_8b = dnn_layer.weight;
+    ProcDriver_write_8b_network_data();
+
+    // weightScale (E8M0)
+    start_addr = dnn_layer.weightScale_start_addr;
+    $display("weightScale_start_addr = 0x%0h", start_addr);
+    data_q_8b = dnn_layer.weightScale;
+    ProcDriver_write_8b_network_data();
+
+    // bias (bFloat16)
+    start_addr = dnn_layer.bias_start_addr;
+    $display("bias_start_addr = 0x%0h", start_addr);
+    data_q_16b = dnn_layer.bias;
+    ProcDriver_write_16b_network_data();
+
+    end_time = $realtime;
+    $display("[%s] write network params to glb end at %0t", kernel.name, end_time);
+    $display("[%s] It takes %0t time to write network params to glb.", kernel.name, end_time - start_time);
+
+
+endtask // Env_write_network_data
 
 
 task Env_run();
@@ -448,16 +523,24 @@ task Env_run();
             begin
                 $display("[%0t] Processing kernel %0d BEGIN", $time, j);
                 kernel = kernels[j];
+                dnn_layer = dnn_layers[j];
+                external_mu_active = external_mu_active_arr[j];
                  // turn on interrupt
                 $display("[%0t] turn on interrupt", $time);  // 120ps?
                 Env_set_interrupt_on();
                 Env_write_bs();
                 Env_glb_configure();
                 Env_cgra_configure();
-
-                // TODO: Add an IF statement here to skip this is MU-only kernel 
                 Env_write_data();
 
+                if (external_mu_active) begin
+                    Env_write_network_data();
+                end
+
+                // TODO: Think about the order of all these. Make sure MU doesn't start producing valid data until cgra has been unstalled and flushed
+                if (external_mu_active) begin
+                    Env_mu_configure();
+                end
 
                 Env_kernel_test();
                 Env_read_data();      $display("[%0t] read_data DONE", $time);

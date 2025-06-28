@@ -12,7 +12,9 @@ APP_ARGS ?= +APP0=app0
 
 # I.e. if APP_ARGS="+APP0=/aha/Halide-to-Hardware/apps/hardware_benchmarks/apps/pointwise"
 # then APP0_NAME="/aha/Halide-to-Hardware/apps/hardware_benchmarks/apps/pointwise"
-APP0_NAME = $(shell echo $(APP_ARGS) | awk '{print $1}' | sed 's/.*=//')
+# APP0_NAME = $(shell echo $(APP_ARGS) | awk '{print $1}' | sed 's/.*=//')
+APP0_NAME = $(shell echo $(APP_ARGS) | sed -n 's/.*APP0=\([^ ]*\).*/\1/p')
+
 
 TOOL ?= VCS
 export WAVEFORM ?= 0
@@ -21,6 +23,7 @@ export SAIF ?= 0
 
 export USING_MATRIX_UNIT ?= 0
 export INCLUDE_MU_GLB_HW ?= 0
+export BEHAVIORAL_MATRIX_UNIT ?= 0
 
 # -------------------------------------------------------------------
 # Compile Parameters
@@ -31,6 +34,7 @@ DESIGN_FILES += $(garnet_dir)/global_buffer/header/global_buffer_param.svh \
 				$(garnet_dir)/global_buffer/header/glb.svh \
 				$(garnet_dir)/global_controller/header/glc.svh \
 				$(garnet_dir)/matrix_unit/header/matrix_unit_param.svh \
+				$(garnet_dir)/matrix_unit/header/matrix_unit_regspace.svh \
 				$(garnet_dir)/garnet.v \
 				$(garnet_dir)/global_buffer/systemRDL/output/glb_pio.sv \
 				$(garnet_dir)/global_buffer/systemRDL/output/glb_jrdl_decode.sv \
@@ -40,6 +44,14 @@ DESIGN_FILES += $(garnet_dir)/global_buffer/header/global_buffer_param.svh \
 				$(garnet_dir)/global_controller/systemRDL/output/glc_jrdl_logic.sv \
 				$(garnet_dir)/genesis_verif/*.sv
 
+ifeq ($(USING_MATRIX_UNIT), 1)
+	ifneq ($(BEHAVIORAL_MATRIX_UNIT), 1)
+		DESIGN_FILES +=	$(garnet_dir)/MatrixUnit_sim_sram.v \
+						$(garnet_dir)/MatrixUnitWrapper_sim.v \
+						$(garnet_dir)/zircon_wrapper/zircon.v
+	endif
+endif
+
 TB_FILES += -F tb/tb_cgra.f
 
 # If official cadence libs are available, use those; else use the stubs that I wrote
@@ -47,7 +59,7 @@ CADENCE_VLIBS    = /cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/s
 OFFICIAL_CW_LIBS = -y $(CADENCE_VLIBS)/CW/ -y $(CADENCE_VLIBS)/CWTECH/
 BACKUP_CW_LIBS   = -y CW/
 CW_LIBS  ?= $(shell test -d $(CADENCE_VLIBS) && echo $(OFFICIAL_CW_LIBS) || echo $(BACKUP_CW_LIBS))
-IP_FILES += $(CW_LIBS) +libext+.v+.sv 
+IP_FILES += $(CW_LIBS) +libext+.v+.sv
 
 # -------------------------------------------------------------------
 # GLS Parameters
@@ -151,7 +163,8 @@ libcgra.so: $(shell find lib -type f) \
             $(garnet_dir)/global_buffer/header/global_buffer_param.h \
             $(garnet_dir)/global_buffer/header/glb.h \
             $(garnet_dir)/global_controller/header/glc.h \
-			$(garnet_dir)/matrix_unit/header/matrix_unit_param.h 
+			$(garnet_dir)/matrix_unit/header/matrix_unit_param.h \
+			$(garnet_dir)/matrix_unit/header/matrix_unit_regspace.h
 	gcc -Wno-error -Wall lib/*.c -I$(garnet_dir)/global_buffer/header -I$(garnet_dir)/global_controller/header -I$(garnet_dir)/matrix_unit/header -shared -o libcgra.so -fPIC
 
 # -------------------------------------------------------------------
@@ -192,6 +205,8 @@ else ifeq ($(TOOL), VCS)
 endif
 
 $(APP0_NAME)/bin/design_meta.json:
+	@echo $(APP_ARGS)
+	@echo 'ERROR oops cannot find design_meta.json in $(APP0_NAME)/bin'
 	@echo ERROR oops cannot find design_meta.json
 	@echo Suggest you do something like
 	@echo '  test=apps/pointwise'
@@ -217,7 +232,7 @@ endif
 
 generate:
 	echo '##[endgroup]'; echo '##[group]make generate (genesis testbench/top.svp)' `date +%H:%M`
-	Genesis2.pl -parse -generate -top top -input $(genesis_tb_dir)/top.svp -parameter top.using_matrix_unit=$(USING_MATRIX_UNIT) top.include_mu_glb_hw=$(INCLUDE_MU_GLB_HW)
+	Genesis2.pl -parse -generate -top top -input $(genesis_tb_dir)/top.svp -parameter top.using_matrix_unit=$(USING_MATRIX_UNIT) top.include_mu_glb_hw=$(INCLUDE_MU_GLB_HW) top.behavioral_matrix_unit=$(BEHAVIORAL_MATRIX_UNIT)
 	mv genesis_verif/top.sv tb/top.sv
 	echo '##[endgroup]'
 

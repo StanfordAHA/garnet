@@ -236,6 +236,14 @@ int parse_io_tile_info(struct IOTileInfo *io_tile_info, json_t const *io_tile_js
         io_tile_info->E64_packed = json_getInteger(E64_packed_json);
     }
 
+    // Parse hacked_for_mu_tiling for matrix unit tiling
+    json_t const *hacked_for_mu_tiling_json = json_getProperty(io_tile_json, "hacked_for_mu_tiling");
+    if (!hacked_for_mu_tiling_json || JSON_BOOLEAN != json_getType(hacked_for_mu_tiling_json)) {
+        io_tile_info->hacked_for_mu_tiling = false;  // Default to false if not found or not a boolean
+    } else {
+        io_tile_info->hacked_for_mu_tiling = json_getBoolean(hacked_for_mu_tiling_json);
+    }
+
     return SUCCESS;
 }
 
