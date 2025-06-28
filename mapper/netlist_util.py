@@ -36,11 +36,11 @@ class CreateBuses(Visitor):
         self.glb_bank_config = (
             json.load(
                 open(
-                    f"/aha/Halide-to-Hardware/apps/hardware_benchmarks/{os.environ['HALIDE_APP_PATH']}/bin/glb_bank_config.json"
+                    f"/aha/Halide-to-Hardware/apps/hardware_benchmarks/{os.environ.get('HALIDE_APP_PATH', '')}/bin/glb_bank_config.json"
                 )
             )
             if os.path.exists(
-                f"/aha/Halide-to-Hardware/apps/hardware_benchmarks/{os.environ['HALIDE_APP_PATH']}/bin/glb_bank_config.json"
+                f"/aha/Halide-to-Hardware/apps/hardware_benchmarks/{os.environ.get('HALIDE_APP_PATH', '')}/bin/glb_bank_config.json"
             )
             else None
         )
@@ -600,11 +600,11 @@ class FixInputsOutputAndPipeline(Visitor):
         self.glb_bank_config = (
             json.load(
                 open(
-                    f"/aha/Halide-to-Hardware/apps/hardware_benchmarks/{os.environ['HALIDE_APP_PATH']}/bin/glb_bank_config.json"
+                    f"/aha/Halide-to-Hardware/apps/hardware_benchmarks/{os.environ.get('HALIDE_APP_PATH', '')}/bin/glb_bank_config.json"
                 )
             )
             if os.path.exists(
-                f"/aha/Halide-to-Hardware/apps/hardware_benchmarks/{os.environ['HALIDE_APP_PATH']}/bin/glb_bank_config.json"
+                f"/aha/Halide-to-Hardware/apps/hardware_benchmarks/{os.environ.get('HALIDE_APP_PATH', '')}/bin/glb_bank_config.json"
             )
             else None
         )
@@ -1407,11 +1407,11 @@ def create_netlist_info(
     glb_bank_config = (
         json.load(
             open(
-                f"/aha/Halide-to-Hardware/apps/hardware_benchmarks/{os.environ['HALIDE_APP_PATH']}/bin/glb_bank_config.json"
+                f"/aha/Halide-to-Hardware/apps/hardware_benchmarks/{os.environ.get('HALIDE_APP_PATH', '')}/bin/glb_bank_config.json"
             )
         )
         if os.path.exists(
-            f"/aha/Halide-to-Hardware/apps/hardware_benchmarks/{os.environ['HALIDE_APP_PATH']}/bin/glb_bank_config.json"
+            f"/aha/Halide-to-Hardware/apps/hardware_benchmarks/{os.environ.get('HALIDE_APP_PATH', '')}/bin/glb_bank_config.json"
         )
         else None
     )
