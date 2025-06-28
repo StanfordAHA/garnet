@@ -452,20 +452,11 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
 
         cycle_stride[i] = io_tile_info->cycle_stride[i];
         data_stride[i] = io_tile_info->data_stride[i];
-        for (int j = 0; j < i; j++) {
-            if (exchange_64_mode && E64_packed && j == 0) {
-                cycle_stride[i] -= io_tile_info->cycle_stride[j] * (io_tile_info->extent[j]/4 - 1);
-                data_stride[i] -= io_tile_info->data_stride[j] * (io_tile_info->extent[j]/4 - 1);
-            } else {
-                cycle_stride[i] -= io_tile_info->cycle_stride[j] * (io_tile_info->extent[j] - 1);
-                data_stride[i] -= io_tile_info->data_stride[j] * (io_tile_info->extent[j] - 1);
-            }
-        }
 
         // Skip this adjustment if the addr gen config has already been modified to account for matrix unit's tiling
         if (!hacked_for_mu_tiling){
             for (int j = 0; j < i; j++) {
-                if (exchange_64_mode && j == 0) {
+                if (exchange_64_mode && E64_packed && j == 0) {
                     cycle_stride[i] -= io_tile_info->cycle_stride[j] * (io_tile_info->extent[j]/4 - 1);
                     data_stride[i] -= io_tile_info->data_stride[j] * (io_tile_info->extent[j]/4 - 1);
                 } else {
