@@ -67,7 +67,7 @@ int parse_num_group(struct KernelInfo *info) {
 
         if (x > max_x) max_x = x;
     }
-    
+
     const char *west_io_env_var = "WEST_IN_IO_SIDES";
     char *west_io_value = getenv(west_io_env_var);
     if (west_io_value != NULL && strcmp(west_io_value, "1") == 0) {
@@ -76,7 +76,7 @@ int parse_num_group(struct KernelInfo *info) {
     } else {
        info->num_groups = (max_x + GROUP_SIZE) / GROUP_SIZE;
     }
-   
+
 
     // clean up
     fclose(fp);
@@ -225,6 +225,17 @@ int parse_io_tile_info(struct IOTileInfo *io_tile_info, json_t const *io_tile_js
     } else {
         io_tile_info->is_glb_input = json_getInteger(is_glb_input_json);
     }
+
+    // Parse E64_packed for E64 packing
+    json_t const *E64_packed_json = json_getProperty(io_tile_json, "E64_packed");
+    if (!E64_packed_json || JSON_INTEGER != json_getType(E64_packed_json)) {
+        // Default to 1 if not found or not an array even not in E64 mode
+        // If not in E64 mode this will be ignored
+        io_tile_info->E64_packed = 1;
+    } else {
+        io_tile_info->E64_packed = json_getInteger(E64_packed_json);
+    }
+
     return SUCCESS;
 }
 
@@ -504,7 +515,7 @@ void *parse_metadata(char *filename) {
     info->bitstream_info = parse_bitstream(info->bitstream_filename);
 
     // Parse IO scheduling information
-    json_t const *IOs_json = json_getProperty(json, "IOs");  
+    json_t const *IOs_json = json_getProperty(json, "IOs");
 
     // parse inputs
     json_t const *input_list_json = json_getProperty(IOs_json, "inputs");
@@ -549,19 +560,19 @@ void *parse_metadata(char *filename) {
         info->app_type = mu2cgra_glb2cgra;
         printf("APP TYPE is mu2cgra_glb2cgra\n");
 
-    // GLB feeds CGRA   
+    // GLB feeds CGRA
     } else if (info->num_inputs > 0) {
         info->app_type = glb2cgra;
         printf("APP TYPE is glb2cgra\n");
 
-    // MU feeds CGRA    
+    // MU feeds CGRA
     } else {
         info->app_type = mu2cgra;
         printf("APP TYPE is mu2cgra\n");
     }
 
-    
-   
+
+
     // parse outputs
     json_t const *output_list_json = json_getProperty(IOs_json, "outputs");
     if (!output_list_json || JSON_ARRAY != json_getType(output_list_json)) {
@@ -896,6 +907,11 @@ int get_io_tile_extent(void *info, int index, int extent_idx) {
 int get_io_tile_is_glb_input(void *info, int index) {
     GET_IO_INFO(info);
     return io_info->io_tiles[index].is_glb_input;
+}
+
+int get_io_tile_E64_packed(void *info, int index) {
+    GET_IO_INFO(info);
+    return io_info->io_tiles[index].E64_packed;
 }
 
 int get_output_size(void *info, int index) {
