@@ -24,7 +24,7 @@ from lassen.sim import PE_fc as lassen_fc
 from mapper.netlist_graph import Node, NetlistGraph
 import pythunder
 import pulp
-
+import json
 
 class CreateBuses(Visitor):
     def __init__(self, inst_info, ready_valid=True):
@@ -33,6 +33,17 @@ class CreateBuses(Visitor):
 
         self.include_E64_HW = "INCLUDE_E64_HW" in os.environ and os.environ.get("INCLUDE_E64_HW") == "1"
         self.exchange_64_mode = "E64_MODE_ON" in os.environ and os.environ.get("E64_MODE_ON") == "1"
+        self.glb_bank_config = (
+            json.load(
+                open(
+                    f"/aha/Halide-to-Hardware/apps/hardware_benchmarks/{os.environ.get('HALIDE_APP_PATH', '')}/bin/glb_bank_config.json"
+                )
+            )
+            if os.path.exists(
+                f"/aha/Halide-to-Hardware/apps/hardware_benchmarks/{os.environ.get('HALIDE_APP_PATH', '')}/bin/glb_bank_config.json"
+            )
+            else None
+        )
 
     def doit(self, dag):
         self.i = 1
@@ -131,12 +142,26 @@ class CreateBuses(Visitor):
         else:
             if self.exchange_64_mode:
                 node_name_parse_list = node.iname.split("stencil_")[2].split("_write")
-
                 packet_num = 0
-                if len(node_name_parse_list) > 1:
-                    packet_num = int(node_name_parse_list[0]) % 4
+                if self.glb_bank_config:
+                    # We need fine-grained packing
+                    output_node_idx = int(node_name_parse_list[0]) if len(node_name_parse_list) > 1 else 0
+                    for output_dict in self.glb_bank_config["outputs"]:
+                        for output_name, output_config in output_dict.items():
+                            if output_name in node.iname:
+                                # use_E64_packing should be 0 or 1
+                                use_E64_packing = output_config["E64_packed"][output_node_idx]
+                                break
+                    if use_E64_packing == 1:
+                        packet_num = output_node_idx % 4
+                    else:
+                        packet_num = 0
                 else:
-                    packet_num = 0
+                    # Normal E64 packing parsing
+                    if len(node_name_parse_list) > 1:
+                        packet_num = int(node_name_parse_list[0]) % 4
+                    else:
+                        packet_num = 0
 
             if self.include_E64_HW:
                 if self.exchange_64_mode:
@@ -572,6 +597,17 @@ class FixInputsOutputAndPipeline(Visitor):
 
         self.include_E64_HW = "INCLUDE_E64_HW" in os.environ and os.environ.get("INCLUDE_E64_HW") == "1"
         self.exchange_64_mode = "E64_MODE_ON" in os.environ and os.environ.get("E64_MODE_ON") == "1"
+        self.glb_bank_config = (
+            json.load(
+                open(
+                    f"/aha/Halide-to-Hardware/apps/hardware_benchmarks/{os.environ.get('HALIDE_APP_PATH', '')}/bin/glb_bank_config.json"
+                )
+            )
+            if os.path.exists(
+                f"/aha/Halide-to-Hardware/apps/hardware_benchmarks/{os.environ.get('HALIDE_APP_PATH', '')}/bin/glb_bank_config.json"
+            )
+            else None
+        )
 
         self.pipeline_inputs = pipeline_inputs
 
@@ -910,12 +946,27 @@ class FixInputsOutputAndPipeline(Visitor):
                         if self.exchange_64_mode:
                             node_name_parse_list = io_child.iname.split("stencil_")[2].split("_read")
                             packet_num = 0
-                            if len(node_name_parse_list) > 1:
-                                packet_num = int(node_name_parse_list[0]) % 4
+                            if self.glb_bank_config:
+                                use_E64_packing = 0
+                                # We need fine-grained packing
+                                input_node_idx = int(node_name_parse_list[0]) if len(node_name_parse_list) > 1 else 0
+                                for input_dict in self.glb_bank_config["inputs"]:
+                                    for input_name, input_config in input_dict.items():
+                                        if input_name in io_child.iname:
+                                            # use_E64_packing should be 0 or 1
+                                            use_E64_packing = input_config["E64_packed"][input_node_idx]
+                                            break
+                                if use_E64_packing == 1:
+                                    packet_num = input_node_idx %4
+                                else:
+                                    packet_num = 0
                             else:
-                                packet_num = 0
+                                # Normal E64 packing parsing
+                                if len(node_name_parse_list) > 1:
+                                    packet_num = int(node_name_parse_list[0]) % 4
+                                else:
+                                    packet_num = 0
                             new_node = new_children[0].select(f"io2f_17_{packet_num}")
-
                         else:
                             new_node = new_children[0].select("io2f_17_0")
                     else:
@@ -1353,13 +1404,49 @@ def create_netlist_info(
     nodes_to_instrs = CreateInstrs(node_info).doit(pdag)
 
     info["id_to_instrs"] = {}
+    glb_bank_config = (
+        json.load(
+            open(
+                f"/aha/Halide-to-Hardware/apps/hardware_benchmarks/{os.environ.get('HALIDE_APP_PATH', '')}/bin/glb_bank_config.json"
+            )
+        )
+        if os.path.exists(
+            f"/aha/Halide-to-Hardware/apps/hardware_benchmarks/{os.environ.get('HALIDE_APP_PATH', '')}/bin/glb_bank_config.json"
+        )
+        else None
+    )
     for node, id in nodes_to_ids.items():
         node_config_kwargs = {}
         if dense_ready_valid and ("I" in id or "i" in id):
             node_config_kwargs['ready_valid_mode'] = 1
 
         if exchange_64_mode and ("I" in id or "i" in id):
-            node_config_kwargs['exchange_64_mode'] = 1
+            if glb_bank_config:
+                # We need fine-grained E64 packing
+                if "_read" in node:
+                    node_name_parse_list = node.split("stencil_")[2].split("_read")
+                    use_e64_list_idx = int(node_name_parse_list[0]) if len(node_name_parse_list) > 1 else 0
+                    for input_dict in glb_bank_config["inputs"]:
+                        for input_name, input_config in input_dict.items():
+                            if input_name in node:
+                                # use_E64_packing should be 0 or 1
+                                use_E64_packing = input_config["E64_packed"][use_e64_list_idx]
+                                break
+                elif "_write" in node:
+                    node_name_parse_list = node.split("stencil_")[2].split("_write")
+                    use_e64_list_idx = int(node_name_parse_list[0]) if len(node_name_parse_list) > 1 else 0
+                    for output_dict in glb_bank_config["outputs"]:
+                        for output_name, output_config in output_dict.items():
+                            if output_name in node:
+                                # use_E64_packing should be 0 or 1
+                                use_E64_packing = output_config["E64_packed"][use_e64_list_idx]
+                                break
+                assert use_E64_packing == 0 or use_E64_packing == 1, f"use_E64_packing should be 0 or 1, but got {use_E64_packing}"
+                if use_E64_packing == 1:
+                    node_config_kwargs['exchange_64_mode'] = 1
+            else:
+                # Normal E64 packing
+                node_config_kwargs['exchange_64_mode'] = 1
 
         # MO: MU IO tile HACK for now. Hardcoding it to use tracks T0 and T1 for now
         # TODO: In the future, find a way to let the PnR tool choose the tracks
