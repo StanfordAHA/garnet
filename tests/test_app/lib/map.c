@@ -405,6 +405,7 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
     int start_addr = io_tile_info->start_addr;
     int cycle_start_addr = io_tile_info->cycle_start_addr;
     int loop_dim = io_tile_info->loop_dim;
+    int E64_packed = io_tile_info->E64_packed;
     int extent[LOOP_LEVEL];
     int dma_range[LOOP_LEVEL];
     int data_stride[LOOP_LEVEL];
@@ -419,7 +420,7 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
 
     // Check if we are in exchange_64 mode
     int exchange_64_mode = get_exchange_64_config();
-    if (exchange_64_mode) {
+    if (exchange_64_mode && E64_packed) {
         printf("INFO: Using exchange_64 mode\n");
     }
 
@@ -439,7 +440,7 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
     for (int i = 0; i < loop_dim; i++) {
         extent[i] = io_tile_info->extent[i] - 2;
 
-        if (exchange_64_mode) {
+        if (exchange_64_mode && E64_packed) {
             if (i == 0) {
                 dma_range[i] = (io_tile_info->extent[i]/4) - 2;
             } else {
@@ -455,7 +456,7 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         // Skip this adjustment if the addr gen config has already been modified to account for matrix unit's tiling
         if (!hacked_for_mu_tiling){
             for (int j = 0; j < i; j++) {
-                if (exchange_64_mode && j == 0) {
+                if (exchange_64_mode && E64_packed && j == 0) {
                     cycle_stride[i] -= io_tile_info->cycle_stride[j] * (io_tile_info->extent[j]/4 - 1);
                     data_stride[i] -= io_tile_info->data_stride[j] * (io_tile_info->extent[j]/4 - 1);
                 } else {
@@ -512,11 +513,11 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
             add_config(config_info,
                     (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_DMA_EXCHANGE_64_MODE_R,
                     (E64_multi_bank_mode << GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB + 1) |
-                    (exchange_64_mode << GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB));
+                    ((exchange_64_mode && E64_packed) << GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB));
         } else if (HW_supports_E64()) {
             add_config(config_info,
                     (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_DMA_EXCHANGE_64_MODE_R,
-                    exchange_64_mode << GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB);
+                    (exchange_64_mode && E64_packed) << GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB);
         }
 
         add_config(config_info,
@@ -542,7 +543,7 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         for (int i = 0; i < loop_dim; i++) {
 
             // Count addr 4x faster b/c reading 8 bytes at once instead of 2 bytes
-            if (exchange_64_mode) {
+            if (exchange_64_mode && E64_packed) {
                 data_stride[i] = data_stride[i] * 4;
             }
 
@@ -594,11 +595,11 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
             add_config(config_info,
                     (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_DMA_EXCHANGE_64_MODE_R,
                     (E64_multi_bank_mode << GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB + 1) |
-                    (exchange_64_mode << GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB));
+                    ((exchange_64_mode && E64_packed) << GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB));
         } else if (HW_supports_E64()) {
             add_config(config_info,
                     (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_DMA_EXCHANGE_64_MODE_R,
-                    exchange_64_mode << GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB);
+                    (exchange_64_mode && E64_packed) << GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB);
         }
 
         // MO: Hack to emit flush from output tiles for MU2CGRA app
@@ -623,7 +624,7 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
                    (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_ST_DMA_HEADER_0_DIM_R,
                    loop_dim);
 
-        if (exchange_64_mode) {
+        if (exchange_64_mode && E64_packed) {
             start_addr += E64_start_addr_increment;
         }
 
@@ -641,7 +642,7 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         printf("Output block dimensionality: %0d\n", loop_dim);
         for (int i = 0; i < loop_dim; i++) {
             // Count 4x faster b/c writing 8 bytes at once instead of 2 bytes
-            if (exchange_64_mode) {
+            if (exchange_64_mode && E64_packed) {
                 data_stride[i] = data_stride[i] * 4;
             }
 

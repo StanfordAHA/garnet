@@ -226,6 +226,16 @@ int parse_io_tile_info(struct IOTileInfo *io_tile_info, json_t const *io_tile_js
         io_tile_info->is_glb_input = json_getInteger(is_glb_input_json);
     }
 
+    // Parse E64_packed for E64 packing
+    json_t const *E64_packed_json = json_getProperty(io_tile_json, "E64_packed");
+    if (!E64_packed_json || JSON_INTEGER != json_getType(E64_packed_json)) {
+        // Default to 1 if not found or not an array even not in E64 mode
+        // If not in E64 mode this will be ignored
+        io_tile_info->E64_packed = 1;
+    } else {
+        io_tile_info->E64_packed = json_getInteger(E64_packed_json);
+    }
+
     // Parse hacked_for_mu_tiling for matrix unit tiling
     json_t const *hacked_for_mu_tiling_json = json_getProperty(io_tile_json, "hacked_for_mu_tiling");
     if (!hacked_for_mu_tiling_json || JSON_BOOLEAN != json_getType(hacked_for_mu_tiling_json)) {
@@ -905,6 +915,11 @@ int get_io_tile_extent(void *info, int index, int extent_idx) {
 int get_io_tile_is_glb_input(void *info, int index) {
     GET_IO_INFO(info);
     return io_info->io_tiles[index].is_glb_input;
+}
+
+int get_io_tile_E64_packed(void *info, int index) {
+    GET_IO_INFO(info);
+    return io_info->io_tiles[index].E64_packed;
 }
 
 int get_output_size(void *info, int index) {
