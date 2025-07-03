@@ -20,19 +20,27 @@ else version=$(verilator --version |& cut -d " " -f2); fi
 if insufficient $version; then
 
     # Only works with g++-10 else "unrecognized option ‘-fcoroutines’"
+    echo "--- MAKE SETUP: Install g++-10, autoconf, bison, help2man"
     yes | (apt update; apt upgrade; apt install g++-10)
     (cd /usr/bin; test -e g++ && mv g++ g++.orig; ln -s g++-10 g++)
+    echo -------------------------------
 
-    # Add target version to apt sources: "plucky" should get us version 5.032
-    cp -p /etc/apt/sources.list /etc/apt/sources.list.bak
-    REPO="deb http://archive.ubuntu.com/ubuntu/ plucky main universe"
-    echo $REPO >> /etc/apt/sources.list
-    diff /etc/apt/sources.list.bak /etc/apt/sources.list
-    apt update
+    echo These are missing in docker ATM 
+    yes | apt-get install autoconf
+    yes | apt-get install bison
+    yes | apt-get install help2man
+    echo -------------------------------
 
-    # Install verilator
-    apt policy verilator
-    yes | apt install -t plucky verilator
+    echo "--- MAKE SETUP: Install verilator 5.028"
+    cd /usr/share; test -d verilator || git clone https://github.com/verilator/verilator
+    cd /usr/share/verilator; git checkout v5.028
+    cd /usr/share/verilator; unset VERILATOR_ROOT; autoconf; ./configure
+    cd /usr/share/verilator; unset VERILATOR_ROOT; make -j $(NPROC) || echo ERROR
+    cd /usr/share/verilator; make clean || echo ERROR cannot clean for some reason i guess
+    test -e /usr/local/bin/verilator && mv /usr/local/bin/verilator /usr/local/bin/verilator.orig || echo NOT YET
+    cd /usr/local/bin; ln -s /usr/share/verilator/bin/verilator
+    echo -------------------------------
+
     verilator --version
 fi
 
