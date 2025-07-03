@@ -244,6 +244,14 @@ int parse_io_tile_info(struct IOTileInfo *io_tile_info, json_t const *io_tile_js
         io_tile_info->hacked_for_mu_tiling = json_getBoolean(hacked_for_mu_tiling_json);
     }
 
+    // Parse bank_toggle_mode for bank toggle mode
+    json_t const *bank_toggle_mode_json = json_getProperty(io_tile_json, "bank_toggle_mode");
+    if (!bank_toggle_mode_json || JSON_INTEGER != json_getType(bank_toggle_mode_json)) {
+        io_tile_info->bank_toggle_mode = 0;  // Default to 0 if not found or not an integer
+    } else {
+        io_tile_info->bank_toggle_mode = json_getInteger(bank_toggle_mode_json);
+    }
+
     return SUCCESS;
 }
 

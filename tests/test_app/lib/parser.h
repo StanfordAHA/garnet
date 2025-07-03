@@ -62,6 +62,9 @@ struct IOTileInfo {
     // Indicates if the addr gen config has been modified to account for matrix unit's tiling
     bool hacked_for_mu_tiling;
 
+    // For bank toggle mode
+    int bank_toggle_mode;
+
 };
 
 struct IOInfo {

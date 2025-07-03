@@ -413,6 +413,7 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
     int mux_sel;
     int mode;
     bool hacked_for_mu_tiling = io_tile_info->hacked_for_mu_tiling;
+    int bank_toggle_mode = io_tile_info->bank_toggle_mode;
 
     // If pad_o in env var call hacky padding function
     bool use_padding = output_padding_config(io_tile_info, &start_addr, &cycle_start_addr);
@@ -454,7 +455,8 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         data_stride[i] = io_tile_info->data_stride[i];
 
         // Skip this adjustment if the addr gen config has already been modified to account for matrix unit's tiling
-        if (!hacked_for_mu_tiling){
+        // Also skip it if configured in bank toggle mode
+        if (!(hacked_for_mu_tiling || bank_toggle_mode)){
             for (int j = 0; j < i; j++) {
                 if (exchange_64_mode && E64_packed && j == 0) {
                     cycle_stride[i] -= io_tile_info->cycle_stride[j] * (io_tile_info->extent[j]/4 - 1);
@@ -465,7 +467,10 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
                 }
             }
         } else {
-            printf("INFO: Addr gen config hacked for MU tiling for IO tile at (%d, %d), skipping stride adjustment\n", io_tile_info->pos.x, io_tile_info->pos.y);
+            if (hacked_for_mu_tiling)
+                printf("INFO: Addr gen config hacked for MU tiling for IO tile at (%d, %d), skipping stride adjustment\n", io_tile_info->pos.x, io_tile_info->pos.y);
+            if (bank_toggle_mode)
+                printf("INFO: Addr gen config hacked for bank toggle mode for IO tile at (%d, %d), skipping stride adjustment\n", io_tile_info->pos.x, io_tile_info->pos.y);
         }
 
         data_stride[i] = data_stride[i] << CGRA_BYTE_OFFSET;
@@ -601,6 +606,12 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
                     (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_DMA_EXCHANGE_64_MODE_R,
                     (exchange_64_mode && E64_packed) << GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB);
         }
+
+        // Bank toggle mode
+        add_config(config_info,
+                (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_DMA_BANK_TOGGLE_MODE_R,
+                 bank_toggle_mode << GLB_DMA_BANK_TOGGLE_MODE_VALUE_F_LSB);
+
 
         // MO: Hack to emit flush from output tiles for MU2CGRA app
         if (kernel_info->app_type == mu2cgra) {
