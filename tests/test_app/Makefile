@@ -44,15 +44,25 @@ DESIGN_FILES += $(garnet_dir)/global_buffer/header/global_buffer_param.svh \
 				$(garnet_dir)/global_controller/systemRDL/output/glc_jrdl_logic.sv \
 				$(garnet_dir)/genesis_verif/*.sv
 
+ZIRCON_FILES = 
 ifeq ($(USING_MATRIX_UNIT), 1)
 	ifneq ($(BEHAVIORAL_MATRIX_UNIT), 1)
-		DESIGN_FILES +=	$(garnet_dir)/MatrixUnit_sim_sram.v \
-						$(garnet_dir)/MatrixUnitWrapper_sim.v \
-						$(garnet_dir)/zircon_wrapper/zircon.v
+		DESIGN_FILES +=	$(garnet_dir)/zircon_wrapper/zircon.v
+		ZIRCON_FILES  = zircon/MatrixUnitWrapper_sim.v \
+				zircon/MatrixUnit_sim_sram.v
 	endif
 endif
 
-TB_FILES += -F tb/tb_cgra.f
+TB_FILES += $(ZIRCON_FILES) -F tb/tb_cgra.f
+
+# There's a more clever way of doing this...foo.gz-to-foo dependence...but I think this will work...
+
+zircon/MatrixUnitWrapper_sim.v: zircon/MatrixUnitWrapper_sim.v.gz
+	cd zircon && gunzip zircon/MatrixUnitWrapper_sim.v.gz
+
+zircon/MatrixUnit_sim_sram.v: zircon/MatrixUnit_sim_sram.v.gz
+	cd zircon && gunzip zircon/MatrixUnit_sim_sram.v.gz
+
 
 # If official cadence libs are available, use those; else use the stubs that I wrote
 CADENCE_VLIBS    = /cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog
@@ -219,7 +229,7 @@ $(APP0_NAME)/bin/design_meta.json:
 .PHONY: compile
 compile: COMPILE_ARGS = $(COMPILE_RTL_ARGS)
 compile: INPUT_ARGS = $(DESIGN_FILES) $(TB_FILES) $(IP_FILES)
-compile:
+compile: $(ZIRCON_FILES)
 	echo '##[endgroup]'; echo '##[group]make compile (verilator => Vtop.mk) or (vcs => simv)' `date +%H:%M`
 	echo '--- MAKE COMPILE (verilator => Vtop.mk) or (vcs => simv)' `date +%H:%M`
 	$(COMPILE)
