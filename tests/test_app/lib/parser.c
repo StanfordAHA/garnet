@@ -252,6 +252,14 @@ int parse_io_tile_info(struct IOTileInfo *io_tile_info, json_t const *io_tile_js
         io_tile_info->bank_toggle_mode = json_getInteger(bank_toggle_mode_json);
     }
 
+    // Parse is_fake_io for fake IOs
+    json_t const *is_fake_io_json = json_getProperty(io_tile_json, "is_fake_io");
+    if (!is_fake_io_json || JSON_INTEGER != json_getType(is_fake_io_json)) {
+        io_tile_info->is_fake_io = 0;  // Default to 0 if not found or not an integer
+    } else {
+        io_tile_info->is_fake_io = json_getInteger(is_fake_io_json);
+    }
+
     return SUCCESS;
 }
 
@@ -928,6 +936,11 @@ int get_io_tile_is_glb_input(void *info, int index) {
 int get_io_tile_E64_packed(void *info, int index) {
     GET_IO_INFO(info);
     return io_info->io_tiles[index].E64_packed;
+}
+
+int get_io_tile_bank_toggle_mode(void *info, int index) {
+    GET_IO_INFO(info);
+    return io_info->io_tiles[index].bank_toggle_mode;
 }
 
 int get_output_size(void *info, int index) {

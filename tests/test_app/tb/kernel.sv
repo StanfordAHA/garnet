@@ -117,6 +117,10 @@ import "DPI-C" function int get_io_tile_E64_packed(
     chandle info,
     int index
 );
+import "DPI-C" function int get_io_tile_bank_toggle_mode(
+    chandle info,
+    int index
+);
 
 import "DPI-C" function chandle get_kernel_configuration(chandle info);
 import "DPI-C" function chandle get_pcfg_configuration(chandle info);
@@ -167,6 +171,7 @@ typedef struct {
     int num_data;
     int is_glb_input; // for back-to-back kernels to judge if input is already in glb
     int E64_packed;
+    int bank_toggle_mode;
     data_array_t io_block_data;
 } IOTile;
 
@@ -668,6 +673,7 @@ function int Kernel::kernel_map();
             outputs[i].io_tiles[j].tile = get_io_tile_map_tile(io_info, j);
             outputs[i].io_tiles[j].start_addr = get_io_tile_start_addr(io_info, j);
             outputs[i].io_tiles[j].E64_packed = get_io_tile_E64_packed(io_info, j);
+            outputs[i].io_tiles[j].bank_toggle_mode = get_io_tile_bank_toggle_mode(io_info, j);
         end
     end
 
@@ -756,7 +762,7 @@ function void Kernel::compare();
                 for (int k = 0; k < num_pixels; k++) begin
 
                     // Deinterleaving is different for MU if operating in E64 mode
-                    if ((app_type == MU2CGRA || app_type == MU2CGRA_GLB2CGRA) && get_exchange_64_config() == 1 && outputs[i].io_tiles[j].E64_packed == 1) begin
+                    if ((app_type == MU2CGRA || app_type == MU2CGRA_GLB2CGRA) && get_exchange_64_config() == 1 && outputs[i].io_tiles[j].E64_packed == 1 || outputs[i].io_tiles[j].bank_toggle_mode == 1) begin
                         output_data_index = (int'(k/4) * 4) * num_io_tiles + j * 4 + (k % 4);
                         output_data[i][output_data_index] = outputs[i].io_tiles[j].io_block_data[k];
                     end else begin
