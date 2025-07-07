@@ -35,7 +35,10 @@ if insufficient $version; then
     cd /usr/share; test -d verilator || git clone https://github.com/verilator/verilator
     cd /usr/share/verilator; git checkout v5.028
     cd /usr/share/verilator; unset VERILATOR_ROOT; autoconf; ./configure
-    cd /usr/share/verilator; unset VERILATOR_ROOT; make -j $(NPROC) || echo ERROR
+
+    # WTF is "NPROC"???
+    # cd /usr/share/verilator; unset VERILATOR_ROOT; make -j $(NPROC) || echo ERROR
+    cd /usr/share/verilator; unset VERILATOR_ROOT; make || echo ERROR
     cd /usr/share/verilator; make clean || echo ERROR cannot clean for some reason i guess
     test -e /usr/local/bin/verilator && mv /usr/local/bin/verilator /usr/local/bin/verilator.orig || echo NOT YET
     cd /usr/local/bin; ln -s /usr/share/verilator/bin/verilator
