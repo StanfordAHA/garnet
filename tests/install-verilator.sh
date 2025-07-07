@@ -32,10 +32,10 @@ if insufficient $version; then
     echo -------------------------------
 
     echo "--- MAKE SETUP: Install verilator 5.028"
+    set -x
     cd /usr/share; test -d verilator || git clone https://github.com/verilator/verilator
     cd /usr/share/verilator; git checkout v5.028
     cd /usr/share/verilator; unset VERILATOR_ROOT; autoconf; ./configure
-    echo It looks like we have `nproc` processors available.
     NPROC=$((`nproc`/2)) || NPROC=1  # Don't be greedy
     cd /usr/share/verilator; unset VERILATOR_ROOT; make -j $NPROC || echo ERROR
     cd /usr/share/verilator; make clean || echo ERROR cannot clean for some reason i guess
