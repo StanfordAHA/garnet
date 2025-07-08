@@ -62,6 +62,11 @@ struct IOTileInfo {
     // Indicates if the addr gen config has been modified to account for matrix unit's tiling
     bool hacked_for_mu_tiling;
 
+    // For bank toggle mode
+    int bank_toggle_mode;
+    // We need fake IOs to read from toggled bank for gold check
+    int is_fake_io;
+
 };
 
 struct IOInfo {
@@ -119,6 +124,7 @@ int get_io_tile_cycle_stride(void *info, int index, int stride_idx);
 int get_io_tile_data_stride(void *info, int index, int stride_idx);
 int get_io_tile_is_glb_input(void *info, int index); // for back-to-back kernels judge if the input is already in global buffer
 int get_io_tile_E64_packed(void *info, int index);
+int get_io_tile_bank_toggle_mode(void *info, int index);
 
 // helper functions to access data from SV testbench
 int get_num_groups(void *info);

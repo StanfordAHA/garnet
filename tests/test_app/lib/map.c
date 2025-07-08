@@ -211,7 +211,7 @@ int glb_map(void *kernel_, int dpr_enabled) {
             }
             printf("Group start: %d, pos x: %d\n", group_start, io_tile_info->pos.x);
             io_tile_info->tile = tile;
-            if (get_E64_multi_bank_mode_config()) {
+            if (get_E64_multi_bank_mode_config() && io_tile_info->E64_packed) {
                 io_tile_info->start_addr =
                 (io_tile_info->start_addr << CGRA_BYTE_OFFSET) + ((tile * 2 + j%2) << BANK_ADDR_WIDTH);
             } else {
@@ -220,7 +220,12 @@ int glb_map(void *kernel_, int dpr_enabled) {
             }
 
             printf("Mapping input_%0d_block_%0d to global buffer\n", i, j);
-            update_io_tile_configuration(io_tile_info, &kernel->config, kernel);
+            if (io_tile_info->is_fake_io == 0) {
+                update_io_tile_configuration(io_tile_info, &kernel->config, kernel);
+            }
+            else {
+                printf("Fake IO tile detected at pos x: %d, skipping configuration\n", io_tile_info->pos.x);
+            }
             if (i == 0 && j == 0) {
                 first_input_tile = tile;
             }
@@ -245,7 +250,7 @@ int glb_map(void *kernel_, int dpr_enabled) {
             }
 
             io_tile_info->tile = tile;
-            if (get_E64_multi_bank_mode_config()) {
+            if (get_E64_multi_bank_mode_config() && io_tile_info->E64_packed) {
                 io_tile_info->start_addr =
                 (io_tile_info->start_addr << CGRA_BYTE_OFFSET) + ((tile * 2 + j%2) << BANK_ADDR_WIDTH);
             } else {
@@ -254,7 +259,12 @@ int glb_map(void *kernel_, int dpr_enabled) {
             }
 
             printf("Mapping output_%0d_block_%0d to global buffer\n", i, j);
-            update_io_tile_configuration(io_tile_info, &kernel->config, kernel);
+            if (io_tile_info->is_fake_io == 0) {
+                update_io_tile_configuration(io_tile_info, &kernel->config, kernel);
+            }
+            else {
+                printf("Fake IO tile detected at pos x: %d, skipping configuration\n", io_tile_info->pos.x);
+            }
             if (i == 0 && j == 0) {
                 first_output_tile = tile;
             }
@@ -413,6 +423,7 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
     int mux_sel;
     int mode;
     bool hacked_for_mu_tiling = io_tile_info->hacked_for_mu_tiling;
+    int bank_toggle_mode = io_tile_info->bank_toggle_mode;
 
     // If pad_o in env var call hacky padding function
     bool use_padding = output_padding_config(io_tile_info, &start_addr, &cycle_start_addr);
@@ -425,7 +436,7 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
     }
 
     int E64_multi_bank_mode = get_E64_multi_bank_mode_config();
-    if (E64_multi_bank_mode) {
+    if (E64_multi_bank_mode && E64_packed) {
         printf("INFO: Using exchange_64 with multi-bank mode\n");
     }
 
@@ -454,7 +465,8 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         data_stride[i] = io_tile_info->data_stride[i];
 
         // Skip this adjustment if the addr gen config has already been modified to account for matrix unit's tiling
-        if (!hacked_for_mu_tiling){
+        // Also skip it if configured in bank toggle mode
+        if (!(hacked_for_mu_tiling || bank_toggle_mode)){
             for (int j = 0; j < i; j++) {
                 if (exchange_64_mode && E64_packed && j == 0) {
                     cycle_stride[i] -= io_tile_info->cycle_stride[j] * (io_tile_info->extent[j]/4 - 1);
@@ -465,7 +477,10 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
                 }
             }
         } else {
-            printf("INFO: Addr gen config hacked for MU tiling for IO tile at (%d, %d), skipping stride adjustment\n", io_tile_info->pos.x, io_tile_info->pos.y);
+            if (hacked_for_mu_tiling)
+                printf("INFO: Addr gen config hacked for MU tiling for IO tile at (%d, %d), skipping stride adjustment\n", io_tile_info->pos.x, io_tile_info->pos.y);
+            if (bank_toggle_mode)
+                printf("INFO: Addr gen config hacked for bank toggle mode for IO tile at (%d, %d), skipping stride adjustment\n", io_tile_info->pos.x, io_tile_info->pos.y);
         }
 
         data_stride[i] = data_stride[i] << CGRA_BYTE_OFFSET;
@@ -509,15 +524,15 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         #define GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB 0
         #endif
 
-        if (HW_supports_multi_bank() && HW_supports_E64()) {
+        if (HW_supports_multi_bank() && HW_supports_E64() && E64_packed) {
             add_config(config_info,
                     (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_DMA_EXCHANGE_64_MODE_R,
                     (E64_multi_bank_mode << GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB + 1) |
-                    ((exchange_64_mode && E64_packed) << GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB));
-        } else if (HW_supports_E64()) {
+                    (exchange_64_mode << GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB));
+        } else if (HW_supports_E64() && E64_packed) {
             add_config(config_info,
                     (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_DMA_EXCHANGE_64_MODE_R,
-                    (exchange_64_mode && E64_packed) << GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB);
+                    (exchange_64_mode << GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB));
         }
 
         add_config(config_info,
@@ -591,16 +606,26 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         // If use hacky padding then switch to valid mode
         if (use_padding || use_glb_tiling) mode = ST_DMA_VALID_MODE_STATIC;
 
-        if (HW_supports_multi_bank() && HW_supports_E64()) {
+        if (HW_supports_multi_bank() && HW_supports_E64() && E64_packed) {
             add_config(config_info,
                     (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_DMA_EXCHANGE_64_MODE_R,
                     (E64_multi_bank_mode << GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB + 1) |
-                    ((exchange_64_mode && E64_packed) << GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB));
-        } else if (HW_supports_E64()) {
+                    ((exchange_64_mode) << GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB));
+        } else if (HW_supports_E64() && E64_packed) {
             add_config(config_info,
                     (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_DMA_EXCHANGE_64_MODE_R,
-                    (exchange_64_mode && E64_packed) << GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB);
+                    (exchange_64_mode << GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB));
         }
+
+        // Bank toggle mode
+        #if defined(GLB_DMA_BANK_TOGGLE_MODE_R) && defined(GLB_DMA_BANK_TOGGLE_MODE_VALUE_F_LSB)
+        if (bank_toggle_mode) {
+            add_config(config_info,
+                    (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_DMA_BANK_TOGGLE_MODE_R,
+                     bank_toggle_mode << GLB_DMA_BANK_TOGGLE_MODE_VALUE_F_LSB);
+        }
+        #endif
+
 
         // MO: Hack to emit flush from output tiles for MU2CGRA app
         if (kernel_info->app_type == mu2cgra) {
