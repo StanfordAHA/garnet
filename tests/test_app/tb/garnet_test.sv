@@ -6,7 +6,9 @@
 ** Change history:  10/14/2020 - Implement the first version
 **===========================================================================*/
 import "DPI-C" function int initialize_monitor(int num_cols);
-import "DPI-C" function int get_external_mu_active_arr_env_var();
+
+// UNUSED methinks but verilator dies when it can't be found ("undefined reference")
+// import "DPI-C" function int get_external_mu_active_arr_env_var();
 
 program garnet_test #(
     parameter int MAX_NUM_APPS = 1000
