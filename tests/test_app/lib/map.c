@@ -618,9 +618,11 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         }
 
         // Bank toggle mode
-        add_config(config_info,
-                (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_DMA_BANK_TOGGLE_MODE_R,
-                 bank_toggle_mode << GLB_DMA_BANK_TOGGLE_MODE_VALUE_F_LSB);
+        if (bank_toggle_mode) {
+            add_config(config_info,
+                    (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_DMA_BANK_TOGGLE_MODE_R,
+                     bank_toggle_mode << GLB_DMA_BANK_TOGGLE_MODE_VALUE_F_LSB);
+        }
 
 
         // MO: Hack to emit flush from output tiles for MU2CGRA app
