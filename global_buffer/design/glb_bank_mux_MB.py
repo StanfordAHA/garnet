@@ -417,12 +417,21 @@ class GlbBankMux_MB(Generator):
         if self._params.include_glb_ring_switch:
             if ((~self.cfg_tile_connected_next) & (~self.cfg_tile_connected_prev)):
                 for i in range(self._params.banks_per_tile):
-                    if self.rd_type_d[i] == self.rd_type_e.strm:
-                        self.rdrs_packet_bank2dma[i] = self.rdrs_packet_bankarr2sw_d[i]
+                    if self.cfg_multi_bank_mode:
+                        if self.rd_type_d[i] == self.rd_type_e.strm:
+                            self.rdrs_packet_bank2dma[i] = self.rdrs_packet_bankarr2sw_d[i]
+                    else:
+                        if self.rd_type_d[i] == self.rd_type_e.strm:
+                            self.rdrs_packet_bank2dma[0] = self.rdrs_packet_bankarr2sw_d[i]
+
         else:
             for i in range(self._params.banks_per_tile):
-                if self.rd_type_d[i] == self.rd_type_e.strm:
-                    self.rdrs_packet_bank2dma[i] = self.rdrs_packet_bankarr2sw_d[i]
+                if self.cfg_multi_bank_mode:
+                    if self.rd_type_d[i] == self.rd_type_e.strm:
+                        self.rdrs_packet_bank2dma[i] = self.rdrs_packet_bankarr2sw_d[i]
+                else:
+                    if self.rd_type_d[i] == self.rd_type_e.strm:
+                        self.rdrs_packet_bank2dma[0] = self.rdrs_packet_bankarr2sw_d[i]
 
     @always_comb
     def rdrs_sw2sr_logic(self):
