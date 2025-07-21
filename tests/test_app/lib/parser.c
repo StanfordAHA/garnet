@@ -184,6 +184,22 @@ int parse_io_tile_info(struct IOTileInfo *io_tile_info, json_t const *io_tile_js
     start_addr_json = json_getChild(start_addr_list_json);
     io_tile_info->start_addr = json_getInteger(start_addr_json);
 
+    // parse gold_check start_addr. May be different from start_addr used to configure the DMA. If not found, use start_addr
+    json_t const *gold_check_start_addr_list_json;
+    gold_check_start_addr_list_json = json_getProperty(addr_json, "gold_check_starting_addr");
+    if (!gold_check_start_addr_list_json || JSON_ARRAY != json_getType(gold_check_start_addr_list_json)) {
+        io_tile_info->gold_check_start_addr = io_tile_info->start_addr; // Default to start_addr if not found
+    } else {
+        // gold_check_start_addr_json type is list, but we only need the first one
+        json_t const *gold_check_start_addr_json;
+        gold_check_start_addr_json = json_getChild(gold_check_start_addr_list_json);
+        if (!gold_check_start_addr_json || JSON_INTEGER != json_getType(gold_check_start_addr_json)) {
+            io_tile_info->gold_check_start_addr = io_tile_info->start_addr; // Default to start_addr if not found
+        } else {
+            io_tile_info->gold_check_start_addr = json_getInteger(gold_check_start_addr_json);
+        }
+    }
+
     // parse data stride
     json_t const *data_stride_list_json;
     if (io_tile_info->io == Input) {
@@ -234,6 +250,14 @@ int parse_io_tile_info(struct IOTileInfo *io_tile_info, json_t const *io_tile_js
         io_tile_info->E64_packed = 1;
     } else {
         io_tile_info->E64_packed = json_getInteger(E64_packed_json);
+    }
+
+    // Parse io_tile extent multiplier; used to handle correct gold reading in E64, and for Zircon k dim tiling
+    json_t const *extent_multiplier_json = json_getProperty(io_tile_json, "extent_multiplier");
+    if (!extent_multiplier_json || JSON_INTEGER != json_getType(extent_multiplier_json)) {
+        io_tile_info->extent_multiplier = 1;  // Default to 1 if not found or not an integer
+    } else {
+        io_tile_info->extent_multiplier = json_getInteger(extent_multiplier_json);
     }
 
     // Parse hacked_for_mu_tiling for matrix unit tiling
@@ -898,6 +922,11 @@ int get_io_tile_start_addr(void *info, int index) {
     return io_info->io_tiles[index].start_addr;
 }
 
+int get_io_tile_gold_check_start_addr(void *info, int index) {
+    GET_IO_INFO(info);
+    return io_info->io_tiles[index].gold_check_start_addr;
+}
+
 int get_io_tile_cycle_start_addr(void *info, int index) {
     GET_IO_INFO(info);
     return io_info->io_tiles[index].cycle_start_addr;
@@ -936,6 +965,11 @@ int get_io_tile_is_glb_input(void *info, int index) {
 int get_io_tile_E64_packed(void *info, int index) {
     GET_IO_INFO(info);
     return io_info->io_tiles[index].E64_packed;
+}
+
+int get_io_tile_extent_multiplier(void *info, int index) {
+    GET_IO_INFO(info);
+    return io_info->io_tiles[index].extent_multiplier;
 }
 
 int get_io_tile_bank_toggle_mode(void *info, int index) {

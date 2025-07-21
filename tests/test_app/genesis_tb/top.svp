@@ -344,6 +344,7 @@ module top;
             integer inputScale_data_file;
             integer weightScale_data_file;
             integer systolic_array_output_data_file;
+            integer matrix_unit_done_file; // Dump when the matrix unit is done
             initial begin
                 input_data_file = $fopen("input_data_mu_in.txt", "w");
                 if (input_data_file == 0) begin
@@ -380,6 +381,12 @@ module top;
                     $display("Error: Could not open systolic_array_mu.txt file.");
                     $finish;
                 end
+
+                matrix_unit_done_file = $fopen("matrix_unit_done.txt", "w");
+                if (matrix_unit_done_file == 0) begin
+                    $display("Error: Could not open matrix_unit_done.txt file.");
+                    $finish;
+                end
             end
 
             always @(posedge clk) begin
@@ -405,6 +412,10 @@ module top;
 
                 if (dut.matrixUnit_1.bb.outputsFromSystolicArray_vld & dut.matrixUnit_1.bb.outputsFromSystolicArray_rdy) begin
                     $fwrite(systolic_array_output_data_file, "[%0t] outputsFromSystolicArray_dat = %0128x\n", $time, dut.matrixUnit_1.bb.outputsFromSystolicArray_dat);
+                end
+
+                if (dut.matrixUnit_1.bb.doneSignal_vld) begin
+                    $fwrite(matrix_unit_done_file, "[%0t] Matrix unit done", $time);
                 end
             end
     \`endif

@@ -253,9 +253,13 @@ int glb_map(void *kernel_, int dpr_enabled) {
             if (get_E64_multi_bank_mode_config() && io_tile_info->E64_packed) {
                 io_tile_info->start_addr =
                 (io_tile_info->start_addr << CGRA_BYTE_OFFSET) + ((tile * 2 + j%2) << BANK_ADDR_WIDTH);
+                io_tile_info->gold_check_start_addr =
+                (io_tile_info->gold_check_start_addr << CGRA_BYTE_OFFSET) + ((tile * 2 + j%2) << BANK_ADDR_WIDTH);
             } else {
                 io_tile_info->start_addr =
                 (io_tile_info->start_addr << CGRA_BYTE_OFFSET) + ((tile * 2 + 1) << BANK_ADDR_WIDTH);
+                io_tile_info->gold_check_start_addr =
+                (io_tile_info->gold_check_start_addr << CGRA_BYTE_OFFSET) + ((tile * 2 + 1) << BANK_ADDR_WIDTH);
             }
 
             printf("Mapping output_%0d_block_%0d to global buffer\n", i, j);
