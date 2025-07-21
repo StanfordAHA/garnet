@@ -454,16 +454,7 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
     // Convert extent/stride hardware-friendly
     for (int i = 0; i < loop_dim; i++) {
         extent[i] = io_tile_info->extent[i] - 2;
-
-        if (exchange_64_mode && E64_packed) {
-            if (i == 0) {
-                dma_range[i] = (io_tile_info->extent[i]/4) - 2;
-            } else {
-                dma_range[i] = extent[i];
-            }
-        } else {
-            dma_range[i] = extent[i];
-        }
+        dma_range[i] = extent[i];
 
         cycle_stride[i] = io_tile_info->cycle_stride[i];
         data_stride[i] = io_tile_info->data_stride[i];
@@ -472,13 +463,8 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         // Also skip it if configured in bank toggle mode
         if (!(hacked_for_mu_tiling || bank_toggle_mode)){
             for (int j = 0; j < i; j++) {
-                if (exchange_64_mode && E64_packed && j == 0) {
-                    cycle_stride[i] -= io_tile_info->cycle_stride[j] * (io_tile_info->extent[j]/4 - 1);
-                    data_stride[i] -= io_tile_info->data_stride[j] * (io_tile_info->extent[j]/4 - 1);
-                } else {
-                    cycle_stride[i] -= io_tile_info->cycle_stride[j] * (io_tile_info->extent[j] - 1);
-                    data_stride[i] -= io_tile_info->data_stride[j] * (io_tile_info->extent[j] - 1);
-                }
+                cycle_stride[i] -= io_tile_info->cycle_stride[j] * (io_tile_info->extent[j] - 1);
+                data_stride[i] -= io_tile_info->data_stride[j] * (io_tile_info->extent[j] - 1);
             }
         } else {
             if (hacked_for_mu_tiling)

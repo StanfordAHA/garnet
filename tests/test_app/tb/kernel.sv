@@ -359,6 +359,8 @@ function Kernel::new(string app_dir, int dpr);
         end else begin
             for (int j = 0; j < num_io_tiles; j++) begin
             num_pixels = input_data[i].size / num_io_tiles;
+            // To ensure all data gets read out. Useful when applying E64 packing 
+            num_pixels = num_pixels * get_io_tile_extent_multiplier(io_info, j);
                 inputs[i].io_tiles[j].num_data = num_pixels;
                 inputs[i].io_tiles[j].io_block_data = new[num_pixels];
                 // NOTE: We assume only innermost loop is unrolled.
@@ -440,6 +442,7 @@ function Kernel::new(string app_dir, int dpr);
                 end
             end
 
+            // To ensure all data gets read out. Useful when applying E64 packing or k-dim host tiling in zircon
             num_pixels = num_pixels * get_io_tile_extent_multiplier(io_info, j);
 
             // For GLB tiling read memory region of entire feature map
