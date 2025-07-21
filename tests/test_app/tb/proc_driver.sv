@@ -106,11 +106,16 @@ task ProcDriver_write_8b_network_data();
         // This will write data to Bank 0, Bank 1, Bank 2, Bank 3...Bank 0 Bank 1 Bank 2 Bank 3 in a cycle
         // ProcDriver_write_waddr = {cur_addr[20:18], cur_addr[4:3], cur_addr[17:5], cur_addr[2:0]};
         // NOTE: This doesn't work on small CGRAs (e.g. fast regression)
-        ProcDriver_write_waddr = {  cur_addr[MU_ADDR_WIDTH - 1 : MU_ADDR_WIDTH - 1 - (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES) - 1)],
-                                    cur_addr[BANK_BYTE_OFFSET + (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES) - 1) - 1 : BANK_BYTE_OFFSET],
-                                    cur_addr[MU_ADDR_WIDTH - 1 - (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES)) : BANK_BYTE_OFFSET + (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES) - 1)],
-                                    cur_addr[BANK_BYTE_OFFSET - 1 : 0]
-                            };
+        // Setting it to 0 for now for that case. To make it work in the future, need to do something like {curr_addr[18:18], [4:3], [17:5], [2:0]}
+        `ifdef DEFAULT_MU_ADDR_TRANSL_LEGAL
+            ProcDriver_write_waddr = {  cur_addr[MU_ADDR_WIDTH - 1 : MU_ADDR_WIDTH - 1 - (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES) - 1)],
+                                        cur_addr[BANK_BYTE_OFFSET + (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES) - 1) - 1 : BANK_BYTE_OFFSET],
+                                        cur_addr[MU_ADDR_WIDTH - 1 - (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES)) : BANK_BYTE_OFFSET + (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES) - 1)],
+                                        cur_addr[BANK_BYTE_OFFSET - 1 : 0]
+                                };
+        `else
+            ProcDriver_write_waddr = 0;
+        `endif
         ProcDriver_write_wdata = bdata;
         ProcDriver_write();
         cur_addr += 8;  // Counts hex 8,10,18,20...(8x2^10 == 0x1000
@@ -142,11 +147,16 @@ task ProcDriver_write_16b_network_data();
         // This will write data to Bank 0, Bank 1, Bank 2, Bank 3...Bank 0 Bank 1 Bank 2 Bank 3 in a cycle
         // ProcDriver_write_waddr = {cur_addr[20:18], cur_addr[4:3], cur_addr[17:5], cur_addr[2:0]};
         // NOTE: This doesn't work on small CGRAs (e.g. fast regression)
-        ProcDriver_write_waddr = {  cur_addr[MU_ADDR_WIDTH - 1 : MU_ADDR_WIDTH - 1 - (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES) - 1)],
-                                    cur_addr[BANK_BYTE_OFFSET + (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES) - 1) - 1 : BANK_BYTE_OFFSET],
-                                    cur_addr[MU_ADDR_WIDTH - 1 - (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES)) : BANK_BYTE_OFFSET + (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES) - 1)],
-                                    cur_addr[BANK_BYTE_OFFSET - 1 : 0]
-                            };
+        // Setting it to 0 for now for that case. To make it work in the future, need to do something like {curr_addr[18:18], [4:3], [17:5], [2:0]}
+        `ifdef DEFAULT_MU_ADDR_TRANSL_LEGAL
+            ProcDriver_write_waddr = {  cur_addr[MU_ADDR_WIDTH - 1 : MU_ADDR_WIDTH - 1 - (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES) - 1)],
+                                        cur_addr[BANK_BYTE_OFFSET + (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES) - 1) - 1 : BANK_BYTE_OFFSET],
+                                        cur_addr[MU_ADDR_WIDTH - 1 - (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES)) : BANK_BYTE_OFFSET + (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES) - 1)],
+                                        cur_addr[BANK_BYTE_OFFSET - 1 : 0]
+                                };
+        `else
+            ProcDriver_write_waddr = 0;
+        `endif
         ProcDriver_write_wdata = bdata;
         ProcDriver_write();
         cur_addr += 8;  // Counts hex 8,10,18,20...(8x2^10 == 0x1000
