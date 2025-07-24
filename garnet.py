@@ -1127,7 +1127,7 @@ def build_verilog(args, garnet):
     matrix_unit_params["MU_AXI_ADDR_WIDTH"] = 30
     matrix_unit_params["MU_AXI_DATA_WIDTH"] = 64
     gen_param_header(top_name="matrix_unit_param",
-                     params=matrix_unit_params,
+                     matrix_unit_params=matrix_unit_params, glb_params=args.glb_params,
                      output_folder=os.path.join(garnet_home, "matrix_unit/header"))
     input_base_addr_reg = Reg(name="MU_AXI_INPUT_BASE_R", addr=8, lsb=0, msb=0)
     weight_base_addr_reg = Reg(name="MU_AXI_WEIGHT_BASE_R", addr=16, lsb=0, msb=0)

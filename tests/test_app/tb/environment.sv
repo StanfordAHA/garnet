@@ -101,13 +101,13 @@ task Env_read_data();
                 if (j % 2 == 0) begin
                     // In bank toggle mode, the entire GLB tile is used for storing data, and we need to start from bank 0
                     // Note that by default the output IO tile has a bank offset to match default odd pos x in map.c, so we need to subtract 1 bank offset
-                    start_addr = kernel.outputs[i].io_tiles[j].start_addr - (1 << BANK_ADDR_WIDTH);
+                    start_addr = kernel.outputs[i].io_tiles[j].gold_check_start_addr - (1 << BANK_ADDR_WIDTH);
                 end else begin
-                    start_addr = kernel.outputs[i].io_tiles[j].start_addr;
+                    start_addr = kernel.outputs[i].io_tiles[j].gold_check_start_addr;
                 end
             end else begin
                 data_q = new[kernel.outputs[i].io_tiles[j].io_block_data.size()];
-                start_addr = kernel.outputs[i].io_tiles[j].start_addr; // 0x1000 or some such
+                start_addr = kernel.outputs[i].io_tiles[j].gold_check_start_addr; // 0x1000 or some such
             end
             $display("[%s] IO tile %0d start_addr = 0x%x", kernel.name, j, start_addr);
             ProcDriver_read_data();

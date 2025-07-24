@@ -44,6 +44,7 @@ struct IOTileInfo {
     enum IO io;
     int tile;
     int start_addr;
+    int gold_check_start_addr; // for gold check, may be different from start_addr
     int cycle_start_addr;
 
     struct Position pos;
@@ -55,6 +56,7 @@ struct IOTileInfo {
     int data_stride[LOOP_LEVEL];
     int extent[LOOP_LEVEL];
     int E64_packed;
+    int extent_multiplier;
 
     // For back-to-back kernels
     int is_glb_input;
