@@ -16,6 +16,10 @@ typedef enum int {
 Kernel kernel;
 DnnLayer dnn_layer;
 int external_mu_active;
+integer performance_summary_file;
+realtime active_app_time;
+realtime mu_config_time, glb_config_time, cgra_config_time;
+realtime bitstream_write_time, input_data_write_time, network_params_write_time;
 
 task one_cy_delay_if_verilator();
 `ifdef verilator
@@ -53,8 +57,10 @@ task Env_write_bs();
 
     end_time = $realtime;
     $display("[%s] write bitstream to glb end at %0t", kernel.name, end_time);
+    bitstream_write_time = end_time - start_time;
     $display("[%s] It takes %0t time to write the bitstream to glb.", kernel.name,
-             end_time - start_time);
+             bitstream_write_time);
+
 endtask
 
 task Env_write_data();
@@ -76,8 +82,9 @@ task Env_write_data();
             end_time = $realtime;
             $display("[%s] write input_%0d_block_%0d to glb end at %0t", kernel.name, i, j,
                      end_time);
+            input_data_write_time = end_time - start_time;
             $display("[%s] It takes %0t time to write %0d Byte data to glb.", kernel.name,
-                     end_time - start_time, kernel.inputs[i].io_tiles[j].num_data * 2);
+                     input_data_write_time, kernel.inputs[i].io_tiles[j].num_data * 2);
         end
     end
 endtask
@@ -127,7 +134,9 @@ task Env_glb_configure();
     AxilDriver_cfg = kernel.bs_cfg;     AxilDriver_config_write();
     AxilDriver_cfg = kernel.kernel_cfg; AxilDriver_config_write();
     end_time = $realtime;
+    glb_config_time = end_time - start_time;
     $display("[%s] glb configuration end at %0t\n", kernel.name, end_time);  // 647.5ns
+    $display("[%s] It takes %0t time to do glb configuration.", kernel.name, glb_config_time);
 endtask
 
 
@@ -157,6 +166,8 @@ task Env_mu_configure();
 
     end_time = $realtime;
     $display("[%s] MU configuration end at %0t\n", kernel.name, end_time);
+    $display("[%s] It takes %0t time to do MU configuration.", kernel.name, mu_config_time);
+    mu_config_time = end_time - start_time;
 endtask
 
 
@@ -191,8 +202,9 @@ task Env_cgra_configure();
 
     end_time = $realtime;
     $display("[%s] fast configuration end at %0t", kernel.name, end_time);
+    cgra_config_time = end_time - start_time;
     $display("[%s] It takes %0t time to do parallel configuration.", kernel.name,
-             end_time - start_time);
+             cgra_config_time);
 endtask
 
 function bit [NUM_CGRA_COLS_INCLUDING_IO-1:0] calculate_cgra_stall_mask(int start, int num);
@@ -332,7 +344,8 @@ task Env_kernel_test();
             Env_wait_interrupt();
             Env_clear_interrupt();
             end_time = $realtime;
-            $display("[%s] It takes %0t total time to run kernel.", kernel.name, end_time - start_time);
+            active_app_time = end_time - start_time;
+            $display("[%s] It takes %0t total time to run kernel.", kernel.name, active_app_time);
 
             total_output_size = 0;
             foreach (kernel.output_size[i]) begin
@@ -520,10 +533,26 @@ task Env_write_network_data();
 
     end_time = $realtime;
     $display("[%s] write network params to glb end at %0t", kernel.name, end_time);
-    $display("[%s] It takes %0t time to write network params to glb.", kernel.name, end_time - start_time);
+    network_params_write_time = end_time - start_time;
+    $display("[%s] It takes %0t time to write network params to glb.", kernel.name, network_params_write_time);
 
 
 endtask // Env_write_network_data
+
+
+task Env_log_performance();
+    realtime total_config_time, total_write_data_time;
+    total_config_time = glb_config_time + cgra_config_time + (external_mu_active ? mu_config_time : 0);
+    total_write_data_time = bitstream_write_time + input_data_write_time + (external_mu_active ? (network_params_write_time) : 0);
+
+    performance_summary_file = $fopen("performance_summary.txt", "w");
+    $fwrite(performance_summary_file, "Kernel name                : %s\n", kernel.name);
+    $fwrite(performance_summary_file, "Clock period               : %0t\n", `CLK_PERIOD);
+    $fwrite(performance_summary_file, "Active app time            : %0t\n", active_app_time);
+    $fwrite(performance_summary_file, "Total config time          : %0t\n", total_config_time);
+    $fwrite(performance_summary_file, "Total write data time      : %0t\n", total_write_data_time);
+    $fclose(performance_summary_file);
+endtask // Env_log_performance
 
 
 task Env_run();
@@ -569,6 +598,7 @@ task Env_run();
                 Env_read_data();      $display("[%0t] read_data DONE", $time);
                 kernel.compare();
                 $display("[%0t] Processing kernel %0d END", $time, j);
+                Env_log_performance();
             end
         end
     end
