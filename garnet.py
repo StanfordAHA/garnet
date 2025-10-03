@@ -501,20 +501,25 @@ class Garnet(Generator):
             inter_core_conns = self.inter_core_connections[bw]
             (source, source_port) = conns[0]
             for (sink, sink_port) in conns[1:]:
-                if source_port in inter_core_conns and source[0] == "M":
-                    if sink_port in inter_core_conns[source_port] and sink[0] == 'p':
-                        packed_ponds[source] = sink
+                pond_to_pe = source_port in inter_core_conns and source[0] == "M" and sink_port in inter_core_conns[source_port] and sink[0] == 'p'
+                pe_to_pond = source_port in inter_core_conns and source[0] == "p" and sink_port in inter_core_conns[source_port] and sink[0] == 'M'
+                if pond_to_pe:
+                    packed_ponds[source] = sink
+                elif pe_to_pond:
+                    packed_ponds[sink] = source
 
         for edge_id, conns in netlist_info['netlist'].items():
             new_conns = []
             for conn in conns:
-                if conn[0] in packed_ponds:
+                is_path_balance_pond = "path_balance_pond" in netlist_info["id_to_name"][conn[0]]
+                if conn[0] in packed_ponds and not(is_path_balance_pond):
                     new_conns.append((packed_ponds[conn[0]], conn[1]))
                 else:
                     new_conns.append(conn)
             netlist_info['netlist'][edge_id] = new_conns
 
         self.pes_with_packed_ponds = {pe: pond for pond, pe in packed_ponds.items()}
+
 
     def load_netlist(self, app, load_only, pipeline_input_broadcasts,
                      input_broadcast_branch_factor, input_broadcast_max_leaves, use_dense_ready_valid=False):
@@ -739,65 +744,6 @@ class Garnet(Generator):
                 netlist_info["buses"], netlist_info["active_core_ports"], netlist_info["id_to_metadata"])
 
 
-    def pack_path_balancing_ponds(self, halide_src):
-        app_bin_folder = halide_src.split("/design_top.json")[0]
-
-        design_placement_file = os.path.join(app_bin_folder, "design.place")
-        path_balancing_json = os.path.join(app_bin_folder, "path_balancing.json")
-
-        assert os.path.exists(design_placement_file), f"Cannot find placement file {design_placement_file}"
-        assert os.path.exists(path_balancing_json), f"Cannot find path balancing file {path_balancing_json}"
-
-        with open(path_balancing_json, "r") as f:
-            path_balancing_info = json.load(f)
-
-        balance_lengths = path_balancing_info["balance_lengths"]
-
-
-        original_placement = {}
-        manual_placement = {}
-
-        # Parse design.place and do the following:
-        # 1. Put every instance that isn't a pipeline reg into manual_placement
-        # 2. For every PE in balance_lengths, add a pond with same location and a unique name to manual_placement
-
-        maximum_pond_id_num = -1
-
-        with open(design_placement_file, "r") as f:
-            # Skip the first two header lines
-            next(f)
-            next(f)
-            for line in f:
-                parts = line.strip().split()
-                assert len(parts) == 4, f"Unexpected line in placement file {line}"
-                name = parts[0]
-
-                if "pnr_pipelining" not in name:
-                    id = parts[3].split("#")[1]
-
-                    # This is a pond, track its maximum ID
-                    if "M" in id:
-                        pond_id_num = int(id[1:])
-                        if pond_id_num > maximum_pond_id_num:
-                            maximum_pond_id_num = pond_id_num
-
-                    x, y = int(parts[1]), int(parts[2])
-                    original_placement[id] = (x, y)
-                    manual_placement[id] = (x, y)
-
-        for balance_pe in balance_lengths:
-            assert balance_pe in original_placement, f"PE {balance_pe} in path balancing info not found in placement file"
-            x, y = original_placement[balance_pe]
-            # Create a unique pond ID
-            maximum_pond_id_num += 1
-            pond_id = f"M{maximum_pond_id_num}"
-            manual_placement[pond_id] = (x, y)
-
-        # Write out new manual.place file
-        manual_placement_file = os.path.join(app_bin_folder, "manual.place")
-        with open(manual_placement_file, "w") as f:
-           for id, (x, y) in manual_placement.items():
-               f.write(f"{id} {x} {y}\n")
 
     def place_and_route(self, args, load_only=False):
 
@@ -812,11 +758,6 @@ class Garnet(Generator):
         input_broadcast_branch_factor = args.input_broadcast_branch_factor
         input_broadcast_max_leaves = args.input_broadcast_max_leaves
         dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1"
-        # TODO: This should NOT be set in application_parameters. It should be set by the flow on the 2nd pass
-        pond_path_balancing = "POND_PATH_BALANCING" in os.environ and os.environ.get("POND_PATH_BALANCING") == "1"
-
-        if pond_path_balancing:
-            self.pack_path_balancing_ponds(halide_src)
 
         id_to_name, instance_to_instr, netlist, bus, active_core_ports, id_to_metadata = \
             self.load_netlist(halide_src,
