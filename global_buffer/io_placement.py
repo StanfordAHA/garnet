@@ -219,7 +219,14 @@ def place_io_blk(id_to_name, app_dir, io_sides, orig_cgra_width, orig_cgra_heigh
         placement[input_blk] = (mu_io_startX + idx//2, mu_io_tile_row)
 
     # manual placement of PE/MEM tiles if needed
-    if "MANUAL_PLACER" in os.environ and os.environ.get("MANUAL_PLACER") == "1" and os.path.isfile(app_dir + "/manual.place"):
+    resnet_manual_placer = "MANUAL_PLACER" in os.environ and os.environ.get("MANUAL_PLACER") == "1"
+    path_balance_manual_placer = "MANUAL_PATH_BALANCE_PLACER" in os.environ and os.environ.get("MANUAL_PATH_BALANCE_PLACER") == "1"
+
+    app_dir_pre_bin = app_dir.split("/bin")[0]
+
+    if (resnet_manual_placer and os.path.isfile(app_dir + "/manual.place")) or (path_balance_manual_placer and os.path.isfile(app_dir_pre_bin + "/manual.place")):
+        if path_balance_manual_placer:
+            os.system(f"cp {app_dir_pre_bin}/manual.place {app_dir}/manual.place")
         with open(app_dir + "/manual.place", "r") as f:
             data = f.readlines()
             for dat in data:
