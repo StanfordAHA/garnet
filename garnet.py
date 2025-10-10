@@ -780,7 +780,7 @@ class Garnet(Generator):
                             pipeline_config_interval=self.pipeline_config_interval,
                             pes_with_packed_ponds=self.pes_with_packed_ponds,
                             west_in_io_sides=west_in_io_sides,
-                            sparse=dense_ready_valid)
+                            dense_ready_valid=dense_ready_valid)
 
         return placement, routing, id_to_name, instance_to_instr, netlist, bus, active_core_ports, id_to_metadata
 
