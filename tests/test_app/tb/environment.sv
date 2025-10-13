@@ -311,7 +311,7 @@ task Env_kernel_test();
     // FORK BRANCH 1: Behavioral MU writes data to CGRA
     fork
         begin
-            //TODO: Explain this magic number from the RTL. Possibly add regs to solve this in real design.
+            //TODO: Explain this magic number 8 from the RTL. Possibly add regs to solve this in real design.
             if (kernel.app_type != GLB2CGRA && !external_mu_active) begin
                 repeat (8) @(posedge behavioral_mu_ifc.clk);
                 Behavioral_MU_write_to_cgra();
