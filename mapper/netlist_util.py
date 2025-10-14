@@ -1339,7 +1339,6 @@ def create_netlist_info(
 
     sinks = PipelineBroadcastHelper().doit(fdag)
     pdag, pond_reg_skipped, swap_pond_ports = PackRegsIntoPonds(sinks).doit(fdag)
-    # breakpoint()
 
     def tile_to_char(t):
         if t.split(".")[1] == "PE":
