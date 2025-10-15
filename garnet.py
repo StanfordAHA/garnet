@@ -501,20 +501,25 @@ class Garnet(Generator):
             inter_core_conns = self.inter_core_connections[bw]
             (source, source_port) = conns[0]
             for (sink, sink_port) in conns[1:]:
-                if source_port in inter_core_conns and source[0] == "M":
-                    if sink_port in inter_core_conns[source_port] and sink[0] == 'p':
-                        packed_ponds[source] = sink
+                pond_to_pe = source_port in inter_core_conns and source[0] == "M" and sink_port in inter_core_conns[source_port] and sink[0] == 'p'
+                pe_to_pond = source_port in inter_core_conns and source[0] == "p" and sink_port in inter_core_conns[source_port] and sink[0] == 'M'
+                if pond_to_pe:
+                    packed_ponds[source] = sink
+                elif pe_to_pond:
+                    packed_ponds[sink] = source
 
         for edge_id, conns in netlist_info['netlist'].items():
             new_conns = []
             for conn in conns:
-                if conn[0] in packed_ponds:
+                is_path_balance_pond = "path_balance_pond" in netlist_info["id_to_name"][conn[0]]
+                if conn[0] in packed_ponds and not(is_path_balance_pond):
                     new_conns.append((packed_ponds[conn[0]], conn[1]))
                 else:
                     new_conns.append(conn)
             netlist_info['netlist'][edge_id] = new_conns
 
         self.pes_with_packed_ponds = {pe: pond for pond, pe in packed_ponds.items()}
+
 
     def load_netlist(self, app, load_only, pipeline_input_broadcasts,
                      input_broadcast_branch_factor, input_broadcast_max_leaves, use_dense_ready_valid=False):
@@ -737,6 +742,8 @@ class Garnet(Generator):
 
         return (netlist_info["id_to_name"], netlist_info["instance_to_instrs"], netlist_info["netlist"],
                 netlist_info["buses"], netlist_info["active_core_ports"], netlist_info["id_to_metadata"])
+
+
 
     def place_and_route(self, args, load_only=False):
 

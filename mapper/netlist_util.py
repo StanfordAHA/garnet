@@ -1136,6 +1136,7 @@ class PackRegsIntoPonds(Visitor):
         return self.find_pe(new_node, num_regs, reg_skip_list)
 
     def find_packing(self, dag):
+        pond_path_balancing = "POND_PATH_BALANCING" in os.environ and os.environ.get("POND_PATH_BALANCING") == "1"
         connections_to_nodes = {}
         connections = []
         ponds = []
@@ -1143,6 +1144,9 @@ class PackRegsIntoPonds(Visitor):
 
         for pond in dag.sources:
             if pond.node_name == "cgralib.Pond":
+                # Don't do this for path balancing ponds
+                if pond_path_balancing and ("path_balance_pond" in pond.iname):
+                    continue
                 ponds.append(pond.iname)
                 for pond_sink in self.sinks[pond]:
                     assert pond_sink.node_name == "Select"
