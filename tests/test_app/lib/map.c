@@ -24,6 +24,17 @@ struct Monitor {
 
 static struct Monitor monitor;
 
+
+int is_voyager_standalone_cgra_app() {
+    int voyager_standalone_cgra_app = 0;
+    const char *voyager_standalone_cgra_app_env_var = "VOYAGER_STANDALONE_CGRA_APP";
+    char *voyager_standalone_cgra_app_value = getenv(voyager_standalone_cgra_app_env_var);
+    if (voyager_standalone_cgra_app_value != NULL && strcmp(voyager_standalone_cgra_app_value, "1") == 0) {
+        voyager_standalone_cgra_app = 1;
+    }
+    return voyager_standalone_cgra_app;
+}
+
 int get_exchange_64_config() {
     int exchange_64_mode = 0;
     const char *exchange_64_env_var = "E64_MODE_ON";
