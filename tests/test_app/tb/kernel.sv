@@ -91,6 +91,10 @@ import "DPI-C" function int get_io_tile_gold_check_start_addr(
     chandle info,
     int index
 );
+import "DPI-C" function int get_io_tile_tb_write_start_addr(
+    chandle info,
+    int index
+);
 import "DPI-C" function int get_io_tile_map_tile(
     chandle info,
     int index
@@ -178,6 +182,7 @@ typedef struct {
     int tile;
     int start_addr;
     int gold_check_start_addr; // for gold check, may be different from start_addr
+    int tb_write_start_addr; // for testbench to write data
     int num_data;
     int is_glb_input; // for back-to-back kernels to judge if input is already in glb
     int E64_packed;
@@ -678,6 +683,7 @@ function int Kernel::kernel_map();
             inputs[i].io_tiles[j].tile = get_io_tile_map_tile(io_info, j);
             inputs[i].io_tiles[j].start_addr = get_io_tile_start_addr(io_info, j);
             inputs[i].io_tiles[j].is_glb_input = get_io_tile_is_glb_input(io_info, j); // for back-to-back kernels
+            inputs[i].io_tiles[j].tb_write_start_addr = get_io_tile_tb_write_start_addr(io_info, j); // for testbench write
             inputs[i].io_tiles[j].E64_packed = get_io_tile_E64_packed(io_info, j);
         end
     end

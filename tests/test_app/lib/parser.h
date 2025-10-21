@@ -45,6 +45,7 @@ struct IOTileInfo {
     int tile;
     int start_addr;
     int gold_check_start_addr; // for gold check, may be different from start_addr
+    int tb_write_start_addr; // for testbench to write data
     int cycle_start_addr;
 
     struct Position pos;
