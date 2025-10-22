@@ -1,4 +1,8 @@
-cat <<'EOF'
+#!/bin/bash
+
+# Template for regression steps
+
+template='
 # ------------------------------------------------------------------------
 - label: ":wrench: Aha regressions"
   agents: { hostname: $BUILDKITE_AGENT_META_DATA_HOSTNAME, docker: true }
@@ -19,7 +23,17 @@ cat <<'EOF'
       source /aha/bin/activate;
       source /cad/modules/tcl/init/sh;
       module load base incisive xcelium/19.03.003 vcs/Q-2020.03-SP2;
-      pwd; aha regress pr;
+      aha regress pr;
     "
+'
 
-EOF
+# Launch THREE regression steps, "regressions 123", 456, and 789.
+
+for i in 1 4 7; do
+    group=$i$((i+1))$((i+2))
+    echo "$template" | sed "
+      s/Aha regressions/Aha regressions $group/
+      s/CONTAINER/CONTAINER-$group/g
+      s/aha regress pr/aha regress pr_aha$((i++)); aha regress pr_aha$((i++)); aha regress pr_aha$((i++))/
+    "
+done
