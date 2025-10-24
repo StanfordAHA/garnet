@@ -222,7 +222,7 @@ int glb_map(void *kernel_, int dpr_enabled) {
             }
             printf("Group start: %d, pos x: %d\n", group_start, io_tile_info->pos.x);
             io_tile_info->tile = tile;
-            if (get_E64_multi_bank_mode_config() && io_tile_info->E64_packed) {
+            if (get_E64_multi_bank_mode_config() && io_tile_info->E64_packed && io_tile_info->use_multi_bank_mode) {
                 io_tile_info->start_addr =
                 (io_tile_info->start_addr << CGRA_BYTE_OFFSET) + ((tile * 2 + j%2) << BANK_ADDR_WIDTH);
             } else {
@@ -261,7 +261,7 @@ int glb_map(void *kernel_, int dpr_enabled) {
             }
 
             io_tile_info->tile = tile;
-            if (get_E64_multi_bank_mode_config() && io_tile_info->E64_packed) {
+            if (get_E64_multi_bank_mode_config() && io_tile_info->E64_packed && io_tile_info->use_multi_bank_mode) {
                 io_tile_info->start_addr =
                 (io_tile_info->start_addr << CGRA_BYTE_OFFSET) + ((tile * 2 + j%2) << BANK_ADDR_WIDTH);
                 io_tile_info->gold_check_start_addr =
@@ -431,6 +431,7 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
     int cycle_start_addr = io_tile_info->cycle_start_addr;
     int loop_dim = io_tile_info->loop_dim;
     int E64_packed = io_tile_info->E64_packed;
+    int tile_use_multi_bank_mode = io_tile_info->use_multi_bank_mode;
     int extent[LOOP_LEVEL];
     int dma_range[LOOP_LEVEL];
     int data_stride[LOOP_LEVEL];
@@ -451,7 +452,7 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
     }
 
     int E64_multi_bank_mode = get_E64_multi_bank_mode_config();
-    if (E64_multi_bank_mode && E64_packed) {
+    if (E64_multi_bank_mode && E64_packed && tile_use_multi_bank_mode) {
         printf("INFO: Using exchange_64 with multi-bank mode\n");
     }
 
@@ -525,7 +526,7 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         #define GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB 0
         #endif
 
-        if (HW_supports_multi_bank() && HW_supports_E64() && E64_packed) {
+        if (HW_supports_multi_bank() && HW_supports_E64() && E64_packed && tile_use_multi_bank_mode) {
             add_config(config_info,
                     (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_DMA_EXCHANGE_64_MODE_R,
                     (E64_multi_bank_mode << GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB + 1) |
@@ -607,7 +608,7 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         // If use hacky padding then switch to valid mode
         if (use_padding || use_glb_tiling) mode = ST_DMA_VALID_MODE_STATIC;
 
-        if (HW_supports_multi_bank() && HW_supports_E64() && E64_packed) {
+        if (HW_supports_multi_bank() && HW_supports_E64() && E64_packed && tile_use_multi_bank_mode) {
             add_config(config_info,
                     (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_DMA_EXCHANGE_64_MODE_R,
                     (E64_multi_bank_mode << GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB + 1) |
