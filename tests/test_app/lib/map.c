@@ -231,7 +231,7 @@ int glb_map(void *kernel_, int dpr_enabled) {
                 io_tile_info->start_addr =
                 (io_tile_info->start_addr << CGRA_BYTE_OFFSET) + ((tile * 2) << BANK_ADDR_WIDTH);
                 io_tile_info->tb_write_start_addr =
-                (io_tile_info->tb_write_start_addr << CGRA_BYTE_OFFSET) + ((tile * 2 + 1) << BANK_ADDR_WIDTH);
+                (io_tile_info->tb_write_start_addr << CGRA_BYTE_OFFSET) + ((tile * 2) << BANK_ADDR_WIDTH);
             }
 
             printf("Mapping input_%0d_block_%0d to global buffer\n", i, j);
