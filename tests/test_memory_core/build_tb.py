@@ -2083,6 +2083,7 @@ if __name__ == "__main__":
     parser.add_argument("--num-fabric-cols-removed", default=0, type=int)
     parser.add_argument('--include-E64-hw', action="store_true")
     parser.add_argument('--use-non-split-fifos', action="store_true")
+    parser.add_argument('--mu_oc_0', type=int, default=32)
 
     args = parser.parse_args()
     bespoke = args.bespoke
@@ -2136,6 +2137,9 @@ if __name__ == "__main__":
 
     if use_non_split_fifos:
         os.environ["USE_NON_SPLIT_FIFOS"] = "1"
+
+    os.environ["NUM_FABRIC_COLS_REMOVED"] = str(num_fabric_cols_removed)
+    os.environ["MU_OC_0"] = str(args.mu_oc_0)
 
     if using_matrix_unit:
         if num_fabric_cols_removed == 0:

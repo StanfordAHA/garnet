@@ -16,6 +16,10 @@ typedef enum int {
 Kernel kernel;
 DnnLayer dnn_layer;
 int external_mu_active;
+integer performance_summary_file;
+realtime active_app_time;
+realtime mu_config_time, glb_config_time, cgra_config_time;
+realtime bitstream_write_time, input_data_write_time, network_params_write_time;
 
 task one_cy_delay_if_verilator();
 `ifdef verilator
@@ -53,8 +57,10 @@ task Env_write_bs();
 
     end_time = $realtime;
     $display("[%s] write bitstream to glb end at %0t", kernel.name, end_time);
+    bitstream_write_time = end_time - start_time;
     $display("[%s] It takes %0t time to write the bitstream to glb.", kernel.name,
-             end_time - start_time);
+             bitstream_write_time);
+
 endtask
 
 task Env_write_data();
@@ -76,8 +82,9 @@ task Env_write_data();
             end_time = $realtime;
             $display("[%s] write input_%0d_block_%0d to glb end at %0t", kernel.name, i, j,
                      end_time);
+            input_data_write_time = end_time - start_time;
             $display("[%s] It takes %0t time to write %0d Byte data to glb.", kernel.name,
-                     end_time - start_time, kernel.inputs[i].io_tiles[j].num_data * 2);
+                     input_data_write_time, kernel.inputs[i].io_tiles[j].num_data * 2);
         end
     end
 endtask
@@ -127,7 +134,9 @@ task Env_glb_configure();
     AxilDriver_cfg = kernel.bs_cfg;     AxilDriver_config_write();
     AxilDriver_cfg = kernel.kernel_cfg; AxilDriver_config_write();
     end_time = $realtime;
+    glb_config_time = end_time - start_time;
     $display("[%s] glb configuration end at %0t\n", kernel.name, end_time);  // 647.5ns
+    $display("[%s] It takes %0t time to do glb configuration.", kernel.name, glb_config_time);
 endtask
 
 
@@ -136,7 +145,7 @@ task Env_mu_configure();
     $timeformat(-9, 2, " ns", 0);
     start_time = $realtime;
     $display("[%s] MU configuration start at %0t", kernel.name, start_time);
-    mu_serialized_params = dnn_layer.serialized_matrix_params;
+    mu_serialized_params = dnn_layer.serialized_matrix_params_info.tensor_32b;
     MU_AxilDriver_serialized_params_write();
 
     // input base address
@@ -157,6 +166,8 @@ task Env_mu_configure();
 
     end_time = $realtime;
     $display("[%s] MU configuration end at %0t\n", kernel.name, end_time);
+    $display("[%s] It takes %0t time to do MU configuration.", kernel.name, mu_config_time);
+    mu_config_time = end_time - start_time;
 endtask
 
 
@@ -191,8 +202,9 @@ task Env_cgra_configure();
 
     end_time = $realtime;
     $display("[%s] fast configuration end at %0t", kernel.name, end_time);
+    cgra_config_time = end_time - start_time;
     $display("[%s] It takes %0t time to do parallel configuration.", kernel.name,
-             end_time - start_time);
+             cgra_config_time);
 endtask
 
 function bit [NUM_CGRA_COLS_INCLUDING_IO-1:0] calculate_cgra_stall_mask(int start, int num);
@@ -299,9 +311,9 @@ task Env_kernel_test();
     // FORK BRANCH 1: Behavioral MU writes data to CGRA
     fork
         begin
-            //TODO: Explain this magic number 7 from the RTL. Possibly add regs to solve this in real design.
+            //TODO: Explain this magic number 8 from the RTL. Possibly add regs to solve this in real design.
             if (kernel.app_type != GLB2CGRA && !external_mu_active) begin
-                repeat (7) @(posedge behavioral_mu_ifc.clk);
+                repeat (8) @(posedge behavioral_mu_ifc.clk);
                 Behavioral_MU_write_to_cgra();
                 mu2cgra_end_time = $realtime;
             end
@@ -332,7 +344,8 @@ task Env_kernel_test();
             Env_wait_interrupt();
             Env_clear_interrupt();
             end_time = $realtime;
-            $display("[%s] It takes %0t total time to run kernel.", kernel.name, end_time - start_time);
+            active_app_time = end_time - start_time;
+            $display("[%s] It takes %0t total time to run kernel.", kernel.name, active_app_time);
 
             total_output_size = 0;
             foreach (kernel.output_size[i]) begin
@@ -479,41 +492,67 @@ task Env_write_network_data();
     $display("[%s] write network params to glb start at %0t", kernel.name, start_time);
 
     // inputActivation (INT8)
-    start_addr = dnn_layer.inputActivation_start_addr;
-    $display("inputActivation_start_addr = 0x%0h", start_addr);
-    data_q_8b = dnn_layer.inputActivation;
+    if (dnn_layer.inputActivation_info.tensor_exists) begin
+        start_addr = dnn_layer.inputActivation_info.start_addr;
+        $display("inputActivation_start_addr = 0x%0h", start_addr);
+        data_q_8b = dnn_layer.inputActivation_info.tensor_8b;
     ProcDriver_write_8b_network_data();
+    end
 
     // inputScale (E8M0)
-    start_addr = dnn_layer.inputScale_start_addr;
-    $display("inputScale_start_addr = 0x%0h", start_addr);
-    data_q_8b = dnn_layer.inputScale;
-    ProcDriver_write_8b_network_data();
+    if (dnn_layer.inputScale_info.tensor_exists) begin
+        start_addr = dnn_layer.inputScale_info.start_addr;
+        $display("inputScale_start_addr = 0x%0h", start_addr);
+        data_q_8b = dnn_layer.inputScale_info.tensor_8b;
+        ProcDriver_write_8b_network_data();
+    end
 
-    // weight INT8
-    start_addr = dnn_layer.weight_start_addr;
-    $display("weight_start_addr = 0x%0h", start_addr);
-    data_q_8b = dnn_layer.weight;
-    ProcDriver_write_8b_network_data();
+    // weight (INT8)
+    if (dnn_layer.weight_info.tensor_exists) begin
+        start_addr = dnn_layer.weight_info.start_addr;
+        $display("weight_start_addr = 0x%0h", start_addr);
+        data_q_8b = dnn_layer.weight_info.tensor_8b;
+        ProcDriver_write_8b_network_data();
+    end
 
     // weightScale (E8M0)
-    start_addr = dnn_layer.weightScale_start_addr;
-    $display("weightScale_start_addr = 0x%0h", start_addr);
-    data_q_8b = dnn_layer.weightScale;
-    ProcDriver_write_8b_network_data();
+    if (dnn_layer.weightScale_info.tensor_exists) begin
+        start_addr = dnn_layer.weightScale_info.start_addr;
+        $display("weightScale_start_addr = 0x%0h", start_addr);
+        data_q_8b = dnn_layer.weightScale_info.tensor_8b;
+        ProcDriver_write_8b_network_data();
+    end
 
     // bias (bFloat16)
-    start_addr = dnn_layer.bias_start_addr;
-    $display("bias_start_addr = 0x%0h", start_addr);
-    data_q_16b = dnn_layer.bias;
-    ProcDriver_write_16b_network_data();
+    if (dnn_layer.bias_info.tensor_exists) begin
+        start_addr = dnn_layer.bias_info.start_addr;
+        $display("bias_start_addr = 0x%0h", start_addr);
+        data_q_16b = dnn_layer.bias_info.tensor_16b;
+        ProcDriver_write_16b_network_data();
+    end
 
     end_time = $realtime;
     $display("[%s] write network params to glb end at %0t", kernel.name, end_time);
-    $display("[%s] It takes %0t time to write network params to glb.", kernel.name, end_time - start_time);
+    network_params_write_time = end_time - start_time;
+    $display("[%s] It takes %0t time to write network params to glb.", kernel.name, network_params_write_time);
 
 
 endtask // Env_write_network_data
+
+
+task Env_log_performance();
+    realtime total_config_time, total_write_data_time;
+    total_config_time = glb_config_time + cgra_config_time + (external_mu_active ? mu_config_time : 0);
+    total_write_data_time = bitstream_write_time + input_data_write_time + (external_mu_active ? (network_params_write_time) : 0);
+
+    performance_summary_file = $fopen("performance_summary.txt", "w");
+    $fwrite(performance_summary_file, "Kernel name                : %s\n", kernel.name);
+    $fwrite(performance_summary_file, "Clock period               : %0t\n", `CLK_PERIOD);
+    $fwrite(performance_summary_file, "Active app time            : %0t\n", active_app_time);
+    $fwrite(performance_summary_file, "Total config time          : %0t\n", total_config_time);
+    $fwrite(performance_summary_file, "Total write data time      : %0t\n", total_write_data_time);
+    $fclose(performance_summary_file);
+endtask // Env_log_performance
 
 
 task Env_run();
@@ -559,6 +598,7 @@ task Env_run();
                 Env_read_data();      $display("[%0t] read_data DONE", $time);
                 kernel.compare();
                 $display("[%0t] Processing kernel %0d END", $time, j);
+                Env_log_performance();
             end
         end
     end

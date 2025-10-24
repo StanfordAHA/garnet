@@ -354,7 +354,35 @@ class Garnet(Generator):
     def map(self, halide_src):
         return map_app(halide_src, retiming=True)
 
-    def get_placement_bitstream(self, placement, id_to_name, instrs, active_core_ports=None, PE_fifos_bypass_config=None):
+    def update_mu_io_config(self, placement, routing, id_to_name, instrs, mu_io_loc_to_id):
+         from canal.cyclone import PortNode
+         for _, route in routing.items():
+            for segment in route:
+                # Check if segment[0] is of PortNode type
+                if not(isinstance(segment[0], PortNode)):
+                    continue
+                node_0_name = segment[0].name
+                if node_0_name.startswith("mu2io_17_"):
+                    mu_io_parity = int(node_0_name.split("mu2io_17_")[1])
+                    node_0_pos = (segment[0].x, segment[0].y)
+
+                    id = mu_io_loc_to_id.get(node_0_pos)[mu_io_parity]
+                    instance = id_to_name[id]
+
+                    # Pnr tool chose this routing track
+                    chosen_track = segment[1].track
+
+                    # Form the new instruction
+                    node_config_kwargs = {}
+                    node_config_kwargs[f'track_active_T{chosen_track}'] = 1
+                    if mu_io_parity == 1:
+                        node_config_kwargs[f'track_select_T{chosen_track}'] = 1
+
+                    # Add the new instruction to the instrs
+                    instrs[instance] = (1, node_config_kwargs)
+
+
+    def get_placement_bitstream(self, placement, routing, id_to_name, instrs, active_core_ports=None, PE_fifos_bypass_config=None, mu_io_loc_to_id=None):
         # Replace partial tile name with coordinate in PE_fifos_bypass_config
         if PE_fifos_bypass_config is not None:
             updates = {}
@@ -372,6 +400,10 @@ class Garnet(Generator):
             for k in deletes:
                 del PE_fifos_bypass_config[k]
             PE_fifos_bypass_config.update(updates)
+
+
+        # Update MU I/O tile configurations based on routing result
+        self.update_mu_io_config(placement, routing, id_to_name, instrs, mu_io_loc_to_id)
 
 
         result = []
@@ -469,20 +501,25 @@ class Garnet(Generator):
             inter_core_conns = self.inter_core_connections[bw]
             (source, source_port) = conns[0]
             for (sink, sink_port) in conns[1:]:
-                if source_port in inter_core_conns and source[0] == "M":
-                    if sink_port in inter_core_conns[source_port] and sink[0] == 'p':
-                        packed_ponds[source] = sink
+                pond_to_pe = source_port in inter_core_conns and source[0] == "M" and sink_port in inter_core_conns[source_port] and sink[0] == 'p'
+                pe_to_pond = source_port in inter_core_conns and source[0] == "p" and sink_port in inter_core_conns[source_port] and sink[0] == 'M'
+                if pond_to_pe:
+                    packed_ponds[source] = sink
+                elif pe_to_pond:
+                    packed_ponds[sink] = source
 
         for edge_id, conns in netlist_info['netlist'].items():
             new_conns = []
             for conn in conns:
-                if conn[0] in packed_ponds:
+                is_path_balance_pond = "path_balance_pond" in netlist_info["id_to_name"][conn[0]]
+                if conn[0] in packed_ponds and not(is_path_balance_pond):
                     new_conns.append((packed_ponds[conn[0]], conn[1]))
                 else:
                     new_conns.append(conn)
             netlist_info['netlist'][edge_id] = new_conns
 
         self.pes_with_packed_ponds = {pe: pond for pond, pe in packed_ponds.items()}
+
 
     def load_netlist(self, app, load_only, pipeline_input_broadcasts,
                      input_broadcast_branch_factor, input_broadcast_max_leaves, use_dense_ready_valid=False):
@@ -706,6 +743,8 @@ class Garnet(Generator):
         return (netlist_info["id_to_name"], netlist_info["instance_to_instrs"], netlist_info["netlist"],
                 netlist_info["buses"], netlist_info["active_core_ports"], netlist_info["id_to_metadata"])
 
+
+
     def place_and_route(self, args, load_only=False):
 
         # place_and_route() used to have a bunch of parameters with defaults
@@ -748,7 +787,7 @@ class Garnet(Generator):
                             pipeline_config_interval=self.pipeline_config_interval,
                             pes_with_packed_ponds=self.pes_with_packed_ponds,
                             west_in_io_sides=west_in_io_sides,
-                            sparse=dense_ready_valid)
+                            dense_ready_valid=dense_ready_valid)
 
         return placement, routing, id_to_name, instance_to_instr, netlist, bus, active_core_ports, id_to_metadata
 
@@ -840,10 +879,15 @@ class Garnet(Generator):
 
         dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1"
 
+
+        mu_io_loc_to_id = {}
         reg_loc_to_id = {}
         for id, loc in placement.items():
             if 'r' in id:
                 reg_loc_to_id.setdefault(loc, []).append(id)
+
+            if 'U' in id or 'u' in id or 'V' in id or 'v' in id:
+                mu_io_loc_to_id.setdefault(loc, []).append(id)
 
         bitstream += self.interconnect.get_route_bitstream(routing, use_fifo=dense_ready_valid, id_to_name=id_to_name,
                                                            reg_loc_to_id=reg_loc_to_id, id_to_metadata=id_to_metadata)
@@ -861,8 +905,8 @@ class Garnet(Generator):
         else:
             PE_fifos_bypass_config = None
 
-        bitstream += self.get_placement_bitstream(placement, id_to_name,
-                                                  instance_to_instr, active_core_ports, PE_fifos_bypass_config=PE_fifos_bypass_config)
+        bitstream += self.get_placement_bitstream(placement, routing, id_to_name,
+                                                  instance_to_instr, active_core_ports, PE_fifos_bypass_config=PE_fifos_bypass_config, mu_io_loc_to_id=mu_io_loc_to_id)
 
         skip_addr = self.interconnect.get_skip_addr()
         bitstream = compress_config_data(bitstream, skip_compression=skip_addr)
@@ -887,7 +931,7 @@ class Garnet(Generator):
         for c_id, ((placement, routing), p_id_to_name) in partition_result.items():
             bitstream = []
             bitstream += self.interconnect.get_route_bitstream(routing)
-            bitstream += self.get_placement_bitstream(placement, p_id_to_name,
+            bitstream += self.get_placement_bitstream(placement, routing, p_id_to_name,
                                                       instance_to_instr)
             skip_addr = self.interconnect.get_skip_addr()
             bitstream = compress_config_data(

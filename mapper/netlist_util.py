@@ -374,11 +374,8 @@ class IO_Input_t_rv(Product):
     io2f_17_1 = BitVector[16]
     io2f_17_2 = BitVector[16]
     io2f_17_3 = BitVector[16]
-    io2f_17_T0 = BitVector[16]
-    io2f_17_T1 = BitVector[16]
-    io2f_17_T2 = BitVector[16]
-    io2f_17_T3 = BitVector[16]
-    io2f_17_T4 = BitVector[16]
+    mu2io_17_0 = BitVector[16]
+    mu2io_17_1 = BitVector[16]
     io2f_1 = Bit
 
 
@@ -936,9 +933,9 @@ class FixInputsOutputAndPipeline(Visitor):
                     oc0_index = 0
 
                 if oc0_index % 2 == 0:
-                    new_node = new_children[0].select("io2f_17_T0")
+                    new_node = new_children[0].select("mu2io_17_0")
                 else:
-                    new_node = new_children[0].select("io2f_17_T1")
+                    new_node = new_children[0].select("mu2io_17_1")
 
             elif "io16in" in io_child.iname:
                 if self.ready_valid:
@@ -1139,6 +1136,7 @@ class PackRegsIntoPonds(Visitor):
         return self.find_pe(new_node, num_regs, reg_skip_list)
 
     def find_packing(self, dag):
+        pond_path_balancing = "POND_PATH_BALANCING" in os.environ and os.environ.get("POND_PATH_BALANCING") == "1"
         connections_to_nodes = {}
         connections = []
         ponds = []
@@ -1146,6 +1144,9 @@ class PackRegsIntoPonds(Visitor):
 
         for pond in dag.sources:
             if pond.node_name == "cgralib.Pond":
+                # Don't do this for path balancing ponds
+                if pond_path_balancing and ("path_balance_pond" in pond.iname):
+                    continue
                 ponds.append(pond.iname)
                 for pond_sink in self.sinks[pond]:
                     assert pond_sink.node_name == "Select"
@@ -1456,12 +1457,6 @@ def create_netlist_info(
                 oc0_index = int(node_name_parse_list[0])
             else:
                 oc0_index = 0
-            if oc0_index % 2 == 0:
-                node_config_kwargs['track_active_T0'] = 1
-            else:
-                # Whatever track receieves data from odd numbered MU input needs its track_select set to 1
-                node_config_kwargs['track_select_T1'] = 1
-                node_config_kwargs['track_active_T1'] = 1
 
         if ((dense_ready_valid or exchange_64_mode) and ("I" in id or "i" in id)) or "U" in id or "u" in id or "V" in id or "v" in id:
             info["id_to_instrs"][id] = (1, node_config_kwargs)
@@ -1520,13 +1515,6 @@ def create_netlist_info(
         # graph.generate_tile_conn(app_dir = app_dir)
         # manual placement
         graph.manualy_place_resnet(app_dir=app_dir)
-
-    # # MO: Matrix unit HACK
-    # breakpoint()
-    # if "MU_APP_MANUAL_PLACER" in os.environ and os.environ.get("MU_APP_MANUAL_PLACER") == "1":
-    #     #breakpoint()
-    #     manual_place_filepath = os.path.join(app_dir, "../hardcoded_bin/manual.place")
-    #     os.system(f"cp {manual_place_filepath} {app_dir}")
 
     CountTiles().doit(pdag)
 

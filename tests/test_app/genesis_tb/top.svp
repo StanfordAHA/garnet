@@ -345,6 +345,8 @@ module top;
             integer weightScale_data_file;
             integer systolic_array_output_data_file;
             integer matrix_unit_done_file; // Dump when the matrix unit is done
+            integer mu_tl_size_out_file;
+            integer mu_tl_source_out_file;
             initial begin
                 input_data_file = $fopen("input_data_mu_in.txt", "w");
                 if (input_data_file == 0) begin
@@ -387,6 +389,18 @@ module top;
                     $display("Error: Could not open matrix_unit_done.txt file.");
                     $finish;
                 end
+
+                mu_tl_size_out_file = $fopen("mu_tl_size_out.txt", "w");
+                if (mu_tl_size_out_file == 0) begin
+                    $display("Error: Could not open mu_tl_size_out.txt file.");
+                    $finish;
+                end
+
+                mu_tl_source_out_file = $fopen("mu_tl_source_out.txt", "w");
+                if (mu_tl_source_out_file == 0) begin
+                    $display("Error: Could not open mu_tl_source_out.txt file.");
+                    $finish;
+                end
             end
 
             always @(posedge clk) begin
@@ -416,6 +430,14 @@ module top;
 
                 if (dut.matrixUnit_1.bb.doneSignal_vld) begin
                     $fwrite(matrix_unit_done_file, "[%0t] Matrix unit done", $time);
+                end
+
+                if (dut.garnet_1.global_buffer_W_inst0.mu_tl_resp_out_rdy & dut.garnet_1.global_buffer_W_inst0.mu_tl_resp_out_vld) begin
+                    $fwrite(mu_tl_size_out_file, "[%0t] mu_tl_size_out = %0d\n", $time, dut.garnet_1.global_buffer_W_inst0.mu_tl_size_out);
+                end
+
+                if (dut.garnet_1.global_buffer_W_inst0.mu_tl_resp_out_rdy & dut.garnet_1.global_buffer_W_inst0.mu_tl_resp_out_vld) begin
+                    $fwrite(mu_tl_source_out_file, "[%0t] mu_tl_source_out = %0d\n", $time, dut.garnet_1.global_buffer_W_inst0.mu_tl_source_out);
                 end
             end
     \`endif
