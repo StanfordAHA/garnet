@@ -471,9 +471,18 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         cycle_stride[i] = io_tile_info->cycle_stride[i];
         data_stride[i] = io_tile_info->data_stride[i];
 
+        // Check if we should skip GLB DMA stride adjustment based on environment variable
+        int skip_glb_dma_stride_adjustment = 0;
+        const char *skip_glb_dma_stride_env_var = "SKIP_GLB_DMA_STRIDE_ADJUSTMENT";
+        char *skip_glb_dma_stride_value = getenv(skip_glb_dma_stride_env_var);
+        if (skip_glb_dma_stride_value != NULL && strcmp(skip_glb_dma_stride_value, "1") == 0) {
+            skip_glb_dma_stride_adjustment = 1;
+        }
+
         // Skip this adjustment if the addr gen config has already been modified to account for matrix unit's tiling
         // Also skip it if configured in bank toggle mode
-        if (!(hacked_for_mu_tiling || bank_toggle_mode)){
+        // Also skip it if SKIP_GLB_DMA_STRIDE_ADJUSTMENT environment variable is set to 1
+        if (!(hacked_for_mu_tiling || bank_toggle_mode || skip_glb_dma_stride_adjustment)){
             for (int j = 0; j < i; j++) {
                 cycle_stride[i] -= io_tile_info->cycle_stride[j] * (io_tile_info->extent[j] - 1);
                 data_stride[i] -= io_tile_info->data_stride[j] * (io_tile_info->extent[j] - 1);
@@ -483,6 +492,8 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
                 printf("INFO: Addr gen config hacked for MU tiling for IO tile at (%d, %d), skipping stride adjustment\n", io_tile_info->pos.x, io_tile_info->pos.y);
             if (bank_toggle_mode)
                 printf("INFO: Addr gen config hacked for bank toggle mode for IO tile at (%d, %d), skipping stride adjustment\n", io_tile_info->pos.x, io_tile_info->pos.y);
+            if (skip_glb_dma_stride_adjustment)
+                printf("INFO: SKIP_GLB_DMA_STRIDE_ADJUSTMENT environment variable set, skipping stride adjustment for IO tile at (%d, %d)\n", io_tile_info->pos.x, io_tile_info->pos.y);
         }
 
         data_stride[i] = data_stride[i] << CGRA_BYTE_OFFSET;

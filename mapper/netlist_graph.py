@@ -275,7 +275,7 @@ class NetlistGraph:
                 mem_list.append(snode)
                 self._find_source_mem(snode, mem_list)
 
-    def manualy_place_resnet(self, app_dir):
+    def manually_place_resnet(self, app_dir):
         HALIDE_GEN_ARGS = os.environ.get("HALIDE_GEN_ARGS")
         k_oc_match = re.search(r'k_oc=(\d+)', HALIDE_GEN_ARGS)
         k_ic_match = re.search(r'k_ic=(\d+)', HALIDE_GEN_ARGS)
@@ -480,6 +480,289 @@ class NetlistGraph:
             stencil_IO[_].y = 0
 
         # write position info into file
+        with open(app_dir + "/manual.place", "w") as f:
+            for node in self.nodes:
+                if node.x is not None:
+                    f.write("{} {} {}\n".format(node.node_name, node.x, node.y))
+
+    def manually_place_fused_quant(self, app_dir):
+        MU_IO_Y_COORD = 17
+        placed_pos = []
+
+        # ----Place MU IOs----
+        # Extract all MU IOs
+        mu_io_nodes = []
+        for node in self.nodes:
+            if "MU_io16in_mu_input_host_stencil" in node.node_id:
+                mu_io_nodes.append(node)
+        # Sort based on the idx 'clkwrk_'
+        mu_io_nodes.sort(
+            key=lambda n: int(n.node_id.split("clkwrk_")[1].split("_")[0])
+        )
+        # Place MU IOs
+        mu_x_sequential = []
+        if os.path.exists(os.path.join(app_dir, "glb_bank_config.json")):
+            with open(os.path.join(app_dir, "glb_bank_config.json"), "r") as f:
+                glb_bank_config = json.load(f)
+            assert glb_bank_config["mu_inputs"][0]["mu_input_host_stencil"]["x_coord"], f"MU IO positions are not found in glb_bank_config.json"
+            mu_x_sequential = glb_bank_config["mu_inputs"][0]["mu_input_host_stencil"]["x_coord"]
+        else:
+            mu_x_sequential = [x for x in range(12, 28) for _ in range(2)]
+        idx = 0
+        for node in mu_io_nodes:
+            (node.x, node.y) = (mu_x_sequential[idx], MU_IO_Y_COORD)
+            # Only MU IOs can be placed at the same coordinate
+            if (node.x, node.y) not in placed_pos:
+                placed_pos.append((node.x, node.y))
+            idx += 1
+
+        # ----Place MU buffer MEMs----
+        buffer_mem_nodes = []
+        for mu_io_node in reversed(mu_io_nodes):
+            assert len(mu_io_node.sinks) == 1, f"MU IO {mu_io_node.node_id} should have exactly one sink"
+            sink_buffer_mem_node = mu_io_node.sinks[0]
+            buffer_mem_nodes.append(sink_buffer_mem_node)
+            (current_x, current_y) = (mu_io_node.x, mu_io_node.y)
+            while_guard = 0
+            while (current_x, current_y) in placed_pos or (current_x + 1) % 4 != 0:
+                while_guard += 1
+                if while_guard > 1000:
+                    raise ValueError(f"while loop guard exceeded for MU buffer MEM {sink_buffer_mem_node.node_id}")
+                if (current_x + 1) % 4 != 0:
+                    current_x += 1
+                elif (current_x, current_y) in placed_pos:
+                    current_y -= 1
+                if current_x < 12 or current_x > 28 or current_y < 1 or current_y > 17:
+                    raise ValueError(f"Cannot find a valid position for the MU buffer MEM {sink_buffer_mem_node.node_id}, invalid position: ({current_x}, {current_y})")
+            (sink_buffer_mem_node.x, sink_buffer_mem_node.y) = (current_x, current_y)
+            placed_pos.append((current_x, current_y))
+
+        # ----Place first stage of reduction tree PEs----
+        first_stage_pe_nodes = []
+        for buffer_mem_node in buffer_mem_nodes:
+            for pe_sink_node in buffer_mem_node.sinks:
+                if "op_hcompute_tree" in pe_sink_node.node_id and pe_sink_node.x is None and buffer_mem_node.y % 2 == 0:
+                    first_stage_pe_nodes.append(pe_sink_node)
+                    if buffer_mem_node.x < 20:
+                        if (buffer_mem_node.x - 2, buffer_mem_node.y) not in placed_pos:
+                            (pe_sink_node.x, pe_sink_node.y) = (buffer_mem_node.x - 2, buffer_mem_node.y)
+                            placed_pos.append((buffer_mem_node.x - 2, buffer_mem_node.y))
+                        else:
+                            (pe_sink_node.x, pe_sink_node.y) = (buffer_mem_node.x - 2, buffer_mem_node.y - 1)
+                            placed_pos.append((buffer_mem_node.x - 2, buffer_mem_node.y - 1))
+                    else:
+                        if (buffer_mem_node.x - 1, buffer_mem_node.y) not in placed_pos:
+                            (pe_sink_node.x, pe_sink_node.y) = (buffer_mem_node.x - 1, buffer_mem_node.y)
+                            placed_pos.append((buffer_mem_node.x - 1, buffer_mem_node.y))
+                        else:
+                            (pe_sink_node.x, pe_sink_node.y) = (buffer_mem_node.x - 1, buffer_mem_node.y - 1)
+                            placed_pos.append((buffer_mem_node.x - 1, buffer_mem_node.y - 1))
+
+        # ----Place second stage of reduction tree PEs----
+        second_stage_pe_nodes = []
+        first_stage_pe_nodes.sort(key=lambda node: node.y, reverse=True)
+        for first_stage_pe_node in first_stage_pe_nodes:
+            assert len(first_stage_pe_node.sinks) == 1, "Reduction tree PE should have only one sink node."
+            if first_stage_pe_node.sinks[0].x is None:
+                second_stage_pe_nodes.append(first_stage_pe_node.sinks[0])
+                if first_stage_pe_node.x < 20:
+                    (first_stage_pe_node.sinks[0].x, first_stage_pe_node.sinks[0].y) = (first_stage_pe_node.x + 1, first_stage_pe_node.y - 1)
+                    placed_pos.append((first_stage_pe_node.x + 1, first_stage_pe_node.y - 1))
+                else:
+                    (first_stage_pe_node.sinks[0].x, first_stage_pe_node.sinks[0].y) = (first_stage_pe_node.x - 1, first_stage_pe_node.y - 1)
+                    placed_pos.append((first_stage_pe_node.x - 1, first_stage_pe_node.y - 1))
+
+        # ----Place third stage of reduction tree PEs----
+        third_stage_pe_nodes = []
+        second_stage_pe_nodes.sort(key=lambda node: node.y, reverse=True)
+        for second_stage_pe_node in second_stage_pe_nodes:
+            assert len(second_stage_pe_node.sinks) == 1, "Reduction tree PE should have only one sink node."
+            if second_stage_pe_node.sinks[0].x is None:
+                third_stage_pe_nodes.append(second_stage_pe_node.sinks[0])
+                if second_stage_pe_node.x > 13:
+                    (second_stage_pe_node.sinks[0].x, second_stage_pe_node.sinks[0].y) = (second_stage_pe_node.x, second_stage_pe_node.y - 2)
+                    placed_pos.append((second_stage_pe_node.x, second_stage_pe_node.y - 2))
+                else:
+                    (second_stage_pe_node.sinks[0].x, second_stage_pe_node.sinks[0].y) = (second_stage_pe_node.x, second_stage_pe_node.y + 1)
+                    placed_pos.append((second_stage_pe_node.x, second_stage_pe_node.y + 1))
+
+        # ----Place fourth stage of reduction tree PEs----
+        fourth_stage_pe_nodes = []
+        third_stage_pe_nodes.sort(key=lambda node: node.x)
+        for third_stage_pe_node in third_stage_pe_nodes:
+            assert len(third_stage_pe_node.sinks) == 1, "Reduction tree PE should have only one sink node."
+            if third_stage_pe_node.sinks[0].x is None:
+                fourth_stage_pe_nodes.append(third_stage_pe_node.sinks[0])
+                if third_stage_pe_node.x < 20:
+                    (third_stage_pe_node.sinks[0].x, third_stage_pe_node.sinks[0].y) = (third_stage_pe_node.x + 2, third_stage_pe_node.y)
+                    placed_pos.append((third_stage_pe_node.x + 2, third_stage_pe_node.y))
+                else:
+                    (third_stage_pe_node.sinks[0].x, third_stage_pe_node.sinks[0].y) = (third_stage_pe_node.x + 3, third_stage_pe_node.y)
+                    placed_pos.append((third_stage_pe_node.x + 3, third_stage_pe_node.y))
+
+        # ----Place fifth stage of reduction tree PEs----
+        fifth_stage_pe_nodes = []
+        fourth_stage_pe_nodes.sort(key=lambda node: node.x)
+        for fourth_stage_pe_node in fourth_stage_pe_nodes:
+            assert len(fourth_stage_pe_node.sinks) == 1, "Reduction tree PE should have only one sink node."
+            if fourth_stage_pe_node.sinks[0].x is None:
+                fifth_stage_pe_nodes.append(fourth_stage_pe_node.sinks[0])
+                (fourth_stage_pe_node.sinks[0].x, fourth_stage_pe_node.sinks[0].y) = (fourth_stage_pe_node.x + 4, fourth_stage_pe_node.y)
+                placed_pos.append((fourth_stage_pe_node.x + 4, fourth_stage_pe_node.y))
+
+        # ----Place sixth stage of reduction tree PEs
+        sixth_stage_pe_nodes = []
+        fifth_stage_pe_nodes.sort(key=lambda node: node.y, reverse=True)
+        for fifth_stage_pe_node in fifth_stage_pe_nodes:
+            assert len(fifth_stage_pe_node.sinks) == 1, "Reduction tree PE should have only one sink node."
+            if fifth_stage_pe_node.sinks[0].x is None:
+                sixth_stage_pe_nodes.append(fifth_stage_pe_node.sinks[0])
+                (fifth_stage_pe_node.sinks[0].x, fifth_stage_pe_node.sinks[0].y) = (fifth_stage_pe_node.x, fifth_stage_pe_node.y - 5)
+                placed_pos.append((fifth_stage_pe_node.x, fifth_stage_pe_node.y - 5))
+
+        # ----Place get-scale PE----
+        assert len(sixth_stage_pe_nodes) == 1 and len(sixth_stage_pe_nodes[0].sinks) == 1
+        get_scale_pe_node = sixth_stage_pe_nodes[0].sinks[0]
+        (get_scale_pe_node.x, get_scale_pe_node.y) = (sixth_stage_pe_nodes[0].x, sixth_stage_pe_nodes[0].y - 3)
+        placed_pos.append((sixth_stage_pe_nodes[0].x, sixth_stage_pe_nodes[0].y - 3))
+
+        # # ----Place apply-scale PEs----
+        # buffer_mem_nodes.sort(key=lambda node: node.y, reverse=True)
+        # for buffer_mem_node in buffer_mem_nodes:
+        #     current_x = buffer_mem_node.x
+        #     current_y = buffer_mem_node.y
+        #     for pe_sink_node in buffer_mem_node.sinks:
+        #         if "apply_scale" in pe_sink_node.node_id:
+        #             if buffer_mem_node.x in [15, 19]:
+        #                 (pe_sink_node.x, pe_sink_node.y) = (current_x + 6, current_y - 8)
+        #                 placed_pos.append((current_x + 6, current_y - 8))
+        #                 current_x += 1
+        #             elif buffer_mem_node.x in [23, 27]:
+        #                 (pe_sink_node.x, pe_sink_node.y) = (current_x - 10, current_y - 8)
+        #                 placed_pos.append((current_x - 10, current_y - 8))
+        #                 current_x -= 1
+
+        # ----Place quantized output pair MEMs and one of the data packing PEs----
+        # Place one PE close to quantized output pair MEM to ensure MEM don't get data from two input ports at the same time
+        # Place quantized output pair MEM first
+        current_x = 15
+        current_y = 1
+        for mem_node in self.mem_nodes:
+            if "mem_quantized_output_pair" in mem_node.node_id:
+                (mem_node.x, mem_node.y) = (current_x, current_y)
+                placed_pos.append((current_x, current_y))
+                current_y += 1
+                if current_y == 5:
+                    current_y -= 4
+                    current_x += 4
+        for mem_node in self.mem_nodes:
+            if "mem_quantized_output_pair" in mem_node.node_id:
+                for pe_source in mem_node.sources:
+                    if "data_packing_pair" in pe_source.node_id:
+                        if mem_node.x < 20:
+                            (pe_source.x, pe_source.y) = (mem_node.x - 1, mem_node.y)
+                            placed_pos.append((mem_node.x - 1, mem_node.y))
+                        else:
+                            (pe_source.x, pe_source.y) = (mem_node.x - 3, mem_node.y)
+                            placed_pos.append((mem_node.x - 3, mem_node.y))
+
+        # Check placed_pos and expose repeated positions if any
+        assert len(placed_pos) == len(set(placed_pos)), f"placed_pos contains duplicate positions: {placed_pos}"
+
+        # # Hardcoded placement to ensure scale IOs paths are pipelined and one won't backpressure the other
+        # for pe_node in self.pe_nodes:
+        #     if "scale_output_data_packing" in pe_node.node_id:
+        #         (pe_node.x, pe_node.y) = (13, 1)
+
+
+
+        # # Place reduction tree stage 0 PEs right above MU IOs
+        # for node in self.pe_nodes:
+        #     if len(node.sources) == 2 and (all(source.node_type in ["U", "V"] for source in node.sources)):
+        #         assert node.sources[0].x == node.sources[1].x, "Source MU IOs should locate at the same coordinate."
+        #         current_x = node.sources[0].x
+        #         current_y = node.sources[0].y - 1
+        #         while (current_x, current_y) in placed_pos or (current_x + 1) % 4 == 0:
+        #             if (current_x, current_y) in placed_pos:
+        #                 # Position occupied, move to above
+        #                 current_y -= 1
+        #             elif (current_x + 1) % 4 == 0:
+        #                 # This is MEM column, move to left
+        #                 current_x -= 1
+        #             if current_x < 12 or current_y < 1:
+        #                 raise ValueError(f"Cannot find a valid position for the PE {node.node_id}, invalid position: ({current_x}, {current_y})")
+        #         (node.x, node.y) = (current_x, current_y)
+        #         placed_pos.append((current_x, current_y))
+
+        # # Place activation buffering MEM tiles close to the MU IOs
+        # for node in self.mem_nodes:
+        #     if len(node.sources) == 1 and node.sources[0].node_type in ["U", "V"]:
+        #         current_x = node.sources[0].x
+        #         current_y = node.sources[0].y - 1
+        #         while (current_x, current_y) in placed_pos or (current_x + 1) % 4 != 0:
+        #             if (current_x, current_y) in placed_pos:
+        #                 # Position occupied, move to above
+        #                 current_y -= 1
+        #             elif (current_x + 1) % 4 != 0:
+        #                 # This is not MEM column, move to right
+        #                 current_x += 1
+        #         (node.x, node.y) = (current_x, current_y)
+        #         placed_pos.append((current_x, current_y))
+
+        # # Place reduction PEs as close as possible to each other
+        # middle_x = 20
+        # middle_y = 13
+        # guard_cnt = 0
+        # abs_max_reduction_pes = []
+        # for node in self.pe_nodes:
+        #     if len(node.sources) == 2 and len(node.sinks) == 1 and "float_abs_max" in node.node_id:
+        #         abs_max_reduction_pes.append(node)
+        # while any(node.x is None for node in abs_max_reduction_pes):
+        #     guard_cnt += 1
+        #     if guard_cnt > 1000:
+        #         raise ValueError("Cannot find valid positions for the reduction PEs")
+        #     for node in abs_max_reduction_pes:
+        #         if node.x is not None or any(source.x is None for source in node.sources):
+        #             # Already placed or sources not placed yet, skip
+        #             continue
+        #         elif node.sources[0].x is not None and node.sources[1].x is not None:
+        #             current_x = node.sources[0].x if abs(node.sources[0].x - middle_x) < abs(node.sources[1].x - middle_x) else node.sources[1].x
+        #             current_y = node.sources[0].y if abs(node.sources[0].y - middle_y) < abs(node.sources[1].y - middle_y) else node.sources[1].y
+        #             while (current_x, current_y) in placed_pos or (current_x + 1) % 4 == 0:
+        #                 if abs(current_x - middle_x) > abs(current_y - middle_y):
+        #                     current_x += 1 if current_x < middle_x else -1
+        #                 else:
+        #                     current_y += 1 if current_y < middle_y else -1
+        #                 if current_x < 12 or current_y < 1:
+        #                     raise ValueError(f"Cannot find a valid position for the PE {node.node_id}, invalid position: ({current_x}, {current_y})")
+        #             (node.x, node.y) = (current_x, current_y)
+        #             placed_pos.append((current_x, current_y))
+
+        # # Place apply scale PEs at least 5 hops away from MU IOs
+        # hpwl_dist = 8
+        # for node in self.pe_nodes:
+        #     if "apply_scale" in node.node_id and any(source.node_type in ["U", "V"] for source in node.sources):
+        #         for source in node.sources:
+        #             if source.node_type in ["U", "V"]:
+        #                 current_x = source.x
+        #                 current_y = source.y - 1
+        #                 while (current_x, current_y) in placed_pos or (current_x + 1) % 4 == 0 or abs(current_x - source.x) + abs(current_y - source.y) < hpwl_dist:
+        #                     print(f"Trying to place PE {node.node_id} at ({current_x}, {current_y})")
+        #                     if (current_x + 1) % 4 == 0:
+        #                         # This is MEM column, move to left
+        #                         current_x -= 1
+        #                     elif current_y > 1:
+        #                         current_y -= 1
+        #                     elif current_x > 1:
+        #                         current_x -= 1
+        #                     else:
+        #                         current_x += 1
+        #                     if current_x < 12 or current_y < 1:
+        #                         raise ValueError(f"Cannot find a valid position for the PE {node.node_id}, invalid position: ({current_x}, {current_y})")
+        #         (node.x, node.y) = (current_x, current_y)
+        #         placed_pos.append((current_x, current_y))
+
+        # Write position info into file
         with open(app_dir + "/manual.place", "w") as f:
             for node in self.nodes:
                 if node.x is not None:

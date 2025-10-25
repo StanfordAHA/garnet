@@ -522,7 +522,7 @@ class Garnet(Generator):
 
 
     def load_netlist(self, app, load_only, pipeline_input_broadcasts,
-                     input_broadcast_branch_factor, input_broadcast_max_leaves, use_dense_ready_valid=False):
+                     input_broadcast_branch_factor, input_broadcast_max_leaves, pipeline_output, use_dense_ready_valid=False):
 
         import metamapper.peak_util as putil
         from mapper.netlist_util import create_netlist_info, print_netlist_info
@@ -609,6 +609,7 @@ class Garnet(Generator):
                                            pipeline_input_broadcasts,
                                            input_broadcast_branch_factor,
                                            input_broadcast_max_leaves,
+                                           pipeline_output,
                                            self.ready_valid,
                                            self.width,
                                            self.height,
@@ -757,6 +758,7 @@ class Garnet(Generator):
         pipeline_input_broadcasts = not args.no_input_broadcast_pipelining
         input_broadcast_branch_factor = args.input_broadcast_branch_factor
         input_broadcast_max_leaves = args.input_broadcast_max_leaves
+        pipeline_output = not args.no_output_pipelining
         dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1"
 
         id_to_name, instance_to_instr, netlist, bus, active_core_ports, id_to_metadata = \
@@ -765,6 +767,7 @@ class Garnet(Generator):
                               pipeline_input_broadcasts,
                               input_broadcast_branch_factor,
                               input_broadcast_max_leaves,
+                              pipeline_output,
                               use_dense_ready_valid=dense_ready_valid)
 
         app_dir = os.path.dirname(halide_src)
@@ -1015,6 +1018,7 @@ def parse_args():
     parser.add_argument("--no-input-broadcast-pipelining", action="store_true")
     parser.add_argument("--input-broadcast-branch-factor", type=int, default=4)
     parser.add_argument("--input-broadcast-max-leaves", type=int, default=16)
+    parser.add_argument("--no-output-pipelining", action="store_true")
     parser.add_argument('--pe', type=str, default="")
     parser.add_argument('--mem-ratio', type=int, default=4)
     parser.add_argument('--num-tracks', type=int, default=5)
