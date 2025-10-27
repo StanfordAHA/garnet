@@ -271,6 +271,16 @@ int parse_io_tile_info(struct IOTileInfo *io_tile_info, json_t const *io_tile_js
         io_tile_info->E64_packed = json_getInteger(E64_packed_json);
     }
 
+    // Parse use_multi_bank_mode for multi-bank mode config
+    json_t const *use_multi_bank_mode_json = json_getProperty(io_tile_json, "use_multi_bank_mode");
+    if (!use_multi_bank_mode_json || JSON_INTEGER != json_getType(use_multi_bank_mode_json)) {
+        // Default to 1 if not found or not an array even not in MB mode
+        // If not in MB mode this will be ignored
+        io_tile_info->use_multi_bank_mode = 1;
+    } else {
+        io_tile_info->use_multi_bank_mode = json_getInteger(use_multi_bank_mode_json);
+    }
+
     // Parse io_tile extent multiplier; used to handle correct gold reading in E64, and for Zircon k dim tiling
     json_t const *extent_multiplier_json = json_getProperty(io_tile_json, "extent_multiplier");
     if (!extent_multiplier_json || JSON_INTEGER != json_getType(extent_multiplier_json)) {
@@ -988,6 +998,11 @@ int get_io_tile_is_glb_input(void *info, int index) {
 int get_io_tile_E64_packed(void *info, int index) {
     GET_IO_INFO(info);
     return io_info->io_tiles[index].E64_packed;
+}
+
+int get_io_tile_use_multi_bank_mode(void *info, int index) {
+    GET_IO_INFO(info);
+    return io_info->io_tiles[index].use_multi_bank_mode;
 }
 
 int get_io_tile_extent_multiplier(void *info, int index) {

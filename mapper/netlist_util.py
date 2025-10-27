@@ -146,11 +146,15 @@ class CreateBuses(Visitor):
                 if self.glb_bank_config:
                     # We need fine-grained packing
                     output_node_idx = int(node_name_parse_list[0]) if len(node_name_parse_list) > 1 else 0
+                    use_E64_packing = 1
                     for output_dict in self.glb_bank_config["outputs"]:
                         for output_name, output_config in output_dict.items():
                             if output_name in node.iname:
                                 # use_E64_packing should be 0 or 1
-                                use_E64_packing = output_config["E64_packed"][output_node_idx]
+                                if "E64_packed" in output_config:
+                                    use_E64_packing = output_config["E64_packed"][output_node_idx]
+                                else:
+                                    use_E64_packing = 1
                                 break
                     if use_E64_packing == 1:
                         packet_num = output_node_idx % 4
@@ -587,7 +591,8 @@ class FixInputsOutputAndPipeline(Visitor):
         max_flush_cycles,
         max_tree_leaves,
         tree_branch_factor,
-        ready_valid=True
+        ready_valid=True,
+        insert_output_regs=False,
     ):
         self.sinks = sinks
         self.ready_valid = ready_valid
@@ -607,7 +612,7 @@ class FixInputsOutputAndPipeline(Visitor):
         )
 
         self.pipeline_inputs = pipeline_inputs
-
+        self.insert_output_regs = insert_output_regs
         self.harden_flush = harden_flush
         self.max_flush_cycles = max_flush_cycles
 
@@ -944,17 +949,20 @@ class FixInputsOutputAndPipeline(Visitor):
                             node_name_parse_list = io_child.iname.split("stencil_")[2].split("_read")
                             packet_num = 0
                             if self.glb_bank_config:
-                                use_E64_packing = 0
+                                use_E64_packing = 1
                                 # We need fine-grained packing
                                 input_node_idx = int(node_name_parse_list[0]) if len(node_name_parse_list) > 1 else 0
                                 for input_dict in self.glb_bank_config["inputs"]:
                                     for input_name, input_config in input_dict.items():
                                         if input_name in io_child.iname:
                                             # use_E64_packing should be 0 or 1
-                                            use_E64_packing = input_config["E64_packed"][input_node_idx]
+                                            if "E64_packed" in input_config:
+                                                use_E64_packing = input_config["E64_packed"][input_node_idx]
+                                            else:
+                                                use_E64_packing = 1
                                             break
                                 if use_E64_packing == 1:
-                                    packet_num = input_node_idx %4
+                                    packet_num = input_node_idx % 4
                                 else:
                                     packet_num = 0
                             else:
@@ -1042,6 +1050,13 @@ class FixInputsOutputAndPipeline(Visitor):
         if node.node_name == "global.IO" or node.node_name == "global.BitIO":
             dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1"
             if "write" in node.iname:
+                if not self.insert_output_regs:
+                    new_node = Output(type=IO_Output_t, iname=node.iname)
+                    new_children = [self.node_map[child] for child in node.children()]
+                    new_node.set_children(*new_children)
+                    self.outputs.append(new_node)
+                    self.node_map[node] = new_node
+                    return
                 new_node = Output(type=IO_Output_t, iname=node.iname)
                 new_children = []
                 for child in node.children():
@@ -1142,6 +1157,9 @@ class PackRegsIntoPonds(Visitor):
         ponds = []
         pes = []
 
+        # Disallow pond packing into certain PEs, e.g., PE right after reduction tree like bias
+        non_packing_pes = set()
+
         for pond in dag.sources:
             if pond.node_name == "cgralib.Pond":
                 # Don't do this for path balancing ponds
@@ -1152,6 +1170,12 @@ class PackRegsIntoPonds(Visitor):
                     assert pond_sink.node_name == "Select"
                     pe_node, num_regs, reg_skip_list = self.find_pe(pond_sink, 0, [])
                     if pe_node is not None:
+                        # Disallow packing rule 1: "bias" in PE names
+                        pe_iname_lower = getattr(pe_node, "iname", "").lower()
+                        pe_nodename_lower = getattr(pe_node, "node_name", "").lower()
+                        if ("bias" in pe_iname_lower) or ("bias" in pe_nodename_lower):
+                            non_packing_pes.add(pe_node.iname)
+
                         if pe_node.iname not in pes:
                             pes.append(pe_node.iname)
 
@@ -1172,7 +1196,7 @@ class PackRegsIntoPonds(Visitor):
 
             model += pulp_var
 
-            if conn[1] not in pes:
+            if conn[1] not in pes or conn[1] in non_packing_pes:
                 model += pulp_var == 0
 
         for pond in ponds:
@@ -1316,6 +1340,7 @@ def create_netlist_info(
     pipeline_input_broadcasts=False,
     input_broadcast_branch_factor=4,
     input_broadcast_max_leaves=16,
+    pipeline_output=True,
     ready_valid=True,
     orig_cgra_width=16,
     orig_cgra_height=28,
@@ -1335,6 +1360,7 @@ def create_netlist_info(
         input_broadcast_max_leaves,
         input_broadcast_branch_factor,
         ready_valid,
+        insert_output_regs=pipeline_output,
     ).doit(dag)
 
     sinks = PipelineBroadcastHelper().doit(fdag)
@@ -1427,20 +1453,29 @@ def create_netlist_info(
                 if "_read" in node:
                     node_name_parse_list = node.split("stencil_")[2].split("_read")
                     use_e64_list_idx = int(node_name_parse_list[0]) if len(node_name_parse_list) > 1 else 0
+                    use_E64_packing = 1
                     for input_dict in glb_bank_config["inputs"]:
                         for input_name, input_config in input_dict.items():
                             if input_name in node:
                                 # use_E64_packing should be 0 or 1
-                                use_E64_packing = input_config["E64_packed"][use_e64_list_idx]
+                                if "E64_packed" in input_config:
+                                    use_E64_packing = input_config["E64_packed"][use_e64_list_idx]
+                                else:
+                                    use_E64_packing = 1
                                 break
                 elif "_write" in node:
+                    # example: io16_hw_output_global_wrapper_glb_stencil_clkwrk_3_op_hcompute_hw_output_global_wrapper_glb_stencil_1_write_0
                     node_name_parse_list = node.split("stencil_")[2].split("_write")
                     use_e64_list_idx = int(node_name_parse_list[0]) if len(node_name_parse_list) > 1 else 0
+                    use_E64_packing = 1
                     for output_dict in glb_bank_config["outputs"]:
                         for output_name, output_config in output_dict.items():
                             if output_name in node:
                                 # use_E64_packing should be 0 or 1
-                                use_E64_packing = output_config["E64_packed"][use_e64_list_idx]
+                                if "E64_packed" in output_config:
+                                    use_E64_packing = output_config["E64_packed"][use_e64_list_idx]
+                                else:
+                                    use_E64_packing = 1
                                 break
                 assert use_E64_packing == 0 or use_E64_packing == 1, f"use_E64_packing should be 0 or 1, but got {use_E64_packing}"
                 if use_E64_packing == 1:
@@ -1510,11 +1545,15 @@ def create_netlist_info(
         graph.get_compute_kernel_latency(app_dir=app_dir)
 
     if "MANUAL_PLACER" in os.environ and os.environ.get("MANUAL_PLACER") == "1":
-        # remove mem reg in conn for manual placement
-        graph.remove_mem_reg_tree()
-        # graph.generate_tile_conn(app_dir = app_dir)
-        # manual placement
-        graph.manualy_place_resnet(app_dir=app_dir)
+        if "resnet" in app_dir:
+            # remove mem reg in conn for manual placement
+            graph.remove_mem_reg_tree()
+            # graph.generate_tile_conn(app_dir=app_dir)
+            # manual placement
+            graph.manually_place_resnet(app_dir=app_dir)
+        elif "get_apply_e8m0_scale_fp" in app_dir:
+            graph.generate_tile_conn(app_dir=app_dir)
+            graph.manually_place_fused_quant(app_dir=app_dir)
 
     CountTiles().doit(pdag)
 

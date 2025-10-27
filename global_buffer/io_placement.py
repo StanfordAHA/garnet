@@ -19,27 +19,30 @@ def parse_glb_bank_config(app_dir, id_to_name, inputs, mu_inputs, mu_io_tile_row
 
     # Build input_coord_map {input_name: [x0, x1, …]} for inputs and mu_inputs
     input_coord_map = {}
-    for item in glb_json.get("inputs", []):
-        for name, data in item.items():
-            input_coord_map[name] = data["x_coord"]
+    if "inputs" in glb_json:
+        for item in glb_json.get("inputs", []):
+            for name, data in item.items():
+                input_coord_map[name] = data["x_coord"]
     # Build mu_input_coord_map {mu_input_name: [x0, x1, …]} for mu_inputs (if any)
     mu_input_coord_map = {}
-    for item in glb_json.get("mu_inputs", []):
-        for name, data in item.items():
-            mu_input_coord_map[name] = data["x_coord"]
+    if "mu_inputs" in glb_json:
+        for item in glb_json.get("mu_inputs", []):
+            for name, data in item.items():
+                mu_input_coord_map[name] = data["x_coord"]
 
     # Handling inputs
-    input_types = input_coord_map.keys()
-    inputs_dict = {t: [] for t in input_types}
-    index_counters = {t: 0 for t in input_types}
-    for input_blk_id in inputs:
-        input_blk_name = id_to_name[input_blk_id]
-        type_name = next((t for t in input_types if t in input_blk_name), None)
-        if type_name:
-            idx = index_counters[type_name]
-            coordinate = (input_coord_map[type_name][idx], 0)
-            inputs_dict[type_name].append({input_blk_id: coordinate})
-            index_counters[type_name] += 1
+    if inputs:
+        input_types = input_coord_map.keys()
+        inputs_dict = {t: [] for t in input_types}
+        index_counters = {t: 0 for t in input_types}
+        for input_blk_id in inputs:
+            input_blk_name = id_to_name[input_blk_id]
+            type_name = next((t for t in input_types if t in input_blk_name), None)
+            if type_name:
+                idx = index_counters[type_name]
+                coordinate = (input_coord_map[type_name][idx], 0)
+                inputs_dict[type_name].append({input_blk_id: coordinate})
+                index_counters[type_name] += 1
 
     # Handling mu_inputs (if any)
     if mu_inputs:
@@ -77,7 +80,8 @@ def parse_glb_bank_config(app_dir, id_to_name, inputs, mu_inputs, mu_io_tile_row
             index_counters[type_name] += 1
 
     # Assert that all the inputs and outputs have been placed
-    assert sum(len(coords) for coords in inputs_dict.values()) == len(inputs), "Inputs in glb_bank_config.json do not match the number of inputs in the design"
+    if inputs:
+        assert sum(len(coords) for coords in inputs_dict.values()) == len(inputs), "Inputs in glb_bank_config.json do not match the number of inputs in the design"
     if mu_inputs:
         assert sum(len(coords) for coords in mu_inputs_dict.values()) == len(mu_inputs), "MU inputs in glb_bank_config.json do not match the number of mu inputs in the design"
     if valid:
@@ -86,9 +90,10 @@ def parse_glb_bank_config(app_dir, id_to_name, inputs, mu_inputs, mu_io_tile_row
         assert sum(len(coords) for coords in outputs_dict.values()) == len(outputs), "Outputs in glb_bank_config.json do not match the number of outputs in the design"
 
     # Update the placement dictionary for inputs and outputs
-    for coord_list in inputs_dict.values():
-        for coord_dict in coord_list:
-            placement.update(coord_dict)
+    if inputs:
+        for coord_list in inputs_dict.values():
+            for coord_dict in coord_list:
+                placement.update(coord_dict)
     for coord_list in outputs_dict.values():
         for coord_dict in coord_list:
             placement.update(coord_dict)
