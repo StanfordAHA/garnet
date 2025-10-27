@@ -31,6 +31,7 @@ import "DPI-C" function chandle get_output_info(
 );
 import "DPI-C" function int glb_map(chandle kernel, int dpr_enabled);
 import "DPI-C" function int get_exchange_64_config();
+import "DPI-C" function int is_voyager_standalone_cgra_app();
 import "DPI-C" function int get_num_groups(chandle info);
 import "DPI-C" function int get_group_start(chandle info);
 import "DPI-C" function int get_app_type(chandle info);
@@ -359,14 +360,14 @@ function Kernel::new(string app_dir, int dpr);
         end else begin
             for (int j = 0; j < num_io_tiles; j++) begin
             num_pixels = input_data[i].size / num_io_tiles;
-            // To ensure all data gets read out. Useful when applying E64 packing 
+            // To ensure all data gets read out. Useful when applying E64 packing
             num_pixels = num_pixels * get_io_tile_extent_multiplier(io_info, j);
                 inputs[i].io_tiles[j].num_data = num_pixels;
                 inputs[i].io_tiles[j].io_block_data = new[num_pixels];
                 // NOTE: We assume only innermost loop is unrolled.
                 for (int k = 0; k < num_pixels; k++) begin
                     // Interleaving is different for MU if operating in E64 mode
-                    if ((app_type == MU2CGRA_GLB2CGRA) && get_exchange_64_config() == 1) begin
+                    if ((app_type == MU2CGRA_GLB2CGRA || is_voyager_standalone_cgra_app()) && get_exchange_64_config() == 1) begin
                         input_data_index = (int'(k/4) * 4) * num_io_tiles + j * 4 + (k % 4);
                         inputs[i].io_tiles[j].io_block_data[k] = input_data[i][input_data_index];
                     end else begin
@@ -777,7 +778,7 @@ function void Kernel::compare();
                 for (int k = 0; k < num_pixels; k++) begin
 
                     // Deinterleaving is different for MU if operating in E64 mode
-                    if ((app_type == MU2CGRA || app_type == MU2CGRA_GLB2CGRA) && get_exchange_64_config() == 1 && outputs[i].io_tiles[j].E64_packed == 1 || outputs[i].io_tiles[j].bank_toggle_mode == 1) begin
+                    if ((app_type == MU2CGRA || app_type == MU2CGRA_GLB2CGRA || is_voyager_standalone_cgra_app()) && get_exchange_64_config() == 1 && outputs[i].io_tiles[j].E64_packed == 1 || outputs[i].io_tiles[j].bank_toggle_mode == 1) begin
                         output_data_index = (int'(k/4) * 4) * num_io_tiles + j * 4 + (k % 4);
                         output_data[i][output_data_index] = outputs[i].io_tiles[j].io_block_data[k];
                     end else begin
