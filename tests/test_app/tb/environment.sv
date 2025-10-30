@@ -76,7 +76,9 @@ task Env_write_data();
             start_time = $realtime;
             $display("[%s] write input_%0d_block_%0d to glb start at %0t", kernel.name, i, j,
                      start_time);
-            start_addr = kernel.inputs[i].io_tiles[j].start_addr;
+            start_addr = kernel.inputs[i].io_tiles[j].tb_write_start_addr;
+            $display("[%s] IO tile %0d start_addr = 0x%x", kernel.name, j, start_addr);
+
             data_q = kernel.inputs[i].io_tiles[j].io_block_data;
             ProcDriver_write_data();
             end_time = $realtime;
