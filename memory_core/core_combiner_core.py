@@ -151,7 +151,7 @@ class CoreCombinerCore(LakeCoreBase):
         assert runtime_mode in self.get_modes_supported()
         self.runtime_mode = runtime_mode
 
-    def get_config_bitstream(self, config_tuple, active_core_ports=None, x=None, y=None, node_name=None, PE_fifos_bypass_config=None):
+    def get_config_bitstream(self, config_tuple, active_core_ports=None, x=None, y=None, instance_name=None, node_name=None, PE_fifos_bypass_config=None, PE_fifos_bypass_dump=None):
         # print(self.runtime_mode)
         # assert self.runtime_mode is not None
         configs = []
@@ -245,6 +245,9 @@ class CoreCombinerCore(LakeCoreBase):
                 bypass_prim_outfifo = 1
             else:
                 bypass_prim_outfifo = 0
+
+            if bypass_prim_outfifo:
+                PE_fifos_bypass_dump["prim_outfifo_bypass"][instance_name] = 1
 
             input_count = 0
             input_bit_count = 0
@@ -423,6 +426,11 @@ class CoreCombinerCore(LakeCoreBase):
                     print(f"Bypassing input and output fifos for PE ({x}, {y})")
                     fine_grained_input_fifo_bypass = PE_fifos_bypass_config[(x, y)]['input_fifo_bypass']
                     fine_grained_output_fifo_bypass = PE_fifos_bypass_config[(x, y)]['output_fifo_bypass']
+
+                    if fine_grained_input_fifo_bypass != [0, 0, 0]:
+                        PE_fifos_bypass_dump["input_fifo_bypass"][instance_name] = fine_grained_input_fifo_bypass
+                    if fine_grained_output_fifo_bypass != 0:
+                        PE_fifos_bypass_dump["output_fifo_bypass"][instance_name] = fine_grained_output_fifo_bypass
 
                 config_fine_grained_input_fifo_bypass = [
                     (f"{self.get_port_remap()['alu']['data0']}_fine_grain_fifo_bypass",

@@ -29,6 +29,7 @@ from canal.logic import ReadyValidLoopBack
 from matrix_unit.cgra2mu_ready_and import cgra2mu_ready_and
 from matrix_unit.mu2cgra_pipeline_unit import mu2cgra_pipeline_unit
 from kratos.util import to_magma
+import json
 
 # set the debug mode to false to speed up construction
 from gemstone.generator.generator import set_debug_mode
@@ -382,7 +383,7 @@ class Garnet(Generator):
                     instrs[instance] = (1, node_config_kwargs)
 
 
-    def get_placement_bitstream(self, placement, routing, id_to_name, instrs, active_core_ports=None, PE_fifos_bypass_config=None, mu_io_loc_to_id=None):
+    def get_placement_bitstream(self, placement, routing, halide_src, id_to_name, instrs, active_core_ports=None, PE_fifos_bypass_config=None, PE_fifos_bypass_dump=None, mu_io_loc_to_id=None):
         # Replace partial tile name with coordinate in PE_fifos_bypass_config
         if PE_fifos_bypass_config is not None:
             updates = {}
@@ -417,7 +418,7 @@ class Garnet(Generator):
             node_node_num = int(node[1:])
 
             result += self.interconnect.configure_placement(x, y, instr, instance,
-                                                            node_pnr_tag, node_node_num, active_core_ports, PE_fifos_bypass_config=PE_fifos_bypass_config)
+                                                            node_pnr_tag, node_node_num, active_core_ports, PE_fifos_bypass_config=PE_fifos_bypass_config, PE_fifos_bypass_dump=PE_fifos_bypass_dump)
             if node in self.pes_with_packed_ponds:
                 print(f"pond {self.pes_with_packed_ponds[node]} being packed with {node} in {x},{y}")
                 node = self.pes_with_packed_ponds[node]
@@ -428,7 +429,7 @@ class Garnet(Generator):
                     continue
                 instr = instrs[instance]
                 result += self.interconnect.configure_placement(x, y, instr, instance,
-                                                                node_pnr_tag, node_node_num, active_core_ports, PE_fifos_bypass_config=PE_fifos_bypass_config)
+                                                                node_pnr_tag, node_node_num, active_core_ports, PE_fifos_bypass_config=PE_fifos_bypass_config, PE_fifos_bypass_dump=PE_fifos_bypass_dump)
         return result
 
     def convert_mapped_to_netlist(self, mapped):
@@ -885,6 +886,7 @@ class Garnet(Generator):
 
         mu_io_loc_to_id = {}
         reg_loc_to_id = {}
+
         for id, loc in placement.items():
             if 'r' in id:
                 reg_loc_to_id.setdefault(loc, []).append(id)
@@ -908,8 +910,22 @@ class Garnet(Generator):
         else:
             PE_fifos_bypass_config = None
 
-        bitstream += self.get_placement_bitstream(placement, routing, id_to_name,
-                                                  instance_to_instr, active_core_ports, PE_fifos_bypass_config=PE_fifos_bypass_config, mu_io_loc_to_id=mu_io_loc_to_id)
+        # For dumping PE fifo bypass config to a json
+        PE_fifos_bypass_dump = {
+                "input_fifo_bypass": {},
+                "output_fifo_bypass": {},
+                "prim_outfifo_bypass": {}
+        }
+
+        bitstream += self.get_placement_bitstream(placement, routing, halide_src, id_to_name,
+                                                  instance_to_instr, active_core_ports, PE_fifos_bypass_config=PE_fifos_bypass_config, PE_fifos_bypass_dump=PE_fifos_bypass_dump, mu_io_loc_to_id=mu_io_loc_to_id)
+
+
+        bin_path = os.path.dirname(halide_src)
+        pe_fifo_bypass_dump_path = os.path.join(bin_path, "pe_id_to_fifo_bypass_config.json")
+        with open(pe_fifo_bypass_dump_path, "w") as f:
+            json.dump(PE_fifos_bypass_dump, f, indent=4)
+
 
         skip_addr = self.interconnect.get_skip_addr()
         bitstream = compress_config_data(bitstream, skip_compression=skip_addr)
