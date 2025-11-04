@@ -200,6 +200,25 @@ int parse_io_tile_info(struct IOTileInfo *io_tile_info, json_t const *io_tile_js
         }
     }
 
+    // parse tb_write_starting_addr
+    json_t const *tb_write_start_addr_list_json;
+    tb_write_start_addr_list_json = json_getProperty(addr_json, "tb_write_starting_addr");
+    if (!tb_write_start_addr_list_json || JSON_ARRAY != json_getType(tb_write_start_addr_list_json)) {
+        // If not found, default to start_addr
+        // This is mainly for backward compatibility with older test apps
+        io_tile_info->tb_write_start_addr = io_tile_info->start_addr;
+    } else {
+        // tb_write_start_addr_json type is list, but we only need the first one
+        json_t const *tb_write_start_addr_json;
+        tb_write_start_addr_json = json_getChild(tb_write_start_addr_list_json);
+        if (!tb_write_start_addr_json || JSON_INTEGER != json_getType(tb_write_start_addr_json)) {
+            // If not an integer, default to start_addr
+            io_tile_info->tb_write_start_addr = io_tile_info->start_addr;
+        } else {
+            io_tile_info->tb_write_start_addr = json_getInteger(tb_write_start_addr_json);
+        }
+    }
+
     // parse data stride
     json_t const *data_stride_list_json;
     if (io_tile_info->io == Input) {
@@ -937,6 +956,10 @@ int get_io_tile_gold_check_start_addr(void *info, int index) {
     return io_info->io_tiles[index].gold_check_start_addr;
 }
 
+int get_io_tile_tb_write_start_addr(void *info, int index) {
+    GET_IO_INFO(info);
+    return io_info->io_tiles[index].tb_write_start_addr;
+}
 int get_io_tile_cycle_start_addr(void *info, int index) {
     GET_IO_INFO(info);
     return io_info->io_tiles[index].cycle_start_addr;
