@@ -767,3 +767,60 @@ class NetlistGraph:
             for node in self.nodes:
                 if node.x is not None:
                     f.write("{} {} {}\n".format(node.node_name, node.x, node.y))
+
+    def manually_place_apply_scale_single_IO(self, app_dir):
+
+        # Place scale output IOs using glb_bank_config.json
+        glb_bank_config_path = os.path.join(app_dir, "glb_bank_config.json")
+        if not os.path.exists(glb_bank_config_path):
+            return
+
+        with open(glb_bank_config_path, "r") as f:
+            glb_bank_config = json.load(f)
+
+        scale_output_x_coords = []
+        for output_entry in glb_bank_config.get("outputs", []):
+            hw_scale_cfg = output_entry.get("hw_scale_packed_output")
+            if hw_scale_cfg is None:
+                continue
+            coords = hw_scale_cfg.get("x_coord", [])
+            scale_output_x_coords.extend(coords)
+
+        if not scale_output_x_coords:
+            return
+
+        def _extract_node_idx(node_id):
+            match = re.search(r"clkwrk_(\d+)", node_id)
+            return int(match.group(1)) if match else 0
+
+        scale_output_nodes = [
+            node
+            for node in self.io_nodes
+            if "io16_hw_scale_packed_output_stencil" in node.node_id
+        ]
+
+        if not scale_output_nodes:
+            return
+
+        scale_output_nodes.sort(key=lambda node: _extract_node_idx(node.node_id))
+
+        for node, x_coord in zip(scale_output_nodes, scale_output_x_coords):
+            node.x = x_coord
+            node.y = 0
+
+        # Place scale packing PE close to the first scale output IO
+        if scale_output_nodes[0].x is not None:
+            pe_x_coord = scale_output_nodes[0].x if scale_output_nodes[0].x >= 12 else 12
+            pe_y_coord = 2
+            for pe_node in self.pe_nodes:
+                if scale_output_nodes[1] in pe_node.sinks:
+                    pe_node.x = pe_x_coord
+                    pe_node.y = pe_y_coord
+                    break
+
+        manual_place_path = os.path.join(app_dir, "manual.place")
+        with open(manual_place_path, "w") as f:
+            for node in self.nodes:
+                if node.x is not None:
+                    f.write(f"{node.node_name} {node.x} {node.y}\n")
+
