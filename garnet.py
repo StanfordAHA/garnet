@@ -493,7 +493,7 @@ class Garnet(Generator):
         return input_interface, output_interface, \
             (reset_port_name, valid_port_name, en_port_name)
 
-    def pack_ponds(self, netlist_info):
+    def pack_ponds(self, netlist_info, path_balance_json=None):
         packed_ponds = {}
 
         for edge_id in list(netlist_info['netlist']):
@@ -502,8 +502,19 @@ class Garnet(Generator):
             inter_core_conns = self.inter_core_connections[bw]
             (source, source_port) = conns[0]
             for (sink, sink_port) in conns[1:]:
-                pond_to_pe = source_port in inter_core_conns and source[0] == "M" and sink_port in inter_core_conns[source_port] and sink[0] == 'p'
-                pe_to_pond = source_port in inter_core_conns and source[0] == "p" and sink_port in inter_core_conns[source_port] and sink[0] == 'M'
+                # If path_balancing json is provided, use that to further qualify pe_to_pond vs. pond_to_pe for path_balancing ponds
+                pe_to_pond = False
+                pond_to_pe = False
+                if path_balance_json is not None and ("path_balance_pond" in netlist_info["id_to_name"][source] or "path_balance_pond" in netlist_info["id_to_name"][sink]):
+                    if "path_balance_pond" in netlist_info["id_to_name"][source]:
+                        pond_to_pe = sink in path_balance_json["pe_to_pond"] and (path_balance_json["pe_to_pond"][sink][0] == False)
+
+                    if "path_balance_pond" in netlist_info["id_to_name"][sink]:
+                        pe_to_pond = source in path_balance_json["pe_to_pond"] and (path_balance_json["pe_to_pond"][source][0] == True)
+                else:
+                    pond_to_pe = source_port in inter_core_conns and source[0] == "M" and sink_port in inter_core_conns[source_port] and sink[0] == 'p'
+                    pe_to_pond = source_port in inter_core_conns and source[0] == "p" and sink_port in inter_core_conns[source_port] and sink[0] == 'M'
+
                 if pond_to_pe:
                     packed_ponds[source] = sink
                 elif pe_to_pond:
@@ -729,7 +740,11 @@ class Garnet(Generator):
                     if port_name in pond_remap:
                         mapping[i] = (inst_name, pond_remap[port_name])
 
-        self.pack_ponds(netlist_info)
+        path_balance_json_path = app_dir + "/path_balancing.json"
+        path_balance_json = None
+        if os.path.exists(path_balance_json_path):
+            path_balance_json = json.load(open(path_balance_json_path, "r"))
+        self.pack_ponds(netlist_info, path_balance_json=path_balance_json)
 
         all_remaps = {}
         all_remaps['pe'] = pe_remap['alu']
