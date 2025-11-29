@@ -427,10 +427,17 @@ class CoreCombinerCore(LakeCoreBase):
                     fine_grained_input_fifo_bypass = PE_fifos_bypass_config[(x, y)]['input_fifo_bypass']
                     fine_grained_output_fifo_bypass = PE_fifos_bypass_config[(x, y)]['output_fifo_bypass']
 
-                    if fine_grained_input_fifo_bypass != [0, 0, 0]:
-                        PE_fifos_bypass_dump["input_fifo_bypass"][instance_name] = fine_grained_input_fifo_bypass
-                    if fine_grained_output_fifo_bypass != 0:
-                        PE_fifos_bypass_dump["output_fifo_bypass"][instance_name] = fine_grained_output_fifo_bypass
+
+                global_pe_tile_output_fifo_bypass = os.getenv('GLOBAL_PE_TILE_OUTPUT_FIFO_BYPASS', '0') == '1'
+
+                if global_pe_tile_output_fifo_bypass:
+                    print(f"GLOBAL BYPASSING output fifos for PE {instance_name} at ({x}, {y})")
+                    fine_grained_output_fifo_bypass = 1
+
+                if fine_grained_input_fifo_bypass != [0, 0, 0]:
+                    PE_fifos_bypass_dump["input_fifo_bypass"][instance_name] = fine_grained_input_fifo_bypass
+                if fine_grained_output_fifo_bypass != 0:
+                    PE_fifos_bypass_dump["output_fifo_bypass"][instance_name] = fine_grained_output_fifo_bypass
 
                 config_fine_grained_input_fifo_bypass = [
                     (f"{self.get_port_remap()['alu']['data0']}_fine_grain_fifo_bypass",

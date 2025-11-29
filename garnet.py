@@ -507,10 +507,12 @@ class Garnet(Generator):
                 pond_to_pe = False
                 if path_balance_json is not None and ("path_balance_pond" in netlist_info["id_to_name"][source] or "path_balance_pond" in netlist_info["id_to_name"][sink]):
                     if "path_balance_pond" in netlist_info["id_to_name"][source]:
-                        pond_to_pe = sink in path_balance_json["pe_to_pond"] and (path_balance_json["pe_to_pond"][sink][0] == False)
+                        pond_intended_pe = netlist_info["id_to_name"][source].split("_path_balance_pond")[0]
+                        pond_to_pe = sink in path_balance_json["pe_to_pond"] and (path_balance_json["pe_to_pond"][sink][0] == False) and sink == pond_intended_pe
 
                     if "path_balance_pond" in netlist_info["id_to_name"][sink]:
-                        pe_to_pond = source in path_balance_json["pe_to_pond"] and (path_balance_json["pe_to_pond"][source][0] == True)
+                        pond_intended_pe = netlist_info["id_to_name"][sink].split("_path_balance_pond")[0]
+                        pe_to_pond = source in path_balance_json["pe_to_pond"] and (path_balance_json["pe_to_pond"][source][0] == True) and source == pond_intended_pe
                 else:
                     pond_to_pe = source_port in inter_core_conns and source[0] == "M" and sink_port in inter_core_conns[source_port] and sink[0] == 'p'
                     pe_to_pond = source_port in inter_core_conns and source[0] == "p" and sink_port in inter_core_conns[source_port] and sink[0] == 'M'
