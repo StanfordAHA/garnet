@@ -423,7 +423,9 @@ class CoreCombinerCore(LakeCoreBase):
                         }
                     }
                     '''
-                    print(f"Bypassing input and output fifos for PE ({x}, {y})")
+                    print(f"Bypassing input or output fifos for PE ({x}, {y})")
+                    print(f"Input fifo bypass: {PE_fifos_bypass_config[(x, y)]['input_fifo_bypass']}")
+                    print(f"Output fifo bypass: {PE_fifos_bypass_config[(x, y)]['output_fifo_bypass']}")
                     fine_grained_input_fifo_bypass = PE_fifos_bypass_config[(x, y)]['input_fifo_bypass']
                     fine_grained_output_fifo_bypass = PE_fifos_bypass_config[(x, y)]['output_fifo_bypass']
 
