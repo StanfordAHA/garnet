@@ -971,11 +971,14 @@ module Interconnect (
         return "Garnet"
 
 
-def write_out_bitstream(filename, bitstream):
+def write_out_bitstream(filename, bitstream, glb_tile_mem_size):
+    max_bs_lines = glb_tile_mem_size * 1024 * 8 // 64
     with open(filename, "w+") as f:
         bs = ["{0:08X} {1:08X}".format(entry[0], entry[1]) for entry
               in bitstream]
         f.write("\n".join(bs))
+    if len(bitstream) > max_bs_lines:
+        raise ValueError(f"Bitstream size {len(bitstream) * 64 // 1024 // 8} KB exceeds GLB tile size {glb_tile_mem_size} KB")
 
 
 def parse_args():
@@ -989,7 +992,7 @@ def parse_args():
     parser.add_argument('--width', type=int, default=4)
     parser.add_argument('--height', type=int, default=2)
     parser.add_argument('--pipeline_config_interval', type=int, default=8)
-    parser.add_argument('--glb_tile_mem_size', type=int, default=256)
+    parser.add_argument('--glb_tile_mem_size', type=int, default=128)
 
     # PNR / bitstream generation pathnames
     parser.add_argument("--input-app", type=str, default="", dest="app")
@@ -1236,7 +1239,7 @@ def pnr(garnet, args, app):
     }
     with open(f"{args.output}.json", "w+") as f:
         json.dump(config, f)
-    write_out_bitstream(args.output, bitstream)
+    write_out_bitstream(args.output, bitstream, args.glb_tile_mem_size)
 
 
 def reschedule_pipelined_app(app):
@@ -1341,7 +1344,7 @@ def main():
             result = garnet.compile_virtualize(args.app, group_size)
             for c_id, bitstream in result.items():
                 filename = os.path.join("temp", f"{c_id}.bs")
-                write_out_bitstream(filename, bitstream)
+                write_out_bitstream(filename, bitstream, args.glb_tile_mem_size)
 
         # WRITE REGS TO CONFIG.JSON
         from passes.collateral_pass.config_register import get_interconnect_regs, get_core_registers

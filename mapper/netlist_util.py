@@ -1554,6 +1554,9 @@ def create_netlist_info(
         elif "get_apply_e8m0_scale_fp" in app_dir:
             graph.generate_tile_conn(app_dir=app_dir)
             graph.manually_place_fused_quant(app_dir=app_dir)
+        elif "apply_e8m0_scale_single_IO" in app_dir:
+            graph.generate_tile_conn(app_dir=app_dir)
+            graph.manually_place_apply_scale_single_IO(app_dir=app_dir)
 
     CountTiles().doit(pdag)
 
