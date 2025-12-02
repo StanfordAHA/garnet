@@ -397,7 +397,7 @@ pushd $mflowgen
   set -x
   git checkout $mflowgen_branch
 
-  if [ "$mflow_branch" == "master" ]; then
+  if [ "$mflowgen_branch" == "master" ]; then
       hacksha=d42836c2
       echo "--- HACK ALERT! Using $hacksha instead of latest master/main"
       # Commit 57cb32e0 seems to have broken things, so use something older than that.
