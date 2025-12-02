@@ -402,6 +402,7 @@ pushd $mflowgen
       echo "--- HACK ALERT! Using $hacksha instead of latest master/main"
       # Commit 57cb32e0 seems to have broken things, so use something older than that.
       # Commit 774642ab is known good maybe so use something >= that
+      test -h nodes && unlink nodes
       git checkout $hacksha
 
       if ! test -e nodes/synopsys-ptpx-genlibdb/configure.yml; then
