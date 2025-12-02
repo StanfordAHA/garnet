@@ -163,7 +163,6 @@ fi
 
 ########################################################################
 # SPACE CHECK -- generally need at least 100G for a full build
-echo '+++ BARRRRRRRRR'
 echo '+++ SPACE CHECK'
 
 # Check partition containing target dir $build_dir" for sufficient space
@@ -395,7 +394,7 @@ fi
 echo "--- PIP INSTALL $mflowgen branch $mflowgen_branch"; date
 pushd $mflowgen
   set -x
-  git checkout $mflowgen_branch
+  git checkout $mflowgen_branch; git pull
 
   if [ "$mflowgen_branch" == "master" ]; then
       hacksha=d42836c2
@@ -404,7 +403,6 @@ pushd $mflowgen
       # Commit 774642ab is known good maybe so use something >= that
       git checkout $hacksha
   fi
-  git pull
 
   # Local modifications to repo can mean trouble!
   if $(git diff | head | grep . > /dev/null); then 

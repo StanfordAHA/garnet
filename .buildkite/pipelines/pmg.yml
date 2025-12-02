@@ -69,7 +69,7 @@ steps:
 # Set pe max width to 112: fp limits to 110 but then lvs says 112 OK
 - label: 'ptile init 20m'
   commands:
-  - 'echo "--- FOOOOO"; source mflowgen/bin/setup-buildkite.sh $$SETUP_FLAGS;
+  - 'source mflowgen/bin/setup-buildkite.sh $$SETUP_FLAGS;
      echo "--- BEGIN mflowgen run";
      mflowgen run --design $$GARNET_HOME/mflowgen/full_chip;
      echo "--- BEGIN make init";
