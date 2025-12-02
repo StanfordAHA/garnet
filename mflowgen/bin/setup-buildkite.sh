@@ -394,15 +394,13 @@ fi
 echo "--- PIP INSTALL $mflowgen branch $mflowgen_branch"; date
 pushd $mflowgen
   set -x
-  git checkout $mflowgen_branch; git pull
-
+  test -h nodes && unlink nodes
   if [ "$mflowgen_branch" == "master" ]; then
       hacksha=d42836c2  # (known bad) minus 1 - failed on mtile
       hacksha=774642ab  # (known good) maybe - mtile works
       echo "--- HACK ALERT! Using $hacksha instead of latest master/main"
       # Commit 57cb32e0 seems to have broken things, so use something older than that.
       # Commit 774642ab is known good maybe so use something >= that
-      test -h nodes && unlink nodes
       git checkout $hacksha
 
       if ! test -e nodes/synopsys-ptpx-genlibdb/configure.yml; then
@@ -410,6 +408,8 @@ pushd $mflowgen
           ln -s steps nodes
           ls -l */synopsys-ptpx-genlibdb/configure.yml
       fi
+  else
+      git checkout $mflowgen_branch; git pull
   fi
 
   # Local modifications to repo can mean trouble!
