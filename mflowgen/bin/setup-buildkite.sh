@@ -396,8 +396,8 @@ pushd $mflowgen
   set -x
   test -h nodes && unlink nodes
   if [ "$mflowgen_branch" == "master" ]; then
-      hacksha=d42836c2  # (known bad) minus 1 - failed on mtile
       hacksha=774642ab  # (known good) maybe - mtile works
+      hacksha=d42836c2  # (known bad) minus 1 - failed on mtile
       echo "--- HACK ALERT! Using $hacksha instead of latest master/main"
       # Commit 57cb32e0 seems to have broken things, so use something older than that.
       # Commit 774642ab is known good maybe so use something >= that
