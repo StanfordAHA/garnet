@@ -163,6 +163,7 @@ fi
 
 ########################################################################
 # SPACE CHECK -- generally need at least 100G for a full build
+echo '+++ BARRRRRRRRR'
 echo '+++ SPACE CHECK'
 
 # Check partition containing target dir $build_dir" for sufficient space
