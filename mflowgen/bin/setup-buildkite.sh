@@ -403,6 +403,12 @@ pushd $mflowgen
       # Commit 57cb32e0 seems to have broken things, so use something older than that.
       # Commit 774642ab is known good maybe so use something >= that
       git checkout $hacksha
+
+      if ! test -e nodes/synopsys-ptpx-genlibdb/configure.yml; then
+          echo "+++ oh noes where is it i must hackyboo mabye"
+          ln -s steps nodes
+          ls -l */synopsys-ptpx-genlibdb/configure.yml
+      fi
   fi
 
   # Local modifications to repo can mean trouble!
