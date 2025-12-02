@@ -393,7 +393,16 @@ fi
 # Check out latest version of the desired branch
 echo "--- PIP INSTALL $mflowgen branch $mflowgen_branch"; date
 pushd $mflowgen
-  git checkout $mflowgen_branch; git pull
+  git checkout $mflowgen_branch
+
+  if [ "$mflowbranch" == "master" ]; then
+      hacksha=d42836c2
+      echo "--- HACK ALERT! Using $hacksha instead of latest master/main"
+      # Commit 57cb32e0 seems to have broken things, so use something older than that.
+      # Commit 774642ab is known good maybe so use something >= that
+      git checkout $hacksha
+  fi
+  git pull
 
   # Local modifications to repo can mean trouble!
   if $(git diff | head | grep . > /dev/null); then 
