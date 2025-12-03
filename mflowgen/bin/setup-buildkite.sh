@@ -1,5 +1,15 @@
 #!/bin/bash
 
+function showpacks {
+echo "+++ SHOWPACKS$1"
+python3 -c '
+import sys; print(*[f"  {p}\n" for p in sys.path], "----")
+import pkg_resources
+print( *sorted([f"  {p.key}\n" for p in pkg_resources.working_set  ]) )
+'
+}    
+
+
 # Set up environment to run a buildkite test in the indicated directory.
 # Examples:
 #     source setup-buildkite.sh --dir /build/gold.100/full_chip
@@ -470,7 +480,7 @@ pushd $mflowgen
   pip install --upgrade pip
   TOP=$PWD; pip install -e .
 popd
-python3 -c 'from mflowgen.components import Graph'
+showpacks 483
 
 # mflowgen might be hidden in $HOME/.local/bin
 if ! (type mflowgen >& /dev/null); then
@@ -483,7 +493,7 @@ fi
 
 # See what we got
 which mflowgen; pip list | grep mflowgen
-python3 -c 'from mflowgen.components import Graph'
+showpacks 496
 
 
 ########################################################################
@@ -492,7 +502,7 @@ python3 -c 'from mflowgen.components import Graph'
 
 echo "--- PIP INSTALL $GARNET_HOME/mflowgen"; date
 pip install -e $GARNET_HOME/mflowgen
-python3 -c 'from mflowgen.components import Graph'
+showpacks 505
 
 ########################################################################
 # ADK
@@ -538,11 +548,11 @@ if ! touch $MFLOWGEN_PATH/is_touchable; then
     echo "Setup FAILED"
     return 13 || exit 13
 fi
-python3 -c 'from mflowgen.components import Graph'
+showpacks 551
 
 echo "--- UNLOCK "; date
 flockmsg "Release! The lock!"; flock -u 9
-python3 -c 'from mflowgen.components import Graph'
+showpacks 555
 
 ########################################################################
 # TCLSH VERSION CHECK
@@ -614,7 +624,7 @@ else
     echo "  "`type tclsh`", version $tclsh_version"
 fi
 echo ""
-python3 -c 'from mflowgen.components import Graph'
+showpacks 627
 
 echo "+++ DEBUG"
 set -x
@@ -626,11 +636,12 @@ head $GARNET_HOME/mflowgen/full_chip/construct.py
 pip list |& grep mflowgen
 
 which python3
-python3 -c 'from mflowgen.components import Graph'
+showpacks 640
 
 
 pyscript=/tmp/deleteme.$RANDOM.py
 echo "
+import sys; print(sys.path)
 import os
 construct_path = '$GARNET_HOME/mflowgen/full_chip/construct.py'
 c_dirname  = os.path.dirname( construct_path )
