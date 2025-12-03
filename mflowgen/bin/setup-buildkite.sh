@@ -2,7 +2,7 @@
 
 function showpacks {
 echo "+++ SHOWPACKS$1"
-python3 -c '
+python3 -c '\
 import sys; print(*[f"  {p}\n" for p in sys.path], "----")
 import pkg_resources
 print( *sorted([f"  {p.key}\n" for p in pkg_resources.working_set  ]) )
@@ -302,6 +302,7 @@ if [ "$USER" == "buildkite-agent" ]; then
 else
     echo "WARNING using default user python environment"
 fi
+showpacks 305
 
 echo "+++ DEBUG"
 set -x
