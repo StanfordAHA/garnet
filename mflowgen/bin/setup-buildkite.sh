@@ -293,6 +293,48 @@ else
     echo "WARNING using default user python environment"
 fi
 
+echo "+++ DEBUG"
+set -x
+mflowgen=/sim/buildkite-agent/mflowgen.master
+pushd $mflowgen
+hacksha=d42836c2  # known-bad minus 1 (known-bad = 57cb32e0)
+git checkout $hacksha
+pip install --upgrade pip
+TOP=$PWD; pip install -e .
+python3 -c 'from mflowgen.components import Graph'
+set +x
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ########################################################################
 # FIXME Probably don't need this (/usr/local/bin stuff) any more...
 # FIXME In fact it probably does more harm than good
