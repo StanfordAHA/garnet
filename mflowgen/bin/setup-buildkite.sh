@@ -400,8 +400,8 @@ pushd $mflowgen
 
   test -h nodes && unlink nodes  # Undo hack detritus, else it will muck us up
   if [ "$mflowgen_branch" == "master" ]; then
-      hacksha=d42836c2  # known-bad minus 1 (known-bad = 57cb32e0)
       hacksha=774642ab  # known-good maybe
+      hacksha=d42836c2  # known-bad minus 1 (known-bad = 57cb32e0)
       echo "--- HACK ALERT! Using $hacksha instead of latest master/main"
       # Commit 57cb32e0 seems to have broken things, so use something older than that.
       # Commit 774642ab is known good maybe so use something >= that
@@ -567,3 +567,28 @@ else
     echo "  "`type tclsh`", version $tclsh_version"
 fi
 echo ""
+
+echo "+++ DEBUG"
+set -x
+pwd  # /sim/buildkite-agent/builds/papers-4/tapeout-aha ?
+
+# GARNET_HOME=`pwd`
+cat <<EOF | python3
+import os
+construct_path = "$GARNET_HOME/mflowgen/mflowgen/full_chip/construct.py"
+c_dirname  = os.path.dirname( construct_path )
+print(c_dirname)
+c_basename = os.path.splitext( os.path.basename( construct_path ) )[0]
+print(c_basename)  # 'construct'
+import importlib.util
+mod_spec = importlib.util.spec_from_file_location( c_basename, construct_path )
+graph_construct_mod = importlib.util.module_from_spec( mod_spec )
+mod_spec.loader.exec_module( graph_construct_mod )
+
+EOF
+set +x
+
+
+# construct_path = "/build/papers-2/tapeout-aha/mflowgen/mflowgen/full_chip/construct.py"
+# mflowgen run --design $GARNET_HOME/mflowgen/full_chip
+# /mflowgen/mflowgen/full_chip/construct.py
