@@ -398,7 +398,7 @@ pushd $mflowgen
   if [ "$mflowgen_branch" == "master" ]; then
       hacksha=d42836c2
       echo "--- HACK ALERT! Using genus-configure from $hacksha instead of latest master/main"
-      git checkout $hacksha -- nodes/cadence-genus-synthesis/configure.yml
+      git checkout $hacksha -- steps/cadence-genus-synthesis/configure.yml
   fi
 
   # Local modifications to repo can mean trouble!
