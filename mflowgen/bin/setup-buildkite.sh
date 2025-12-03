@@ -575,6 +575,12 @@ echo GARNET_HOME=$GARNET_HOME
 ls -l $GARNET_HOME/mflowgen/full_chip/construct.py
 head $GARNET_HOME/mflowgen/full_chip/construct.py
 
+pip list |& grep mflowgen
+
+which python3
+python3 -c 'from mflowgen.components import Graph'
+
+
 pyscript=/tmp/deleteme.$RANDOM.py
 echo "
 import os
