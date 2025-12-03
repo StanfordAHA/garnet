@@ -300,6 +300,8 @@ if [ "$USER" == "buildkite-agent" ]; then
         else
             python3 -m venv $venv
         fi
+        set +x
+
     fi
     source $venv/bin/activate
     check_pyversions
