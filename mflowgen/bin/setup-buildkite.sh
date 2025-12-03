@@ -568,3 +568,8 @@ else
     echo "  "`type tclsh`", version $tclsh_version"
 fi
 echo ""
+
+echo "+++ DEBUG"
+pwd
+which mflowgen
+mflowgen run --demo
