@@ -284,9 +284,22 @@ if [ "$USER" == "buildkite-agent" ]; then
     if test -e $venv; then
         echo "Found existing venv '$venv'"
     else
+
+        # Huh on r8arm-aha buildkite agent appears to use /usr/local/bin/python3 (3.7)
+        # Instead of /usr/bin/python3 (3.11)
         echo "Building new venv '$venv'"
         # mkdir -p $vdir; python3.7 -m venv $venv
-        mkdir -p $vdir; python3 -m venv $venv
+
+        set -x
+        which python3
+        python3 --version
+
+        mkdir -p $vdir
+        if test -e /usr/bin/python3; then
+            /usr/bin/python3 -m venv $venv
+        else
+            python3 -m venv $venv
+        fi
     fi
     source $venv/bin/activate
     check_pyversions
