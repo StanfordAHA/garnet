@@ -400,8 +400,8 @@ pushd $mflowgen
 
   test -h nodes && unlink nodes  # Undo hack detritus, else it will muck us up
   if [ "$mflowgen_branch" == "master" ]; then
-      hacksha=774642ab  # known-good maybe
       hacksha=d42836c2  # known-bad minus 1 (known-bad = 57cb32e0)
+      hacksha=774642ab  # known-good maybe
       echo "--- HACK ALERT! Using $hacksha instead of latest master/main"
       # Commit 57cb32e0 seems to have broken things, so use something older than that.
       # Commit 774642ab is known good maybe so use something >= that
