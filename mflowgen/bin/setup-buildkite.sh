@@ -428,6 +428,7 @@ pushd $mflowgen
   pip install --upgrade pip
   TOP=$PWD; pip install -e .
 popd
+python3 -c 'from mflowgen.components import Graph'
 
 # mflowgen might be hidden in $HOME/.local/bin
 if ! (type mflowgen >& /dev/null); then
@@ -440,6 +441,7 @@ fi
 
 # See what we got
 which mflowgen; pip list | grep mflowgen
+python3 -c 'from mflowgen.components import Graph'
 
 
 ########################################################################
@@ -448,6 +450,7 @@ which mflowgen; pip list | grep mflowgen
 
 echo "--- PIP INSTALL $GARNET_HOME/mflowgen"; date
 pip install -e $GARNET_HOME/mflowgen
+python3 -c 'from mflowgen.components import Graph'
 
 ########################################################################
 # ADK
@@ -493,9 +496,11 @@ if ! touch $MFLOWGEN_PATH/is_touchable; then
     echo "Setup FAILED"
     return 13 || exit 13
 fi
+python3 -c 'from mflowgen.components import Graph'
 
 echo "--- UNLOCK "; date
 flockmsg "Release! The lock!"; flock -u 9
+python3 -c 'from mflowgen.components import Graph'
 
 ########################################################################
 # TCLSH VERSION CHECK
@@ -567,6 +572,7 @@ else
     echo "  "`type tclsh`", version $tclsh_version"
 fi
 echo ""
+python3 -c 'from mflowgen.components import Graph'
 
 echo "+++ DEBUG"
 set -x
