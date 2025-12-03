@@ -575,7 +575,7 @@ echo GARNET_HOME=$GARNET_HOME
 ls -l $GARNET_HOME/mflowgen/full_chip/construct.py
 head $GARNET_HOME/mflowgen/full_chip/construct.py
 
-pyscript="
+echo "
 import os
 construct_path = '$GARNET_HOME/mflowgen/full_chip/construct.py'
 c_dirname  = os.path.dirname( construct_path )
@@ -586,9 +586,9 @@ import importlib.util
 mod_spec = importlib.util.spec_from_file_location( c_basename, construct_path )
 graph_construct_mod = importlib.util.module_from_spec( mod_spec )
 mod_spec.loader.exec_module( graph_construct_mod )
-"
-echo "$pyscript"
-python3 -c "$pyscript"
+" > /tmp/deleteme.$RANDOM
+cat /tmp/deleteme.$RANDOM
+python3 /tmp/deleteme.$RANDOM
 
 set +x
 
