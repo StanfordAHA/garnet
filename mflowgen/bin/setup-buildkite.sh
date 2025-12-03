@@ -285,7 +285,8 @@ if [ "$USER" == "buildkite-agent" ]; then
         echo "Found existing venv '$venv'"
     else
         echo "Building new venv '$venv'"
-        mkdir -p $vdir; python3.7 -m venv $venv
+        # mkdir -p $vdir; python3.7 -m venv $venv
+        mkdir -p $vdir; python3 -m venv $venv
     fi
     source $venv/bin/activate
     check_pyversions
