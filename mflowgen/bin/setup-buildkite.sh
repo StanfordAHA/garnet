@@ -1,13 +1,12 @@
 #!/bin/bash
 
-function showpacks {
-echo "+++ SHOWPACKS$1"
-python3 -c '\
+cat <<EOF > /tmp/foobar.py
 import sys; print(*[f"  {p}\n" for p in sys.path], "----")
 import pkg_resources
 print( *sorted([f"  {p.key}\n" for p in pkg_resources.working_set  ]) )
-'
-}    
+EOF
+
+function showpacks { echo "+++ SHOWPACKS $1"; python3 /tmp/foobar.py; }
 
 
 # Set up environment to run a buildkite test in the indicated directory.
@@ -312,7 +311,7 @@ hacksha=d42836c2  # known-bad minus 1 (known-bad = 57cb32e0)
 git checkout $hacksha
 pip install --upgrade pip
 TOP=$PWD; pip install -e .
-python3 -c 'from mflowgen.components import Graph'
+showpacks 315
 set +x
 
 
