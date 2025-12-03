@@ -425,6 +425,7 @@ pushd $mflowgen
   [ "$OVERRIDE_MFLOWGEN_HASH" ] && git checkout $OVERRIDE_MFLOWGEN_HASH
 
   # Branch is pure, go ahead and install
+  pip install --upgrade pip
   TOP=$PWD; pip install -e .
 popd
 
