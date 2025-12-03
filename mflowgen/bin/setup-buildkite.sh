@@ -393,6 +393,7 @@ fi
 # Check out latest version of the desired branch
 echo "--- PIP INSTALL $mflowgen branch $mflowgen_branch"; date
 pushd $mflowgen
+  git clean -ffxdq  # Delete non-repo and dirty files maybe?
   git checkout $mflowgen_branch; git pull
   if [ "$mflowgen_branch" == "master" ]; then
       hacksha=d42836c2
