@@ -284,24 +284,8 @@ if [ "$USER" == "buildkite-agent" ]; then
     if test -e $venv; then
         echo "Found existing venv '$venv'"
     else
-
-        # Huh on r8arm-aha buildkite agent appears to use /usr/local/bin/python3 (3.7)
-        # Instead of /usr/bin/python3 (3.11)
         echo "Building new venv '$venv'"
-        # mkdir -p $vdir; python3.7 -m venv $venv
-
-        set -x
-        which python3
-        python3 --version
-
-        mkdir -p $vdir
-        if test -e /usr/bin/python3; then
-            /usr/bin/python3 -m venv $venv
-        else
-            python3 -m venv $venv
-        fi
-        set +x
-
+        mkdir -p $vdir; python3 -m venv $venv
     fi
     source $venv/bin/activate
     check_pyversions
@@ -316,7 +300,7 @@ fi
 ########################################################################
 # Lots of useful things in /usr/local/bin. coreir for instance ("type"=="which")
 # echo ""; type coreir
-export PATH="$PATH:/usr/local/bin"; hash -r
+# export PATH="$PATH:/usr/local/bin"; hash -r
 # type coreir; echo ""
 ########################################################################
 
@@ -409,6 +393,12 @@ fi
 # Check out latest version of the desired branch
 echo "--- PIP INSTALL $mflowgen branch $mflowgen_branch"; date
 pushd $mflowgen
+
+  # Adding hack to address two problems:
+  # 1. flowsetup: can't read "vars(delay_default,rc_corner)": no such element in array
+  # 2. mflowgen run: No such file 'nodes/cadence-genus-synthesis/configure.yml'
+
+  # test -h nodes && unlink nodes  # Undo hack detritus, else it will muck us up
   git clean -ffxdq  # Delete non-repo and dirty files maybe?
   git checkout $mflowgen_branch; git pull
   if [ "$mflowgen_branch" == "master" ]; then
@@ -427,6 +417,7 @@ pushd $mflowgen
   [ "$OVERRIDE_MFLOWGEN_HASH" ] && git checkout $OVERRIDE_MFLOWGEN_HASH
 
   # Branch is pure, go ahead and install
+  pip install --upgrade pip
   TOP=$PWD; pip install -e .
 popd
 
@@ -569,7 +560,7 @@ else
 fi
 echo ""
 
-echo "+++ DEBUG"
-pwd
-which mflowgen
-mflowgen run --demo
+# echo "+++ DEBUG"
+# pwd
+# which mflowgen
+# mflowgen run --demo | cat
