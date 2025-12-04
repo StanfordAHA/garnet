@@ -1,14 +1,5 @@
 #!/bin/bash
 
-cat <<EOF > /tmp/foobar.py
-import sys; print(*[f"  {p}\n" for p in sys.path], "----")
-import pkg_resources
-print( *sorted([f"  {p.key}\n" for p in pkg_resources.working_set  ]) )
-EOF
-
-function showpacks { echo "+++ SHOWPACKS $1"; python3 /tmp/foobar.py; }
-
-
 # Set up environment to run a buildkite test in the indicated directory.
 # Examples:
 #     source setup-buildkite.sh --dir /build/gold.100/full_chip
@@ -301,49 +292,6 @@ if [ "$USER" == "buildkite-agent" ]; then
 else
     echo "WARNING using default user python environment"
 fi
-showpacks 305
-
-echo "+++ DEBUG"
-set -x
-mflowgen=/sim/buildkite-agent/mflowgen.master
-pushd $mflowgen
-hacksha=d42836c2  # known-bad minus 1 (known-bad = 57cb32e0)
-git checkout $hacksha
-pip install --upgrade pip
-TOP=$PWD; pip install -e .
-showpacks 315
-set +x
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 ########################################################################
 # FIXME Probably don't need this (/usr/local/bin stuff) any more...
@@ -479,8 +427,8 @@ pushd $mflowgen
   # Branch is pure, go ahead and install
   pip install --upgrade pip
   TOP=$PWD; pip install -e .
+  echo $PATH; which mflowgen
 popd
-showpacks 483
 
 # mflowgen might be hidden in $HOME/.local/bin
 if ! (type mflowgen >& /dev/null); then
@@ -493,7 +441,6 @@ fi
 
 # See what we got
 which mflowgen; pip list | grep mflowgen
-showpacks 496
 
 
 ########################################################################
@@ -502,7 +449,6 @@ showpacks 496
 
 echo "--- PIP INSTALL $GARNET_HOME/mflowgen"; date
 pip install -e $GARNET_HOME/mflowgen
-showpacks 505
 
 ########################################################################
 # ADK
@@ -548,11 +494,9 @@ if ! touch $MFLOWGEN_PATH/is_touchable; then
     echo "Setup FAILED"
     return 13 || exit 13
 fi
-showpacks 551
 
 echo "--- UNLOCK "; date
 flockmsg "Release! The lock!"; flock -u 9
-showpacks 555
 
 ########################################################################
 # TCLSH VERSION CHECK
@@ -624,41 +568,46 @@ else
     echo "  "`type tclsh`", version $tclsh_version"
 fi
 echo ""
-showpacks 627
 
-echo "+++ DEBUG"
-set -x
-pwd  # /sim/buildkite-agent/builds/papers-4/tapeout-aha ?
-echo GARNET_HOME=$GARNET_HOME
-ls -l $GARNET_HOME/mflowgen/full_chip/construct.py
-head $GARNET_HOME/mflowgen/full_chip/construct.py
-
-pip list |& grep mflowgen
-
-which python3
-showpacks 640
-
-
-pyscript=/tmp/deleteme.$RANDOM.py
-echo "
-import sys; print(sys.path)
-import os
-construct_path = '$GARNET_HOME/mflowgen/full_chip/construct.py'
-c_dirname  = os.path.dirname( construct_path )
-print(c_dirname)
-c_basename = os.path.splitext( os.path.basename( construct_path ) )[0]
-print(c_basename)  # 'construct'
-import importlib.util
-mod_spec = importlib.util.spec_from_file_location( c_basename, construct_path )
-graph_construct_mod = importlib.util.module_from_spec( mod_spec )
-mod_spec.loader.exec_module( graph_construct_mod )
-" > $pyscript
-cat $pyscript
-python3 $pyscript
-
-set +x
+# echo "+++ DEBUG"
+# set -x
+# pwd  # /sim/buildkite-agent/builds/papers-4/tapeout-aha ?
+# echo GARNET_HOME=$GARNET_HOME
+# ls -l $GARNET_HOME/mflowgen/full_chip/construct.py
+# head $GARNET_HOME/mflowgen/full_chip/construct.py
+# 
+# pip list |& grep mflowgen
+# 
+# which python3
+# 
+# 
+# pyscript=/tmp/deleteme.$RANDOM.py
+# echo "
+# import sys; print(sys.path)
+# import os
+# construct_path = '$GARNET_HOME/mflowgen/full_chip/construct.py'
+# c_dirname  = os.path.dirname( construct_path )
+# print(c_dirname)
+# c_basename = os.path.splitext( os.path.basename( construct_path ) )[0]
+# print(c_basename)  # 'construct'
+# import importlib.util
+# mod_spec = importlib.util.spec_from_file_location( c_basename, construct_path )
+# graph_construct_mod = importlib.util.module_from_spec( mod_spec )
+# mod_spec.loader.exec_module( graph_construct_mod )
+# " > $pyscript
+# cat $pyscript
+# python3 $pyscript
+# 
+# set +x
 
 
 # construct_path = "/build/papers-2/tapeout-aha/mflowgen/mflowgen/full_chip/construct.py"
 # mflowgen run --design $GARNET_HOME/mflowgen/full_chip
 # /mflowgen/mflowgen/full_chip/construct.py
+
+# cat <<EOF > /tmp/foobar.py
+# import sys; print(*[f"  {p}\n" for p in sys.path], "----")
+# # import pkg_resources
+# # print( *sorted([f"  {p.key}\n" for p in pkg_resources.working_set  ]) )
+# EOF
+# function showpacks { echo "+++ SHOWPACKS $1"; python3 /tmp/foobar.py; }
