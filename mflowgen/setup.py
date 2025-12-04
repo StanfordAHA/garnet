@@ -2,6 +2,9 @@
 from setuptools import setup        # ...but this is what we've always used til now...
 setup(
     name='garnet-pd',
+    author='Alex Carsello',
+    url='https://github.com/StanfordAHA/garnet/tree/master/mflowgen',
+    install_requires=['mflowgen'],
     packages=[
         'common',
         'full_chip',
@@ -11,10 +14,5 @@ setup(
         'tile_array',
         'Tile_MemCore',
         'Tile_PE',
-    ],
-    author='Alex Carsello',
-    url='https://github.com/StanfordAHA/garnet/tree/master/mflowgen',
-    install_requires=[
-        'mflowgen'
     ],
 )
