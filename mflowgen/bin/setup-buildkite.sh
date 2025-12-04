@@ -349,6 +349,7 @@ echo "--- Building in destination dir `pwd`"
 
 ########################################################################
 # MFLOWGEN: Use a single common mflowgen for all builds of a given branch
+# BECAUSE IT IS A SHARED RESOURCE do not muck with it if at all possible. 
 
 mflowgen_branch=master
 [ "$OVERRIDE_MFLOWGEN_BRANCH" ] && mflowgen_branch=$OVERRIDE_MFLOWGEN_BRANCH
@@ -394,23 +395,45 @@ fi
 echo "--- PIP INSTALL $mflowgen branch $mflowgen_branch"; date
 pushd $mflowgen
 
-  # Adding hack to address two problems:
-  # 1. flowsetup: can't read "vars(delay_default,rc_corner)": no such element in array
-  # 2. mflowgen run: No such file 'nodes/cadence-genus-synthesis/configure.yml'
-
-  test -h nodes && unlink nodes  # Undo hack detritus, else it will muck us up
   if [ "$mflowgen_branch" == "master" ]; then
-      hacksha=774642ab  # known-good maybe
-      hacksha=d42836c2  # known-bad minus 1 (known-bad = 57cb32e0)
-      echo "--- HACK ALERT! Using $hacksha instead of latest master/main"
-      # Commit 57cb32e0 seems to have broken things, so use something older than that.
-      # Commit 774642ab is known good maybe so use something >= that
-      git checkout $hacksha
-      if ! test -e nodes/synopsys-ptpx-genlibdb/configure.yml; then
-          echo "+++ oh noes where is it i must hackyboo mabye: SYMLINK NODES->STEPS :("
-          ln -s steps nodes
-          ls -l */synopsys-ptpx-genlibdb/configure.yml
+
+      echo "--- Verify correctness of mflowgen.master"
+
+      # Can no longer use latest master branch as is because of new errors
+      # 1. flowsetup: can't read "vars(delay_default,rc_corner)": no such element in array
+      # 2. mflowgen run: No such file 'nodes/cadence-genus-synthesis/configure.yml'
+      # We fix error 1 by using an older sha; we fix error 2 with the symlink
+      errmsg=""
+      goodhsa=774642ab  # older known-good maybe
+      goodsha=d42836c2  # known-bad minus 1 (known-bad = 57cb32e0)
+      c=$(git rev-parse HEAD | cut -b 1-8)
+      if [ "$c" != "$goodsha" ]; then
+          errmsg="${errmsg}Found commit $c, should be $goodsha\n"
       fi
+      if ! test -e nodes/synopsys-ptpx-genlibdb/configure.yml; then
+          errmsg="${errmsg}Cannot find subdir 'nodes' should do 'ln -s steps nodes'"
+      fi
+      if [ "$errmsg" ]; then
+          printf "+++ ERROR $mflowgen is incorrect, must be fixed\n"
+          printf "$errmsg"
+          return 13 || exit 13
+      fi
+      echo "Correct!"
+
+#   test -h nodes && unlink nodes  # Undo hack detritus, else it will muck us up
+#   if [ "$mflowgen_branch" == "master" ]; then
+#       hacksha=774642ab  # known-good maybe
+#       hacksha=d42836c2  # known-bad minus 1 (known-bad = 57cb32e0)
+#       echo "--- HACK ALERT! Using $hacksha instead of latest master/main"
+#       # Commit 57cb32e0 seems to have broken things, so use something older than that.
+#       # Commit 774642ab is known good maybe so use something >= that
+#       git checkout $hacksha
+#       if ! test -e nodes/synopsys-ptpx-genlibdb/configure.yml; then
+#           echo "+++ oh noes where is it i must hackyboo mabye: SYMLINK NODES->STEPS :("
+#           ln -s steps nodes
+#           ls -l */synopsys-ptpx-genlibdb/configure.yml
+#       fi
+
   else
       git checkout $mflowgen_branch; git pull
   fi
@@ -457,7 +480,9 @@ echo "--- ADK SETUP / CHECK"
 export MFLOWGEN_PATH=$mflowgen/adks
 echo "set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
 
-if [ "$skip_mflowgen" == "true" ]; then
+# Huh when was this ever a good idea.
+# if [ "$skip_mflowgen" == "true" ]; then
+if false; then
     echo "SKIP ADK INSTALL because of cmd-line arg '--skip_mflowgen'"
 
 else
