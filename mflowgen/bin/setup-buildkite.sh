@@ -397,13 +397,13 @@ echo "--- PIP INSTALL $mflowgen branch $mflowgen_branch"; date
 pushd $mflowgen
 
   if [ "$mflowgen_branch" == "master" ]; then
-
       echo "--- Verify correctness of mflowgen.master"
 
       # Can no longer use latest master branch as is because of new errors
       # 1. flowsetup: can't read "vars(delay_default,rc_corner)": no such element in array
       # 2. mflowgen run: No such file 'nodes/cadence-genus-synthesis/configure.yml'
       # We fix error 1 by using an older sha; we fix error 2 with the symlink
+
       errmsg=""
       goodhsa=774642ab  # older known-good maybe
       goodsha=d42836c2  # known-bad minus 1 (known-bad = 57cb32e0)
@@ -420,21 +420,6 @@ pushd $mflowgen
           return 13 || exit 13
       fi
       echo "Correct!"
-
-#   test -h nodes && unlink nodes  # Undo hack detritus, else it will muck us up
-#   if [ "$mflowgen_branch" == "master" ]; then
-#       hacksha=774642ab  # known-good maybe
-#       hacksha=d42836c2  # known-bad minus 1 (known-bad = 57cb32e0)
-#       echo "--- HACK ALERT! Using $hacksha instead of latest master/main"
-#       # Commit 57cb32e0 seems to have broken things, so use something older than that.
-#       # Commit 774642ab is known good maybe so use something >= that
-#       git checkout $hacksha
-#       if ! test -e nodes/synopsys-ptpx-genlibdb/configure.yml; then
-#           echo "+++ oh noes where is it i must hackyboo mabye: SYMLINK NODES->STEPS :("
-#           ln -s steps nodes
-#           ls -l */synopsys-ptpx-genlibdb/configure.yml
-#       fi
-
   else
       git checkout $mflowgen_branch; git pull
   fi
