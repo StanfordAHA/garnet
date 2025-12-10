@@ -285,6 +285,7 @@ if [ "$USER" == "buildkite-agent" ]; then
         echo "Found existing venv '$venv'"
     else
         echo "Building new venv '$venv'"
+        # FIXME seems bad to pin this to an old version but I'm not brave enough to change it ATM
         mkdir -p $vdir; python3.7 -m venv $venv
     fi
     source $venv/bin/activate
@@ -592,3 +593,9 @@ else
     echo "  "`type tclsh`", version $tclsh_version"
 fi
 echo ""
+
+# Can uncomment this as a quick check to see if everything worked okay
+# echo "+++ DEBUG"
+# pwd
+# which mflowgen
+# mflowgen run --demo | cat
