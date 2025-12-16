@@ -285,6 +285,7 @@ if [ "$USER" == "buildkite-agent" ]; then
         echo "Found existing venv '$venv'"
     else
         echo "Building new venv '$venv'"
+        # FIXME seems bad to pin this to an old version but I'm not brave enough to change it ATM
         mkdir -p $vdir; python3.7 -m venv $venv
     fi
     source $venv/bin/activate
@@ -349,6 +350,7 @@ echo "--- Building in destination dir `pwd`"
 
 ########################################################################
 # MFLOWGEN: Use a single common mflowgen for all builds of a given branch
+# BECAUSE IT IS A SHARED RESOURCE do not muck with it if at all possible. 
 
 mflowgen_branch=master
 [ "$OVERRIDE_MFLOWGEN_BRANCH" ] && mflowgen_branch=$OVERRIDE_MFLOWGEN_BRANCH
@@ -393,7 +395,34 @@ fi
 # Check out latest version of the desired branch
 echo "--- PIP INSTALL $mflowgen branch $mflowgen_branch"; date
 pushd $mflowgen
-  git checkout $mflowgen_branch; git pull
+
+  if [ "$mflowgen_branch" == "master" ]; then
+      echo "--- Verify correctness of mflowgen.master"
+
+      # Can no longer use latest master branch as is because of new errors
+      # 1. flowsetup: can't read "vars(delay_default,rc_corner)": no such element in array
+      # 2. mflowgen run: No such file 'nodes/cadence-genus-synthesis/configure.yml'
+      # We fix error 1 by using an older sha; we fix error 2 with the symlink
+
+      errmsg=""
+      goodhsa=774642ab  # older known-good maybe
+      goodsha=d42836c2  # known-bad minus 1 (known-bad = 57cb32e0)
+      c=$(git rev-parse HEAD | cut -b 1-8)
+      if [ "$c" != "$goodsha" ]; then
+          errmsg="${errmsg}Found commit $c, should be $goodsha\n"
+      fi
+      if ! test -e nodes/synopsys-ptpx-genlibdb/configure.yml; then
+          errmsg="${errmsg}Cannot find subdir 'nodes' should do 'ln -s steps nodes'"
+      fi
+      if [ "$errmsg" ]; then
+          printf "+++ ERROR $mflowgen is incorrect, must be fixed\n"
+          printf "$errmsg"
+          return 13 || exit 13
+      fi
+      echo "Correct!"
+  else
+      git checkout $mflowgen_branch; git pull
+  fi
 
   # Local modifications to repo can mean trouble!
   if $(git diff | head | grep . > /dev/null); then 
@@ -405,6 +434,7 @@ pushd $mflowgen
   [ "$OVERRIDE_MFLOWGEN_HASH" ] && git checkout $OVERRIDE_MFLOWGEN_HASH
 
   # Branch is pure, go ahead and install
+  pip install --upgrade pip
   TOP=$PWD; pip install -e .
 popd
 
@@ -436,7 +466,9 @@ echo "--- ADK SETUP / CHECK"
 export MFLOWGEN_PATH=$mflowgen/adks
 echo "set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
 
-if [ "$skip_mflowgen" == "true" ]; then
+# Huh when was this ever a good idea.
+# if [ "$skip_mflowgen" == "true" ]; then
+if false; then
     echo "SKIP ADK INSTALL because of cmd-line arg '--skip_mflowgen'"
 
 else
@@ -546,3 +578,9 @@ else
     echo "  "`type tclsh`", version $tclsh_version"
 fi
 echo ""
+
+# Can uncomment this as a quick check to see if everything worked okay
+# echo "+++ DEBUG"
+# pwd
+# which mflowgen
+# mflowgen run --demo | cat
