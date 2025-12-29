@@ -152,8 +152,7 @@ if [ "$use_container" == True ]; then
       echo '--- Continuing...'
 
       if [ "$use_local_garnet" == True ]; then
-        echo "+++ Updating container with local garnet repo"
-        asdasdasd
+        echo "--- Updating container with local garnet repo"
         docker exec $container_name /bin/bash -c "rm -rf /aha/garnet"
         # Clone local garnet repo to prevent copying untracked files
         git clone $GARNET_HOME ./garnet
