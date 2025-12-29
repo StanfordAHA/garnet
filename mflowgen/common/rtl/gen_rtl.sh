@@ -64,7 +64,7 @@ flags+=" --pipeline_config_interval $pipeline_config_interval"
 flags+=" -v --glb_tile_mem_size $glb_tile_mem_size"
 
 # [ "$WHICH_SOC" == "amber" ] && flags+=" --dense-only"
-# ------------------------------------------------------------ 
+# ------------------------------------------------------------
 # garnet.py does this:
 #    if os.getenv('WHICH_SOC') == "amber": garnet_amber.main()
 # ...so even though garnet.py switches changed, garnet_amber.py did not,
@@ -72,7 +72,7 @@ flags+=" -v --glb_tile_mem_size $glb_tile_mem_size"
 # TODO someone needs to unify garnet.py and garnet_amber.py but not me, not today haha
 
 # sparsity flags for onyx
-[ "$WHICH_SOC" != "amber" ] && flags+=" --include-sparse"
+# [ "$WHICH_SOC" != "amber" ] && flags+=" --include-sparse"
 
 
 # Default is power-aware, but can be turned off
@@ -87,12 +87,12 @@ if [ "$use_container" == True ]; then
 
       ########################################################################
       # What!!? No!!! Why??? Never used??
-      #       
+      #
       #       # Clone AHA repo
       #       echo '--- gen_rtl aha clone BEGIN' `date +%H:%M`
       #       git clone https://github.com/StanfordAHA/aha.git
       #       cd aha
-      # 
+      #
       # Again: why?
       mkdir -p aha; cd aha
       ########################################################################
@@ -152,12 +152,14 @@ if [ "$use_container" == True ]; then
       echo '--- Continuing...'
 
       if [ "$use_local_garnet" == True ]; then
+        echo "+++ Updating container with local garnet repo"
+        asdasdasd
         docker exec $container_name /bin/bash -c "rm -rf /aha/garnet"
         # Clone local garnet repo to prevent copying untracked files
         git clone $GARNET_HOME ./garnet
         docker cp ./garnet $container_name:/aha/garnet
       fi
-      
+
       # Update container for amber config if necessary
       if [ "$WHICH_SOC" == "amber" ]; then
           echo "+++ Updating container with amber updates"
@@ -176,7 +178,7 @@ if [ "$use_container" == True ]; then
           docker exec $container_name /bin/bash -c "git submodule status"
           echo "------------------------------------------------------------------------"
 
-          echo "$amber_updates" | while read u; do 
+          echo "$amber_updates" | while read u; do
               [ "$u" == "" ] && continue    # Skip blank lines
               echo docker exec CONTAINER /bin/bash -c \"$u\"
               docker exec $container_name /bin/bash -c "$u"
@@ -189,7 +191,7 @@ if [ "$use_container" == True ]; then
           echo "------------------------------------------------------------------------"
           echo "--- continue..."
       fi
-      
+
       # run garnet.py in container and concat all verilog outputs
       echo "---docker exec $container_name"
 
@@ -245,6 +247,8 @@ if [ "$use_container" == True ]; then
          else
            echo --- DEFAULT rtl build: aha garnet $flags
            # Rename output verilog, final name must be 'design.v'
+           echo 'Mek Mek Mek - changing lake to GF-enabled lake'
+           pushd /aha/lake         && git fetch && git checkout 93e4847 && popd;
            aha garnet $flags; # Here is where we build the verilog for the main chip
            cd garnet
            if [ -d 'genesis_verif' ]; then

@@ -361,12 +361,13 @@ def construct():
     g.update_params(parameters)
 
     # Add bank height param to init
-    amber_bank_height = parameters['bank_height']
+    # amber_bank_height = parameters['bank_height']
     onyx_bank_height = (
         (parameters['glb_tile_mem_size'] * 1024 // 2)
         // (parameters['num_words'] * (parameters['word_size'] // 8))
     )
-    bh = onyx_bank_height if (which_soc == 'onyx') else amber_bank_height
+    # bh = onyx_bank_height if (which_soc == 'onyx') else amber_bank_height
+    bh = onyx_bank_height if (which_soc == 'onyx') else None
     init.update_params({'bank_height': bh}, True)
 
     # Change nthreads

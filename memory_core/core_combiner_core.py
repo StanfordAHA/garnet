@@ -60,6 +60,9 @@ class CoreCombinerCore(LakeCoreBase):
         if self.rf:
             self.read_delay = 0
 
+        print("Using tech map garnet:", tech_map_name)
+        exit()
+
         cc_core_name = "CoreCombiner"
 
         # assert controllers_list is not None and len(controllers_list) > 0

@@ -178,7 +178,7 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
                 dual_port: bool = False,
                 rf: bool = False,
                 perf_debug: bool = False,
-                tech_map='Intel'):
+                tech_map='GF'):
 
     # TODO: We now use using_matrix_unit to determine if we are using rv mem and pond or not
     #       But we can use rv mem and pond without matrix unit if we want
@@ -201,6 +201,11 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
     #     tm = GF_Tech_Map(depth=mem_depth, width=macro_width, dual_port=dual_port)
 
     assert tech_map in ['Intel', 'GF', 'TSMC']
+    print("TECH MAP ONYX:", tech_map)
+    if tech_map not in "GF":
+        tech_map = "GF"
+    print("TECH MAP ONYX 2:", tech_map)
+
     tm = tech_map
 
     # Should this stuff be done no matter what??
