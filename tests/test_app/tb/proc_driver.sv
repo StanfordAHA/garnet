@@ -10,6 +10,7 @@ import "DPI-C" function int get_MU_input_bubble_mode();
 
 bit [GLB_ADDR_WIDTH-1:0] start_addr;
 bit [GLB_ADDR_WIDTH-1:0] cur_addr;
+bit [GLB_ADDR_WIDTH-1:0] translated_start_addr;
 bitstream_t              bs_q;
 
 bit [GLB_ADDR_WIDTH-1:0]  ProcDriver_write_waddr;
@@ -83,6 +84,13 @@ task ProcDriver_write_8b_network_data();
     assert (BANK_DATA_WIDTH == 64);
     size = data_q_8b.size();
 
+    translated_start_addr = {  cur_addr[MU_ADDR_WIDTH - 1 : MU_ADDR_WIDTH - 1 - (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES) - 1)],
+                                        cur_addr[BANK_BYTE_OFFSET + (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES) - 1) - 1 : BANK_BYTE_OFFSET],
+                                        cur_addr[MU_ADDR_WIDTH - 1 - (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES)) : BANK_BYTE_OFFSET + (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES) - 1)],
+                                        cur_addr[BANK_BYTE_OFFSET - 1 : 0]
+                                };
+    $display("Translated_start_addr = 0x%0h", translated_start_addr);
+
     // Write data in little endian format
     for (int i = 0; i < size; i += 8) begin
         if ((i + 1) == size) begin
@@ -130,6 +138,13 @@ task ProcDriver_write_16b_network_data();
     proc_lock.get(1);
     assert (BANK_DATA_WIDTH == 64);
     size = data_q_16b.size();
+
+    translated_start_addr = {  cur_addr[MU_ADDR_WIDTH - 1 : MU_ADDR_WIDTH - 1 - (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES) - 1)],
+                                        cur_addr[BANK_BYTE_OFFSET + (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES) - 1) - 1 : BANK_BYTE_OFFSET],
+                                        cur_addr[MU_ADDR_WIDTH - 1 - (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES)) : BANK_BYTE_OFFSET + (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES) - 1)],
+                                        cur_addr[BANK_BYTE_OFFSET - 1 : 0]
+                                };
+    $display("Translated_start_addr = 0x%0h", translated_start_addr);
 
     // Write data in little endian format
     for (int i = 0; i < size; i += 4) begin

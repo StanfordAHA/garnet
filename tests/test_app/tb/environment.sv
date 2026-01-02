@@ -152,17 +152,22 @@ task Env_mu_configure();
 
     // input base address
     mu_axi_addr = `MU_AXI_INPUT_BASE_R;
+    // mu_axi_addr = 'h20000000 + `MU_AXI_INPUT_BASE_R;
     mu_axi_data = 0;
     MU_AxilDriver_write();
 
    // weight base address
     mu_axi_addr = `MU_AXI_WEIGHT_BASE_R;
+    // mu_axi_addr = 'h20000000 + `MU_AXI_WEIGHT_BASE_R;
     mu_axi_data = 0;
+    // mu_axi_data = 800;
     MU_AxilDriver_write();
 
     // bias base address
     mu_axi_addr = `MU_AXI_BIAS_BASE_R;
+    // mu_axi_addr = 'h20000000 + `MU_AXI_BIAS_BASE_R;
     mu_axi_data = 0;
+    // mu_axi_data = 800;
     MU_AxilDriver_write();
 
 
@@ -304,6 +309,7 @@ task Env_kernel_test();
     // A write of 0x10001 to address 0x18 starts data streaming to proc tiles.
     addr = Env_kernel_cfg.addr;  // 0x18
     data = Env_kernel_cfg.data;  // (e.g. 0x10001 for pointwise)
+    $display("[%s] Start streaming by writing addr 0x%0h data 0x%0h", kernel.name, addr, data);
     AxilDriver_write();          // This starts the (G2F) streaming
 
     /* temp registration block for pr diff
