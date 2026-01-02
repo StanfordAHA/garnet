@@ -29,6 +29,7 @@ from canal.logic import ReadyValidLoopBack
 from matrix_unit.cgra2mu_ready_and import cgra2mu_ready_and
 from matrix_unit.mu2cgra_pipeline_unit import mu2cgra_pipeline_unit
 from kratos.util import to_magma
+import json
 
 # set the debug mode to false to speed up construction
 from gemstone.generator.generator import set_debug_mode
@@ -382,7 +383,7 @@ class Garnet(Generator):
                     instrs[instance] = (1, node_config_kwargs)
 
 
-    def get_placement_bitstream(self, placement, routing, id_to_name, instrs, active_core_ports=None, PE_fifos_bypass_config=None, mu_io_loc_to_id=None):
+    def get_placement_bitstream(self, placement, routing, halide_src, id_to_name, instrs, active_core_ports=None, PE_fifos_bypass_config=None, PE_fifos_bypass_dump=None, mu_io_loc_to_id=None):
         # Replace partial tile name with coordinate in PE_fifos_bypass_config
         if PE_fifos_bypass_config is not None:
             updates = {}
@@ -417,7 +418,7 @@ class Garnet(Generator):
             node_node_num = int(node[1:])
 
             result += self.interconnect.configure_placement(x, y, instr, instance,
-                                                            node_pnr_tag, node_node_num, active_core_ports, PE_fifos_bypass_config=PE_fifos_bypass_config)
+                                                            node_pnr_tag, node_node_num, active_core_ports, PE_fifos_bypass_config=PE_fifos_bypass_config, PE_fifos_bypass_dump=PE_fifos_bypass_dump)
             if node in self.pes_with_packed_ponds:
                 print(f"pond {self.pes_with_packed_ponds[node]} being packed with {node} in {x},{y}")
                 node = self.pes_with_packed_ponds[node]
@@ -428,7 +429,7 @@ class Garnet(Generator):
                     continue
                 instr = instrs[instance]
                 result += self.interconnect.configure_placement(x, y, instr, instance,
-                                                                node_pnr_tag, node_node_num, active_core_ports, PE_fifos_bypass_config=PE_fifos_bypass_config)
+                                                                node_pnr_tag, node_node_num, active_core_ports, PE_fifos_bypass_config=PE_fifos_bypass_config, PE_fifos_bypass_dump=PE_fifos_bypass_dump)
         return result
 
     def convert_mapped_to_netlist(self, mapped):
@@ -492,7 +493,7 @@ class Garnet(Generator):
         return input_interface, output_interface, \
             (reset_port_name, valid_port_name, en_port_name)
 
-    def pack_ponds(self, netlist_info):
+    def pack_ponds(self, netlist_info, path_balance_json=None):
         packed_ponds = {}
 
         for edge_id in list(netlist_info['netlist']):
@@ -501,8 +502,21 @@ class Garnet(Generator):
             inter_core_conns = self.inter_core_connections[bw]
             (source, source_port) = conns[0]
             for (sink, sink_port) in conns[1:]:
-                pond_to_pe = source_port in inter_core_conns and source[0] == "M" and sink_port in inter_core_conns[source_port] and sink[0] == 'p'
-                pe_to_pond = source_port in inter_core_conns and source[0] == "p" and sink_port in inter_core_conns[source_port] and sink[0] == 'M'
+                # If path_balancing json is provided, use that to further qualify pe_to_pond vs. pond_to_pe for path_balancing ponds
+                pe_to_pond = False
+                pond_to_pe = False
+                if path_balance_json is not None and ("path_balance_pond" in netlist_info["id_to_name"][source] or "path_balance_pond" in netlist_info["id_to_name"][sink]):
+                    if "path_balance_pond" in netlist_info["id_to_name"][source]:
+                        pond_intended_pe = netlist_info["id_to_name"][source].split("_path_balance_pond")[0]
+                        pond_to_pe = sink in path_balance_json["pe_to_pond"] and (path_balance_json["pe_to_pond"][sink][0] == False) and sink == pond_intended_pe
+
+                    if "path_balance_pond" in netlist_info["id_to_name"][sink]:
+                        pond_intended_pe = netlist_info["id_to_name"][sink].split("_path_balance_pond")[0]
+                        pe_to_pond = source in path_balance_json["pe_to_pond"] and (path_balance_json["pe_to_pond"][source][0] == True) and source == pond_intended_pe
+                else:
+                    pond_to_pe = source_port in inter_core_conns and source[0] == "M" and sink_port in inter_core_conns[source_port] and sink[0] == 'p'
+                    pe_to_pond = source_port in inter_core_conns and source[0] == "p" and sink_port in inter_core_conns[source_port] and sink[0] == 'M'
+
                 if pond_to_pe:
                     packed_ponds[source] = sink
                 elif pe_to_pond:
@@ -728,7 +742,11 @@ class Garnet(Generator):
                     if port_name in pond_remap:
                         mapping[i] = (inst_name, pond_remap[port_name])
 
-        self.pack_ponds(netlist_info)
+        path_balance_json_path = app_dir + "/path_balancing.json"
+        path_balance_json = None
+        if os.path.exists(path_balance_json_path):
+            path_balance_json = json.load(open(path_balance_json_path, "r"))
+        self.pack_ponds(netlist_info, path_balance_json=path_balance_json)
 
         all_remaps = {}
         all_remaps['pe'] = pe_remap['alu']
@@ -885,6 +903,7 @@ class Garnet(Generator):
 
         mu_io_loc_to_id = {}
         reg_loc_to_id = {}
+
         for id, loc in placement.items():
             if 'r' in id:
                 reg_loc_to_id.setdefault(loc, []).append(id)
@@ -908,8 +927,22 @@ class Garnet(Generator):
         else:
             PE_fifos_bypass_config = None
 
-        bitstream += self.get_placement_bitstream(placement, routing, id_to_name,
-                                                  instance_to_instr, active_core_ports, PE_fifos_bypass_config=PE_fifos_bypass_config, mu_io_loc_to_id=mu_io_loc_to_id)
+        # For dumping PE fifo bypass config to a json
+        PE_fifos_bypass_dump = {
+                "input_fifo_bypass": {},
+                "output_fifo_bypass": {},
+                "prim_outfifo_bypass": {}
+        }
+
+        bitstream += self.get_placement_bitstream(placement, routing, halide_src, id_to_name,
+                                                  instance_to_instr, active_core_ports, PE_fifos_bypass_config=PE_fifos_bypass_config, PE_fifos_bypass_dump=PE_fifos_bypass_dump, mu_io_loc_to_id=mu_io_loc_to_id)
+
+
+        bin_path = os.path.dirname(halide_src)
+        pe_fifo_bypass_dump_path = os.path.join(bin_path, "pe_id_to_fifo_bypass_config.json")
+        with open(pe_fifo_bypass_dump_path, "w") as f:
+            json.dump(PE_fifos_bypass_dump, f, indent=4)
+
 
         skip_addr = self.interconnect.get_skip_addr()
         bitstream = compress_config_data(bitstream, skip_compression=skip_addr)
