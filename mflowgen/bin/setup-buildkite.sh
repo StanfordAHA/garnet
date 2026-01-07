@@ -396,33 +396,7 @@ fi
 echo "--- PIP INSTALL $mflowgen branch $mflowgen_branch"; date
 pushd $mflowgen
 
-  if [ "$mflowgen_branch" == "master" ]; then
-      echo "--- Verify correctness of mflowgen.master"
-
-      # Can no longer use latest master branch as is because of new errors
-      # 1. flowsetup: can't read "vars(delay_default,rc_corner)": no such element in array
-      # 2. mflowgen run: No such file 'nodes/cadence-genus-synthesis/configure.yml'
-      # We fix error 1 by using an older sha; we fix error 2 with the symlink
-
-      errmsg=""
-      goodhsa=774642ab  # older known-good maybe
-      goodsha=d42836c2  # known-bad minus 1 (known-bad = 57cb32e0)
-      c=$(git rev-parse HEAD | cut -b 1-8)
-      if [ "$c" != "$goodsha" ]; then
-          errmsg="${errmsg}Found commit $c, should be $goodsha\n"
-      fi
-      if ! test -e nodes/synopsys-ptpx-genlibdb/configure.yml; then
-          errmsg="${errmsg}Cannot find subdir 'nodes' should do 'ln -s steps nodes'"
-      fi
-      if [ "$errmsg" ]; then
-          printf "+++ ERROR $mflowgen is incorrect, must be fixed\n"
-          printf "$errmsg"
-          return 13 || exit 13
-      fi
-      echo "Correct!"
-  else
-      git checkout $mflowgen_branch; git pull
-  fi
+  git checkout $mflowgen_branch; git pull
 
   # Local modifications to repo can mean trouble!
   if $(git diff | head | grep . > /dev/null); then 
