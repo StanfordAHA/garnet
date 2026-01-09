@@ -12,6 +12,7 @@ if {[file exists $vars(adk_dir)/pdk-qrc-lef.map]} {
 }
 
 # Start Innovus in an assign-free flow
+set version [ string range [ getVersion ] 0 1 ]
 if {[ expr $version > 19 ]} {
   set_db init_no_new_assigns true
 }
