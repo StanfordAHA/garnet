@@ -10,4 +10,3 @@ name: custom-cts-overrides
 
 outputs:
   - cts-overrides.tcl
-  - reporting.tcl
