@@ -119,6 +119,9 @@ def construct():
     custom_flowgen_setup = custom_step('/custom-flowgen-setup')
     genlibdb_constraints = custom_step('/../common/custom-genlibdb-constraints')
 
+    # Had to make this custom to fix reporting.tcl :(
+    cts = custom_step('/../common/cadence-innovus-cts')
+
     if adk_name == 'tsmc16':
         gen_sram = custom_step('/../common/gen_sram_macro_amber')
         custom_lvs = custom_step('/custom-lvs-rules-amber')
@@ -155,7 +158,10 @@ def construct():
     init           = default_step('cadence-innovus-init')            # noqa
     power          = default_step('cadence-innovus-power')           # noqa
     place          = default_step('cadence-innovus-place')           # noqa
-    cts            = default_step('cadence-innovus-cts')             # noqa
+
+    # Had to make this custom to fix reporting.tcl :(
+    # cts            = default_step('cadence-innovus-cts')             # noqa
+
     postcts_hold   = default_step('cadence-innovus-postcts_hold')    # noqa
     route          = default_step('cadence-innovus-route')           # noqa
     postroute      = default_step('cadence-innovus-postroute')       # noqa
