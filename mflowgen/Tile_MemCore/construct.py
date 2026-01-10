@@ -496,7 +496,7 @@ def construct():
     # Because mflowgen updated and change lvs.run.template...
     # Dunno why I should go through the "parameters" list...maybe I will find out and regret it later :(
     # Also don't know what is the "True" parameter at the end but oh well
-    lvs.update_params({'lvs_extra_spice_include': 'inputs/*.spi inputs/*.sp'}, True)
+    lvs.update_params({'lvs_extra_spice_include': "'inputs/*.spi inputs/*.sp'"}, True)
 
     if pwr_aware:
         pwr_aware_gls.update_params({'design_name': parameters['design_name']}, True)
