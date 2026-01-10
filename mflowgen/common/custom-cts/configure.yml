@@ -10,3 +10,4 @@ name: custom-cts
 
 outputs:
   - setup-ccopt.tcl
+  - reporting.tcl
