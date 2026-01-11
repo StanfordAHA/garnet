@@ -151,7 +151,11 @@ def construct():
     init         = Step('cadence-innovus-init',          default=True)  # noqa
     power        = Step('cadence-innovus-power',         default=True)  # noqa
     place        = Step('cadence-innovus-place',         default=True)  # noqa
-    cts          = Step('cadence-innovus-cts',           default=True)  # noqa
+
+    # Had to make custom fix for reporting.tcl :(
+    # cts            = Step('cadence-innovus-cts',            default=True)  # noqa
+    cts =          Step(this_dir + '/../common/cadence-innovus-cts')
+
     postcts_hold = Step('cadence-innovus-postcts_hold',  default=True)  # noqa
     route        = Step('cadence-innovus-route',         default=True)  # noqa
     postroute    = Step('cadence-innovus-postroute',     default=True)  # noqa
@@ -162,7 +166,12 @@ def construct():
 
     if which("calibre") is not None:
         drc = Step('mentor-calibre-drc', default=True)
-        lvs = Step('mentor-calibre-lvs', default=True)
+
+        # 01/2026 mflowgen update required change to lvs step :(
+        # See commend in ../common/mentor-calibre-lvs/configure.yml
+        # lvs = default_step('mentor-calibre-lvs')
+        lvs = custom_step('/../common/mentor-calibre-lvs')
+
     else:
         drc = Step('cadence-pegasus-drc', default=True)
         lvs = Step('cadence-pegasus-lvs', default=True)
@@ -463,6 +472,11 @@ def construct():
     synth.update_params({'PWR_AWARE': parameters['PWR_AWARE']}, True)
     init.update_params({'PWR_AWARE': parameters['PWR_AWARE']}, True)
     power.update_params({'PWR_AWARE': parameters['PWR_AWARE']}, True)
+
+    # Because mflowgen updated and change lvs.run.template...
+    # Dunno why these usually go through the "parameters[]" list...maybe I will find out and regret it later :(
+    # Also don't know what is the "True" parameter at the end but oh well
+    lvs.update_params({'lvs_extra_spice_include': "'inputs/*.spi inputs/*.sp'"}, True)
 
     if pwr_aware:
         init.update_params({'flatten_effort': parameters['flatten_effort']}, True)
