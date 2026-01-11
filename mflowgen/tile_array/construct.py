@@ -158,7 +158,7 @@ def construct():
         # 01/2026 mflowgen update required change to lvs step :(
         # See commend in ../common/mentor-calibre-lvs/configure.yml
         # lvs = default_step('mentor-calibre-lvs')
-        lvs = custom_step('/../common/mentor-calibre-lvs')
+        lvs = Step(this_dir + '/../common/mentor-calibre-lvs')
 
     else:
         drc = Step('cadence-pegasus-drc', default=True)
