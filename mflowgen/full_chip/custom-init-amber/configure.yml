@@ -9,6 +9,7 @@ name: custom-init
 #-------------------------------------------------------------------------
 
 outputs:
+  - pre-init.tcl
   - add-endcaps-welltaps.tcl
   - place-macros.tcl
   - dont-touch.tcl
