@@ -142,7 +142,12 @@ def construct():
 
     if which("calibre") is not None:
         drc = Step('mentor-calibre-drc', default=True)
-        lvs = Step('mentor-calibre-lvs', default=True)
+
+        # 01/2026 mflowgen update required change to lvs step :(
+        # See commend in ../common/mentor-calibre-lvs/configure.yml
+        # lvs = Step('mentor-calibre-lvs', default=True)
+        lvs = Step(this_dir + '/../common/mentor-calibre-lvs')
+
     else:
         drc = Step('cadence-pegasus-drc', default=True)
         lvs = Step('cadence-pegasus-lvs', default=True)

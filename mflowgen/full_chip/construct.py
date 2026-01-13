@@ -276,7 +276,12 @@ def construct():
 
     if which("calibre") is not None:
         drc = default_step('mentor-calibre-drc')
-        lvs = default_step('mentor-calibre-lvs')
+
+        # 01/2026 mflowgen update required change to lvs step :(
+        # See commend in ../common/mentor-calibre-lvs/configure.yml
+        # lvs = default_step('mentor-calibre-lvs')
+        lvs = Step(this_dir + '/../common/mentor-calibre-lvs')
+
         # GF has a different way of running fill
         if adk_name == 'gf12-adk':
             fill = custom_step('/../common/mentor-calibre-fill-gf')
