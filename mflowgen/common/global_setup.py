@@ -1,6 +1,6 @@
 import os
 
-def global_setup:
+def global_setup():
     print("Hello woild I am global setup howdja do")
     print("Hey I wonder where does this script live?")
     print("I think it is here maybe:")
