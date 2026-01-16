@@ -9,11 +9,13 @@ import os
 from mflowgen.components import Graph, Step
 from shutil import which
 from common.get_sys_adk import get_sys_adk
+from common.global_setup import global_setup
 
 
 def construct():
 
     g = Graph()
+    global_setup()
 
     # -----------------------------------------------------------------------
     # Parameters
