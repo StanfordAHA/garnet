@@ -75,7 +75,7 @@ steps:
      echo "--- BEGIN make init";
 
      # echo make tile_array-Tile_MemCore-cadence-innovus-init;
-     # echo exit 13 | make tile_array-Tile_MemCore-cadence-innovus-init;'
+     # echo exit 13 | make tile_array-Tile_MemCore-cadence-innovus-init;
 
      echo make tile_array-Tile_MemCore-mentor-calibre-lvs;
      echo exit 13 | make tile_array-Tile_MemCore-mentor-calibre-lvs;'
