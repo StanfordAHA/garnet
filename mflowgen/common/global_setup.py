@@ -19,7 +19,7 @@ def global_setup(caller__file__):
     callee_dir = os.path.dirname(os.path.realpath(__file__))
     repo_dir = os.getcwd()
     import shutil
-    src = os.path.join(callee_dir, 'init_scripts/pre-init.tcl')
+    src = os.path.join(callee_dir, 'init-scripts/pre-init.tcl')
     print(f"--- OMG gonna try and copy {src} to {repo_dir}")
     shutil.copy(src, repo_dir)
 
