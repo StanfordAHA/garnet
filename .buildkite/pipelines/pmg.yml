@@ -56,11 +56,11 @@ steps:
      mflowgen run --design $$GARNET_HOME/mflowgen/full_chip;
      echo "--- BEGIN make init";
 
-     # echo make tile_array-Tile_MemCore-cadence-innovus-init;
-     # echo exit 13 | make tile_array-Tile_MemCore-cadence-innovus-init;
+     echo make tile_array-Tile_MemCore-cadence-innovus-init;
+     echo exit 13 | make tile_array-Tile_MemCore-cadence-innovus-init;
 
-     echo make tile_array-Tile_MemCore-mentor-calibre-lvs;
-     echo exit 13 | make tile_array-Tile_MemCore-mentor-calibre-lvs;'
+     # echo make tile_array-Tile_MemCore-mentor-calibre-lvs;
+     # echo exit 13 | make tile_array-Tile_MemCore-mentor-calibre-lvs;'
 
   - .buildkite/pipelines/check_tile_width.sh Tile_MemCore --max 250 $BDIR
   - mflowgen/bin/buildcheck.sh $BDIR/full_chip/*tile_array/*Tile_MemCore --show-all-errors
