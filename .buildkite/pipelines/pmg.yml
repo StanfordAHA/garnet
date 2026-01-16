@@ -66,21 +66,26 @@ steps:
 
 # ------------------------------------------------------------------------
 
-# # MTILE through init
-# - label: 'mtile init 25m'
-#   commands:
-#   - 'source mflowgen/bin/setup-buildkite.sh $$SETUP_FLAGS;
-#      echo "--- BEGIN mflowgen run";
-#      mflowgen run --design $$GARNET_HOME/mflowgen/full_chip;
-#      echo "--- BEGIN make init";
-#      echo make tile_array-Tile_MemCore-cadence-innovus-init;
-#      echo exit 13 | make tile_array-Tile_MemCore-cadence-innovus-init;'
-#   - .buildkite/pipelines/check_tile_width.sh Tile_MemCore --max 250 $BDIR
-#   - mflowgen/bin/buildcheck.sh $BDIR/full_chip/*tile_array/*Tile_MemCore --show-all-errors
-
-# MTILE through LVS
+# MTILE through lvs
 - label: 'mtile lvs 2h'
   commands:
-  - $TEST --need_space 30G full_chip tile_array Tile_MemCore --steps mentor-calibre-lvs --debug
+  - 'source mflowgen/bin/setup-buildkite.sh $$SETUP_FLAGS;
+     echo "--- BEGIN mflowgen run";
+     mflowgen run --design $$GARNET_HOME/mflowgen/full_chip;
+     echo "--- BEGIN make init";
+
+     # echo make tile_array-Tile_MemCore-cadence-innovus-init;
+     # echo exit 13 | make tile_array-Tile_MemCore-cadence-innovus-init;'
+
+     echo make tile_array-Tile_MemCore-mentor-calibre-lvs;
+     echo exit 13 | make tile_array-Tile_MemCore-mentor-calibre-lvs;'
+
   - .buildkite/pipelines/check_tile_width.sh Tile_MemCore --max 250 $BDIR
   - mflowgen/bin/buildcheck.sh $BDIR/full_chip/*tile_array/*Tile_MemCore --show-all-errors
+
+# # MTILE through LVS
+# - label: 'mtile lvs 2h'
+#   commands:
+#   - $TEST --need_space 30G full_chip tile_array Tile_MemCore --steps mentor-calibre-lvs --debug
+#   - .buildkite/pipelines/check_tile_width.sh Tile_MemCore --max 250 $BDIR
+#   - mflowgen/bin/buildcheck.sh $BDIR/full_chip/*tile_array/*Tile_MemCore --show-all-errors
