@@ -91,11 +91,7 @@ def construct():
     init         = Step('cadence-innovus-init',          default=True)  # noqa
     power        = Step('cadence-innovus-power',         default=True)  # noqa
     place        = Step('cadence-innovus-place',         default=True)  # noqa
-
-    # Had to make custom fix for reporting.tcl :(
-    # cts            = Step('cadence-innovus-cts',            default=True)  # noqa
-    cts =          Step(this_dir + '/../common/cadence-innovus-cts')
-
+    cts          = Step('cadence-innovus-cts',           default=True)  # noqa
     postcts_hold = Step('cadence-innovus-postcts_hold',  default=True)  # noqa
     route        = Step('cadence-innovus-route',         default=True)  # noqa
     postroute    = Step('cadence-innovus-postroute',     default=True)  # noqa

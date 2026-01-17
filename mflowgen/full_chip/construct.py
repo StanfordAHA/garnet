@@ -262,11 +262,7 @@ def construct():
     init           = default_step('cadence-innovus-init')       # noqa
     power          = default_step('cadence-innovus-power')      # noqa
     place          = default_step('cadence-innovus-place')      # noqa
-
-    # Had to make custom fix for reporting.tcl :(
-    # cts            = Step('cadence-innovus-cts',            default=True)  # noqa
-    cts =          Step(this_dir + '/../common/cadence-innovus-cts')
-
+    cts            = default_step('cadence-innovus-cts')        # noqa
     postcts_hold   = default_step('cadence-innovus-postcts_hold')  # noqa
     route          = default_step('cadence-innovus-route')         # noqa
     postroute      = default_step('cadence-innovus-postroute')     # noqa
