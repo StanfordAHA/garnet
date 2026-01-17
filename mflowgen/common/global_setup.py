@@ -1,5 +1,9 @@
 import os, sys
 
+# And/or can just use MFLOWGEN_HOME maybe, that's what get-top-dir does, sorta
+from mflowgen.utils import get_top_dir
+
+
 # TOD/FIXME get rid of caller__file__ parm, not used
 def global_setup(caller__file__):
     print("--- Hello woild I am global setup howdja do")
@@ -19,12 +23,17 @@ def global_setup(caller__file__):
     # Copy callee_dir/init_scripts/pre-init.tcl => repo_dir/nodes/cadence-innovus-init/scripts/
     callee_dir = os.path.dirname(os.path.realpath(__file__))
     # repo_dir = os.getcwd()
+
     # caller_dir = os.path.dirname(os.path.realpath(caller__file__))
-    caller_dir = sys.modules["__main__"].__file__
+    # caller_dir = sys.modules["__main__"].__file__
+    # dst = os.path.join(caller_dir, '../nodes/cadence-innovus-init/scripts/')
+
+    caller_dir = get_top_dir()
+    dst = os.path.join(caller_dir, 'nodes/cadence-innovus-init/scripts/')
+
 
     import shutil
     src = os.path.join(callee_dir, 'init-scripts/pre-init.tcl')
-    dst = os.path.join(caller_dir, '../nodes/cadence-innovus-init/scripts/')
     print(f"--- OMG gonna try and copy {src} to {dst}")
     shutil.copy(src, dst)
 
