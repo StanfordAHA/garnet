@@ -2,8 +2,10 @@ import os, sys
 
 from mflowgen.utils import get_top_dir
 
-def global_setup():
-    print("--- Hello woild I am global setup howdja do")
+def global_setup(caller=None):
+    print("+++ Hello woild I am global setup howdja do")
+    print("I was called by", os.path.realpath(caller))
+    print("I was called from dir", os.path.dirname(os.path.realpath(caller))
 
     # E.g. /sim/buildkite-agent/builds/papers-2/tapeout-aha/mflowgen/common
     print("Hey I wonder where does this script live?")

@@ -37,7 +37,7 @@ def sr_override_parms(parmdict):
 def construct():
 
     g = Graph()
-    global_setup()
+    global_setup(__file__)
 
     # -----------------------------------------------------------------------
     # Parameters
