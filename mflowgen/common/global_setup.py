@@ -17,9 +17,12 @@ def global_setup(caller__file__):
     # Replace mflowgen pre-init with fixed version
     # Copy callee_dir/init_scripts/pre-init.tcl => repo_dir/nodes/cadence-innovus-init/scripts/
     callee_dir = os.path.dirname(os.path.realpath(__file__))
-    repo_dir = os.getcwd()
+    # repo_dir = os.getcwd()
+    caller_dir = os.path.dirname(os.path.realpath(caller__file__))
+
     import shutil
     src = os.path.join(callee_dir, 'init-scripts/pre-init.tcl')
-    print(f"--- OMG gonna try and copy {src} to {repo_dir}")
-    shutil.copy(src, repo_dir)
+    dst = os.path.join(caller_dir, '../nodes/cadence-innovus-init/scripts/')
+    print(f"--- OMG gonna try and copy {src} to {dst}")
+    shutil.copy(src, dst)
 
