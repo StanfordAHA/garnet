@@ -1,3 +1,5 @@
+import os, sys
+
 def patch(patchfile):
     '''
     Overwrite file in cloned repo with the local patchfile
@@ -5,7 +7,6 @@ def patch(patchfile):
     we copy local file patch/<patchfile> to MFLOWGEN_REO/nodes/<patchfile>
     BUT ONLY IF the two files are different
     '''
-    import os, sys
     import shutil
     from mflowgen.utils import get_top_dir
 
@@ -34,8 +35,9 @@ def patch(patchfile):
 def global_setup(caller=None):
     print("+++ Hello woild I am global setup howdja do")
     print("I was called by", os.path.realpath(caller))
-    print("I was called from dir", os.path.dirname(os.path.realpath(caller))
+    print("I was called from dir", os.path.dirname(os.path.realpath(caller)))
 
+    # Replace mflowgen default scripts withour own versions
     patch('cadence-innovus-init/scripts/pre-init.tcl')
     patch('cadence-innovus-cts/scripts/reporting.tcl')
 
