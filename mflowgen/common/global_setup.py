@@ -1,11 +1,8 @@
 import os, sys
 
-# And/or can just use MFLOWGEN_HOME maybe, that's what get-top-dir does, sorta
 from mflowgen.utils import get_top_dir
 
-
-# TOD/FIXME get rid of caller__file__ parm, not used
-def global_setup(caller__file__):
+def global_setup():
     print("--- Hello woild I am global setup howdja do")
 
     # E.g. /sim/buildkite-agent/builds/papers-2/tapeout-aha/mflowgen/common

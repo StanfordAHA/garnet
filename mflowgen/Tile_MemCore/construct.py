@@ -15,7 +15,7 @@ from common.global_setup import global_setup
 def construct():
 
     g = Graph()
-    global_setup(__file__)
+    global_setup()
 
     # -----------------------------------------------------------------------
     # Parameters
