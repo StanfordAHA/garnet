@@ -1,5 +1,6 @@
-import os
+import os, sys
 
+# TOD/FIXME get rid of caller__file__ parm, not used
 def global_setup(caller__file__):
     print("--- Hello woild I am global setup howdja do")
 
@@ -18,7 +19,8 @@ def global_setup(caller__file__):
     # Copy callee_dir/init_scripts/pre-init.tcl => repo_dir/nodes/cadence-innovus-init/scripts/
     callee_dir = os.path.dirname(os.path.realpath(__file__))
     # repo_dir = os.getcwd()
-    caller_dir = os.path.dirname(os.path.realpath(caller__file__))
+    # caller_dir = os.path.dirname(os.path.realpath(caller__file__))
+    caller_dir = sys.modules["__main__"].__file__
 
     import shutil
     src = os.path.join(callee_dir, 'init-scripts/pre-init.tcl')
