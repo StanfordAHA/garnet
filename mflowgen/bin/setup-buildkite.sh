@@ -399,9 +399,9 @@ pushd $mflowgen
   git checkout $mflowgen_branch; git pull
 
   # Local modifications to repo can mean trouble!
+  # But it's actually part of the flow now, see global_setup.py
   if $(git diff | head | grep . > /dev/null); then 
-      echo "+++ ERROR found local mods to mflowgen repo in $mflowgen_branch"
-      exit 13
+      echo "+++ WARNING found local mods to mflowgen repo in $mflowgen_branch"
   fi
 
   [ "$OVERRIDE_MFLOWGEN_HASH" ] && echo "--- git checkout $OVERRIDE_MFLOWGEN_HASH"
