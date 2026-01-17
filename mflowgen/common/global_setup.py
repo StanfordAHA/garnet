@@ -18,7 +18,7 @@ def patch(patchfile):
     mfrepo_dir = get_top_dir()
 
     # Copy callee_dir/init_scripts/pre-init.tcl => $REPO/nodes/cadence-innovus-init/scripts/
-    patchfile = 'cadence-innovus-init/scripts/pre-init.tcl'
+    # e.g. patchfile = 'cadence-innovus-init/scripts/pre-init.tcl'
     src = os.path.join(callee_dir, 'patch', patchfile)
     dst = os.path.join(mfrepo_dir, 'nodes', patchfile)
 
