@@ -23,13 +23,15 @@ def patch(patchfile):
     dst = os.path.join(mfrepo_dir, 'nodes', patchfile)
 
     # Copy if different
+    info = f'...copy {src} to {dst}...'
     with open(src) as fsrc:
         with open(dst) as fdst:
             if fsrc.read() != fdst.read():
-                print(f"...copying {src} to {dst}...")
                 shutil.copy(src, dst)
+                info += 'DONE'
             else:
-                print(f"...no copy b/c {src} == {dst}...")
+                info += 'NO; files are same already'
+    print(info)
                 
 
 def global_setup(caller=None):
