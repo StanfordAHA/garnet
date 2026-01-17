@@ -15,27 +15,28 @@ def patch(patchfile):
     callee_dir = os.path.dirname(os.path.realpath(__file__))
 
     # mflowgen repo e.g. /sim/buildkite-agent/mflowgen.master
-    caller_dir = get_top_dir()
+    mfrepo_dir = get_top_dir()
 
     # Copy callee_dir/init_scripts/pre-init.tcl => $REPO/nodes/cadence-innovus-init/scripts/
     patchfile = 'cadence-innovus-init/scripts/pre-init.tcl'
     src = os.path.join(callee_dir, 'patch', patchfile)
-    dst = os.path.join(caller_dir, 'nodes', patchfile)
+    dst = os.path.join(mfrepo_dir, 'nodes', patchfile)
 
     # Copy if different
     with open(src) as fsrc:
         with open(dst) as fdst:
             if fsrc.read() != fdst.read():
-                print("Copying {src} to {dst}...")
+                print(f"...copying {src} to {dst}...")
                 shutil.copy(src, dst)
             else:
-                print("No copy b/c {src} == {dst}...")
+                print(f"...no copy b/c {src} == {dst}...")
                 
 
 def global_setup(caller=None):
-    print("+++ Hello woild I am global setup howdja do")
-    print("I was called by", os.path.realpath(caller))
-    print("I was called from dir", os.path.dirname(os.path.realpath(caller)))
+    # E.g. caller_dir = /build/papers-4/tapeout-aha/mflowgen/mflowgen/Tile_PE
+    caller_dir = os.path.dirname(os.path.realpath(caller))
+    caller_name = os.path.basename(caller_dir)
+    print(f"+++ global_setup() called from {caller_name}/construct.py")
 
     # Replace mflowgen default scripts withour own versions
     patch('cadence-innovus-init/scripts/pre-init.tcl')
