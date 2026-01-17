@@ -16,7 +16,6 @@ parameters:
 #-------------------------------------------------------------------------
 
 outputs:
-  - pre-init.tcl
   - add-endcaps-welltaps.tcl
   - floorplan.tcl
   - pin-assignments.tcl
