@@ -28,9 +28,9 @@ def patch(patchfile):
         with open(dst) as fdst:
             if fsrc.read() != fdst.read():
                 shutil.copy(src, dst)
-                info += 'DONE'
+                info += 'PATCHED NOW'
             else:
-                info += 'SAME already'
+                info += 'this was already done previously...'
     print(info)
                 
 
