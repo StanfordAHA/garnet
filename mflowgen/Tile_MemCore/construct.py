@@ -9,12 +9,12 @@ import os
 from mflowgen.components import Graph, Step
 from shutil import which
 from common.get_sys_adk import get_sys_adk
-from common.global_setup import global_setup
 
 
 def construct():
 
     g = Graph()
+    from common.global_setup import global_setup
     global_setup(__file__)
 
     # -----------------------------------------------------------------------
@@ -120,6 +120,7 @@ def construct():
     custom_genus_scripts = custom_step('/custom-genus-scripts')
     custom_flowgen_setup = custom_step('/custom-flowgen-setup')
     genlibdb_constraints = custom_step('/../common/custom-genlibdb-constraints')
+
     if adk_name == 'tsmc16':
         gen_sram = custom_step('/../common/gen_sram_macro_amber')
         custom_lvs = custom_step('/custom-lvs-rules-amber')
@@ -168,12 +169,7 @@ def construct():
 
     if which("calibre") is not None:
         drc = default_step('mentor-calibre-drc')
-
-        # 01/2026 mflowgen update required change to lvs step :(
-        # See commend in ../common/mentor-calibre-lvs/configure.yml
-        # lvs = default_step('mentor-calibre-lvs')
-        lvs = custom_step('/../common/mentor-calibre-lvs')
-
+        lvs = default_step('mentor-calibre-lvs')
     else:
         drc = default_step('cadence-pegasus-drc')
         lvs = default_step('cadence-pegasus-lvs')
@@ -492,11 +488,6 @@ def construct():
 
     # Used in floorplan.tcl
     init.update_params({'adk': parameters['adk']}, True)
-
-    # Because mflowgen updated and change lvs.run.template...
-    # Dunno why I should go through the "parameters" list...maybe I will find out and regret it later :(
-    # Also don't know what is the "True" parameter at the end but oh well
-    lvs.update_params({'lvs_extra_spice_include': "'inputs/*.spi inputs/*.sp'"}, True)
 
     if pwr_aware:
         pwr_aware_gls.update_params({'design_name': parameters['design_name']}, True)

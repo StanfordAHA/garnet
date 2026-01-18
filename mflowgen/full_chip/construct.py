@@ -11,7 +11,7 @@ import os
 from mflowgen.components import Graph, Step, Subgraph
 from shutil import which
 from common.get_sys_adk import get_sys_adk
-from common.global_setup import global_setup
+
 
 def sr_override_parms(parmdict):
     '''
@@ -37,6 +37,8 @@ def sr_override_parms(parmdict):
 def construct():
 
     g = Graph()
+
+    from common.global_setup import global_setup
     global_setup(__file__)
 
     # -----------------------------------------------------------------------
@@ -273,12 +275,7 @@ def construct():
 
     if which("calibre") is not None:
         drc = default_step('mentor-calibre-drc')
-
-        # 01/2026 mflowgen update required change to lvs step :(
-        # See commend in ../common/mentor-calibre-lvs/configure.yml
-        # lvs = default_step('mentor-calibre-lvs')
-        lvs = Step(this_dir + '/../common/mentor-calibre-lvs')
-
+        lvs = default_step('mentor-calibre-lvs')
         # GF has a different way of running fill
         if adk_name == 'gf12-adk':
             fill = custom_step('/../common/mentor-calibre-fill-gf')

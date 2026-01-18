@@ -11,11 +11,13 @@ import os
 from mflowgen.components import Graph, Step
 from shutil import which
 from common.get_sys_adk import get_sys_adk
-from common.global_setup import global_setup
+
 
 def construct():
 
     g = Graph()
+
+    from common.global_setup import global_setup
     global_setup(__file__)
 
     # -----------------------------------------------------------------------
@@ -114,12 +116,7 @@ def construct():
 
     if which("calibre") is not None:
         drc = Step('mentor-calibre-drc', default=True)
-
-        # 01/2026 mflowgen update required change to lvs step :(
-        # See commend in ../common/mentor-calibre-lvs/configure.yml
-        # lvs = Step('mentor-calibre-lvs', default=True)
-        lvs = Step(this_dir + '/../common/mentor-calibre-lvs')
-
+        lvs = Step('mentor-calibre-lvs', default=True)
     else:
         drc = Step('cadence-pegasus-drc', default=True)
         lvs = Step('cadence-pegasus-lvs', default=True)

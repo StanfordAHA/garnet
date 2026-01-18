@@ -7,11 +7,13 @@ import os
 from mflowgen.components import Graph, Step, Subgraph
 from shutil import which
 from common.get_sys_adk import get_sys_adk
-from common.global_setup import global_setup
+
 
 def construct():
 
     g = Graph()
+
+    from common.global_setup import global_setup
     global_setup(__file__)
 
     # -----------------------------------------------------------------------
@@ -151,16 +153,10 @@ def construct():
 
     if which("calibre") is not None:
         drc = Step('mentor-calibre-drc', default=True)
-
-        # 01/2026 mflowgen update required change to lvs step :(
-        # See commend in ../common/mentor-calibre-lvs/configure.yml
-        # lvs = Step('mentor-calibre-lvs', default=True)
-        lvs = Step(this_dir + '/../common/mentor-calibre-lvs')
-
+        lvs = Step('mentor-calibre-lvs', default=True)
     else:
         drc = Step('cadence-pegasus-drc', default=True)
         lvs = Step('cadence-pegasus-lvs', default=True)
-
     debugcalibre = Step('cadence-innovus-debug-calibre', default=True)
     vcs_sim = Step('synopsys-vcs-sim', default=True)
 
@@ -523,11 +519,6 @@ def construct():
     # CTS uses height/width param to do CTS endpoint overrides properly
     cts.update_params({'array_width': parameters['array_width']}, True)
     cts.update_params({'array_height': parameters['array_height']}, True)
-
-    # Because mflowgen updated and change lvs.run.template...
-    # Dunno why these usually go through the "parameters[]" list...maybe I will find out and regret it later :(
-    # Also don't know what is the "True" parameter at the end but oh well
-    lvs.update_params({'lvs_extra_spice_include': "'inputs/*.spi inputs/*.sp'"}, True)
 
     # Since we are adding an additional input script to the generic Innovus
     # steps, we modify the order parameter for that node which determines
