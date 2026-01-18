@@ -354,7 +354,8 @@ echo "--- Building in destination dir `pwd`"
 
 # BECAUSE IT IS A SHARED RESOURCE do not muck with it if at all possible. 
 
-mflowgen_branch=master
+# mflowgen_branch=master  # Chris be woke I guess
+mflowgen_branch=main
 [ "$OVERRIDE_MFLOWGEN_BRANCH" ] && mflowgen_branch=$OVERRIDE_MFLOWGEN_BRANCH
 
 mflowgen=mflowgen_clone
@@ -363,6 +364,7 @@ if test -e $mflowgen; then
 else
     echo "--- INSTALL LATEST MFLOWGEN using branch '$mflowgen_branch'"; date
     echo "No mflowgen yet; cloning a new one"
+    echo pwd=`pwd`
     git clone -b $mflowgen_branch \
         -- https://github.com/mflowgen/mflowgen.git $mflowgen
 
