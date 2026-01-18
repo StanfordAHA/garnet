@@ -23,14 +23,14 @@ def patch(patchfile):
     dst = os.path.join(mfrepo_dir, 'nodes', patchfile)
 
     # Copy if different
-    info = f'...copy {src} to {dst}...'
+    info = f'...{patchfile}...'
     with open(src) as fsrc:
         with open(dst) as fdst:
             if fsrc.read() != fdst.read():
                 shutil.copy(src, dst)
                 info += 'DONE'
             else:
-                info += 'NO; files are same already'
+                info += 'SAME already'
     print(info)
                 
 
@@ -38,7 +38,7 @@ def global_setup(caller=None):
     # E.g. caller_dir = /build/papers-4/tapeout-aha/mflowgen/mflowgen/Tile_PE
     caller_dir = os.path.dirname(os.path.realpath(caller))
     caller_name = os.path.basename(caller_dir)
-    print(f"+++ global_setup() called from {caller_name}/construct.py")
+    print(f"--- {caller_name} global_setup()")
 
     # Replace mflowgen default scripts withour own versions
     patch('cadence-innovus-init/scripts/pre-init.tcl')
