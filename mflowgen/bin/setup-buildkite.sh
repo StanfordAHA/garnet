@@ -456,8 +456,8 @@ if ! touch $MFLOWGEN_PATH/is_touchable; then
     return 13 || exit 13
 fi
 
-echo "--- UNLOCK "; date
-flockmsg "Release! The lock!"; flock -u 9
+# echo "--- UNLOCK "; date
+# flockmsg "Release! The lock!"; flock -u 9
 
 ########################################################################
 # TCLSH VERSION CHECK
