@@ -350,69 +350,44 @@ echo "--- Building in destination dir `pwd`"
 
 ########################################################################
 # MFLOWGEN: Use a single common mflowgen for all builds of a given branch
+# No don't do that it's more trouble than it's worth ugh
+
 # BECAUSE IT IS A SHARED RESOURCE do not muck with it if at all possible. 
 
 mflowgen_branch=master
 [ "$OVERRIDE_MFLOWGEN_BRANCH" ] && mflowgen_branch=$OVERRIDE_MFLOWGEN_BRANCH
 
-# If /sim/buildkite agent exists, install mflowgen in /sim/buildkite agent;
-# otherwise, install in /tmp/$USER
-if test -e /sim/buildkite-agent; then
-    mflowgen=/sim/buildkite-agent/mflowgen
+mflowgen=mflowgen_clone
+if test -e $mflowgen; then
+    echo "--- Found existing mflowgen clone '$mflowgen'"
 else
-    printf "***WARNING cannot find /sim/buildkite-agent\n"
-    printf "   Will install mflowgen in /tmp/$USER/mflowgen\n\n"
-    mkdir -p /tmp/$USER; mflowgen=/tmp/$USER/mflowgen
+    echo "--- INSTALL LATEST MFLOWGEN using branch '$mflowgen_branch'"; date
+    echo "No mflowgen yet; cloning a new one"
+    git clone -b $mflowgen_branch \
+        -- https://github.com/mflowgen/mflowgen.git $mflowgen
+
+    # Check out latest version of the desired branch
+    echo "--- PIP INSTALL $mflowgen branch $mflowgen_branch"; date
+    pushd $mflowgen
+
+      git checkout $mflowgen_branch; git pull
+
+      # Local modifications to repo can mean trouble!
+      # But it's actually part of the flow now, see global_setup.py
+      if $(git diff | head | grep . > /dev/null); then 
+          echo "+++ WARNING found local mods to mflowgen repo in $mflowgen_branch"
+      fi
+
+      [ "$OVERRIDE_MFLOWGEN_HASH" ] && echo "--- git checkout $OVERRIDE_MFLOWGEN_HASH"
+      [ "$OVERRIDE_MFLOWGEN_HASH" ] && git checkout $OVERRIDE_MFLOWGEN_HASH
+
+      # Branch is pure, go ahead and install
+      pip install --upgrade pip
+      TOP=$PWD; pip install -e .
+    popd
 fi
 
-if [ "$mflowbranch" != "master" ]; then
-    mflowgen=$mflowgen.$mflowgen_branch
-fi
-
-# Side effect: defines function 'flockmsg'
-echo "--- LOCK"; source $GARNET_HOME/mflowgen/bin/setup-buildkite-flock.sh
-
-# FIXME/TODO could have better mechanism to decide when to skip mflowgen install;
-# maybe 'cd $mflowgen; git log' and compare to repo or something
-
-if [ "$skip_mflowgen" == "true" ]; then
-  echo "--- SKIP MFLOWGEN INSTALL because of cmd-line arg '--skip_mflowgen'"
-  echo "WILL USE MFLOWGEN IN '$mflowgen'"
-  ls -ld $mflowgen || return 13 || exit 13
-
-else
-  echo "--- INSTALL LATEST MFLOWGEN using branch '$mflowgen_branch'"; date
-  echo "Install mflowgen in dir '$mflowgen'"
-
-  # Build repo if not exists yet
-  if ! test -e $mflowgen; then
-      echo "No mflowgen yet; cloning a new one"
-      git clone -b $mflowgen_branch \
-          -- https://github.com/mflowgen/mflowgen.git $mflowgen
-  fi
-fi
-
-# Check out latest version of the desired branch
-echo "--- PIP INSTALL $mflowgen branch $mflowgen_branch"; date
-pushd $mflowgen
-
-  git checkout $mflowgen_branch; git pull
-
-  # Local modifications to repo can mean trouble!
-  # But it's actually part of the flow now, see global_setup.py
-  if $(git diff | head | grep . > /dev/null); then 
-      echo "+++ WARNING found local mods to mflowgen repo in $mflowgen_branch"
-  fi
-
-  [ "$OVERRIDE_MFLOWGEN_HASH" ] && echo "--- git checkout $OVERRIDE_MFLOWGEN_HASH"
-  [ "$OVERRIDE_MFLOWGEN_HASH" ] && git checkout $OVERRIDE_MFLOWGEN_HASH
-
-  # Branch is pure, go ahead and install
-  pip install --upgrade pip
-  TOP=$PWD; pip install -e .
-popd
-
-# mflowgen might be hidden in $HOME/.local/bin
+# mflowgen might be hidden in $HOME/.local/bin (really?)
 if ! (type mflowgen >& /dev/null); then
     echo "***WARNING Cannot find mflowgen after install"
     echo "   Will try adding '$HOME/.local/bin' to your path why not"
