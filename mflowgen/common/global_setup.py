@@ -43,32 +43,5 @@ def global_setup(caller=None):
     # Replace mflowgen default scripts withour own versions
     patch('cadence-innovus-init/scripts/pre-init.tcl')
     patch('cadence-innovus-cts/scripts/reporting.tcl')
+    patch('mentor-calibre-lvs/lvs.runset.template')
 
-
-
-# now copy patch/cadence-innovus-cts/scripts/reporting.tcl
-
-##############################################################################
-# TRASH
-
-# def trash():
-#     # E.g. /sim/buildkite-agent/builds/papers-2/tapeout-aha/mflowgen/common
-#     print("Hey I wonder where does this script live?")
-#     print("I think it is here maybe:")
-#     print(os.path.dirname(os.path.realpath(__file__)))
-# 
-#     # E.g. /sim/buildkite-agent/builds/papers-2/tapeout-aha/mflowgen/common
-#     print("Okay okay but where is mflowgen repo tho")
-#     print("Is it here:")
-#     print(os.getcwd())
-# 
-#     # Time to get fancy
-#     # Replace mflowgen pre-init with fixed version
-#     # repo_dir = os.getcwd()
-# 
-# 
-#     # caller_dir = os.path.dirname(os.path.realpath(caller__file__))
-#     # caller_dir = sys.modules["__main__"].__file__
-#     # dst = os.path.join(caller_dir, '../nodes/cadence-innovus-init/scripts/')
-# 
-#     caller_dir = get_top_dir()
