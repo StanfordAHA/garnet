@@ -43,6 +43,6 @@ def global_setup(caller=None):
     # Replace mflowgen default scripts withour own versions
     patch('cadence-innovus-init/scripts/pre-init.tcl')
     patch('cadence-innovus-cts/scripts/reporting.tcl')
-    patch('mentor-calibre-lvs/configure.yml')
     patch('mentor-calibre-lvs/lvs.runset.template')
+    patch('mentor-calibre-lvs/configure.yml')
 
