@@ -349,12 +349,8 @@ echo "--- Building in destination dir `pwd`"
 
 
 ########################################################################
-# MFLOWGEN: Use a single common mflowgen for all builds of a given branch
-# No don't do that it's more trouble than it's worth ugh
+# MFLOWGEN setup: clone and install
 
-# BECAUSE IT IS A SHARED RESOURCE do not muck with it if at all possible. 
-
-# mflowgen_branch=master  # Chris be woke I guess
 mflowgen_branch=main
 [ "$OVERRIDE_MFLOWGEN_BRANCH" ] && mflowgen_branch=$OVERRIDE_MFLOWGEN_BRANCH
 
@@ -455,9 +451,6 @@ if ! touch $MFLOWGEN_PATH/is_touchable; then
     echo "Setup FAILED"
     return 13 || exit 13
 fi
-
-# echo "--- UNLOCK "; date
-# flockmsg "Release! The lock!"; flock -u 9
 
 ########################################################################
 # TCLSH VERSION CHECK
