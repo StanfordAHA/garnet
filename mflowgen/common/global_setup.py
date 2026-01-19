@@ -2,9 +2,9 @@ import os, sys
 
 def patch(patchfile):
     '''
-    Overwrite file in cloned repo with the local patchfile
-    E.g. if patchfile="cadence-innovus-init/configure.yml"
-    we copy local file patch/<patchfile> to MFLOWGEN_REO/nodes/<patchfile>
+    Overwrite file in cloned repo with local patchfile
+    E.g. if patchfile="cadence-innovus-init/configure.yml",
+    copy local file patch/<patchfile> to MFLOWGEN_REPO/nodes/<patchfile>
     BUT ONLY IF the two files are different
     '''
     import shutil
