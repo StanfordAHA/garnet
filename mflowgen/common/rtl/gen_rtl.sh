@@ -63,6 +63,9 @@ flags="--width $array_width --height $array_height"
 flags+=" --pipeline_config_interval $pipeline_config_interval"
 flags+=" -v --glb_tile_mem_size $glb_tile_mem_size"
 
+# Default is power-aware, but can be turned off
+[ "$PWR_AWARE" == False ] && flags+=" --no-pd"
+
 # Where/when is this used?
 [ "$interconnect_only" == True ] && flags+=" --interconnect-only"
 
