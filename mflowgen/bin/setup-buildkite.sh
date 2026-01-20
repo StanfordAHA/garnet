@@ -363,27 +363,27 @@ else
     echo pwd=`pwd`
     git clone -b $mflowgen_branch \
         -- https://github.com/mflowgen/mflowgen.git $mflowgen
-
-    # Check out latest version of the desired branch
-    echo "--- PIP INSTALL $mflowgen branch $mflowgen_branch"; date
-    pushd $mflowgen
-
-      git checkout $mflowgen_branch; git pull
-
-      # Local modifications to repo can mean trouble!
-      # But it's actually part of the flow now, see global_setup.py
-      if $(git diff | head | grep . > /dev/null); then 
-          echo "+++ WARNING found local mods to mflowgen repo in $mflowgen_branch"
-      fi
-
-      [ "$OVERRIDE_MFLOWGEN_HASH" ] && echo "--- git checkout $OVERRIDE_MFLOWGEN_HASH"
-      [ "$OVERRIDE_MFLOWGEN_HASH" ] && git checkout $OVERRIDE_MFLOWGEN_HASH
-
-      # Branch is pure, go ahead and install
-      pip install --upgrade pip
-      TOP=$PWD; pip install -e .
-    popd
 fi
+
+# Check out latest version of the desired branch
+echo "--- PIP INSTALL $mflowgen branch $mflowgen_branch"; date
+pushd $mflowgen
+
+  git checkout $mflowgen_branch; git pull
+
+  # Local modifications to repo can mean trouble!
+  # But it's actually part of the flow now, see global_setup.py
+  if $(git diff | head | grep . > /dev/null); then 
+      echo "+++ WARNING found local mods to mflowgen repo in $mflowgen_branch"
+  fi
+
+  [ "$OVERRIDE_MFLOWGEN_HASH" ] && echo "--- git checkout $OVERRIDE_MFLOWGEN_HASH"
+  [ "$OVERRIDE_MFLOWGEN_HASH" ] && git checkout $OVERRIDE_MFLOWGEN_HASH
+
+  # Branch is pure, go ahead and install
+  pip install --upgrade pip
+  TOP=$PWD; pip install -e .
+popd
 
 # mflowgen might be hidden in $HOME/.local/bin (really?)
 if ! (type mflowgen >& /dev/null); then
