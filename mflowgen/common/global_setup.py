@@ -44,4 +44,5 @@ def global_setup(caller=None):
     patch('cadence-innovus-init/scripts/pre-init.tcl')
     patch('cadence-innovus-cts/scripts/reporting.tcl')
     patch('mentor-calibre-lvs/lvs.runset.template')
+    patch('mentor-calibre-lvs/configure.yml')
 
