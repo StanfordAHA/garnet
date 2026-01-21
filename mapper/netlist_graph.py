@@ -824,3 +824,24 @@ class NetlistGraph:
                 if node.x is not None:
                     f.write(f"{node.node_name} {node.x} {node.y}\n")
 
+    def manually_place_pe_mem_flush_test(self, app_dir):
+        HALIDE_GEN_ARGS = os.environ.get("HALIDE_GEN_ARGS")
+        mem_column_idx_match = re.search(r'mem_column_idx=(\d+)', HALIDE_GEN_ARGS)
+        column_start_y_match = re.search(r'column_start_y=(\d+)', HALIDE_GEN_ARGS)
+        assert mem_column_idx_match, "No mem_column_idx in HALIDE_GEN_ARGS. Please turn off MANUAL_PLACER or re-define HALIDE_GEN_ARGS for pe_mem_flush_test."
+        assert column_start_y_match, "No column_start_y in HALIDE_GEN_ARGS. Please turn off MANUAL_PLACER or re-define HALIDE_GEN_ARGS for pe_mem_flush_test."
+        mem_column_idx = int(mem_column_idx_match.group(1))
+        column_start_y = int(column_start_y_match.group(1))
+        assert (mem_column_idx + 1) % 4 == 0, "mem_column_idx + 1 must be divisible by 4"
+
+        current_y = column_start_y
+        for node in self.mem_nodes:
+            node.x = mem_column_idx
+            node.y = current_y
+            current_y += 1
+
+        manual_place_path = os.path.join(app_dir, "manual.place")
+        with open(manual_place_path, "w") as f:
+            for node in self.nodes:
+                if node.x is not None:
+                    f.write(f"{node.node_name} {node.x} {node.y}\n")
