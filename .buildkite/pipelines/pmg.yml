@@ -71,8 +71,8 @@ steps:
   - 'source mflowgen/bin/setup-buildkite.sh $$SETUP_FLAGS;
      echo "--- BEGIN mflowgen run";
      mflowgen run --design $$GARNET_HOME/mflowgen/full_chip;
-     TARGET=cadence-innovus-init;
      TARGET=mentor-calibre-lvs;
+     TARGET=cadence-innovus-init;
      echo "--- BEGIN make $$TARGET";
      echo make tile_array-Tile_PE-$$TARGET;
      echo exit 13 | make tile_array-Tile_PE-$$TARGET;'
@@ -85,8 +85,8 @@ steps:
   - 'source mflowgen/bin/setup-buildkite.sh $$SETUP_FLAGS;
      echo "--- BEGIN mflowgen run";
      mflowgen run --design $$GARNET_HOME/mflowgen/full_chip;
-     TARGET=cadence-innovus-init;
      TARGET=mentor-calibre-lvs;
+     TARGET=cadence-innovus-init;
      echo "--- BEGIN make $$TARGET";
      echo make tile_array-Tile_MemCore-$$TARGET;
      echo exit 13 | make tile_array-Tile_MemCore-$$TARGET;'
@@ -99,8 +99,8 @@ steps:
   - 'source mflowgen/bin/setup-buildkite.sh $$SETUP_FLAGS;
      echo "--- BEGIN mflowgen run";
      mflowgen run --design $$GARNET_HOME/mflowgen/full_chip;
-     TARGET=cadence-innovus-init;
      TARGET=mentor-calibre-lvs;
+     TARGET=cadence-innovus-init;
      echo "--- BEGIN make $$TARGET";
      echo make glb_top-glb_tile-$$TARGET;
      echo exit 13 | make glb_top-glb_tile-$$TARGET;'
