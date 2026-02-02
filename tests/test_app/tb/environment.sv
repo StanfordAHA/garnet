@@ -152,23 +152,18 @@ task Env_mu_configure();
 
     // input base address
     mu_axi_addr = `MU_AXI_INPUT_BASE_R;
-    // mu_axi_addr = 'h20000000 + `MU_AXI_INPUT_BASE_R;
     mu_axi_data = 0;
-    // MU_AxilDriver_write();
+    MU_AxilDriver_write();
 
    // weight base address
     mu_axi_addr = `MU_AXI_WEIGHT_BASE_R;
-    // mu_axi_addr = 'h20000000 + `MU_AXI_WEIGHT_BASE_R;
     mu_axi_data = 0;
-    // mu_axi_data = 800;
-    // MU_AxilDriver_write();
+    MU_AxilDriver_write();
 
     // bias base address
     mu_axi_addr = `MU_AXI_BIAS_BASE_R;
-    // mu_axi_addr = 'h20000000 + `MU_AXI_BIAS_BASE_R;
     mu_axi_data = 0;
-    // mu_axi_data = 800;
-    // MU_AxilDriver_write();
+    MU_AxilDriver_write();
 
 
     end_time = $realtime;
@@ -299,10 +294,11 @@ task Env_kernel_test();
     group_start = kernel.group_start;
     num_groups = kernel.num_groups;
     // glb_stall_mask = calculate_glb_stall_mask(group_start, num_groups); // Unused???
+    cgra_stall_mask = calculate_cgra_stall_mask(group_start, num_groups);
+    Env_cgra_unstall();
 
-
-    // start_time = $realtime;
-    // $display("[%s] kernel start at %0t", kernel.name, start_time);
+    start_time = $realtime;
+    $display("[%s] kernel start at %0t", kernel.name, start_time);
     Env_kernel_cfg = kernel.get_strm_start_config();
 
     // A write of 0x10001 to address 0x18 starts data streaming to proc tiles.
@@ -314,13 +310,6 @@ task Env_kernel_test();
     /* temp registration block for pr diff
     axil_drv.write(cfg.addr, cfg.data);
     */
-    // TODO: Think about the order of all these. Make sure MU doesn't start producing valid data until cgra has been unstalled and flushed
-    if (external_mu_active) begin
-        Env_mu_configure();
-    end
-
-    start_time = $realtime;
-    $display("[%s] kernel start at %0t", kernel.name, start_time);
 
     // FORK BRANCH 1: Behavioral MU writes data to CGRA
     fork
@@ -603,17 +592,12 @@ task Env_run();
                     Env_write_network_data();
                 end
 
-                // // TODO: Think about the order of all these. Make sure MU doesn't start producing valid data until cgra has been unstalled and flushed
-                // if (external_mu_active) begin
-                //     Env_mu_configure();
-                // end
-
-                cgra_stall_mask = calculate_cgra_stall_mask(group_start, num_groups);
-                Env_cgra_unstall();
-                for (int i = 0; i < 1; i++) begin
-                    Env_kernel_test();
-                    repeat (100) @(posedge axil_ifc.clk);
+                // TODO: Think about the order of all these. Make sure MU doesn't start producing valid data until cgra has been unstalled and flushed
+                if (external_mu_active) begin
+                    Env_mu_configure();
                 end
+
+                Env_kernel_test();
                 Env_read_data();      $display("[%0t] read_data DONE", $time);
                 kernel.compare();
                 $display("[%0t] Processing kernel %0d END", $time, j);
