@@ -349,85 +349,32 @@ echo "--- Building in destination dir `pwd`"
 
 
 ########################################################################
-# MFLOWGEN: Use a single common mflowgen for all builds of a given branch
-# BECAUSE IT IS A SHARED RESOURCE do not muck with it if at all possible. 
+# MFLOWGEN setup: clone and install
 
-mflowgen_branch=master
+mflowgen_branch=main
 [ "$OVERRIDE_MFLOWGEN_BRANCH" ] && mflowgen_branch=$OVERRIDE_MFLOWGEN_BRANCH
 
-# If /sim/buildkite agent exists, install mflowgen in /sim/buildkite agent;
-# otherwise, install in /tmp/$USER
-if test -e /sim/buildkite-agent; then
-    mflowgen=/sim/buildkite-agent/mflowgen
+mflowgen=mflowgen_clone
+if test -e $mflowgen; then
+    echo "--- Found existing mflowgen clone '$mflowgen'"
 else
-    printf "***WARNING cannot find /sim/buildkite-agent\n"
-    printf "   Will install mflowgen in /tmp/$USER/mflowgen\n\n"
-    mkdir -p /tmp/$USER; mflowgen=/tmp/$USER/mflowgen
-fi
-
-if [ "$mflowbranch" != "master" ]; then
-    mflowgen=$mflowgen.$mflowgen_branch
-fi
-
-# Side effect: defines function 'flockmsg'
-echo "--- LOCK"; source $GARNET_HOME/mflowgen/bin/setup-buildkite-flock.sh
-
-# FIXME/TODO could have better mechanism to decide when to skip mflowgen install;
-# maybe 'cd $mflowgen; git log' and compare to repo or something
-
-if [ "$skip_mflowgen" == "true" ]; then
-  echo "--- SKIP MFLOWGEN INSTALL because of cmd-line arg '--skip_mflowgen'"
-  echo "WILL USE MFLOWGEN IN '$mflowgen'"
-  ls -ld $mflowgen || return 13 || exit 13
-
-else
-  echo "--- INSTALL LATEST MFLOWGEN using branch '$mflowgen_branch'"; date
-  echo "Install mflowgen in dir '$mflowgen'"
-
-  # Build repo if not exists yet
-  if ! test -e $mflowgen; then
-      echo "No mflowgen yet; cloning a new one"
-      git clone -b $mflowgen_branch \
-          -- https://github.com/mflowgen/mflowgen.git $mflowgen
-  fi
+    echo "--- INSTALL LATEST MFLOWGEN using branch '$mflowgen_branch'"; date
+    echo "No mflowgen yet; cloning a new one"
+    echo pwd=`pwd`
+    git clone -b $mflowgen_branch \
+        -- https://github.com/mflowgen/mflowgen.git $mflowgen
 fi
 
 # Check out latest version of the desired branch
 echo "--- PIP INSTALL $mflowgen branch $mflowgen_branch"; date
 pushd $mflowgen
 
-  if [ "$mflowgen_branch" == "master" ]; then
-      echo "--- Verify correctness of mflowgen.master"
-
-      # Can no longer use latest master branch as is because of new errors
-      # 1. flowsetup: can't read "vars(delay_default,rc_corner)": no such element in array
-      # 2. mflowgen run: No such file 'nodes/cadence-genus-synthesis/configure.yml'
-      # We fix error 1 by using an older sha; we fix error 2 with the symlink
-
-      errmsg=""
-      goodhsa=774642ab  # older known-good maybe
-      goodsha=d42836c2  # known-bad minus 1 (known-bad = 57cb32e0)
-      c=$(git rev-parse HEAD | cut -b 1-8)
-      if [ "$c" != "$goodsha" ]; then
-          errmsg="${errmsg}Found commit $c, should be $goodsha\n"
-      fi
-      if ! test -e nodes/synopsys-ptpx-genlibdb/configure.yml; then
-          errmsg="${errmsg}Cannot find subdir 'nodes' should do 'ln -s steps nodes'"
-      fi
-      if [ "$errmsg" ]; then
-          printf "+++ ERROR $mflowgen is incorrect, must be fixed\n"
-          printf "$errmsg"
-          return 13 || exit 13
-      fi
-      echo "Correct!"
-  else
-      git checkout $mflowgen_branch; git pull
-  fi
+  git checkout $mflowgen_branch; git pull
 
   # Local modifications to repo can mean trouble!
+  # But it's actually part of the flow now, see global_setup.py
   if $(git diff | head | grep . > /dev/null); then 
-      echo "+++ ERROR found local mods to mflowgen repo in $mflowgen_branch"
-      exit 13
+      echo "+++ WARNING found local mods to mflowgen repo in $mflowgen_branch"
   fi
 
   [ "$OVERRIDE_MFLOWGEN_HASH" ] && echo "--- git checkout $OVERRIDE_MFLOWGEN_HASH"
@@ -438,7 +385,7 @@ pushd $mflowgen
   TOP=$PWD; pip install -e .
 popd
 
-# mflowgen might be hidden in $HOME/.local/bin
+# mflowgen might be hidden in $HOME/.local/bin (really?)
 if ! (type mflowgen >& /dev/null); then
     echo "***WARNING Cannot find mflowgen after install"
     echo "   Will try adding '$HOME/.local/bin' to your path why not"
@@ -504,9 +451,6 @@ if ! touch $MFLOWGEN_PATH/is_touchable; then
     echo "Setup FAILED"
     return 13 || exit 13
 fi
-
-echo "--- UNLOCK "; date
-flockmsg "Release! The lock!"; flock -u 9
 
 ########################################################################
 # TCLSH VERSION CHECK
