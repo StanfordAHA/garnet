@@ -84,11 +84,15 @@ task ProcDriver_write_8b_network_data();
     assert (BANK_DATA_WIDTH == 64);
     size = data_q_8b.size();
 
-    translated_start_addr = {  cur_addr[MU_ADDR_WIDTH - 1 : MU_ADDR_WIDTH - 1 - (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES) - 1)],
-                                        cur_addr[BANK_BYTE_OFFSET + (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES) - 1) - 1 : BANK_BYTE_OFFSET],
-                                        cur_addr[MU_ADDR_WIDTH - 1 - (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES)) : BANK_BYTE_OFFSET + (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES) - 1)],
-                                        cur_addr[BANK_BYTE_OFFSET - 1 : 0]
-                                };
+    `ifdef DEFAULT_MU_ADDR_TRANSL_LEGAL
+        translated_start_addr = {  cur_addr[MU_ADDR_WIDTH - 1 : MU_ADDR_WIDTH - 1 - (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES) - 1)],
+                                            cur_addr[BANK_BYTE_OFFSET + (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES) - 1) - 1 : BANK_BYTE_OFFSET],
+                                            cur_addr[MU_ADDR_WIDTH - 1 - (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES)) : BANK_BYTE_OFFSET + (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES) - 1)],
+                                            cur_addr[BANK_BYTE_OFFSET - 1 : 0]
+                                    };
+    `else
+        translated_start_addr = 0;
+    `endif
     $display("Translated_start_addr = 0x%0h", translated_start_addr);
 
     // Write data in little endian format
@@ -139,11 +143,15 @@ task ProcDriver_write_16b_network_data();
     assert (BANK_DATA_WIDTH == 64);
     size = data_q_16b.size();
 
-    translated_start_addr = {  cur_addr[MU_ADDR_WIDTH - 1 : MU_ADDR_WIDTH - 1 - (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES) - 1)],
-                                        cur_addr[BANK_BYTE_OFFSET + (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES) - 1) - 1 : BANK_BYTE_OFFSET],
-                                        cur_addr[MU_ADDR_WIDTH - 1 - (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES)) : BANK_BYTE_OFFSET + (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES) - 1)],
-                                        cur_addr[BANK_BYTE_OFFSET - 1 : 0]
-                                };
+    `ifdef DEFAULT_MU_ADDR_TRANSL_LEGAL
+        translated_start_addr = {  cur_addr[MU_ADDR_WIDTH - 1 : MU_ADDR_WIDTH - 1 - (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES) - 1)],
+                                            cur_addr[BANK_BYTE_OFFSET + (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES) - 1) - 1 : BANK_BYTE_OFFSET],
+                                            cur_addr[MU_ADDR_WIDTH - 1 - (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES)) : BANK_BYTE_OFFSET + (TILE_SEL_ADDR_WIDTH - $clog2(MU_WORD_NUM_TILES) - 1)],
+                                            cur_addr[BANK_BYTE_OFFSET - 1 : 0]
+                                    };
+    `else
+        translated_start_addr = 0;
+    `endif
     $display("Translated_start_addr = 0x%0h", translated_start_addr);
 
     // Write data in little endian format
