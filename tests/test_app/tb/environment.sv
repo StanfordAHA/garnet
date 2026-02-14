@@ -304,6 +304,7 @@ task Env_kernel_test();
     // A write of 0x10001 to address 0x18 starts data streaming to proc tiles.
     addr = Env_kernel_cfg.addr;  // 0x18
     data = Env_kernel_cfg.data;  // (e.g. 0x10001 for pointwise)
+    $display("[%s] Start streaming by writing addr 0x%0h data 0x%0h", kernel.name, addr, data);
     AxilDriver_write();          // This starts the (G2F) streaming
 
     /* temp registration block for pr diff
