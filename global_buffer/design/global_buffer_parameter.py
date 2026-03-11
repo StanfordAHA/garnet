@@ -48,7 +48,10 @@ class GlobalBufferParams:
 
     @property
     def mu_glb_rd_latency(self):
-        return ((2*self.num_glb_tiles) - 1) + self.mu_rd_addr2tile0_delay + self.mu_sw2bank_mux_delay + self.bankmux2sram_rd_delay  + self.mu_sw2track_out_delay + self.mu_rd_data_tile0_2out_delay
+        if self.mu_glb_ring_interconnect:
+            return ((2*self.num_glb_tiles) - 1) + self.mu_rd_addr2tile0_delay + self.mu_sw2bank_mux_delay + self.bankmux2sram_rd_delay  + self.mu_sw2track_out_delay + self.mu_rd_data_tile0_2out_delay
+        else:
+            return self.glb_mu_transl_input_fifo_delay + self.bankmux2sram_rd_delay + self.glb_mu_transl_output_fifo_delay + self.glb_global_level2_bank_pipeline_depth
 
     @property
     def mu_tl_resp_fifo_depth(self):
@@ -111,6 +114,8 @@ class GlobalBufferParams:
     include_E64_hw: bool = False
     include_multi_bank_hw: bool = False
     include_mu_glb_hw: bool = False
+    mu_glb_ring_interconnect: bool = False
+    mu_glb_crossbar: bool = False
     include_glb_ring_switch: bool = False
     mu_word_num_tiles: int = 2
     mu_switch_num_tracks: int = 4
@@ -215,6 +220,9 @@ class GlobalBufferParams:
     mu_rd_data_tile0_2out_delay: int = 1
     mu_sw2bank_mux_delay: int = 1
     mu_sw2track_out_delay: int = 1
+    glb_mu_transl_input_fifo_delay: int = 1
+    glb_mu_transl_output_fifo_delay: int = 1
+    glb_global_level2_bank_pipeline_depth: int = 1
 
     # Not used by TSMC (yet)
     flush_crossbar_pipeline_depth: int = 1
@@ -262,6 +270,8 @@ def gen_global_buffer_params(**kwargs):
     include_E64_hw = kwargs.pop('include_E64_hw', False)
     include_multi_bank_hw = kwargs.pop('include_multi_bank_hw', False)
     include_mu_glb_hw = kwargs.pop('include_mu_glb_hw', False)
+    mu_glb_ring_interconnect = kwargs.pop('mu_glb_ring_interconnect', False)
+    mu_glb_crossbar = kwargs.pop('mu_glb_crossbar', False)
     include_glb_ring_switch = kwargs.pop('include_glb_ring_switch', False)
 
     if config_port_pipeline is True:
@@ -305,6 +315,8 @@ def gen_global_buffer_params(**kwargs):
                                 include_E64_hw=include_E64_hw,
                                 include_multi_bank_hw=include_multi_bank_hw,
                                 include_mu_glb_hw=include_mu_glb_hw,
+                                mu_glb_ring_interconnect=mu_glb_ring_interconnect,
+                                mu_glb_crossbar=mu_glb_crossbar,
                                 include_glb_ring_switch=include_glb_ring_switch)
 
     return params

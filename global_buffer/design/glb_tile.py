@@ -1,4 +1,4 @@
-from kratos import Generator, RawStringStmt, always_ff, posedge, const
+from kratos import Generator, RawStringStmt, always_ff, posedge, const, always_comb
 from kratos.util import clock
 from global_buffer.design.glb_store_dma import GlbStoreDma
 from global_buffer.design.glb_store_dma_E64 import GlbStoreDma_E64
@@ -14,6 +14,7 @@ from global_buffer.design.glb_ring_switch import GlbRingSwitch
 from global_buffer.design.glb_pcfg_broadcast import GlbPcfgBroadcast
 from global_buffer.design.glb_switch import GlbSwitch
 from global_buffer.design.glb_switch_data_loop import GlbSwitchDataLoop
+from global_buffer.design.glb_mu_crossbar_switch import GlbMUCrossbarSwitch
 from global_buffer.design.glb_tile_ifc import GlbTileInterface
 from global_buffer.design.glb_tile_data_loop_ifc import GlbTileDataLoopInterface
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
@@ -83,13 +84,20 @@ class GlbTile(Generator):
         self.if_proc_est_m = self.interface(self.if_proc, "if_proc_est_m")
         self.if_proc_wst_s = self.interface(self.if_proc, "if_proc_wst_s")
 
-        # MU interface
-        if self._params.include_mu_glb_hw:
+        # MU interface: Ring interconnect implementation
+        if self._params.include_mu_glb_hw and self._params.mu_glb_ring_interconnect:
             self.if_mu_rd = GlbTileDataLoopInterface(addr_width=self._params.glb_addr_width,
                                             data_width=self._params.bank_data_width, is_clk_en=True, is_strb=False, has_wr_ifc=False, num_tracks=self._params.mu_switch_num_tracks, mu_word_num_tiles=self._params.mu_word_num_tiles)
             self.if_mu_rd_est_m = self.interface(self.if_mu_rd, "if_mu_rd_est_m")
             self.if_mu_rd_wst_s = self.interface(self.if_mu_rd, "if_mu_rd_wst_s")
 
+        # MU interface: Crossbar implementation
+        if self._params.include_mu_glb_hw and self._params.mu_glb_crossbar:
+            self.mu_crossbar_rd_addr_d = self.input("mu_crossbar_rd_addr_d", self._params.glb_addr_width)
+            self.mu_crossbar_rd_en = self.input("mu_crossbar_rd_en", 1)
+
+            self.mu_crossbar_rd_data_out = self.output("mu_crossbar_rd_data_out", 128)
+            self.mu_crossbar_rd_data_valid_out = self.output("mu_crossbar_rd_data_valid_out", 1)
 
         # Connect m2s ports
         for m2s_port in self.if_proc.m_to_s:
@@ -105,7 +113,7 @@ class GlbTile(Generator):
             self.wire(port, self.if_proc_wst_s[s2m_port])
 
 
-        if self._params.include_mu_glb_hw:
+        if self._params.include_mu_glb_hw and self._params.mu_glb_ring_interconnect:
             # Connect m2s ports
             for m2s_port in self.if_mu_rd.m_to_s:
                 port = self.output(f"if_mu_rd_est_m_{m2s_port}", width=self.if_mu_rd_est_m[m2s_port].width, size=self.if_mu_rd_est_m[m2s_port].size, packed=True)
@@ -319,16 +327,21 @@ class GlbTile(Generator):
                        gclk=self.gclk_proc_switch)
 
         if self._params.include_mu_glb_hw:
-            # Clock gating - mu_rd switch
-            self.clk_en_mu_rd_switch = self.var("clk_en_mu_rd_switch", 1)
-            self.gclk_mu_rd_switch = self.var("gclk_mu_rd_switch", 1)
-            self.wire(self.clk_en_mu_rd_switch, self.if_mu_rd_wst_s['rd_clk_en'])
-            self.clk_en_mu_rd_sw2bank = self.var("clk_en_mu_rd_sw2bank", 1)
-            self.add_child("glb_clk_gate_mu_rd_switch",
-                        ClkGate(_params=self._params),
-                        clk=self.clk,
-                        enable=self.clk_en_mu_rd_switch | self.clk_en_master,
-                        gclk=self.gclk_mu_rd_switch)
+            if self._params.mu_glb_ring_interconnect:
+                # Clock gating - mu_rd switch
+                self.clk_en_mu_rd_switch = self.var("clk_en_mu_rd_switch", 1)
+                self.gclk_mu_rd_switch = self.var("gclk_mu_rd_switch", 1)
+                self.wire(self.clk_en_mu_rd_switch, self.if_mu_rd_wst_s['rd_clk_en'])
+                self.clk_en_mu_rd_sw2bank = self.var("clk_en_mu_rd_sw2bank", 1)
+                self.add_child("glb_clk_gate_mu_rd_switch",
+                            ClkGate(_params=self._params),
+                            clk=self.clk,
+                            enable=self.clk_en_mu_rd_switch | self.clk_en_master,
+                            gclk=self.gclk_mu_rd_switch)
+            else:
+                self.clk_en_mu_crossbar2bank = self.var("clk_en_mu_crossbar2bank", 1)
+
+
 
         # Clock gating - pcfg_dma
         self.clk_en_pcfg_dma = self.var("clk_en_pcfg_dma", 1)
@@ -367,7 +380,7 @@ class GlbTile(Generator):
         # Clock gating - bank
         self.clk_en_bank = self.var("clk_en_bank", 1)
         self.gclk_bank = self.var("gclk_bank", 1)
-        if self._params.include_mu_glb_hw:
+        if self._params.include_mu_glb_hw and self._params.mu_glb_ring_interconnect:
             if self._params.include_glb_ring_switch:
                 self.wire(self.clk_en_bank, self.clk_en_lddma2bank | self.clk_en_stdma2bank | self.clk_en_pcfgdma2bank
                           | self.clk_en_ring2bank | self.clk_en_pcfgring2bank | self.clk_en_procsw2bank | self.clk_en_mu_rd_sw2bank)
@@ -375,6 +388,13 @@ class GlbTile(Generator):
                 self.wire(self.clk_en_bank, self.clk_en_lddma2bank | self.clk_en_stdma2bank | self.clk_en_pcfgdma2bank
                         | self.clk_en_procsw2bank | self.clk_en_mu_rd_sw2bank)
 
+        elif self._params.include_mu_glb_hw and self._params.mu_glb_crossbar:
+            if self._params.include_glb_ring_switch:
+                self.wire(self.clk_en_bank, self.clk_en_lddma2bank | self.clk_en_stdma2bank | self.clk_en_pcfgdma2bank
+                        | self.clk_en_ring2bank | self.clk_en_pcfgring2bank | self.clk_en_procsw2bank | self.clk_en_mu_crossbar2bank)
+            else:
+                self.wire(self.clk_en_bank, self.clk_en_lddma2bank | self.clk_en_stdma2bank | self.clk_en_pcfgdma2bank
+                        | self.clk_en_procsw2bank | self.clk_en_mu_crossbar2bank)
         else:
             if self._params.include_glb_ring_switch:
                 self.wire(self.clk_en_bank, self.clk_en_lddma2bank | self.clk_en_stdma2bank | self.clk_en_pcfgdma2bank
@@ -580,8 +600,12 @@ class GlbTile(Generator):
             self.wire(self.glb_bank_mux.cfg_multi_bank_mode, self.cfg_bank_mux_multi_bank_mode)
 
         if self._params.include_mu_glb_hw:
-            self.wire(self.glb_bank_mux.rdrq_packet_mu_rd_sw2bank, self.rdrq_packet_mu_rd_sw2bank)
-            self.wire(self.rdrs_packet_bank2mu_rd_sw, self.glb_bank_mux.rdrs_packet_bank2mu_rd_sw)
+            if self._params.mu_glb_ring_interconnect:
+                self.wire(self.glb_bank_mux.rdrq_packet_mu_rd_sw2bank, self.rdrq_packet_mu_rd_sw2bank)
+                self.wire(self.rdrs_packet_bank2mu_rd_sw, self.glb_bank_mux.rdrs_packet_bank2mu_rd_sw)
+            elif self._params.mu_glb_crossbar:
+                self.wire(self.glb_bank_mux.rdrq_packet_mu_crossbar2bank, self.rdrq_packet_mu_crossbar2bank)
+                self.wire(self.rdrs_packet_bank2mu_crossbar, self.glb_bank_mux.rdrs_packet_bank2mu_crossbar)
 
         self.glb_proc_switch = GlbSwitch(self._params, ifc=self.if_proc, wr_channel=True, rd_channel=True)
         self.add_child("glb_proc_switch",
@@ -598,7 +622,7 @@ class GlbTile(Generator):
                        rdrs_packet=self.rdrs_packet_bank2procsw)
 
 
-        if self._params.include_mu_glb_hw:
+        if self._params.include_mu_glb_hw and self._params.mu_glb_ring_interconnect:
             self.glb_mu_rd_switch = GlbSwitchDataLoop(self._params, ifc=self.if_mu_rd, wr_channel=False, rd_channel=True, num_tracks=self._params.mu_switch_num_tracks)
             self.add_child("glb_mu_rd_switch",
                         self.glb_mu_rd_switch,
@@ -611,6 +635,23 @@ class GlbTile(Generator):
                         clk_en_sw2bank=self.clk_en_mu_rd_sw2bank,
                         rdrq_packet=self.rdrq_packet_mu_rd_sw2bank,
                         rdrs_packet=self.rdrs_packet_bank2mu_rd_sw)
+
+        if self._params.include_mu_glb_hw and self._params.mu_glb_crossbar:
+            self.glb_mu_rd_switch = GlbMUCrossbarSwitch(self._params)
+
+            self.add_child("glb_mu_crossbar_switch",
+                           GlbMUCrossbarSwitch(self._params),
+                           clk=self.clk,
+                           reset=self.reset,
+                           clk_en_mu_crossbar2bank=self.clk_en_mu_crossbar2bank,
+                           mu_crossbar_rd_addr_d=self.mu_crossbar_rd_addr_d,
+                           mu_crossbar_rd_en=self.mu_crossbar_rd_en,
+                           rdrq_packet=self.rdrq_packet_mu_crossbar2bank,
+                           rdrs_packet=self.rdrs_packet_bank2mu_crossbar,
+                           mu_crossbar_rd_data_out=self.mu_crossbar_rd_data_out,
+                           mu_crossbar_rd_data_valid_out=self.mu_crossbar_rd_data_valid_out)
+
+
 
         if self._params.include_glb_ring_switch:
             self.add_child("glb_strm_ring_switch",
@@ -738,7 +779,10 @@ class GlbTile(Generator):
 
         self.rdrq_packet_procsw2bank = self.var("rdrq_packet_procsw2bank", self.header.rdrq_packet_t)
         if self._params.include_mu_glb_hw:
-            self.rdrq_packet_mu_rd_sw2bank = self.var("rdrq_packet_mu_rd_sw2bank", self.header.mu_rdrq_packet_t)
+            if self._params.mu_glb_ring_interconnect:
+                self.rdrq_packet_mu_rd_sw2bank = self.var("rdrq_packet_mu_rd_sw2bank", self.header.mu_rdrq_packet_t)
+            elif self._params.mu_glb_crossbar:
+                self.rdrq_packet_mu_crossbar2bank = self.var("rdrq_packet_mu_crossbar2bank", self.header.mu_crossbar_rdrq_packet_t)
         if self._params.include_glb_ring_switch:
             self.rdrq_packet_ring2bank = self.var("rdrq_packet_ring2bank", self.header.rdrq_packet_t)
             self.rdrq_packet_dma2ring = self.var("rdrq_packet_dma2ring", self.header.rdrq_packet_t)
@@ -750,7 +794,10 @@ class GlbTile(Generator):
 
         self.rdrs_packet_bank2procsw = self.var("rdrs_packet_bank2procsw", self.header.rdrs_packet_t)
         if self._params.include_mu_glb_hw:
-            self.rdrs_packet_bank2mu_rd_sw = self.var("rdrs_packet_bank2mu_rd_sw", self.header.rdrs_packet_t, size = self._params.banks_per_tile)
+            if self._params.mu_glb_ring_interconnect:
+                self.rdrs_packet_bank2mu_rd_sw = self.var("rdrs_packet_bank2mu_rd_sw", self.header.rdrs_packet_t, size = self._params.banks_per_tile)
+            else:
+                self.rdrs_packet_bank2mu_crossbar = self.var("rdrs_packet_bank2mu_crossbar", self.header.rdrs_packet_t, size=self._params.banks_per_tile)
         if self._params.include_glb_ring_switch:
             self.rdrs_packet_bank2ring = self.var("rdrs_packet_bank2ring", self.header.rdrs_packet_t)
             self.rdrs_packet_ring2dma = self.var("rdrs_packet_ring2dma", self.header.rdrs_packet_t)

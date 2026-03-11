@@ -71,6 +71,8 @@ class Garnet(Generator):
         self.include_E64_hw = args.include_E64_hw
         self.include_multi_bank_hw = args.include_multi_bank_hw
         self.include_mu_glb_hw = args.include_mu_glb_hw
+        self.mu_glb_ring_interconnect = args.mu_glb_ring_interconnect
+        self.mu_glb_crossbar = args.mu_glb_crossbar
         self.pipeline_mu2cgra = args.pipeline_mu2cgra
 
         # Build GLB unless interconnect_only (CGRA-only) requested
@@ -1084,6 +1086,8 @@ def parse_args():
     parser.add_argument('--include-E64-hw', action="store_true")
     parser.add_argument('--include-multi-bank-hw', action="store_true")
     parser.add_argument('--include-mu-glb-hw', action="store_true")
+    parser.add_argument('--mu-glb-ring-interconnect', action="store_true")
+    parser.add_argument('--mu-glb-crossbar', action="store_true")
     parser.add_argument('--use-non-split-fifos', action="store_true")
     parser.add_argument('--exclude-glb-ring-switch', action="store_true")
     parser.add_argument('--pipeline-mu2cgra', action="store_true")
@@ -1147,6 +1151,8 @@ def parse_args():
         include_E64_hw=args.include_E64_hw,
         include_multi_bank_hw=args.include_multi_bank_hw,
         include_mu_glb_hw=args.include_mu_glb_hw,
+        mu_glb_ring_interconnect=args.mu_glb_ring_interconnect,
+        mu_glb_crossbar=args.mu_glb_crossbar,
         include_glb_ring_switch=include_glb_ring_switch)
 
 

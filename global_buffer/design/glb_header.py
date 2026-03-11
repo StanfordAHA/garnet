@@ -102,6 +102,8 @@ class GlbHeader():
         self.mu_rdrq_packet_ports = [("rd_en", 1),
                                   ("rd_addr", self._params.glb_addr_width),
                                   ("sub_packet_idx", clog2(self._params.mu_word_num_tiles)),]
+        self.mu_crossbar_rdrq_packet_ports = [("rd_en", 1),
+                                  ("rd_addr", self._params.glb_addr_width)]
         self.rdrs_packet_ports = [("rd_data", self._params.bank_data_width),
                                   ("rd_data_valid", 1), ]
 
@@ -112,6 +114,7 @@ class GlbHeader():
         self.rdrq_bank_packet_t = PackedStruct("rdrq_bank_packet_t", self.rdrq_bank_packet_ports)
         self.wr_packet_t = PackedStruct("wr_packet_t", self.wr_packet_ports)
         self.mu_rdrq_packet_t = PackedStruct("mu_rdrq_packet_t", self.mu_rdrq_packet_ports)
+        self.mu_crossbar_rdrq_packet_t = PackedStruct("mu_crossbar_rdrq_packet_t", self.mu_crossbar_rdrq_packet_ports)
         self.rdrq_packet_t = PackedStruct("rdrq_packet_t", self.rdrq_packet_ports)
         self.rdrs_packet_t = PackedStruct("rdrs_packet_t", self.rdrs_packet_ports)
         self.packet_t = PackedStruct("packet_t")

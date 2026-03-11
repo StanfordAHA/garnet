@@ -27,9 +27,9 @@ program glb_mu_test #(
     int OVERLAP_TEST_SIZE_1 = (INPUT_DATA_SIZE/NUM_SEGMENTS) * OVERLAP_TEST_SPLIT_FACTOR;
     int OVERLAP_TEST_SIZE_2 = (INPUT_DATA_SIZE/NUM_SEGMENTS) - OVERLAP_TEST_SIZE_1;
 
-    semaphore proc_lock; 
+    semaphore proc_lock;
     initial proc_lock = new(1);
-    semaphore mu_lock; 
+    semaphore mu_lock;
     initial mu_lock = new(1);
 
     initial begin
@@ -62,29 +62,29 @@ program glb_mu_test #(
 
         // Load data
         data_arr16 = new[INPUT_DATA_SIZE];
-        data_arr16_out = new[INPUT_DATA_SIZE]; 
+        data_arr16_out = new[INPUT_DATA_SIZE];
         data_arr16_seg0 = new[INPUT_DATA_SIZE/NUM_SEGMENTS];
         data_arr16_seg1 = new[INPUT_DATA_SIZE/NUM_SEGMENTS];
         data_arr16_seg2 = new[INPUT_DATA_SIZE/NUM_SEGMENTS];
         data_arr16_seg3 = new[INPUT_DATA_SIZE/NUM_SEGMENTS];
         load_data("testvectors/512_v1.dat", data_arr16, data_arr16_seg0, data_arr16_seg1, data_arr16_seg2, data_arr16_seg3);
 
-        // Basic read-after-write test 
-        run_basic_raw_test(NUM_GLB_TILES, MU_WORD_NUM_TILES, BANK_DEPTH, BURST_SIZE, 
-                       start_addr, data_arr16, data_arr16_out, data_arr16_seg0, 
+        // // Basic read-after-write test
+        run_basic_raw_test(NUM_GLB_TILES, MU_WORD_NUM_TILES, BANK_DEPTH, BURST_SIZE,
+                       start_addr, data_arr16, data_arr16_out, data_arr16_seg0,
                        data_arr16_seg1, data_arr16_seg2, data_arr16_seg3);
-       
-        // Run byte-by-byte readout test 
-        data_arr16_out_byte_by_byte = new[INPUT_DATA_SIZE]; 
-        run_byte_by_byte_raw_test(NUM_GLB_TILES, MU_WORD_NUM_TILES, BANK_DEPTH, start_addr, 
-                              data_arr16, data_arr16_out_byte_by_byte, data_arr16_seg0, 
+
+        // Run byte-by-byte readout test
+        data_arr16_out_byte_by_byte = new[INPUT_DATA_SIZE];
+        run_byte_by_byte_raw_test(NUM_GLB_TILES, MU_WORD_NUM_TILES, BANK_DEPTH, start_addr,
+                              data_arr16, data_arr16_out_byte_by_byte, data_arr16_seg0,
                               data_arr16_seg1, data_arr16_seg2, data_arr16_seg3);
-        
+
         // Load data custom for pt2 (overlap test)
         $display("\n---RUNNING OVERLAP TEST---");
         $display("OVERLAP TEST SIZE 1: %0d", OVERLAP_TEST_SIZE_1);
         $display("OVERLAP TEST SIZE 2: %0d", OVERLAP_TEST_SIZE_2);
-        data_arr16_out_overlap = new[INPUT_DATA_SIZE]; 
+        data_arr16_out_overlap = new[INPUT_DATA_SIZE];
         data_arr16_pt2_seg0 = new[OVERLAP_TEST_SIZE_1];
         data_arr16_pt2_seg1 = new[OVERLAP_TEST_SIZE_1];
         data_arr16_pt2_seg2 = new[OVERLAP_TEST_SIZE_1];
@@ -98,13 +98,13 @@ program glb_mu_test #(
                            data_arr16_pt2_seg4, data_arr16_pt2_seg5, data_arr16_pt2_seg6, data_arr16_pt2_seg7);
 
         // Run overlap test
-        run_overlap_test(NUM_GLB_TILES, BANK_DEPTH, BURST_SIZE, OVERLAP_TEST_SIZE_1, start_addr, 
-            data_arr16, data_arr16_pt2_seg0, data_arr16_pt2_seg1, data_arr16_pt2_seg2, data_arr16_pt2_seg3, 
-            data_arr16_pt2_seg4, data_arr16_pt2_seg5, data_arr16_pt2_seg6, data_arr16_pt2_seg7, 
+        run_overlap_test(NUM_GLB_TILES, BANK_DEPTH, BURST_SIZE, OVERLAP_TEST_SIZE_1, start_addr,
+            data_arr16, data_arr16_pt2_seg0, data_arr16_pt2_seg1, data_arr16_pt2_seg2, data_arr16_pt2_seg3,
+            data_arr16_pt2_seg4, data_arr16_pt2_seg5, data_arr16_pt2_seg6, data_arr16_pt2_seg7,
             data_arr16_out_overlap);
 
 
-        // Run tilelink collateral test (testing proper tilelink resp out behavior)    
+        // Run tilelink collateral test (testing proper tilelink resp out behavior)
         source_out = new[9];
         size_out = new[9];
         golden_size_out = new[9];
@@ -134,13 +134,13 @@ program glb_mu_test #(
         input logic [CGRA_DATA_WIDTH-1:0] data_arr16_seg2[],
         input logic [CGRA_DATA_WIDTH-1:0] data_arr16_seg3[]
     );
-        for (int glb_tile_base = 0; glb_tile_base < num_glb_tiles; glb_tile_base += mu_word_num_tiles) begin 
-            for (int offset = 0; offset < bank_depth; offset += 32) begin         
-                $display("\n---RUNNING BASIC RAW TEST WITH BASE %0d---", glb_tile_base);    
+        for (int glb_tile_base = 0; glb_tile_base < num_glb_tiles; glb_tile_base += mu_word_num_tiles) begin
+            for (int offset = 0; offset < bank_depth; offset += 32) begin
+                $display("\n---RUNNING BASIC RAW TEST WITH BASE %0d---", glb_tile_base);
 
                 // Initialize
-                initialize(); 
-                
+                initialize();
+
                 // Write data to 4 consecutive BANKS, starting from base tile
                 write_data_to_banks(glb_tile_base, offset, start_addr, data_arr16_seg0, data_arr16_seg1, data_arr16_seg2, data_arr16_seg3);
 
@@ -148,7 +148,7 @@ program glb_mu_test #(
 
                 // Read data using MU-GLB read-path
                 MU_read_data_from_banks(glb_tile_base, offset, burst_size, data_arr16_out);
-            
+
                 // Compare data
                 compare_data(data_arr16, data_arr16_out);
             end
@@ -168,13 +168,13 @@ program glb_mu_test #(
         input logic [CGRA_DATA_WIDTH-1:0] data_arr16_seg2[],
         input logic [CGRA_DATA_WIDTH-1:0] data_arr16_seg3[]
     );
-        for (int glb_tile_base = 0; glb_tile_base < num_glb_tiles; glb_tile_base += mu_word_num_tiles) begin 
-            for (int offset = 0; offset < bank_depth; offset += 32) begin         
-                $display("\n---RUNNING BYTE-BY-BYTE RAW TEST WITH BASE %0d---", glb_tile_base);    
+        for (int glb_tile_base = 0; glb_tile_base < num_glb_tiles; glb_tile_base += mu_word_num_tiles) begin
+            for (int offset = 0; offset < bank_depth; offset += 32) begin
+                $display("\n---RUNNING BYTE-BY-BYTE RAW TEST WITH BASE %0d---", glb_tile_base);
 
                 // Initialize
-                initialize(); 
-                
+                initialize();
+
                 // Write data to 4 consecutive BANKS, starting from base tile
                 write_data_to_banks(glb_tile_base, offset, start_addr, data_arr16_seg0, data_arr16_seg1, data_arr16_seg2, data_arr16_seg3);
 
@@ -182,7 +182,7 @@ program glb_mu_test #(
 
                 // Read data using MU-GLB read-path (byte-by-byte)
                 MU_read_data_from_banks_byte_by_byte(glb_tile_base, offset, data_arr16_out_byte_by_byte);
-            
+
                 // Compare data
                 compare_data(data_arr16, data_arr16_out_byte_by_byte);
             end
@@ -208,11 +208,11 @@ program glb_mu_test #(
     );
         for (int glb_tile_base = 0; glb_tile_base < num_glb_tiles - 2; glb_tile_base += 2) begin
             // Initialize
-            initialize(); 
+            initialize();
 
-            $display("\n---RUNNING OVERLAP TEST ACROSS TILES %0d and %0d---", glb_tile_base, glb_tile_base + 2); 
+            $display("\n---RUNNING OVERLAP TEST ACROSS TILES %0d and %0d---", glb_tile_base, glb_tile_base + 2);
 
-            // Write all of the first group to the tail end of base tile 
+            // Write all of the first group to the tail end of base tile
             write_data_to_banks(glb_tile_base, bank_depth - (overlap_test_size_1 / 4), start_addr, data_arr16_pt2_seg0, data_arr16_pt2_seg1, data_arr16_pt2_seg2, data_arr16_pt2_seg3);
 
             // Write 2nd group at beginning of neighboring tiles
@@ -229,7 +229,7 @@ program glb_mu_test #(
     endtask
 
     task MU_tilelink_collateral_test (ref logic [MU_TL_SOURCE_WIDTH-1:0] golden_source_out[], ref logic [MU_TL_NUM_BURST_BITS-1:0] golden_size_out[], ref logic [MU_TL_SOURCE_WIDTH-1:0] source_out[], ref logic [MU_TL_NUM_BURST_BITS-1:0] size_out[]);
-        
+
         initialize();
 
         golden_source_out[0] = 0;
@@ -240,7 +240,7 @@ program glb_mu_test #(
         golden_source_out[5] = 1;
         golden_source_out[6] = 4;
         golden_source_out[7] = 4;
-        golden_source_out[8] = 1;
+        golden_source_out[8] = 17;
 
         golden_size_out[0] = 7;
         golden_size_out[1] = 7;
@@ -251,7 +251,7 @@ program glb_mu_test #(
         golden_size_out[6] = 6;
         golden_size_out[7] = 6;
         golden_size_out[8] = 0;
-    
+
         mu_lock.get(1);
         fork
             // Process 1 initiates read by feeding addresses one per cycle when ready is high
@@ -292,7 +292,7 @@ program glb_mu_test #(
                 @(posedge glb_mu_ifc.clk);
 
                 // 1B request on source 1 (inputScale): 1 beat
-                glb_mu_ifc.mu_tl_source_in = 1;
+                glb_mu_ifc.mu_tl_source_in = 17;
                 glb_mu_ifc.mu_tl_size_in = 0;
 
                 wait (glb_mu_ifc.mu_tl_rq_in_rdy);
@@ -301,15 +301,15 @@ program glb_mu_test #(
                 glb_mu_ifc.mu_tl_rq_in_vld = 0;
             end
             begin
-                // HERE: wait for the appropriate amount of data 
+                // HERE: wait for the appropriate amount of data
                 for (int i = 0; i < 9; i++) begin
-                    wait (glb_mu_ifc.mu_rd_data_valid);      
+                    wait (glb_mu_ifc.mu_rd_data_valid);
 
                     size_out[i] = glb_mu_ifc.mu_tl_size_out;
-                    source_out[i] = glb_mu_ifc.mu_tl_source_out;                
-                    
+                    source_out[i] = glb_mu_ifc.mu_tl_source_out;
+
                     @(posedge glb_mu_ifc.clk);
-                
+
                 end
             end
         join
@@ -404,14 +404,14 @@ program glb_mu_test #(
         $display("Writing data starting at address %0h", start_addr);
         ProcDriver_write_data(start_addr, data_arr16_seg0);
 
-        start_addr = (((tile_base) << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) | 
+        start_addr = (((tile_base) << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) |
                       (1 << BANK_ADDR_WIDTH)) + (offset * (2 **(BANK_BYTE_OFFSET)));
         ProcDriver_write_data(start_addr, data_arr16_seg1);
 
         start_addr = ((tile_base + 1) << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) + (offset * (2 **(BANK_BYTE_OFFSET)));
         ProcDriver_write_data(start_addr, data_arr16_seg2);
 
-        start_addr =  (((tile_base + 1) << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) | 
+        start_addr =  (((tile_base + 1) << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH)) |
                       (1 << BANK_ADDR_WIDTH)) + (offset * (2 **(BANK_BYTE_OFFSET)));
         ProcDriver_write_data(start_addr, data_arr16_seg3);
     endtask
@@ -453,7 +453,7 @@ program glb_mu_test #(
     endtask
 
 
-       
+
     task compare_data(
         input logic [CGRA_DATA_WIDTH-1:0] data_arr16[],
         input logic [CGRA_DATA_WIDTH-1:0] data_arr16_out[]
@@ -503,7 +503,7 @@ program glb_mu_test #(
     task ProcDriver_write_data(input [GLB_ADDR_WIDTH-1:0] start_addr, logic [CGRA_DATA_WIDTH-1:0] data_q[]);
         cur_addr = start_addr;
         proc_lock.get(1);
-        size = data_q.size();  
+        size = data_q.size();
         for (int i = 0; i < size; i += 4) begin
             if ((i + 1) == size) begin
                 bdata = data_q[i];
@@ -515,7 +515,7 @@ program glb_mu_test #(
                 bdata = {data_q[i+3], data_q[i+2], data_q[i+1], data_q[i]};
             end
             ProcDriver_write(cur_addr, bdata);
-            cur_addr += 8;  
+            cur_addr += 8;
         end
         repeat (10) @(posedge p_ifc.clk);
         proc_lock.put(1);
@@ -535,8 +535,8 @@ program glb_mu_test #(
 
     int num_words, num_trans;
     task ProcDriver_read_data(input [GLB_ADDR_WIDTH-1:0] start_addr, ref logic [CGRA_DATA_WIDTH-1:0] data_q[]);
-        num_words = data_q.size();  
-        num_trans = (num_words + 3) / 4;  
+        num_words = data_q.size();
+        num_trans = (num_words + 3) / 4;
         proc_lock.get(1);
         fork
             // Process 1 initiates read by setting rd_en HIGH and feeding addresses one per cycle
@@ -555,8 +555,8 @@ program glb_mu_test #(
             end
             begin
                 for (int i = 0; i < num_trans; i++) begin
-                    wait (p_ifc.rd_data_valid);      
-                    // wait (glb_mu_ifc.mu_rd_data_valid);  
+                    wait (p_ifc.rd_data_valid);
+                    // wait (glb_mu_ifc.mu_rd_data_valid);
 
                     data_q[i*4] = p_ifc.rd_data & 'hFFFF;
 
@@ -573,9 +573,9 @@ program glb_mu_test #(
                     end
 
                     @(posedge p_ifc.clk);
-                
+
                 end
-    
+
             end
         join
         repeat (10) @(posedge p_ifc.clk);
@@ -584,14 +584,14 @@ program glb_mu_test #(
 
     int num_mu_words, num_mu_trans, num_mu_addr_trans, mask, RANDOM_DELAY;
     task MUDriver_read_data(input [MU_ADDR_WIDTH-1:0] start_addr, input [MU_TL_NUM_BURST_BITS-1:0] burst_size, ref logic [CGRA_DATA_WIDTH-1:0] data_q[]);
-        num_mu_words = data_q.size();  
-        num_mu_trans = (num_mu_words + 3) / 16; 
+        num_mu_words = data_q.size();
+        num_mu_trans = (num_mu_words + 3) / 16;
         if (BURST_SIZE <= (MU_WORD_WIDTH / 8)) begin
             num_mu_addr_trans = num_mu_trans ;
         end else begin
             num_mu_addr_trans = num_mu_trans / (BURST_SIZE / (MU_WORD_WIDTH / 8));
-        end 
-        
+        end
+
         mu_lock.get(1);
         fork
             // Process 1 initiates read by feeding addresses one per cycle when ready is high
@@ -628,7 +628,7 @@ program glb_mu_test #(
             end
             begin
                 for (int i = 0; i < num_mu_trans; i++) begin
-                    wait (glb_mu_ifc.mu_rd_data_valid);      
+                    wait (glb_mu_ifc.mu_rd_data_valid);
 
                     data_q[i*16] = glb_mu_ifc.mu_rd_data & 'hFFFF;
 
@@ -690,12 +690,12 @@ program glb_mu_test #(
 
                     if ((i * 16 + 15) < num_mu_words) begin
                         data_q[i*16+15] = (glb_mu_ifc.mu_rd_data & (('hFFFF) << 240)) >> 240;
-                    end    
-                    
+                    end
+
                     @(posedge glb_mu_ifc.clk);
-                
+
                 end
-    
+
             end
         join
         repeat (10) @(posedge glb_mu_ifc.clk);
@@ -705,10 +705,10 @@ program glb_mu_test #(
 
     int num_mu_words, num_mu_trans, num_mu_addr_trans, mask, RANDOM_DELAY;
     task MUDriver_read_data_byte_by_byte(input [MU_ADDR_WIDTH-1:0] start_addr, ref logic [CGRA_DATA_WIDTH-1:0] data_q[]);
-        num_mu_words = data_q.size();  
-        num_mu_trans = (num_mu_words) * 2; 
+        num_mu_words = data_q.size();
+        num_mu_trans = (num_mu_words) * 2;
         num_mu_addr_trans = num_mu_trans ;
-       
+
         mu_lock.get(1);
         fork
             // Process 1 initiates read by feeding addresses one per cycle when ready is high
@@ -731,9 +731,10 @@ program glb_mu_test #(
                     glb_mu_ifc.mu_tl_rq_in_vld = 1'b1;
                     // address increases by 1 (byte-by-byte) every read
                     glb_mu_ifc.mu_tl_addr_in = (start_addr + i);
-                   
+
                     glb_mu_ifc.mu_tl_size_in = 0;
-                    glb_mu_ifc.mu_tl_source_in = INPUT_SCALE_REQ_SRC_CODE; 
+                    // glb_mu_ifc.mu_tl_source_in = INPUT_SCALE_REQ_SRC_CODE;
+                    glb_mu_ifc.mu_tl_source_in = 17;
                     wait (glb_mu_ifc.mu_tl_rq_in_rdy);
                     @(posedge glb_mu_ifc.clk);
                 end
@@ -742,7 +743,7 @@ program glb_mu_test #(
             end
             begin
                 for (int i = 0; i < num_mu_trans; i++) begin
-                    wait (glb_mu_ifc.mu_rd_data_valid);      
+                    wait (glb_mu_ifc.mu_rd_data_valid);
 
                     if ((i % 2) == 0) begin
                         data_q[int'(i/2)] = {7'b0, glb_mu_ifc.mu_rd_data[7:0]};
@@ -751,9 +752,9 @@ program glb_mu_test #(
                     end
 
                     @(posedge glb_mu_ifc.clk);
-                
+
                 end
-    
+
             end
         join
         repeat (10) @(posedge glb_mu_ifc.clk);
@@ -850,11 +851,11 @@ program glb_mu_test #(
         return 0;
     endfunction
 
-    
 
 
 
-    
+
+
 
 
 //    `include "tb/environment.sv"

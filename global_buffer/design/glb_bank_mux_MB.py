@@ -1,4 +1,4 @@
-from kratos import Generator, always_comb, const, concat
+from kratos import Generator, always_comb, const, concat, clog2
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from global_buffer.design.pipeline import Pipeline
 from global_buffer.design.glb_header import GlbHeader
@@ -19,7 +19,7 @@ class GlbBankMux_MB(Generator):
         self.wr_packet_procsw2bank = self.input("wr_packet_procsw2bank", self.header.wr_packet_t)
         if self._params.include_glb_ring_switch:
             self.wr_packet_ring2bank = self.input("wr_packet_ring2bank", self.header.wr_packet_t)
-        self.wr_packet_dma2bank = self.input("wr_packet_dma2bank",  self.header.wr_packet_t, size=_params.banks_per_tile)
+        self.wr_packet_dma2bank = self.input("wr_packet_dma2bank",  self.header.wr_packet_t, size=self._params.banks_per_tile)
         self.wr_packet_sw2bankarr = self.output(
             "wr_packet_sw2bankarr", self.header.wr_bank_packet_t, size=self._params.banks_per_tile)
 
@@ -32,7 +32,10 @@ class GlbBankMux_MB(Generator):
             self.rdrq_packet_pcfgring2bank = self.input("rdrq_packet_pcfgring2bank", self.header.rdrq_packet_t)
 
         if self._params.include_mu_glb_hw:
-            self.rdrq_packet_mu_rd_sw2bank = self.input("rdrq_packet_mu_rd_sw2bank", self.header.mu_rdrq_packet_t) # size > 1 for multibank HW
+            if self._params.mu_glb_ring_interconnect:
+                self.rdrq_packet_mu_rd_sw2bank = self.input("rdrq_packet_mu_rd_sw2bank", self.header.mu_rdrq_packet_t) # size > 1 for multibank HW
+            elif self._params.mu_glb_crossbar:
+                self.rdrq_packet_mu_crossbar2bank = self.input("rdrq_packet_mu_crossbar2bank", self.header.mu_crossbar_rdrq_packet_t) # size > 1 for multibank HW
 
         self.rdrq_packet_sw2bankarr = self.output(
             "rdrq_packet_sw2bankarr", self.header.rdrq_bank_packet_t, size=self._params.banks_per_tile)
@@ -41,14 +44,17 @@ class GlbBankMux_MB(Generator):
         self.rdrs_packet_bankarr2sw = self.input(
             "rdrs_packet_bankarr2sw", self.header.rdrs_packet_t, size=self._params.banks_per_tile)
         self.rdrs_packet_bank2procsw = self.output("rdrs_packet_bank2procsw", self.header.rdrs_packet_t)
-        self.rdrs_packet_bank2dma = self.output("rdrs_packet_bank2dma", self.header.rdrs_packet_t, size=_params.banks_per_tile)
+        self.rdrs_packet_bank2dma = self.output("rdrs_packet_bank2dma", self.header.rdrs_packet_t, size=self._params.banks_per_tile)
         self.rdrs_packet_bank2pcfgdma = self.output("rdrs_packet_bank2pcfgdma", self.header.rdrs_packet_t)
         if self._params.include_glb_ring_switch:
             self.rdrs_packet_bank2ring = self.output("rdrs_packet_bank2ring", self.header.rdrs_packet_t)
             self.rdrs_packet_bank2pcfgring = self.output("rdrs_packet_bank2pcfgring", self.header.rdrs_packet_t)
 
         if self._params.include_mu_glb_hw:
-            self.rdrs_packet_bank2mu_rd_sw = self.output("rdrs_packet_bank2mu_rd_sw", self.header.rdrs_packet_t, size=_params.banks_per_tile)
+            if self._params.mu_glb_ring_interconnect:
+                self.rdrs_packet_bank2mu_rd_sw = self.output("rdrs_packet_bank2mu_rd_sw", self.header.rdrs_packet_t, size=self._params.banks_per_tile)
+            elif self._params.mu_glb_crossbar:
+                self.rdrs_packet_bank2mu_crossbar = self.output("rdrs_packet_bank2mu_crossbar", self.header.rdrs_packet_t, size=self._params.banks_per_tile)
 
         # configuration
         if self._params.include_glb_ring_switch:
@@ -140,7 +146,10 @@ class GlbBankMux_MB(Generator):
         # rdrq packet
         for i in range(self._params.banks_per_tile):
             if self._params.include_mu_glb_hw:
-                self.add_always(self.rdrq_sw2bankarr_logic_support_mu, i=i)
+                if self._params.mu_glb_ring_interconnect:
+                    self.add_always(self.rdrq_sw2bankarr_logic_support_mu_ring, i=i)
+                elif self._params.mu_glb_crossbar:
+                    self.add_always(self.rdrq_sw2bankarr_logic_support_mu_crossbar, i=i)
             else:
                 self.add_always(self.rdrq_sw2bankarr_logic, i=i)
 
@@ -148,7 +157,10 @@ class GlbBankMux_MB(Generator):
         self.add_always(self.rdrs_sw2dma_logic)
         self.add_always(self.rdrs_sw2pr_logic)
         if self._params.include_mu_glb_hw:
-            self.add_always(self.rdrs_sw2mu_logic)
+            if self._params.mu_glb_ring_interconnect:
+                self.add_always(self.rdrs_sw2mu_logic_ring_interconnect)
+            elif self._params.mu_glb_crossbar:
+                self.add_always(self.rdrs_sw2mu_logic_crossbar)
         self.add_always(self.rdrs_sw2pcfgdma_logic)
         if self._params.include_glb_ring_switch:
             self.add_always(self.rdrs_sw2sr_logic)
@@ -247,7 +259,7 @@ class GlbBankMux_MB(Generator):
 
 
     @ always_comb
-    def rdrq_sw2bankarr_logic_support_mu(self, i):
+    def rdrq_sw2bankarr_logic_support_mu_ring(self, i):
         # WITH RING SWITCH
         if self._params.include_glb_ring_switch:
             if ((self.rdrq_packet_mu_rd_sw2bank['rd_en'] == 1)
@@ -336,6 +348,94 @@ class GlbBankMux_MB(Generator):
                 self.rdrq_packet_sw2bankarr_w[i] = 0
                 self.rd_type[i] = self.rd_type_e.none
 
+
+    @ always_comb
+    def rdrq_sw2bankarr_logic_support_mu_crossbar(self, i):
+        # WITH RING SWITCH
+        if self._params.include_glb_ring_switch:
+            if ((self.rdrq_packet_mu_crossbar2bank['rd_en'] == 1)
+                    # read if relevant portion of tileID matches
+                    & ((self.rdrq_packet_mu_crossbar2bank['rd_addr'][self.tile_sel_msb, self.tile_sel_lsb+clog2(self._params.mu_word_num_tiles)] == self.glb_tile_id[self._params.tile_sel_addr_width-1, clog2(self._params.mu_word_num_tiles)]))
+                    ):
+                self.rdrq_packet_sw2bankarr_w[i]['rd_en'] = self.rdrq_packet_mu_crossbar2bank['rd_en']
+                self.rdrq_packet_sw2bankarr_w[i]['rd_addr'] = self.rdrq_packet_mu_crossbar2bank['rd_addr'][(
+                    self._params.bank_addr_width - 1), 0]
+                self.rd_type[i] = self.rd_type_e.mu_read
+            elif ((self.rdrq_packet_procsw2bank['rd_en'] == 1)
+                    & (self.rdrq_packet_procsw2bank['rd_addr'][self.tile_sel_msb, self.tile_sel_lsb] == self.glb_tile_id)
+                    & (self.rdrq_packet_procsw2bank['rd_addr'][self.bank_sel_msb, self.bank_sel_lsb] == i)):
+                self.rdrq_packet_sw2bankarr_w[i]['rd_en'] = self.rdrq_packet_procsw2bank['rd_en']
+                self.rdrq_packet_sw2bankarr_w[i]['rd_addr'] = self.rdrq_packet_procsw2bank['rd_addr'][(
+                    self._params.bank_addr_width - 1), 0]
+                self.rd_type[i] = self.rd_type_e.proc
+            elif ((self.rdrq_packet_pcfgdma2bank['rd_en'] == 1)
+                    & ((~self.cfg_pcfg_tile_connected_prev) & (~self.cfg_pcfg_tile_connected_next))
+                    & (self.rdrq_packet_pcfgdma2bank['rd_addr'][self.tile_sel_msb, self.tile_sel_lsb] == self.glb_tile_id)
+                    & (self.rdrq_packet_pcfgdma2bank['rd_addr'][self.bank_sel_msb, self.bank_sel_lsb] == i)):
+                self.rdrq_packet_sw2bankarr_w[i]['rd_en'] = self.rdrq_packet_pcfgdma2bank['rd_en']
+                self.rdrq_packet_sw2bankarr_w[i]['rd_addr'] = self.rdrq_packet_pcfgdma2bank['rd_addr'][(
+                    self._params.bank_addr_width - 1), 0]
+                self.rd_type[i] = self.rd_type_e.pcfg
+            elif ((self.rdrq_packet_pcfgring2bank['rd_en'] == 1)
+                    & (self.rdrq_packet_pcfgring2bank['rd_addr'][self.tile_sel_msb, self.tile_sel_lsb] == self.glb_tile_id)
+                    & (self.rdrq_packet_pcfgring2bank['rd_addr'][self.bank_sel_msb, self.bank_sel_lsb] == i)):
+                self.rdrq_packet_sw2bankarr_w[i]['rd_en'] = self.rdrq_packet_pcfgring2bank['rd_en']
+                self.rdrq_packet_sw2bankarr_w[i]['rd_addr'] = self.rdrq_packet_pcfgring2bank['rd_addr'][(
+                    self._params.bank_addr_width - 1), 0]
+                self.rd_type[i] = self.rd_type_e.pcfg
+            elif ((self.rdrq_packet_dma2bank['rd_en'] == 1)
+                    & ((~self.cfg_tile_connected_prev) & (~self.cfg_tile_connected_next))
+                    & (self.rdrq_packet_dma2bank['rd_addr'][self.tile_sel_msb, self.tile_sel_lsb] == self.glb_tile_id)
+                    & ((self.rdrq_packet_dma2bank['rd_addr'][self.bank_sel_msb, self.bank_sel_lsb] == i) | self.cfg_multi_bank_mode)):
+                self.rdrq_packet_sw2bankarr_w[i]['rd_en'] = self.rdrq_packet_dma2bank['rd_en']
+                self.rdrq_packet_sw2bankarr_w[i]['rd_addr'] = self.rdrq_packet_dma2bank['rd_addr'][(
+                    self._params.bank_addr_width - 1), 0]
+                self.rd_type[i] = self.rd_type_e.strm
+            elif ((self.rdrq_packet_ring2bank['rd_en'] == 1)
+                    & (self.rdrq_packet_ring2bank['rd_addr'][self.tile_sel_msb, self.tile_sel_lsb] == self.glb_tile_id)
+                    & (self.rdrq_packet_ring2bank['rd_addr'][self.bank_sel_msb, self.bank_sel_lsb] == i)):
+                self.rdrq_packet_sw2bankarr_w[i]['rd_en'] = self.rdrq_packet_ring2bank['rd_en']
+                self.rdrq_packet_sw2bankarr_w[i]['rd_addr'] = self.rdrq_packet_ring2bank['rd_addr'][(
+                    self._params.bank_addr_width - 1), 0]
+                self.rd_type[i] = self.rd_type_e.strm
+            else:
+                self.rdrq_packet_sw2bankarr_w[i] = 0
+                self.rd_type[i] = self.rd_type_e.none
+
+        # NO RING SWITCH
+        else:
+            if ((self.rdrq_packet_mu_crossbar2bank['rd_en'] == 1)
+                    # read if relevant portion of tileID matches
+                    & ((self.rdrq_packet_mu_crossbar2bank['rd_addr'][self.tile_sel_msb, self.tile_sel_lsb+clog2(self._params.mu_word_num_tiles)] == self.glb_tile_id[self._params.tile_sel_addr_width-1, clog2(self._params.mu_word_num_tiles)]))
+                    ):
+                self.rdrq_packet_sw2bankarr_w[i]['rd_en'] = self.rdrq_packet_mu_crossbar2bank['rd_en']
+                self.rdrq_packet_sw2bankarr_w[i]['rd_addr'] = self.rdrq_packet_mu_crossbar2bank['rd_addr'][(
+                    self._params.bank_addr_width - 1), 0]
+                self.rd_type[i] = self.rd_type_e.mu_read
+            elif ((self.rdrq_packet_procsw2bank['rd_en'] == 1)
+                    & (self.rdrq_packet_procsw2bank['rd_addr'][self.tile_sel_msb, self.tile_sel_lsb] == self.glb_tile_id)
+                    & (self.rdrq_packet_procsw2bank['rd_addr'][self.bank_sel_msb, self.bank_sel_lsb] == i)):
+                self.rdrq_packet_sw2bankarr_w[i]['rd_en'] = self.rdrq_packet_procsw2bank['rd_en']
+                self.rdrq_packet_sw2bankarr_w[i]['rd_addr'] = self.rdrq_packet_procsw2bank['rd_addr'][(
+                    self._params.bank_addr_width - 1), 0]
+                self.rd_type[i] = self.rd_type_e.proc
+            elif ((self.rdrq_packet_pcfgdma2bank['rd_en'] == 1)
+                    & (self.rdrq_packet_pcfgdma2bank['rd_addr'][self.tile_sel_msb, self.tile_sel_lsb] == self.glb_tile_id)
+                    & (self.rdrq_packet_pcfgdma2bank['rd_addr'][self.bank_sel_msb, self.bank_sel_lsb] == i)):
+                self.rdrq_packet_sw2bankarr_w[i]['rd_en'] = self.rdrq_packet_pcfgdma2bank['rd_en']
+                self.rdrq_packet_sw2bankarr_w[i]['rd_addr'] = self.rdrq_packet_pcfgdma2bank['rd_addr'][(
+                    self._params.bank_addr_width - 1), 0]
+                self.rd_type[i] = self.rd_type_e.pcfg
+            elif ((self.rdrq_packet_dma2bank['rd_en'] == 1)
+                    & (self.rdrq_packet_dma2bank['rd_addr'][self.tile_sel_msb, self.tile_sel_lsb] == self.glb_tile_id)
+                    & ((self.rdrq_packet_dma2bank['rd_addr'][self.bank_sel_msb, self.bank_sel_lsb] == i) | self.cfg_multi_bank_mode)):
+                self.rdrq_packet_sw2bankarr_w[i]['rd_en'] = self.rdrq_packet_dma2bank['rd_en']
+                self.rdrq_packet_sw2bankarr_w[i]['rd_addr'] = self.rdrq_packet_dma2bank['rd_addr'][(
+                    self._params.bank_addr_width - 1), 0]
+                self.rd_type[i] = self.rd_type_e.strm
+            else:
+                self.rdrq_packet_sw2bankarr_w[i] = 0
+                self.rd_type[i] = self.rd_type_e.none
 
 
     @always_comb
@@ -440,11 +540,18 @@ class GlbBankMux_MB(Generator):
                 self.rdrs_packet_bank2procsw = self.rdrs_packet_bankarr2sw_d[i]
 
     @ always_comb
-    def rdrs_sw2mu_logic(self):
+    def rdrs_sw2mu_logic_ring_interconnect(self):
         self.rdrs_packet_bank2mu_rd_sw = 0
         for i in range(self._params.banks_per_tile):
             if self.rd_type_d[i] == self.rd_type_e.mu_read:
                 self.rdrs_packet_bank2mu_rd_sw[i] = self.rdrs_packet_bankarr2sw_d[i]
+
+    @ always_comb
+    def rdrs_sw2mu_logic_crossbar(self):
+        self.rdrs_packet_bank2mu_crossbar = 0
+        for i in range(self._params.banks_per_tile):
+            if self.rd_type_d[i] == self.rd_type_e.mu_read:
+                self.rdrs_packet_bank2mu_crossbar[i] = self.rdrs_packet_bankarr2sw_d[i]
 
     @ always_comb
     def rdrs_sw2pcfgdma_logic(self):

@@ -37,6 +37,9 @@ def main():
     parser.add_argument("--include_multi_bank_hw", action="store_true")
     parser.add_argument("--include_mu_glb_hw", action="store_true")
     parser.add_argument("--include_glb_ring_switch", action="store_true")
+    parser.add_argument('--mu_glb_ring_interconnect', action="store_true")
+    parser.add_argument('--mu_glb_crossbar', action="store_true")
+
 
 
     args = parser.parse_args()
@@ -57,7 +60,9 @@ def main():
                                       include_E64_hw=args.include_E64_hw,
                                       include_multi_bank_hw=args.include_multi_bank_hw,
                                       include_mu_glb_hw=args.include_mu_glb_hw,
-                                      include_glb_ring_switch=args.include_glb_ring_switch)
+                                      include_glb_ring_switch=args.include_glb_ring_switch,
+                                      mu_glb_ring_interconnect=args.mu_glb_ring_interconnect,
+                                      mu_glb_crossbar=args.mu_glb_crossbar)
 
     glb = GlobalBuffer(_params=params)
 

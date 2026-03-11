@@ -224,7 +224,8 @@ class GlbMUTransl(Generator):
 
     def add_size_out_pipeline(self):
         self.size_out_pipeline = Pipeline(width=self._params.mu_tl_num_burst_bits,
-                                                   depth=self._params.mu_glb_rd_latency - 2, # -2 to remove both the input FIFO and output FIFO
+                                                   # Removing the latency added by the input and output FIFOs of this module
+                                                   depth=self._params.mu_glb_rd_latency - (self._params.glb_mu_transl_input_fifo_delay + self._params.glb_mu_transl_output_fifo_delay),
                                                    flatten_output=False)
         self.add_child("size_out_pipeline",
                        self.size_out_pipeline,
@@ -236,7 +237,8 @@ class GlbMUTransl(Generator):
 
     def add_source_out_pipeline(self):
         self.source_out_pipeline = Pipeline(width=self._params.mu_tl_source_width,
-                                                   depth=self._params.mu_glb_rd_latency - 2, # -2 to remove both the input FIFO and output FIFO
+                                                    # Removing the latency added by the input and output FIFOs of this module
+                                                   depth=self._params.mu_glb_rd_latency - (self._params.glb_mu_transl_input_fifo_delay + self._params.glb_mu_transl_output_fifo_delay),
                                                    flatten_output=False)
         self.add_child("source_out_pipeline",
                        self.source_out_pipeline,
@@ -248,7 +250,8 @@ class GlbMUTransl(Generator):
 
     def add_byte_mask_pipeline(self):
         self.byte_mask_pipeline = Pipeline(width=self.byte_mask_bitwidth,
-                                                   depth=self._params.mu_glb_rd_latency - 2, # -2 to remove both the input FIFO and output FIFO
+                                                   # Removing the latency added by the input and output FIFOs of this module
+                                                   depth=self._params.mu_glb_rd_latency - (self._params.glb_mu_transl_input_fifo_delay + self._params.glb_mu_transl_output_fifo_delay),
                                                    flatten_output=False)
         self.add_child("byte_mask_pipeline",
                        self.byte_mask_pipeline,

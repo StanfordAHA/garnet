@@ -37,6 +37,10 @@ class GlobalBuffer(Generator):
         self.proc_rd_data = self.output("proc_rd_data", self._params.bank_data_width)
         self.proc_rd_data_valid = self.output("proc_rd_data_valid", 1)
 
+        # localparam
+        self.tile_sel_msb = self._params.bank_addr_width + self._params.bank_sel_addr_width + self._params.tile_sel_addr_width - 1
+        self.tile_sel_lsb = self._params.bank_addr_width + self._params.bank_sel_addr_width
+
 
         if self._params.include_mu_glb_hw:
             # Tilelink request collateral
@@ -155,6 +159,9 @@ class GlobalBuffer(Generator):
         if self._params.include_mu_glb_hw:
             self.mu_rd_en = self.var("mu_rd_en", 1)
             self.mu_rd_addr = self.var("mu_rd_addr", self._params.glb_addr_width)
+            if self._params.mu_glb_crossbar:
+                self.mu_rd_addr_d_array = self.var("mu_rd_addr_d_array", self._params.glb_addr_width, size=self._params.mu_glb_rd_latency - (self._params.glb_mu_transl_input_fifo_delay + self._params.glb_mu_transl_output_fifo_delay))
+                self.mu_rd_addr_d_last = self.var("mu_rd_addr_d_last", self._params.glb_addr_width)
             self.mu_rd_data_w = self.var("mu_rd_data_w", self._params.mu_word_width)
             self.mu_rd_data_valid_w = self.var("mu_rd_data_valid_w", 1)
 
@@ -277,7 +284,7 @@ class GlobalBuffer(Generator):
         if_proc_tile2tile = GlbTileInterface(addr_width=self._params.glb_addr_width,
                                              data_width=self._params.bank_data_width, is_clk_en=True, is_strb=True)
 
-        if self._params.include_mu_glb_hw:
+        if self._params.include_mu_glb_hw and self._params.mu_glb_ring_interconnect:
             if_mu_rd_tile2tile = GlbTileDataLoopInterface(addr_width=self._params.glb_addr_width,
                                                 data_width=self._params.bank_data_width, is_clk_en=True, is_strb=False, has_wr_ifc=False, num_tracks=self._params.mu_switch_num_tracks, mu_word_num_tiles=self._params.mu_word_num_tiles)
 
@@ -295,7 +302,7 @@ class GlobalBuffer(Generator):
             self.if_proc_list.append(self.interface(
                 if_proc_tile2tile, f"if_proc_tile2tile_{i}"))
 
-            if self._params.include_mu_glb_hw:
+            if self._params.include_mu_glb_hw and self._params.mu_glb_ring_interconnect:
                 self.if_mu_rd_list.append(self.interface(
                     if_mu_rd_tile2tile, f"if_mu_rd_tile2tile_{i}"))
 
@@ -338,7 +345,7 @@ class GlobalBuffer(Generator):
 
         self.wire(self.if_proc_list[-1].rd_data, 0)
         self.wire(self.if_proc_list[-1].rd_data_valid, 0)
-        if self._params.include_mu_glb_hw:
+        if self._params.include_mu_glb_hw and self._params.mu_glb_ring_interconnect:
             self.wire(self.if_mu_rd_list[-1].rd_data_e2w, 0)
             self.wire(self.if_mu_rd_list[-1].rd_data_e2w_valid, 0)
             self.wire(self.if_mu_rd_list[0].sub_packet_idx, 0)
@@ -349,20 +356,25 @@ class GlobalBuffer(Generator):
 
         self.add_glb_tile()
         self.add_always(self.proc_pipeline)
-        # if self._params.include_mu_glb_hw:
-        #     self.add_always(self.mu_rd_addr_pipeline)
+        if self._params.include_mu_glb_hw and self._params.mu_glb_crossbar:
+           self.add_mu_rd_addr_pipeline()
         self.add_always(self.sram_cfg_pipeline)
         self.add_always(self.left_edge_proc_wr_ff)
         self.add_always(self.left_edge_proc_rd_in_ff)
         self.add_always(self.left_edge_proc_rd_out_logic)
         self.add_always(self.left_edge_proc_rd_out_ff)
         if self._params.include_mu_glb_hw:
-            self.add_always(self.left_edge_mu_rd_in_ff)
-            self.add_always(self.left_edge_mu_rd_out_logic)
+            if self._params.mu_glb_ring_interconnect:
+                self.add_always(self.left_edge_mu_rd_in_ff)
+                self.add_always(self.left_edge_mu_rd_out_logic)
+            elif self._params.mu_glb_crossbar:
+                self.add_always(self.mu_glb_crossbar_output_mux)
+
             # self.add_always(self.left_edge_mu_rd_out_ff)
         self.add_proc_clk_en()
-        if self._params.include_mu_glb_hw:
-            self.add_mu_clk_en()
+        # FIXME: Think about what to do for clock enable for crossbar topology
+        if self._params.include_mu_glb_hw and self._params.mu_glb_ring_interconnect:
+            self.add_mu_ring_interconnect_clk_en()
         self.add_always(self.left_edge_cfg_ff)
         self.add_always(self.left_edge_cgra_cfg_ff)
         if self._params.include_glb_ring_switch:
@@ -422,15 +434,6 @@ class GlobalBuffer(Generator):
             self.proc_rd_en_d = self.proc_rd_en
             self.proc_rd_addr_d = self.proc_rd_addr
 
-    # @always_ff((posedge, "clk"), (posedge, "reset"))
-    # def mu_rd_addr_pipeline(self):
-    #     if self.reset:
-    #         self.mu_rd_en_d = 0
-    #         self.mu_rd_addr_d = 0
-    #     else:
-    #         self.mu_rd_en_d = self.mu_rd_en
-    #         self.mu_rd_addr_d = self.mu_rd_addr
-
 
     @ always_ff((posedge, "clk"), (posedge, "reset"))
     def sram_cfg_pipeline(self):
@@ -484,7 +487,7 @@ class GlobalBuffer(Generator):
                        )
         self.wire(self.if_proc_list[0].rd_clk_en, self.proc_rd_clk_en)
 
-    def add_mu_clk_en(self):
+    def add_mu_ring_interconnect_clk_en(self):
         self.mu_rd_clk_en_gen = GlbClkEnGen(cnt=2 * self._params.num_glb_tiles
                                          + self._params.tile2sram_rd_delay + self._params.mu_clk_en_margin)
         self.mu_rd_clk_en_gen.p_cnt.value = 2 * self._params.num_glb_tiles + \
@@ -594,6 +597,77 @@ class GlobalBuffer(Generator):
 
         # Just take 0th valid (entire packet should be moving in lock-step)
         self.mu_rd_data_valid_w = self.if_mu_rd_list[0].rd_data_e2w_valid[0]
+
+
+    def add_mu_rd_addr_pipeline(self):
+        self.mu_rd_addr_pipeline = Pipeline(width=self._params.glb_addr_width,
+                                                    # Removing the latency added by the input and output FIFOs of the glb-MU tranlator
+                                                   depth=self._params.mu_glb_rd_latency - (self._params.glb_mu_transl_input_fifo_delay + self._params.glb_mu_transl_output_fifo_delay),
+                                                    flatten_output=True)
+        self.add_child("mu_rd_addr_pipeline",
+                        self.mu_rd_addr_pipeline,
+                        clk=self.clk,
+                        clk_en=const(1, 1),
+                        reset=self.reset,
+                        in_=self.mu_rd_addr,
+                        out_=self.mu_rd_addr_d_array)
+
+    @always_comb
+    def mu_glb_crossbar_output_mux(self):
+        self.mu_rd_addr_d_last = self.mu_rd_addr_d_array[(self._params.mu_glb_rd_latency - (self._params.glb_mu_transl_input_fifo_delay + self._params.glb_mu_transl_output_fifo_delay)) - 1]
+        self.mu_rd_data_w = 0
+        self.mu_rd_data_valid_w = 0
+        # self.mu_rd_data_valid_w = self.glb_tile[0].ports.mu_crossbar_rd_data_valid_0
+
+        # for i in range(self._params.num_glb_tiles // self._params.mu_word_num_tiles):
+        #     if(self.mu_rd_addr[self.tile_sel_msb, self.tile_sel_lsb+clog2(self._params.mu_word_num_tiles)] == i):
+
+        #         for j in range(self._params.mu_word_num_tiles):
+        #             for k in range(self._params.banks_per_tile):
+        #                 # self.mu_rd_data_w[((j * self._params.banks_per_tile + k + 1) * self._params.bank_data_width) - 1,
+        #                 #                   (j * self._params.banks_per_tile + k) * self._params.bank_data_width] = self.glb_tile[i * self._params.mu_word_num_tiles + j].ports.mu_crossbar_rdrs_packet[k]["rd_data"]
+        #                 breakpoint()
+        #                 self.mu_rd_data_w[(j * 2), j] = self.glb_tile[i * self._params.mu_word_num_tiles + j].ports.mu_crossbar_rdrs_packet[k]["rd_data"]
+
+
+        #         self.mu_rd_data_valid_w = self.glb_tile[i * self._params.mu_word_num_tiles].ports.mu_crossbar_rdrs_packet[0]["rd_data_valid"]
+
+
+        # 7-to-1 mux for zircon
+        if self.mu_rd_addr_d_last[self.tile_sel_msb, self.tile_sel_lsb+clog2(self._params.mu_word_num_tiles)] == 0:
+            self.mu_rd_data_w[127, 0] = self.glb_tile[0].ports.mu_crossbar_rd_data_out
+            self.mu_rd_data_w[255, 128] = self.glb_tile[1].ports.mu_crossbar_rd_data_out
+            self.mu_rd_data_valid_w = self.glb_tile[0].ports.mu_crossbar_rd_data_valid_out
+
+        elif self.mu_rd_addr_d_last[self.tile_sel_msb, self.tile_sel_lsb+clog2(self._params.mu_word_num_tiles)] == 1:
+            self.mu_rd_data_w[127, 0] = self.glb_tile[2].ports.mu_crossbar_rd_data_out
+            self.mu_rd_data_w[255, 128] = self.glb_tile[3].ports.mu_crossbar_rd_data_out
+            self.mu_rd_data_valid_w = self.glb_tile[2].ports.mu_crossbar_rd_data_valid_out
+
+        elif self.mu_rd_addr_d_last[self.tile_sel_msb, self.tile_sel_lsb+clog2(self._params.mu_word_num_tiles)] == 2:
+            self.mu_rd_data_w[127, 0] = self.glb_tile[4].ports.mu_crossbar_rd_data_out
+            self.mu_rd_data_w[255, 128] = self.glb_tile[5].ports.mu_crossbar_rd_data_out
+            self.mu_rd_data_valid_w = self.glb_tile[4].ports.mu_crossbar_rd_data_valid_out
+
+        elif self.mu_rd_addr_d_last[self.tile_sel_msb, self.tile_sel_lsb+clog2(self._params.mu_word_num_tiles)] == 3:
+            self.mu_rd_data_w[127, 0] = self.glb_tile[6].ports.mu_crossbar_rd_data_out
+            self.mu_rd_data_w[255, 128] = self.glb_tile[7].ports.mu_crossbar_rd_data_out
+            self.mu_rd_data_valid_w = self.glb_tile[6].ports.mu_crossbar_rd_data_valid_out
+
+        elif self.mu_rd_addr_d_last[self.tile_sel_msb, self.tile_sel_lsb+clog2(self._params.mu_word_num_tiles)] == 4:
+            self.mu_rd_data_w[127, 0] = self.glb_tile[8].ports.mu_crossbar_rd_data_out
+            self.mu_rd_data_w[255, 128] = self.glb_tile[9].ports.mu_crossbar_rd_data_out
+            self.mu_rd_data_valid_w = self.glb_tile[8].ports.mu_crossbar_rd_data_valid_out
+
+        elif self.mu_rd_addr_d_last[self.tile_sel_msb, self.tile_sel_lsb+clog2(self._params.mu_word_num_tiles)] == 5:
+            self.mu_rd_data_w[127, 0] = self.glb_tile[10].ports.mu_crossbar_rd_data_out
+            self.mu_rd_data_w[255, 128] = self.glb_tile[11].ports.mu_crossbar_rd_data_out
+            self.mu_rd_data_valid_w = self.glb_tile[10].ports.mu_crossbar_rd_data_valid_out
+
+        elif self.mu_rd_addr_d_last[self.tile_sel_msb, self.tile_sel_lsb+clog2(self._params.mu_word_num_tiles)] == 6:
+            self.mu_rd_data_w[127, 0] = self.glb_tile[12].ports.mu_crossbar_rd_data_out
+            self.mu_rd_data_w[255, 128] = self.glb_tile[13].ports.mu_crossbar_rd_data_out
+            self.mu_rd_data_valid_w = self.glb_tile[12].ports.mu_crossbar_rd_data_valid_out
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def left_edge_proc_rd_out_ff(self):
@@ -887,37 +961,45 @@ class GlobalBuffer(Generator):
                 self.wire(self.cfg_pcfg_tile_connected[i + 1], self.glb_tile[i].ports.cfg_pcfg_tile_connected_esto)
 
             if self._params.include_mu_glb_hw:
-                # MU interface
-                self.wire(self.if_mu_rd_list[i + 1].rd_en, self.glb_tile[i].ports.if_mu_rd_est_m_rd_en)
-                self.wire(self.if_mu_rd_list[i + 1].rd_clk_en, self.glb_tile[i].ports.if_mu_rd_est_m_rd_clk_en)
-                self.wire(self.if_mu_rd_list[i + 1].rd_addr, self.glb_tile[i].ports.if_mu_rd_est_m_rd_addr)
-                self.wire(self.if_mu_rd_list[i + 1].sub_packet_idx, self.glb_tile[i].ports.if_mu_rd_est_m_sub_packet_idx)
+                if self._params.mu_glb_ring_interconnect:
+                    # MU interface
+                    self.wire(self.if_mu_rd_list[i + 1].rd_en, self.glb_tile[i].ports.if_mu_rd_est_m_rd_en)
+                    self.wire(self.if_mu_rd_list[i + 1].rd_clk_en, self.glb_tile[i].ports.if_mu_rd_est_m_rd_clk_en)
+                    self.wire(self.if_mu_rd_list[i + 1].rd_addr, self.glb_tile[i].ports.if_mu_rd_est_m_rd_addr)
+                    self.wire(self.if_mu_rd_list[i + 1].sub_packet_idx, self.glb_tile[i].ports.if_mu_rd_est_m_sub_packet_idx)
 
-                # RIGHT EDGE: LOOP BACK
-                if i != self._params.num_glb_tiles - 1:
-                    self.wire(self.glb_tile[i].ports.if_mu_rd_est_m_rd_data_e2w, self.if_mu_rd_list[i + 1].rd_data_e2w)
-                    self.wire(self.glb_tile[i].ports.if_mu_rd_est_m_rd_data_e2w_valid, self.if_mu_rd_list[i + 1].rd_data_e2w_valid)
-                else:
-                    self.wire(self.glb_tile[i].ports.if_mu_rd_est_m_rd_data_e2w, self.glb_tile[i].ports.if_mu_rd_est_m_rd_data_w2e)
-                    self.wire(self.glb_tile[i].ports.if_mu_rd_est_m_rd_data_e2w_valid, self.glb_tile[i].ports.if_mu_rd_est_m_rd_data_w2e_valid)
+                    # RIGHT EDGE: LOOP BACK
+                    if i != self._params.num_glb_tiles - 1:
+                        self.wire(self.glb_tile[i].ports.if_mu_rd_est_m_rd_data_e2w, self.if_mu_rd_list[i + 1].rd_data_e2w)
+                        self.wire(self.glb_tile[i].ports.if_mu_rd_est_m_rd_data_e2w_valid, self.if_mu_rd_list[i + 1].rd_data_e2w_valid)
+                    else:
+                        self.wire(self.glb_tile[i].ports.if_mu_rd_est_m_rd_data_e2w, self.glb_tile[i].ports.if_mu_rd_est_m_rd_data_w2e)
+                        self.wire(self.glb_tile[i].ports.if_mu_rd_est_m_rd_data_e2w_valid, self.glb_tile[i].ports.if_mu_rd_est_m_rd_data_w2e_valid)
 
-                self.wire(self.if_mu_rd_list[i].rd_data_w2e, self.glb_tile[i].ports.if_mu_rd_est_m_rd_data_w2e)
-                self.wire(self.if_mu_rd_list[i].rd_data_w2e_valid, self.glb_tile[i].ports.if_mu_rd_est_m_rd_data_w2e_valid)
+                    self.wire(self.if_mu_rd_list[i].rd_data_w2e, self.glb_tile[i].ports.if_mu_rd_est_m_rd_data_w2e)
+                    self.wire(self.if_mu_rd_list[i].rd_data_w2e_valid, self.glb_tile[i].ports.if_mu_rd_est_m_rd_data_w2e_valid)
 
-                self.wire(self.glb_tile[i].ports.if_mu_rd_wst_s_rd_en, self.if_mu_rd_list[i].rd_en)
-                self.wire(self.glb_tile[i].ports.if_mu_rd_wst_s_rd_clk_en, self.if_mu_rd_list[i].rd_clk_en)
-                self.wire(self.glb_tile[i].ports.if_mu_rd_wst_s_rd_addr, self.if_mu_rd_list[i].rd_addr)
-                self.wire(self.glb_tile[i].ports.if_mu_rd_wst_s_sub_packet_idx, self.if_mu_rd_list[i].sub_packet_idx)
-                self.wire(self.if_mu_rd_list[i].rd_data_e2w, self.glb_tile[i].ports.if_mu_rd_wst_s_rd_data_e2w)
-                self.wire(self.if_mu_rd_list[i].rd_data_e2w_valid, self.glb_tile[i].ports.if_mu_rd_wst_s_rd_data_e2w_valid)
+                    self.wire(self.glb_tile[i].ports.if_mu_rd_wst_s_rd_en, self.if_mu_rd_list[i].rd_en)
+                    self.wire(self.glb_tile[i].ports.if_mu_rd_wst_s_rd_clk_en, self.if_mu_rd_list[i].rd_clk_en)
+                    self.wire(self.glb_tile[i].ports.if_mu_rd_wst_s_rd_addr, self.if_mu_rd_list[i].rd_addr)
+                    self.wire(self.glb_tile[i].ports.if_mu_rd_wst_s_sub_packet_idx, self.if_mu_rd_list[i].sub_packet_idx)
+                    self.wire(self.if_mu_rd_list[i].rd_data_e2w, self.glb_tile[i].ports.if_mu_rd_wst_s_rd_data_e2w)
+                    self.wire(self.if_mu_rd_list[i].rd_data_e2w_valid, self.glb_tile[i].ports.if_mu_rd_wst_s_rd_data_e2w_valid)
 
-                # LEFT EDGE
-                if i != 0:
-                    self.wire(self.glb_tile[i].ports.if_mu_rd_wst_s_rd_data_w2e, self.if_mu_rd_list[i-1].rd_data_w2e)
-                    self.wire(self.glb_tile[i].ports.if_mu_rd_wst_s_rd_data_w2e_valid, self.if_mu_rd_list[i-1].rd_data_w2e_valid)
-                else:
-                    self.wire(self.glb_tile[i].ports.if_mu_rd_wst_s_rd_data_w2e, 0)
-                    self.wire(self.glb_tile[i].ports.if_mu_rd_wst_s_rd_data_w2e_valid, 0)
+                    # LEFT EDGE
+                    if i != 0:
+                        self.wire(self.glb_tile[i].ports.if_mu_rd_wst_s_rd_data_w2e, self.if_mu_rd_list[i-1].rd_data_w2e)
+                        self.wire(self.glb_tile[i].ports.if_mu_rd_wst_s_rd_data_w2e_valid, self.if_mu_rd_list[i-1].rd_data_w2e_valid)
+                    else:
+                        self.wire(self.glb_tile[i].ports.if_mu_rd_wst_s_rd_data_w2e, 0)
+                        self.wire(self.glb_tile[i].ports.if_mu_rd_wst_s_rd_data_w2e_valid, 0)
+                elif self._params.mu_glb_crossbar:
+                    # Input rd_addr and rd_en
+                    self.wire(self.glb_tile[i].ports.mu_crossbar_rd_addr_d, self.mu_rd_addr_d_array[0])
+                    self.wire(self.glb_tile[i].ports.mu_crossbar_rd_en, self.mu_rd_en)
+
+                    # Ouptut rd_data and rd_data_valid: TODO need to implement a mux. Select signal is subset of the address bits
+
 
     @ always_ff((posedge, "clk"), (posedge, "reset"))
     def interrupt_pipeline(self):

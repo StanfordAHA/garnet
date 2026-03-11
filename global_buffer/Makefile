@@ -13,8 +13,8 @@ TIMEPRECISION ?= 1ps
 TIMEUNIT_NUMBER_ONLY = $(shell echo $(TIMEUNIT) | rev | cut -c 3- | rev)
 CLK_PERIOD_NUMBER_ONLY = $(shell echo $(CLK_PERIOD) | rev | cut -c 3- | rev)
 CLK_SRC_LATENCY_NUMBER_ONLY = $(shell echo $(CLK_SRC_LATENCY) | rev | cut -c 3- | rev)
-CLK_PERIOD_TIMEUNIT = $(shell echo "scale=2; $(CLK_PERIOD_NUMBER_ONLY) / $(TIMEUNIT_NUMBER_ONLY)" | bc) 
-CLK_SRC_LATENCY_TIMEUNIT = $(shell echo "scale=2; $(CLK_SRC_LATENCY_NUMBER_ONLY) / $(TIMEUNIT_NUMBER_ONLY)" | bc) 
+CLK_PERIOD_TIMEUNIT = $(shell echo "scale=2; $(CLK_PERIOD_NUMBER_ONLY) / $(TIMEUNIT_NUMBER_ONLY)" | bc)
+CLK_SRC_LATENCY_TIMEUNIT = $(shell echo "scale=2; $(CLK_SRC_LATENCY_NUMBER_ONLY) / $(TIMEUNIT_NUMBER_ONLY)" | bc)
 
 # architecture
 CGRA_WIDTH ?= 28
@@ -28,7 +28,7 @@ export WAVEFORM ?= 0
 # export WAVEFORM ?= 1
 export SAIF ?= 0
 
-# GLS 
+# GLS
 SDF ?= 0
 MTM ?= MAXIMUM
 SDF_CMD_FILE ?= sdf_cmd.cmd
@@ -45,7 +45,7 @@ RUN_ARGS += +DEBUG
 RUN_LOG ?= run.log
 
 # design files
-HEADER_FILES ?= header/global_buffer_param.svh header/glb.svh 
+HEADER_FILES ?= header/global_buffer_param.svh header/glb.svh
 DESIGN_FILES ?= global_buffer.sv systemRDL/output/glb_pio.sv systemRDL/output/glb_jrdl_decode.sv systemRDL/output/glb_jrdl_logic.sv
 NETLIST_FILES ?= gls/glb.vcs.v gls/glb_tile.vcs.v gls/glb_tile_sram.v gls/stdcells.v gls/stdcells-prim.v
 ifeq ($(WHICH_SOC), amber)
@@ -63,8 +63,8 @@ ifeq ($(WHICH_SOC), amber)
     SIM = sim_amber
 endif
 
-TB_FILES ?= -F $(SIM)/tb_global_buffer.f 
-TB_MU_FILES ?= -F $(SIM)/tb_global_buffer_mu.f 
+TB_FILES ?= -F $(SIM)/tb_global_buffer.f
+TB_MU_FILES ?= -F $(SIM)/tb_global_buffer_mu.f
 
 # -------------------------------------------------------------------
 # Commands
@@ -136,13 +136,13 @@ else
 endif
 rtl: export GARNET_HOME := $(current_dir)/..
 rtl: export PYTHONPATH = $(GARNET_HOME):$$PYTHONPATH
-rtl: 
+rtl:
 	python global_buffer_main.py -r -v -p --num_cgra_cols=$(CGRA_WIDTH) --num_glb_tiles=$(NUM_GLB_TILES) --glb_tile_mem_size=$(GLB_TILE_MEM_SIZE) $(SRAM_STUB_ARG)
 
 
 
 # -------------------------------------------------------------------
-# RTL Zircon 
+# RTL Zircon
 # -------------------------------------------------------------------
 .PHONY: rtl_zircon
 ifneq ($(SRAM_STUB), 0)
@@ -152,15 +152,15 @@ else
 endif
 rtl_zircon: export GARNET_HOME := $(current_dir)/..
 rtl_zircon: export PYTHONPATH = $(GARNET_HOME):$$PYTHONPATH
-rtl_zircon: 
-	python global_buffer_main.py -r -v -p --num_cgra_cols=$(CGRA_WIDTH) --num_glb_tiles=$(NUM_GLB_TILES) --glb_tile_mem_size=$(GLB_TILE_MEM_SIZE) $(SRAM_STUB_ARG) --include_E64_hw --include_multi_bank_hw --include_mu_glb_hw
+rtl_zircon:
+	python global_buffer_main.py -r -v -p --num_cgra_cols=$(CGRA_WIDTH) --num_glb_tiles=$(NUM_GLB_TILES) --glb_tile_mem_size=$(GLB_TILE_MEM_SIZE) $(SRAM_STUB_ARG) --include_E64_hw --include_multi_bank_hw --include_mu_glb_hw --mu_glb_crossbar
 
 
 # -------------------------------------------------------------------
 # Compile & Run
 # -------------------------------------------------------------------
-COMPILE_RTL_ARGS += +define+CLK_PERIOD=$(CLK_PERIOD_TIMEUNIT) +define+TIMEUNIT=$(TIMEUNIT) +define+TIMEPRECISION=$(TIMEPRECISION) +define+CLK_SRC_LATENCY=0ps 
-COMPILE_GLS_ARGS += +define+CLK_PERIOD=$(CLK_PERIOD_TIMEUNIT) +define+TIMEUNIT=$(TIMEUNIT) +define+TIMEPRECISION=$(TIMEPRECISION) +define+CLK_SRC_LATENCY=$(CLK_SRC_LATENCY_TIMEUNIT) 
+COMPILE_RTL_ARGS += +define+CLK_PERIOD=$(CLK_PERIOD_TIMEUNIT) +define+TIMEUNIT=$(TIMEUNIT) +define+TIMEPRECISION=$(TIMEPRECISION) +define+CLK_SRC_LATENCY=0ps
+COMPILE_GLS_ARGS += +define+CLK_PERIOD=$(CLK_PERIOD_TIMEUNIT) +define+TIMEUNIT=$(TIMEUNIT) +define+TIMEPRECISION=$(TIMEPRECISION) +define+CLK_SRC_LATENCY=$(CLK_SRC_LATENCY_TIMEUNIT)
 ifeq ($(TOOL), XCELIUM)
     COMPILE = $(XRUN)
     COMPILE_RTL_ARGS += -xminitialize 0 -xminit_log init.log -nospecify
