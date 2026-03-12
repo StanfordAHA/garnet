@@ -29,7 +29,7 @@ def construct():
   parameters = {
     'construct_path'      : __file__,
     'design_name'         : 'Tile_IOCoreReadyValid',
-    'clock_period'        : 1.1 * 1000,
+    'clock_period'        : 1.8 * 1000,
     'core_density_target' : 0.6,
     'adk'                 : adk_name,
     'adk_view'            : adk_view,
@@ -45,13 +45,8 @@ def construct():
     # Timing Slack
     'setup_target_slack'  : 0,
     'hold_target_slack'   : 0.015,
-    # Power analysis
-    "use_sdf"             : False, # uses sdf but not the way it is in xrun node
-    'app_to_run'          : 'tests/conv_3_3',
-    'saif_instance'       : 'testbench/dut',
-    'testbench_name'      : 'testbench',
-    'strip_path'          : 'testbench/dut',
-    'drc_env_setup'       : 'drcenv-block.sh'
+    # Useful Skew (CTS)
+    'useful_skew'       : True
   }
 
   #-----------------------------------------------------------------------
@@ -73,11 +68,7 @@ def construct():
   custom_power         = Step( this_dir + '/../common/custom-power-leaf'            )
   custom_cts           = Step( this_dir + '/custom-cts'                             )
   genlibdb_constraints = Step( this_dir + '/../common/custom-genlibdb-constraints'  )
-  custom_timing_assert = Step( this_dir + '/../common/custom-timing-assert'         )
-  custom_dc_scripts    = Step( this_dir + '/custom-dc-scripts'                      )
-  testbench            = Step( this_dir + '/../common/testbench'                    )
-  application          = Step( this_dir + '/../common/application'                  )
-  post_pnr_power       = Step( this_dir + '/../common/tile-post-pnr-power'          )
+  custom_pre_signoff   = Step( this_dir + '/custom-pre-signoff'                     )
   drc                  = Step( this_dir + '/../common/intel16-synopsys-icv-drc'     )
   lvs                  = Step( this_dir + '/../common/intel16-synopsys-icv-lvs'     )
   custom_hack_sdc_unit = Step( this_dir + '/../common/custom-hack-sdc-unit'         )
@@ -98,26 +89,26 @@ def construct():
   pt_signoff     = Step( 'synopsys-pt-timing-signoff',    default=True )
   genlibdb_tt    = Step( 'synopsys-ptpx-genlibdb',        default=True )
   genlibdb_ff    = Step( 'synopsys-ptpx-genlibdb',        default=True )
-  debugcalibre   = Step( 'cadence-innovus-debug-calibre', default=True )
 
   genlibdb_tt.set_name( 'synopsys-ptpx-genlibdb-tt' )
   genlibdb_ff.set_name( 'synopsys-ptpx-genlibdb-ff' )
 
   # Add custom timing scripts
-  custom_timing_steps = [ synth, postcts_hold, signoff ] # connects to these
-  for c_step in custom_timing_steps:
-    c_step.extend_inputs( custom_timing_assert.all_outputs() )
+  # custom_timing_steps = [ synth, postcts_hold, signoff ] # connects to these
+  # for c_step in custom_timing_steps:
+  #   c_step.extend_inputs( custom_timing_assert.all_outputs() )
 
   # Add extra input edges to innovus steps that need custom tweaks
   init.extend_inputs( custom_init.all_outputs() )
   power.extend_inputs( custom_power.all_outputs() )
+  signoff.extend_inputs( custom_pre_signoff.all_outputs() )
   genlibdb_tt.extend_inputs( genlibdb_constraints.all_outputs() )
   genlibdb_ff.extend_inputs( genlibdb_constraints.all_outputs() )
   synth.extend_inputs( custom_genus_scripts.all_outputs() )
   iflow.extend_inputs( custom_flowgen_setup.all_outputs() )
 
   # Extra input to DC for constraints
-  synth.extend_inputs( ["common.tcl", "reporting.tcl", "generate-results.tcl", "scenarios.tcl", "report_alu.py", "parse_alu.py"] )
+  synth.extend_inputs( ["common.tcl", "reporting.tcl", "generate-results.tcl", "scenarios.tcl"] )
   # Extra outputs from DC
   synth.extend_outputs( ["sdc"] )
   iflow.extend_inputs( ["scenarios.tcl", "sdc"] )
@@ -140,19 +131,19 @@ def construct():
   # Inputs
   g.add_input( 'design.v', rtl.i('design.v') )
   # Outputs
-  g.add_output( 'Tile_PE-typical.lib',    genlibdb_tt.o('design.lib')       )
-  g.add_output( 'Tile_PE-typical.db',     genlibdb_tt.o('design.db')        )
-  g.add_output( 'Tile_PE-bc.lib',         genlibdb_ff.o('design.lib')       )
-  g.add_output( 'Tile_PE-bc.db',          genlibdb_ff.o('design.db')        )
-  g.add_output( 'Tile_PE.lef',            signoff.o('design.lef')           )
-  g.add_output( 'Tile_PE.oas',            signoff.o('design-merged.oas')    )
-  g.add_output( 'Tile_PE.sdf',            signoff.o('design.sdf')           )
-  g.add_output( 'Tile_PE.vcs.v',          signoff.o('design.vcs.v')         )
-  g.add_output( 'Tile_PE.vcs.pg.v',       signoff.o('design.vcs.pg.v')      )
-  g.add_output( 'Tile_PE.spef.gz',        signoff.o('design.spef.gz')       )
-  g.add_output( 'Tile_PE.rcbest.spef.gz', signoff.o('design.rcbest.spef.gz'))
-  g.add_output( 'Tile_PE.pt.sdc',         signoff.o('design.pt.sdc')        )
-  g.add_output( 'Tile_PE.lvs.v',          lvs.o('design_merged.lvs.v')      )
+  g.add_output( 'Tile_IOCoreReadyValid-typical.lib',    genlibdb_tt.o('design.lib')       )
+  g.add_output( 'Tile_IOCoreReadyValid-typical.db',     genlibdb_tt.o('design.db')        )
+  g.add_output( 'Tile_IOCoreReadyValid-bc.lib',         genlibdb_ff.o('design.lib')       )
+  g.add_output( 'Tile_IOCoreReadyValid-bc.db',          genlibdb_ff.o('design.db')        )
+  g.add_output( 'Tile_IOCoreReadyValid.lef',            signoff.o('design.lef')           )
+  g.add_output( 'Tile_IOCoreReadyValid.oas',            signoff.o('design-merged.oas')    )
+  g.add_output( 'Tile_IOCoreReadyValid.sdf',            signoff.o('design.sdf')           )
+  g.add_output( 'Tile_IOCoreReadyValid.vcs.v',          signoff.o('design.vcs.v')         )
+  g.add_output( 'Tile_IOCoreReadyValid.vcs.pg.v',       signoff.o('design.vcs.pg.v')      )
+  g.add_output( 'Tile_IOCoreReadyValid.spef.gz',        signoff.o('design.spef.gz')       )
+  g.add_output( 'Tile_IOCoreReadyValid.rcbest.spef.gz', signoff.o('design.rcbest.spef.gz'))
+  g.add_output( 'Tile_IOCoreReadyValid.pt.sdc',         signoff.o('design.pt.sdc')        )
+  g.add_output( 'Tile_IOCoreReadyValid.lvs.v',          lvs.o('design_merged.lvs.v')      )
 
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
@@ -161,9 +152,8 @@ def construct():
   g.add_step( info                     )
   g.add_step( rtl                      )
   g.add_step( constraints              )
-  g.add_step( custom_dc_scripts        )
   g.add_step( synth                    )
-  g.add_step( custom_timing_assert     )
+  g.add_step( custom_pre_signoff       )
   g.add_step( custom_genus_scripts     )
   g.add_step( iflow                    )
   g.add_step( custom_flowgen_setup     )
@@ -184,10 +174,6 @@ def construct():
   g.add_step( genlibdb_ff              )
   g.add_step( drc                      )
   g.add_step( lvs                      )
-  g.add_step( debugcalibre             )
-  g.add_step( application              )
-  g.add_step( testbench                )
-  g.add_step( post_pnr_power           )
   g.add_step( custom_hack_sdc_unit     )
 
   #-----------------------------------------------------------------------
@@ -216,10 +202,9 @@ def construct():
   g.connect_by_name( constraints,               synth            )
   g.connect_by_name( custom_genus_scripts,      synth            )
   g.connect_by_name( constraints,               iflow            )
-  g.connect_by_name( custom_dc_scripts,         iflow            )
 
-  for c_step in custom_timing_steps:
-    g.connect_by_name( custom_timing_assert, c_step )
+  # for c_step in custom_timing_steps:
+  #   g.connect_by_name( custom_timing_assert, c_step )
 
   g.connect_by_name( synth,                 iflow                )
   g.connect_by_name( synth,                 init                 )
@@ -241,6 +226,7 @@ def construct():
 
   g.connect_by_name( custom_init,           init                 )
   g.connect_by_name( custom_power,          power                )
+  g.connect_by_name( custom_pre_signoff,    signoff              )
 
   g.connect_by_name( init,                  power                )
   g.connect_by_name( power,                 place                )
@@ -263,17 +249,6 @@ def construct():
   g.connect_by_name( adk,                   pt_signoff           )
   g.connect_by_name( signoff,               pt_signoff           )
 
-  g.connect_by_name( application,           testbench            )
-  g.connect_by_name( application,           post_pnr_power       )
-  g.connect_by_name( signoff,               post_pnr_power       )
-  g.connect_by_name( pt_signoff,            post_pnr_power       )
-  g.connect_by_name( testbench,             post_pnr_power       )
-
-  g.connect_by_name( adk,                   debugcalibre         )
-  g.connect_by_name( synth,                 debugcalibre         )
-  g.connect_by_name( iflow,                 debugcalibre         )
-  g.connect_by_name( signoff,               debugcalibre         )
-
   # New 'custom_cts' step added for gf12
   cts.extend_inputs( custom_cts.all_outputs() )
   g.add_step(        custom_cts               )
@@ -294,13 +269,10 @@ def construct():
 
   g.update_params( parameters )
 
-  # Add custom timing scripts
-
-  for c_step in custom_timing_steps:
-    order = c_step.get_param( 'order' )
-    order.append( 'report-special-timing.tcl' )
-    c_step.set_param( 'order', order )
-    c_step.extend_postconditions( [{ 'pytest': 'inputs/test_timing.py' }] )
+  # Add signoff ECO routing (looks like it's a fake DRC, skip this step)
+  order = signoff.get_param( 'order' )
+  order = ['pre-signoff.tcl'] + order
+  signoff.set_param( 'order', order )
 
   # Since we are adding an additional input script to the generic Innovus
   # steps, we modify the order parameter for that node which determines
@@ -310,7 +282,6 @@ def construct():
   init.update_params( { 'order': [
     'pre-init.tcl',
     'main.tcl',
-    # 'dont-touch.tcl',
     'dont-use.tcl',
     'innovus-pnr-config.tcl',
     'quality-of-life.tcl',

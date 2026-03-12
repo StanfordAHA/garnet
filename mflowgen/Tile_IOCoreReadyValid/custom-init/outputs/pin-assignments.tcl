@@ -34,11 +34,13 @@ if { $clock_ports != 0 } {
 
 # Buses with more than 10 bits will be out of order after the sort, but shouldn't be a big issue since
 # the whole bus will still be together.
-set north1 [sort_collection [get_ports SB_*_NORTH_SB_IN*] hierarchical_name]
-set north2 [sort_collection [get_ports {SB_*_NORTH_SB_OUT* clk clk_pass_through reset stall flush config_config_* config_read config_write read_config_data_in}] hierarchical_name]
+# set north1 [sort_collection [get_ports {SB_*_NORTH_SB_IN* glb2io* io2glb*}] hierarchical_name]
+# set north2 [sort_collection [get_ports {SB_*_NORTH_SB_OUT* clk reset stall flush config_config_* config_read config_write read_config_data_in}] hierarchical_name]
+set north1 [sort_collection [get_ports {glb2io*}] hierarchical_name]
+set north2 [sort_collection [get_ports {io2glb* clk reset stall flush config_config_* config_read config_write read_config_data_in}] hierarchical_name]
 set north [concat $north1 $north2]
 set south1 [sort_collection [get_ports SB_*_SOUTH_SB_OUT*] hierarchical_name]
-set south2 [sort_collection [get_ports {SB_*_SOUTH_SB_IN* clk_out clk_pass_through_out_bot reset_out stall_out flush_out config_out_config_* config_out_read config_out_write read_config_data}] hierarchical_name]
+set south2 [sort_collection [get_ports {SB_*_SOUTH_SB_IN* clk_out reset_out stall_out flush_out config_out_config_* config_out_read config_out_write read_config_data}] hierarchical_name]
 set south [concat $south1 $south2]
 set east1 [sort_collection [get_ports SB_*_EAST_SB_OUT*] hierarchical_name]
 set east2 [sort_collection [get_ports SB_*_EAST_SB_IN*] hierarchical_name]
@@ -58,15 +60,10 @@ set lr_spread_mid [expr ($lr_spread_min + $lr_spread_max) / 2]
 
 # Assign left side pins
 editPin -pin [get_property $west1 hierarchical_name] -start [list 0 $lr_spread_min ] -end [list 0 [expr {$lr_spread_mid - 1}]] -side LEFT -spreadType RANGE -spreadDirection clockwise -layer M4
-
 editPin -pin [get_property $west2 hierarchical_name] -start [list 0 [expr $lr_spread_mid + 1] ] -end [list 0 $lr_spread_max] -side LEFT -spreadType RANGE -spreadDirection clockwise -layer M4
 
 # Assign right side pins
 editPin -pin [get_property $east1 hierarchical_name] -start [list $width $lr_spread_min ] -end [list $width [expr {$lr_spread_mid - 1}]] -side RIGHT -spreadType RANGE -spreadDirection counterclockwise -layer M4
-
-# Clk_out_pass_thorugh_out_right in the middle of the right side
-editPin -pin clk_pass_through_out_right -assign [list $width $lr_spread_mid] -side RIGHT -layer M4 -spreadDirection counterclockwise
-
 editPin -pin [get_property $east2 hierarchical_name] -start [list $width [expr $lr_spread_mid + 1] ] -end [list $width $lr_spread_max] -side RIGHT -spreadType RANGE -spreadDirection counterclockwise -layer M4
 
 # These lists will be ordered from msb to lsb.

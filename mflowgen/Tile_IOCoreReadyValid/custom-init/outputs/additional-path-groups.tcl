@@ -12,7 +12,7 @@
 # For CGRA tiles, the timing of pass through signals
 # (clk, reset, config, stall) is very important
 
-set pt_inputs [get_ports {clk_pass_through reset stall config_config*}]
+set pt_inputs [get_ports {clk reset stall config_config*}]
 set pt_outputs [get_ports {clk*out reset_out stall_out config_out*}]
 
 group_path -name CriticalPassThrough -from $pt_inputs -to $pt_outputs
