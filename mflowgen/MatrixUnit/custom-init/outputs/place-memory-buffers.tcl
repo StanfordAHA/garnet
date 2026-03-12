@@ -7,6 +7,23 @@
 #-------------------------------------------------------------------------
 # Helper Functions
 #-------------------------------------------------------------------------
+proc snap_to_grid {input granularity} {
+   set new_value [expr ceil($input / $granularity) * $granularity]
+   return $new_value
+}
+
+proc legalize_sram_x_location {x_loc} {
+    global ADK_M3_TO_M8_STRIPE_OFSET_LIST
+    set hori_pitch [dbGet top.fPlan.coreSite.size_x]
+    set vert_pitch [dbGet top.fPlan.coreSite.size_y]
+    set tech_pitch_x [expr 5 * $hori_pitch]
+    set tech_pitch_y [expr 1 * $vert_pitch]
+    set sram_x_granularity [lindex $ADK_M3_TO_M8_STRIPE_OFSET_LIST 2]
+    set sram_x_granularity [snap_to_grid $sram_x_granularity $hori_pitch]
+    set sram_x_granularity [expr 2 * $sram_x_granularity]
+    return [snap_to_grid $x_loc $sram_x_granularity]
+}
+
 proc get_memory_cells_by_name {pattern} {
     set matched_macros [ \
         get_cells \
@@ -66,7 +83,7 @@ proc place_macro_grid_row_major {macros llx lly gap_x gap_y max_per_row} {
     set macro_width       [dbGet [dbGet -p top.insts.name $first_macro_name].cell.size_x]
     set macro_height      [dbGet [dbGet -p top.insts.name $first_macro_name].cell.size_y]
     set macro_place_llx   $llx
-    set macro_place_lly   $lly
+    set macro_place_lly   [snap_to_grid $lly $tech_pitch_y]
     set macro_orientation R0
     set halo_left         $tech_pitch_x
     set halo_bottom       $tech_pitch_y
@@ -128,11 +145,16 @@ set macro_weight_scale_buffers [get_memory_cells_by_name *weightScaleBuffer*]
 # Placing Memory Macros
 #-------------------------------------------------------------------------
 # ========================================================== Input Buffers
-set llx 20.0
-set lly 2780.0
-set gap_x 0.0
-set gap_y 0.0
-set max_per_row 8
+# set llx           25.0
+# set lly         2630.0
+# set gap_x          0.0
+# set gap_y         50.0
+# set max_per_row    8
+set llx           25.0
+set lly         2720.0
+set gap_x          0.0
+set gap_y          0.0
+set max_per_row    8
 place_macro_grid_row_major \
     $macro_input_buffers \
     $llx \
@@ -142,11 +164,16 @@ place_macro_grid_row_major \
     $max_per_row
 
 # ========================================================= Weight Buffers
-set llx 900.0
-set lly 2780.0
-set gap_x 0.0
-set gap_y 0.0
-set max_per_row 4
+# set llx          920.0
+# set lly         2630.0
+# set gap_x          0.0
+# set gap_y         50.0
+# set max_per_row    4
+set llx          750.0
+set lly         2720.0
+set gap_x          0.0
+set gap_y          0.0
+set max_per_row    4
 place_macro_grid_row_major \
     $macro_weight_buffers \
     $llx \
@@ -155,14 +182,19 @@ place_macro_grid_row_major \
     $gap_y \
     $max_per_row
 
-# =================================================== Accumulation Buffers
-set llx 30.0
-set lly 125.0
-set gap_x 0.0
-set gap_y 0.0
-set max_per_row 8
+# =================================================== Weight Scale Buffers
+# set llx          735.0
+# set lly         2630.0
+# set gap_x          0.0
+# set gap_y         50.0
+# set max_per_row    4
+set llx         1116.72
+set lly         2720.0
+set gap_x          0.0
+set gap_y          0.0
+set max_per_row    4
 place_macro_grid_row_major \
-    $macro_accumulation_buffers \
+    $macro_weight_scale_buffers \
     $llx \
     $lly \
     $gap_x \
@@ -170,15 +202,34 @@ place_macro_grid_row_major \
     $max_per_row
 
 # ==================================================== Input Scale Buffers
-# inputScaleBuffer_DoubleBuffer_E8M0_1_1024_mem1Run_inst_mem1_value_d_rsc_comp_g_depth[0].g_width[0].g_macro1024.mem
-# inputScaleBuffer_DoubleBuffer_E8M0_1_1024_mem0Run_inst_mem0_value_d_rsc_comp_g_depth[0].g_width[0].g_macro1024.mem
+# set llx          150.0
+# set lly         2350.0
+# set gap_x          0.0
+# set gap_y          0.0
+# set max_per_row    2
+set llx           25.0
+set lly         2475.0
+set gap_x          0.0
+set gap_y          0.0
+set max_per_row    1
+place_macro_grid_row_major \
+    $macro_input_scale_buffers \
+    $llx \
+    $lly \
+    $gap_x \
+    $gap_y \
+    $max_per_row
 
-# =================================================== Weight Scale Buffers
-# weightScaleBuffer_DoubleBuffer_E8M0_32_1024_mem1Run_inst_mem1_value_d_rsc_comp_g_depth[0].g_width[3].g_macro1024.mem
-# weightScaleBuffer_DoubleBuffer_E8M0_32_1024_mem1Run_inst_mem1_value_d_rsc_comp_g_depth[0].g_width[2].g_macro1024.mem
-# weightScaleBuffer_DoubleBuffer_E8M0_32_1024_mem1Run_inst_mem1_value_d_rsc_comp_g_depth[0].g_width[1].g_macro1024.mem
-# weightScaleBuffer_DoubleBuffer_E8M0_32_1024_mem1Run_inst_mem1_value_d_rsc_comp_g_depth[0].g_width[0].g_macro1024.mem
-# weightScaleBuffer_DoubleBuffer_E8M0_32_1024_mem0Run_inst_mem0_value_d_rsc_comp_g_depth[0].g_width[3].g_macro1024.mem
-# weightScaleBuffer_DoubleBuffer_E8M0_32_1024_mem0Run_inst_mem0_value_d_rsc_comp_g_depth[0].g_width[2].g_macro1024.mem
-# weightScaleBuffer_DoubleBuffer_E8M0_32_1024_mem0Run_inst_mem0_value_d_rsc_comp_g_depth[0].g_width[1].g_macro1024.mem
-# weightScaleBuffer_DoubleBuffer_E8M0_32_1024_mem0Run_inst_mem0_value_d_rsc_comp_g_depth[0].g_width[0].g_macro1024.mem
+# =================================================== Accumulation Buffers
+set llx         50.3
+set lly         30.0
+set gap_x        0.0
+set gap_y        0.0
+set max_per_row  8
+place_macro_grid_row_major \
+    $macro_accumulation_buffers \
+    $llx \
+    $lly \
+    $gap_x \
+    $gap_y \
+    $max_per_row

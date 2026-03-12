@@ -37,7 +37,7 @@ proc get_pe_cells_by_name {pattern} {
     set matched_macros [ \
         get_cells \
             -hierarchical \
-            -filter {is_black_box==true} \
+            -filter {is_macro_cell==true} \
             $pattern \
     ]
     return [sort_collection_by_postfix $matched_macros]
@@ -118,6 +118,26 @@ proc place_macro_grid_row_major {macros llx lly gap_x gap_y max_per_row} {
             $halo_top \
             -snapToSite \
             $macro_name
+        # put route blockage
+        createRouteBlk \
+            -name pe_r${row}c${col}_rblk_non_pin_layers \
+            -layer { m1 m2       m5    m7 m8 } \
+            -inst $macro_name \
+            -cover \
+            -spacing 0.324 \
+            -exceptpgnet
+        createRouteBlk \
+            -name pe_r${row}c${col}_rblk_pin_layers \
+            -layer {       m3 m4     m6      } \
+            -inst $macro_name \
+            -cover \
+            -exceptpgnet
+        # dont create via, because those are already created in the tile
+        createRouteBlk \
+          -inst $macro_name \
+          -cover \
+          -cutLayer {v1 v2 v3 v4 v5 v6 v7 v8} \
+          -pgnetonly
         # update index and location
         incr col
         if {$col >= $max_per_row} {
@@ -146,11 +166,11 @@ set macro_pes [get_pe_cells_by_name *systolicArray_pe*]
 # Placing PE Array
 #-------------------------------------------------------------------------
 # Assuming PE is 27umx27um, this will make the PE array match the power stripes
-set llx             80.64
-set lly           2592.00
-set gap_x           10.80
-set gap_y           16.20
-set max_per_row     32
+set llx            168.48
+set lly           2232.72
+set gap_x            5.40
+set gap_y            1.08
+set max_per_row        32
 place_macro_grid_row_major \
     $macro_pes \
     $llx \
@@ -158,3 +178,72 @@ place_macro_grid_row_major \
     $gap_x \
     $gap_y \
     $max_per_row
+
+#-------------------------------------------------------------------------
+# Create Routing Blockages for stripes
+#-------------------------------------------------------------------------
+# dont allow power stripes to cross on edges, because there might be signal wires
+set vert_pitch [dbGet top.fPlan.coreSite.size_y]
+set hori_pitch [dbGet top.fPlan.coreSite.size_x]
+set tech_pitch_x [expr $hori_pitch * 5]
+set tech_pitch_y [expr $vert_pitch * 1]
+set num_cols 32
+set num_rows 64
+# columns
+for {set col 0} {$col < $num_cols} {incr col} {
+    # set pe_top     [index_collection $macro_pes [expr $col]]
+    # set pe_bottom  [index_collection $macro_pes [expr $col + ($num_rows-1)*$num_cols]]
+    # set column_llx [get_property $pe_bottom x_coordinate_min]
+    # set column_lly [get_property $pe_bottom y_coordinate_min]
+    # set column_urx [get_property $pe_top    x_coordinate_max]
+    # set column_ury [get_property $pe_top    y_coordinate_max]
+    set pe_top     [get_property [index_collection $macro_pes [expr $col]] full_name]
+    set pe_bottom  [get_property [index_collection $macro_pes [expr $col + ($num_rows-1)*$num_cols]] full_name]
+    set column_llx [dbGet [dbGet -p top.insts.name $pe_bottom].box_llx]
+    set column_lly [dbGet [dbGet -p top.insts.name $pe_bottom].box_lly]
+    set column_urx [dbGet [dbGet -p top.insts.name $pe_top].box_urx]
+    set column_ury [dbGet [dbGet -p top.insts.name $pe_top].box_ury]
+    foreach layer_name { m3 m5 m7 } {
+        createRouteBlk \
+          -name c${col}_blockage_left \
+          -box [expr $column_llx + 0] [expr $column_lly - 0.54] [expr $column_llx + $tech_pitch_x] [expr $column_ury + 0.54] \
+          -layer $layer_name \
+          -spacing 0.0 \
+          -pgnetonly
+        createRouteBlk \
+          -name c${col}_blockage_right \
+          -box [expr $column_urx - $tech_pitch_x] [expr $column_lly - 0.54] [expr $column_urx + 0] [expr $column_ury + 0.54] \
+          -layer $layer_name \
+          -spacing 0.0 \
+          -pgnetonly
+    }
+}
+# rows
+for {set row 0} {$row < $num_rows} {incr row} {
+    # set pe_right [index_collection $macro_pes [expr ($row * $num_cols) + ($num_cols-1)]]
+    # set pe_left  [index_collection $macro_pes [expr ($row * $num_cols)]]
+    # set row_llx  [get_property $pe_left  x_coordinate_min]
+    # set row_lly  [get_property $pe_left  y_coordinate_min]
+    # set row_urx  [get_property $pe_right x_coordinate_max]
+    # set row_ury  [get_property $pe_right y_coordinate_max]
+    set pe_right [get_property [index_collection $macro_pes [expr ($row * $num_cols) + ($num_cols-1)]] full_name]
+    set pe_left  [get_property [index_collection $macro_pes [expr ($row * $num_cols)]] full_name]
+    set row_llx  [dbGet [dbGet -p top.insts.name $pe_left].box_llx]
+    set row_lly  [dbGet [dbGet -p top.insts.name $pe_left].box_lly]
+    set row_urx  [dbGet [dbGet -p top.insts.name $pe_right].box_urx]
+    set row_ury  [dbGet [dbGet -p top.insts.name $pe_right].box_ury]
+    foreach layer_name { m4 m6 m8 } {
+        createRouteBlk \
+          -name r${row}_blockage_bot \
+          -box [expr $row_llx - 0.324] [expr $row_lly + 0] [expr $row_urx + 0.324] [expr $row_lly + $tech_pitch_y] \
+          -layer $layer_name \
+          -spacing 0.0 \
+          -pgnetonly
+        createRouteBlk \
+          -name r${row}_blockage_top \
+          -box [expr $row_llx - 0.324] [expr $row_ury - $tech_pitch_y] [expr $row_urx + 0.324] [expr $row_ury + 0] \
+          -layer $layer_name \
+          -spacing 0.0 \
+          -pgnetonly
+    }
+}

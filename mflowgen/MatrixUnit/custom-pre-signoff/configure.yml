@@ -1,14 +1,12 @@
 #=========================================================================
-# Custom Scripts -- power
+# Custom Scripts -- pre-signoff
 #=========================================================================
 
-name: custom-power-mu
+name: custom-pre-signoff
 
 #-------------------------------------------------------------------------
 # Inputs and Outputs
 #-------------------------------------------------------------------------
 
 outputs:
-  - globalnetconnect.tcl
-  - power-strategy.tcl
-
+  - pre-signoff.tcl

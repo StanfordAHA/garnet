@@ -21,3 +21,6 @@ outputs:
   - insert-input-antenna-diodes.tcl
   - place-memory-buffers.tcl
   - place-pe-array.tcl
+  - place-dic-cells.tcl
+  - create-placement-blockage.tcl
+  

@@ -27,8 +27,8 @@ def construct():
 
   parameters = {
     'construct_path'    : __file__,
-    'design_name'       : 'MatrixUnit',
-    'clock_period'      : 1.2 * 1000,
+    'design_name'       : 'MatrixUnitWrapper',
+    'clock_period'      : 2.0 * 1000,
     'adk'               : adk_name,
     'adk_view'          : adk_view,
     'adk_stdcell'       : 'b0m_6t_108pp',
@@ -37,21 +37,21 @@ def construct():
     'flatten_effort'    : 3,
     'topographical'     : True,
     # RTL Generation
-    'array_width'         : 28,
-    'array_height'        : 16,
-    'num_glb_tiles'       : 14,
-    'glb_tile_mem_size'   : 128,
-    'interconnect_only'   : False,
-    'use_local_garnet'    : False,
-    'PWR_AWARE'           : False,
-    'soc_only'            : False,
-    'include_core'        : 1,
-    'rtl_docker_image'    : 'default', # Current default is 'stanfordaha/garnet:latest'
+    'array_width'       : 28,
+    'array_height'      : 16,
+    'num_glb_tiles'     : 14,
+    'glb_tile_mem_size' : 128,
+    'interconnect_only' : False,
+    'use_local_garnet'  : False,
+    'PWR_AWARE'         : False,
+    'soc_only'          : False,
+    'include_core'      : 1,
+    'rtl_docker_image'  : 'default', # Current default is 'stanfordaha/garnet:latest'
     # MatrixUnit P&R parameters
-    'pe_array_width'      : 32,
-    'pe_array_height'     : 64,
+    'pe_array_width'    : 32,
+    'pe_array_height'   : 64,
     # Useful Skew (CTS)
-    'useful_skew'       : False,
+    'useful_skew'       : True,
     # hold target slack
     'hold_target_slack' : 0.07,
     'drc_env_setup'     : 'drcenv-block.sh'
@@ -71,24 +71,29 @@ def construct():
     'innovus-pnr-config.tcl',
     'dont-use.tcl',
     'quality-of-life.tcl',
+
     # ----- Frames
     'floorplan.tcl',
     'add-tracks.tcl',
     'create-rows.tcl',
     'pin-assignments.tcl',
+
     # ----- Place the important blocks
-    'insert-input-antenna-diodes.tcl',
     'place-memory-buffers.tcl',
-    # 'place-pe-array.tcl',
-    # 'place-dic-cells.tcl',
-    # 'add-endcaps-welltaps.tcl',
-    # ----- Blockages (TODO: check what's inside extend-blockage.tcl)
-    #'create-boundary-blockage.tcl',
-    # 'extend-blockage.tcl',
+    'place-pe-array.tcl',
+    'place-dic-cells.tcl',
+    'add-endcaps-welltaps.tcl',
+    'insert-input-antenna-diodes.tcl',
+
+    # ----- Blockages 
+    'create-boundary-blockage.tcl',
+    # 'create-placement-blockage.tcl',
+    # 'extend-blockage.tcl', (TODO: check what's inside extend-blockage.tcl)
+
     # ----- Final Touch
-    # 'create-special-grid.tcl',
-    # 'make-path-groups.tcl',
-    # 'reporting.tcl'
+    'create-special-grid.tcl',
+    'make-path-groups.tcl',
+    'reporting.tcl'
   ]
 
   # ADK step
@@ -99,17 +104,20 @@ def construct():
   processing_element = Subgraph( this_dir + '/../ProcessingElement', 'ProcessingElement' )
 
   # Custom steps
-  rtl            = Step( this_dir + '/../common/rtl'                          )
-  constraints    = Step( this_dir + '/constraints'                            )
-  custom_init    = Step( this_dir + '/custom-init'                            )
-  custom_power   = Step( this_dir + '/../common/custom-power-hierarchical'    )
-  custom_cts     = Step( this_dir + '/custom-cts-overrides'                   )
-  gls_args       = Step( this_dir + '/gls_args'                               )
-  custom_flowgen_setup = Step( this_dir + '/custom-flowgen-setup'             )
-  custom_hack_sdc_unit = Step( this_dir + '/../common/custom-hack-sdc-unit'   )
-  custom_hack_lef_ante = Step( this_dir + '/../common/custom-hack-lef-antenna')
-  gen_sram_iw    = Step( this_dir + '/../common/gen_sram_macro'               )
-  gen_sram_accum = Step( this_dir + '/../common/gen_sram_macro'               )
+  rtl                  = Step( this_dir + '/../common/rtl'                          )
+  constraints          = Step( this_dir + '/constraints'                            )
+  custom_init          = Step( this_dir + '/custom-init'                            )
+  custom_power         = Step( this_dir + '/custom-power-mu'                        )
+  custom_postplace_blk = Step( this_dir + '/custom-post-place-blockage'             )
+  custom_cts           = Step( this_dir + '/custom-cts'                             )
+  custom_pre_signoff   = Step( this_dir + '/custom-pre-signoff'                     )
+  custom_flowgen_setup = Step( this_dir + '/custom-flowgen-setup'                   )
+  custom_hack_sdc_unit = Step( this_dir + '/../common/custom-hack-sdc-unit'         )
+  custom_hack_lef_ante = Step( this_dir + '/../common/custom-hack-lef-antenna'      )
+  gen_sram_iw          = Step( this_dir + '/../common/gen_sram_macro'               )
+  gen_sram_accum       = Step( this_dir + '/../common/gen_sram_macro'               )
+  gen_sram_si          = Step( this_dir + '/../common/gen_sram_macro'               )
+  gen_sram_sw          = Step( this_dir + '/../common/gen_sram_macro'               )
 
   # Default steps
   info           = Step( 'info',                           default=True )
@@ -125,9 +133,9 @@ def construct():
   postroute_hold = Step( 'cadence-innovus-postroute_hold', default=True )
   signoff        = Step( 'cadence-innovus-signoff',        default=True )
   pt_signoff     = Step( 'synopsys-pt-timing-signoff',     default=True )
+  pt_signoff_flat= Step( 'synopsys-pt-timing-signoff-flat',default=True )
   genlibdb_tt    = Step( 'synopsys-ptpx-genlibdb',         default=True )
   genlibdb_ff    = Step( 'synopsys-ptpx-genlibdb',         default=True )
-  debugcalibre   = Step( 'cadence-innovus-debug-calibre',  default=True )
   drc            = Step( this_dir + '/../common/intel16-synopsys-icv-drc' )
   lvs            = Step( this_dir + '/../common/intel16-synopsys-icv-lvs' )
 
@@ -135,6 +143,8 @@ def construct():
   genlibdb_ff.set_name( 'synopsys-ptpx-genlibdb-ff' )
   gen_sram_iw.set_name( 'gen_sram_iw' )
   gen_sram_accum.set_name( 'gen_sram_accum' )
+  gen_sram_si.set_name( 'gen_sram_si' )
+  gen_sram_sw.set_name( 'gen_sram_sw' )
 
   # ----- SRAM info
   # SRAM Families:
@@ -160,24 +170,43 @@ def construct():
       'wc_corner': "psss_0.765v_125c",
       'partial_write': 0
   } )
+  gen_sram_si.update_params( {
+      'sram_family': "RF_2P",
+      'num_words': 2048,
+      'word_size': 8,
+      'mux_size': 4,
+      'tt_corner': "tttt_0.85v_25c",
+      'bc_corner': "pfff_0.89v_-40c",
+      'wc_corner': "psss_0.765v_125c",
+      'partial_write': 0
+  } )
+  gen_sram_sw.update_params( {
+      'sram_family': "RF_2P",
+      'num_words': 32,
+      'word_size': 128,
+      'mux_size': 1,
+      'tt_corner': "tttt_0.85v_25c",
+      'bc_corner': "pfff_0.89v_-40c",
+      'wc_corner': "psss_0.765v_125c",
+      'partial_write': 0
+  } )
 
   # Add macro info to downstream nodes
   synth.extend_inputs( ['ProcessingElement-typical.lib', 'ProcessingElement.lef'] )
   iflow.extend_inputs( custom_flowgen_setup.all_outputs() )
-  pt_signoff.extend_inputs( ['ProcessingElement-typical.db'] )
-  pt_signoff.extend_inputs( ['ProcessingElement-bc.db'] )
-  genlibdb_tt.extend_inputs( ['ProcessingElement-typical.db'] )
-  genlibdb_ff.extend_inputs( ['ProcessingElement-bc.db'] )
 
   # Add extra input edges to innovus steps that need custom tweaks
   init.extend_inputs( custom_init.all_outputs() )
   power.extend_inputs( custom_power.all_outputs() )
+  place.extend_inputs( custom_postplace_blk.all_outputs() )
   cts.extend_inputs( custom_cts.all_outputs() )
+  signoff.extend_inputs( custom_pre_signoff.all_outputs() )
 
   # SDC hack for the genlibdb and pt_signoff steps
   genlibdb_tt.extend_inputs( custom_hack_sdc_unit.all_outputs() )
   genlibdb_ff.extend_inputs( custom_hack_sdc_unit.all_outputs() )
   pt_signoff.extend_inputs( custom_hack_sdc_unit.all_outputs() )
+  pt_signoff_flat.extend_inputs( custom_hack_sdc_unit.all_outputs() )
 
   # LEF antenna hack
   adk.extend_inputs( custom_hack_lef_ante.all_outputs() )
@@ -187,70 +216,92 @@ def construct():
   g.add_input( 'header'  , rtl.i('header')   )
 
   # Outputs (MatrixUnit)
-  g.add_output( 'MatrixUnit-typical.lib',            genlibdb_tt.o('design.lib')          )
-  g.add_output( 'MatrixUnit-typical.db',             genlibdb_tt.o('design.db')           )
-  g.add_output( 'MatrixUnit-bc.lib',                 genlibdb_ff.o('design.lib')          )
-  g.add_output( 'MatrixUnit-bc.db',                  genlibdb_ff.o('design.db')           )
-  g.add_output( 'MatrixUnit.lef',                    signoff.o('design.lef')              )
-  g.add_output( 'MatrixUnit.vcs.v',                  signoff.o('design.vcs.v')            )
-  g.add_output( 'MatrixUnit.sdf',                    signoff.o('design.sdf')              )
-  g.add_output( 'MatrixUnit.oas',                    signoff.o('design-merged.oas')       )
-  g.add_output( 'MatrixUnit.lvs.v',                  lvs.o('design_merged.lvs.v')         )
-  g.add_output( 'MatrixUnit.vcs.pg.v',               signoff.o('design.vcs.pg.v')         )
-  g.add_output( 'MatrixUnit.spef.gz',                signoff.o('design.spef.gz')          )
+  g.add_output( 'MatrixUnitWrapper-typical.lib',            genlibdb_tt.o('design.lib')          )
+  g.add_output( 'MatrixUnitWrapper-typical.db',             genlibdb_tt.o('design.db')           )
+  g.add_output( 'MatrixUnitWrapper-bc.lib',                 genlibdb_ff.o('design.lib')          )
+  g.add_output( 'MatrixUnitWrapper-bc.db',                  genlibdb_ff.o('design.db')           )
+  g.add_output( 'MatrixUnitWrapper.lef',                    signoff.o('design.lef')              )
+  g.add_output( 'MatrixUnitWrapper.sdf',                    signoff.o('design.sdf')              )
+  g.add_output( 'MatrixUnitWrapper.oas',                    signoff.o('design-merged.oas')       )
+  g.add_output( 'MatrixUnitWrapper.lvs.v',                  lvs.o('design_merged.lvs.v')         )
+  g.add_output( 'MatrixUnitWrapper.vcs.v',                  signoff.o('design.vcs.v')            )
+  g.add_output( 'MatrixUnitWrapper.vcs.pg.v',               signoff.o('design.vcs.pg.v')         )
+  g.add_output( 'MatrixUnitWrapper.pt.sdc',                 signoff.o('design.pt.sdc')           )
+  g.add_output( 'MatrixUnitWrapper.spef.gz',                signoff.o('design.spef.gz')          )
   # Outputs (MatrixUnit_sram_iw)
-  g.add_output( 'MatrixUnit_sram_iw.spi',            gen_sram_iw.o('sram.spi')            )
-  g.add_output( 'MatrixUnit_sram_iw.v',              gen_sram_iw.o('sram.v')              )
-  g.add_output( 'MatrixUnit_sram_iw-bc.db',          gen_sram_iw.o('sram-bc.db')          )
-  g.add_output( 'MatrixUnit_sram_iw-bc.lib',         gen_sram_iw.o('sram-bc.lib')         )
-  g.add_output( 'MatrixUnit_sram_iw-wc.db',          gen_sram_iw.o('sram-wc.db')          )
-  g.add_output( 'MatrixUnit_sram_iw-wc.lib',         gen_sram_iw.o('sram-wc.lib')         )
-  g.add_output( 'MatrixUnit_sram_iw-typical.db',     gen_sram_iw.o('sram-typical.db')     )
-  g.add_output( 'MatrixUnit_sram_iw-typical.lib',    gen_sram_iw.o('sram-typical.lib')    )
+  g.add_output( 'MatrixUnitWrapper_sram_iw.spi',            gen_sram_iw.o('sram.spi')            )
+  g.add_output( 'MatrixUnitWrapper_sram_iw.v',              gen_sram_iw.o('sram.v')              )
+  g.add_output( 'MatrixUnitWrapper_sram_iw-bc.db',          gen_sram_iw.o('sram-bc.db')          )
+  g.add_output( 'MatrixUnitWrapper_sram_iw-bc.lib',         gen_sram_iw.o('sram-bc.lib')         )
+  g.add_output( 'MatrixUnitWrapper_sram_iw-wc.db',          gen_sram_iw.o('sram-wc.db')          )
+  g.add_output( 'MatrixUnitWrapper_sram_iw-wc.lib',         gen_sram_iw.o('sram-wc.lib')         )
+  g.add_output( 'MatrixUnitWrapper_sram_iw-typical.db',     gen_sram_iw.o('sram-typical.db')     )
+  g.add_output( 'MatrixUnitWrapper_sram_iw-typical.lib',    gen_sram_iw.o('sram-typical.lib')    )
   # Outputs (MatrixUnit_sram_accum)
-  g.add_output( 'MatrixUnit_sram_accum.spi',         gen_sram_accum.o('sram.spi')         )
-  g.add_output( 'MatrixUnit_sram_accum.v',           gen_sram_accum.o('sram.v')           )
-  g.add_output( 'MatrixUnit_sram_accum-bc.db',       gen_sram_accum.o('sram-bc.db')       )
-  g.add_output( 'MatrixUnit_sram_accum-bc.lib',      gen_sram_accum.o('sram-bc.lib')      )
-  g.add_output( 'MatrixUnit_sram_accum-wc.db',       gen_sram_accum.o('sram-wc.db')       )
-  g.add_output( 'MatrixUnit_sram_accum-wc.lib',      gen_sram_accum.o('sram-wc.lib')      )
-  g.add_output( 'MatrixUnit_sram_accum-typical.db',  gen_sram_accum.o('sram-typical.db')  )
-  g.add_output( 'MatrixUnit_sram_accum-typical.lib', gen_sram_accum.o('sram-typical.lib') )
+  g.add_output( 'MatrixUnitWrapper_sram_accum.spi',         gen_sram_accum.o('sram.spi')         )
+  g.add_output( 'MatrixUnitWrapper_sram_accum.v',           gen_sram_accum.o('sram.v')           )
+  g.add_output( 'MatrixUnitWrapper_sram_accum-bc.db',       gen_sram_accum.o('sram-bc.db')       )
+  g.add_output( 'MatrixUnitWrapper_sram_accum-bc.lib',      gen_sram_accum.o('sram-bc.lib')      )
+  g.add_output( 'MatrixUnitWrapper_sram_accum-wc.db',       gen_sram_accum.o('sram-wc.db')       )
+  g.add_output( 'MatrixUnitWrapper_sram_accum-wc.lib',      gen_sram_accum.o('sram-wc.lib')      )
+  g.add_output( 'MatrixUnitWrapper_sram_accum-typical.db',  gen_sram_accum.o('sram-typical.db')  )
+  g.add_output( 'MatrixUnitWrapper_sram_accum-typical.lib', gen_sram_accum.o('sram-typical.lib') )
+  # Outputs (MatrixUnit_sram_si)
+  g.add_output( 'MatrixUnitWrapper_sram_si.spi',            gen_sram_si.o('sram.spi')            )
+  g.add_output( 'MatrixUnitWrapper_sram_si.v',              gen_sram_si.o('sram.v')              )
+  g.add_output( 'MatrixUnitWrapper_sram_si-bc.db',          gen_sram_si.o('sram-bc.db')          )
+  g.add_output( 'MatrixUnitWrapper_sram_si-bc.lib',         gen_sram_si.o('sram-bc.lib')         )
+  g.add_output( 'MatrixUnitWrapper_sram_si-wc.db',          gen_sram_si.o('sram-wc.db')          )
+  g.add_output( 'MatrixUnitWrapper_sram_si-wc.lib',         gen_sram_si.o('sram-wc.lib')         )
+  g.add_output( 'MatrixUnitWrapper_sram_si-typical.db',     gen_sram_si.o('sram-typical.db')     )
+  g.add_output( 'MatrixUnitWrapper_sram_si-typical.lib',    gen_sram_si.o('sram-typical.lib')    )
+  # Outputs (MatrixUnit_sram_sw)
+  g.add_output( 'MatrixUnitWrapper_sram_sw.spi',            gen_sram_sw.o('sram.spi')            )
+  g.add_output( 'MatrixUnitWrapper_sram_sw.v',              gen_sram_sw.o('sram.v')              )
+  g.add_output( 'MatrixUnitWrapper_sram_sw-bc.db',          gen_sram_sw.o('sram-bc.db')          )
+  g.add_output( 'MatrixUnitWrapper_sram_sw-bc.lib',         gen_sram_sw.o('sram-bc.lib')         )
+  g.add_output( 'MatrixUnitWrapper_sram_sw-wc.db',          gen_sram_sw.o('sram-wc.db')          )
+  g.add_output( 'MatrixUnitWrapper_sram_sw-wc.lib',         gen_sram_sw.o('sram-wc.lib')         )
+  g.add_output( 'MatrixUnitWrapper_sram_sw-typical.db',     gen_sram_sw.o('sram-typical.db')     )
+  g.add_output( 'MatrixUnitWrapper_sram_sw-typical.lib',    gen_sram_sw.o('sram-typical.lib')    )
 
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
   #-----------------------------------------------------------------------
 
-  g.add_step( info           )
-  g.add_step( rtl            )
-  g.add_step( processing_element)
-  g.add_step( constraints    )
-  g.add_step( synth          )
+  g.add_step( info                 )
+  g.add_step( rtl                  )
+  g.add_step( processing_element   )
+  g.add_step( constraints          )
+  g.add_step( synth                )
   g.add_step( custom_flowgen_setup )
-  g.add_step( iflow          )
-  g.add_step( init           )
-  g.add_step( custom_init    )
-  g.add_step( power          )
-  g.add_step( custom_power   )
-  g.add_step( place          )
-  g.add_step( custom_cts     )
-  g.add_step( cts            )
-  g.add_step( postcts_hold   )
-  g.add_step( route          )
-  g.add_step( postroute      )
-  g.add_step( postroute_hold )
-  g.add_step( signoff        )
-  g.add_step( pt_signoff     )
-  g.add_step( drc            )
-  g.add_step( lvs            )
-  g.add_step( debugcalibre   )
-  g.add_step( gls_args       )
-  g.add_step( genlibdb_tt    )
-  g.add_step( genlibdb_ff    )
+  g.add_step( iflow                )
+  g.add_step( init                 )
+  g.add_step( custom_init          )
+  g.add_step( power                )
+  g.add_step( custom_power         )
+  g.add_step( custom_postplace_blk )
+  g.add_step( custom_pre_signoff   )
+  g.add_step( place                )
+  g.add_step( custom_cts           )
+  g.add_step( cts                  )
+  g.add_step( postcts_hold         )
+  g.add_step( route                )
+  g.add_step( postroute            )
+  g.add_step( postroute_hold       )
+  g.add_step( signoff              )
+  g.add_step( pt_signoff           )
+  g.add_step( pt_signoff_flat      )
+  g.add_step( drc                  )
+  g.add_step( lvs                  )
+  g.add_step( genlibdb_tt          )
+  g.add_step( genlibdb_ff          )
   g.add_step( custom_hack_sdc_unit )
   g.add_step( custom_hack_lef_ante )
-  g.add_step( gen_sram_iw    )
-  g.add_step( gen_sram_accum )
+  g.add_step( gen_sram_iw          )
+  g.add_step( gen_sram_accum       )
+  g.add_step( gen_sram_si          )
+  g.add_step( gen_sram_sw          )
 
   #-----------------------------------------------------------------------
   # Graph -- Add edges
@@ -273,6 +324,8 @@ def construct():
   g.connect_by_name( adk,      lvs            )
   g.connect_by_name( adk,      gen_sram_iw    )
   g.connect_by_name( adk,      gen_sram_accum )
+  g.connect_by_name( adk,      gen_sram_si    )
+  g.connect_by_name( adk,      gen_sram_sw    )
 
   #-----------------------------------------------------------------------
   # Graph -- Add edges for SRAMs/PEs
@@ -281,41 +334,78 @@ def construct():
   for step in [synth, iflow, init, power, place, cts, postcts_hold, route, postroute, postroute_hold, signoff]:
     step.extend_inputs( ['sram_iw-typical.lib', 'sram_iw-bc.lib', 'sram_iw.lef'] )
     step.extend_inputs( ['sram_accum-typical.lib', 'sram_accum-bc.lib', 'sram_accum.lef'] )
-    step.extend_inputs( ['ProcessingElement-typical.lib', 'ProcessingElement-bc.lib', 'ProcessingElement.lef'] )
+    step.extend_inputs( ['sram_si-typical.lib', 'sram_si-bc.lib', 'sram_si.lef'] )
+    step.extend_inputs( ['sram_sw-typical.lib', 'sram_sw-bc.lib', 'sram_sw.lef'] )
+    step.extend_inputs( ['ProcessingElement-typical.lib', 'ProcessingElement-bc.lib', 'ProcessingElement.lef', 'ProcessingElement.def.gz'] )
   # PTPX Signoff / genlibdb needs .db files
   pt_signoff.extend_inputs( ['sram_iw-typical.db',
                              'sram_iw-bc.db',
                              'sram_accum-typical.db',
                              'sram_accum-bc.db',
+                             'sram_si-typical.db',
+                             'sram_si-bc.db',
+                             'sram_sw-typical.db',
+                             'sram_sw-bc.db',
                              'ProcessingElement-typical.db',
                              'ProcessingElement-bc.db'] )
+  pt_signoff_flat.extend_inputs( ['sram_iw-typical.db',
+                                  'sram_iw-bc.db',
+                                  'sram_accum-typical.db',
+                                  'sram_accum-bc.db',
+                                  'sram_si-typical.db',
+                                  'sram_si-bc.db',
+                                  'sram_sw-typical.db',
+                                  'sram_sw-bc.db',
+                                  'ProcessingElement.vcs.v',
+                                  'ProcessingElement.pt.sdc',
+                                  'ProcessingElement.spef.gz'] )
   genlibdb_tt.extend_inputs( ['sram_iw-typical.db',
-                              'sram_accum-typical.db'
+                              'sram_accum-typical.db',
+                              'sram_si-typical.db',
+                              'sram_sw-typical.db',
                               'ProcessingElement-typical.db'] )
   genlibdb_ff.extend_inputs( ['sram_iw-bc.db',
-                              'sram_accum-bc.db'
-                              'ProcessingElement.db'] )
+                              'sram_accum-bc.db',
+                              'sram_si-bc.db',
+                              'sram_sw-bc.db',
+                              'ProcessingElement-bc.db'] )
   # Signoff needs the merged OASIS file
   signoff.extend_inputs( ['sram_iw.oas'] )
   signoff.extend_inputs( ['sram_accum.oas'] )
+  signoff.extend_inputs( ['sram_si.oas'] )
+  signoff.extend_inputs( ['sram_sw.oas'] )
   signoff.extend_inputs( ['ProcessingElement.oas'] )
   # LVS node need spi
   lvs.extend_inputs( ['sram_iw.spi'] )
   lvs.extend_inputs( ['sram_accum.spi'] )
-  lvs.extend_inputs( ['ProcessingElement.spi'] )
+  lvs.extend_inputs( ['sram_si.spi'] )
+  lvs.extend_inputs( ['sram_sw.spi'] )
+  lvs.extend_inputs( ['ProcessingElement.lvs.v'] )
   # Connect gen_sram_macro node(s) to all downstream nodes that need them
   nodes_need_sram = [synth, iflow, init, power, place, cts, postcts_hold,
-                route, postroute, postroute_hold, signoff, pt_signoff,
+                route, postroute, postroute_hold, signoff, pt_signoff, pt_signoff_flat,
                 genlibdb_tt, genlibdb_ff, lvs]
   for node in nodes_need_sram:
+    # Input/Weight SRAM
     for sram_output in gen_sram_iw.all_outputs():
       node_input = sram_output.replace('sram', 'sram_iw')
       if node_input in node.all_inputs():
         g.connect(gen_sram_iw.o(sram_output), node.i(node_input))
+    # Accumulation SRAM
     for sram_output in gen_sram_accum.all_outputs():
       node_input = sram_output.replace('sram', 'sram_accum')
       if node_input in node.all_inputs():
         g.connect(gen_sram_accum.o(sram_output), node.i(node_input))
+    # Input Scale SRAM
+    for sram_output in gen_sram_si.all_outputs():
+      node_input = sram_output.replace('sram', 'sram_si')
+      if node_input in node.all_inputs():
+        g.connect(gen_sram_si.o(sram_output), node.i(node_input))
+    # Weight Scale SRAM
+    for sram_output in gen_sram_sw.all_outputs():
+      node_input = sram_output.replace('sram', 'sram_sw')
+      if node_input in node.all_inputs():
+        g.connect(gen_sram_sw.o(sram_output), node.i(node_input))
 
   # inputs to ProcessingElement
   g.connect_by_name( rtl, processing_element )
@@ -332,6 +422,7 @@ def construct():
   g.connect_by_name( processing_element,      postroute_hold )
   g.connect_by_name( processing_element,      signoff        )
   g.connect_by_name( processing_element,      pt_signoff     )
+  g.connect_by_name( processing_element,      pt_signoff_flat)
   g.connect_by_name( processing_element,      drc            )
   g.connect_by_name( processing_element,      lvs            )
   g.connect_by_name( processing_element,      genlibdb_tt    )
@@ -358,9 +449,11 @@ def construct():
   g.connect_by_name( iflow,    postroute_hold )
   g.connect_by_name( iflow,    signoff        )
 
-  g.connect_by_name( custom_init,  init     )
-  g.connect_by_name( custom_power, power    )
-  g.connect_by_name( custom_cts, cts        )
+  g.connect_by_name( custom_init,          init  )
+  g.connect_by_name( custom_power,         power )
+  g.connect_by_name( custom_postplace_blk, place )
+  g.connect_by_name( custom_cts,           cts   )
+  g.connect_by_name( custom_pre_signoff,   signoff )
 
   g.connect_by_name( init,         power          )
   g.connect_by_name( power,        place          )
@@ -375,23 +468,19 @@ def construct():
 
   g.connect_by_name( adk,          pt_signoff   )
   g.connect_by_name( signoff,      pt_signoff   )
+  g.connect_by_name( adk,          pt_signoff_flat )
+  g.connect_by_name( signoff,      pt_signoff_flat )
 
   g.connect_by_name( adk,          genlibdb_tt )
   g.connect_by_name( adk,          genlibdb_ff )
   g.connect_by_name( signoff,      genlibdb_tt )
   g.connect_by_name( signoff,      genlibdb_ff )
 
-  g.connect_by_name( adk,      debugcalibre )
-  g.connect_by_name( synth,    debugcalibre )
-  g.connect_by_name( iflow,    debugcalibre )
-  g.connect_by_name( signoff,  debugcalibre )
-  g.connect_by_name( drc,      debugcalibre )
-  g.connect_by_name( lvs,      debugcalibre )
-
   # SDC hack for the genlibdb and pt_signoff steps
   g.connect_by_name( custom_hack_sdc_unit, genlibdb_tt )
   g.connect_by_name( custom_hack_sdc_unit, genlibdb_ff )
   g.connect_by_name( custom_hack_sdc_unit, pt_signoff )
+  g.connect_by_name( custom_hack_sdc_unit, pt_signoff_flat )
 
   # LEF antenna hack
   g.connect_by_name( custom_hack_lef_ante, adk )
@@ -411,22 +500,47 @@ def construct():
   })
 
   # Add SDC unit hack before genlibdb and pt_signoff
-  sdc_hack_command = "python inputs/hack_sdc_unit.py inputs/design.pt.sdc"
-
   # The SDC file generated by Innovus contains -library flag to explicitly
   # specify which library to use for the cell. However, we will change the
   # target library for different corners and that makes the SDC commands
   # fail to find the cell. We should remove the -library flag and let the
   # tool find the cell from the target library (default behavior).
-  sdc_filter_command = "sed -i 's/-library [^ ]* //g' inputs/design.pt.sdc"
-
-  # add the commands to the steps
-  genlibdb_tt.pre_extend_commands( [sdc_hack_command, sdc_filter_command] )
-  genlibdb_ff.pre_extend_commands( [sdc_hack_command, sdc_filter_command] )
-  pt_signoff.pre_extend_commands( [sdc_hack_command, sdc_filter_command] )
+  genlibdb_tt.pre_extend_commands( [
+    "python inputs/hack_sdc_unit.py inputs/design.pt.sdc",
+    "sed -i 's/-library [^ ]* //g'  inputs/design.pt.sdc",
+  ] )
+  genlibdb_ff.pre_extend_commands( [
+    "python inputs/hack_sdc_unit.py inputs/design.pt.sdc",
+    "sed -i 's/-library [^ ]* //g'  inputs/design.pt.sdc",
+  ] )
+  pt_signoff.pre_extend_commands( [
+    "python inputs/hack_sdc_unit.py inputs/design.pt.sdc",
+    "sed -i 's/-library [^ ]* //g'  inputs/design.pt.sdc",
+  ] )
+  pt_signoff_flat.pre_extend_commands( [
+    "python inputs/hack_sdc_unit.py inputs/design.pt.sdc",
+    "sed -i 's/-library [^ ]* //g'  inputs/design.pt.sdc",
+    "python inputs/hack_sdc_unit.py inputs/ProcessingElement.pt.sdc",
+    "sed -i 's/-library [^ ]* //g'  inputs/ProcessingElement.pt.sdc",
+  ] )
 
   # init -- update custom order
   init.update_params( { 'order': init_order } )
+
+  # placement -- update custom order
+  place_order = place.get_param( 'order' )
+  place_order.append( 'custom-post-place-blockage.tcl' )
+  place.set_param( 'order', place_order )
+
+  # Add signoff ECO routing
+  order = signoff.get_param( 'order' )
+  order = ['pre-signoff.tcl'] + order
+  signoff.set_param( 'order', order )
+
+  # update clock insertion delay in CTS
+  order = cts.get_param( 'order' )
+  order.insert(order.index('main.tcl'), 'custom-cts-additional-setup.tcl')
+  cts.set_param( 'order', order )
 
   # DRC Rule Decks
   drc_rule_decks = [

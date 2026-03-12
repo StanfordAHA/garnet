@@ -33,39 +33,21 @@ proc insert_into_middle_of_collection {base_collection new_collection} {
 # Pin Collections
 #-------------------------------------------------------------------------
 # [Top Pins]
-#             clk
-#             rstn
-#             startSignal* (r/v)
-#             doneSignal* (r/v)
-#             serialMatrixParamsIn* (dat: 32b, with r/v)
-#             # Temporal Top Pins
-#             # New IWB pins will replace the following input/weight/bias pins
-#             IWB_Address_Request* (dat: 22b, with r/v)
-#             IWB_Data_Response* (dat: 256b, with r/v)
-#                 inputAddressRequest* ------------ 96
-#                 inputDataResponse* -------------- 512
-#                 inputScaleAddressRequest* ------- 96
-#                 inputScaleDataResponse* --------- 8
-#                 weightAddressRequest* ----------- 96
-#                 weightDataResponse* ------------- 256
-#                 weightScaleAddressRequest* ------ 96
-#                 weightScaleDataResponse* -------- 256
-#                 biasAddressRequest* ------------- 96
-#                 biasDataResponse* --------------- 256
+#             clock_in_clock ------------------ 1
+#             clock_in_reset ------------------ 1
+#             axi_in* ------------------------- 235
+#             unified_out* -------------------- 352
 # [Bottom Pins]
-#             outputsFromSystolicArray* (dat: 512b, with r/v)
+#             io_outputsFromSystolicArray* ---- 514
 
 # Organize ports into collection objects
-set ports_param   [sort_collection [get_ports {*Param*}]     hierarchical_name]
-set ports_input   [sort_collection [get_ports {*input*}]     hierarchical_name]
-set ports_weight  [sort_collection [get_ports {*weight*}]    hierarchical_name]
-set ports_bias    [sort_collection [get_ports {*bias*}]      hierarchical_name]
-set ports_clk_rst [sort_collection [get_ports {*clk* *rst*}] hierarchical_name]
-set ports_control [sort_collection [get_ports {*Signal*}]    hierarchical_name]
-set ports_output  [sort_collection [get_ports {*outputs*}]   hierarchical_name]
+set ports_uni     [sort_collection [get_ports {*unified_out*}]                hierarchical_name]
+set ports_axi     [sort_collection [get_ports {*axi_in*}]                     hierarchical_name]
+set ports_clk_rst [sort_collection [get_ports {*in_clock* *in_reset*}]        hierarchical_name]
+set ports_output  [sort_collection [get_ports {*outputsFromSystolicArray*}]   hierarchical_name]
 
 # Distribute the ports to different sides
-set ports_top    [concat $ports_param $ports_input $ports_weight $ports_bias $ports_control]
+set ports_top    [concat $ports_uni $ports_axi]
 set ports_bottom [concat $ports_output]
 set ports_left   []
 set ports_right  []
@@ -90,7 +72,7 @@ editPin \
     -side            TOP \
     -spreadType      START \
     -unit            TRACK \
-    -spacing         7 \
+    -spacing         23 \
     -start           [list $pin_margin_top $block_height] \
     -pin             [get_property $ports_top hierarchical_name]
 
@@ -99,7 +81,7 @@ editPin \
     -side            BOTTOM \
     -spreadType      START \
     -unit            TRACK \
-    -spacing         25 \
+    -spacing         26 \
     -start           [list $pin_margin_bottom 0.0] \
     -spreadDirection counterClockwise \
     -pin             [get_property $ports_bottom hierarchical_name]

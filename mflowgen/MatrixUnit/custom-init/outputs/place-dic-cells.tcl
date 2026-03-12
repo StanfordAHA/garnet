@@ -1,0 +1,129 @@
+#=========================================================================
+# place-dic-cells.tcl
+#=========================================================================
+# This script places the drop-in cell required by this technology.
+# Author : 
+# Date   :
+
+proc snap_to_grid {input granularity} {
+   set new_value [expr ceil($input / $granularity) * $granularity]
+   return $new_value
+}
+
+set hori_pitch [dbGet top.fPlan.coreSite.size_x]
+set vert_pitch [dbGet top.fPlan.coreSite.size_y]
+
+set halo_cd_left   [expr $hori_pitch * 8]
+set halo_cd_bottom [expr $vert_pitch * 4]
+set halo_cd_right  [expr $hori_pitch * 8]
+set halo_cd_top    [expr $vert_pitch * 4]
+set halo_reg_left   [expr $hori_pitch * 5]
+set halo_reg_bottom [expr $vert_pitch * 1]
+set halo_reg_right  [expr $hori_pitch * 5]
+set halo_reg_top    [expr $vert_pitch * 1]
+
+# ========================================================================
+# Place DIC-CD (MAX: 2000um)
+# ========================================================================
+# --- DIC_CD_0
+set dic_cd_inst_name INTEL_DIC_CD_0
+set dic_cd_x         [snap_to_grid 1218 $hori_pitch]
+set dic_cd_y         [snap_to_grid 2283 $vert_pitch]
+addInst \
+    -cell $ADK_DIC_CELL_CD \
+    -inst $dic_cd_inst_name \
+    -loc "$dic_cd_x $dic_cd_y" \
+    -place_status fixed
+addHaloToBlock \
+    $halo_cd_left \
+    $halo_cd_bottom \
+    $halo_cd_right \
+    $halo_cd_top \
+    $dic_cd_inst_name \
+    -snapToSite
+# --- DIC_CD_1
+set dic_cd_inst_name INTEL_DIC_CD_1
+set dic_cd_x         [snap_to_grid 1218 $hori_pitch]
+set dic_cd_y         [snap_to_grid  313 $vert_pitch]
+addInst \
+    -cell $ADK_DIC_CELL_CD \
+    -inst $dic_cd_inst_name \
+    -loc "$dic_cd_x $dic_cd_y" \
+    -place_status fixed
+addHaloToBlock \
+    $halo_cd_left \
+    $halo_cd_bottom \
+    $halo_cd_right \
+    $halo_cd_top \
+    $dic_cd_inst_name \
+    -snapToSite
+
+# # --- DIC_CD_2
+# set dic_cd_inst_name INTEL_DIC_CD_2
+# set dic_cd_x         [snap_to_grid 1218 $hori_pitch]
+# set dic_cd_y         [snap_to_grid  345 $vert_pitch]
+# addInst \
+#     -cell $ADK_DIC_CELL_CD \
+#     -inst $dic_cd_inst_name \
+#     -loc "$dic_cd_x $dic_cd_y" \
+#     -place_status fixed
+# addHaloToBlock \
+#     $halo_cd_left \
+#     $halo_cd_bottom \
+#     $halo_cd_right \
+#     $halo_cd_top \
+#     $dic_cd_inst_name \
+#     -snapToSite
+
+# ========================================================================
+# Place DIC-REG (MAX: 1500um)
+# ========================================================================
+# --- DIC_REG_0
+set dic_reg_inst_name INTEL_DIC_REG_0
+set dic_reg_x [snap_to_grid    8 $hori_pitch]
+set dic_reg_y [snap_to_grid 2850 $vert_pitch]
+addInst \
+    -cell $ADK_DIC_CELL_REG \
+    -inst $dic_reg_inst_name \
+    -loc "$dic_reg_x $dic_reg_y" \
+    -place_status fixed
+addHaloToBlock \
+    $halo_reg_left \
+    $halo_reg_bottom \
+    $halo_reg_right \
+    $halo_reg_top \
+    $dic_reg_inst_name \
+    -snapToSite
+# --- DIC_REG_1
+set dic_reg_inst_name INTEL_DIC_REG_1
+set dic_reg_x [snap_to_grid    8 $hori_pitch]
+set dic_reg_y [snap_to_grid 1450 $vert_pitch]
+addInst \
+    -cell $ADK_DIC_CELL_REG \
+    -inst $dic_reg_inst_name \
+    -loc "$dic_reg_x $dic_reg_y" \
+    -place_status fixed
+addHaloToBlock \
+    $halo_reg_left \
+    $halo_reg_bottom \
+    $halo_reg_right \
+    $halo_reg_top \
+    $dic_reg_inst_name \
+    -snapToSite
+# --- DIC_REG_2
+set dic_reg_inst_name INTEL_DIC_REG_2
+set dic_reg_x [snap_to_grid    8 $hori_pitch]
+set dic_reg_y [snap_to_grid    8 $vert_pitch]
+addInst \
+    -cell $ADK_DIC_CELL_REG \
+    -inst $dic_reg_inst_name \
+    -loc "$dic_reg_x $dic_reg_y" \
+    -place_status fixed
+addHaloToBlock \
+    $halo_reg_left \
+    $halo_reg_bottom \
+    $halo_reg_right \
+    $halo_reg_top \
+    $dic_reg_inst_name \
+    -snapToSite
+    

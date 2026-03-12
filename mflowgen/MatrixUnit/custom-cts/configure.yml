@@ -1,14 +1,14 @@
 #=========================================================================
-# Custom Scripts -- power
+# Custom Scripts -- custom-cts-additional-setup.tcl
 #=========================================================================
 
-name: custom-power-mu
+name: custom-cts
 
 #-------------------------------------------------------------------------
-# Inputs and Outputs
+# inputs and outputs
 #-------------------------------------------------------------------------
 
 outputs:
-  - globalnetconnect.tcl
-  - power-strategy.tcl
+  - custom-cts-additional-setup.tcl
+
 
