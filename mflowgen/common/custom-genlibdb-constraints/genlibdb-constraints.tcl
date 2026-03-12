@@ -14,7 +14,8 @@
 # create a loop in the tile_array level
 # (dangerous: only disable these during libdb generation)
 puts "\[genlibdb-constraints.tcl\] Setting paths from SB-inputs to SB-outputs to be false paths."
-set_false_path -from [get_ports SB* -filter {direction == in}] -to [get_ports SB* -filter {direction == out}]
+# set_false_path -from [get_ports SB* -filter {direction == in}] -to [get_ports SB* -filter {direction == out}]
+set_false_path -from [get_ports SB*] -to [get_ports SB*]
 
 # We don't want to analyze the full combinational path through PE/MEM core in tile_array level 
 set PE_core_name PE_inst0

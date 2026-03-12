@@ -54,7 +54,8 @@ proc carve_out_special_layer_in { box layer_name layer_width } {
 
 # carve out the special layer over macros
 # get the list of macros in the design
-set macro_list [get_db insts -if {.base_cell.base_class == block}]
+# Skip the ProcessingElement macros
+set macro_list [get_db insts -if {.base_cell.base_class == block && .base_cell.name != ProcessingElement}]
 foreach macro $macro_list {
   # macro may have hierarchy, so we need to get the last element and use it as the regex filter
   # ex: insts:top/all/the/way/down/to/this/macro

@@ -35,7 +35,8 @@ keywords = [
     "set_input_transition",
     "set_max_transition",
     "set_max_delay",
-    "set_min_delay"
+    "set_min_delay",
+    "set_clock_uncertainty"
 ]
 regex_prefix = "(" + "|".join(keywords) + ")"
 

@@ -68,13 +68,14 @@ flags+=" -v"
 [ "$include_matrix_unit" == True ] && flags+=" --using-matrix-unit"
 [ "$include_matrix_unit" == True ] && flags+=" --mu-datawidth 16"
 [ "$include_matrix_unit" == True ] && flags+=" --give-north-io-sbs"
-[ "$include_matrix_unit" == True ] && flags+=" --num-fabric-cols-removed 8"
+[ "$include_matrix_unit" == True ] && flags+=" --num-fabric-cols-removed 12"
 [ "$include_matrix_unit" == True ] && flags+=" --mu-oc-0 32"
 [ "$include_matrix_unit" == True ] && flags+=" --include-E64-hw"
 [ "$include_matrix_unit" == True ] && flags+=" --include-multi-bank-hw"
 [ "$include_matrix_unit" == True ] && flags+=" --include-mu-glb-hw"
 [ "$include_matrix_unit" == True ] && flags+=" --use-non-split-fifos"
 [ "$include_matrix_unit" == True ] && flags+=" --exclude-glb-ring-switch"
+[ "$include_matrix_unit" == True ] && flags+=" --pipeline-mu2cgra"
 
 # Use aha docker container for all dependencies
 if [ "$use_container" == True ]; then
@@ -166,38 +167,6 @@ if [ "$use_container" == True ]; then
         docker cp ./garnet $container_name:/aha/garnet
       fi
       
-      # Update container for amber config if necessary
-      if [ "$WHICH_SOC" == "amber" ]; then
-          echo "+++ Updating container with amber updates"
-
-          # E.g. updates="cd /aha/garnet   && git checkout 9982932;
-          #               cd /aha/gemstone && git checkout 28b10a6;
-          #               cd /aha/kratos   && git checkout 873b369;
-          #               cd /aha/lake     && git checkout 837ffe1;"
-
-          amber_updates=`get_amber_updates`
-
-          echo "$amber_updates"
-          echo "------------------------------------------------------------------------"
-
-          echo "BEFORE:"
-          docker exec $container_name /bin/bash -c "git submodule status"
-          echo "------------------------------------------------------------------------"
-
-          echo "$amber_updates" | while read u; do 
-              [ "$u" == "" ] && continue    # Skip blank lines
-              echo docker exec CONTAINER /bin/bash -c \"$u\"
-              docker exec $container_name /bin/bash -c "$u"
-              printf "\n"
-          done
-
-          echo "------------------------------------------------------------------------"
-          echo "AFTER:"
-          docker exec $container_name /bin/bash -c "git submodule status"
-          echo "------------------------------------------------------------------------"
-          echo "--- continue..."
-      fi
-      
       # run garnet.py in container and concat all verilog outputs
       echo "---docker exec $container_name"
 
@@ -286,18 +255,6 @@ if [ "$use_container" == True ]; then
         cat ../outputs/mu.v         >> ../outputs/design.v
       else
         docker cp $container_name:/aha/garnet/design.v ../outputs/design.v
-      fi
-
-      # FIXME there might be a more elegant solution for this, see e.g.
-      # /aha/gemstone/tests/common/rtl/{AN_CELL.sv,AO_CELL.sv}
-      if [ "$WHICH_SOC" == "amber" ]; then
-          echo '--- AN_CELL hack'
-          # docker cp $container_name:/aha/garnet/design.v ../outputs/tmp$$.v
-          cat ../outputs/design.v \
-                 | sed 's/AN_CELL inst/ AN2D0BWP16P90 inst/' \
-                 | sed 's/AO_CELL inst/ AO22D0BWP16P90 inst/' \
-                 > ../outputs/tmp$$.v
-          mv ../outputs/tmp$$.v ../outputs/design.v
       fi
 
       if [ $glb_only == True ]; then

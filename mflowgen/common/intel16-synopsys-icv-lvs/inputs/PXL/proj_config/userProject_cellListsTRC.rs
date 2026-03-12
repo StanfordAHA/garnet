@@ -58,6 +58,8 @@ oaConstructs2Explode = {
 "ip224uhdlp1p11rf_512x32m4b2c1s0_t0r0p0d0a1m1h_c2229srstsphdclp_cssatimctrlmid",
 "ip224uhdlp1p11rf_4096x64m4b2c1s1_t0r0p0d0a1m1h_c2229srstsphdclp_cssatimctrlmid",
 "ip224uhdlp1p11rf_8192x32m8b2c1s1_t0r0p0d0a1m1h_c2229srstsphdclp_cssatimctrlmid",
+"ip224uhdlp1p11rf_1024x64m4b2c1s0_t0r0p0d0a1m1h_c2229srstsphdclp_cssatimctrlmid",
+"ip224rfsbhpm1r1w1024x64m2_c22p61rfsbhpm1r1wleaf_cntl512x2core",
 "gpio_1v2_e1__sdio1v8_logic"
 };
 

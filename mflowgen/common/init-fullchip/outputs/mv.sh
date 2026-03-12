@@ -1,0 +1,10 @@
+cp add-welltaps-for-pad-latchup.tcl /sim/pohan/zircon/garnet/mflowgen/full_chip/custom-init/outputs
+cp alignment-cells.tcl              /sim/pohan/zircon/garnet/mflowgen/full_chip/custom-init/outputs
+cp attach-results-to-outputs.tcl    /sim/pohan/zircon/garnet/mflowgen/full_chip/custom-init/outputs
+cp check-bumps.tcl                  /sim/pohan/zircon/garnet/mflowgen/full_chip/custom-init/outputs
+cp fcroute-extra-config.cfg         /sim/pohan/zircon/garnet/mflowgen/full_chip/custom-init/outputs
+cp floorplan.tcl                    /sim/pohan/zircon/garnet/mflowgen/full_chip/custom-init/outputs
+cp gen-bumps.tcl                    /sim/pohan/zircon/garnet/mflowgen/full_chip/custom-init/outputs
+cp io-fillers.tcl                   /sim/pohan/zircon/garnet/mflowgen/full_chip/custom-init/outputs
+cp route-bumps.tcl                  /sim/pohan/zircon/garnet/mflowgen/full_chip/custom-init/outputs
+cp sealring.tcl                     /sim/pohan/zircon/garnet/mflowgen/full_chip/custom-init/outputs
