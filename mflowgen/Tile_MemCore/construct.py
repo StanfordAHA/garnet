@@ -29,7 +29,7 @@ def construct():
   parameters = {
     'construct_path'      : __file__,
     'design_name'         : 'Tile_MemCore',
-    'clock_period'        : 1.1 * 1000,
+    'clock_period'        : 2.0 * 1000,
     'adk'                 : adk_name,
     'adk_view'            : adk_view,
     'adk_stdcell'         : 'b0m_6t_108pp',
@@ -51,13 +51,8 @@ def construct():
     # RTL Generation
     'interconnect_only'   : False,
     'rtl_docker_image'    : 'default', # Current default is 'stanfordaha/garnet:latest'
-    # Power analysis
-    "use_sdf"             : False, # uses sdf but not the way it is in xrun node
-    'app_to_run'          : 'tests/conv_3_3',
-    'saif_instance'       : 'testbench/dut',
-    'testbench_name'      : 'testbench',
-    'strip_path'          : 'testbench/dut',
-    'drc_env_setup'       : 'drcenv-block.sh'
+    # Useful Skew (CTS)
+    'useful_skew'         : True
   }
 
   #-----------------------------------------------------------------------
@@ -79,12 +74,9 @@ def construct():
   custom_flowgen_setup = Step( this_dir + '/custom-flowgen-setup'                   )
   custom_cts           = Step( this_dir + '/custom-cts'                             )
   gen_sram             = Step( this_dir + '/../common/gen_sram_macro'               )
-  custom_lvs           = Step( this_dir + '/custom-lvs-rules'                       )
   custom_power         = Step( this_dir + '/../common/custom-power-leaf'            )
-  testbench            = Step( this_dir + '/../common/testbench'                    )
-  application          = Step( this_dir + '/../common/application'                  )
+  custom_pre_signoff   = Step( this_dir + '/custom-pre-signoff'                     )
 
-  post_pnr_power       = Step( this_dir + '/../common/tile-post-pnr-power'          )
   drc                  = Step( this_dir + '/../common/intel16-synopsys-icv-drc'     )
   lvs                  = Step( this_dir + '/../common/intel16-synopsys-icv-lvs'     )
   custom_hack_sdc_unit = Step( this_dir + '/../common/custom-hack-sdc-unit'         )
@@ -105,7 +97,6 @@ def construct():
   pt_signoff           = Step( 'synopsys-pt-timing-signoff',           default=True )
   genlibdb_tt          = Step( 'synopsys-ptpx-genlibdb-r7cad-hack',    default=True )
   genlibdb_ff          = Step( 'synopsys-ptpx-genlibdb-r7cad-hack',    default=True )
-  debugcalibre         = Step( 'cadence-innovus-debug-calibre',        default=True )
 
   genlibdb_tt.set_name( 'synopsys-ptpx-genlibdb-r7cad-hack-tt' )
   genlibdb_ff.set_name( 'synopsys-ptpx-genlibdb-r7cad-hack-ff' )
@@ -136,6 +127,7 @@ def construct():
   # Add extra input edges to innovus steps that need custom tweaks
   init.extend_inputs( custom_init.all_outputs() )
   power.extend_inputs( custom_power.all_outputs() )
+  signoff.extend_inputs( custom_pre_signoff.all_outputs() )
 
   # Add extra input edges to genlibdb for loop-breaking constraints
   genlibdb_tt.extend_inputs( genlibdb_constraints.all_outputs() )
@@ -203,6 +195,7 @@ def construct():
   g.add_step( custom_init          )
   g.add_step( power                )
   g.add_step( custom_power         )
+  g.add_step( custom_pre_signoff   )
   g.add_step( place                )
   g.add_step( cts                  )
   g.add_step( postcts_hold         )
@@ -216,11 +209,6 @@ def construct():
   g.add_step( genlibdb_ff          )
   g.add_step( drc                  )
   g.add_step( lvs                  )
-  g.add_step( custom_lvs           )
-  g.add_step( debugcalibre         )
-  g.add_step( application          )
-  g.add_step( testbench            )
-  g.add_step( post_pnr_power       )
   g.add_step( custom_cts           )
   g.add_step( custom_hack_sdc_unit )
 
@@ -277,7 +265,7 @@ def construct():
   g.connect_by_name( iflow,                signoff        )
   g.connect_by_name( custom_init,          init           )
   g.connect_by_name( custom_power,         power          )
-  g.connect_by_name( custom_lvs,           lvs            )
+  g.connect_by_name( custom_pre_signoff,   signoff        )
   g.connect_by_name( init,                 power          )
   g.connect_by_name( power,                place          )
   g.connect_by_name( place,                cts            )
@@ -296,16 +284,6 @@ def construct():
   g.connect_by_name( genlibdb_constraints, genlibdb_ff    )
   g.connect_by_name( adk,                  pt_signoff     )
   g.connect_by_name( signoff,              pt_signoff     )
-  g.connect_by_name( application,          testbench      )
-  g.connect_by_name( application,          post_pnr_power )
-  g.connect_by_name( gen_sram,             post_pnr_power )
-  g.connect_by_name( signoff,              post_pnr_power )
-  g.connect_by_name( pt_signoff,           post_pnr_power )
-  g.connect_by_name( testbench,            post_pnr_power )
-  g.connect_by_name( adk,                  debugcalibre   )
-  g.connect_by_name( synth,                debugcalibre   )
-  g.connect_by_name( iflow,                debugcalibre   )
-  g.connect_by_name( signoff,              debugcalibre   )
   g.connect_by_name( custom_cts,           cts            )
 
   # Connect spef to genlibdb
@@ -376,6 +354,11 @@ def construct():
   genlibdb_ff.update_params({
     'corner': 'bc'
   })
+
+  # Add signoff ECO routing
+  order = signoff.get_param( 'order' )
+  order = ['pre-signoff.tcl'] + order
+  signoff.set_param( 'order', order )
 
   # Add SDC unit hack before genlibdb and pt_signoff
   sdc_hack_command = "python inputs/hack_sdc_unit.py inputs/design.pt.sdc"
