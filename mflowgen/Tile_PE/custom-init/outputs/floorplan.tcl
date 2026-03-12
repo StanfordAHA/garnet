@@ -17,8 +17,11 @@ set core_margin_bottom $tech_pitch_y
 set core_margin_right  $tech_pitch_x
 set core_margin_top    $tech_pitch_y
 
-set core_width  [expr 180 * $tech_pitch_x - $core_margin_left - $core_margin_right]
-set core_height [expr 300 * $tech_pitch_y - $core_margin_top - $core_margin_bottom]
+# try release some space horizontally
+# (2*0.54) per pe, total 1.08*15 = 16.2um
+# set core_width  [expr 180 * $tech_pitch_x - $core_margin_left - $core_margin_right]
+set core_width  [expr 178 * $tech_pitch_x - $core_margin_left - $core_margin_right]
+set core_height [expr 330 * $tech_pitch_y - $core_margin_top - $core_margin_bottom]
 #-------------------------------------------------------------------------
 # Floorplan
 #-------------------------------------------------------------------------
