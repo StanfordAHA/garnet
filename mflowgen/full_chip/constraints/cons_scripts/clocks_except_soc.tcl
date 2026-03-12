@@ -119,6 +119,16 @@ foreach dev $dev_names {
   set_false_path -through [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_${dev}_gated_en/E]
 }
 
+# Somehow, in Zircon the clock gate instance clock port is not connected to the clock tree
+# so, there is a huge clock skew between the clock enable and the clock signal
+# This causes a huge setup time violation
+# I saw Gedeon set false path to these enable signals, but I don't know why it's not applied
+# to generally all AhaClockGate instances
+# Because we're running out of time for the tapeout, I will set false path to all AhaClockGate instances
+set all_aha_clock_gate_instances [get_cells -hier -filter {ref_name =~ AhaClockGate}]
+set all_aha_clock_gate_en_pins [get_pins -of_objects $all_aha_clock_gate_instances -filter {name =~ E}]
+set_false_path -through $all_aha_clock_gate_en_pins
+
 # ------------------------------------------------------------------------------
 # TLX Training
 # ------------------------------------------------------------------------------

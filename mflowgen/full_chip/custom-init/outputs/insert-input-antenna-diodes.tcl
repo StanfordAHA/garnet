@@ -1,1 +1,0 @@
-../../../common/init-scripts/insert-input-antenna-diodes.tcl

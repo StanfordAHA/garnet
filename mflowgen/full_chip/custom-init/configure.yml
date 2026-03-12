@@ -9,14 +9,21 @@ name: custom-init
 #-------------------------------------------------------------------------
 
 outputs:
-  - place-macros.tcl
-  - dont-touch.tcl
-  - innovus-pnr-config.tcl
+  - stylus-compatibility-procs.tcl
+  - floorplan.tcl
+  - create-route-blockage-io-pads.tcl
+  - io-fillers.tcl
   - create-rows.tcl
   - add-tracks.tcl
-  - create-boundary-blockage.tcl
-  - create-special-grid.tcl
-  - place-dic-cells-tma2.tcl
-  - carve-out-special-grid-fullchip.tcl
+  - gen-bumps.tcl
+  - route-bumps.tcl
+  - innovus-pnr-config.tcl
+  - place-macros.tcl
+  - place-soc-mem.tcl
+  - place-glb-top.tcl
+  - place-io-tile.tcl
+  - place-matrix-unit.tcl
+  - place-tile-array.tcl
   - add-welltaps-for-pad-latchup.tcl
-  # - insert-input-antenna-diodes.tcl
+  - create-special-grid.tcl
+  - carve-out-special-grid-fullchip.tcl

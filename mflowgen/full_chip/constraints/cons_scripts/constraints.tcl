@@ -47,3 +47,13 @@ source -echo -verbose inputs/cons_scripts/garnet_constraints.tcl
 # Set Design Context
 # ------------------------------------------------------------------------------
 source -echo -verbose inputs/cons_scripts/design_context.tcl
+
+# ------------------------------------------------------------------------------
+# Constraints for Tile Array
+# ------------------------------------------------------------------------------
+source -echo -verbose inputs/cons_scripts/interconnect_constraints.tcl
+
+# ------------------------------------------------------------------------------
+# Disable Timing to fix combinational loops
+# ------------------------------------------------------------------------------
+source -echo -verbose inputs/cons_scripts/disable-tile-sb-timing.tcl

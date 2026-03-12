@@ -49,8 +49,8 @@ set tlx_fwd_outputs [list $port_names(tlx_fwd_payload_valid) \
 
 
 # Output Constraints
-set_output_delay -max [expr -0.500*1000] -clock [get_clocks tlx_fwd_strobe] [get_ports $tlx_fwd_outputs]
-set_output_delay -min [expr 0.500*1000] -clock [get_clocks tlx_fwd_strobe] [get_ports $tlx_fwd_outputs]
+set_output_delay -max [expr -0.1000*1000] -clock [get_clocks tlx_fwd_strobe] [get_ports $tlx_fwd_outputs]
+set_output_delay -min [expr 0.1000*1000] -clock [get_clocks tlx_fwd_strobe] [get_ports $tlx_fwd_outputs]
 
 set_multicycle_path -setup 0 -from [get_clocks tlx_fwd_gclk] -to [get_clocks tlx_fwd_strobe]
 set_multicycle_path -hold -1 -from [get_clocks tlx_fwd_gclk] -to [get_clocks tlx_fwd_strobe]

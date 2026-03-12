@@ -1,14 +1,12 @@
 #=========================================================================
-# Custom Scripts -- custom-cts-additional-setup.tcl
+# Custom Scripts -- pre-signoff
 #=========================================================================
 
-name: custom-cts
+name: custom-pre-signoff
 
 #-------------------------------------------------------------------------
-# inputs and outputs
+# Inputs and Outputs
 #-------------------------------------------------------------------------
 
 outputs:
-  - custom-cts-additional-setup.tcl
-
-
+  - pre-signoff.tcl

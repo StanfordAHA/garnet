@@ -28,19 +28,16 @@ def construct():
   parameters = {
     'construct_path'           : __file__,
     'design_name'              : 'GarnetSOC_pad_frame',
-    'clock_period'             : 1.1 * 1000,
+    'clock_period'             : 2.5 * 1000,
     'adk'                      : adk_name,
     'adk_view'                 : adk_view,
     'adk_stdcell'              : 'b0m_6t_108pp',
     'adk_libmodel'             : 'nldm',
     # Synthesis
-    'flatten_effort'           : 0,
+    'flatten_effort'           : 3,
     'topographical'            : True,
     # CTS
-    # True: 1201 build
-    # False: 1202 build
-    'set_cts_insertion_delay'  : True,
-    'useful_skew'              : False,
+    'useful_skew'              : True,
     # RTL Generation
     'array_width'              : 28,
     'array_height'             : 16,
@@ -65,8 +62,8 @@ def construct():
     'TLX_FWD_DATA_LO_WIDTH'    : 16,
     'TLX_REV_DATA_LO_WIDTH'    : 45,
     'nthreads'                 : 16,
-    # Testbench
-    'cgra_apps'                : ["tests/conv_1_2", "tests/conv_2_1"]
+    # Pipeline stage insertion
+    'pipeline_config_interval' : 8
   }
 
   # Four 32KB SRAM macros connected to the NIC400 bus
@@ -96,14 +93,19 @@ def construct():
       'quality-of-life.tcl',
       'stylus-compatibility-procs.tcl',
       'floorplan.tcl',
+      'io_pad_placement.tcl',
+      'create-route-blockage-io-pads.tcl',
       'io-fillers.tcl',
       'create-rows.tcl',
       'add-tracks.tcl',
-      # 'place-dic-cells-tma2.tcl',
       'gen-bumps.tcl',
       'route-bumps.tcl',
       'innovus-pnr-config.tcl',
-      'place-macros.tcl',
+      'place-soc-mem.tcl',
+      'place-glb-top.tcl',
+      'place-io-tile.tcl',
+      'place-matrix-unit.tcl',
+      'place-tile-array.tcl',
       'add-welltaps-for-pad-latchup.tcl',
       'create-special-grid.tcl',
       'carve-out-special-grid-fullchip.tcl'
@@ -125,12 +127,11 @@ def construct():
   gen_sram_nic         = Step( f'{this_dir}/../common/gen_sram_macro'           )
   gen_sram_cpu         = Step( f'{this_dir}/../common/gen_sram_macro'           )
   read_design          = Step( f'{this_dir}/../common/fc-custom-read-design'    )
-  custom_power         = Step( f'{this_dir}/../common/custom-power-chip'        )
-  init_fc              = Step( f'{this_dir}/../common/init-fullchip'            )
+  custom_power         = Step( f'{this_dir}/custom-power-chip'                  )
   constraints          = Step( f'{this_dir}/constraints'                        )
   custom_init          = Step( f'{this_dir}/custom-init'                        )
   custom_cts           = Step( f'{this_dir}/custom-cts'                         )
-  io_file              = Step( f'{this_dir}/io_file'                            )
+  custom_pre_signoff   = Step( f'{this_dir}/custom-pre-signoff'                 )
   lvs                  = Step( f'{this_dir}/../common/intel16-synopsys-icv-lvs' )
   custom_flowgen_setup = Step( f'{this_dir}/custom-flowgen-setup'               )
   custom_signoff       = Step( f'{this_dir}/custom-signoff'                     )
@@ -140,20 +141,12 @@ def construct():
   gen_sram_cpu.set_name( 'gen_sram_macro_cpu' )
 
   # Block-level designs
-  tile_array   = Subgraph(f'{this_dir}/../tile_array',             'tile_array')
-  glb_top      = Subgraph(f'{this_dir}/../glb_top',                'glb_top')
-  matrix_unit  = Subgraph(f'{this_dir}/../MatrixUnit',             'MatrixUnit')
-  tapeout_flow = Subgraph(f'{this_dir}/../intel-usp-tapeout-flow', 'tapeout-flow')
-
-  # CGRA simulation
-  cgra_rtl_sim_compile  = Step( f'{this_dir}/cgra_rtl_sim_compile' )
-  cgra_rtl_sim_run      = Step( f'{this_dir}/cgra_rtl_sim_run'     )
-  cgra_sim_build        = Step( f'{this_dir}/cgra_sim_build'       )
-  # cgra_gl_sim_compile   = Step( this_dir + '/cgra_gl_sim_compile'  )
-  # cgra_gl_sim_run       = Step( this_dir + '/cgra_gl_sim_run'      )
-  # cgra_gl_ptpx          = Step( this_dir + '/cgra_gl_ptpx'         )
-  # cgra_rtl_sim_verdict  = Step( this_dir + '/cgra_rtl_sim_verdict' )
-  # cgra_gl_sim_verdict   = Step( this_dir + '/cgra_gl_sim_verdict'  )
+  Tile_IOCoreReadyValid = Subgraph(f'{this_dir}/../Tile_IOCoreReadyValid',  'Tile_IOCoreReadyValid')
+  Tile_PE               = Subgraph(f'{this_dir}/../Tile_PE',                'Tile_PE'              )
+  Tile_MemCore          = Subgraph(f'{this_dir}/../Tile_MemCore',           'Tile_MemCore'         )
+  global_buffer         = Subgraph(f'{this_dir}/../glb_top',                'glb_top'              )
+  matrix_unit           = Subgraph(f'{this_dir}/../MatrixUnit',             'MatrixUnit'           )
+  tapeout_flow          = Subgraph(f'{this_dir}/../intel-usp-tapeout-flow', 'tapeout-flow'         )
 
   # Default steps
   synth          = Step( 'cadence-genus-synthesis',          default=True )
@@ -169,6 +162,7 @@ def construct():
   postroute_hold = Step( 'cadence-innovus-postroute_hold',   default=True )
   signoff        = Step( 'cadence-innovus-signoff',          default=True )
   pt_signoff     = Step( 'synopsys-pt-timing-signoff',       default=True )
+  pt_signoff_flat= Step( 'synopsys-pt-timing-signoff-flat',  default=True )
   debugcalibre   = Step( 'cadence-innovus-debug-calibre',    default=True )
 
   # These steps need timing info for cgra tiles
@@ -186,102 +180,123 @@ def construct():
     signoff
   ]
   for step in hier_steps:
-    step.extend_inputs( ['tile_array-typical.lib', 'tile_array-bc.lib', 'tile_array.lef'] )
-    step.extend_inputs( ['glb_top-typical.lib',    'glb_top-bc.lib',    'glb_top.lef'] )
-    step.extend_inputs( ['MatrixUnit-typical.lib', 'MatrixUnit-bc.lib', 'MatrixUnit.lef'] )
-    step.extend_inputs( ['sram_nic-typical.lib',   'sram_nic-bc.lib',   'sram_nic.lef'] )
-    step.extend_inputs( ['sram_cpu-typical.lib',   'sram_cpu-bc.lib',   'sram_cpu.lef'] )
+    step.extend_inputs( ['Tile_IOCoreReadyValid-typical.lib', 'Tile_IOCoreReadyValid-bc.lib', 'Tile_IOCoreReadyValid.lef'] )
+    step.extend_inputs( ['Tile_PE-typical.lib',               'Tile_PE-bc.lib',               'Tile_PE.lef'] )
+    step.extend_inputs( ['Tile_MemCore-typical.lib',          'Tile_MemCore-bc.lib',          'Tile_MemCore.lef'] )
+    step.extend_inputs( ['global_buffer-typical.lib',         'global_buffer-bc.lib',         'global_buffer.lef'] )
+    step.extend_inputs( ['MatrixUnitWrapper-typical.lib',     'MatrixUnitWrapper-bc.lib',     'MatrixUnitWrapper.lef'] )
+    step.extend_inputs( ['sram_nic-typical.lib',              'sram_nic-bc.lib',              'sram_nic.lef'] )
+    step.extend_inputs( ['sram_cpu-typical.lib',              'sram_cpu-bc.lib',              'sram_cpu.lef'] )
   
   # PTPX Signoff needs .db files only
-  pt_signoff.extend_inputs( ['tile_array-typical.db', 'tile_array-bc.db'] )
-  pt_signoff.extend_inputs( ['glb_top-typical.db',    'glb_top-bc.db'] )
-  pt_signoff.extend_inputs( ['MatrixUnit-typical.db', 'MatrixUnit-bc.db'] )
-  pt_signoff.extend_inputs( ['sram_nic-typical.db',   'sram_nic-bc.db'] )
-  pt_signoff.extend_inputs( ['sram_cpu-typical.db',   'sram_cpu-bc.db'] )
+  pt_signoff.extend_inputs( ['Tile_IOCoreReadyValid-typical.db', 'Tile_IOCoreReadyValid-bc.db'] )
+  pt_signoff.extend_inputs( ['Tile_PE-typical.db',               'Tile_PE-bc.db'] )
+  pt_signoff.extend_inputs( ['Tile_MemCore-typical.db',          'Tile_MemCore-bc.db'] )
+  pt_signoff.extend_inputs( ['global_buffer-typical.db',         'global_buffer-bc.db'] )
+  pt_signoff.extend_inputs( ['MatrixUnitWrapper-typical.db',     'MatrixUnitWrapper-bc.db'] )
+  pt_signoff.extend_inputs( ['sram_nic-typical.db',              'sram_nic-bc.db'] )
+  pt_signoff.extend_inputs( ['sram_cpu-typical.db',              'sram_cpu-bc.db'] )
+
+  pt_signoff_flat.extend_inputs( ['Tile_IOCoreReadyValid.vcs.v', 'Tile_IOCoreReadyValid.pt.sdc', 'Tile_IOCoreReadyValid.spef.gz'] )
+  pt_signoff_flat.extend_inputs( ['Tile_PE.vcs.v',               'Tile_PE.pt.sdc',               'Tile_PE.spef.gz'              ] )
+  pt_signoff_flat.extend_inputs( ['Tile_MemCore.vcs.v',          'Tile_MemCore.pt.sdc',          'Tile_MemCore.spef.gz'         ] )
+  pt_signoff_flat.extend_inputs( ['global_buffer.vcs.v',         'global_buffer.pt.sdc',         'global_buffer.spef.gz'        ] )
+  pt_signoff_flat.extend_inputs( ['MatrixUnitWrapper.vcs.v',     'MatrixUnitWrapper.pt.sdc',     'MatrixUnitWrapper.spef.gz'    ] )
+  pt_signoff_flat.extend_inputs( ['sram_nic-typical.db',         'sram_nic-bc.db'] )
+  pt_signoff_flat.extend_inputs( ['sram_cpu-typical.db',         'sram_cpu-bc.db'] )
+  pt_signoff_flat.extend_inputs( ['Tile_MemCore_sram-typical.db','Tile_MemCore_sram-bc.db'] )
+  pt_signoff_flat.extend_inputs( ['global_buffer_sram-typical.db','global_buffer_sram-bc.db'] )
+  pt_signoff_flat.extend_inputs( ['MatrixUnitWrapper_sram_iw-typical.db',   'MatrixUnitWrapper_sram_iw-bc.db'] )
+  pt_signoff_flat.extend_inputs( ['MatrixUnitWrapper_sram_accum-typical.db','MatrixUnitWrapper_sram_accum-bc.db'] )
+  pt_signoff_flat.extend_inputs( ['MatrixUnitWrapper_sram_si-typical.db',   'MatrixUnitWrapper_sram_si-bc.db'] )
+  pt_signoff_flat.extend_inputs( ['MatrixUnitWrapper_sram_sw-typical.db',   'MatrixUnitWrapper_sram_sw-bc.db'] )
 
   # Need all block oasis's to merge into the final layout
-  signoff.extend_inputs( ['tile_array.oas'] )
-  signoff.extend_inputs( ['glb_top.oas'] )
-  signoff.extend_inputs( ['MatrixUnit.oas'] )
+  signoff.extend_inputs( ['Tile_IOCoreReadyValid.oas'] )
+  signoff.extend_inputs( ['Tile_PE.oas'] )
+  signoff.extend_inputs( ['Tile_MemCore.oas'] )
+  signoff.extend_inputs( ['global_buffer.oas'] )
+  signoff.extend_inputs( ['MatrixUnitWrapper.oas'] )
   signoff.extend_inputs( ['sram_nic.oas'] )
   signoff.extend_inputs( ['sram_cpu.oas'] )
+  signoff.extend_inputs( custom_pre_signoff.all_outputs() )
 
   # Add extra input edges to innovus steps that need custom tweaks
   iflow.extend_inputs( custom_flowgen_setup.all_outputs() )
   init.extend_inputs( custom_init.all_outputs() )
-  init.extend_inputs( init_fc.all_outputs() )
+  init.extend_inputs( ['io_pad_placement.tcl'] )
+  # init.extend_inputs( init_fc.all_outputs() )
   power.extend_inputs( custom_power.all_outputs() )
 
   cts.extend_inputs( custom_cts.all_outputs() )
 
-  synth.extend_inputs( soc_rtl.all_outputs() )
+  synth.extend_inputs( ['rtl', 'rtl-scripts'] )
   synth.extend_inputs( read_design.all_outputs() )
   synth.extend_inputs( ["cons_scripts"] )
 
   # Need LVS verilog files for both tile types to do LVS
-
-  lvs.extend_inputs( ['tile_array.lvs.v'] )
-  lvs.extend_inputs( ['glb_top.lvs.v'] )
-  lvs.extend_inputs( ['MatrixUnit.lvs.v'] )
+  lvs.extend_inputs( ['Tile_IOCoreReadyValid.lvs.v'] )
+  lvs.extend_inputs( ['Tile_PE.lvs.v'] )
+  lvs.extend_inputs( ['Tile_MemCore.lvs.v'] )
+  lvs.extend_inputs( ['global_buffer.lvs.v'] )
+  lvs.extend_inputs( ['MatrixUnitWrapper.lvs.v'] )
 
   # Need sram spice file for LVS
-
-  lvs.extend_inputs( ['glb_top_sram.spi'] )
-  lvs.extend_inputs( ['tile_array_sram.spi'] )
-
-  # TODO: Need MatrixUnit spice file for LVS
-  # lvs.extend_inputs( ['MatrixUnit_sram_input.spi'] )
-  # lvs.extend_inputs( ['MatrixUnit_sram_weight.spi'] )
-  # lvs.extend_inputs( ['MatrixUnit_sram_accum.spi'] )
+  lvs.extend_inputs( ['global_buffer_sram.spi'] )
+  lvs.extend_inputs( ['Tile_MemCore_sram.spi'] )
+  lvs.extend_inputs( ['MatrixUnitWrapper_sram_accum.spi'] )
+  lvs.extend_inputs( ['MatrixUnitWrapper_sram_iw.spi'] )
+  lvs.extend_inputs( ['MatrixUnitWrapper_sram_si.spi'] )
+  lvs.extend_inputs( ['MatrixUnitWrapper_sram_sw.spi'] )
 
   # signoff extend inputs
   signoff.extend_inputs( custom_signoff.all_outputs() )
 
   # SDC hack for the genlibdb and pt_signoff steps
   pt_signoff.extend_inputs( custom_hack_sdc_unit.all_outputs() )
+  pt_signoff_flat.extend_inputs( custom_hack_sdc_unit.all_outputs() )
 
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
   #-----------------------------------------------------------------------
 
-  g.add_step( info              )
-  g.add_step( rtl               )
-  g.add_step( soc_rtl           )
-  g.add_step( gen_sram_nic      )
-  g.add_step( gen_sram_cpu      )
-  g.add_step( tile_array        )
-  g.add_step( glb_top           )
-  g.add_step( matrix_unit       )
-  g.add_step( constraints       )
-  g.add_step( read_design       )
-  g.add_step( synth             )
-  g.add_step( custom_flowgen_setup )
-  g.add_step( custom_signoff    )
-  g.add_step( iflow             )
-  g.add_step( init              )
-  g.add_step( init_fc           )
-  g.add_step( io_file           )
-  g.add_step( custom_init       )
-  g.add_step( power             )
-  g.add_step( custom_power      )
-  g.add_step( place             )
-  g.add_step( cts               )
-  g.add_step( postcts_hold      )
-  g.add_step( route             )
-  g.add_step( postroute         )
-  g.add_step( postroute_hold    )
-  g.add_step( signoff           )
-  g.add_step( pt_signoff        )
-  g.add_step( debugcalibre      )
-  g.add_step( lvs               )
-  g.add_step( tapeout_flow      )
-  g.add_step( custom_hack_sdc_unit )
+  g.add_step( info                  )
+  g.add_step( rtl                   )
+  g.add_step( soc_rtl               )
+  g.add_step( gen_sram_nic          )
+  g.add_step( gen_sram_cpu          )
+  g.add_step( Tile_IOCoreReadyValid )
+  g.add_step( Tile_PE               )
+  g.add_step( Tile_MemCore          )
+  g.add_step( global_buffer         )
+  g.add_step( matrix_unit           )
+  g.add_step( constraints           )
+  g.add_step( read_design           )
+  g.add_step( synth                 )
+  g.add_step( custom_flowgen_setup  )
+  g.add_step( custom_signoff        )
+  g.add_step( custom_pre_signoff    )
+  g.add_step( iflow                 )
+  g.add_step( init                  )
+  g.add_step( custom_init           )
+  g.add_step( power                 )
+  g.add_step( custom_power          )
+  g.add_step( place                 )
+  g.add_step( cts                   )
+  g.add_step( postcts_hold          )
+  g.add_step( route                 )
+  g.add_step( postroute             )
+  g.add_step( postroute_hold        )
+  g.add_step( signoff               )
+  g.add_step( pt_signoff            )
+  g.add_step( pt_signoff_flat       )
+  g.add_step( debugcalibre          )
+  g.add_step( lvs                   )
+  g.add_step( tapeout_flow          )
+  g.add_step( custom_hack_sdc_unit  )
 
   # App test nodes
-  g.add_step( cgra_rtl_sim_compile )
-  g.add_step( cgra_sim_build       )
-  g.add_step( cgra_rtl_sim_run     )
-  g.add_step( custom_cts        )
+  g.add_step( custom_cts            )
 
   #-----------------------------------------------------------------------
   # Graph -- Add edges
@@ -303,18 +318,11 @@ def construct():
   g.connect_by_name( adk,      postroute_hold )
   g.connect_by_name( adk,      signoff        )
   g.connect_by_name( adk,      lvs            )
-  # Connect RTL verification nodes
-  g.connect_by_name( rtl, cgra_rtl_sim_compile )
-  g.connect_by_name( cgra_sim_build, cgra_rtl_sim_run )
-  g.connect_by_name( cgra_rtl_sim_compile, cgra_rtl_sim_run )
-
-  # Connect GL verification nodes
-  # g.connect_by_name( signoff, cgra_gl_sim_compile )
 
   # All of the blocks within this hierarchical design
   # Skip these if we're doing soc_only
   if parameters['soc_only'] == False:
-      blocks = [tile_array, glb_top, matrix_unit]
+      blocks = [Tile_IOCoreReadyValid, Tile_PE, Tile_MemCore, global_buffer, matrix_unit]
       for block in blocks:
           g.connect_by_name( block, synth          )
           g.connect_by_name( block, iflow          )
@@ -328,19 +336,21 @@ def construct():
           g.connect_by_name( block, postroute_hold )
           g.connect_by_name( block, signoff        )
           g.connect_by_name( block, pt_signoff     )
+          g.connect_by_name( block, pt_signoff_flat)
           g.connect_by_name( block, lvs            )
-      # Tile_array can use rtl from rtl node
-      g.connect_by_name( rtl, tile_array )
-      # glb_top can use rtl from rtl node
-      g.connect_by_name( rtl, glb_top )
-      # MatrixUnit can use rtl from rtl node
-      g.connect_by_name( rtl, matrix_unit )
+      # These subgraphs can inherit the RTL from the top level
+      g.connect_by_name( rtl, Tile_IOCoreReadyValid )
+      g.connect_by_name( rtl, Tile_PE               )
+      g.connect_by_name( rtl, Tile_MemCore          )
+      g.connect_by_name( rtl, global_buffer         )
+      g.connect_by_name( rtl, matrix_unit           )
 
   g.connect_by_name( rtl,          synth          )
   g.connect_by_name( soc_rtl,      synth          )
   g.connect_by_name( constraints,  synth          )
   g.connect_by_name( read_design,  synth          )
-  g.connect_by_name( soc_rtl,      io_file        )
+  # g.connect_by_name( soc_rtl,      io_file        )
+  g.connect_by_name( soc_rtl,      init           ) # feed the io_pad_placement.tcl to init
   g.connect_by_name( synth,        iflow          )
   g.connect_by_name( synth,        init           )
   g.connect_by_name( synth,        power          )
@@ -362,7 +372,7 @@ def construct():
 
   # Connect gen_sram_macro node(s) to all downstream nodes that need them
   sram_nodes = [synth, iflow, init, power, place, cts, postcts_hold,
-                route, postroute, postroute_hold, signoff, pt_signoff]
+                route, postroute, postroute_hold, signoff, pt_signoff, pt_signoff_flat]
   for node in sram_nodes:
     for sram_output in gen_sram_nic.all_outputs():
       node_input = sram_output.replace('sram', 'sram_nic')
@@ -378,10 +388,6 @@ def construct():
   g.connect(gen_sram_nic.o('sram.spi'), lvs.i('sram_nic.spi'))
   g.connect(gen_sram_cpu.o('sram.spi'), lvs.i('sram_cpu.spi'))
 
-  # Full chip floorplan stuff
-  g.connect_by_name( io_file, init_fc )
-  g.connect_by_name( init_fc, init    )
-
   g.connect_by_name( init,           power          )
   g.connect_by_name( power,          place          )
   g.connect_by_name( place,          cts            )
@@ -391,9 +397,12 @@ def construct():
   g.connect_by_name( postroute,      postroute_hold )
   g.connect_by_name( postroute_hold, signoff        )
   g.connect_by_name( custom_signoff, signoff        )
+  g.connect_by_name( custom_pre_signoff,   signoff  )
 
   g.connect_by_name( adk,          pt_signoff   )
   g.connect_by_name( signoff,      pt_signoff   )
+  g.connect_by_name( adk,          pt_signoff_flat   )
+  g.connect_by_name( signoff,      pt_signoff_flat   )
 
   g.connect_by_name( adk,      debugcalibre )
   g.connect_by_name( synth,    debugcalibre )
@@ -403,6 +412,7 @@ def construct():
 
   # SDC hack for the genlibdb and pt_signoff steps
   g.connect_by_name( custom_hack_sdc_unit, pt_signoff )
+  g.connect_by_name( custom_hack_sdc_unit, pt_signoff_flat )
 
   #-----------------------------------------------------------------------
   # Parameterize
@@ -428,19 +438,12 @@ def construct():
   init.update_params({'soc_only': parameters['soc_only']}, True)
 
   init.update_params( {'order': init_order } )
+  init.update_params( {'pipeline_config_interval': parameters['pipeline_config_interval']}, True )
 
-  # glb_top parameters update
-  glb_top.update_params({'array_width': parameters['array_width']}, True)
-  glb_top.update_params({'glb_tile_mem_size': parameters['glb_tile_mem_size']}, True)
-  glb_top.update_params({'num_glb_tiles': parameters['num_glb_tiles']}, True)
-
-  # App test parameters update
-  cgra_rtl_sim_compile.update_params({'array_width': parameters['array_width']}, True)
-  cgra_rtl_sim_compile.update_params({'array_height': parameters['array_height']}, True)
-  cgra_rtl_sim_compile.update_params({'clock_period': parameters['clock_period']}, True)
-  cgra_rtl_sim_compile.update_params({'glb_tile_mem_size': parameters['glb_tile_mem_size']}, True)
-
-  cgra_rtl_sim_run.update_params({'cgra_apps': parameters['cgra_apps']}, True)
+  # global_buffer parameters update
+  global_buffer.update_params({'array_width': parameters['array_width']}, True)
+  global_buffer.update_params({'glb_tile_mem_size': parameters['glb_tile_mem_size']}, True)
+  global_buffer.update_params({'num_glb_tiles': parameters['num_glb_tiles']}, True)
 
   postroute_hold.update_params({'full_chip_build': True}, True)
 
@@ -450,12 +453,16 @@ def construct():
   order.insert(0, 'add-endcaps-welltaps.tcl' )
   power.update_params( { 'order': order } )
 
+  # update clock insertion delay in CTS
+  order = cts.get_param( 'order' )
+  order.insert(order.index('main.tcl'), 'custom-cts-additional-setup.tcl')
+  cts.set_param( 'order', order )
+
   # add custom signoff create physical pin script
   order = signoff.get_param('order')
   order.insert(0, 'create-physical-pin.tcl' )
+  order = ['pre-signoff.tcl'] + order
   signoff.update_params( { 'order': order } )
-
-  cts.update_params({'set_cts_insertion_delay': parameters['set_cts_insertion_delay']}, allow_new=True)
   
   # connect tapeout
   g.connect(signoff.o("design-merged.oas"), tapeout_flow.i("design.oas"))
@@ -475,6 +482,21 @@ def construct():
 
   # add the commands to the steps
   pt_signoff.pre_extend_commands( [sdc_hack_command, sdc_filter_command, sdc_pclock_command] )
+
+  pt_signoff_flat.pre_extend_commands( [
+    "python inputs/hack_sdc_unit.py inputs/design.pt.sdc",
+    "sed -i 's/-library [^ ]* //g'  inputs/design.pt.sdc",
+    "python inputs/hack_sdc_unit.py inputs/MatrixUnitWrapper.pt.sdc",
+    "sed -i 's/-library [^ ]* //g'  inputs/MatrixUnitWrapper.pt.sdc",
+    "python inputs/hack_sdc_unit.py inputs/Tile_IOCoreReadyValid.pt.sdc",
+    "sed -i 's/-library [^ ]* //g'  inputs/Tile_IOCoreReadyValid.pt.sdc",
+    "python inputs/hack_sdc_unit.py inputs/Tile_PE.pt.sdc",
+    "sed -i 's/-library [^ ]* //g'  inputs/Tile_PE.pt.sdc",
+    "python inputs/hack_sdc_unit.py inputs/Tile_MemCore.pt.sdc",
+    "sed -i 's/-library [^ ]* //g'  inputs/Tile_MemCore.pt.sdc",
+    "python inputs/hack_sdc_unit.py inputs/global_buffer.pt.sdc",
+    "sed -i 's/-library [^ ]* //g'  inputs/global_buffer.pt.sdc"
+  ] )
 
   return g
 
