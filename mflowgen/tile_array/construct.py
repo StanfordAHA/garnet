@@ -29,7 +29,7 @@ def construct():
   parameters = {
     'construct_path'    : __file__,
     'design_name'       : 'Interconnect',
-    'clock_period'      : 1.1 * 1000,
+    'clock_period'      : 4.0 * 1000,
     'adk'               : adk_name,
     'adk_view'          : adk_view,
     'adk_stdcell'       : 'b0m_6t_108pp',
