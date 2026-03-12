@@ -37,6 +37,14 @@ set array_width $env(array_width)
 set num_glb_tiles $env(num_glb_tiles)
 # flush output pins are added every $prr_size glb_tiles
 set prr_size 4
+# [Zircon] 4x bandwidth
+#   input  logic [1:0][3:0] [15:0]  strm_data_f2g,     //4x
+#   input  logic [1:0][3:0]         strm_data_f2g_vld, //4x
+#   output logic [1:0][3:0]         strm_data_f2g_rdy, //4x
+#   output logic [1:0][3:0] [15:0]  strm_data_g2f,     //4x
+#   output logic [1:0][3:0]         strm_data_g2f_vld, //4x
+#   input  logic [1:0][3:0]         strm_data_g2f_rdy, //4x
+set zircon_factor 4
 set cgra_data_width 16
 set cgra_cfg_addr_width 32
 set cgra_cfg_data_width 32
@@ -47,15 +55,18 @@ set all [sort_collection [get_ports] hierarchical_name]
 
 # per cgra tile ports
 for {set j 0} {$j < $array_width} {incr j} {
-    for {set k 0} {$k < $cgra_data_width} {incr k} {
-        lappend tile_ports($j) [get_object_name [get_ports "strm_data_f2g[[expr {$j*$cgra_data_width+$k}]]"]]
-        lappend tile_ports($j) [get_object_name [get_ports "strm_data_g2f[[expr {$j*$cgra_data_width+$k}]]"]]
-    }
-    lappend tile_ports($j) [get_object_name [get_ports "strm_data_f2g_rdy[$j]"]]
-    lappend tile_ports($j) [get_object_name [get_ports "strm_data_f2g_vld[$j]"]]
 
-    lappend tile_ports($j) [get_object_name [get_ports "strm_data_g2f_rdy[$j]"]]
-    lappend tile_ports($j) [get_object_name [get_ports "strm_data_g2f_vld[$j]"]]
+    # [Zircon] 4x bandwidth
+    for {set z 0} {$z < $zircon_factor} {incr z} {
+        for {set k 0} {$k < $cgra_data_width} {incr k} {
+            lappend tile_ports($j) [get_object_name [get_ports "strm_data_f2g[[expr {$j*$zircon_factor*$cgra_data_width + $z*$cgra_data_width + $k}]]"]]
+            lappend tile_ports($j) [get_object_name [get_ports "strm_data_g2f[[expr {$j*$zircon_factor*$cgra_data_width + $z*$cgra_data_width + $k}]]"]]
+        }
+        lappend tile_ports($j) [get_object_name [get_ports "strm_data_f2g_rdy[[expr {$j*$zircon_factor + $z}]]"]]
+        lappend tile_ports($j) [get_object_name [get_ports "strm_data_f2g_vld[[expr {$j*$zircon_factor + $z}]]"]]
+        lappend tile_ports($j) [get_object_name [get_ports "strm_data_g2f_rdy[[expr {$j*$zircon_factor + $z}]]"]]
+        lappend tile_ports($j) [get_object_name [get_ports "strm_data_g2f_vld[[expr {$j*$zircon_factor + $z}]]"]]
+    }
 
     lappend tile_ports($j) [get_object_name [get_ports "strm_ctrl_f2g[$j]"]]
     lappend tile_ports($j) [get_object_name [get_ports "strm_ctrl_g2f[$j]"]]
@@ -99,6 +110,10 @@ for {set i 0} {$i < $num_glb_tiles} {incr i} {
         lappend cache $port
     }
 }
+set bottom_ports [get_object_name [get_ports mu_tl_*]]
+foreach port $bottom_ports {
+    lappend cache $port
+}
 
 foreach a [get_object_name $all] {
     if {($a ni $cache) && ($a ne "clk") && ($a ne "reset")} {
@@ -120,11 +135,27 @@ set left_offset 20
 
  
 # pins for glb <-> soc
-editPin -pin $first_tile -start 5 $height -end $first_tile_pin_range $height -side TOP -spreadType RANGE -spreadDirection clockwise -layer 5
+editPin \
+    -pin $first_tile \
+    -start 5 $height \
+    -end $first_tile_pin_range $height \
+    -side TOP \
+    -spreadType RANGE \
+    -spreadDirection clockwise \
+    -layer M3
 
 # clk pin and reset pin
-editPin -pin "clk" -side TOP -assign [expr $width / 2]  $height -layer 7
-editPin -pin "reset" -side TOP -assign [expr ($width / 2) + 2 * $first_tile_pin_offset] $height -layer 7
+editPin \
+    -pin "clk" \
+    -side TOP \
+    -assign [expr $width / 2] $height \
+    -layer M7
+
+editPin \
+    -pin "reset" \
+    -side TOP \
+    -assign [expr ($width / 2) + 2 * $first_tile_pin_offset] $height \
+    -layer M7
 
 # reset first_tile_pin_range to include clk and reset
 set first_tile_pin_range [expr $first_tile_pin_range + 2 * $first_tile_pin_offset + 5]
@@ -132,11 +163,30 @@ set glb_tile_port_offset [expr {($width - $first_tile_pin_range) / $num_glb_tile
 
 # for glb <-> glc
 for {set i 0} {$i < $num_glb_tiles} {incr i} {
-    editPin -pin $glb_tile_ports($i) -start [list [expr {$first_tile_pin_range + $glb_tile_port_offset * $i + 20}] $height] -end [list [expr {$first_tile_pin_range + $glb_tile_port_offset * ($i + 1) - 20}] $height] -side TOP -spreadType RANGE -spreadDirection clockwise -layer 5
+    editPin \
+    -pin $glb_tile_ports($i) \
+    -start [list [expr {$first_tile_pin_range + $glb_tile_port_offset * $i + 20}] $height] \
+    -end [list [expr {$first_tile_pin_range + $glb_tile_port_offset * ($i + 1) - 20}] $height] \
+    -side TOP \
+    -spreadType RANGE \
+    -spreadDirection clockwise \
+    -layer M3
 }
   
 # bottom pins
+# for {set j 0} {$j < $array_width} {incr j} {
+#     editPin -pin $tile_ports($j) -start [list [expr {($tile_width/2)*$j+5+$left_offset}] 0] -end [list [expr {($tile_width/2)*($j+1)-5+$left_offset}] 0] -side BOTTOM -spreadType RANGE -spreadDirection counterclockwise -layer 5
+# }
 for {set j 0} {$j < $array_width} {incr j} {
-    editPin -pin $tile_ports($j) -start [list [expr {($tile_width/2)*$j+5+$left_offset}] 0] -end [list [expr {($tile_width/2)*($j+1)-5+$left_offset}] 0] -side BOTTOM -spreadType RANGE -spreadDirection counterclockwise -layer 5
+    foreach port $tile_ports($j) {
+        lappend bottom_ports $port
+    }
 }
-
+editPin \
+    -pin $bottom_ports \
+    -start [list 25 0] \
+    -end [list 3725 0] \
+    -side BOTTOM \
+    -spreadType RANGE \
+    -spreadDirection counterclockwise \
+    -layer M3

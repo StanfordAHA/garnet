@@ -25,9 +25,9 @@ set core_margin_l $tech_pitch_x
 
 # Margins between glb tiles and core edge
 set tile_margin_t [expr 60 * $tech_pitch_y]
-set tile_margin_b [expr 20 * $tech_pitch_y]
-set tile_margin_l [expr 68 * $tech_pitch_x]
-set tile_margin_r [expr 20 * $tech_pitch_x]
+set tile_margin_b [expr 41 * $tech_pitch_y]
+set tile_margin_l [expr 63 * $tech_pitch_x]
+set tile_margin_r [expr 25 * $tech_pitch_x]
 
 set tiles [get_cells *glb_tile*]
 set tile_width [dbGet [dbGet -p top.insts.name *glb_tile* -i 0].cell.size_x]
@@ -76,11 +76,63 @@ foreach_in_collection tile $tiles {
   set ury [dbGet [dbGet -p top.insts.name $tile_name].box_ury]
   set tb_margin $vert_pitch
   set lr_margin [expr $horiz_pitch * 3]
+
   createRouteBlk \
     -inst $tile_name \
-    -box [expr $llx - $lr_margin] [expr $lly - $tb_margin] [expr $urx + $lr_margin] [expr $ury + $tb_margin] \
-    -layer {m1 m2 m3 m4 m5 m6 m7 m8} \
+    -box $llx $lly $urx $ury \
+    -layer {m1 m2 m3 m4} \
+    -exceptpgnet
+
+  createRouteBlk \
+    -inst $tile_name \
+    -box $llx $lly $urx $ury \
+    -layer {m5 m6 m7 m8} \
+    -spacing 0.324 \
+    -exceptpgnet
+  
+  createRouteBlk \
+    -inst $tile_name \
+    -box $llx $lly $urx $ury \
+    -layer {m1 m2 m3 m4} \
+    -spacing 0.324 \
     -pgnetonly
+  
+  # dont create via, because those are already created in the tile
+  createRouteBlk \
+    -inst $tile_name \
+    -cover \
+    -cutLayer {v5 v6 v7 v8} \
+    -pgnetonly
+  
+  # dont allow power stripes to cross on edges, because there might be signal wires
+  foreach layer_name { m6 m8 } {
+      createRouteBlk \
+        -name ${tile_name}_${layer_name}_blockage_bot \
+        -box [expr $llx - 0.324] [expr $lly + 0] [expr $urx + 0.324] [expr $lly + $tech_pitch_y] \
+        -layer $layer_name \
+        -spacing 0.0 \
+        -pgnetonly
+      createRouteBlk \
+        -name ${tile_name}_${layer_name}_blockage_top \
+        -box [expr $llx - 0.324] [expr $ury - $tech_pitch_y] [expr $urx + 0.324] [expr $ury + 0] \
+        -layer $layer_name \
+        -spacing 0.0 \
+        -pgnetonly
+  }
+  foreach layer_name { m5 m7 } {
+      createRouteBlk \
+        -name ${tile_name}_${layer_name}_blockage_left \
+        -box [expr $llx + 0] [expr $lly - 0.324] [expr $llx + $tech_pitch_x] [expr $ury + 0.324] \
+        -layer $layer_name \
+        -spacing 0.0 \
+        -pgnetonly
+      createRouteBlk \
+        -name ${tile_name}_${layer_name}_blockage_right \
+        -box [expr $urx - $tech_pitch_x] [expr $lly - 0.324] [expr $urx + 0] [expr $ury + 0.324] \
+        -layer $layer_name \
+        -spacing 0.0 \
+        -pgnetonly
+  }
 
   set x_loc [expr $x_loc + $tile_width + $gap]
 }

@@ -1,14 +1,14 @@
 #=========================================================================
-# Custom Scripts -- custom-cts-additional-setup.tcl
+# Custom Scripts -- power
 #=========================================================================
 
-name: custom-cts
+name: custom-power-hierarchical-glb-top
 
 #-------------------------------------------------------------------------
-# inputs and outputs
+# Inputs and Outputs
 #-------------------------------------------------------------------------
 
 outputs:
-  - custom-cts-additional-setup.tcl
-
+  - globalnetconnect.tcl
+  - power-strategy.tcl
 

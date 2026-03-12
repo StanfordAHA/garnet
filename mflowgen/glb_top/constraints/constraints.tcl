@@ -23,6 +23,9 @@ create_clock -name ${clock_name} \
              -period ${clock_period} \
              [get_ports ${clock_net}]
 
+create_clock -name ${clock_name}_virtual \
+             -period ${clock_period}
+
 #=========================================================================
 # clk_en multicycle path
 #=========================================================================
@@ -55,19 +58,19 @@ set_driving_cell -no_design_rule \
 # input delay
 #=========================================================================
 # set_input_delay constraints for input ports
-set_input_delay -clock ${clock_name} 0.2 [all_inputs -no_clocks]
+set_input_delay -clock ${clock_name}_virtual 200 [all_inputs -no_clocks]
 
 #=========================================================================
 # output delay
 #=========================================================================
 # set_output_delay constraints for output ports
-set_output_delay -clock ${clock_name} 200 [all_outputs]
+set_output_delay -clock ${clock_name}_virtual 200 [all_outputs]
 # Higher output delay for output signals to cgra
-set_output_delay -clock ${clock_name} 400 [get_ports cgra_cfg_g2f* -filter "direction==out"]
-set_output_delay -clock ${clock_name} 500 [get_ports strm_data_flush_g2f* -filter "direction==out"]
-set_output_delay -clock ${clock_name} 500 [get_ports strm_data*g2f* -filter "direction==out"]
-set_output_delay -clock ${clock_name} 500 [get_ports strm_data*f2g* -filter "direction==out"]
-set_output_delay -clock ${clock_name} 500 [get_ports cgra_stall* -filter "direction==out"]
+set_output_delay -clock ${clock_name}_virtual 400 [get_ports cgra_cfg_g2f* -filter "direction==out"]
+set_output_delay -clock ${clock_name}_virtual 500 [get_ports strm_data_flush_g2f* -filter "direction==out"]
+set_output_delay -clock ${clock_name}_virtual 500 [get_ports strm_data*g2f* -filter "direction==out"]
+set_output_delay -clock ${clock_name}_virtual 500 [get_ports strm_data*f2g* -filter "direction==out"]
+set_output_delay -clock ${clock_name}_virtual 500 [get_ports cgra_stall* -filter "direction==out"]
 
 #=========================================================================
 # set_muticycle_path & set_false path
@@ -92,7 +95,7 @@ set_multicycle_path -hold 2 -to [get_ports *interrupt_pulse -filter "direction==
 set_max_fanout 20 $design_name
 
 # Make all signals meet good slew
-set_max_transition [expr 0.10*${clock_period}] $design_name
+set_max_transition 100 $design_name
 
 # Do not touch nets
 set num_tiles [sizeof_collection [get_cells *glb_tile_gen_*]]
@@ -101,29 +104,4 @@ for {set i 1} {$i < $num_tiles} {incr i} {
   set nets [get_nets -of_objects [get_pins -of_objects [get_cells *glb_tile_gen_$i*] -filter {name =~ *_wst*}]]
   query_objects $nets
   set_dont_touch $nets true
-}
-
-
-###########################################################################
-# Disabling Timing Checks on Input Diodes
-#
-# Input diodes are dynamically added during the PnR initialization stage.
-# To ensure accurate timing analysis, we need the tool to ignore timing
-# checks on these cells. However, since constraints may be applied before
-# these cells are introduced, we include a safeguard to verify their
-# existence before applying the constraint.
-###########################################################################
-
-# Get the list of cells matching the pattern "IN_PORT_DIODE_*"
-set diode_cells [get_cells -quiet -hierarchical -filter "name =~ IN_PORT_DIODE_*"]
-
-# Check if the list is not empty
-if {[llength $diode_cells] > 0} {
-    foreach cell $diode_cells {
-        # Apply false path to each cell
-        set_false_path -through $cell
-    }
-    puts "False path applied to diode cells: $diode_cells"
-} else {
-    puts "No matching diode cells found."
 }

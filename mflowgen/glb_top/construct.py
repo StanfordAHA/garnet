@@ -29,8 +29,7 @@ def construct():
   parameters = {
     'construct_path'      : __file__,
     'design_name'         : 'global_buffer',
-    'clock_period'        : 1.1 * 1000,
-    'sim_clock_period'    : 1.42,
+    'clock_period'        : 2.0 * 1000,
     'adk'                 : adk_name,
     'adk_view'            : adk_view,
     'adk_stdcell'         : 'b0m_6t_108pp',
@@ -45,17 +44,13 @@ def construct():
     # signals in glb_top to corresponding CGRA tile columns below glb_top
     'array_width'         : 28,
     'num_glb_tiles'       : 14,
-    'tool'                : "VCS",
     # glb tile memory size (unit: KB)
     'use_container'       : True,
     'glb_tile_mem_size'   : 128,
-    'rtl_testvectors'     : ["test01", "test02", "test03", "test04", "test05", "test06", "test07", "test08", "test09", "test10", "test11"],
-    'gls_testvectors'     : ["test01", "test02", "test03", "test04", "test05", "test06", "test07", "test08", "test09", "test10", "test11"],
     'sdf'                 : True,
     'saif'                : False,
     'waveform'            : True,
-    'drc_env_setup'       : 'drcenv-block.sh',
-    'useful_skew'         : False
+    'useful_skew'         : True
   }
 
   #-----------------------------------------------------------------------
@@ -96,20 +91,16 @@ def construct():
 
   # Custom steps
   
-  rtl                  = Step( this_dir + '/../common/rtl'                       )
-  testbench            = Step( this_dir + '/testbench'                           )
-  sim_compile          = Step( this_dir + '/sim-compile'                         )
-  sim_run              = Step( this_dir + '/sim-run'                             )
-  sim_gl_compile       = Step( this_dir + '/sim-gl-compile'                      )
-  constraints          = Step( this_dir + '/constraints'                         )
-  custom_init          = Step( this_dir + '/custom-init'                         )
-  custom_lvs           = Step( this_dir + '/custom-lvs-rules'                    )
-  custom_power         = Step( this_dir + '/../common/custom-power-hierarchical' )
-  custom_cts           = Step( this_dir + '/custom-cts'                          )
-  custom_flowgen_setup = Step( this_dir + '/custom-flowgen-setup'                )
-  drc                  = Step( this_dir + '/../common/intel16-synopsys-icv-drc'  )
-  lvs                  = Step( this_dir + '/../common/intel16-synopsys-icv-lvs'  )
-  custom_hack_sdc_unit = Step( this_dir + '/../common/custom-hack-sdc-unit'      )
+  rtl                  = Step( this_dir + '/../common/rtl'                               )
+  constraints          = Step( this_dir + '/constraints'                                 )
+  custom_init          = Step( this_dir + '/custom-init'                                 )
+  custom_power         = Step( this_dir + '/custom-power-hierarchical-glb-top'           )
+  custom_cts           = Step( this_dir + '/custom-cts'                                  )
+  custom_flowgen_setup = Step( this_dir + '/custom-flowgen-setup'                        )
+  drc                  = Step( this_dir + '/../common/intel16-synopsys-icv-drc'          )
+  lvs                  = Step( this_dir + '/../common/intel16-synopsys-icv-lvs'          )
+  custom_hack_sdc_unit = Step( this_dir + '/../common/custom-hack-sdc-unit'              )
+  custom_pre_signoff   = Step( this_dir + '/custom-pre-signoff'                          )
 
   # Default steps
 
@@ -126,13 +117,8 @@ def construct():
   postroute_hold = Step( 'cadence-innovus-postroute_hold',  default=True )
   signoff        = Step( 'cadence-innovus-signoff',         default=True )
   pt_signoff     = Step( 'synopsys-pt-timing-signoff',      default=True )
-  debugcalibre   = Step( 'cadence-innovus-debug-calibre',   default=True )
+  pt_signoff_flat= Step( 'synopsys-pt-timing-signoff-flat', default=True )
 
-
-  # genlibdb_tt    = Step( 'synopsys-ptpx-genlibdb',          default=True )
-  # genlibdb_ff    = Step( 'synopsys-ptpx-genlibdb',          default=True )
-  # genlibdb_tt.set_name( 'synopsys-ptpx-genlibdb-tt' )
-  # genlibdb_ff.set_name( 'synopsys-ptpx-genlibdb-ff' )
   genlibdb_tt       = Step( this_dir + '/../common/cadence-innovus-genlib')
   genlibdb_ff       = Step( this_dir + '/../common/cadence-innovus-genlib')
   genlibdb_tt.set_name( 'cadence-innovus-genlibdb-tt' )
@@ -143,60 +129,29 @@ def construct():
   g.add_input( 'header'  , rtl.i('header')   )
 
   # Outputs
-  g.add_output( 'glb_top-typical.lib',      genlibdb_tt.o('design.lib')             )
-  g.add_output( 'glb_top-typical.db',       genlibdb_tt.o('design.db')              )
-  g.add_output( 'glb_top-bc.lib',           genlibdb_ff.o('design.lib')             )
-  g.add_output( 'glb_top-bc.db',            genlibdb_ff.o('design.db')              )
-  g.add_output( 'glb_top.lef',              signoff.o('design.lef')                 )
-  g.add_output( 'glb_top.oas',              signoff.o('design-merged.oas')          )
-  g.add_output( 'glb_top.sdf',              signoff.o('design.sdf')                 )
-  g.add_output( 'glb_top.vcs.v',            signoff.o('design.vcs.v')               )
-  g.add_output( 'glb_top.vcs.pg.v',         signoff.o('design.vcs.pg.v')            )
-  g.add_output( 'glb_top.spef.gz',          signoff.o('design.spef.gz')             )
-  g.add_output( 'glb_top.rcbest.spef.gz',   signoff.o('design.rcbest.spef.gz')      )
-  g.add_output( 'glb_top.lvs.v',            lvs.o('design_merged.lvs.v')            )
-  g.add_output( 'glb_top_sram.spi',         glb_tile.o('glb_tile_sram.spi')         )
-  g.add_output( 'glb_top_sram.v',           glb_tile.o('glb_tile_sram.v')           )
-  g.add_output( 'glb_top_sram-bc.db',       glb_tile.o('glb_tile_sram-bc.db')       )
-  g.add_output( 'glb_top_sram-bc.lib',      glb_tile.o('glb_tile_sram-bc.lib')      )
-  g.add_output( 'glb_top_sram-wc.db',       glb_tile.o('glb_tile_sram-wc.db')       )
-  g.add_output( 'glb_top_sram-wc.lib',      glb_tile.o('glb_tile_sram-wc.lib')      )
-  g.add_output( 'glb_top_sram-typical.db',  glb_tile.o('glb_tile_sram-typical.db')  )
-  g.add_output( 'glb_top_sram-typical.lib', glb_tile.o('glb_tile_sram-typical.lib') )
+  g.add_output( 'global_buffer-typical.lib',      genlibdb_tt.o('design.lib')             )
+  g.add_output( 'global_buffer-typical.db',       genlibdb_tt.o('design.db')              )
+  g.add_output( 'global_buffer-bc.lib',           genlibdb_ff.o('design.lib')             )
+  g.add_output( 'global_buffer-bc.db',            genlibdb_ff.o('design.db')              )
+  g.add_output( 'global_buffer.lef',              signoff.o('design.lef')                 )
+  g.add_output( 'global_buffer.oas',              signoff.o('design-merged.oas')          )
+  g.add_output( 'global_buffer.sdf',              signoff.o('design.sdf')                 )
+  g.add_output( 'global_buffer.vcs.v',            signoff.o('design.vcs.v')               )
+  g.add_output( 'global_buffer.vcs.pg.v',         signoff.o('design.vcs.pg.v')            )
+  g.add_output( 'global_buffer.pt.sdc',           signoff.o('design.pt.sdc')              )
+  g.add_output( 'global_buffer.spef.gz',          signoff.o('design.spef.gz')             )
+  g.add_output( 'global_buffer.rcbest.spef.gz',   signoff.o('design.rcbest.spef.gz')      )
+  g.add_output( 'global_buffer.lvs.v',            lvs.o('design_merged.lvs.v')            )
+  g.add_output( 'global_buffer_sram.spi',         glb_tile.o('glb_tile_sram.spi')         )
+  g.add_output( 'global_buffer_sram.v',           glb_tile.o('glb_tile_sram.v')           )
+  g.add_output( 'global_buffer_sram-bc.db',       glb_tile.o('glb_tile_sram-bc.db')       )
+  g.add_output( 'global_buffer_sram-bc.lib',      glb_tile.o('glb_tile_sram-bc.lib')      )
+  g.add_output( 'global_buffer_sram-wc.db',       glb_tile.o('glb_tile_sram-wc.db')       )
+  g.add_output( 'global_buffer_sram-wc.lib',      glb_tile.o('glb_tile_sram-wc.lib')      )
+  g.add_output( 'global_buffer_sram-typical.db',  glb_tile.o('glb_tile_sram-typical.db')  )
+  g.add_output( 'global_buffer_sram-typical.lib', glb_tile.o('glb_tile_sram-typical.lib') )
 
-  if parameters['tool'] == 'VCS':
-    sim_compile.extend_outputs(['simv', 'simv.daidir'])
-    sim_gl_compile.extend_outputs(['simv', 'simv.daidir'])
-    sim_run.extend_inputs(['simv', 'simv.daidir'])
-  elif parameters['tool'] == 'XCELIUM':
-    sim_compile.extend_outputs(['xcelium.d'])
-    sim_gl_compile.extend_outputs(['xcelium.d'])
-    sim_run.extend_inputs(['xcelium.d'])
-
-  sim_gl_run_nodes = {}
-  ptpx_gl_nodes = {}
-  for test in parameters["gls_testvectors"]:
-    sim_gl_run        = Step( this_dir + '/sim-gl-run'       )
-    ptpx_gl           = Step( this_dir + '/synopsys-ptpx-gl' )
-
-    # rename
-    sim_gl_run.set_name(f"sim_gl_run_{test}")
-    ptpx_gl.set_name(f"ptpx_gl_{test}")
-    sim_gl_run_nodes[test] = sim_gl_run
-    ptpx_gl_nodes[test] = ptpx_gl
-    sim_gl_run.update_params( {'test' : test}, allow_new=True)
-
-    # Gate-level ptpx node
-    ptpx_gl.set_param("strip_path", "top/dut")
-    ptpx_gl.extend_inputs(glb_tile.all_outputs())
-    if parameters['tool'] == 'VCS':
-      sim_gl_run.extend_inputs(['simv', 'simv.daidir'])
-    elif parameters['tool'] == 'XCELIUM':
-      sim_gl_run.extend_inputs(['xcelium.d'])
-    if parameters['saif'] == True:
-      sim_gl_run.extend_postconditions( ["assert File( 'outputs/run.saif' ) "] )
-    if parameters['waveform'] == True:
-      sim_gl_run.extend_postconditions( ["assert File( 'outputs/run.fsdb' ) "] )
+  signoff.extend_inputs( custom_pre_signoff.all_outputs() )
 
 
   # Add header files to outputs
@@ -213,6 +168,7 @@ def construct():
   # Add glb_tile macro inputs to downstream nodes
 
   pt_signoff.extend_inputs( ['glb_tile-typical.db', 'glb_tile-bc.db'] )
+  pt_signoff_flat.extend_inputs( ['glb_tile_sram-typical.db', 'glb_tile_sram-bc.db', 'glb_tile.vcs.v', 'glb_tile.pt.sdc', 'glb_tile.spef.gz'] )
   genlibdb_tt.extend_inputs( ['glb_tile-typical.db'] )
   genlibdb_ff.extend_inputs( ['glb_tile-bc.db'] )
 
@@ -235,11 +191,6 @@ def construct():
   # Need sram spice file for LVS
   lvs.extend_inputs( ['glb_tile_sram.spi'] )
 
-  xlist = synth.get_postconditions()
-  xlist = \
-    [ _ for _ in xlist if 'percent_clock_gated' not in _ ]
-  xlist = synth.set_postconditions( xlist )
-
   # Add extra input edges to innovus steps that need custom tweaks
   iflow.extend_inputs( custom_flowgen_setup.all_outputs() )
   init.extend_inputs( custom_init.all_outputs() )
@@ -250,46 +201,39 @@ def construct():
   # genlibdb_tt.extend_inputs( custom_hack_sdc_unit.all_outputs() )
   # genlibdb_ff.extend_inputs( custom_hack_sdc_unit.all_outputs() )
   pt_signoff.extend_inputs( custom_hack_sdc_unit.all_outputs() )
+  pt_signoff_flat.extend_inputs( custom_hack_sdc_unit.all_outputs() )
 
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
   #-----------------------------------------------------------------------
 
-  g.add_step( info           )
-  g.add_step( rtl            )
-  g.add_step( testbench      )
-  g.add_step( sim_compile    )
-  g.add_step( sim_run        )
-  g.add_step( sim_gl_compile )
-  g.add_step( glb_tile       )
-  g.add_step( constraints    )
-  g.add_step( synth          )
+  g.add_step( info                 )
+  g.add_step( rtl                  )
+  g.add_step( glb_tile             )
+  g.add_step( constraints          )
+  g.add_step( synth                )
   g.add_step( custom_flowgen_setup )
-  g.add_step( iflow          )
-  g.add_step( init           )
-  g.add_step( custom_init    )
-  g.add_step( power          )
-  g.add_step( custom_power   )
-  g.add_step( place          )
-  g.add_step( custom_cts     )
-  g.add_step( cts            )
-  g.add_step( postcts_hold   )
-  g.add_step( route          )
-  g.add_step( postroute      )
-  g.add_step( postroute_hold )
-  g.add_step( signoff        )
-  g.add_step( pt_signoff     )
-  g.add_step( genlibdb_tt    )
-  g.add_step( genlibdb_ff    )
-  g.add_step( drc            )
-  g.add_step( lvs            )
-  g.add_step( custom_lvs     )
-  g.add_step( debugcalibre   )
+  g.add_step( iflow                )
+  g.add_step( init                 )
+  g.add_step( custom_init          )
+  g.add_step( power                )
+  g.add_step( custom_power         )
+  g.add_step( place                )
+  g.add_step( custom_cts           )
+  g.add_step( cts                  )
+  g.add_step( postcts_hold         )
+  g.add_step( route                )
+  g.add_step( postroute            )
+  g.add_step( postroute_hold       )
+  g.add_step( signoff              )
+  g.add_step( pt_signoff           )
+  g.add_step( pt_signoff_flat      )
+  g.add_step( genlibdb_tt          )
+  g.add_step( genlibdb_ff          )
+  g.add_step( drc                  )
+  g.add_step( lvs                  )
   g.add_step( custom_hack_sdc_unit )
-
-  # for test in parameters["gls_testvectors"]:
-  #   g.add_step(sim_gl_run_nodes[test])
-  #   g.add_step(ptpx_gl_nodes[test])
+  g.add_step( custom_pre_signoff   )
 
   #-----------------------------------------------------------------------
   # Graph -- Add edges
@@ -313,27 +257,23 @@ def construct():
   g.connect_by_name( adk,      genlibdb_tt    )
   g.connect_by_name( adk,      genlibdb_ff    )
 
-  g.connect_by_name( glb_tile,      synth        )
-  g.connect_by_name( glb_tile,      iflow        )
-  g.connect_by_name( glb_tile,      init         )
-  g.connect_by_name( glb_tile,      power        )
-  g.connect_by_name( glb_tile,      place        )
-  g.connect_by_name( glb_tile,      cts          )
-  g.connect_by_name( glb_tile,      postcts_hold )
-  g.connect_by_name( glb_tile,      route        )
-  g.connect_by_name( glb_tile,      postroute    )
+  g.connect_by_name( glb_tile,      synth          )
+  g.connect_by_name( glb_tile,      iflow          )
+  g.connect_by_name( glb_tile,      init           )
+  g.connect_by_name( glb_tile,      power          )
+  g.connect_by_name( glb_tile,      place          )
+  g.connect_by_name( glb_tile,      cts            )
+  g.connect_by_name( glb_tile,      postcts_hold   )
+  g.connect_by_name( glb_tile,      route          )
+  g.connect_by_name( glb_tile,      postroute      )
   g.connect_by_name( glb_tile,      postroute_hold )
-  g.connect_by_name( glb_tile,      signoff      )
-  g.connect_by_name( glb_tile,      pt_signoff   )
-  g.connect_by_name( glb_tile,      genlibdb_tt  )
-  g.connect_by_name( glb_tile,      genlibdb_ff  )
-  g.connect_by_name( glb_tile,      drc          )
-  g.connect_by_name( glb_tile,      lvs          )
-
-  g.connect_by_name( rtl,         sim_compile  )
-  g.connect_by_name( testbench,   sim_compile  )
-  g.connect_by_name( testbench,   sim_run      )
-  g.connect_by_name( sim_compile, sim_run      )
+  g.connect_by_name( glb_tile,      signoff        )
+  g.connect_by_name( glb_tile,      pt_signoff     )
+  g.connect_by_name( glb_tile,      pt_signoff_flat)
+  g.connect_by_name( glb_tile,      genlibdb_tt    )
+  g.connect_by_name( glb_tile,      genlibdb_ff    )
+  g.connect_by_name( glb_tile,      drc            )
+  g.connect_by_name( glb_tile,      lvs            )
 
   g.connect_by_name( rtl,         synth        )
   g.connect_by_name( constraints, synth        )
@@ -347,75 +287,60 @@ def construct():
   g.connect_by_name( synth,       place        )
   g.connect_by_name( synth,       cts          )
   
-  g.connect_by_name( custom_flowgen_setup,  iflow )
-  g.connect_by_name( iflow,    init         )
-  g.connect_by_name( iflow,    power        )
-  g.connect_by_name( iflow,    place        )
-  g.connect_by_name( iflow,    cts          )
-  g.connect_by_name( iflow,    postcts_hold )
-  g.connect_by_name( iflow,    route        )
-  g.connect_by_name( iflow,    postroute    )
-  g.connect_by_name( iflow,    postroute_hold )
-  g.connect_by_name( iflow,    signoff      )
-  g.connect_by_name( iflow,    genlibdb_tt    )
-  g.connect_by_name( iflow,    genlibdb_ff    )
+  g.connect_by_name( custom_flowgen_setup,  iflow          )
+  g.connect_by_name( iflow,                 init           )
+  g.connect_by_name( iflow,                 power          )
+  g.connect_by_name( iflow,                 place          )
+  g.connect_by_name( iflow,                 cts            )
+  g.connect_by_name( iflow,                 postcts_hold   )
+  g.connect_by_name( iflow,                 route          )
+  g.connect_by_name( iflow,                 postroute      )
+  g.connect_by_name( iflow,                 postroute_hold )
+  g.connect_by_name( iflow,                 signoff        )
+  g.connect_by_name( iflow,                 genlibdb_tt    )
+  g.connect_by_name( iflow,                 genlibdb_ff    )
 
 
-  g.connect_by_name( custom_init,  init     )
-  g.connect_by_name( custom_power, power    )
-  g.connect_by_name( custom_cts,   cts      )
-  g.connect_by_name( custom_lvs,   lvs      )
+  g.connect_by_name( custom_init,        init    )
+  g.connect_by_name( custom_power,       power   )
+  g.connect_by_name( custom_pre_signoff, signoff )
+  g.connect_by_name( custom_cts,         cts     )
 
-  g.connect_by_name( init,         power          )
-  g.connect_by_name( power,        place          )
-  g.connect_by_name( place,        cts            )
-  g.connect_by_name( cts,          postcts_hold   )
-  g.connect_by_name( postcts_hold, route          )
-  g.connect_by_name( route,        postroute      )
-  g.connect_by_name( postroute,    postroute_hold )
-  g.connect_by_name( postroute_hold,    signoff   )
-  g.connect_by_name( signoff,      drc            )
-  g.connect_by_name( signoff,      lvs            )
+  g.connect_by_name( init,           power          )
+  g.connect_by_name( power,          place          )
+  g.connect_by_name( place,          cts            )
+  g.connect_by_name( cts,            postcts_hold   )
+  g.connect_by_name( postcts_hold,   route          )
+  g.connect_by_name( route,          postroute      )
+  g.connect_by_name( postroute,      postroute_hold )
+  g.connect_by_name( postroute_hold, signoff        )
+  g.connect_by_name( signoff,        drc            )
+  g.connect_by_name( signoff,        lvs            )
 
   g.connect_by_name( adk,          pt_signoff     )
   g.connect_by_name( signoff,      pt_signoff     )
+  g.connect_by_name( adk,          pt_signoff_flat)
+  g.connect_by_name( signoff,      pt_signoff_flat)
 
   g.connect_by_name( signoff,      genlibdb_tt     )
   g.connect_by_name( signoff,      genlibdb_ff     )
-
-  g.connect_by_name( rtl,        sim_gl_compile )
-  g.connect_by_name( testbench,  sim_gl_compile )
-  g.connect_by_name( adk,        sim_gl_compile )
-  g.connect_by_name( glb_tile,   sim_gl_compile )
-  g.connect_by_name( signoff,    sim_gl_compile )
-
-  # for test in parameters["gls_testvectors"]:
-  #   g.connect_by_name( testbench, sim_gl_run_nodes[test] )
-  #   g.connect_by_name( sim_gl_compile, sim_gl_run_nodes[test] )
-
-  # for test in parameters["gls_testvectors"]:
-  #   g.connect_by_name( adk,                    ptpx_gl_nodes[test] )
-  #   g.connect_by_name( glb_tile,               ptpx_gl_nodes[test] )
-  #   g.connect_by_name( signoff,                ptpx_gl_nodes[test] )
-  #   g.connect_by_name( sim_gl_run_nodes[test], ptpx_gl_nodes[test] )
-
-  g.connect_by_name( adk,      debugcalibre )
-  g.connect_by_name( synth,    debugcalibre )
-  g.connect_by_name( iflow,    debugcalibre )
-  g.connect_by_name( signoff,  debugcalibre )
-  g.connect_by_name( drc,      debugcalibre )
-  g.connect_by_name( lvs,      debugcalibre )
 
   # SDC hack for the genlibdb and pt_signoff steps
   # g.connect_by_name( custom_hack_sdc_unit, genlibdb_tt )
   # g.connect_by_name( custom_hack_sdc_unit, genlibdb_ff )
   g.connect_by_name( custom_hack_sdc_unit, pt_signoff )
+  g.connect_by_name( custom_hack_sdc_unit, pt_signoff_flat )
 
   #-----------------------------------------------------------------------
   # Parameterize
   #-----------------------------------------------------------------------
 
   g.update_params( parameters )
+
+  # Add signoff ECO routing (looks like it's a fake DRC, skip this step)
+  order = signoff.get_param( 'order' )
+  order = ['pre-signoff.tcl'] + order
+  signoff.set_param( 'order', order )
 
   # Since we are adding an additional input script to the generic Innovus
   # steps, we modify the order parameter for that node which determines
@@ -430,6 +355,11 @@ def construct():
 
   # init -- update custom order
   init.update_params( { 'order': init_order } )
+
+  # update clock insertion delay in CTS
+  order = cts.get_param( 'order' )
+  order.insert(order.index('main.tcl'), 'custom-cts-additional-setup.tcl')
+  cts.set_param( 'order', order )
 
   # DRC Rule Decks
   drc_rule_decks = [
@@ -461,19 +391,21 @@ def construct():
   genlibdb_ff.update_params({'corner': 'bc'})
 
   # Add SDC unit hack before genlibdb and pt_signoff
-  sdc_hack_command = "python inputs/hack_sdc_unit.py inputs/design.pt.sdc"
-
   # The SDC file generated by Innovus contains -library flag to explicitly
   # specify which library to use for the cell. However, we will change the
   # target library for different corners and that makes the SDC commands
   # fail to find the cell. We should remove the -library flag and let the
   # tool find the cell from the target library (default behavior).
-  sdc_filter_command = "sed -i 's/-library [^ ]* //g' inputs/design.pt.sdc"
-
-  # add the commands to the steps
-  # genlibdb_tt.pre_extend_commands( [sdc_hack_command, sdc_filter_command] )
-  # genlibdb_ff.pre_extend_commands( [sdc_hack_command, sdc_filter_command] )
-  pt_signoff.pre_extend_commands( [sdc_hack_command, sdc_filter_command] )
+  pt_signoff.pre_extend_commands( [
+    "python inputs/hack_sdc_unit.py inputs/design.pt.sdc",
+    "sed -i 's/-library [^ ]* //g' inputs/design.pt.sdc",
+  ] )
+  pt_signoff_flat.pre_extend_commands( [
+    "python inputs/hack_sdc_unit.py inputs/design.pt.sdc",
+    "sed -i 's/-library [^ ]* //g'  inputs/design.pt.sdc",
+    "python inputs/hack_sdc_unit.py inputs/glb_tile.pt.sdc",
+    "sed -i 's/-library [^ ]* //g'  inputs/glb_tile.pt.sdc",
+  ] )
 
   # Increase hold slack on postroute_hold step
   postroute_hold.update_params( { 'hold_target_slack': parameters['hold_target_slack'] }, allow_new=True  )
