@@ -16,12 +16,12 @@ setPinAssignMode -pinEditInBatch true
 set block_width  [dbGet top.fPlan.box_urx]
 set block_height [dbGet top.fPlan.box_ury]
 # ports objects
-set weight_in    [get_ports {weightIn*}]
-set weight_out   [get_ports {weightOut*}]
-set input_in     [get_ports {inputIn*}]
-set input_out    [get_ports {inputOut*}]
-set psum_in      [get_ports {psumIn*}]
-set psum_out     [get_ports {psumOut*}]
+set weight_in    [get_ports {weight_in*}]
+set weight_out   [get_ports {weight_out*}]
+set input_in     [get_ports {input_in*}]
+set input_out    [get_ports {input_out*}]
+set psum_in      [get_ports {psum_in*}]
+set psum_out     [get_ports {psum_out*}]
 
 #-------------------------------------------------------------------------
 # Pins
@@ -29,9 +29,6 @@ set psum_out     [get_ports {psumOut*}]
 # top/bottom pins
 set pins_top    [lsort -dictionary [get_property [concat $weight_in $psum_in] hierarchical_name]]
 set pins_bottom [lsort -dictionary [get_property [concat $weight_out $psum_out] hierarchical_name]]
-# add clk/rstn to the middle of the pin list
-set pins_top    [linsert $pins_top [expr [llength $pins_top] / 2] clk]
-set pins_bottom [linsert $pins_bottom [expr [llength $pins_bottom] / 2] rstn]
 # left/right pins
 set pins_left   [lsort -dictionary -decreasing [get_property [concat $input_in] hierarchical_name]]
 set pins_right  [lsort -dictionary -decreasing [get_property [concat $input_out] hierarchical_name]]
@@ -39,54 +36,77 @@ set pins_right  [lsort -dictionary -decreasing [get_property [concat $input_out]
 #-------------------------------------------------------------------------
 # Top/Bottom Pin Placement
 #-------------------------------------------------------------------------
-set gap_to_corner 1
-set horiz_min $gap_to_corner
-set horiz_max [expr $block_width - $gap_to_corner]
+set track_pitch 0.09
+set start_pos [expr $track_pitch * 39]
 
 editPin \
     -layer           M3 \
     -side            TOP \
-    -spreadType      RANGE \
-    -start           [list $horiz_min $block_height] \
-    -end             [list $horiz_max $block_height] \
+    -spreadType      START \
+    -start           [list $start_pos $block_height] \
+    -unit            TRACK \
     -snap            TRACK \
+    -spacing         6 \
     -pin             $pins_top
 
 editPin \
     -layer           M3 \
     -side            BOTTOM \
-    -spreadType      RANGE \
-    -start           [list $horiz_min 0] \
-    -end             [list $horiz_max 0] \
-    -spreadDirection counterclockwise \
+    -spreadType      START \
+    -start           [list $start_pos 0] \
+    -unit            TRACK \
     -snap            TRACK \
+    -spacing         6 \
+    -spreadDirection counterclockwise \
     -pin             $pins_bottom
 
 #-------------------------------------------------------------------------
 # Left/Right Pin Placement
 #-------------------------------------------------------------------------
-set gap_to_corner 2
-set vert_min $gap_to_corner
-set vert_max [expr $block_height - $gap_to_corner]
+set track_pitch 0.09
+set start_pos [expr $track_pitch * 30]
 
 editPin \
     -layer           M4 \
     -side            LEFT \
-    -spreadType      RANGE \
-    -start           [list 0 $vert_min] \
-    -end             [list 0 $vert_max] \
+    -spreadType      START \
+    -start           [list 0 $start_pos] \
+    -unit            TRACK \
     -snap            TRACK \
+    -spacing         21 \
     -pin             $pins_left
 
 editPin \
     -layer           M4 \
     -side            RIGHT \
-    -spreadType      RANGE \
-    -start           [list $block_width $vert_min] \
-    -end             [list $block_width $vert_max] \
-    -spreadDirection counterclockwise \
+    -spreadType      START \
+    -start           [list $block_width $start_pos] \
+    -unit            TRACK \
     -snap            TRACK \
+    -spacing         21 \
+    -spreadDirection counterclockwise \
     -pin             $pins_right
+
+#-------------------------------------------------------------------------
+# Clock / Reset Pin Placement
+#-------------------------------------------------------------------------
+editPin \
+    -layer           M6 \
+    -side            LEFT \
+    -spreadType      START \
+    -start           [list 0 12.5] \
+    -snap            TRACK \
+    -pin             rstn
+
+editPin \
+    -layer           M6 \
+    -side            RIGHT \
+    -spreadType      START \
+    -start           [list $block_width 12.5] \
+    -snap            TRACK \
+    -spreadDirection counterclockwise \
+    -pin             clk
+
 
 #-------------------------------------------------------------------------
 # Batch Mode End

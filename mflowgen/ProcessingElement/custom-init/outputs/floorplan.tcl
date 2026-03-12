@@ -17,8 +17,12 @@ set core_margin_bottom $tech_pitch_y
 set core_margin_right  $tech_pitch_x
 set core_margin_top    $tech_pitch_y
 
-set core_width  [expr 50 * $tech_pitch_x - $core_margin_left - $core_margin_right]
-set core_height [expr 50 * $tech_pitch_y - $core_margin_top - $core_margin_bottom]
+# New PE synthesis area: 380
+# width:  21.6um (factor 40)
+# height: 21.6um (factor 40)
+# estimated density: 81.45%
+set core_width  [expr 54 * $tech_pitch_x - $core_margin_left - $core_margin_right]
+set core_height [expr 54 * $tech_pitch_y - $core_margin_top - $core_margin_bottom]
 #-------------------------------------------------------------------------
 # Floorplan
 #-------------------------------------------------------------------------

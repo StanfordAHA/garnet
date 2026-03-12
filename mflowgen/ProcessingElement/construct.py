@@ -29,7 +29,7 @@ def construct():
   parameters = {
     'construct_path'      : __file__,
     'design_name'         : 'ProcessingElement',
-    'clock_period'        : 1.1 * 1000,
+    'clock_period'        : 1.4 * 1000,
     'core_density_target' : 0.6,
     'adk'                 : adk_name,
     'adk_view'            : adk_view,
@@ -74,7 +74,7 @@ def construct():
   custom_init          = Step( this_dir + '/custom-init'                            )
   # custom_genus_scripts = Step( this_dir + '/custom-genus-scripts'                   )
   custom_flowgen_setup = Step( this_dir + '/custom-flowgen-setup'                   )
-  custom_power         = Step( this_dir + '/../common/custom-power-leaf'            )
+  custom_power         = Step( this_dir + '/custom-power-leaf-mu-pe'                )
   custom_cts           = Step( this_dir + '/custom-cts'                             )
   drc                  = Step( this_dir + '/../common/intel16-synopsys-icv-drc'     )
   lvs                  = Step( this_dir + '/../common/intel16-synopsys-icv-lvs'     )
@@ -96,7 +96,6 @@ def construct():
   pt_signoff     = Step( 'synopsys-pt-timing-signoff',    default=True )
   genlibdb_tt    = Step( 'synopsys-ptpx-genlibdb',        default=True )
   genlibdb_ff    = Step( 'synopsys-ptpx-genlibdb',        default=True )
-  debugcalibre   = Step( 'cadence-innovus-debug-calibre', default=True )
 
   # Steps not needed for matrix unit
   # genlibdb_constraints = Step( this_dir + '/../common/custom-genlibdb-constraints'  )
@@ -155,6 +154,7 @@ def construct():
   g.add_output( 'ProcessingElement.vcs.v',          signoff.o('design.vcs.v')         )
   g.add_output( 'ProcessingElement.vcs.pg.v',       signoff.o('design.vcs.pg.v')      )
   g.add_output( 'ProcessingElement.spef.gz',        signoff.o('design.spef.gz')       )
+  g.add_output( 'ProcessingElement.def.gz',         signoff.o('design.def.gz')        )
   g.add_output( 'ProcessingElement.rcbest.spef.gz', signoff.o('design.rcbest.spef.gz'))
   g.add_output( 'ProcessingElement.pt.sdc',         signoff.o('design.pt.sdc')        )
   g.add_output( 'ProcessingElement.lvs.v',          lvs.o('design_merged.lvs.v')      )
@@ -189,9 +189,6 @@ def construct():
   g.add_step( genlibdb_ff              )
   g.add_step( drc                      )
   g.add_step( lvs                      )
-  g.add_step( debugcalibre             )
-  # g.add_step( application              )
-  # g.add_step( post_pnr_power           )
   g.add_step( custom_hack_sdc_unit     )
 
   #-----------------------------------------------------------------------
@@ -266,12 +263,6 @@ def construct():
   
   g.connect_by_name( adk,                   pt_signoff           )
   g.connect_by_name( signoff,               pt_signoff           )
-
-  g.connect_by_name( adk,                   debugcalibre         )
-  g.connect_by_name( synth,                 debugcalibre         )
-  g.connect_by_name( iflow,                 debugcalibre         )
-  g.connect_by_name( signoff,               debugcalibre         )
-
   # New 'custom_cts' step added for gf12
   cts.extend_inputs( custom_cts.all_outputs() )
   g.add_step(        custom_cts               )
@@ -311,9 +302,7 @@ def construct():
     'create-boundary-blockage.tcl',
     'add-endcaps-welltaps.tcl',
     'insert-input-antenna-diodes.tcl',
-    'create-special-grid.tcl',
     'make-path-groups.tcl',
-    # 'additional-path-groups.tcl',
     'reporting.tcl'
   ] } )
 
