@@ -20,7 +20,7 @@ set core_margin_bottom $tech_pitch_y
 set core_margin_right  $tech_pitch_x
 set core_margin_top    $tech_pitch_y
 
-set core_width  [expr 487 * $tech_pitch_x - $core_margin_left - $core_margin_right]
+set core_width  [expr 488 * $tech_pitch_x - $core_margin_left - $core_margin_right]
 set core_height [expr 1050 * $tech_pitch_y - $core_margin_top - $core_margin_bottom]
 
 #-------------------------------------------------------------------------
@@ -57,10 +57,12 @@ set y_loc $gap_y
 #          To fix this, we move the SRAM x-location a little bit to the left
 #          such that the power stripe and power pin can have a nice cross
 #          overlap.
-set x_loc [expr $x_loc - 5 * $hori_pitch]
+set sram_x_granularity [lindex $ADK_M3_TO_M8_STRIPE_OFSET_LIST 2]
+set sram_x_granularity [snap_to_grid $sram_x_granularity $hori_pitch]
+set sram_x_granularity [expr 2 * $sram_x_granularity]
 foreach_in_collection sram [get_cells -hierarchical *sram_array*] {
   set sram_name [get_property $sram full_name]
-  set x_loc_snap [snap_to_grid $x_loc [expr 2*$hori_pitch]]
+  set x_loc_snap [snap_to_grid $x_loc $sram_x_granularity]
   set y_loc_snap [snap_to_grid $y_loc [expr 2*$vert_pitch]]
   placeInstance $sram_name $x_loc_snap $y_loc_snap -fixed
   set y_loc [expr $y_loc + $sram_height + $gap_y]

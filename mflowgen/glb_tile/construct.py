@@ -28,7 +28,7 @@ def construct():
   parameters = {
     'construct_path'     : __file__,
     'design_name'        : 'glb_tile',
-    'clock_period'       : 1.1 * 1000,
+    'clock_period'       : 1.4 * 1000,
     'adk'                : adk_name,
     'adk_view'           : adk_view,
     'adk_stdcell'        : 'b0m_6t_108pp',
@@ -69,9 +69,7 @@ def construct():
   constraints          = Step( this_dir + '/constraints'                            )
   custom_init          = Step( this_dir + '/custom-init'                            )
   gen_sram             = Step( this_dir + '/../common/gen_sram_macro'               )
-  custom_power         = Step( this_dir + '/../common/custom-power-leaf'            )
-  custom_lvs           = Step( this_dir + '/custom-lvs-rules'                       )
-  custom_cts           = Step( this_dir + '/../common/custom-cts'                   )
+  custom_power         = Step( this_dir + '/custom-power-leaf-glb-tile'             )
   custom_flowgen_setup = Step( this_dir + '/custom-flowgen-setup'                   )
   drc                  = Step( this_dir + '/../common/intel16-synopsys-icv-drc'     )
   lvs                  = Step( this_dir + '/../common/intel16-synopsys-icv-lvs'     )
@@ -94,7 +92,6 @@ def construct():
   postroute_hold    = Step( 'cadence-innovus-postroute_hold',default=True )
   signoff           = Step( 'cadence-innovus-signoff',       default=True )
   pt_signoff        = Step( 'synopsys-pt-timing-signoff',    default=True )
-  debugcalibre      = Step( 'cadence-innovus-debug-calibre', default=True )
 
   genlibdb_tt       = Step( this_dir + '/../common/cadence-innovus-genlib')
   genlibdb_ff       = Step( this_dir + '/../common/cadence-innovus-genlib')
@@ -124,6 +121,7 @@ def construct():
   g.add_output( 'glb_tile.sdf',              signoff.o('design.sdf')           )
   g.add_output( 'glb_tile.vcs.v',            signoff.o('design.vcs.v')         )
   g.add_output( 'glb_tile.vcs.pg.v',         signoff.o('design.vcs.pg.v')      )
+  g.add_output( 'glb_tile.pt.sdc',           signoff.o('design.pt.sdc')       )
   g.add_output( 'glb_tile.spef.gz',          signoff.o('design.spef.gz')       )
   g.add_output( 'glb_tile.rcbest.spef.gz',   signoff.o('design.rcbest.spef.gz'))
   g.add_output( 'glb_tile.lvs.v',            lvs.o('design_merged.lvs.v')      )
@@ -161,7 +159,6 @@ def construct():
 
   init.extend_inputs( custom_init.all_outputs() )
   power.extend_inputs( custom_power.all_outputs() )
-  cts.extend_inputs( custom_cts.all_outputs() )
 
   # Header files required for glb rtl output
   rtl.extend_postconditions( ["assert File( 'outputs/header' ) "] )
@@ -189,7 +186,6 @@ def construct():
   g.add_step( power                )
   g.add_step( custom_power         )
   g.add_step( place                )
-  g.add_step( custom_cts           )
   g.add_step( cts                  )
   g.add_step( postcts_hold         )
   g.add_step( route                )
@@ -201,8 +197,6 @@ def construct():
   g.add_step( genlibdb_ff          )
   g.add_step( drc                  )
   g.add_step( lvs                  )
-  g.add_step( custom_lvs           )
-  g.add_step( debugcalibre         )
   g.add_step( custom_flowgen_setup )
   g.add_step( custom_hack_sdc_unit )
   g.add_step( custom_hack_lef_ante )
@@ -279,10 +273,6 @@ def construct():
   g.connect_by_name( signoff,              genlibdb_tt    )
   g.connect_by_name( signoff,              genlibdb_ff    )
   g.connect_by_name( signoff,              pt_signoff     )
-  g.connect_by_name( adk,                  debugcalibre   )
-  g.connect_by_name( synth,                debugcalibre   )
-  g.connect_by_name( iflow,                debugcalibre   )
-  g.connect_by_name( signoff,              debugcalibre   )
 
   # Connect spef to genlibdb
   # g.connect( signoff.o( 'design.spef.gz' ),        genlibdb_tt.i( 'design.spef.gz' ) )

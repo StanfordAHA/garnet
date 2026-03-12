@@ -58,20 +58,31 @@ set right_bot [lsort -command port_compare [get_property $right_bot_port_objs hi
 set right [concat $right_bot $right_top]
 
 set cols_per_tile 2
+# [Zircon] 4x bandwidth
+#   input  logic [1:0][3:0] [15:0]  strm_data_f2g,     //4x
+#   input  logic [1:0][3:0]         strm_data_f2g_vld, //4x
+#   output logic [1:0][3:0]         strm_data_f2g_rdy, //4x
+#   output logic [1:0][3:0] [15:0]  strm_data_g2f,     //4x
+#   output logic [1:0][3:0]         strm_data_g2f_vld, //4x
+#   input  logic [1:0][3:0]         strm_data_g2f_rdy, //4x
+set zircon_factor 4
 set cgra_data_width 16
 set cgra_cfg_addr_width 32
 set cgra_cfg_data_width 32
 
 for {set j 0} {$j < $cols_per_tile} {incr j} {
-    for {set k 0} {$k < $cgra_data_width} {incr k} {
-        lappend bottom_col($j) [get_object_name [get_ports "strm_data_f2g[[expr {$j*$cgra_data_width+$k}]]"]]
-        lappend bottom_col($j) [get_object_name [get_ports "strm_data_g2f[[expr {$j*$cgra_data_width+$k}]]"]]
-    }
-    lappend bottom_col($j) [get_object_name [get_ports "strm_data_f2g_vld[$j]"]]
-    lappend bottom_col($j) [get_object_name [get_ports "strm_data_f2g_rdy[$j]"]]
 
-    lappend bottom_col($j) [get_object_name [get_ports "strm_data_g2f_vld[$j]"]]
-    lappend bottom_col($j) [get_object_name [get_ports "strm_data_g2f_rdy[$j]"]]
+    # [Zircon] 4x bandwidth
+    for {set z 0} {$z < $zircon_factor} {incr z} {
+        for {set k 0} {$k < $cgra_data_width} {incr k} {
+            lappend bottom_col($j) [get_object_name [get_ports "strm_data_f2g[[expr {$j*$zircon_factor*$cgra_data_width + $z*$cgra_data_width + $k}]]"]]
+            lappend bottom_col($j) [get_object_name [get_ports "strm_data_g2f[[expr {$j*$zircon_factor*$cgra_data_width + $z*$cgra_data_width + $k}]]"]]
+        }
+        lappend bottom_col($j) [get_object_name [get_ports "strm_data_f2g_vld[[expr {$j*$zircon_factor + $z}]]"]]
+        lappend bottom_col($j) [get_object_name [get_ports "strm_data_f2g_rdy[[expr {$j*$zircon_factor + $z}]]"]]
+        lappend bottom_col($j) [get_object_name [get_ports "strm_data_g2f_vld[[expr {$j*$zircon_factor + $z}]]"]]
+        lappend bottom_col($j) [get_object_name [get_ports "strm_data_g2f_rdy[[expr {$j*$zircon_factor + $z}]]"]]
+    }
 
     lappend bottom_col($j) [get_object_name [get_ports "strm_ctrl_f2g[$j]"]]
     lappend bottom_col($j) [get_object_name [get_ports "strm_ctrl_g2f[$j]"]]
@@ -130,6 +141,5 @@ editPin -pin $left -start { 0 5 } -end [list 0 [expr {$height - 5}]] -side LEFT 
 editPin -pin $right -start [list $width  5] -end [list $width [expr {$height - 5}]] -side RIGHT -spreadType RANGE -spreadDirection counterclockwise -layer M4
 
 for {set j 0} {$j < $cols_per_tile} {incr j} {
-    editPin -pin $bottom_col($j) -start [list [expr {($width/2)*$j+10}] 0] -end [list [expr {($width/2)*($j+1)-10}] 0] -side BOTTOM -spreadType RANGE -spreadDirection counterclockwise -layer M3
+    editPin -pin $bottom_col($j) -start [list [expr {($width/2)*$j+5}] 0] -end [list [expr {($width/2)*($j+1)-5}] 0] -side BOTTOM -spreadType RANGE -spreadDirection counterclockwise -layer M3
 }
-

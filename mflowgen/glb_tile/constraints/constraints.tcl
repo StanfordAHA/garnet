@@ -23,69 +23,79 @@ create_clock -name ${clock_name} \
              -period ${clock_period} \
              [get_ports ${clock_net}]
 
+create_clock -name ${clock_name}_virtual \
+             -period ${clock_period}
+
 # Gated clks
-create_generated_clock -name gclk_cfg \
-    -source [get_ports ${clock_net}] \
-    -divide_by 1 \
-    -master_clock ${clock_name} \
-    -add \
-    [get_pins glb_clk_gate_cfg/gclk]
+# create_generated_clock -name gclk_cfg \
+#     -source [get_ports ${clock_net}] \
+#     -divide_by 1 \
+#     -master_clock ${clock_name} \
+#     -add \
+#     [get_pins glb_clk_gate_cfg/gclk]
 
-create_generated_clock -name gclk_pcfg_broadcast \
-    -source [get_ports ${clock_net}] \
-    -divide_by 1 \
-    -master_clock ${clock_name} \
-    -add \
-    [get_pins glb_clk_gate_pcfg_broadcast/gclk]
+# create_generated_clock -name gclk_pcfg_broadcast \
+#     -source [get_ports ${clock_net}] \
+#     -divide_by 1 \
+#     -master_clock ${clock_name} \
+#     -add \
+#     [get_pins glb_clk_gate_pcfg_broadcast/gclk]
 
-create_generated_clock -name gclk_ld_dma \
-    -source [get_ports ${clock_net}] \
-    -divide_by 1 \
-    -master_clock ${clock_name} \
-    -add \
-    [get_pins glb_clk_gate_ld_dma/gclk]
+# create_generated_clock -name gclk_ld_dma \
+#     -source [get_ports ${clock_net}] \
+#     -divide_by 1 \
+#     -master_clock ${clock_name} \
+#     -add \
+#     [get_pins glb_clk_gate_ld_dma/gclk]
 
-create_generated_clock -name gclk_st_dma \
-    -source [get_ports ${clock_net}] \
-    -divide_by 1 \
-    -master_clock ${clock_name} \
-    -add \
-    [get_pins glb_clk_gate_st_dma/gclk]
+# create_generated_clock -name gclk_st_dma \
+#     -source [get_ports ${clock_net}] \
+#     -divide_by 1 \
+#     -master_clock ${clock_name} \
+#     -add \
+#     [get_pins glb_clk_gate_st_dma/gclk]
 
-create_generated_clock -name gclk_pcfg_dma \
-    -source [get_ports ${clock_net}] \
-    -divide_by 1 \
-    -master_clock ${clock_name} \
-    -add \
-    [get_pins glb_clk_gate_pcfg_dma/gclk]
+# create_generated_clock -name gclk_pcfg_dma \
+#     -source [get_ports ${clock_net}] \
+#     -divide_by 1 \
+#     -master_clock ${clock_name} \
+#     -add \
+#     [get_pins glb_clk_gate_pcfg_dma/gclk]
 
-create_generated_clock -name gclk_proc_switch \
-    -source [get_ports ${clock_net}] \
-    -divide_by 1 \
-    -master_clock ${clock_name} \
-    -add \
-    [get_pins glb_clk_gate_proc_switch/gclk]
+# create_generated_clock -name gclk_proc_switch \
+#     -source [get_ports ${clock_net}] \
+#     -divide_by 1 \
+#     -master_clock ${clock_name} \
+#     -add \
+#     [get_pins glb_clk_gate_proc_switch/gclk]
 
-create_generated_clock -name gclk_strm_switch \
-    -source [get_ports ${clock_net}] \
-    -divide_by 1 \
-    -master_clock ${clock_name} \
-    -add \
-    [get_pins glb_clk_gate_strm_switch/gclk]
+# create_generated_clock -name gclk_strm_switch \
+#     -source [get_ports ${clock_net}] \
+#     -divide_by 1 \
+#     -master_clock ${clock_name} \
+#     -add \
+#     [get_pins glb_clk_gate_strm_switch/gclk]
 
-create_generated_clock -name gclk_pcfg_switch \
-    -source [get_ports ${clock_net}] \
-    -divide_by 1 \
-    -master_clock ${clock_name} \
-    -add \
-    [get_pins glb_clk_gate_pcfg_switch/gclk]
+# create_generated_clock -name gclk_pcfg_switch \
+#     -source [get_ports ${clock_net}] \
+#     -divide_by 1 \
+#     -master_clock ${clock_name} \
+#     -add \
+#     [get_pins glb_clk_gate_pcfg_switch/gclk]
 
-create_generated_clock -name gclk_bank \
-    -source [get_ports ${clock_net}] \
-    -divide_by 1 \
-    -master_clock ${clock_name} \
-    -add \
-    [get_pins glb_clk_gate_bank/gclk]
+# create_generated_clock -name gclk_mu_rd_switch \
+#     -source [get_ports ${clock_net}] \
+#     -divide_by 1 \
+#     -master_clock ${clock_name} \
+#     -add \
+#     [get_pins glb_clk_gate_mu_rd_switch/gclk]
+
+# create_generated_clock -name gclk_bank \
+#     -source [get_ports ${clock_net}] \
+#     -divide_by 1 \
+#     -master_clock ${clock_name} \
+#     -add \
+#     [get_pins glb_clk_gate_bank/gclk]
 
 #=========================================================================
 # load
@@ -106,20 +116,20 @@ set_driving_cell -no_design_rule \
 #=========================================================================
 # set_input_delay
 #=========================================================================
-set_input_delay -clock ${clock_name} 200 [all_inputs -no_clocks]
-set_input_delay -clock ${clock_name} 300 [get_ports *_est* -filter "direction==in"]
-set_input_delay -clock ${clock_name} 300 [get_ports *_wst* -filter "direction==in"]
+set_input_delay -clock ${clock_name}_virtual 200 [all_inputs -no_clocks]
+set_input_delay -clock ${clock_name}_virtual 300 [get_ports *_est* -filter "direction==in"]
+set_input_delay -clock ${clock_name}_virtual 300 [get_ports *_wst* -filter "direction==in"]
 
 # set_output_delay constraints for output ports
-set_output_delay -clock ${clock_name} 300 [all_outputs]
-set_output_delay -clock ${clock_name} 600 [get_ports *_est* -filter "direction==out"]
-set_output_delay -clock ${clock_name} 600 [get_ports *_wst* -filter "direction==out"]
+set_output_delay -clock ${clock_name}_virtual 300 [all_outputs]
+set_output_delay -clock ${clock_name}_virtual 600 [get_ports *_est* -filter "direction==out"]
+set_output_delay -clock ${clock_name}_virtual 600 [get_ports *_wst* -filter "direction==out"]
 
 # g2f output ports should have high output_delay to make internal delay low
-set_output_delay -clock ${clock_name} 800 [get_ports cgra_cfg_*g2f* -filter "direction==out"]
-set_output_delay -clock ${clock_name} 800 [get_ports strm_data_*g2f* -filter "direction==out"]
-set_output_delay -clock ${clock_name} 800 [get_ports strm_data_*f2g* -filter "direction==out"]
-set_output_delay -clock ${clock_name} 800 [get_ports data_flush* -filter "direction==out"]
+set_output_delay -clock ${clock_name}_virtual 800 [get_ports cgra_cfg_*g2f* -filter "direction==out"]
+set_output_delay -clock ${clock_name}_virtual 800 [get_ports strm_data_*g2f* -filter "direction==out"]
+set_output_delay -clock ${clock_name}_virtual 800 [get_ports strm_data_*f2g* -filter "direction==out"]
+set_output_delay -clock ${clock_name}_virtual 800 [get_ports data_flush* -filter "direction==out"]
 
 # set_min_delay for all tile-connected inputs
 set_min_delay -from [get_ports *_est* -filter "direction==in"] 400
@@ -152,14 +162,14 @@ set_multicycle_path -setup 10 -from [get_cells glb_cfg/glb_pio/pio_logic/*] -thr
 set_multicycle_path -hold 9 -from [get_cells glb_cfg/glb_pio/pio_logic/*] -through [get_pins glb_cfg/cfg_* -filter "direction==out"]
 
 # these inputs/outputs are configuration register
-set_multicycle_path -setup 10 -from {cfg_tile_connected_wsti}
-set_multicycle_path -hold 9 -from {cfg_tile_connected_wsti}
-set_multicycle_path -setup 10 -from {cfg_pcfg_tile_connected_wsti}
-set_multicycle_path -hold 9 -from {cfg_pcfg_tile_connected_wsti}
-set_multicycle_path -setup 10 -to {cfg_tile_connected_esto}
-set_multicycle_path -hold 9 -to {cfg_tile_connected_esto}
-set_multicycle_path -setup 10 -to {cfg_pcfg_tile_connected_esto}
-set_multicycle_path -hold 9 -to {cfg_pcfg_tile_connected_esto}
+# set_multicycle_path -setup 10 -from {cfg_tile_connected_wsti}
+# set_multicycle_path -hold   9 -from {cfg_tile_connected_wsti}
+# set_multicycle_path -setup 10 -from {cfg_pcfg_tile_connected_wsti}
+# set_multicycle_path -hold   9 -from {cfg_pcfg_tile_connected_wsti}
+# set_multicycle_path -setup 10 -to   {cfg_tile_connected_esto}
+# set_multicycle_path -hold   9 -to   {cfg_tile_connected_esto}
+# set_multicycle_path -setup 10 -to   {cfg_pcfg_tile_connected_esto}
+# set_multicycle_path -hold   9 -to   {cfg_pcfg_tile_connected_esto}
  
 # # Just make clk-gate enable to single cycle
 # set_multicycle_path -setup 1 -to [get_pins glb_clk_gate*/enable]
@@ -188,7 +198,7 @@ set_multicycle_path -hold 3 -from [get_ports cgra_cfg_jtag_rd_en_wsti]
 set_max_fanout 20 $design_name
 
 # Make all signals meet good slew
-set_max_transition [expr 0.10*${clock_period}] $design_name
+set_max_transition 100 $design_name
 
 set_false_path -hold -through [get_property [get_pins -hierarchical */fwen]      full_name]
 set_false_path -hold -through [get_property [get_pins -hierarchical */clkbyp]    full_name]
@@ -201,27 +211,3 @@ set_false_path -hold -through [get_property [get_pins -hierarchical */wpulse[0]]
 set_false_path -hold -through [get_property [get_pins -hierarchical */wpulse[1]] full_name]
 set_false_path -hold -through [get_property [get_pins -hierarchical */wa[0]]     full_name]
 set_false_path -hold -through [get_property [get_pins -hierarchical */wa[1]]     full_name]
-
-###########################################################################
-# Disabling Timing Checks on Input Diodes
-#
-# Input diodes are dynamically added during the PnR initialization stage.
-# To ensure accurate timing analysis, we need the tool to ignore timing
-# checks on these cells. However, since constraints may be applied before
-# these cells are introduced, we include a safeguard to verify their
-# existence before applying the constraint.
-###########################################################################
-
-# Get the list of cells matching the pattern "IN_PORT_DIODE_*"
-set diode_cells [get_cells -quiet -hierarchical -filter "name =~ IN_PORT_DIODE_*"]
-
-# Check if the list is not empty
-if {[llength $diode_cells] > 0} {
-    foreach cell $diode_cells {
-        # Apply false path to each cell
-        set_false_path -through $cell
-    }
-    puts "False path applied to diode cells: $diode_cells"
-} else {
-    puts "No matching diode cells found."
-}
