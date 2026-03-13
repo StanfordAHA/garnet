@@ -376,10 +376,13 @@ void *parse_io(json_t const *io_json, enum IO io) {
     }
     io_info->num_io_tiles = cnt;
 
-    // If the number of io_tiles is larger than 1, then the number of io_tiles
-    // should be equal to the innermost_channel
-    if (io_info->num_io_tiles > 1) {
-        assert(io_info->num_io_tiles == channel[0]);
+    // If the number of real io_tiles is larger than 1, then it should be equal to the innermost_channel
+    int real_tile_cnt = 0;
+    for (int i = 0; i < io_info->num_io_tiles; i++) {
+        if (io_info->io_tiles[i].is_fake_io == 0) real_tile_cnt++;
+    }
+    if (real_tile_cnt > 1) {
+        assert(real_tile_cnt == channel[0]);
     }
 
     return io_info;
@@ -1013,6 +1016,11 @@ int get_io_tile_extent_multiplier(void *info, int index) {
 int get_io_tile_bank_toggle_mode(void *info, int index) {
     GET_IO_INFO(info);
     return io_info->io_tiles[index].bank_toggle_mode;
+}
+
+int get_io_tile_is_fake_io(void *info, int index) {
+    GET_IO_INFO(info);
+    return io_info->io_tiles[index].is_fake_io;
 }
 
 int get_output_size(void *info, int index) {

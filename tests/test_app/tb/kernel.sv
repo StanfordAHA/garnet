@@ -134,6 +134,10 @@ import "DPI-C" function int get_io_tile_bank_toggle_mode(
     chandle info,
     int index
 );
+import "DPI-C" function int get_io_tile_is_fake_io(
+    chandle info,
+    int index
+);
 
 import "DPI-C" function chandle get_kernel_configuration(chandle info);
 import "DPI-C" function chandle get_pcfg_configuration(chandle info);
@@ -187,6 +191,7 @@ typedef struct {
     int is_glb_input; // for back-to-back kernels to judge if input is already in glb
     int E64_packed;
     int bank_toggle_mode;
+    int is_fake_io;
     data_array_t io_block_data;
 } IOTile;
 
@@ -685,6 +690,7 @@ function int Kernel::kernel_map();
             inputs[i].io_tiles[j].is_glb_input = get_io_tile_is_glb_input(io_info, j); // for back-to-back kernels
             inputs[i].io_tiles[j].tb_write_start_addr = get_io_tile_tb_write_start_addr(io_info, j); // for testbench write
             inputs[i].io_tiles[j].E64_packed = get_io_tile_E64_packed(io_info, j);
+            inputs[i].io_tiles[j].is_fake_io = get_io_tile_is_fake_io(io_info, j);
         end
     end
 
@@ -696,6 +702,7 @@ function int Kernel::kernel_map();
             outputs[i].io_tiles[j].gold_check_start_addr = get_io_tile_gold_check_start_addr(io_info, j);
             outputs[i].io_tiles[j].E64_packed = get_io_tile_E64_packed(io_info, j);
             outputs[i].io_tiles[j].bank_toggle_mode = get_io_tile_bank_toggle_mode(io_info, j);
+            outputs[i].io_tiles[j].is_fake_io = get_io_tile_is_fake_io(io_info, j);
         end
     end
 

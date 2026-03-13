@@ -467,7 +467,8 @@ task Env_set_interrupt_on();
     data = 32'b0;
     foreach (kernel.inputs[i]) begin
         foreach (kernel.inputs[i].io_tiles[j]) begin
-            data |= 1 << kernel.inputs[i].io_tiles[j].tile;
+            if (kernel.inputs[i].io_tiles[j].is_fake_io == 0)
+                data |= 1 << kernel.inputs[i].io_tiles[j].tile;
         end
     end
     $display("G2F interrupt enable : %0x\n", data);
@@ -479,7 +480,8 @@ task Env_set_interrupt_on();
     data = 32'b0;
     foreach (kernel.outputs[i]) begin
         foreach (kernel.outputs[i].io_tiles[j]) begin
-            data |= 1 << kernel.outputs[i].io_tiles[j].tile;
+            if (kernel.outputs[i].io_tiles[j].is_fake_io == 0)
+                data |= 1 << kernel.outputs[i].io_tiles[j].tile;
         end
     end
     $display("F2G interrupt enable : %0x\n", data);
@@ -558,6 +560,16 @@ task Env_log_performance();
 endtask // Env_log_performance
 
 
+task Env_cgra_reset();
+    $display("[%0t] CGRA reset BEGIN", $time);
+    inter_kernel_reset = 1;
+    repeat (3) @(posedge p_ifc.clk);
+    inter_kernel_reset = 0;
+    repeat (20) @(posedge p_ifc.clk);
+    $display("[%0t] CGRA reset END", $time);
+endtask // Env_cgra_reset
+
+
 task Env_run();
     // int dpr;  (declared in garnet_test.sv, which "include"s this file)
     // wait for reset
@@ -580,6 +592,7 @@ task Env_run();
                 kernel = kernels[j];
                 dnn_layer = dnn_layers[j];
                 external_mu_active = external_mu_active_arr[j];
+                if (j > 0) Env_cgra_reset();
                  // turn on interrupt
                 $display("[%0t] turn on interrupt", $time);  // 120ps?
                 Env_set_interrupt_on();
@@ -600,7 +613,6 @@ task Env_run();
                 Env_kernel_test();
                 Env_read_data();      $display("[%0t] read_data DONE", $time);
                 kernel.compare();
-                $display("[%0t] Processing kernel %0d END", $time, j);
                 Env_log_performance();
             end
         end
@@ -613,7 +625,8 @@ task build_input_tile_mask();
     tile_mask = 0;
     foreach (kernel.inputs[i]) begin
         foreach (kernel.inputs[i].io_tiles[j]) begin
-            tile_mask |= 1 << kernel.inputs[i].io_tiles[j].tile;
+            if (kernel.inputs[i].io_tiles[j].is_fake_io == 0)
+                tile_mask |= 1 << kernel.inputs[i].io_tiles[j].tile;
         end
     end
     $display("\n[%0t] Built a INPUT tile mask %0x", $time, tile_mask);
@@ -624,7 +637,8 @@ task build_output_tile_mask();
     tile_mask = 0;
     foreach (kernel.outputs[i]) begin
         foreach (kernel.outputs[i].io_tiles[j]) begin
-            tile_mask |= 1 << kernel.outputs[i].io_tiles[j].tile;
+            if (kernel.outputs[i].io_tiles[j].is_fake_io == 0)
+                tile_mask |= 1 << kernel.outputs[i].io_tiles[j].tile;
         end
     end
     $display("\n[%0t] Built a OUTPUT tile mask %0x", $time, tile_mask);

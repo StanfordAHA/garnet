@@ -130,6 +130,7 @@ int get_io_tile_is_glb_input(void *info, int index); // for back-to-back kernels
 int get_io_tile_E64_packed(void *info, int index);
 int get_io_tile_use_multi_bank_mode(void *info, int index);
 int get_io_tile_bank_toggle_mode(void *info, int index);
+int get_io_tile_is_fake_io(void *info, int index);
 
 // helper functions to access data from SV testbench
 int get_num_groups(void *info);

@@ -13,8 +13,9 @@ import "DPI-C" function int initialize_monitor(int num_cols);
 program garnet_test #(
     parameter int MAX_NUM_APPS = 1000
 ) (
-    input logic clk,
-    reset,
+    input  logic clk,
+    input  logic reset,
+    output logic inter_kernel_reset,
     proc_ifc p_ifc,
     axil_ifc axil_ifc,
     axil_ifc mu_axil_ifc,
@@ -50,6 +51,8 @@ program garnet_test #(
         time_check(1ps == 1.0);  //   pass    pass   ERROR   ERROR
         time_check(irt == rrt);  //   pass    ERROR
     end
+
+    initial inter_kernel_reset = 0;
 
     initial begin
         if ($value$plusargs("DPR=%d", value)) begin

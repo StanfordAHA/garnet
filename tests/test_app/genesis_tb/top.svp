@@ -36,6 +36,7 @@ module top;
     logic clk;
     logic reset;
     logic interrupt;
+    logic inter_kernel_reset;
 
     //============================================================================//
     // clk / reset generation
@@ -175,12 +176,13 @@ module top;
     // instantiate test
     //============================================================================//
     garnet_test test (
-        .clk     (clk),
-        .reset   (reset),
-        .p_ifc   (p_ifc),
-        .axil_ifc(axil_ifc),
-        .mu_axil_ifc(mu_axil_ifc),
-        .behavioral_mu_ifc (behavioral_mu_ifc)
+        .clk                (clk),
+        .reset              (reset),
+        .inter_kernel_reset (inter_kernel_reset),
+        .p_ifc              (p_ifc),
+        .axil_ifc           (axil_ifc),
+        .mu_axil_ifc        (mu_axil_ifc),
+        .behavioral_mu_ifc  (behavioral_mu_ifc)
     );
 
 
@@ -191,7 +193,7 @@ module top;
         Zircon dut (
         // clk/reset/interrupt
         .clk_in              (clk),
-        .reset_in            (reset),
+        .reset_in            (reset | inter_kernel_reset),
         .interrupt           (interrupt),
         .cgra_running_clk_out(  /*unused*/),
 
@@ -264,7 +266,7 @@ module top;
         Garnet dut (
             // clk/reset/interrupt
             .clk_in              (clk),
-            .reset_in            (reset),
+            .reset_in            (reset | inter_kernel_reset),
             .interrupt           (interrupt),
             .cgra_running_clk_out(  /*unused*/),
 

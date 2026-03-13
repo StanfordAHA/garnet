@@ -522,8 +522,11 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
 
     if (io_tile_info->io == Input) {
 
-        // Point to the other bank if the input is stored in GLB
-        if (io_tile_info->is_glb_input == 1) start_addr = start_addr + (1 << BANK_ADDR_WIDTH);
+        // Point to the other bank if the input is stored in GLB.
+        // In E64_MB mode, both input and output are assigned the same bank (tile*2 + j%2),
+        // so no offset is needed.
+        if (io_tile_info->is_glb_input == 1 && !(E64_multi_bank_mode && E64_packed && tile_use_multi_bank_mode))
+            start_addr = start_addr + (1 << BANK_ADDR_WIDTH);
 
         if (strcmp(io_tile_info->mode, "RV") == 0) {
             printf("\nIO tiles are in READY-VALID mode\n");
