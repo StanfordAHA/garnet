@@ -274,6 +274,10 @@ def gen_global_buffer_params(**kwargs):
     mu_glb_crossbar = kwargs.pop('mu_glb_crossbar', False)
     include_glb_ring_switch = kwargs.pop('include_glb_ring_switch', False)
 
+    # If using mu_glb_hw, default to ring interconnect if crossbar not specified (legacy for Zircon)
+    if include_mu_glb_hw and not mu_glb_crossbar:
+        mu_glb_ring_interconnect = True
+
     if config_port_pipeline is True:
         config_port_pipeline_depth = 1
     else:
