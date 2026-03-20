@@ -22,12 +22,12 @@ foreach s ${active_scenarios} {
 set vars(analysis_views)                         [concat ${setup_a_views} ${hold_a_views}]
 
 foreach s ${active_scenarios} {
-    set vars(analysis_setup_${s},delay_corner)          delay_default
+    set vars(analysis_setup_${s},delay_corner)          delay_typical
     set vars(analysis_setup_${s},constraint_mode)       constraints_${s}
     if {[lsearch -exact $vars(delay_corners) "delay_best"] != -1} {
       set vars(analysis_hold_${s},delay_corner)          delay_best
     } else {
-      set vars(analysis_hold_${s},delay_corner)          delay_default
+      set vars(analysis_hold_${s},delay_corner)          delay_typical
     }
     set vars(analysis_hold_${s},constraint_mode)       constraints_${s}
 }

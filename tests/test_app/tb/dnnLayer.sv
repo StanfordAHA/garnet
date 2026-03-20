@@ -18,12 +18,14 @@ typedef struct {
         byte_array_t tensor_8b;
         int size;
         int start_addr;
+        int tensor_exists; // Indicates if the tensor exists
 } tensor_8b_info_t;
 
 typedef struct {
         half_array_t tensor_16b;
         int size;
         int start_addr;
+        int tensor_exists; // Indicates if the tensor exists
 } tensor_16b_info_t;
 
 typedef struct {
@@ -32,26 +34,12 @@ typedef struct {
 } tensor_32b_info_t;
 
 class DnnLayer;
-
-    byte_array_t inputActivation;
-    byte_array_t weight;
-    half_array_t bias;
-    byte_array_t inputScale;
-    byte_array_t weightScale;
-    matrix_params_array_t serialized_matrix_params;
-
     tensor_8b_info_t inputActivation_info;
     tensor_8b_info_t inputScale_info;
     tensor_8b_info_t weight_info;
     tensor_8b_info_t weightScale_info;
     tensor_16b_info_t bias_info;
     tensor_32b_info_t serialized_matrix_params_info;
-
-    int inputActivation_start_addr;
-    int weight_start_addr;
-    int bias_start_addr;
-    int inputScale_start_addr;
-    int weightScale_start_addr;
 
     string inputActivation_filename;
     string weight_filename;
@@ -82,32 +70,21 @@ function DnnLayer::read_params(string app_dir);
 
    inputActivation_filename = {app_dir, "/tensor_files/input_hex.txt"};
    inputActivation_info = parse_8b_data(inputActivation_filename);
-   inputActivation = inputActivation_info.tensor_8b;
-   inputActivation_start_addr = inputActivation_info.start_addr;
 
    inputScale_filename = {app_dir, "/tensor_files/inputScale_hex.txt"};
    inputScale_info = parse_8b_data(inputScale_filename);
-   inputScale = inputScale_info.tensor_8b;
-   inputScale_start_addr = inputScale_info.start_addr;
 
    weight_filename = {app_dir, "/tensor_files/weight_hex.txt"};
    weight_info = parse_8b_data(weight_filename);
-   weight = weight_info.tensor_8b;
-   weight_start_addr = weight_info.start_addr;
 
    weightScale_filename = {app_dir, "/tensor_files/weightScale_hex.txt"};
    weightScale_info = parse_8b_data(weightScale_filename);
-   weightScale = weightScale_info.tensor_8b;
-   weightScale_start_addr = weightScale_info.start_addr;
 
    bias_filename = {app_dir, "/tensor_files/bias_hex.txt"};
    bias_info = parse_16b_data(bias_filename);
-   bias = bias_info.tensor_16b;
-   bias_start_addr = bias_info.start_addr;
 
    matrix_params_filename = {app_dir, "/serialized_matrix_params.txt"};;
    serialized_matrix_params_info = parse_32b_data(matrix_params_filename);
-   serialized_matrix_params = serialized_matrix_params_info.tensor_32b;
 
    $display("\nDnnLayer object successfully created\n");
 
@@ -128,6 +105,7 @@ endfunction
 function tensor_8b_info_t DnnLayer::parse_8b_data(string filename);
     int cnt = 0;
     int size;
+    int tensor_exists;
     int start_addr;
     tensor_8b_info_t result;
     string line;
@@ -136,16 +114,35 @@ function tensor_8b_info_t DnnLayer::parse_8b_data(string filename);
     $display("[%0t] Reading dnn layer params from %s", $time, filename);
     assertion(fp != 0, "Unable to read file!");
 
-    // Read and parse the size from the first line
+
+    // Read and parse tensor exists (true or false) from the first line
     void'($fgets(line, fp));
-    if (!$sscanf(line, "SIZE: %d", size)) begin
-        $fatal(1, "Expected first line in file to be 'SIZE: <int>', got: %s", line);
+    if (!$sscanf(line, "TENSOR_EXISTS: %d", tensor_exists)) begin
+        $fatal(1, "Expected first line in file to be 'TENSOR_EXISTS: <0|1>', got: %s", line);
+    end
+    if (tensor_exists == 0) begin
+        $display("INFO: %s indicates that tensor does not exist. Returning empty tensor.", filename);
+        result.tensor_exists = 0;
+        result.size = 0;
+        result.start_addr = 0;
+        $fclose(fp);
+        return result;
+    end else if (tensor_exists == 1) begin
+        result.tensor_exists = 1;
+    end else begin
+        $fatal(1, "Expected first line in file to be 'TENSOR_EXISTS: <0|1>', got: %s", line);
     end
 
-    // Read and parse the start addr from the second line
+    // Read and parse the size from the second line
+    void'($fgets(line, fp));
+    if (!$sscanf(line, "SIZE: %d", size)) begin
+        $fatal(1, "Expected second line in file to be 'SIZE: <int>', got: %s", line);
+    end
+
+    // Read and parse the start addr from the third line
     void'($fgets(line, fp));
     if (!$sscanf(line, "START_ADDR: %d", start_addr)) begin
-        $fatal(1, "Expected first line in file to be 'START_ADDR: <int>', got: %s", line);
+        $fatal(1, "Expected third line in file to be 'START_ADDR: <int>', got: %s", line);
     end
 
 
@@ -190,6 +187,7 @@ endfunction
 function tensor_16b_info_t DnnLayer::parse_16b_data(string filename);
     int cnt = 0;
     int size;
+    int tensor_exists;
     int start_addr;
     tensor_16b_info_t result;
     string line;
@@ -198,16 +196,35 @@ function tensor_16b_info_t DnnLayer::parse_16b_data(string filename);
     $display("[%0t] Reading dnn layer params from %s", $time, filename);
     assertion(fp != 0, "Unable to read file!");
 
-    // Read and parse the size from the first line
+
+    // Read and parse tensor exists (true or false) from the first line
     void'($fgets(line, fp));
-    if (!$sscanf(line, "SIZE: %d", size)) begin
-        $fatal(1, "Expected first line in file to be 'SIZE: <int>', got: %s", line);
+    if (!$sscanf(line, "TENSOR_EXISTS: %d", tensor_exists)) begin
+        $fatal(1, "Expected first line in file to be 'TENSOR_EXISTS: <0|1>', got: %s", line);
+    end
+    if (tensor_exists == 0) begin
+        $display("INFO: %s indicates that tensor does not exist. Returning empty tensor.", filename);
+        result.tensor_exists = 0;
+        result.size = 0;
+        result.start_addr = 0;
+        $fclose(fp);
+        return result;
+    end else if (tensor_exists == 1) begin
+        result.tensor_exists = 1;
+    end else begin
+        $fatal(1, "Expected first line in file to be 'TENSOR_EXISTS: <0|1>', got: %s", line);
     end
 
-    // Read and parse the start addr from the second line
+    // Read and parse the size from the second line
+    void'($fgets(line, fp));
+    if (!$sscanf(line, "SIZE: %d", size)) begin
+        $fatal(1, "Expected second line in file to be 'SIZE: <int>', got: %s", line);
+    end
+
+    // Read and parse the start addr from the third line
     void'($fgets(line, fp));
     if (!$sscanf(line, "START_ADDR: %d", start_addr)) begin
-        $fatal(1, "Expected first line in file to be 'START_ADDR: <int>', got: %s", line);
+        $fatal(1, "Expected third line in file to be 'START_ADDR: <int>', got: %s", line);
     end
 
     result.size = size;

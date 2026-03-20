@@ -44,6 +44,8 @@ struct IOTileInfo {
     enum IO io;
     int tile;
     int start_addr;
+    int gold_check_start_addr; // for gold check, may be different from start_addr
+    int tb_write_start_addr; // for testbench to write data
     int cycle_start_addr;
 
     struct Position pos;
@@ -55,6 +57,8 @@ struct IOTileInfo {
     int data_stride[LOOP_LEVEL];
     int extent[LOOP_LEVEL];
     int E64_packed;
+    int use_multi_bank_mode;
+    int extent_multiplier;
 
     // For back-to-back kernels
     int is_glb_input;
@@ -124,6 +128,7 @@ int get_io_tile_cycle_stride(void *info, int index, int stride_idx);
 int get_io_tile_data_stride(void *info, int index, int stride_idx);
 int get_io_tile_is_glb_input(void *info, int index); // for back-to-back kernels judge if the input is already in global buffer
 int get_io_tile_E64_packed(void *info, int index);
+int get_io_tile_use_multi_bank_mode(void *info, int index);
 int get_io_tile_bank_toggle_mode(void *info, int index);
 
 // helper functions to access data from SV testbench

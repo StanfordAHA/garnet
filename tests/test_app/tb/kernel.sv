@@ -31,6 +31,7 @@ import "DPI-C" function chandle get_output_info(
 );
 import "DPI-C" function int glb_map(chandle kernel, int dpr_enabled);
 import "DPI-C" function int get_exchange_64_config();
+import "DPI-C" function int is_voyager_standalone_cgra_app();
 import "DPI-C" function int get_num_groups(chandle info);
 import "DPI-C" function int get_group_start(chandle info);
 import "DPI-C" function int get_app_type(chandle info);
@@ -86,6 +87,14 @@ import "DPI-C" function int get_io_tile_start_addr(
     chandle info,
     int index
 );
+import "DPI-C" function int get_io_tile_gold_check_start_addr(
+    chandle info,
+    int index
+);
+import "DPI-C" function int get_io_tile_tb_write_start_addr(
+    chandle info,
+    int index
+);
 import "DPI-C" function int get_io_tile_map_tile(
     chandle info,
     int index
@@ -114,6 +123,10 @@ import "DPI-C" function int get_io_tile_is_glb_input( // for back-to-back kernel
     int index
 );
 import "DPI-C" function int get_io_tile_E64_packed(
+    chandle info,
+    int index
+);
+import "DPI-C" function int get_io_tile_extent_multiplier(
     chandle info,
     int index
 );
@@ -168,6 +181,8 @@ typedef bitstream_entry_t bitstream_t[];
 typedef struct {
     int tile;
     int start_addr;
+    int gold_check_start_addr; // for gold check, may be different from start_addr
+    int tb_write_start_addr; // for testbench to write data
     int num_data;
     int is_glb_input; // for back-to-back kernels to judge if input is already in glb
     int E64_packed;
@@ -350,12 +365,14 @@ function Kernel::new(string app_dir, int dpr);
         end else begin
             for (int j = 0; j < num_io_tiles; j++) begin
             num_pixels = input_data[i].size / num_io_tiles;
+            // To ensure all data gets read out. Useful when applying E64 packing
+            num_pixels = num_pixels * get_io_tile_extent_multiplier(io_info, j);
                 inputs[i].io_tiles[j].num_data = num_pixels;
                 inputs[i].io_tiles[j].io_block_data = new[num_pixels];
                 // NOTE: We assume only innermost loop is unrolled.
                 for (int k = 0; k < num_pixels; k++) begin
                     // Interleaving is different for MU if operating in E64 mode
-                    if ((app_type == MU2CGRA_GLB2CGRA) && get_exchange_64_config() == 1) begin
+                    if ((app_type == MU2CGRA_GLB2CGRA || is_voyager_standalone_cgra_app()) && get_exchange_64_config() == 1) begin
                         input_data_index = (int'(k/4) * 4) * num_io_tiles + j * 4 + (k % 4);
                         inputs[i].io_tiles[j].io_block_data[k] = input_data[i][input_data_index];
                     end else begin
@@ -430,6 +447,9 @@ function Kernel::new(string app_dir, int dpr);
                     num_pixels = num_pixels * get_io_tile_extent(io_info, j, k);
                 end
             end
+
+            // To ensure all data gets read out. Useful when applying E64 packing or k-dim host tiling in zircon
+            num_pixels = num_pixels * get_io_tile_extent_multiplier(io_info, j);
 
             // For GLB tiling read memory region of entire feature map
             if (num_glb_tiling > 0) begin
@@ -663,6 +683,7 @@ function int Kernel::kernel_map();
             inputs[i].io_tiles[j].tile = get_io_tile_map_tile(io_info, j);
             inputs[i].io_tiles[j].start_addr = get_io_tile_start_addr(io_info, j);
             inputs[i].io_tiles[j].is_glb_input = get_io_tile_is_glb_input(io_info, j); // for back-to-back kernels
+            inputs[i].io_tiles[j].tb_write_start_addr = get_io_tile_tb_write_start_addr(io_info, j); // for testbench write
             inputs[i].io_tiles[j].E64_packed = get_io_tile_E64_packed(io_info, j);
         end
     end
@@ -672,6 +693,7 @@ function int Kernel::kernel_map();
         for (int j = 0; j < outputs[i].num_io_tiles; j++) begin
             outputs[i].io_tiles[j].tile = get_io_tile_map_tile(io_info, j);
             outputs[i].io_tiles[j].start_addr = get_io_tile_start_addr(io_info, j);
+            outputs[i].io_tiles[j].gold_check_start_addr = get_io_tile_gold_check_start_addr(io_info, j);
             outputs[i].io_tiles[j].E64_packed = get_io_tile_E64_packed(io_info, j);
             outputs[i].io_tiles[j].bank_toggle_mode = get_io_tile_bank_toggle_mode(io_info, j);
         end
@@ -762,7 +784,7 @@ function void Kernel::compare();
                 for (int k = 0; k < num_pixels; k++) begin
 
                     // Deinterleaving is different for MU if operating in E64 mode
-                    if ((app_type == MU2CGRA || app_type == MU2CGRA_GLB2CGRA) && get_exchange_64_config() == 1 && outputs[i].io_tiles[j].E64_packed == 1 || outputs[i].io_tiles[j].bank_toggle_mode == 1) begin
+                    if ((app_type == MU2CGRA || app_type == MU2CGRA_GLB2CGRA || is_voyager_standalone_cgra_app()) && get_exchange_64_config() == 1 && outputs[i].io_tiles[j].E64_packed == 1 || outputs[i].io_tiles[j].bank_toggle_mode == 1) begin
                         output_data_index = (int'(k/4) * 4) * num_io_tiles + j * 4 + (k % 4);
                         output_data[i][output_data_index] = outputs[i].io_tiles[j].io_block_data[k];
                     end else begin

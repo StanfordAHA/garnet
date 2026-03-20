@@ -3,16 +3,17 @@ import math
 import os
 
 
-def gen_param_header(top_name, params, output_folder):
+def gen_param_header(top_name, matrix_unit_params, glb_params, output_folder):
     h_filename = os.path.join(output_folder, f"{top_name}.h")
     svh_filename = os.path.join(output_folder, f"{top_name}.svh")
-    gen_header_files(params=params,
+    gen_header_files(matrix_unit_params=matrix_unit_params,
+                     glb_params=glb_params,
                      svh_filename=svh_filename,
                      h_filename=h_filename,
                      header_name="matrix_unit")
 
 
-def gen_header_files(params, svh_filename, h_filename, header_name):
+def gen_header_files(matrix_unit_params, glb_params, svh_filename, h_filename, header_name):
     # mod_params = asdict(params)
 
     folder = svh_filename.rsplit('/', 1)[0]
@@ -25,7 +26,7 @@ def gen_header_files(params, svh_filename, h_filename, header_name):
         f.write(f"`ifndef {header_name.upper()}_PARAM\n")
         f.write(f"`define {header_name.upper()}_PARAM\n")
         f.write(f"package {header_name}_param;\n")
-        for k, v in params.items():
+        for k, v in matrix_unit_params.items():
             if type(v) is str:
                 continue
             v = int(v)
@@ -33,10 +34,14 @@ def gen_header_files(params, svh_filename, h_filename, header_name):
         f.write("endpackage\n")
         f.write("`endif\n")
 
+        num_tile_id_bits_in_mu_addr = glb_params.tile_sel_addr_width - math.log2(glb_params.mu_word_num_tiles)
+        if num_tile_id_bits_in_mu_addr > 1:
+            f.write(f"`define DEFAULT_MU_ADDR_TRANSL_LEGAL 1\n")
+
     os.makedirs(os.path.dirname(h_filename), exist_ok=True)
     with open(h_filename, "w") as f:
         f.write("#pragma once\n")
-        for k, v in params.items():
+        for k, v in matrix_unit_params.items():
             if type(v) is str:
                 continue
             v = int(v)

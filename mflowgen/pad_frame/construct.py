@@ -13,6 +13,9 @@ from common.get_sys_adk import get_sys_adk
 def construct():
     g = Graph()
 
+    from common.global_setup import global_setup
+    global_setup(__file__)
+
     # -----------------------------------------------------------------------
     # Parameters
     # -----------------------------------------------------------------------

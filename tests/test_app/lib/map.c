@@ -24,6 +24,17 @@ struct Monitor {
 
 static struct Monitor monitor;
 
+
+int is_voyager_standalone_cgra_app() {
+    int voyager_standalone_cgra_app = 0;
+    const char *voyager_standalone_cgra_app_env_var = "VOYAGER_STANDALONE_CGRA_APP";
+    char *voyager_standalone_cgra_app_value = getenv(voyager_standalone_cgra_app_env_var);
+    if (voyager_standalone_cgra_app_value != NULL && strcmp(voyager_standalone_cgra_app_value, "1") == 0) {
+        voyager_standalone_cgra_app = 1;
+    }
+    return voyager_standalone_cgra_app;
+}
+
 int get_exchange_64_config() {
     int exchange_64_mode = 0;
     const char *exchange_64_env_var = "E64_MODE_ON";
@@ -211,12 +222,16 @@ int glb_map(void *kernel_, int dpr_enabled) {
             }
             printf("Group start: %d, pos x: %d\n", group_start, io_tile_info->pos.x);
             io_tile_info->tile = tile;
-            if (get_E64_multi_bank_mode_config() && io_tile_info->E64_packed) {
+            if (get_E64_multi_bank_mode_config() && io_tile_info->E64_packed && io_tile_info->use_multi_bank_mode) {
                 io_tile_info->start_addr =
                 (io_tile_info->start_addr << CGRA_BYTE_OFFSET) + ((tile * 2 + j%2) << BANK_ADDR_WIDTH);
+                io_tile_info->tb_write_start_addr =
+                (io_tile_info->tb_write_start_addr << CGRA_BYTE_OFFSET) + ((tile * 2 + j%2) << BANK_ADDR_WIDTH);
             } else {
                 io_tile_info->start_addr =
                 (io_tile_info->start_addr << CGRA_BYTE_OFFSET) + ((tile * 2) << BANK_ADDR_WIDTH);
+                io_tile_info->tb_write_start_addr =
+                (io_tile_info->tb_write_start_addr << CGRA_BYTE_OFFSET) + ((tile * 2) << BANK_ADDR_WIDTH);
             }
 
             printf("Mapping input_%0d_block_%0d to global buffer\n", i, j);
@@ -250,12 +265,16 @@ int glb_map(void *kernel_, int dpr_enabled) {
             }
 
             io_tile_info->tile = tile;
-            if (get_E64_multi_bank_mode_config() && io_tile_info->E64_packed) {
+            if (get_E64_multi_bank_mode_config() && io_tile_info->E64_packed && io_tile_info->use_multi_bank_mode) {
                 io_tile_info->start_addr =
                 (io_tile_info->start_addr << CGRA_BYTE_OFFSET) + ((tile * 2 + j%2) << BANK_ADDR_WIDTH);
+                io_tile_info->gold_check_start_addr =
+                (io_tile_info->gold_check_start_addr << CGRA_BYTE_OFFSET) + ((tile * 2 + j%2) << BANK_ADDR_WIDTH);
             } else {
                 io_tile_info->start_addr =
                 (io_tile_info->start_addr << CGRA_BYTE_OFFSET) + ((tile * 2 + 1) << BANK_ADDR_WIDTH);
+                io_tile_info->gold_check_start_addr =
+                (io_tile_info->gold_check_start_addr << CGRA_BYTE_OFFSET) + ((tile * 2 + 1) << BANK_ADDR_WIDTH);
             }
 
             printf("Mapping output_%0d_block_%0d to global buffer\n", i, j);
@@ -416,6 +435,7 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
     int cycle_start_addr = io_tile_info->cycle_start_addr;
     int loop_dim = io_tile_info->loop_dim;
     int E64_packed = io_tile_info->E64_packed;
+    int tile_use_multi_bank_mode = io_tile_info->use_multi_bank_mode;
     int extent[LOOP_LEVEL];
     int dma_range[LOOP_LEVEL];
     int data_stride[LOOP_LEVEL];
@@ -436,7 +456,7 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
     }
 
     int E64_multi_bank_mode = get_E64_multi_bank_mode_config();
-    if (E64_multi_bank_mode && E64_packed) {
+    if (E64_multi_bank_mode && E64_packed && tile_use_multi_bank_mode) {
         printf("INFO: Using exchange_64 with multi-bank mode\n");
     }
 
@@ -450,37 +470,34 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
     // Convert extent/stride hardware-friendly
     for (int i = 0; i < loop_dim; i++) {
         extent[i] = io_tile_info->extent[i] - 2;
-
-        if (exchange_64_mode && E64_packed) {
-            if (i == 0) {
-                dma_range[i] = (io_tile_info->extent[i]/4) - 2;
-            } else {
-                dma_range[i] = extent[i];
-            }
-        } else {
-            dma_range[i] = extent[i];
-        }
+        dma_range[i] = extent[i];
 
         cycle_stride[i] = io_tile_info->cycle_stride[i];
         data_stride[i] = io_tile_info->data_stride[i];
 
+        // Check if we should skip GLB DMA stride adjustment based on environment variable
+        int skip_glb_dma_stride_adjustment = 0;
+        const char *skip_glb_dma_stride_env_var = "SKIP_GLB_DMA_STRIDE_ADJUSTMENT";
+        char *skip_glb_dma_stride_value = getenv(skip_glb_dma_stride_env_var);
+        if (skip_glb_dma_stride_value != NULL && strcmp(skip_glb_dma_stride_value, "1") == 0) {
+            skip_glb_dma_stride_adjustment = 1;
+        }
+
         // Skip this adjustment if the addr gen config has already been modified to account for matrix unit's tiling
         // Also skip it if configured in bank toggle mode
-        if (!(hacked_for_mu_tiling || bank_toggle_mode)){
+        // Also skip it if SKIP_GLB_DMA_STRIDE_ADJUSTMENT environment variable is set to 1
+        if (!(hacked_for_mu_tiling || bank_toggle_mode || skip_glb_dma_stride_adjustment)){
             for (int j = 0; j < i; j++) {
-                if (exchange_64_mode && E64_packed && j == 0) {
-                    cycle_stride[i] -= io_tile_info->cycle_stride[j] * (io_tile_info->extent[j]/4 - 1);
-                    data_stride[i] -= io_tile_info->data_stride[j] * (io_tile_info->extent[j]/4 - 1);
-                } else {
-                    cycle_stride[i] -= io_tile_info->cycle_stride[j] * (io_tile_info->extent[j] - 1);
-                    data_stride[i] -= io_tile_info->data_stride[j] * (io_tile_info->extent[j] - 1);
-                }
+                cycle_stride[i] -= io_tile_info->cycle_stride[j] * (io_tile_info->extent[j] - 1);
+                data_stride[i] -= io_tile_info->data_stride[j] * (io_tile_info->extent[j] - 1);
             }
         } else {
             if (hacked_for_mu_tiling)
                 printf("INFO: Addr gen config hacked for MU tiling for IO tile at (%d, %d), skipping stride adjustment\n", io_tile_info->pos.x, io_tile_info->pos.y);
             if (bank_toggle_mode)
                 printf("INFO: Addr gen config hacked for bank toggle mode for IO tile at (%d, %d), skipping stride adjustment\n", io_tile_info->pos.x, io_tile_info->pos.y);
+            if (skip_glb_dma_stride_adjustment)
+                printf("INFO: SKIP_GLB_DMA_STRIDE_ADJUSTMENT environment variable set, skipping stride adjustment for IO tile at (%d, %d)\n", io_tile_info->pos.x, io_tile_info->pos.y);
         }
 
         data_stride[i] = data_stride[i] << CGRA_BYTE_OFFSET;
@@ -524,7 +541,7 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         #define GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB 0
         #endif
 
-        if (HW_supports_multi_bank() && HW_supports_E64() && E64_packed) {
+        if (HW_supports_multi_bank() && HW_supports_E64() && E64_packed && tile_use_multi_bank_mode) {
             add_config(config_info,
                     (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_DMA_EXCHANGE_64_MODE_R,
                     (E64_multi_bank_mode << GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB + 1) |
@@ -606,7 +623,7 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         // If use hacky padding then switch to valid mode
         if (use_padding || use_glb_tiling) mode = ST_DMA_VALID_MODE_STATIC;
 
-        if (HW_supports_multi_bank() && HW_supports_E64() && E64_packed) {
+        if (HW_supports_multi_bank() && HW_supports_E64() && E64_packed && tile_use_multi_bank_mode) {
             add_config(config_info,
                     (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_DMA_EXCHANGE_64_MODE_R,
                     (E64_multi_bank_mode << GLB_DMA_EXCHANGE_64_MODE_VALUE_F_LSB + 1) |
