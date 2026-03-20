@@ -347,7 +347,7 @@ def construct():
   # which scripts get run and when they get run.
 
   # rtl parameters update
-  rtl.update_params( { 'glb_only': True }, allow_new=True )
+#  rtl.update_params( { 'glb_only': True }, allow_new=True )
 
   # pin assignment parameters update
   init.update_params( { 'array_width': parameters['array_width'] }, allow_new=True )

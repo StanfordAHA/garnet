@@ -1,0 +1,144 @@
+#=========================================================================
+# floorplan.tcl
+#=========================================================================
+# This script is called from the Innovus init flow step.
+#
+# Author : Christopher Torng
+# Date   : March 26, 2018
+
+#-------------------------------------------------------------------------
+# Floorplan variables
+#-------------------------------------------------------------------------
+
+set vert_pitch [dbGet top.fPlan.coreSite.size_y]
+set horiz_pitch [dbGet top.fPlan.coreSite.size_x]
+
+set tech_pitch_x [expr $horiz_pitch * 5]
+set tech_pitch_y [expr $vert_pitch * 1]
+
+# Core bounding box margins
+
+set core_margin_t $tech_pitch_y
+set core_margin_b $tech_pitch_y
+set core_margin_r $tech_pitch_x
+set core_margin_l $tech_pitch_x
+
+# Margins between glb tiles and core edge
+set tile_margin_t [expr 60 * $tech_pitch_y]
+set tile_margin_b [expr 41 * $tech_pitch_y]
+set tile_margin_l [expr 63 * $tech_pitch_x]
+set tile_margin_r [expr 25 * $tech_pitch_x]
+
+set tiles [get_cells *glb_tile*]
+set tile_width [dbGet [dbGet -p top.insts.name *glb_tile* -i 0].cell.size_x]
+# Add the gap every $num_tiles_for_gap glb-tiles for better routing
+set num_tiles_for_gap 4
+# The width of the gap
+set tile_gap 0
+set tile_height [dbGet [dbGet -p top.insts.name *glb_tile* -i 0].cell.size_y]
+set num_tiles [sizeof_collection $tiles]
+
+#-------------------------------------------------------------------------
+# Floorplan
+#-------------------------------------------------------------------------
+
+set core_width [expr ($num_tiles * $tile_width) + (((($num_tiles + $num_tiles_for_gap - 1) / $num_tiles_for_gap) - 1) * $tile_gap) + $tile_margin_l + $tile_margin_r]
+set core_height_multiplier 1.4375
+# set core_height [expr $tile_height + $tile_margin_t + $tile_margin_b]
+set core_height [expr ($tile_height + $tile_margin_t + $tile_margin_b) * $core_height_multiplier]
+
+floorPlan -s $core_width $core_height \
+             $core_margin_l $core_margin_b $core_margin_r $core_margin_t
+
+setFlipping s
+
+# set tile_start_y [expr $core_margin_b + $tile_margin_b]
+set tile_start_y [expr $core_height - $tile_margin_t - $tile_height + $core_margin_b]
+set tile_start_x [expr $core_margin_l + $tile_margin_l]
+
+set y_loc $tile_start_y
+set x_loc $tile_start_x
+set tile_cnt 0
+# TODO guarantee that this iteration is in order from glb_tile0 ... n
+foreach_in_collection tile $tiles {
+  set tile_cnt [expr $tile_cnt + 1]
+  if {[expr {$tile_cnt % $num_tiles_for_gap == 0}]} {
+    set gap $tile_gap
+  } else {
+    set gap 0
+  }
+
+  set tile_name [get_property $tile full_name]
+  placeInstance $tile_name $x_loc $y_loc -fixed
+
+  # Create pg net blockage for all power stripe layers in tile
+  # to prevent DRC from interaction with tile stripes
+  set llx [dbGet [dbGet -p top.insts.name $tile_name].box_llx]
+  set lly [dbGet [dbGet -p top.insts.name $tile_name].box_lly]
+  set urx [dbGet [dbGet -p top.insts.name $tile_name].box_urx]
+  set ury [dbGet [dbGet -p top.insts.name $tile_name].box_ury]
+  set tb_margin $vert_pitch
+  set lr_margin [expr $horiz_pitch * 3]
+
+  createRouteBlk \
+    -inst $tile_name \
+    -box $llx $lly $urx $ury \
+    -layer {m1 m2 m3 m4} \
+    -exceptpgnet
+
+  createRouteBlk \
+    -inst $tile_name \
+    -box $llx $lly $urx $ury \
+    -layer {m5 m6 m7 m8} \
+    -spacing 0.324 \
+    -exceptpgnet
+
+  createRouteBlk \
+    -inst $tile_name \
+    -box $llx $lly $urx $ury \
+    -layer {m1 m2 m3 m4} \
+    -spacing 0.324 \
+    -pgnetonly
+
+  # dont create via, because those are already created in the tile
+  createRouteBlk \
+    -inst $tile_name \
+    -cover \
+    -cutLayer {v5 v6 v7 v8} \
+    -pgnetonly
+
+  # dont allow power stripes to cross on edges, because there might be signal wires
+  foreach layer_name { m6 m8 } {
+      createRouteBlk \
+        -name ${tile_name}_${layer_name}_blockage_bot \
+        -box [expr $llx - 0.324] [expr $lly + 0] [expr $urx + 0.324] [expr $lly + $tech_pitch_y] \
+        -layer $layer_name \
+        -spacing 0.0 \
+        -pgnetonly
+      createRouteBlk \
+        -name ${tile_name}_${layer_name}_blockage_top \
+        -box [expr $llx - 0.324] [expr $ury - $tech_pitch_y] [expr $urx + 0.324] [expr $ury + 0] \
+        -layer $layer_name \
+        -spacing 0.0 \
+        -pgnetonly
+  }
+  foreach layer_name { m5 m7 } {
+      createRouteBlk \
+        -name ${tile_name}_${layer_name}_blockage_left \
+        -box [expr $llx + 0] [expr $lly - 0.324] [expr $llx + $tech_pitch_x] [expr $ury + 0.324] \
+        -layer $layer_name \
+        -spacing 0.0 \
+        -pgnetonly
+      createRouteBlk \
+        -name ${tile_name}_${layer_name}_blockage_right \
+        -box [expr $urx - $tech_pitch_x] [expr $lly - 0.324] [expr $urx + 0] [expr $ury + 0.324] \
+        -layer $layer_name \
+        -spacing 0.0 \
+        -pgnetonly
+  }
+
+  set x_loc [expr $x_loc + $tile_width + $gap]
+}
+
+addHaloToBlock -allMacro [expr $horiz_pitch * 3] [expr $vert_pitch * 2] [expr $horiz_pitch * 3] [expr $vert_pitch * 2]
+

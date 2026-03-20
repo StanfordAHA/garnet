@@ -290,7 +290,7 @@ def construct():
   # Parameterize
   #-----------------------------------------------------------------------
 
-  rtl.update_params( { 'glb_only': True }, allow_new=True )
+#  rtl.update_params( { 'glb_only': True }, allow_new=True )
 
   g.update_params( parameters )
 
