@@ -444,17 +444,13 @@ function Kernel::new(string app_dir, int dpr);
         outputs[i].io_tiles = new[num_io_tiles];
 
         for (int j = 0; j < num_io_tiles; j++) begin
-            loop_dim = get_io_tile_loop_dim(io_info, j);
-            for (int k = 0; k < loop_dim; k++) begin
-                if (k == 0) begin
-                    num_pixels = get_io_tile_extent(io_info, j, k);
-                end else begin
-                    num_pixels = num_pixels * get_io_tile_extent(io_info, j, k);
-                end
-            end
-
-            // To ensure all data gets read out. Useful when applying E64 packing or k-dim host tiling in zircon
-            num_pixels = num_pixels * get_io_tile_extent_multiplier(io_info, j);
+            // Use full tensor shape divided evenly across tiles so the dummy host
+            // reads the complete GLB address range per tile. This covers scattered
+            // writes (e.g. E64 multi-bank with large outer stride) and lets
+            // intermediate passes show partial results at the correct positions.
+            // Backward-compatible: when product(extents)*extent_multiplier*num_tiles
+            // equals shape_total (normal single-pass case), the result is the same.
+            num_pixels = (output_size[i] >> 1) / num_io_tiles;
 
             // For GLB tiling read memory region of entire feature map
             if (num_glb_tiling > 0) begin

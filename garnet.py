@@ -614,6 +614,13 @@ class Garnet(Generator):
         mapped_dag = map_design_top(app_dir, arch_nodes, dag)
         tile_info = {"global.PE": self.pe_fc, "cgralib.Mem": all_nodes.peak_nodes["cgralib.Mem"],
                      "global.IO": IO_fc, "global.BitIO": BitIO_fc, "cgralib.Pond": all_nodes.peak_nodes["cgralib.Pond"]}
+        # Collect all input IOs (io16in) instance names from the flattened coreir
+        # module. Dangling IOs (no CGRA fabric connections) are dropped by the
+        # mapper but must be physically placed for E64 transpose packing.
+        all_io16in_inames = [
+            inst.name for inst in cmod.definition.instances
+            if inst.module.name == "IO" and "io16in" in inst.name
+        ]
         netlist_info = create_netlist_info(app_dir,
                                            mapped_dag,
                                            tile_info,
@@ -628,7 +635,8 @@ class Garnet(Generator):
                                            self.width,
                                            self.height,
                                            self.mu_oc_0,
-                                           self.num_fabric_cols_removed)
+                                           self.num_fabric_cols_removed,
+                                           dangling_io_inames=all_io16in_inames)
 
         # Remapping all of the ports in the application to generic ports that exist in the hardware
         # Seems really brittle, we should probably do this in a better way

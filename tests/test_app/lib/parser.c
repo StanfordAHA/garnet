@@ -184,17 +184,18 @@ int parse_io_tile_info(struct IOTileInfo *io_tile_info, json_t const *io_tile_js
     start_addr_json = json_getChild(start_addr_list_json);
     io_tile_info->start_addr = json_getInteger(start_addr_json);
 
-    // parse gold_check start_addr. May be different from start_addr used to configure the DMA. If not found, use start_addr
+    // parse gold_check start_addr. May be different from start_addr used to configure the DMA.
+    // If not found, default to 0 (reads from bank base), consistent with map.c expectation.
     json_t const *gold_check_start_addr_list_json;
     gold_check_start_addr_list_json = json_getProperty(addr_json, "gold_check_starting_addr");
     if (!gold_check_start_addr_list_json || JSON_ARRAY != json_getType(gold_check_start_addr_list_json)) {
-        io_tile_info->gold_check_start_addr = io_tile_info->start_addr; // Default to start_addr if not found
+        io_tile_info->gold_check_start_addr = 0; // Default to 0 (bank base) if not found
     } else {
         // gold_check_start_addr_json type is list, but we only need the first one
         json_t const *gold_check_start_addr_json;
         gold_check_start_addr_json = json_getChild(gold_check_start_addr_list_json);
         if (!gold_check_start_addr_json || JSON_INTEGER != json_getType(gold_check_start_addr_json)) {
-            io_tile_info->gold_check_start_addr = io_tile_info->start_addr; // Default to start_addr if not found
+            io_tile_info->gold_check_start_addr = 0; // Default to 0 (bank base) if not found
         } else {
             io_tile_info->gold_check_start_addr = json_getInteger(gold_check_start_addr_json);
         }
