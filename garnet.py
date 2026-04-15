@@ -9,6 +9,7 @@ if os.getenv('WHICH_SOC') == "amber":
 
 import argparse
 import magma
+import time
 from systemRDL.util import gen_rdl_header  # If I move this it breaks. Dunno why.
 # from cgra import compress_config_data
 import json
@@ -85,7 +86,9 @@ class Garnet(Generator):
         width = args.width
         height = args.height
         cc_args = get_cc_args(width, height, io_sides, args)
+        _t_cc = time.time()
         self.interconnect = create_cgra(**cc_args.__dict__)
+        print(f"[INFO] create_cgra total: {time.time()-_t_cc:.2f}s", flush=True)
 
         # Add stall, flush, and configuration ports
 
@@ -1319,13 +1322,17 @@ def main():
     print(f'--- GARNET-BUILD ({app_name(args.app)})')
 
     # BUILD GARNET
+    _t_main = time.time()
     garnet = Garnet(args, io_sides)
+    print(f"[INFO] Garnet build: {time.time()-_t_main:.2f}s", flush=True)
 
     # VERILOG
     # FIXME verilog could be inside daemon loop (below). Right?
     if args.verilog:
         print('--- GARNET VERILOG')
+        _t_main = time.time()
         build_verilog(args, garnet)
+        print(f"[INFO] build_verilog: {time.time()-_t_main:.2f}s", flush=True)
 
     print(f"args.daemon={args.daemon}", flush=True)
 
