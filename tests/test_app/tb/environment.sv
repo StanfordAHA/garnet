@@ -105,8 +105,10 @@ task Env_read_data();
 
             // Creates empty array of indicated size maybe (4096 maybe)
             if (kernel.outputs[i].io_tiles[j].bank_toggle_mode == 1) begin
-                // We read half the data from each bank if bank toggle mode is enabled
-                data_q = new[kernel.outputs[i].io_tiles[j].io_block_data.size() >> 1];
+                // In bank toggle mode, io_block_data.size() is the per-bank share of the
+                // output (shape is duplicated so num_io_tiles already accounts for fake
+                // tiles), so each tile reads that many words from its assigned bank.
+                data_q = new[kernel.outputs[i].io_tiles[j].io_block_data.size()];
                 if (j % 2 == 0) begin
                     // In bank toggle mode, the entire GLB tile is used for storing data, and we need to start from bank 0
                     // Note that by default the output IO tile has a bank offset to match default odd pos x in map.c, so we need to subtract 1 bank offset

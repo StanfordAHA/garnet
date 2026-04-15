@@ -377,13 +377,16 @@ void *parse_io(json_t const *io_json, enum IO io) {
     }
     io_info->num_io_tiles = cnt;
 
-    // If the number of real io_tiles is larger than 1, then it should be equal to the innermost_channel
-    int real_tile_cnt = 0;
+    // If the number of real io_tiles is larger than 1, then it should be equal to the innermost_channel.
+    // A real tile in bank_toggle_mode alternates between two GLB banks, so it counts as two.
+    int effective_tile_cnt = 0;
     for (int i = 0; i < io_info->num_io_tiles; i++) {
-        if (io_info->io_tiles[i].is_fake_io == 0) real_tile_cnt++;
+        if (io_info->io_tiles[i].is_fake_io == 0) {
+            effective_tile_cnt += io_info->io_tiles[i].bank_toggle_mode ? 2 : 1;
+        }
     }
-    if (real_tile_cnt > 1) {
-        assert(real_tile_cnt == channel[0]);
+    if (effective_tile_cnt > 1) {
+        assert(effective_tile_cnt == channel[0]);
     }
 
     return io_info;
