@@ -1653,6 +1653,16 @@ def prepare_glb_collateral(glb_dir=None, bitstream=None, matrices_in=None, desig
         assert os.path.exists(f"{glb_dir}/{tensor_desc_str}_{file_number}")
 
         os.system(f"xxd -r -p {glb_dir}/{tensor_desc_str}_{file_number} > {glb_dir}/bin/{tensor_desc_str}.raw")
+        # Pad sparse output .raw up to the GLB tile extent so that output_size
+        # (= filesize) gives kernel.sv enough buffer to capture the full
+        # seg/crd/vals stream, which carries framing words not present in the
+        # gold-only .raw. Matches the old extent*extent_multiplier sizing.
+        raw_path = f"{glb_dir}/bin/{tensor_desc_str}.raw"
+        target_bytes = 32768 * 2  # extent * 2 bytes per 16-bit word
+        cur_bytes = os.path.getsize(raw_path)
+        if cur_bytes < target_bytes:
+            with open(raw_path, "ab") as raw_fp:
+                raw_fp.write(b"\x00" * (target_bytes - cur_bytes))
         with open(f"{glb_dir}/{tensor_desc_str}_{file_number}") as tmp_fp:
             num_lines = len(tmp_fp.readlines())
         output_glb_tiles[idx_] = (core, core_placement, tensor_desc_str, num_lines, num_blocks, seg_mode, file_number)
