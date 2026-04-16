@@ -226,12 +226,13 @@ int glb_map(void *kernel_, int dpr_enabled) {
             }
             printf("Group start: %d, pos x: %d\n", group_start, io_tile_info->pos.x);
             io_tile_info->tile = tile;
-            // read_data_starting_addr is in software IO 16-bit word units, matching
-            // data_stride units. In E64 mode, each DMA cycle reads 4 words,
-            // so the starting address must be scaled by the same E64 factor that
-            // is applied to data_stride in update_io_tile_configuration().
-            // tb_write_start_addr is the host-side write address and should also match, but really should be 0 by default.
-            int e64_starting_addr_scale = (get_exchange_64_config() && io_tile_info->E64_packed) ? 4 : 1;
+            // In E64 mode each DMA cycle transfers 4 words, so 16-bit-word
+            // addresses need a 4x scale.  K-DIM host tiling already divides by
+            // io_bw_per_cycle in parse_design_meta.py, so skip the scale to
+            // avoid double-counting.
+            const char *k_dim_env_in = getenv("K_DIM_HOST_TILING");
+            int k_dim_active_in = k_dim_env_in && atoi(k_dim_env_in) == 1;
+            int e64_starting_addr_scale = (!k_dim_active_in && get_exchange_64_config() && io_tile_info->E64_packed) ? 4 : 1;
             if (get_E64_multi_bank_mode_config() && io_tile_info->E64_packed && io_tile_info->use_multi_bank_mode) {
                 io_tile_info->start_addr =
                 (io_tile_info->start_addr * e64_starting_addr_scale << CGRA_BYTE_OFFSET) + ((tile * 2 + j%2) << BANK_ADDR_WIDTH);
@@ -279,12 +280,15 @@ int glb_map(void *kernel_, int dpr_enabled) {
             }
 
             io_tile_info->tile = tile;
-            // write_data_starting_addr is in software IO 16-bit word units, matching
-            // data_stride units.  In E64 mode, each DMA cycle writes 4 words,
-            // so the starting address must be scaled by the same E64 factor that
-            // is applied to data_stride in update_io_tile_configuration().
-            // gold_check_start_addr is used for dummy host gold check and should also match, but really should be 0 by default.
-            int e64_starting_addr_scale = (get_exchange_64_config() && io_tile_info->E64_packed) ? 4 : 1;
+            // In E64 mode, each DMA cycle reads/writes 4 words, so addresses that
+            // are in 16-bit-word units must be scaled by 4.  However, K-DIM host
+            // tiling computes write_data_starting_addr in parse_design_meta.py
+            // already divided by io_bw_per_cycle (which includes the E64 factor),
+            // so applying the scale again would double-count and push data past
+            // its intended k-slice region.
+            const char *k_dim_env = getenv("K_DIM_HOST_TILING");
+            int k_dim_active = k_dim_env && atoi(k_dim_env) == 1;
+            int e64_starting_addr_scale = (!k_dim_active && get_exchange_64_config() && io_tile_info->E64_packed) ? 4 : 1;
             if (get_E64_multi_bank_mode_config() && io_tile_info->E64_packed && io_tile_info->use_multi_bank_mode) {
                 io_tile_info->start_addr =
                 (io_tile_info->start_addr * e64_starting_addr_scale << CGRA_BYTE_OFFSET) + ((tile * 2 + j%2) << BANK_ADDR_WIDTH);
