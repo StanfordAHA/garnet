@@ -105,8 +105,10 @@ task Env_read_data();
 
             // Creates empty array of indicated size maybe (4096 maybe)
             if (kernel.outputs[i].io_tiles[j].bank_toggle_mode == 1) begin
-                // We read half the data from each bank if bank toggle mode is enabled
-                data_q = new[kernel.outputs[i].io_tiles[j].io_block_data.size() >> 1];
+                // In bank toggle mode, io_block_data.size() is the per-bank share of the
+                // output (shape is duplicated so num_io_tiles already accounts for fake
+                // tiles), so each tile reads that many words from its assigned bank.
+                data_q = new[kernel.outputs[i].io_tiles[j].io_block_data.size()];
                 if (j % 2 == 0) begin
                     // In bank toggle mode, the entire GLB tile is used for storing data, and we need to start from bank 0
                     // Note that by default the output IO tile has a bank offset to match default odd pos x in map.c, so we need to subtract 1 bank offset
@@ -467,7 +469,8 @@ task Env_set_interrupt_on();
     data = 32'b0;
     foreach (kernel.inputs[i]) begin
         foreach (kernel.inputs[i].io_tiles[j]) begin
-            data |= 1 << kernel.inputs[i].io_tiles[j].tile;
+            if (kernel.inputs[i].io_tiles[j].is_fake_io == 0)
+                data |= 1 << kernel.inputs[i].io_tiles[j].tile;
         end
     end
     $display("G2F interrupt enable : %0x\n", data);
@@ -479,7 +482,8 @@ task Env_set_interrupt_on();
     data = 32'b0;
     foreach (kernel.outputs[i]) begin
         foreach (kernel.outputs[i].io_tiles[j]) begin
-            data |= 1 << kernel.outputs[i].io_tiles[j].tile;
+            if (kernel.outputs[i].io_tiles[j].is_fake_io == 0)
+                data |= 1 << kernel.outputs[i].io_tiles[j].tile;
         end
     end
     $display("F2G interrupt enable : %0x\n", data);
@@ -558,6 +562,16 @@ task Env_log_performance();
 endtask // Env_log_performance
 
 
+task Env_cgra_reset();
+    $display("[%0t] CGRA reset BEGIN", $time);
+    inter_kernel_reset = 1;
+    repeat (3) @(posedge p_ifc.clk);
+    inter_kernel_reset = 0;
+    repeat (20) @(posedge p_ifc.clk);
+    $display("[%0t] CGRA reset END", $time);
+endtask // Env_cgra_reset
+
+
 task Env_run();
     // int dpr;  (declared in garnet_test.sv, which "include"s this file)
     // wait for reset
@@ -580,6 +594,7 @@ task Env_run();
                 kernel = kernels[j];
                 dnn_layer = dnn_layers[j];
                 external_mu_active = external_mu_active_arr[j];
+                if (j > 0) Env_cgra_reset();
                  // turn on interrupt
                 $display("[%0t] turn on interrupt", $time);  // 120ps?
                 Env_set_interrupt_on();
@@ -600,7 +615,6 @@ task Env_run();
                 Env_kernel_test();
                 Env_read_data();      $display("[%0t] read_data DONE", $time);
                 kernel.compare();
-                $display("[%0t] Processing kernel %0d END", $time, j);
                 Env_log_performance();
             end
         end
@@ -613,7 +627,8 @@ task build_input_tile_mask();
     tile_mask = 0;
     foreach (kernel.inputs[i]) begin
         foreach (kernel.inputs[i].io_tiles[j]) begin
-            tile_mask |= 1 << kernel.inputs[i].io_tiles[j].tile;
+            if (kernel.inputs[i].io_tiles[j].is_fake_io == 0)
+                tile_mask |= 1 << kernel.inputs[i].io_tiles[j].tile;
         end
     end
     $display("\n[%0t] Built a INPUT tile mask %0x", $time, tile_mask);
@@ -624,7 +639,8 @@ task build_output_tile_mask();
     tile_mask = 0;
     foreach (kernel.outputs[i]) begin
         foreach (kernel.outputs[i].io_tiles[j]) begin
-            tile_mask |= 1 << kernel.outputs[i].io_tiles[j].tile;
+            if (kernel.outputs[i].io_tiles[j].is_fake_io == 0)
+                tile_mask |= 1 << kernel.outputs[i].io_tiles[j].tile;
         end
     end
     $display("\n[%0t] Built a OUTPUT tile mask %0x", $time, tile_mask);

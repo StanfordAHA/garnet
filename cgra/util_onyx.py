@@ -63,6 +63,7 @@ import magma as m
 from peak import family
 from lake.spec.spec_memory_controller import SpecMemoryController, build_four_port_wide_fetch_rv, build_pond_rv
 import os
+import time
 
 
 def get_actual_size(width: int, height: int, io_sides: List[IOSide]):
@@ -179,6 +180,8 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
                 rf: bool = False,
                 perf_debug: bool = False,
                 tech_map='Intel'):
+
+    _t_phase = time.time()
 
     # TODO: We now use using_matrix_unit to determine if we are using rv mem and pond or not
     #       But we can use rv mem and pond without matrix unit if we want
@@ -443,6 +446,22 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
     mu_io_startX = int(((input_width - num_fabric_cols_removed) - num_mu_io_tiles) / 2) + num_fabric_cols_removed
     mu_io_endX = mu_io_startX + num_mu_io_tiles - 1
 
+    # Hoist pond spec/controller out of the tile loop. Relies on
+    # CoreCombinerCore._circuit_cache hitting after tile 1 so subsequent tiles
+    # never re-consume the SpecMemoryController.
+    if use_rv_mem_pond:
+        pond_cap = 64
+        pond_data_width = 16
+        pond_dims = 4
+        pond_use_sim_sram = True
+        pond_use_rf = True
+        pond_fifo_depth = 0
+        pond_depth = pond_cap // (pond_data_width // 8)
+
+        pond_spec = build_pond_rv(storage_capacity=pond_cap, data_width=pond_data_width, dims=pond_dims, physical=not pond_use_sim_sram,
+                                  reg_file=pond_use_rf, opt_rv=True)
+        pond_spec_mem_ctrl = SpecMemoryController(spec=pond_spec)
+
     for x in range(width):
         # Only update the altcore if it had been used actually.
         if altcore_used:
@@ -489,21 +508,9 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
 
             else:
                 if use_rv_mem_pond:
-                    pond_cap = 64
-                    pond_data_width = 16
-                    pond_dims = 4
-                    pond_use_sim_sram = True
-                    pond_use_rf = True
-                    # Set the pond fifo depth to 0 for accumulation loop
-                    pond_fifo_depth = 0
-                    pond_depth = pond_cap // (pond_data_width // 8)
-
-                    # print("Adding pond spec...")
-                    pond_spec = build_pond_rv(storage_capacity=pond_cap, data_width=pond_data_width, dims=pond_dims, physical=not pond_use_sim_sram,
-                                            reg_file=pond_use_rf, opt_rv=True)
-
+                    # print(f"Adding pond core at ({x}, {y})...")
                     pond_core_core_combiner_core = CoreCombinerCore(data_width=16,
-                                                                    controllers_list=[SpecMemoryController(spec=pond_spec)],
+                                                                    controllers_list=[pond_spec_mem_ctrl],
                                                                     use_sim_sram=True,
                                                                     tech_map_name=tm,
                                                                     pnr_tag="M",
@@ -554,6 +561,9 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
                                 additional_core[(x, y)] = PondCore(gate_flush=not harden_flush, ready_valid=ready_valid)
 
             cores[(x, y)] = core
+
+    print(f"[INFO] create_cgra tile loop: {time.time()-_t_phase:.2f}s", flush=True)
+    _t_phase = time.time()
 
     # for x in range(width):
     #     for y in range(height):
@@ -737,6 +747,9 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
                                 ready_valid=ready_valid,
                                 give_north_io_sbs=give_north_io_sbs)
 
+    print(f"[INFO] create_cgra Interconnect(): {time.time()-_t_phase:.2f}s", flush=True)
+    _t_phase = time.time()
+
     if hi_lo_tile_id:
         tile_id_physical(interconnect)
     if add_pd:
@@ -761,5 +774,7 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
         clk_physical(interconnect, tile_layout_option)
 
     pipeline_global_signals(interconnect, pipeline_config_interval)
+
+    print(f"[INFO] create_cgra post-passes: {time.time()-_t_phase:.2f}s", flush=True)
 
     return interconnect

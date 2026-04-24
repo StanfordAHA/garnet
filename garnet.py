@@ -9,6 +9,7 @@ if os.getenv('WHICH_SOC') == "amber":
 
 import argparse
 import magma
+import time
 from systemRDL.util import gen_rdl_header  # If I move this it breaks. Dunno why.
 # from cgra import compress_config_data
 import json
@@ -85,7 +86,9 @@ class Garnet(Generator):
         width = args.width
         height = args.height
         cc_args = get_cc_args(width, height, io_sides, args)
+        _t_cc = time.time()
         self.interconnect = create_cgra(**cc_args.__dict__)
+        print(f"[INFO] create_cgra total: {time.time()-_t_cc:.2f}s", flush=True)
 
         # Add stall, flush, and configuration ports
 
@@ -614,6 +617,13 @@ class Garnet(Generator):
         mapped_dag = map_design_top(app_dir, arch_nodes, dag)
         tile_info = {"global.PE": self.pe_fc, "cgralib.Mem": all_nodes.peak_nodes["cgralib.Mem"],
                      "global.IO": IO_fc, "global.BitIO": BitIO_fc, "cgralib.Pond": all_nodes.peak_nodes["cgralib.Pond"]}
+        # Collect all input IOs (io16in) instance names from the flattened coreir
+        # module. Dangling IOs (no CGRA fabric connections) are dropped by the
+        # mapper but must be physically placed for E64 transpose packing.
+        all_io16in_inames = [
+            inst.name for inst in cmod.definition.instances
+            if inst.module.name == "IO" and "io16in" in inst.name
+        ]
         netlist_info = create_netlist_info(app_dir,
                                            mapped_dag,
                                            tile_info,
@@ -628,7 +638,8 @@ class Garnet(Generator):
                                            self.width,
                                            self.height,
                                            self.mu_oc_0,
-                                           self.num_fabric_cols_removed)
+                                           self.num_fabric_cols_removed,
+                                           dangling_io_inames=all_io16in_inames)
 
         # Remapping all of the ports in the application to generic ports that exist in the hardware
         # Seems really brittle, we should probably do this in a better way
@@ -1311,13 +1322,17 @@ def main():
     print(f'--- GARNET-BUILD ({app_name(args.app)})')
 
     # BUILD GARNET
+    _t_main = time.time()
     garnet = Garnet(args, io_sides)
+    print(f"[INFO] Garnet build: {time.time()-_t_main:.2f}s", flush=True)
 
     # VERILOG
     # FIXME verilog could be inside daemon loop (below). Right?
     if args.verilog:
         print('--- GARNET VERILOG')
+        _t_main = time.time()
         build_verilog(args, garnet)
+        print(f"[INFO] build_verilog: {time.time()-_t_main:.2f}s", flush=True)
 
     print(f"args.daemon={args.daemon}", flush=True)
 

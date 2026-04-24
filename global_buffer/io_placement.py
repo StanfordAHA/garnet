@@ -100,6 +100,66 @@ def parse_glb_bank_config(app_dir, id_to_name, inputs, mu_inputs, mu_io_tile_row
 
     return placement
 
+def parse_scheduled_ops(app_dir, id_to_name, inputs, outputs, valid, placement):
+    """Place input/output IO blocks using glb_bank_idx_for_graph from scheduled_ops.json.
+
+    For multi-pass operations each pass contributes its own set of graph banks.
+    Banks are accumulated in pass order so the total count matches the number of
+    coreir IO blocks for each tensor.
+
+    Bank indices map directly to column indices for both inputs and outputs.
+
+    Inputs are matched by their key name (e.g. "input", "weight") as a substring
+    of the coreir block name.  Outputs with numeric keys use the "node" field
+    (e.g. "silu") as the substring instead.  The coreir template must embed these
+    same names in its IO instance names for the match to work.  Output IO instance
+    names must still contain "output" (required by the block classifier in
+    place_io_blk), so the convention is "io16_output_{node}_stencil_clkwrk_...".
+    """
+    with open(os.path.join(app_dir, "scheduled_ops.json"), "r") as f:
+        scheduled_ops = json.load(f)
+
+    # Accumulate x-coords per logical tensor name across all passes.
+    # Each element of glb_bank_idx_for_graph is the bank (x-coord) for one IO tile,
+    # in the same order as the coreir IO blocks.
+    input_x_coords = {}   # {in_key: [x0, x1, ...]}
+    output_x_coords = {}  # {out_type: [x0, x1, ...]}
+
+    for op in scheduled_ops:
+        for in_key, in_data in op["inputs"].items():
+            input_x_coords.setdefault(in_key, []).extend(in_data["glb_bank_idx_for_graph"])
+
+        for out_key, out_data in op["outputs"].items():
+            # Numeric keys (e.g. "0") are not useful substrings; use node name.
+            out_type = out_data["node"] if out_key.isdigit() else out_key
+            output_x_coords.setdefault(out_type, []).extend(out_data["glb_bank_idx_for_graph"])
+
+    # Place inputs: match in_key as a substring of the coreir block name.
+    index_counters = {name: 0 for name in input_x_coords}
+    for input_blk_id in inputs:
+        blk_name = id_to_name[input_blk_id]
+        matched = next((name for name in input_x_coords if name in blk_name), None)
+        if matched is not None:
+            idx = index_counters[matched]
+            placement[input_blk_id] = (input_x_coords[matched][idx], 0)
+            index_counters[matched] += 1
+
+    # Place outputs: match out_type (node name) as a substring of the coreir block name.
+    index_counters = {name: 0 for name in output_x_coords}
+    for out_idx, output_blk_id in enumerate(outputs):
+        blk_name = id_to_name[output_blk_id]
+        matched = next((name for name in output_x_coords if name in blk_name), None)
+        if matched is not None:
+            idx = index_counters[matched]
+            x_coord = output_x_coords[matched][idx]
+            placement[output_blk_id] = (x_coord, 0)
+            if out_idx < len(valid):
+                placement[valid[out_idx]] = (x_coord, 0)
+            index_counters[matched] += 1
+
+    return placement
+
+
 def place_io_blk(id_to_name, app_dir, io_sides, orig_cgra_width, orig_cgra_height, mu_oc_0, num_fabric_cols_removed):
     """Hacky function to place the IO blocks"""
 
@@ -241,5 +301,9 @@ def place_io_blk(id_to_name, app_dir, io_sides, orig_cgra_width, orig_cgra_heigh
     # parse the glb_bank_config.json to specify bank locations
     if os.path.isfile(app_dir + "/glb_bank_config.json"):
         placement = parse_glb_bank_config(app_dir, id_to_name, inputs, inputs_from_MU, mu_io_tile_row, outputs, valid, placement)
+
+    # parse scheduled_ops.json to assign IO x-coords from glb_bank_idx_for_graph
+    if os.path.isfile(os.path.join(app_dir, "scheduled_ops.json")):
+        placement = parse_scheduled_ops(app_dir, id_to_name, inputs, outputs, valid, placement)
 
     return placement

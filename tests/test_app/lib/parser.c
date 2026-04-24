@@ -184,17 +184,18 @@ int parse_io_tile_info(struct IOTileInfo *io_tile_info, json_t const *io_tile_js
     start_addr_json = json_getChild(start_addr_list_json);
     io_tile_info->start_addr = json_getInteger(start_addr_json);
 
-    // parse gold_check start_addr. May be different from start_addr used to configure the DMA. If not found, use start_addr
+    // parse gold_check start_addr. May be different from start_addr used to configure the DMA.
+    // If not found, default to 0 (reads from bank base), consistent with map.c expectation.
     json_t const *gold_check_start_addr_list_json;
     gold_check_start_addr_list_json = json_getProperty(addr_json, "gold_check_starting_addr");
     if (!gold_check_start_addr_list_json || JSON_ARRAY != json_getType(gold_check_start_addr_list_json)) {
-        io_tile_info->gold_check_start_addr = io_tile_info->start_addr; // Default to start_addr if not found
+        io_tile_info->gold_check_start_addr = 0; // Default to 0 (bank base) if not found
     } else {
         // gold_check_start_addr_json type is list, but we only need the first one
         json_t const *gold_check_start_addr_json;
         gold_check_start_addr_json = json_getChild(gold_check_start_addr_list_json);
         if (!gold_check_start_addr_json || JSON_INTEGER != json_getType(gold_check_start_addr_json)) {
-            io_tile_info->gold_check_start_addr = io_tile_info->start_addr; // Default to start_addr if not found
+            io_tile_info->gold_check_start_addr = 0; // Default to 0 (bank base) if not found
         } else {
             io_tile_info->gold_check_start_addr = json_getInteger(gold_check_start_addr_json);
         }
@@ -376,10 +377,16 @@ void *parse_io(json_t const *io_json, enum IO io) {
     }
     io_info->num_io_tiles = cnt;
 
-    // If the number of io_tiles is larger than 1, then the number of io_tiles
-    // should be equal to the innermost_channel
-    if (io_info->num_io_tiles > 1) {
-        assert(io_info->num_io_tiles == channel[0]);
+    // If the number of real io_tiles is larger than 1, then it should be equal to the innermost_channel.
+    // A real tile in bank_toggle_mode alternates between two GLB banks, so it counts as two.
+    int effective_tile_cnt = 0;
+    for (int i = 0; i < io_info->num_io_tiles; i++) {
+        if (io_info->io_tiles[i].is_fake_io == 0) {
+            effective_tile_cnt += io_info->io_tiles[i].bank_toggle_mode ? 2 : 1;
+        }
+    }
+    if (effective_tile_cnt > 1) {
+        assert(effective_tile_cnt == channel[0]);
     }
 
     return io_info;
@@ -1013,6 +1020,11 @@ int get_io_tile_extent_multiplier(void *info, int index) {
 int get_io_tile_bank_toggle_mode(void *info, int index) {
     GET_IO_INFO(info);
     return io_info->io_tiles[index].bank_toggle_mode;
+}
+
+int get_io_tile_is_fake_io(void *info, int index) {
+    GET_IO_INFO(info);
+    return io_info->io_tiles[index].is_fake_io;
 }
 
 int get_output_size(void *info, int index) {

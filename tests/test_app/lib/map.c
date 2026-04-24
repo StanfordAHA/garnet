@@ -201,9 +201,13 @@ int glb_map(void *kernel_, int dpr_enabled) {
     int num_outputs = kernel->num_outputs;
     int first_input_tile;
     int last_input_tile;
+    // Used to track first REAL input tile for flush crossbar configuration, since fake IO tiles are soley used for dummy host data transfer.
+    int first_real_input_found = 0;
 
     int first_output_tile;
     int last_output_tile;
+    // Used to track first REAL output tile for flush crossbar configuration, since fake IO tiles are solely used for dummy host data transfer.
+    int first_real_output_found = 0;
 
     struct IOInfo *io_info;
     struct IOTileInfo *io_tile_info;
@@ -222,27 +226,38 @@ int glb_map(void *kernel_, int dpr_enabled) {
             }
             printf("Group start: %d, pos x: %d\n", group_start, io_tile_info->pos.x);
             io_tile_info->tile = tile;
+            // In E64 mode each DMA cycle transfers 4 words, so 16-bit-word
+            // addresses need a 4x scale.  K-DIM host tiling already divides by
+            // io_bw_per_cycle in parse_design_meta.py, so skip the scale to
+            // avoid double-counting.
+            const char *k_dim_env_in = getenv("K_DIM_HOST_TILING");
+            int k_dim_active_in = k_dim_env_in && atoi(k_dim_env_in) == 1;
+            int e64_starting_addr_scale = (!k_dim_active_in && get_exchange_64_config() && io_tile_info->E64_packed) ? 4 : 1;
             if (get_E64_multi_bank_mode_config() && io_tile_info->E64_packed && io_tile_info->use_multi_bank_mode) {
                 io_tile_info->start_addr =
-                (io_tile_info->start_addr << CGRA_BYTE_OFFSET) + ((tile * 2 + j%2) << BANK_ADDR_WIDTH);
+                (io_tile_info->start_addr * e64_starting_addr_scale << CGRA_BYTE_OFFSET) + ((tile * 2 + j%2) << BANK_ADDR_WIDTH);
                 io_tile_info->tb_write_start_addr =
-                (io_tile_info->tb_write_start_addr << CGRA_BYTE_OFFSET) + ((tile * 2 + j%2) << BANK_ADDR_WIDTH);
+                (io_tile_info->tb_write_start_addr * e64_starting_addr_scale << CGRA_BYTE_OFFSET) + ((tile * 2 + j%2) << BANK_ADDR_WIDTH);
             } else {
                 io_tile_info->start_addr =
-                (io_tile_info->start_addr << CGRA_BYTE_OFFSET) + ((tile * 2) << BANK_ADDR_WIDTH);
+                (io_tile_info->start_addr * e64_starting_addr_scale << CGRA_BYTE_OFFSET) + ((tile * 2) << BANK_ADDR_WIDTH);
                 io_tile_info->tb_write_start_addr =
-                (io_tile_info->tb_write_start_addr << CGRA_BYTE_OFFSET) + ((tile * 2) << BANK_ADDR_WIDTH);
+                (io_tile_info->tb_write_start_addr * e64_starting_addr_scale << CGRA_BYTE_OFFSET) + ((tile * 2) << BANK_ADDR_WIDTH);
             }
 
             printf("Mapping input_%0d_block_%0d to global buffer\n", i, j);
             if (io_tile_info->is_fake_io == 0) {
                 update_io_tile_configuration(io_tile_info, &kernel->config, kernel);
+                // Use the first real (non-fake) input tile as the flush source.
+                // Fake IO tiles have no load DMA configured, so their data_flush
+                // never fires and cannot be used to flush the CGRA.
+                if (!first_real_input_found) {
+                    first_input_tile = tile;
+                    first_real_input_found = 1;
+                }
             }
             else {
                 printf("Fake IO tile detected at pos x: %d, skipping configuration\n", io_tile_info->pos.x);
-            }
-            if (i == 0 && j == 0) {
-                first_input_tile = tile;
             }
         }
     }
@@ -265,27 +280,40 @@ int glb_map(void *kernel_, int dpr_enabled) {
             }
 
             io_tile_info->tile = tile;
+            // In E64 mode, each DMA cycle reads/writes 4 words, so addresses that
+            // are in 16-bit-word units must be scaled by 4.  However, K-DIM host
+            // tiling computes write_data_starting_addr in parse_design_meta.py
+            // already divided by io_bw_per_cycle (which includes the E64 factor),
+            // so applying the scale again would double-count and push data past
+            // its intended k-slice region.
+            const char *k_dim_env = getenv("K_DIM_HOST_TILING");
+            int k_dim_active = k_dim_env && atoi(k_dim_env) == 1;
+            int e64_starting_addr_scale = (!k_dim_active && get_exchange_64_config() && io_tile_info->E64_packed) ? 4 : 1;
             if (get_E64_multi_bank_mode_config() && io_tile_info->E64_packed && io_tile_info->use_multi_bank_mode) {
                 io_tile_info->start_addr =
-                (io_tile_info->start_addr << CGRA_BYTE_OFFSET) + ((tile * 2 + j%2) << BANK_ADDR_WIDTH);
+                (io_tile_info->start_addr * e64_starting_addr_scale << CGRA_BYTE_OFFSET) + ((tile * 2 + j%2) << BANK_ADDR_WIDTH);
                 io_tile_info->gold_check_start_addr =
-                (io_tile_info->gold_check_start_addr << CGRA_BYTE_OFFSET) + ((tile * 2 + j%2) << BANK_ADDR_WIDTH);
+                (io_tile_info->gold_check_start_addr * e64_starting_addr_scale << CGRA_BYTE_OFFSET) + ((tile * 2 + j%2) << BANK_ADDR_WIDTH);
             } else {
                 io_tile_info->start_addr =
-                (io_tile_info->start_addr << CGRA_BYTE_OFFSET) + ((tile * 2 + 1) << BANK_ADDR_WIDTH);
+                (io_tile_info->start_addr * e64_starting_addr_scale << CGRA_BYTE_OFFSET) + ((tile * 2 + 1) << BANK_ADDR_WIDTH);
                 io_tile_info->gold_check_start_addr =
-                (io_tile_info->gold_check_start_addr << CGRA_BYTE_OFFSET) + ((tile * 2 + 1) << BANK_ADDR_WIDTH);
+                (io_tile_info->gold_check_start_addr * e64_starting_addr_scale << CGRA_BYTE_OFFSET) + ((tile * 2 + 1) << BANK_ADDR_WIDTH);
             }
 
             printf("Mapping output_%0d_block_%0d to global buffer\n", i, j);
             if (io_tile_info->is_fake_io == 0) {
                 update_io_tile_configuration(io_tile_info, &kernel->config, kernel);
+                // Use the first real (non-fake) output tile as the flush source.
+                // Fake IO tiles have no store DMA configured, so their data_flush
+                // never fires and cannot be used to flush the CGRA.
+                if (!first_real_output_found) {
+                    first_output_tile = tile;
+                    first_real_output_found = 1;
+                }
             }
             else {
                 printf("Fake IO tile detected at pos x: %d, skipping configuration\n", io_tile_info->pos.x);
-            }
-            if (i == 0 && j == 0) {
-                first_output_tile = tile;
             }
         }
     }
@@ -522,8 +550,12 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
 
     if (io_tile_info->io == Input) {
 
-        // Point to the other bank if the input is stored in GLB
-        if (io_tile_info->is_glb_input == 1) start_addr = start_addr + (1 << BANK_ADDR_WIDTH);
+        // Point to the other bank if the input is stored in GLB.
+        // In E64_MB mode, both input and output are assigned the same bank (tile*2 + j%2),
+        // so no offset is needed.
+        // HACK: this logic may break when we want to read data from bank0 in non-E64 MB mode for back-to-back verification
+        if (io_tile_info->is_glb_input == 1 && !(E64_multi_bank_mode && E64_packed && tile_use_multi_bank_mode))
+            start_addr = start_addr + (1 << BANK_ADDR_WIDTH);
 
         if (strcmp(io_tile_info->mode, "RV") == 0) {
             printf("\nIO tiles are in READY-VALID mode\n");

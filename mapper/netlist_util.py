@@ -254,6 +254,13 @@ class CreateIDs(Visitor):
         self.node_to_type = {}
         self.node_to_id = {}
         self.run(dag)
+        # Assign 'I' to io16in Input nodes not reached during traversal
+        # (e.g., dangling transpose IOs with no fabric connections).
+        for input_node in dag.inputs:
+            if "io16in" in input_node.iname and input_node.iname not in self.node_to_type:
+                print(f"[INFO] CreateIDs: assigning 'I' to dangling IO: {input_node.iname}")
+                self.node_to_type[input_node.iname] = "I"
+                self.tile_types.add("I")
         for tile_type in self.tile_types:
             nodes = [k for k, v in self.node_to_type.items() if v == tile_type]
             nodes.sort()
@@ -1236,6 +1243,13 @@ class PackRegsIntoPonds(Visitor):
         self.dag_sources = []
         self.dag_sinks = []
         self.run(dag)
+        # Forward any Input nodes not visited during traversal (e.g., dangling IOs
+        # with no CGRA fabric connections) so they survive into the output IODag.
+        for inp in dag.inputs:
+            if inp not in self.node_map:
+                print(f"[INFO] PackRegsIntoPonds: forwarding unvisited input: {inp.iname}")
+                self.inputs.append(inp)
+                self.node_map[inp] = inp
         for source in dag.sources:
             if hasattr(source, "sink"):
                 self.dag_sources.append(source)
@@ -1345,7 +1359,8 @@ def create_netlist_info(
     orig_cgra_width=16,
     orig_cgra_height=28,
     mu_oc_0=32,
-    num_fabric_cols_removed=8
+    num_fabric_cols_removed=8,
+    dangling_io_inames: list = None,
 ):
     if load_only:
         packed_file = os.path.join(app_dir, "design.packed")
@@ -1362,6 +1377,19 @@ def create_netlist_info(
         ready_valid,
         insert_output_regs=pipeline_output,
     ).doit(dag)
+
+    # Inject Input nodes for dangling input IOs (io16in instances with no CGRA
+    # fabric connections) that were dropped by the mapper but are needed for
+    # physical placement (e.g., E64 transpose packing).
+    if dangling_io_inames:
+        existing_inames = {inp.iname for inp in fdag.inputs}
+        print(f"[INFO] create_netlist_info: existing input inames = {existing_inames}")
+        print(f"[INFO] create_netlist_info: dangling_io_inames = {dangling_io_inames}")
+        for iname in dangling_io_inames:
+            if iname not in existing_inames:
+                print(f"[INFO] Injecting dangling IO: {iname}")
+                new_inp = Input(type=IO_Input_t_rv if ready_valid else IO_Input_t, iname=iname)
+                fdag.inputs.append(new_inp)
 
     sinks = PipelineBroadcastHelper().doit(fdag)
     pdag, pond_reg_skipped, swap_pond_ports = PackRegsIntoPonds(sinks).doit(fdag)
