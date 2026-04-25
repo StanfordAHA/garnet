@@ -184,6 +184,23 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
     #       But we can use rv mem and pond without matrix unit if we want
     use_rv_mem_pond = using_matrix_unit
 
+    # Check for custom lake spec config via environment variable
+    lake_spec_config = os.environ.get("LAKE_SPEC_CONFIG", "")
+    lake_spec_mode = os.environ.get("LAKE_SPEC_MODE", "")
+    if lake_spec_config:
+        import json as json_mod
+        with open(lake_spec_config) as _f:
+            _spec_params = json_mod.load(_f)
+        # Both modes use SpecMemoryController
+        use_rv_mem_pond = True
+        spec_vec_width = _spec_params.get("vec_width", 1)
+        spec_data_width = _spec_params.get("data_width", 16)
+        mem_width = spec_data_width * spec_vec_width
+        bytes_per_word = max(1, mem_width // 8)
+        mem_depth = _spec_params.get("storage_capacity", mem_depth * bytes_per_word) // bytes_per_word
+
+    true_dual_port = bool(lake_spec_config) and dual_port
+
     # currently only add 16bit io cores
     # bit_widths = [1, 16, 17]
     ready_valid = scgra
@@ -237,7 +254,14 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
 
         wscan = WriteScanner(fifo_depth=fifo_depth, perf_debug=perf_debug)
 
-        if use_rv_mem_pond:
+        if lake_spec_config:
+            from aha.util.sweep_thesis_collateral import build_spec_rv, build_spec
+            if lake_spec_mode == "rv":
+                spec = build_spec_rv(**_spec_params)
+            else:
+                spec = build_spec(**_spec_params)
+            strg_ub = SpecMemoryController(spec=spec)
+        elif use_rv_mem_pond:
             # strg_ub = StrgUBVec(mem_width=mem_width, mem_depth=mem_depth, comply_with_17=True)
             strg_cap = 4096
             fw = 4
@@ -248,14 +272,6 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
         else:
             strg_ub = StrgUBVec(mem_width=mem_width, mem_depth=mem_depth, comply_with_17=True)
 
-        fiber_access = FiberAccess(local_memory=False,
-                                   use_pipelined_scanner=pipeline_scanner,
-                                   fifo_depth=fifo_depth,
-                                   buffet_optimize_wide=True,
-                                   perf_debug=perf_debug)
-
-        buffet = BuffetLike(mem_depth=mem_depth, local_memory=False, optimize_wide=True, fifo_depth=fifo_depth)
-
         if use_rv_mem_pond:
             strg_ram = StrgRAMRV(memory_width=mem_width, memory_depth=mem_depth, comply_with_17=True)
         else:
@@ -263,16 +279,35 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
 
         stencil_valid = StencilValid()
 
-        if use_fiber_access:
-            controllers.append(fiber_access)
+        if lake_spec_config:
+            controllers.append(strg_ub)
+            controllers.append(strg_ram)
+            controllers.append(stencil_valid)
         else:
-            controllers.append(scan)
-            controllers.append(wscan)
-            controllers.append(buffet)
+            fiber_access = FiberAccess(local_memory=False,
+                                       use_pipelined_scanner=pipeline_scanner,
+                                       fifo_depth=fifo_depth,
+                                       buffet_optimize_wide=True,
+                                       perf_debug=perf_debug,
+                                       mem_width=mem_width,
+                                       mem_depth=mem_depth)
 
-        controllers.append(strg_ub)
-        controllers.append(strg_ram)
-        controllers.append(stencil_valid)
+            buffet = BuffetLike(mem_depth=mem_depth,
+                                mem_width=mem_width,
+                                local_memory=False,
+                                optimize_wide=True,
+                                fifo_depth=fifo_depth)
+
+            if use_fiber_access:
+                controllers.append(fiber_access)
+            else:
+                controllers.append(scan)
+                controllers.append(wscan)
+                controllers.append(buffet)
+
+            controllers.append(strg_ub)
+            controllers.append(strg_ram)
+            controllers.append(stencil_valid)
 
         isect = Intersect(fifo_depth=fifo_depth, perf_debug=perf_debug)
 
@@ -314,6 +349,7 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
                                        'input_prefix': "PE_",
                                        'fifo_depth': fifo_depth,
                                        'dual_port': dual_port,
+                                       'true_dual_port': true_dual_port,
                                        'rf': rf}),
                    (CoreCombinerCore, {'controllers_list': controllers_2,
                                        'use_sim_sram': not physical_sram,
@@ -325,6 +361,7 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
                                        'input_prefix': "PE_",
                                        'fifo_depth': fifo_depth,
                                        'dual_port': dual_port,
+                                       'true_dual_port': true_dual_port,
                                        'rf': rf}),
                    (CoreCombinerCore, {'controllers_list': controllers_2,
                                        'use_sim_sram': not physical_sram,
@@ -336,6 +373,7 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
                                        'input_prefix': "PE_",
                                        'fifo_depth': fifo_depth,
                                        'dual_port': dual_port,
+                                       'true_dual_port': true_dual_port,
                                        'rf': rf}),
                    (CoreCombinerCore, {'controllers_list': controllers,
                                        'use_sim_sram': not physical_sram,
@@ -347,6 +385,7 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
                                        'input_prefix': "MEM_",
                                        'fifo_depth': fifo_depth,
                                        'dual_port': dual_port,
+                                       'true_dual_port': true_dual_port,
                                        'rf': rf})]
 
     # DENSE ONLY CGRA
@@ -385,6 +424,7 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
                                        'input_prefix': "PE_",
                                        'fifo_depth': fifo_depth,
                                        'dual_port': dual_port,
+                                       'true_dual_port': true_dual_port,
                                        'rf': rf}),
                    (CoreCombinerCore, {'controllers_list': controllers_2,
                                        'use_sim_sram': not physical_sram,
@@ -397,6 +437,7 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
                                        'input_prefix': "PE_",
                                        'fifo_depth': fifo_depth,
                                        'dual_port': dual_port,
+                                       'true_dual_port': true_dual_port,
                                        'rf': rf}),
                    (CoreCombinerCore, {'controllers_list': controllers_2,
                                        'use_sim_sram': not physical_sram,
@@ -409,6 +450,7 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
                                        'input_prefix': "PE_",
                                        'fifo_depth': fifo_depth,
                                        'dual_port': dual_port,
+                                       'true_dual_port': true_dual_port,
                                        'rf': rf}),
                    (CoreCombinerCore, {'controllers_list': controllers,
                                        'use_sim_sram': not physical_sram,
@@ -421,6 +463,7 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
                                        'input_prefix': "MEM_",
                                        'fifo_depth': fifo_depth,
                                        'dual_port': dual_port,
+                                       'true_dual_port': true_dual_port,
                                        'rf': rf})]
 
     # compute the actual size

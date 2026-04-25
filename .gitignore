@@ -56,3 +56,14 @@ tests/test_app/tb/top.sv
 
 #Ignore mu_synthetic data dir, which is generated during testing
 tests/test_app/mu2cgra_synthetic_data/
+
+*ast*
+*html*
+*log*
+*json*
+*xml*
+*yaml*
+*txt*
+*so*
+*simv.daidir*
+*xcelium.d*

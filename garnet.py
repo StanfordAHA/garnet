@@ -440,9 +440,9 @@ class Garnet(Generator):
         outputs = []
         for _, net in netlist.items():
             for blk_id, port in net:
-                if port == "io2f_16":
+                if port in ("io2f_16", "io2f_17"):
                     inputs.append(blk_id)
-                elif port == "f2io_16":
+                elif port in ("f2io_16", "f2io_17"):
                     outputs.append(blk_id)
                 elif port == "io2f_1":
                     inputs.append(blk_id)
@@ -459,13 +459,12 @@ class Garnet(Generator):
 
         for blk_id in inputs:
             x, y = placement[blk_id]
-            if blk_id[0] == "I":
-                bit_width = 1
-            elif self.ready_valid:
+            if self.ready_valid:
                 bit_width = 17
-            else:
+            elif blk_id[0] == "I":
                 bit_width = 16
-            # bit_width = 16 if blk_id[0] == "I" else 1
+            else:
+                bit_width = 1
             name = f"glb2io_{bit_width}_X{x:02X}_Y{y:02X}"
             input_interface.append(name)
             assert name in self.interconnect.interface()
@@ -476,13 +475,12 @@ class Garnet(Generator):
                 en_port_name.append(name)
         for blk_id in outputs:
             x, y = placement[blk_id]
-            # bit_width = 16 if blk_id[0] == "I" else 1
-            if blk_id[0] == "I":
-                bit_width = 1
-            elif self.ready_valid:
+            if self.ready_valid:
                 bit_width = 17
-            else:
+            elif blk_id[0] == "I":
                 bit_width = 16
+            else:
+                bit_width = 1
             name = f"io2glb_{bit_width}_X{x:02X}_Y{y:02X}"
             output_interface.append(name)
             assert name in self.interconnect.interface()
@@ -618,6 +616,7 @@ class Garnet(Generator):
 
         # Remapping all of the ports in the application to generic ports that exist in the hardware
         # Seems really brittle, we should probably do this in a better way
+        mem_remaps = []
         mem_remap = None
         pe_remap = None
 
@@ -627,29 +626,42 @@ class Garnet(Generator):
             if isinstance(pnr_tag, list):
                 continue
             pnr_tag = pnr_tag.tag_name
-            if pnr_tag == "m" and mem_remap is None:
-                mem_remap = actual_core.get_port_remap()
+            if pnr_tag == "m":
+                mem_remaps.append(actual_core.get_port_remap())
             elif pnr_tag == "p" and pe_remap is None:
                 pe_remap = actual_core.get_port_remap()
-            elif mem_remap is not None and pe_remap is not None:
+            elif mem_remaps and pe_remap is not None:
                 break
 
-        if use_dense_ready_valid:
-            lakespec_pin_remap = {
-                'data_in_0': 'port_0',
-                'data_in_1': 'port_1',
-                'data_in_2': 'port_2',
-                'data_out_0': 'port_3',
-                'data_out_1': 'port_4',
-                'data_out_2': 'port_5',
-            }
-        else:
-            lakespec_pin_remap = {
-                'data_in_0': 'port_0',
-                'data_in_1': 'port_1',
-                'data_out_0': 'port_2',
-                'data_out_1': 'port_3'
-            }
+        if mem_remaps:
+            mem_remap = {}
+            for remap in mem_remaps:
+                for mode_name, mode_remap in remap.items():
+                    merged_mode_remap = mem_remap.setdefault(mode_name, {})
+                    for port_name, pin_name in mode_remap.items():
+                        merged_mode_remap.setdefault(port_name, pin_name)
+
+        lakespec_remap = mem_remap.get('lakespec', {}) if mem_remap is not None else {}
+        port_entries = {}
+        for k, v in lakespec_remap.items():
+            base_key = k[:-len('_f__intercept')] if k.endswith('_f__intercept') else k
+            if base_key.startswith('port_'):
+                port_entries[base_key] = v
+        n_in = sum(1 for v in port_entries.values() if 'input_width' in v)
+        n_out = sum(1 for v in port_entries.values() if 'output_width' in v)
+        if n_in == 0 and n_out == 0:
+            n_in, n_out = 2, 2
+        lakespec_pin_remap = {}
+        for i in range(n_in):
+            lakespec_pin_remap[f'data_in_{i}'] = f'port_{i}'
+        for j in range(n_out):
+            lakespec_pin_remap[f'data_out_{j}'] = f'port_{n_in + j}'
+
+        def resolve_lakespec_pin(pin_name):
+            for candidate in (pin_name, f"{pin_name}_f__intercept"):
+                if candidate in lakespec_remap:
+                    return lakespec_remap[candidate]
+            raise KeyError(pin_name)
 
         for netlist_id, connections_list in netlist_info['netlist'].items():
             for idx, connection in enumerate(connections_list):
@@ -677,17 +689,11 @@ class Garnet(Generator):
                             }
                         assert pin_ in hack_remap
                         pin_ = hack_remap[pin_]
-                    print(mem_remap)
-                    # Hack - put the remap for lakespec here???
                     if mode == "UB" and "UB" not in mem_remap:
                         if 'lakespec' in mem_remap:
-                            print("Hello - here")
-                            pin_remap = mem_remap['lakespec'][lakespec_pin_remap[pin_]]
-                            print(pin_remap)
-                            # exit()
+                            pin_remap = resolve_lakespec_pin(lakespec_pin_remap[pin_])
                         else:
                             raise NotImplementedError
-                    # exit()
                     else:
                         pin_remap = mem_remap[mode][pin_]
 
@@ -1054,6 +1060,11 @@ def parse_args():
     parser.add_argument('--use-non-split-fifos', action="store_true")
     parser.add_argument('--exclude-glb-ring-switch', action="store_true")
     parser.add_argument('--pipeline-mu2cgra', action="store_true")
+    parser.add_argument('--lake-spec-config', type=str, default="",
+                        help="JSON file with lake spec parameters for custom memory config")
+    parser.add_argument('--lake-spec-mode', type=str, default="",
+                        choices=["", "rv", "static"],
+                        help="Memory controller mode: rv (ready-valid) or static")
 
     # Daemon choices are maybe ['help', 'launch', 'use', 'kill', 'force', 'status', 'wait']
     parser.add_argument('--daemon', type=str, choices=GarnetDaemon.choices, default=None)
@@ -1259,6 +1270,12 @@ def reschedule_pipelined_app(app):
 def main():
     args, io_sides = parse_args()
     GarnetDaemon.initial_check(args)
+
+    # Propagate lake spec config/mode to environment for create_cgra()
+    if args.lake_spec_config:
+        os.environ["LAKE_SPEC_CONFIG"] = args.lake_spec_config
+    if args.lake_spec_mode:
+        os.environ["LAKE_SPEC_MODE"] = args.lake_spec_mode
     # "launch" => ERROR if daemon exists already else continue
     # "force"  => kill existing daemon, then continue
     # "status" => echo daemon status and exit

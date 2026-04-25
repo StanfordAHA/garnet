@@ -121,7 +121,7 @@ VERILATOR = verilator $(VERILATOR_WARN) --timing --cc --exe tb/CGRA.cpp \
 XRUN = xrun \
 	   -64bit \
 	   -sv \
-	   -timescale 100ps/1ps \
+	   -timescale 1ps/1ps \
 	   -debug \
 	   -sysv \
 	   -top top \

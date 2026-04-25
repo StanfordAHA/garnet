@@ -36,6 +36,7 @@ class CoreCombinerCore(LakeCoreBase):
                  name=None,
                  input_prefix="",
                  dual_port=False,
+                 true_dual_port=False,
                  rf=False,
                  ready_valid=True,
                  mem_width=mem_width_default,
@@ -46,6 +47,7 @@ class CoreCombinerCore(LakeCoreBase):
         self.input_prefix = input_prefix
 
         self.dual_port = dual_port
+        self.true_dual_port = true_dual_port
         self.rf = rf
         self.mem_width = mem_width
         self.mem_depth = mem_depth
@@ -93,6 +95,7 @@ class CoreCombinerCore(LakeCoreBase):
                      self.config_addr_width,
                      cc_core_name,
                      dual_port,
+                     true_dual_port,
                      rf,
                      new_pond)
 
