@@ -19,10 +19,8 @@ else version=$(verilator --version |& cut -d " " -f2); fi
 
 if insufficient $version; then
 
-    # Only works with g++-10 else "unrecognized option ‘-fcoroutines’"
-    echo "--- MAKE SETUP: Install g++-10, autoconf, bison, help2man"
-    yes | (apt update; apt upgrade; apt install g++-10)
-    (cd /usr/bin; test -e g++ && mv g++ g++.orig; ln -s g++-10 g++)
+    # Hey guess what we have g++-13 available in the container now
+    (cd /usr/bin; test -e g++ && mv g++ g++.orig; ln -s g++-13 g++)
     echo -------------------------------
 
     echo These are missing in docker ATM 

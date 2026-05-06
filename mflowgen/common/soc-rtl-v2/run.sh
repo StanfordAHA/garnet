@@ -18,6 +18,8 @@ fi
 # Clone the ARM IP Repo
 # git clone git@r7arm-aha:nyengele/aham3soc_armip.git aham3soc_armip  # No longer works
 # git clone /sim/repos/aham3soc_armip aham3soc_armip                  # No longer exists! (on r8arm-aha)
+
+# Copy ARM IP from local cache
 cp -r /sim/buildkite-agent/aham3soc_armip_cache aham3soc_armip
 
 # Generate Pad Frame
