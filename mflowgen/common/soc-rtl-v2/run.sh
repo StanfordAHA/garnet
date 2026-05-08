@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
 # Get Current Directory
 CUR_DIR=$(pwd)
@@ -7,19 +8,19 @@ CUR_DIR=$(pwd)
 git clone https://github.com/StanfordAHA/AhaM3SoC.git aham3soc
 
 if [ "$WHICH_SOC" == "amber" ]; then
-# NOW: to make this branch (master-tsmc) work, must use amber soc
-# FIXME/TODO: should be part of top-level parms
-# FIXME/TODO: whrere are top-level parms???
-amber_soc=83dca39f4e4568ae134f0af69c2ad1b0c8adf6e7
-(cd aham3soc; git checkout $amber_soc)
-
-# Clone the ARM IP Repo
-git clone git@r7arm-aha:nyengele/aham3soc_armip.git aham3soc_armip
-else
-# Clone the ARM IP Repo
-git clone /sim/repos/aham3soc_armip aham3soc_armip
+    # NOW: to make this branch (master-tsmc) work, must use amber soc
+    # FIXME/TODO: should be part of top-level parms
+    # FIXME/TODO: whrere are top-level parms???
+    amber_soc=83dca39f4e4568ae134f0af69c2ad1b0c8adf6e7
+    (cd aham3soc; git checkout $amber_soc)
 fi
 
+# Clone the ARM IP Repo
+# git clone git@r7arm-aha:nyengele/aham3soc_armip.git aham3soc_armip  # No longer works
+# git clone /sim/repos/aham3soc_armip aham3soc_armip                  # No longer exists! (on r8arm-aha)
+
+# Copy ARM IP from local cache
+cp -r /sim/buildkite-agent/aham3soc_armip_cache aham3soc_armip
 
 # Generate Pad Frame
 mkdir -p aham3soc_pad_frame
