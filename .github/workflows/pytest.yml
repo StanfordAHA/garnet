@@ -27,11 +27,6 @@ jobs:
         git submodule sync --recursive
         git submodule update --init --force --recursive --depth=1
 
-#       run: |
-#         auth_header="$(git config --local --get http.https://github.com/.extraheader)"
-#         git submodule sync --recursive
-#         git -c "http.extraheader=$auth_header" -c protocol.version=2 submodule update --init --force --recursive --depth=1
-
     - name: Pull and run docker
       shell: bash
       run: |
