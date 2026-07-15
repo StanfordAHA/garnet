@@ -47,6 +47,15 @@ def construct():
         'array_height': 16,
         'interconnect_only': False,
 
+        # Lake-spec knobs (see garnet/mflowgen/common/rtl/gen_rtl.sh).
+        # Broadcast via g.update_params(parameters) below into both the
+        # top-level rtl step and the Tile_MemCore subgraph. Empty defaults
+        # preserve baseline behavior for consumers that don't set env.
+        'lake_spec_config':    os.environ.get('LAKE_SPEC_CONFIG', ''),
+        'lake_spec_mode':      os.environ.get('LAKE_SPEC_MODE', ''),
+        'dual_port':           os.environ.get('DUAL_PORT',           'False') == 'True',
+        'use_non_split_fifos': os.environ.get('USE_NON_SPLIT_FIFOS', 'False') == 'True',
+
         # Power Domains
         'PWR_AWARE': True,
 
@@ -504,6 +513,14 @@ def construct():
     # -----------------------------------------------------------------------
 
     g.update_params(parameters)
+
+    # Forward lake-spec knobs into the Tile_MemCore subgraph explicitly.
+    # g.update_params broadcasts to top-level steps but does not always
+    # descend into subgraph nodes' parameter spaces (see the glb_top
+    # forwarding pattern in full_chip/construct.py).
+    for _key in ('lake_spec_config', 'lake_spec_mode',
+                 'dual_port', 'use_non_split_fifos'):
+        Tile_MemCore.update_params({_key: parameters[_key]}, True)
 
     # LVS adk has separate view parameter
     if which_soc == "onyx":

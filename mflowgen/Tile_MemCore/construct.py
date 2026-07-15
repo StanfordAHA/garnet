@@ -75,6 +75,15 @@ def construct():
         'interconnect_only': False,
         'rtl_docker_image': 'default',  # Current default is 'stanfordaha/garnet:latest'
 
+        # Lake-spec knobs. Empty strings/False -> preserve default MemCore RTL.
+        # sweep_tile_memcore_pnr.py sets these per config point via
+        # `mflowgen run --update`, and the rtl step forwards them to
+        # `aha garnet` (see common/rtl/gen_rtl.sh).
+        'lake_spec_config': os.environ.get('LAKE_SPEC_CONFIG', ''),
+        'lake_spec_mode':   os.environ.get('LAKE_SPEC_MODE',   ''),
+        'dual_port':                os.environ.get('DUAL_PORT',           'False') == 'True',
+        'use_non_split_fifos':      os.environ.get('USE_NON_SPLIT_FIFOS', 'False') == 'True',
+
         # Power Domains
         'PWR_AWARE': pwr_aware,
 

@@ -76,7 +76,17 @@ def construct():
         'array_height': 16,
         'num_glb_tiles': 16,
         'interconnect_only': False,
+        # Must stay True: the lake-spec flags below only exist in the local
+        # garnet checkout (modern_gf), not in the default docker garnet.
         'use_local_garnet': True,
+
+        # Lake-spec knobs. Broadcast to the top-level rtl step and forwarded
+        # explicitly to the tile_array subgraph (which forwards to
+        # Tile_MemCore). Empty defaults preserve baseline behavior.
+        'lake_spec_config':    os.environ.get('LAKE_SPEC_CONFIG', ''),
+        'lake_spec_mode':      os.environ.get('LAKE_SPEC_MODE', ''),
+        'dual_port':           os.environ.get('DUAL_PORT',           'False') == 'True',
+        'use_non_split_fifos': os.environ.get('USE_NON_SPLIT_FIFOS', 'False') == 'True',
         # glb tile memory size (unit: KB)
         # 'glb_tile_mem_size' : 64,  #  64x16 => 1M global buffer
         'glb_tile_mem_size': 256,   # 256*16 => 4M global buffer
@@ -762,6 +772,12 @@ def construct():
     glb_top.update_params({'array_width': parameters['array_width']}, True)
     glb_top.update_params({'glb_tile_mem_size': parameters['glb_tile_mem_size']}, True)
     glb_top.update_params({'num_glb_tiles': parameters['num_glb_tiles']}, True)
+
+    # Forward lake-spec knobs into the tile_array subgraph, which forwards
+    # further into the Tile_MemCore subgraph inside it.
+    for _key in ('lake_spec_config', 'lake_spec_mode',
+                 'dual_port', 'use_non_split_fifos'):
+        tile_array.update_params({_key: parameters[_key]}, True)
 
     # App test parameters update
     cgra_rtl_sim_compile.update_params({'array_width': parameters['array_width']}, True)

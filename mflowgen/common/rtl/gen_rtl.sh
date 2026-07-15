@@ -81,6 +81,30 @@ flags+=" -v --glb_tile_mem_size $glb_tile_mem_size"
 # Where/when is this used?
 [ "$interconnect_only" == True ] && flags+=" --interconnect-only"
 
+# ------------------------------------------------------------------------
+# Lake-spec knobs. Empty -> no-op (preserves existing behavior for
+# consumers like Tile_PE / glb_top that don't set these).
+# ------------------------------------------------------------------------
+[ "$dual_port"            == True ] && flags+=" --dual-port"
+[ "$use_non_split_fifos"  == True ] && flags+=" --use-non-split-fifos"
+
+# Track whether we have an in-workspace spec config that must be shipped
+# into the container so garnet.py can read it.
+SPEC_CFG_HOST=""
+if [ -n "$lake_spec_config" ]; then
+    # Resolve to an absolute path so it survives the eventual `cd garnet`
+    # inside the container heredoc.
+    SPEC_CFG_HOST="$(readlink -f "$lake_spec_config" 2>/dev/null || echo "$lake_spec_config")"
+    if [ ! -f "$SPEC_CFG_HOST" ]; then
+        echo "*** ERROR: lake_spec_config file not found: $lake_spec_config" >&2
+        exit 1
+    fi
+    # In-container path where we'll drop the spec (see docker cp below).
+    SPEC_CFG_CTR="/tmp/lake_spec_config.json"
+    flags+=" --lake-spec-config $SPEC_CFG_CTR"
+    [ -n "$lake_spec_mode" ] && flags+=" --lake-spec-mode $lake_spec_mode"
+fi
+
 # Use aha docker container for all dependencies
 if [ "$use_container" == True ]; then
       echo "Use aha docker container for all dependencies"
@@ -159,6 +183,15 @@ if [ "$use_container" == True ]; then
         docker cp ./garnet $container_name:/aha/garnet
       fi
 
+      # Ship the lake spec config into the container if one was provided.
+      # garnet.py reads --lake-spec-config and re-exports LAKE_SPEC_CONFIG for
+      # util_onyx.py; we set both so either code path works.
+      if [ -n "$SPEC_CFG_HOST" ]; then
+        echo "--- gen_rtl: shipping lake_spec_config -> $SPEC_CFG_CTR"
+        docker cp "$SPEC_CFG_HOST" ${container_name}:${SPEC_CFG_CTR}
+      fi
+
+
       # Update container for amber config if necessary
       if [ "$WHICH_SOC" == "amber" ]; then
           echo "+++ Updating container with amber updates"
@@ -199,6 +232,9 @@ if [ "$use_container" == True ]; then
          # (Single-quote regime)
          # Oh what a hack
          export WHICH_SOC='$WHICH_SOC'
+         export LAKE_SPEC_CONFIG='$SPEC_CFG_CTR'
+         export LAKE_SPEC_MODE='$lake_spec_mode'
+         export USE_NON_SPLIT_FIFOS='$use_non_split_fifos'
 
          function checkpip {
              # Example: checkpip ast.t "peak "
@@ -321,6 +357,15 @@ if [ "$use_container" == True ]; then
 else    # if NOT [ $use_container == True ]
       current_dir=$(pwd)
       cd $GARNET_HOME
+
+      # Local (non-container) path: point at the host spec file directly.
+      if [ -n "$SPEC_CFG_HOST" ]; then
+          export LAKE_SPEC_CONFIG="$SPEC_CFG_HOST"
+          # Rewrite the container path we baked into $flags to the host path.
+          flags="${flags/--lake-spec-config ${SPEC_CFG_CTR}/--lake-spec-config ${SPEC_CFG_HOST}}"
+      fi
+      [ -n "$lake_spec_mode"     ] && export LAKE_SPEC_MODE="$lake_spec_mode"
+      [ "$use_non_split_fifos" == True ] && export USE_NON_SPLIT_FIFOS=1
 
       if [ $interconnect_only == True ]; then
         eval "python garnet.py $flags"

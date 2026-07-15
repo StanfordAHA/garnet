@@ -34,6 +34,21 @@ parameters:
   # Current default is 'stanfordaha/garnet:latest'
   rtl_docker_image: default
 
+  # ------------------------------------------------------------------------
+  # Lake-spec knobs for memory-tile RTL variance.
+  # Empty string (default) -> preserve existing behavior (no spec applied).
+  # When lake_spec_config points at a spec_config.json (as produced by
+  # sweep_thesis_collateral.py's write_json(spec_config_path, cfg)), the
+  # RTL step forwards both --lake-spec-config and --lake-spec-mode to
+  # `aha garnet` and exports matching env vars into the docker container.
+  # dual_port / use_non_split_fifos are broken out because those flags
+  # already exist unconditionally in garnet.py.
+  # ------------------------------------------------------------------------
+  lake_spec_config: ""
+  lake_spec_mode: ""
+  dual_port: False
+  use_non_split_fifos: False
+
   ############################################################################
   # To try out a new docker image e.g. 'stanfordaha/garnet:cst' or 'stanfordaha/garnet@sha256:1e4a0bf29f3bad8e3...'
   #   - set 'save_verilog_to_tmpdir' to "True"
