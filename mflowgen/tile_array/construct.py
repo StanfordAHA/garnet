@@ -55,6 +55,7 @@ def construct():
         'lake_spec_mode':      os.environ.get('LAKE_SPEC_MODE', ''),
         'dual_port':           os.environ.get('DUAL_PORT',           'False') == 'True',
         'use_non_split_fifos': os.environ.get('USE_NON_SPLIT_FIFOS', 'False') == 'True',
+        'use_sim_sram':        os.environ.get('USE_SIM_SRAM',        'False') == 'True',
 
         # Power Domains
         'PWR_AWARE': True,
@@ -519,7 +520,7 @@ def construct():
     # descend into subgraph nodes' parameter spaces (see the glb_top
     # forwarding pattern in full_chip/construct.py).
     for _key in ('lake_spec_config', 'lake_spec_mode',
-                 'dual_port', 'use_non_split_fifos'):
+                 'dual_port', 'use_non_split_fifos', 'use_sim_sram'):
         Tile_MemCore.update_params({_key: parameters[_key]}, True)
 
     # LVS adk has separate view parameter

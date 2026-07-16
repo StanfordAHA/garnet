@@ -87,6 +87,7 @@ def construct():
         'lake_spec_mode':      os.environ.get('LAKE_SPEC_MODE', ''),
         'dual_port':           os.environ.get('DUAL_PORT',           'False') == 'True',
         'use_non_split_fifos': os.environ.get('USE_NON_SPLIT_FIFOS', 'False') == 'True',
+        'use_sim_sram':        os.environ.get('USE_SIM_SRAM',        'False') == 'True',
         # glb tile memory size (unit: KB)
         # 'glb_tile_mem_size' : 64,  #  64x16 => 1M global buffer
         'glb_tile_mem_size': 256,   # 256*16 => 4M global buffer

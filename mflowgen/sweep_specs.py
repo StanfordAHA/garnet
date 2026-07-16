@@ -126,6 +126,10 @@ def build_argparser():
     p.add_argument("--no-non-split-fifos", dest="non_split_fifos",
                    action="store_false",
                    help="Build without --use-non-split-fifos.")
+    p.add_argument("--use-sim-sram", action="store_true",
+                   help="Build with behavioral (simulatable) SRAM instead of a "
+                        "hardened macro. Needed for spec geometries with no "
+                        "matching physical SRAM macro in the tech map.")
     p.add_argument("--dry-run", action="store_true",
                    help="Print each config's workspace + commands, run nothing.")
     p.add_argument("--skip-existing", action="store_true",
@@ -304,6 +308,7 @@ def _run_one(cfg, cfg_dir, args):
     env["LAKE_SPEC_MODE"] = args.runtime_mode
     env["DUAL_PORT"] = "True" if cfg.get("dual_port", False) else "False"
     env["USE_NON_SPLIT_FIFOS"] = "True" if args.non_split_fifos else "False"
+    env["USE_SIM_SRAM"] = "True" if args.use_sim_sram else "False"
 
     make_cmd = ["make", str(args.stop_after)]
     if args.parallel_jobs > 0:
@@ -311,7 +316,7 @@ def _run_one(cfg, cfg_dir, args):
 
     if args.dry_run:
         for k in ("LAKE_SPEC_CONFIG", "LAKE_SPEC_MODE", "DUAL_PORT",
-                  "USE_NON_SPLIT_FIFOS"):
+                  "USE_NON_SPLIT_FIFOS", "USE_SIM_SRAM"):
             print(f"        DRY-RUN env: {k}={env[k]}", flush=True)
         print(f"        DRY-RUN cmd: mflowgen run --design {args.graph}",
               flush=True)

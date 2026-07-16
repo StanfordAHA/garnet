@@ -63,7 +63,6 @@ class CoreCombinerCore(LakeCoreBase):
             self.read_delay = 0
 
         print("Using tech map garnet:", tech_map_name)
-        exit()
 
         cc_core_name = "CoreCombiner"
 

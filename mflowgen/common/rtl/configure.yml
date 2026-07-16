@@ -49,6 +49,11 @@ parameters:
   dual_port: False
   use_non_split_fifos: False
 
+  # If true, pass --use_sim_sram to garnet.py: behavioral (simulatable) SRAM
+  # instead of a hardened macro. Needed to generate RTL for spec points whose
+  # geometry has no matching physical SRAM macro in the tech map.
+  use_sim_sram: False
+
   ############################################################################
   # To try out a new docker image e.g. 'stanfordaha/garnet:cst' or 'stanfordaha/garnet@sha256:1e4a0bf29f3bad8e3...'
   #   - set 'save_verilog_to_tmpdir' to "True"

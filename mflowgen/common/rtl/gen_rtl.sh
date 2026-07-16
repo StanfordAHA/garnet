@@ -87,6 +87,7 @@ flags+=" -v --glb_tile_mem_size $glb_tile_mem_size"
 # ------------------------------------------------------------------------
 [ "$dual_port"            == True ] && flags+=" --dual-port"
 [ "$use_non_split_fifos"  == True ] && flags+=" --use-non-split-fifos"
+[ "$use_sim_sram"         == True ] && flags+=" --use_sim_sram"
 
 # Track whether we have an in-workspace spec config that must be shipped
 # into the container so garnet.py can read it.
