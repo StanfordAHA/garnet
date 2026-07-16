@@ -41,3 +41,9 @@ set vars(hold_analysis_views)                  "[join ${hold_a_views}]"
 set vars(active_hold_views)                    "[join ${hold_a_views}]"
 
 set vars(power_analysis_view)                  analysis_setup_default_c
+
+
+set vars(delay_corners) { delay_default delay_typical }
+set vars(delay_default,early_library_set) {libs_typical}
+set vars(delay_default,late_library_set) {libs_typical}
+set vars(delay_default,rc_corner) {typical}

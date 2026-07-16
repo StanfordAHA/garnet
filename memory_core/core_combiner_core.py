@@ -66,7 +66,7 @@ class CoreCombinerCore(LakeCoreBase):
 
         cc_core_name = "CoreCombiner"
 
-        # assert controllers_list is not None and len(controllers_list) > 0
+        assert controllers_list is not None and len(controllers_list) > 0
         for controller in controllers_list:
             cc_core_name += f"_{str(controller)}"
 

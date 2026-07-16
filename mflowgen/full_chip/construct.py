@@ -50,6 +50,8 @@ def construct():
     if adk_name == 'tsmc16':
         adk_view = 'view-standard'
         which_soc = 'amber'
+    elif adk_name == 'gf12-adk':
+        adk_view = 'view-standard'
 
     if which("calibre") is not None:
         drc_rule_deck = 'calibre-drc-chip.rule'
@@ -63,7 +65,8 @@ def construct():
     parameters = {
         'construct_path': __file__,
         'design_name': 'GarnetSOC_pad_frame',
-        'clock_period': 1.1,
+        'clock_period': 2.0,
+        # 'clock_period': 1.1,
         'adk': adk_name,
         'adk_view': adk_view,
 
@@ -93,7 +96,8 @@ def construct():
         'glb_tile_mem_size': 256,   # 256*16 => 4M global buffer
 
         # Power Domains
-        'PWR_AWARE': True,
+        'PWR_AWARE': False,
+        # 'PWR_AWARE': True,
 
         # Include Garnet?
         'soc_only': False,

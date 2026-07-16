@@ -21,7 +21,11 @@ def construct():
 
     adk_name = get_sys_adk()  # E.g. 'gf12-adk' or 'tsmc16'
     adk_view = 'multivt'
-    pwr_aware = True
+    # pwr_aware = True
+    pwr_aware = False
+
+    if adk_name == 'gf12-adk':
+        adk_view = 'view-standard'
 
     if pwr_aware:
         adk_view = adk_view + '-pm'

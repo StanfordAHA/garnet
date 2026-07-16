@@ -23,6 +23,7 @@ def construct():
     if adk_name == 'tsmc16':
         read_hdl_defines = 'TSMC16'
     elif adk_name == 'gf12-adk':
+        adk_view = 'view-standard'
         read_hdl_defines = 'GF12'
     else:
         read_hdl_defines = ''
@@ -58,7 +59,8 @@ def construct():
         'use_sim_sram':        os.environ.get('USE_SIM_SRAM',        'False') == 'True',
 
         # Power Domains
-        'PWR_AWARE': True,
+        # 'PWR_AWARE': True,
+        'PWR_AWARE': False,
 
         # Useful Skew (CTS)
         'useful_skew': False,

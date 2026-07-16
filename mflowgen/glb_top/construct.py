@@ -28,6 +28,8 @@ def construct():
     if adk_name == 'tsmc16':
         adk_view = 'view-standard'
         which_soc = 'amber'
+    elif adk_name == 'gf12-adk':
+        adk_view = 'view-standard'
 
     parameters = {
         'construct_path': __file__,

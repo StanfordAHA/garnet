@@ -21,6 +21,9 @@ def construct():
     adk_view = 'multivt'
     pwr_aware = False     # os.environ.get('PWR_AWARE')
 
+    if adk_name == 'gf12-adk':
+        adk_view = 'view-standard'
+
     # autopep8: off
     parameters = {
         'construct_path'    : __file__,                              # noqa

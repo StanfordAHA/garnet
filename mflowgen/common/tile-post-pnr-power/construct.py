@@ -20,6 +20,9 @@ def construct():
     adk_name = 'tsmc16'
     adk_view = 'multivt'
 
+    if adk_name == 'gf12-adk':
+        adk_view = 'view-standard'
+
     # autopep8: off
     parameters = {
         'construct_path'    : __file__,                              # noqa

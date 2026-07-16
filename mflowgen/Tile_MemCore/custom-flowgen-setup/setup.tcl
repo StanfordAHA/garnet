@@ -41,3 +41,16 @@ set vars(hold_analysis_views)                  "[join ${hold_a_views}]"
 set vars(active_hold_views)                    "[join ${hold_a_views}]"
 
 set vars(power_analysis_view)                  analysis_setup_UNIFIED_BUFFER
+
+# set vars(delay_default,rc_corner)               typical
+# set vars(delay_default)                         typical
+
+set vars(delay_corners) { delay_default delay_typical }
+set vars(delay_default,early_library_set) {libs_typical}
+set vars(delay_default,late_library_set) {libs_typical}
+set vars(delay_default,rc_corner) {typical}
+
+# create_delay_corner -name delay_default -library_set libs_min -rc_corner rc_min
+
+puts "Setting delay default"
+# puts $delay_default
