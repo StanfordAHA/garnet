@@ -355,16 +355,35 @@ def _check_step_exists(step, cfg_dir, env):
     if proc.returncode != 0:
         return
 
-    targets = set()
+    # `make list` prints one node per line as " -  23 : cadence-innovus-signoff"
+    # (see mflowgen/backends/makefile_syntax.py: make_list). Generic targets
+    # use "-- description" instead of ":". Collect both ids and names.
+    names, targets = set(), set()
     for line in proc.stdout.splitlines():
-        line = line.strip().lstrip("-").strip()
-        tok = line.split()[0] if line else ""
-        if tok:
-            targets.add(tok)
-    if not targets or step in targets:
+        line = line.strip()
+        if not line.startswith("-"):
+            continue
+        line = line.lstrip("-").strip()
+        if " : " in line:
+            num, name = line.split(" : ", 1)
+            num, name = num.strip(), name.strip()
+            targets.add(num)
+            if name:
+                targets.add(name)
+                names.add(name)
+        else:
+            tok = line.split()[0] if line else ""
+            if tok:
+                targets.add(tok)
+                names.add(tok)
+
+    # If we parsed no step *names*, our parse of `make list` is wrong (or its
+    # format changed). Stay quiet rather than block a legitimate build -- make
+    # reports an unknown target in about a second anyway.
+    if not names or step in targets:
         return
 
-    near = sorted(t for t in targets if step in t or t in step)
+    near = sorted(n for n in names if step in n or n in step)
     hint = f"\n    Did you mean: {', '.join(near)}" if near else ""
     raise SystemExit(
         f"*** ERROR: '{step}' is not a step in this graph.{hint}\n"
