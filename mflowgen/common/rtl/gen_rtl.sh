@@ -282,8 +282,11 @@ if [ "$use_container" == True ]; then
          else
            echo --- DEFAULT rtl build: aha garnet $flags
            # Rename output verilog, final name must be 'design.v'
-           echo 'Mek Mek Mek - changing lake to GF-enabled lake'
-           pushd /aha/lake         && git fetch && git checkout 93e4847 && popd;
+           # Track the tip of lake's THESIS branch (GF-enabled lake).
+           # -B forces the local branch to match origin/THESIS even if the
+           # container image ships a stale local THESIS.
+           echo 'Mek Mek Mek - changing lake to GF-enabled lake (THESIS tip)'
+           pushd /aha/lake         && git fetch origin THESIS && git checkout -B THESIS origin/THESIS && git log -1 --oneline && popd;
            aha garnet $flags; # Here is where we build the verilog for the main chip
            cd garnet
            if [ -d 'genesis_verif' ]; then

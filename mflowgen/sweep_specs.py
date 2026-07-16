@@ -11,7 +11,7 @@ For each spec point:
     3. Run `mflowgen run --design <graph>` there with LAKE_SPEC_CONFIG /
        LAKE_SPEC_MODE / DUAL_PORT / USE_NON_SPLIT_FIFOS exported, so
        construct.py + common/rtl/gen_rtl.sh forward the knobs to garnet.py.
-    4. Drive `make` up to --stop-after (default: signoff).
+    4. Drive `make` up to --stop-after (default: cadence-innovus-signoff).
     5. Copy PPA-ish outputs into artifacts/ and append a row to results.csv.
 
 The spec JSON is read back inside the build by cgra/util_onyx.py, which
@@ -100,10 +100,12 @@ def build_argparser():
                         "to the memory-core RTL step (default: %(default)s).")
     p.add_argument("--runtime-mode", choices=["static", "rv"], default="static",
                    help="Lake runtime mode -> --lake-spec-mode (default: %(default)s).")
-    p.add_argument("--stop-after", default="signoff",
-                   help="Step name or number to run up to via `make`. Common: "
-                        "rtl, cadence-genus-synthesis, cadence-innovus-signoff "
-                        "(default: %(default)s).")
+    p.add_argument("--stop-after", default="cadence-innovus-signoff",
+                   help="Step name or number to run up to via `make`. Must be a "
+                        "real mflowgen step name (see `make list` in a "
+                        "configured workspace), not the local variable name used "
+                        "in construct.py. Common: rtl, cadence-genus-synthesis, "
+                        "cadence-innovus-signoff (default: %(default)s).")
     p.add_argument("--rtl-only", action="store_true",
                    help="Shortcut for --stop-after rtl; fastest check that the "
                         "spec plumbing reaches garnet.py.")
@@ -321,10 +323,47 @@ def _run_one(cfg, cfg_dir, args):
 
     _sh(["mflowgen", "run", "--design", str(args.graph)],
         cwd=cfg_dir, env=env, log=cfg_dir / "mflowgen_run.log")
+    _check_step_exists(args.stop_after, cfg_dir, env)
     _sh(make_cmd, cwd=cfg_dir, env=env, log=cfg_dir / "make.log")
 
     _collect_artifacts(cfg_dir)
     return time.time() - t0
+
+
+def _check_step_exists(step, cfg_dir, env):
+    """Validate --stop-after against the configured graph's real targets.
+
+    mflowgen derives make targets from step names, which are not the local
+    variable names used in construct.py (e.g. the variable `signoff` is the
+    step `cadence-innovus-signoff`). Catching a typo here beats discovering
+    it as a bare "No rule to make target" after `mflowgen run` has already
+    done its work. A numeric step id is always allowed.
+    """
+    if str(step).isdigit():
+        return
+    try:
+        proc = subprocess.run(["make", "list"], cwd=str(cfg_dir), env=env,
+                              stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                              text=True, timeout=120)
+    except (OSError, subprocess.SubprocessError):
+        return  # Can't check; let make speak for itself.
+    if proc.returncode != 0:
+        return
+
+    targets = set()
+    for line in proc.stdout.splitlines():
+        line = line.strip().lstrip("-").strip()
+        tok = line.split()[0] if line else ""
+        if tok:
+            targets.add(tok)
+    if not targets or step in targets:
+        return
+
+    near = sorted(t for t in targets if step in t or t in step)
+    hint = f"\n    Did you mean: {', '.join(near)}" if near else ""
+    raise SystemExit(
+        f"*** ERROR: '{step}' is not a step in this graph.{hint}\n"
+        f"    Run `make list` in {cfg_dir} to see all targets.")
 
 
 def _collect_artifacts(cfg_dir):
