@@ -11,7 +11,8 @@ if { $uniquify_with_design_name == True } {
 }
 
 write_snapshot -directory results_syn -tag final
-write_design -innovus -basename results_syn/syn_out
+# write_design -innovus -basename results_syn/syn_out
+write_design -basename results_syn/syn_out
 write_sdf -version "OVI 2.1" -recrem split -setuphold split > results_syn/syn_out.sdf
 write_spef > results_syn/syn_out.spef
 write_sdc -strict -view UNIFIED_BUFFER > results_syn/strict.sdc

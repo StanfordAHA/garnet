@@ -21,10 +21,13 @@ def construct():
 
     adk_name = get_sys_adk()  # E.g. 'gf12-adk' or 'tsmc16'
     adk_view = 'multivt'
-    pwr_aware = True
+    pwr_aware = False
 
     if pwr_aware:
         adk_view = adk_view + '-pm'
+
+    if adk_name == 'gf12-adk':
+        adk_view = 'view-standard'
 
     synth_power = False
     if os.environ.get('SYNTH_POWER') == 'True':
@@ -43,6 +46,7 @@ def construct():
     if adk_name == 'tsmc16':
         read_hdl_defines = 'TSMC16'
     elif adk_name == 'gf12-adk':
+        adk_view = 'view-standard'
         read_hdl_defines = 'GF12'
     else:
         read_hdl_defines = ''

@@ -78,6 +78,8 @@ flags+=" -v --glb_tile_mem_size $glb_tile_mem_size"
 # Default is power-aware, but can be turned off
 [ "$PWR_AWARE" == False ] && flags+=" --no-pd"
 
+flags+=" --use-non-split-fifos "
+
 # Where/when is this used?
 [ "$interconnect_only" == True ] && flags+=" --interconnect-only"
 
@@ -179,9 +181,12 @@ if [ "$use_container" == True ]; then
       if [ "$use_local_garnet" == True ]; then
         echo "--- Updating container with local garnet repo"
         docker exec $container_name /bin/bash -c "rm -rf /aha/garnet"
+        docker exec $container_name /bin/bash -c "rm -rf /aha/lake"
         # Clone local garnet repo to prevent copying untracked files
-        git clone $GARNET_HOME ./garnet
-        docker cp ./garnet $container_name:/aha/garnet
+        # git clone $GARNET_HOME ./garnet
+        docker cp /sim/mstrange/BUILD_CGRA/garnet $container_name:/aha/garnet
+        echo "--- Copying in lake repo"
+        docker cp /sim/mstrange/BUILD_CGRA/lake $container_name:/aha/lake
       fi
 
       # Ship the lake spec config into the container if one was provided.
