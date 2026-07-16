@@ -255,7 +255,7 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
         wscan = WriteScanner(fifo_depth=fifo_depth, perf_debug=perf_debug)
 
         if lake_spec_config:
-            from aha.util.sweep_thesis_collateral import build_spec_rv, build_spec
+            from lake.spec.spec_memory_controller import build_spec_rv, build_spec
             if lake_spec_mode == "rv":
                 spec = build_spec_rv(**_spec_params)
             else:
