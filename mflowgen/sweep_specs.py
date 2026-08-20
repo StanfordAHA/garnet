@@ -120,6 +120,18 @@ def build_argparser():
                    help="Comma-separated config names to exclude.")
     p.add_argument("--parallel-jobs", type=int, default=0,
                    help="If >0, pass -j N to `make` inside each workspace.")
+    p.add_argument("--clean", default="",
+                   help="Comma-separated step names/numbers to `make clean-<step>` "
+                        "before building (after `mflowgen run`), forcing those steps "
+                        "-- and everything downstream -- to rebuild from current "
+                        "sources. Use when you edited a step's files (constraints, "
+                        "construct.py, ...) but the workspace already exists: a plain "
+                        "re-run reuses cached step dirs. mflowgen exposes a "
+                        "clean-<name> alias per node. Example: "
+                        "--clean constraints,cadence-genus-synthesis")
+    p.add_argument("--clean-all", action="store_true",
+                   help="`make clean-all` before building (full rebuild -- redoes the "
+                        "expensive RTL step). Takes precedence over --clean.")
     p.add_argument("--non-split-fifos", dest="non_split_fifos",
                    action="store_true", default=True,
                    help="Build with --use-non-split-fifos (default).")
@@ -299,6 +311,17 @@ def _config_name(cfg):
 # ---------------------------------------------------------------------------
 # Per-config runner
 # ---------------------------------------------------------------------------
+def _clean_targets(args):
+    """Build the `make clean-...` command for --clean / --clean-all, or []."""
+    if args.clean_all:
+        return ["make", "clean-all"]
+    steps = [s.strip() for s in args.clean.split(",") if s.strip()]
+    if not steps:
+        return []
+    # mflowgen emits `clean-<name>` (alias) and `clean-<idx>` for every node.
+    return ["make", *(f"clean-{s}" for s in steps)]
+
+
 def _run_one(cfg, cfg_dir, args):
     t0 = time.time()
 
@@ -314,12 +337,19 @@ def _run_one(cfg, cfg_dir, args):
     if args.parallel_jobs > 0:
         make_cmd.insert(1, f"-j{args.parallel_jobs}")
 
+    # Steps to force-clean before building (see --clean / --clean-all). These
+    # run after `mflowgen run` (so the Makefile + clean-<name> targets exist)
+    # and before the build target.
+    clean_cmd = _clean_targets(args)
+
     if args.dry_run:
         for k in ("LAKE_SPEC_CONFIG", "LAKE_SPEC_MODE", "DUAL_PORT",
                   "USE_NON_SPLIT_FIFOS", "USE_SIM_SRAM"):
             print(f"        DRY-RUN env: {k}={env[k]}", flush=True)
         print(f"        DRY-RUN cmd: mflowgen run --design {args.graph}",
               flush=True)
+        if clean_cmd:
+            print(f"        DRY-RUN cmd: {' '.join(clean_cmd)}", flush=True)
         print(f"        DRY-RUN cmd: {' '.join(make_cmd)}", flush=True)
         return 0.0
 
@@ -328,6 +358,8 @@ def _run_one(cfg, cfg_dir, args):
 
     _sh(["mflowgen", "run", "--design", str(args.graph)],
         cwd=cfg_dir, env=env, log=cfg_dir / "mflowgen_run.log")
+    if clean_cmd:
+        _sh(clean_cmd, cwd=cfg_dir, env=env, log=cfg_dir / "make_clean.log")
     _check_step_exists(args.stop_after, cfg_dir, env)
     _sh(make_cmd, cwd=cfg_dir, env=env, log=cfg_dir / "make.log")
 
