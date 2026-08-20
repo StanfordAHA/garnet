@@ -132,6 +132,14 @@ def build_argparser():
     p.add_argument("--clean-all", action="store_true",
                    help="`make clean-all` before building (full rebuild -- redoes the "
                         "expensive RTL step). Takes precedence over --clean.")
+    p.add_argument("--make", default="", metavar="TARGETS",
+                   help="Passthrough: run `make <TARGETS>` in each selected config's "
+                        "existing workspace and exit (no build). Forwards mflowgen's "
+                        "own targets so you can drive the sweep's workspaces with the "
+                        "verbs you already know: clean-all, clean-<N>, clean-<step>, "
+                        "status, list, runtimes. Output goes straight to your "
+                        "terminal. Space/comma-separated; unconfigured workspaces are "
+                        "skipped. Examples: --make clean-all  |  --make status")
     p.add_argument("--non-split-fifos", dest="non_split_fifos",
                    action="store_true", default=True,
                    help="Build with --use-non-split-fifos (default).")
@@ -166,6 +174,9 @@ def main(argv=None):
         for cfg in configs:
             print(_config_name(cfg))
         return 0
+
+    if args.make:
+        return _run_make_passthrough(configs, args)
 
     _preflight(args)
 
@@ -311,6 +322,38 @@ def _config_name(cfg):
 # ---------------------------------------------------------------------------
 # Per-config runner
 # ---------------------------------------------------------------------------
+def _run_make_passthrough(configs, args):
+    """Run `make <targets>` in each selected workspace and exit (no build).
+
+    A thin passthrough to mflowgen's own make targets (clean-all, clean-<N>,
+    clean-<step>, status, list, runtimes, ...) across every selected config, so
+    regular mflowgen users can drive the sweep's workspaces with familiar verbs.
+    Output is inherited (streamed to the terminal) rather than logged, so
+    status/list/runtimes are readable. Workspaces without a Makefile (not yet
+    configured) are skipped rather than erroring.
+    """
+    targets = args.make.replace(",", " ").split()
+    out_dir = Path(args.out_dir).resolve()
+    env = os.environ.copy()
+    rc = 0
+    for cfg in configs:
+        name = _config_name(cfg)
+        cfg_dir = out_dir / name
+        print(f"\n[{name}] make {' '.join(targets)}   (cwd {cfg_dir})", flush=True)
+        if not (cfg_dir / "Makefile").exists():
+            print("        SKIP: no configured workspace (run a build first)",
+                  flush=True)
+            continue
+        if args.dry_run:
+            print(f"        DRY-RUN cmd: make {' '.join(targets)}", flush=True)
+            continue
+        proc = subprocess.run(["make", *targets], cwd=str(cfg_dir), env=env)
+        if proc.returncode != 0:
+            rc = proc.returncode
+            print(f"        (make exited {proc.returncode})", flush=True)
+    return rc
+
+
 def _clean_targets(args):
     """Build the `make clean-...` command for --clean / --clean-all, or []."""
     if args.clean_all:
