@@ -1,0 +1,52 @@
+name: gen_sram_macro_spec
+
+# Spec-aware SRAM macro generation.
+#
+# Unlike common/gen_sram_macro (which builds a FIXED macro from the
+# num_words/word_size/mux_size parameters), this step reads the generated RTL
+# (design.v) and builds *exactly* the SRAM macro that Lake instantiated for the
+# active spec. This keeps the hardened macro in lockstep with the RTL for every
+# lake-spec sweep point, instead of blackboxing a mismatched default.
+#
+# Ported from lake/pd/thesis/gen_sram_macro (the proven thesis flow); output
+# names are matched to what the garnet Tile_MemCore graph consumes.
+
+commands:
+  - echo "Generating spec-matched SRAM macro from RTL..."
+  - python get_macro_name.py
+
+inputs:
+  - adk
+  - design.v
+
+outputs:
+  - sram.v
+  - sram_pwr.v
+  - sram.lef
+  - sram_tt.lib
+  - sram_ff.lib
+  - sram_tt.db  # Need this back for power on ptpx
+  - sram.gds
+  - sram.spi
+
+parameters:
+  # SRAM Families (derived from the RTL macro name at run time; these are
+  # only the fallback defaults when no macro can be extracted):
+  # S1DB: single port high density
+  # S1PB: single port high performance
+  # SDPB: dual port high performance
+  # R2PB: dual port reg file
+  sram_family: "S1DB"
+  num_words: 512
+  word_size: 32
+  mux_size: 4
+  num_subarrays: 2
+  corner: "TT_0P800V_025C"
+  bc_corner: "FFPG_0P945V_125C"
+  partial_write: False
+  leakage_opt: False
+  redundancy: False
+
+postconditions:
+   # Sanity check to see if we at least got one sram
+   - assert File( 'outputs/sram_tt.lib' )

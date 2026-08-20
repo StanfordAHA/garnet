@@ -133,12 +133,23 @@ def construct():
     custom_flowgen_setup = custom_step('/custom-flowgen-setup')
     genlibdb_constraints = custom_step('/../common/custom-genlibdb-constraints')
 
+    # When a lake spec drives the RTL, the hardened SRAM geometry is chosen by
+    # Lake (per spec) and must match what the RTL instantiates. The fixed-macro
+    # step (common/gen_sram_macro) always builds the default 512x32 macro, which
+    # blackboxes for any other geometry -> use the RTL-driven spec-aware step
+    # instead. Behavioral-SRAM builds (use_sim_sram) have no macro to extract,
+    # so they keep the fixed step (its lib is unused by the behavioral RTL).
+    spec_sram = bool(parameters['lake_spec_config']) and not parameters['use_sim_sram']
+
     if adk_name == 'tsmc16':
         gen_sram = custom_step('/../common/gen_sram_macro_amber')
         custom_lvs = custom_step('/custom-lvs-rules-amber')
         custom_power = custom_step('/../common/custom-power-leaf-amber')
     else:
-        gen_sram = custom_step('/../common/gen_sram_macro')
+        if spec_sram:
+            gen_sram = custom_step('/../common/gen_sram_macro_spec')
+        else:
+            gen_sram = custom_step('/../common/gen_sram_macro')
         custom_lvs = custom_step('/custom-lvs-rules')
         custom_power = custom_step('/../common/custom-power-leaf')
 
@@ -355,6 +366,11 @@ def construct():
     # Connect by name
 
     g.connect_by_name(adk, gen_sram)
+    # Spec-aware SRAM generation reads the generated RTL to build the exact
+    # macro Lake instantiated (design.v -> get_macro_name.py). The fixed-macro
+    # step has no design.v input, so this edge only matters for spec_sram.
+    if spec_sram:
+        g.connect_by_name(rtl, gen_sram)
     g.connect_by_name(adk, synth)
     g.connect_by_name(adk, iflow)
     g.connect_by_name(adk, init)

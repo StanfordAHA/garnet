@@ -37,29 +37,57 @@ if { [info exists ::env(WHICH_SOC)] } {
 set module MemCore_inner_W_inst0
 if { $WHICH_SOC == "amber" } { set module LakeTop_W_inst0 }
 
+# Spec-generated MemCores with a single bulk controller have no `mode`
+# config port: lake's memtile_builder.py makes `mode` a real input port only
+# when num_modes > 1, otherwise it collapses to an internal 1-bit var wired to
+# 0 (see lake/lake/top/memtile_builder.py:175-184). The classic onyx MemCore
+# has several controllers (UB/FIFO/SRAM) so mode[0]/mode[1] exist; a
+# single-spec MemCore does not, and set_case_analysis on the missing pin aborts
+# synthesis with TUI-61. Detect the port once and skip the mode case-analysis
+# when it is absent — such designs have one fixed behavior, so the three
+# constraint scenarios below all analyze the real (single-mode) logic.
+proc _obj_exists {name} {
+    set found 0
+    catch { if {[llength [get_pins $name]]  > 0} { set found 1 } }
+    if {$found} { return 1 }
+    catch { if {[llength [get_ports $name]] > 0} { set found 1 } }
+    return $found
+}
+set has_mode [_obj_exists "MemCore_inst0/$module/mode\[0\]"]
+if { !$has_mode } {
+    puts "INFO: constraints.tcl: no 'mode' config port on MemCore_inst0/$module -- \
+single-controller (spec) design; skipping mode case-analysis."
+}
+
 create_mode -name UNIFIED_BUFFER
 set_constraint_mode UNIFIED_BUFFER
 
-# Read common 
+# Read common
 source -echo -verbose ${common_cnst}
 
-set_case_analysis 0 MemCore_inst0/$module/mode[0]
-set_case_analysis 0 MemCore_inst0/$module/mode[1]
+if { $has_mode } {
+    set_case_analysis 0 MemCore_inst0/$module/mode[0]
+    set_case_analysis 0 MemCore_inst0/$module/mode[1]
+}
 
 create_mode -name FIFO
 set_constraint_mode FIFO
 
-# Read common 
+# Read common
 source -echo -verbose ${common_cnst}
 
-set_case_analysis 1 MemCore_inst0/$module/mode[0]
-set_case_analysis 0 MemCore_inst0/$module/mode[1]
+if { $has_mode } {
+    set_case_analysis 1 MemCore_inst0/$module/mode[0]
+    set_case_analysis 0 MemCore_inst0/$module/mode[1]
+}
 
 create_mode -name SRAM
 set_constraint_mode SRAM
 
-# Read common 
+# Read common
 source -echo -verbose ${common_cnst}
 
-set_case_analysis 0 MemCore_inst0/$module/mode[0]
-set_case_analysis 1 MemCore_inst0/$module/mode[1]
+if { $has_mode } {
+    set_case_analysis 0 MemCore_inst0/$module/mode[0]
+    set_case_analysis 1 MemCore_inst0/$module/mode[1]
+}

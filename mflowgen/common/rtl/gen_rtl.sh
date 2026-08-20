@@ -184,9 +184,13 @@ if [ "$use_container" == True ]; then
         docker exec $container_name /bin/bash -c "rm -rf /aha/lake"
         # Clone local garnet repo to prevent copying untracked files
         # git clone $GARNET_HOME ./garnet
-        docker cp /sim/mstrange/BUILD_CGRA/garnet $container_name:/aha/garnet
+        # Host paths derived from env so this is portable across build machines.
+        # LAKE_PATH falls back to a lake sibling of $GARNET_HOME if unset.
+        host_garnet="${GARNET_HOME:?GARNET_HOME must be set}"
+        host_lake="${LAKE_PATH:-$(dirname "$host_garnet")/lake}"
+        docker cp "$host_garnet" $container_name:/aha/garnet
         echo "--- Copying in lake repo"
-        docker cp /sim/mstrange/BUILD_CGRA/lake $container_name:/aha/lake
+        docker cp "$host_lake" $container_name:/aha/lake
       fi
 
       # Ship the lake spec config into the container if one was provided.
