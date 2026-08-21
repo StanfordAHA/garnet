@@ -84,6 +84,24 @@ DEFAULT_SPEC_POINTS = [
 ]
 
 
+# Named subsets of DEFAULT_SPEC_POINTS, selectable with --preset. Values are
+# config names (as produced by _config_name / shown by --list). Keep these in
+# sync if a spec point above is renamed -- _collect_configs validates that every
+# name in the chosen preset actually resolves to a config.
+PRESETS = {
+    # A small, diverse regression set that spans the axes the flow cares about:
+    #   - single vs multi controller  -> the `mode` case-analysis guard
+    #   - single vs dual port          -> S1DB vs SDPB SRAM macro family
+    #   - small vs large geometry      -> spec-aware macro at both ends
+    "smoke4": [
+        "fw1_dw16_sc4096_sp_in1_out1",       # single-controller (mode guard)
+        "fw4_dw16_sc8192_sp_in2_out2_vc2",   # multi-controller (mode present)
+        "fw8_dw16_sc32768_sp_in4_out4_vc2",  # wide/large single-port macro
+        "fw2_dw16_sc4096_dp_in2_out2_vc2",   # dual-port (SDPB family)
+    ],
+}
+
+
 def build_argparser():
     p = argparse.ArgumentParser(
         prog="sweep_specs.py",
@@ -114,6 +132,11 @@ def build_argparser():
                         "built-in list (or replace it, with --replace).")
     p.add_argument("--replace", action="store_true",
                    help="Drop DEFAULT_SPEC_POINTS; use only --extra-specs.")
+    p.add_argument("--preset", choices=sorted(PRESETS), default=None,
+                   help="Select a named subset of the built-in spec points. "
+                        "'smoke4' is a diverse 4-build regression set (single/multi "
+                        "controller, single/dual port, small/large geometry). "
+                        "Composes with --only/--skip (all filters apply).")
     p.add_argument("--only", default="",
                    help="Comma-separated config names to include.")
     p.add_argument("--skip", default="",
@@ -271,6 +294,18 @@ def _collect_configs(args):
             raise SystemExit(f"*** ERROR: --extra-specs must be a JSON list, "
                              f"got {type(payload).__name__}")
         configs.extend(payload)
+
+    if args.preset:
+        want = PRESETS[args.preset]
+        available = {_config_name(c) for c in configs}
+        missing = [n for n in want if n not in available]
+        if missing:
+            raise SystemExit(
+                f"*** ERROR: preset '{args.preset}' names configs not in the spec "
+                f"list: {', '.join(missing)}\n"
+                f"    The preset is stale -- update PRESETS in sweep_specs.py.")
+        preset_names = set(want)
+        configs = [c for c in configs if _config_name(c) in preset_names]
 
     if args.only:
         only = {s.strip() for s in args.only.split(",") if s.strip()}
