@@ -53,20 +53,20 @@ set core_margin_r [expr 10 * $horiz_pitch]
 set core_margin_l [expr 10 * $horiz_pitch]
 
 #-------------------------------------------------------------------------
-# Grow the die to contain the SRAM macro block (spec-aware)
+# Grow the die to contain the SRAM macro block (only if it doesn't fit)
 #-------------------------------------------------------------------------
 # The height above is a FIXED number of rows (core_height) chosen so MemCore
-# and PE tiles abut in the full array. For standalone lake-spec MemCore builds
-# the SRAM macro geometry varies per spec: a low-mux macro (e.g. the fw8
-# W02048B064M04 point) is physically taller than core_height rows, so the
-# centered placement below lands it at a negative y -- "out of design Box" --
-# and routeDesign fails on 100%+ density / overlaps. Query the macro block
-# extent up front and grow width/height to fit it (+ margins/halo). This only
-# ever ENLARGES the die (max), so a MemCore whose SRAM already fits (the
-# default onyx macro) is unaffected.
-set _fp_is_spec [expr {[info exists ::env(lake_spec_config)] && $::env(lake_spec_config) ne ""}]
+# and PE tiles abut in the full array. Spec sweeps generate SRAM macros of
+# varying geometry: a low-mux macro (e.g. the fw8 W02048B064M04 point) is
+# physically taller than core_height rows, so the centered placement below
+# lands it at a negative y -- "out of design Box" (IMPSP-606) -- and
+# routeDesign fails on 100%+ density / overlaps. Measure the macro block up
+# front and enlarge width/height ONLY when it doesn't fit. This is self-gating
+# on the actual overflow (no reliance on a spec env var, which is not exported
+# to the init step), so a MemCore whose macro already fits -- the default onyx
+# build -- never enters the grow branches and is byte-identical.
 set _fp_srams [get_cells -quiet -hier -filter {is_memory_cell==true}]
-if { $_fp_is_spec && [sizeof_collection $_fp_srams] > 0 } {
+if { [sizeof_collection $_fp_srams] > 0 } {
   set _fp_sram0   [lindex [get_property $_fp_srams name] 0]
   set _fp_sram_w  [dbGet [dbGet -p top.insts.name *$_fp_sram0].cell.size_x]
   set _fp_sram_h  [dbGet [dbGet -p top.insts.name *$_fp_sram0].cell.size_y]
@@ -80,15 +80,20 @@ if { $_fp_is_spec && [sizeof_collection $_fp_srams] > 0 } {
   }
   set _fp_block_w [expr ($_fp_banks * $_fp_sram_w) + (int(ceil(($_fp_banks-1)/2.0)) * $_fp_sx)]
   set _fp_block_h $_fp_sram_h
-  # Vertical: block height + core margins (t+b) + macro halo, with slack.
+  # block height/width + core margins (t+b / l+r) + macro halo, with slack.
   set _fp_need_h [expr $_fp_block_h + $core_margin_t + $core_margin_b + (6 * $vert_pitch)]
-  if { $_fp_need_h > $height } { set height $_fp_need_h }
-  # Recompute the density-driven width at the (possibly taller) height, then
-  # ensure it also spans the SRAM block (+ l/r margins + halo).
-  set width [expr $total_cell_area / $core_density_target / $height]
   set _fp_need_w [expr $_fp_block_w + $core_margin_l + $core_margin_r + (12 * $horiz_pitch)]
-  if { $_fp_need_w > $width } { set width $_fp_need_w }
-  puts "INFO: floorplan: SRAM $_fp_sram0 block ${_fp_block_w}x${_fp_block_h}; die core -> ${width}x${height}"
+  if { $_fp_need_h > $height } {
+    # Macro taller than the fixed die (the fw8-style overflow). Grow height,
+    # then rederive the density-driven width at the new (taller) height -- which
+    # is now narrower, so also make sure it still spans the SRAM block in x.
+    # Everything that changes the die lives inside this branch, so a macro that
+    # already fits the fixed height (the default onyx build) is byte-identical.
+    set height $_fp_need_h
+    set width  [expr $total_cell_area / $core_density_target / $height]
+    if { $_fp_need_w > $width } { set width $_fp_need_w }
+    puts "INFO: floorplan: grew die to fit SRAM $_fp_sram0 (block ${_fp_block_w}x${_fp_block_h}) -> core ${width}x${height}"
+  }
 }
 
 #-------------------------------------------------------------------------
