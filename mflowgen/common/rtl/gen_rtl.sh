@@ -180,28 +180,22 @@ if [ "$use_container" == True ]; then
 
       if [ "$use_local_garnet" == True ]; then
         echo "--- Updating container with local garnet repo"
+        docker exec $container_name /bin/bash -c "rm -rf /aha/garnet"
+        docker exec $container_name /bin/bash -c "rm -rf /aha/lake"
         # Host paths derived from env so this is portable across build machines.
         # LAKE_PATH falls back to a lake sibling of $GARNET_HOME if unset.
         host_garnet="${GARNET_HOME:?GARNET_HOME must be set}"
         host_lake="${LAKE_PATH:-$(dirname "$host_garnet")/lake}"
-
-        # Stream each repo in as a tar, excluding only build output (sweep_out/).
-        # A plain `docker cp <dir>` copies the whole tree and dies on the
-        # absolute adk symlinks inside mflowgen workspaces ("invalid symlink
-        # .../8-gf12-adk/HEAD -> .../adks/gf12-adk/HEAD") when the sweep output
-        # lands inside the garnet checkout; excluding sweep_out sidesteps that.
-        # NOTE: .git MUST be included -- the build does an in-container
-        # `git fetch/checkout` of lake's THESIS branch (see below), so a lake
-        # without .git leaves the shell in /aha/lake and breaks `cd garnet`.
-        # Uncommitted work is preserved (this is why we copy rather than clone).
-        copy_repo_in () {   # $1 = host src dir   $2 = container dest dir
-          docker exec "$container_name" /bin/bash -c "rm -rf '$2' && mkdir -p '$2'"
-          tar -C "$1" --exclude=./sweep_out -cf - . \
-            | docker cp - "${container_name}:$2"
-        }
-        copy_repo_in "$host_garnet" /aha/garnet
+        # Plain `docker cp <dir>` (not a tar stream): the copied repos end up
+        # owned by the container user, so the in-container `git fetch/checkout`
+        # of lake's THESIS branch (below) works without "dubious ownership".
+        # Keep build output OUT of the garnet checkout though -- an in-tree
+        # mflowgen workspace holds absolute adk symlinks that `docker cp`
+        # rejects ("invalid symlink .../8-gf12-adk/HEAD"). sweep_specs warns
+        # when --out-dir is inside garnet; point it elsewhere.
+        docker cp "$host_garnet" $container_name:/aha/garnet
         echo "--- Copying in lake repo"
-        copy_repo_in "$host_lake" /aha/lake
+        docker cp "$host_lake" $container_name:/aha/lake
       fi
 
       # Ship the lake spec config into the container if one was provided.
