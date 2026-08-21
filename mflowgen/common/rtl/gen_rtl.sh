@@ -185,16 +185,18 @@ if [ "$use_container" == True ]; then
         host_garnet="${GARNET_HOME:?GARNET_HOME must be set}"
         host_lake="${LAKE_PATH:-$(dirname "$host_garnet")/lake}"
 
-        # Stream each repo in as a tar, excluding build output (sweep_out/) and
-        # VCS metadata (.git/). A plain `docker cp <dir>` copies the whole tree
-        # and dies on the absolute adk symlinks inside mflowgen workspaces
-        # ("invalid symlink .../8-gf12-adk/HEAD -> .../adks/gf12-adk/HEAD") when
-        # the sweep output lands inside the garnet checkout; excluding sweep_out
-        # sidesteps that and also avoids shipping the multi-GB .git. Uncommitted
-        # work is preserved (this is why we copy rather than git-clone).
+        # Stream each repo in as a tar, excluding only build output (sweep_out/).
+        # A plain `docker cp <dir>` copies the whole tree and dies on the
+        # absolute adk symlinks inside mflowgen workspaces ("invalid symlink
+        # .../8-gf12-adk/HEAD -> .../adks/gf12-adk/HEAD") when the sweep output
+        # lands inside the garnet checkout; excluding sweep_out sidesteps that.
+        # NOTE: .git MUST be included -- the build does an in-container
+        # `git fetch/checkout` of lake's THESIS branch (see below), so a lake
+        # without .git leaves the shell in /aha/lake and breaks `cd garnet`.
+        # Uncommitted work is preserved (this is why we copy rather than clone).
         copy_repo_in () {   # $1 = host src dir   $2 = container dest dir
           docker exec "$container_name" /bin/bash -c "rm -rf '$2' && mkdir -p '$2'"
-          tar -C "$1" --exclude=./sweep_out --exclude=./.git -cf - . \
+          tar -C "$1" --exclude=./sweep_out -cf - . \
             | docker cp - "${container_name}:$2"
         }
         copy_repo_in "$host_garnet" /aha/garnet
