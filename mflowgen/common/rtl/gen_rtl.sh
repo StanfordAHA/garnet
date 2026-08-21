@@ -276,6 +276,13 @@ if [ "$use_container" == True ]; then
 
          source /aha/bin/activate; # Set up the build environment
 
+         # The garnet/lake repos are docker-cp'd in from the host and keep host
+         # ownership, which differs from this container user -- so git refuses
+         # to operate on them ("detected dubious ownership"). Trust exactly the
+         # two copied-in repos (git's own recommended fix; ephemeral container).
+         git config --global --add safe.directory /aha/garnet;
+         git config --global --add safe.directory /aha/lake;
+
          # FIXME note that 'if' statements below will fail if e.g. 'interconnect_only' not set
          # Easy fix is not obvious since we are already inside a double-quoted string :(
 
