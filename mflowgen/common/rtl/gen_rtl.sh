@@ -288,10 +288,10 @@ if [ "$use_container" == True ]; then
          if [ $interconnect_only == True ]; then
            echo --- INTERCONNECT_ONLY: aha garnet $flags
            aha garnet $flags; # Here is where we build the verilog for the main chip
-           cd garnet
+           cd /aha/garnet
            cp garnet.v design.v
          elif [ $glb_only == True ]; then
-           cd garnet
+           cd /aha/garnet
 
            echo '--- GLB_ONLY requested; do special glb things'
            echo make -C global_buffer rtl CGRA_WIDTH=${array_width} GLB_TILE_MEM_SIZE=${glb_tile_mem_size}
@@ -307,9 +307,17 @@ if [ "$use_container" == True ]; then
            # -B forces the local branch to match origin/THESIS even if the
            # container image ships a stale local THESIS.
            echo 'Mek Mek Mek - changing lake to GF-enabled lake (THESIS tip)'
-           pushd /aha/lake         && git fetch origin THESIS && git checkout -B THESIS origin/THESIS && git log -1 --oneline && popd;
+           # Run in a subshell so the parent CWD is never disturbed (a bare
+           # pushd/popd around a failing git fetch would leave us in /aha/lake
+           # and make the later cd fail cryptically), and fail loudly if the
+           # checkout does not succeed instead of limping on with the wrong
+           # lake and a confusing downstream error.
+           # (No backticks/$ here: this text is inside a host double-quoted
+           # docker-exec string and would be evaluated by the host shell.)
+           ( cd /aha/lake && git fetch origin THESIS && git checkout -B THESIS origin/THESIS && git log -1 --oneline ) \
+             || { echo '*** ERROR: gen_rtl: lake THESIS checkout failed (see above); is /aha/lake a git repo with network access?'; exit 1; }
            aha garnet $flags; # Here is where we build the verilog for the main chip
-           cd garnet
+           cd /aha/garnet
            if [ -d 'genesis_verif' ]; then
              cp garnet.v genesis_verif/garnet.v
              cat genesis_verif/* >> design.v
