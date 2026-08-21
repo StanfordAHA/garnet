@@ -37,12 +37,14 @@ Examples:
 
 from pathlib import Path
 import argparse
+import concurrent.futures
 import csv
 import json
 import os
 import shutil
 import subprocess
 import sys
+import threading
 import time
 
 
@@ -142,7 +144,16 @@ def build_argparser():
     p.add_argument("--skip", default="",
                    help="Comma-separated config names to exclude.")
     p.add_argument("--parallel-jobs", type=int, default=0,
-                   help="If >0, pass -j N to `make` inside each workspace.")
+                   help="If >0, pass -j N to `make` inside each workspace "
+                        "(parallelism WITHIN one build).")
+    p.add_argument("--config-jobs", type=int, default=1, metavar="M",
+                   help="Number of spec configs to build CONCURRENTLY (default 1 = "
+                        "serial). Each config is an independent workspace, so they "
+                        "run in parallel cleanly. Orthogonal to --parallel-jobs "
+                        "(make -jN within a build); effective load is roughly "
+                        "config_jobs x parallel_jobs. Mind RAM and Genus/Innovus "
+                        "licenses -- e.g. 2 configs x -j6 is a common sweet spot. "
+                        "Forced to 1 under --dry-run.")
     p.add_argument("--clean", default="",
                    help="Comma-separated step names/numbers to `make clean-<step>` "
                         "before building (after `mflowgen run`), forcing those steps "
@@ -204,6 +215,15 @@ def main(argv=None):
     _preflight(args)
 
     out_dir = Path(args.out_dir).resolve()
+    if out_dir == GARNET_DIR or GARNET_DIR in out_dir.parents:
+        print(
+            f"*** WARNING: --out-dir is inside the garnet checkout ({out_dir}).\n"
+            "    gen_rtl copies the garnet tree into its docker container; the\n"
+            "    default sweep_out/ name is excluded from that copy, but other\n"
+            "    in-tree build output can still break it on absolute adk symlinks.\n"
+            "    Prefer an --out-dir outside the garnet repo, e.g.\n"
+            f"      {GARNET_DIR.parent / 'sweep_out' / 'tile_memcore_pnr'}",
+            file=sys.stderr, flush=True)
     if not args.dry_run:
         out_dir.mkdir(parents=True, exist_ok=True)
     results_csv = out_dir / "results.csv"
@@ -215,36 +235,30 @@ def main(argv=None):
 
     rows = []
     failures = 0
-    for i, cfg in enumerate(configs, start=1):
-        name = _config_name(cfg)
-        cfg_dir = out_dir / name
-        if not args.dry_run:
-            cfg_dir.mkdir(parents=True, exist_ok=True)
-        done_flag = cfg_dir / "done.flag"
+    total = len(configs)
+    n_jobs = 1 if args.dry_run else max(1, args.config_jobs)
+    results_lock = threading.Lock()
 
-        print(f"\n[{i}/{len(configs)}] {name}", flush=True)
-        print(f"        workspace: {cfg_dir}", flush=True)
-
-        if args.skip_existing and done_flag.exists():
-            print("        SKIP: done.flag already present", flush=True)
-            rows.append(_row(name, cfg, cfg_dir, "SKIP", "already_done", 0.0))
+    def record(row):
+        nonlocal failures
+        if row is None:
+            return
+        with results_lock:
+            if row["status"] == "FAIL":
+                failures += 1
+            rows.append(row)
             _write_results(results_csv, rows)
-            continue
 
-        try:
-            duration = _run_one(cfg, cfg_dir, args)
-            if args.dry_run:
-                continue
-            done_flag.write_text("ok\n")
-            rows.append(_row(name, cfg, cfg_dir, "PASS", "", duration))
-        except subprocess.CalledProcessError as e:
-            failures += 1
-            rows.append(_row(name, cfg, cfg_dir, "FAIL",
-                             f"exit_code={e.returncode}", 0.0))
-        except Exception as e:  # noqa: BLE001 -- record and press on
-            failures += 1
-            rows.append(_row(name, cfg, cfg_dir, "FAIL", str(e)[:200], 0.0))
-        _write_results(results_csv, rows)
+    if n_jobs == 1:
+        for i, cfg in enumerate(configs, start=1):
+            record(_process_config(i, total, cfg, out_dir, args))
+    else:
+        print(f"Running up to {n_jobs} configs concurrently.", flush=True)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=n_jobs) as ex:
+            futs = [ex.submit(_process_config, i, total, cfg, out_dir, args)
+                    for i, cfg in enumerate(configs, start=1)]
+            for fut in concurrent.futures.as_completed(futs):
+                record(fut.result())
 
     if args.dry_run:
         print("\nDry run: nothing executed.", flush=True)
@@ -357,6 +371,39 @@ def _config_name(cfg):
 # ---------------------------------------------------------------------------
 # Per-config runner
 # ---------------------------------------------------------------------------
+def _process_config(idx, total, cfg, out_dir, args):
+    """Build one config; return its results row (or None for a dry-run).
+
+    Self-contained (catches its own build errors and returns a FAIL row) so it
+    is safe to run either serially or concurrently via a thread pool.
+    """
+    name = _config_name(cfg)
+    cfg_dir = out_dir / name
+    if not args.dry_run:
+        cfg_dir.mkdir(parents=True, exist_ok=True)
+    done_flag = cfg_dir / "done.flag"
+
+    print(f"\n[{idx}/{total}] {name}\n        workspace: {cfg_dir}", flush=True)
+
+    if args.skip_existing and done_flag.exists():
+        print(f"        SKIP: {name} (done.flag present)", flush=True)
+        return _row(name, cfg, cfg_dir, "SKIP", "already_done", 0.0)
+
+    try:
+        duration = _run_one(cfg, cfg_dir, args)
+        if args.dry_run:
+            return None
+        done_flag.write_text("ok\n")
+        print(f"        PASS: {name} ({duration:.0f}s)", flush=True)
+        return _row(name, cfg, cfg_dir, "PASS", "", duration)
+    except subprocess.CalledProcessError as e:
+        print(f"        FAIL: {name} (exit {e.returncode})", flush=True)
+        return _row(name, cfg, cfg_dir, "FAIL", f"exit_code={e.returncode}", 0.0)
+    except Exception as e:  # noqa: BLE001 -- record and press on
+        print(f"        FAIL: {name} ({str(e)[:120]})", flush=True)
+        return _row(name, cfg, cfg_dir, "FAIL", str(e)[:200], 0.0)
+
+
 def _run_make_passthrough(configs, args):
     """Run `make <targets>` in each selected workspace and exit (no build).
 
