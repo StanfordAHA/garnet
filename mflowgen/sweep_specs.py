@@ -294,6 +294,28 @@ def _preflight(args):
     except OSError:
         pass
 
+    # A stale in-tree build dir (garnet/sweep_out from an earlier in-tree run)
+    # breaks the rtl step: gen_rtl `docker cp`s the whole garnet checkout into
+    # the build container, and an in-tree mflowgen workspace holds absolute adk
+    # symlinks that docker cp rejects ("invalid symlink ..."). Fail fast with
+    # the fix rather than deep inside the container -- but only when we are
+    # building elsewhere (an intentional in-tree --out-dir is warned about
+    # separately, in main()).
+    stale = GARNET_DIR / "sweep_out"
+    out_dir_resolved = Path(args.out_dir).resolve()
+    stale_is_outdir = out_dir_resolved == stale or stale in out_dir_resolved.parents
+    try:
+        stale_nonempty = stale.is_dir() and any(stale.iterdir())
+    except OSError:
+        stale_nonempty = False
+    if stale_nonempty and not stale_is_outdir:
+        raise SystemExit(
+            f"*** ERROR: stale in-tree build dir at {stale}\n"
+            "    gen_rtl copies the garnet checkout into the build container, and\n"
+            "    an in-tree mflowgen workspace holds absolute adk symlinks that\n"
+            "    docker cp rejects ('invalid symlink ...'). Remove it and re-run:\n"
+            f"      rm -rf {stale}")
+
 
 # ---------------------------------------------------------------------------
 # Config selection
