@@ -276,10 +276,12 @@ if [ "$use_container" == True ]; then
 
          source /aha/bin/activate; # Set up the build environment
 
-         # The garnet/lake repos are docker-cp'd in from the host and keep host
-         # ownership, which differs from this container user -- so git refuses
-         # to operate on them ("detected dubious ownership"). Trust exactly the
-         # two copied-in repos (git's own recommended fix; ephemeral container).
+         # The garnet/lake repos are docker-cp-ed in from the host and keep host
+         # ownership, which differs from this container user, so git refuses to
+         # operate on them with a dubious-ownership error. Trust exactly the two
+         # copied-in repos here (git own recommended fix; ephemeral container).
+         # NOTE: this text is inside a host double-quoted docker-exec string --
+         # do NOT use double quotes, backticks or a dollar-sign here.
          git config --global --add safe.directory /aha/garnet;
          git config --global --add safe.directory /aha/lake;
 
