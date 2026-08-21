@@ -478,13 +478,19 @@ def _run_one(cfg, cfg_dir, args):
         print(f"        DRY-RUN cmd: {' '.join(make_cmd)}", flush=True)
         return 0.0
 
-    with open(spec_path, "w") as f:
-        json.dump(cfg, f, indent=2, sort_keys=True)
-
     _sh(["mflowgen", "run", "--design", str(args.graph)],
         cwd=cfg_dir, env=env, log=cfg_dir / "mflowgen_run.log")
     if clean_cmd:
         _sh(clean_cmd, cwd=cfg_dir, env=env, log=cfg_dir / "make_clean.log")
+
+    # Write the spec AFTER any clean. `make clean-all` deletes every file in the
+    # workspace except Makefile/.mflowgen* (find -maxdepth 1 ... -exec rm -rf),
+    # so writing spec_config.json earlier would let clean-all erase it and make
+    # the rtl step fail with "lake_spec_config file not found". mflowgen run only
+    # needs the path (baked from LAKE_SPEC_CONFIG env), not the contents.
+    with open(spec_path, "w") as f:
+        json.dump(cfg, f, indent=2, sort_keys=True)
+
     _check_step_exists(args.stop_after, cfg_dir, env)
     _sh(make_cmd, cwd=cfg_dir, env=env, log=cfg_dir / "make.log")
 
