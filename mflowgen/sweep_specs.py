@@ -166,6 +166,11 @@ def build_argparser():
     p.add_argument("--clean-all", action="store_true",
                    help="`make clean-all` before building (full rebuild -- redoes the "
                         "expensive RTL step). Takes precedence over --clean.")
+    p.add_argument("--fresh", action="store_true",
+                   help="Completely delete each config's workspace dir (rm -rf) "
+                        "before building -- a total wipe, unlike --clean-all which is "
+                        "mflowgen's own clean and keeps Makefile/.mflowgen. Overrides "
+                        "--clean/--clean-all and --skip-existing.")
     p.add_argument("--make", default="", metavar="TARGETS",
                    help="Passthrough: run `make <TARGETS>` in each selected config's "
                         "existing workspace and exit (no build). Forwards mflowgen's "
@@ -401,11 +406,22 @@ def _process_config(idx, total, cfg, out_dir, args):
     """
     name = _config_name(cfg)
     cfg_dir = out_dir / name
+
+    print(f"\n[{idx}/{total}] {name}\n        workspace: {cfg_dir}", flush=True)
+
+    # --fresh: completely remove the workspace before building (total wipe,
+    # stronger than mflowgen's clean-all). Done before the skip-existing check
+    # so it also overrides that.
+    if args.fresh and cfg_dir.exists():
+        if args.dry_run:
+            print(f"        DRY-RUN: rm -rf {cfg_dir}", flush=True)
+        else:
+            print(f"        FRESH: rm -rf {cfg_dir}", flush=True)
+            shutil.rmtree(cfg_dir)
+
     if not args.dry_run:
         cfg_dir.mkdir(parents=True, exist_ok=True)
     done_flag = cfg_dir / "done.flag"
-
-    print(f"\n[{idx}/{total}] {name}\n        workspace: {cfg_dir}", flush=True)
 
     if args.skip_existing and done_flag.exists():
         print(f"        SKIP: {name} (done.flag present)", flush=True)
@@ -460,6 +476,8 @@ def _run_make_passthrough(configs, args):
 
 def _clean_targets(args):
     """Build the `make clean-...` command for --clean / --clean-all, or []."""
+    if args.fresh:
+        return []  # workspace was already rm -rf'd; nothing to mflowgen-clean
     if args.clean_all:
         return ["make", "clean-all"]
     steps = [s.strip() for s in args.clean.split(",") if s.strip()]
