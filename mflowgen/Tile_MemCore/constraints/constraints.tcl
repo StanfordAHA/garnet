@@ -37,15 +37,16 @@ if { [info exists ::env(WHICH_SOC)] } {
 set module MemCore_inner_W_inst0
 if { $WHICH_SOC == "amber" } { set module LakeTop_W_inst0 }
 
-# Spec-generated MemCores with a single bulk controller have no `mode`
-# config port: lake's memtile_builder.py makes `mode` a real input port only
-# when num_modes > 1, otherwise it collapses to an internal 1-bit var wired to
-# 0 (see lake/lake/top/memtile_builder.py:175-184). The classic onyx MemCore
-# has several controllers (UB/FIFO/SRAM) so mode[0]/mode[1] exist; a
-# single-spec MemCore does not, and set_case_analysis on the missing pin aborts
-# synthesis with TUI-61. Detect the port once and skip the mode case-analysis
-# when it is absent — such designs have one fixed behavior, so the three
-# constraint scenarios below all analyze the real (single-mode) logic.
+# The mode case-analysis below assumes a 2-bit mode[1:0] bus on
+# MemCore_inner_W, which the classic onyx MemCore has (several controllers ->
+# UB/FIFO/SRAM). Spec-generated MemCores do NOT: verified against real
+# garnet.py RTL, MemCore_inner_W there declares `input logic mode` -- a 1-bit
+# SCALAR (mode_excl carries the rest) -- so neither mode[0] nor mode[1] is a
+# findable pin, and set_case_analysis on them aborts synthesis with TUI-61.
+# (lake's memtile_builder.py sizes `mode` from num_modes; the spec memtiles we
+# sweep land on the scalar form.) So detect mode[0] once and skip the
+# case-analysis when it is absent -- those designs still synthesize; the three
+# constraint scenarios below just analyze the real logic without pinning mode.
 proc _obj_exists {name} {
     set found 0
     catch { if {[llength [get_pins $name]]  > 0} { set found 1 } }
