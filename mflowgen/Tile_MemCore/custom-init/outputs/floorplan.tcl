@@ -85,14 +85,22 @@ if { [sizeof_collection $_fp_srams] > 0 } {
   set _fp_need_w [expr $_fp_block_w + $core_margin_l + $core_margin_r + (12 * $horiz_pitch)]
   if { $_fp_need_h > $height } {
     # Macro taller than the fixed die (the fw8-style overflow). Grow height,
-    # then rederive the density-driven width at the new (taller) height -- which
-    # is now narrower, so also make sure it still spans the SRAM block in x.
-    # Everything that changes the die lives inside this branch, so a macro that
-    # already fits the fixed height (the default onyx build) is byte-identical.
+    # then size the width to hold BOTH the fixed macros AND the std cells at the
+    # density target. Sizing by std area alone (total_cell_area/density) leaves
+    # the macros eating the core, squeezing std placement into thin slivers and
+    # tripping routeDesign's placement check (NRIG-76 overlaps after filler).
+    # So reserve the macro footprint (banks*w*h) on top of the density-sized
+    # std-cell area. Snap both dims up to the site grid so filler rows/cols are
+    # clean. Everything that changes the die lives inside this branch, so a
+    # macro that already fits the fixed height (the default onyx build) is
+    # byte-identical.
     set height $_fp_need_h
-    set width  [expr $total_cell_area / $core_density_target / $height]
+    set _fp_macro_area [expr $_fp_banks * $_fp_sram_w * $_fp_sram_h]
+    set width [expr ($total_cell_area / $core_density_target + $_fp_macro_area) / $height]
     if { $_fp_need_w > $width } { set width $_fp_need_w }
-    puts "INFO: floorplan: grew die to fit SRAM $_fp_sram0 (block ${_fp_block_w}x${_fp_block_h}) -> core ${width}x${height}"
+    set height [expr ceil($height / $vert_pitch)  * $vert_pitch]
+    set width  [expr ceil($width  / $horiz_pitch) * $horiz_pitch]
+    puts "INFO: floorplan: grew die for SRAM $_fp_sram0 (block ${_fp_block_w}x${_fp_block_h}, macro_area ${_fp_macro_area}) -> core ${width}x${height}"
   }
 }
 
