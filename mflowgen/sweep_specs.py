@@ -101,6 +101,17 @@ PRESETS = {
         "fw8_dw16_sc32768_sp_in4_out4_vc2",  # wide/large single-port macro
         "fw2_dw16_sc4096_dp_in2_out2_vc2",   # dual-port (SDPB family)
     ],
+    # Every DEFAULT_SPEC_POINT -- the complete regression set. Adds, over
+    # smoke4: fw4 single-port (in2/out2) and fw2 fetch=2/sc2048 single-port
+    # (the narrow geometry with no 2-column macro -> cols=1 fallback).
+    "full": [
+        "fw4_dw16_sc8192_sp_in2_out2_vc2",
+        "fw1_dw16_sc4096_sp_in1_out1",
+        "fw2_dw16_sc2048_sp_in1_out1_vc2",
+        "fw8_dw16_sc32768_sp_in4_out4_vc2",
+        "fw2_dw16_sc4096_dp_in2_out2_vc2",
+        "fw4_dw16_sc8192_dp_in4_out4_vc2",
+    ],
 }
 
 
