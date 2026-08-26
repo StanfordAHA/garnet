@@ -1,0 +1,29 @@
+name: setup
+
+#-------------------------------------------------------------------------
+# Inputs and Outputs
+#-------------------------------------------------------------------------
+
+outputs:
+  - design.v          # RTL netlist for the sim
+  - design.vcs.v      # signed-off netlist for the power calc
+  - design.spef.gz
+  - design.pt.sdc
+  - design.namemap
+  - testbench.sv
+  - sram.v
+  - sram_tt.db
+  - test_vectors.txt
+  - test_outputs.txt
+
+#-------------------------------------------------------------------------
+# Commands
+#-------------------------------------------------------------------------
+
+commands:
+  - cp ../../inputs/*.* outputs
+  - cp ../../inputs/tile_tbs/{tile_id}/test_vectors.txt outputs/test_vectors.txt
+  - cp ../../inputs/tile_tbs/{tile_id}/test_outputs.txt outputs/test_outputs.txt
+
+parameters:
+  tile_id: Tile_X01_Y01

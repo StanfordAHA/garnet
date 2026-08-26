@@ -32,8 +32,11 @@ def construct():
     synth_power = False
     if os.environ.get('SYNTH_POWER') == 'True':
         synth_power = True
-    # power domains do not work with post-synth power
-    if synth_power:
+    # RTL-activity power (RTL sim -> ptpx-rtl on the signoff netlist via the
+    # Genus design.namemap). Independent opt-in from SYNTH_POWER.
+    rtl_power = os.environ.get('RTL_POWER') == 'True'
+    # power domains do not work with post-synth / rtl power
+    if synth_power or rtl_power:
         pwr_aware = False
 
     want_drc_pm = True
@@ -160,6 +163,8 @@ def construct():
         drc_pm = custom_step('/../common/gf-mentor-calibre-drcplus-pm')
     if synth_power:
         post_synth_power = custom_step('/../common/tile-post-synth-power')
+    if rtl_power:
+        post_rtl_power = custom_step('/../common/tile-post-rtl-power')
     post_pnr_power = custom_step('/../common/tile-post-pnr-power')
 
     # Power aware setup
@@ -233,6 +238,10 @@ def construct():
     iflow.extend_inputs(custom_flowgen_setup.all_outputs())
 
     synth.extend_outputs(["sdc"])
+    # RTL-activity power needs the Genus RTL->gate name map (written by
+    # custom-genus-scripts/generate-results.tcl -> results_syn/design.namemap).
+    if rtl_power:
+        synth.extend_outputs(["design.namemap"])
     iflow.extend_inputs(["sdc"])
     init.extend_inputs(["sdc"])
     power.extend_inputs(["sdc"])
@@ -352,6 +361,8 @@ def construct():
     g.add_step(testbench)
     if synth_power:
         g.add_step(post_synth_power)
+    if rtl_power:
+        g.add_step(post_rtl_power)
     g.add_step(post_pnr_power)
 
     # Power aware step
@@ -465,6 +476,17 @@ def construct():
     reverse_connect(post_pnr_power, signoff)
     reverse_connect(post_pnr_power, pt_signoff)
     reverse_connect(post_pnr_power, testbench)
+
+    if rtl_power:
+        # RTL sim reads the RTL design.v (from the rtl step); ptpx-rtl computes
+        # power on the signoff netlist (design.vcs.v + spef + pt.sdc) bound to
+        # the RTL SAIF via the Genus design.namemap (from synth).
+        reverse_connect(post_rtl_power, application)
+        reverse_connect(post_rtl_power, gen_sram)
+        reverse_connect(post_rtl_power, rtl)
+        reverse_connect(post_rtl_power, synth)
+        reverse_connect(post_rtl_power, signoff)
+        reverse_connect(post_rtl_power, testbench)
 
     reverse_connect(debugcalibre, adk)
     reverse_connect(debugcalibre, synth)

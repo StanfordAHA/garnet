@@ -1,34 +1,39 @@
 #=========================================================================
-# Synopsys PTPX -- RTL
+# tile-post-rtl-power
 #=========================================================================
+# Per-tile RTL-activity power: RTL sim of each placed tile with the app's
+# stimulus -> RTL SAIF -> synopsys-ptpx-rtl on the signed-off netlist (bound
+# via the Genus design.namemap). Mirror of tile-post-pnr-power.
 
-name: synopsys-ptpx-rtl
+name: post-rtl-power
 
 #-------------------------------------------------------------------------
 # Inputs and Outputs
 #-------------------------------------------------------------------------
 
 inputs:
-  - adk
-  - design.vcs.v
+  - tiles_Tile_PE.list
+  - tiles_Tile_MemCore.list
+  - design.v          # RTL netlist (simulated to get RTL-name activity)
+  - design.vcs.v      # signed-off gate netlist (power is computed on this)
   - design.spef.gz
   - design.pt.sdc
-  - run.saif
-  - design.namemap
+  - design.namemap    # Genus RTL->gate name map, `source`d by ptpx-rtl
+  - sram.v
+  - sram_tt.db
+  - testbench.sv
+  - tile_tbs
 
 outputs:
-  - power.hier
+  - reports
 
 #-------------------------------------------------------------------------
 # Commands
 #-------------------------------------------------------------------------
 
 commands:
-  - pt_shell -file pt_px.tcl
-  # Surface the hierarchical power report as a named output, matching
-  # synopsys-ptpx-gl/-synth so tile-post-rtl-power's run.sh can collect it.
-  - mkdir -p outputs
-  - cp reports/*.pwr.hier.rpt outputs/power.hier
+  - mkdir outputs/reports
+  - python run_all_tiles.py
 
 #-------------------------------------------------------------------------
 # Parameters
@@ -37,4 +42,8 @@ commands:
 parameters:
   clock_period: 1.0
   design_name: undefined
-  strip_path: undefined
+  testbench_name: tb
+  strip_path: tb/dut
+  waves: True
+  PWR_AWARE: False
+  use_sdf: False

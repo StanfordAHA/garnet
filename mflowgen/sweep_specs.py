@@ -203,16 +203,16 @@ def build_argparser():
     p.add_argument("--power", action="store_true",
                    help="After the build, run the app-driven power flow for "
                         "each spec instead of stopping at signoff. Sets "
-                        "SYNTH_POWER=True (adds the post-synth power node; the "
-                        "construct disables power-aware PnR when this is set) "
-                        "and makes BOTH power leaves -- 'post-synth-power' and "
-                        "'post-pnr-power' -- which pull the full PnR + the "
-                        "'application' sim (default app conv_3_3) as "
-                        "dependencies. Supersedes --stop-after. NOTE: needs "
-                        "docker + Cadence (Innovus/Xcelium) + PrimeTime, i.e. "
-                        "the build machine, not /aha. This graph has no "
-                        "pre-synthesis/RTL power node -- only post-synth and "
-                        "post-pnr.")
+                        "SYNTH_POWER=True and RTL_POWER=True (adds the "
+                        "post-synth + RTL power nodes; the construct disables "
+                        "power-aware PnR when set) and makes all THREE power "
+                        "leaves -- 'post-rtl-power' (RTL-sim activity on the "
+                        "signoff netlist via the Genus namemap), "
+                        "'post-synth-power', and 'post-pnr-power' -- which pull "
+                        "the full PnR + the 'application' sim (default app "
+                        "conv_3_3) as dependencies. Supersedes --stop-after. "
+                        "NOTE: needs docker + Cadence (Innovus/Xcelium) + "
+                        "PrimeTime, i.e. the build machine, not /aha.")
     p.add_argument("--dry-run", action="store_true",
                    help="Print each config's workspace + commands, run nothing.")
     p.add_argument("--skip-existing", action="store_true",
@@ -529,7 +529,8 @@ def _run_one(cfg, cfg_dir, args):
     # 'application' sim as dependencies, so making them runs the whole chain.
     if args.power:
         env["SYNTH_POWER"] = "True"
-        build_targets = ["post-synth-power", "post-pnr-power"]
+        env["RTL_POWER"] = "True"
+        build_targets = ["post-rtl-power", "post-synth-power", "post-pnr-power"]
     else:
         build_targets = [str(args.stop_after)]
 
@@ -546,7 +547,7 @@ def _run_one(cfg, cfg_dir, args):
         dry_env_keys = ["LAKE_SPEC_CONFIG", "LAKE_SPEC_MODE", "DUAL_PORT",
                         "USE_NON_SPLIT_FIFOS", "USE_SIM_SRAM"]
         if args.power:
-            dry_env_keys.append("SYNTH_POWER")
+            dry_env_keys += ["SYNTH_POWER", "RTL_POWER"]
         for k in dry_env_keys:
             print(f"        DRY-RUN env: {k}={env[k]}", flush=True)
         print(f"        DRY-RUN cmd: mflowgen run --design {args.graph}",
