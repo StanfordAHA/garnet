@@ -200,6 +200,19 @@ def build_argparser():
                    help="Build with behavioral (simulatable) SRAM instead of a "
                         "hardened macro. Needed for spec geometries with no "
                         "matching physical SRAM macro in the tech map.")
+    p.add_argument("--power", action="store_true",
+                   help="After the build, run the app-driven power flow for "
+                        "each spec instead of stopping at signoff. Sets "
+                        "SYNTH_POWER=True (adds the post-synth power node; the "
+                        "construct disables power-aware PnR when this is set) "
+                        "and makes BOTH power leaves -- 'post-synth-power' and "
+                        "'post-pnr-power' -- which pull the full PnR + the "
+                        "'application' sim (default app conv_3_3) as "
+                        "dependencies. Supersedes --stop-after. NOTE: needs "
+                        "docker + Cadence (Innovus/Xcelium) + PrimeTime, i.e. "
+                        "the build machine, not /aha. This graph has no "
+                        "pre-synthesis/RTL power node -- only post-synth and "
+                        "post-pnr.")
     p.add_argument("--dry-run", action="store_true",
                    help="Print each config's workspace + commands, run nothing.")
     p.add_argument("--skip-existing", action="store_true",
@@ -509,7 +522,18 @@ def _run_one(cfg, cfg_dir, args):
     env["USE_NON_SPLIT_FIFOS"] = "True" if args.non_split_fifos else "False"
     env["USE_SIM_SRAM"] = "True" if args.use_sim_sram else "False"
 
-    make_cmd = ["make", str(args.stop_after)]
+    # --power: run the app-driven power leaves instead of stopping at signoff.
+    # SYNTH_POWER must be set BEFORE `mflowgen run` -- the construct reads it at
+    # graph-materialization time to add the post-synth power node. Both leaves
+    # ('post-synth-power' / 'post-pnr-power') pull the full PnR + the
+    # 'application' sim as dependencies, so making them runs the whole chain.
+    if args.power:
+        env["SYNTH_POWER"] = "True"
+        build_targets = ["post-synth-power", "post-pnr-power"]
+    else:
+        build_targets = [str(args.stop_after)]
+
+    make_cmd = ["make", *build_targets]
     if args.parallel_jobs > 0:
         make_cmd.insert(1, f"-j{args.parallel_jobs}")
 
@@ -519,8 +543,11 @@ def _run_one(cfg, cfg_dir, args):
     clean_cmd = _clean_targets(args)
 
     if args.dry_run:
-        for k in ("LAKE_SPEC_CONFIG", "LAKE_SPEC_MODE", "DUAL_PORT",
-                  "USE_NON_SPLIT_FIFOS", "USE_SIM_SRAM"):
+        dry_env_keys = ["LAKE_SPEC_CONFIG", "LAKE_SPEC_MODE", "DUAL_PORT",
+                        "USE_NON_SPLIT_FIFOS", "USE_SIM_SRAM"]
+        if args.power:
+            dry_env_keys.append("SYNTH_POWER")
+        for k in dry_env_keys:
             print(f"        DRY-RUN env: {k}={env[k]}", flush=True)
         print(f"        DRY-RUN cmd: mflowgen run --design {args.graph}",
               flush=True)
@@ -542,7 +569,8 @@ def _run_one(cfg, cfg_dir, args):
     with open(spec_path, "w") as f:
         json.dump(cfg, f, indent=2, sort_keys=True)
 
-    _check_step_exists(args.stop_after, cfg_dir, env)
+    for _t in build_targets:
+        _check_step_exists(_t, cfg_dir, env)
     _sh(make_cmd, cwd=cfg_dir, env=env, log=cfg_dir / "make.log")
 
     _collect_artifacts(cfg_dir)
