@@ -238,10 +238,10 @@ def construct():
     iflow.extend_inputs(custom_flowgen_setup.all_outputs())
 
     synth.extend_outputs(["sdc"])
-    # RTL-activity power needs the Genus RTL->gate name map (written by
-    # custom-genus-scripts/generate-results.tcl -> results_syn/design.namemap).
-    if rtl_power:
-        synth.extend_outputs(["design.namemap"])
+    # design.namemap (the Genus RTL->gate name map) is already a declared
+    # output of cadence-genus-synthesis, linked from name_map.rpt -- no
+    # extend_outputs needed. tile-post-rtl-power consumes it via reverse_connect
+    # to synth below.
     iflow.extend_inputs(["sdc"])
     init.extend_inputs(["sdc"])
     power.extend_inputs(["sdc"])
