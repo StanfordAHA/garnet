@@ -201,18 +201,28 @@ def build_argparser():
                         "hardened macro. Needed for spec geometries with no "
                         "matching physical SRAM macro in the tech map.")
     p.add_argument("--power", action="store_true",
-                   help="After the build, run the app-driven power flow for "
-                        "each spec instead of stopping at signoff. Sets "
-                        "SYNTH_POWER=True and RTL_POWER=True (adds the "
-                        "post-synth + RTL power nodes; the construct disables "
-                        "power-aware PnR when set) and makes all THREE power "
-                        "leaves -- 'post-rtl-power' (RTL-sim activity on the "
-                        "signoff netlist via the Genus namemap), "
-                        "'post-synth-power', and 'post-pnr-power' -- which pull "
-                        "the full PnR + the 'application' sim (default app "
-                        "conv_3_3) as dependencies. Supersedes --stop-after. "
+                   help="After the build, run the app-driven PRE-SYNTHESIS + "
+                        "POST-SYNTHESIS power flow for each spec instead of "
+                        "stopping at signoff. Sets RTL_POWER=True and "
+                        "SYNTH_POWER=True (adds the RTL + post-synth power "
+                        "nodes; the construct disables power-aware PnR when "
+                        "either is set) and makes the 'post-rtl-power' "
+                        "(RTL-sim activity on the signoff netlist via the Genus "
+                        "namemap) and 'post-synth-power' leaves, which pull "
+                        "synth + the 'application' sim (default app conv_3_3) "
+                        "as dependencies. Supersedes --stop-after. Add "
+                        "--include-pnr-power for the gate-level PnR leaf too. "
                         "NOTE: needs docker + Cadence (Innovus/Xcelium) + "
                         "PrimeTime, i.e. the build machine, not /aha.")
+    p.add_argument("--include-pnr-power", dest="include_pnr_power",
+                   action="store_true",
+                   help="Additionally make the 'post-pnr-power' leaf "
+                        "(gate-level power on the post-signoff routed netlist). "
+                        "The node is always in the graph; this is what triggers "
+                        "building it. Combine with --power for all three levels, "
+                        "or use alone for just PnR power. Also supersedes "
+                        "--stop-after. Same build-machine requirements as "
+                        "--power.")
     p.add_argument("--dry-run", action="store_true",
                    help="Print each config's workspace + commands, run nothing.")
     p.add_argument("--skip-existing", action="store_true",
@@ -522,16 +532,23 @@ def _run_one(cfg, cfg_dir, args):
     env["USE_NON_SPLIT_FIFOS"] = "True" if args.non_split_fifos else "False"
     env["USE_SIM_SRAM"] = "True" if args.use_sim_sram else "False"
 
-    # --power: run the app-driven power leaves instead of stopping at signoff.
-    # SYNTH_POWER must be set BEFORE `mflowgen run` -- the construct reads it at
-    # graph-materialization time to add the post-synth power node. Both leaves
-    # ('post-synth-power' / 'post-pnr-power') pull the full PnR + the
-    # 'application' sim as dependencies, so making them runs the whole chain.
+    # Power leaves replace the plain --stop-after target when requested.
+    #   --power              -> pre-synth (RTL) + post-synth power
+    #   --include-pnr-power  -> gate-level post-signoff (PnR) power
+    # The two are independent and composable. RTL_POWER/SYNTH_POWER must be set
+    # BEFORE `mflowgen run` -- the construct reads them at graph-materialization
+    # time to add the RTL / post-synth power nodes (and disable power-aware PnR).
+    # post-pnr-power is ALWAYS in the graph, so its leaf needs no env toggle.
+    # Every leaf pulls its netlist + the 'application' sim as dependencies, so
+    # making them runs the whole chain.
+    build_targets = []
     if args.power:
-        env["SYNTH_POWER"] = "True"
         env["RTL_POWER"] = "True"
-        build_targets = ["post-rtl-power", "post-synth-power", "post-pnr-power"]
-    else:
+        env["SYNTH_POWER"] = "True"
+        build_targets += ["post-rtl-power", "post-synth-power"]
+    if args.include_pnr_power:
+        build_targets.append("post-pnr-power")
+    if not build_targets:
         build_targets = [str(args.stop_after)]
 
     make_cmd = ["make", *build_targets]
