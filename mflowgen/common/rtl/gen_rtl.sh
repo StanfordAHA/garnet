@@ -39,6 +39,10 @@ if [ -f inputs/design.v ]; then
     echo "Using header from parent graph"
     (cd outputs; ln -s ../../inputs/header)
   fi
+  # Keep the rtl step's declared collateral outputs satisfied (see below).
+  # Prefer a parent-provided collateral/spec if present, else empty.
+  if [ -f inputs/lake_collateral.json ]; then (cd outputs; ln -s ../../inputs/lake_collateral.json); else touch outputs/lake_collateral.json; fi
+  if [ -f inputs/spec_config.json ];    then (cd outputs; ln -s ../../inputs/spec_config.json);    else touch outputs/spec_config.json;    fi
   echo '--- gen_rtl END' `date +%H:%M`
   exit
 fi
@@ -47,6 +51,7 @@ fi
 if [ "$soc_only" == True ]; then
     echo "soc_only set to true. Garnet not included"
     touch outputs/design.v
+    touch outputs/lake_collateral.json outputs/spec_config.json
     echo '--- gen_rtl END' `date +%H:%M`
     exit
 fi
@@ -361,6 +366,20 @@ if [ "$use_container" == True ]; then
         cp -r ../glc_header/* ../outputs/header/
       fi
 
+      # Context-A lake collateral: emit from the CONTAINER's lake (the lake that
+      # just built this RTL) so --per-tile can cross-check it against the build
+      # machine's native lake (verify-lake-collateral). Only meaningful for a
+      # lake-spec build; for non-spec consumers (Tile_PE) write empty files so
+      # the rtl step's declared outputs always exist.
+      if [ -n "$SPEC_CFG_HOST" ]; then
+        docker exec $container_name /bin/bash -c \
+          "source /aha/bin/activate; cd /aha/garnet; python -m lake.utils.spec_config_to_collateral --spec $SPEC_CFG_CTR -o /aha/garnet/lake_collateral.json"
+        docker cp $container_name:/aha/garnet/lake_collateral.json ../outputs/lake_collateral.json
+        cp "$SPEC_CFG_HOST" ../outputs/spec_config.json
+      else
+        touch ../outputs/lake_collateral.json ../outputs/spec_config.json
+      fi
+
       # See whassup with docker atm
       docker ps
       docker images --digests
@@ -430,6 +449,14 @@ else    # if NOT [ $use_container == True ]
       elif [ $interconnect_only == False ]; then
         cp -r global_buffer/header $current_dir/outputs/header
         cp -r global_controller/header/* $current_dir/outputs/header/
+      fi
+      # Context-A lake collateral (host lake, non-container path). Empty files
+      # for non-spec builds so the rtl step's declared outputs always exist.
+      if [ -n "$SPEC_CFG_HOST" ]; then
+        python -m lake.utils.spec_config_to_collateral --spec "$SPEC_CFG_HOST" -o "$current_dir/outputs/lake_collateral.json"
+        cp "$SPEC_CFG_HOST" "$current_dir/outputs/spec_config.json"
+      else
+        touch "$current_dir/outputs/lake_collateral.json" "$current_dir/outputs/spec_config.json"
       fi
       cd $current_dir ;
 fi
