@@ -23,6 +23,10 @@ parameters:
   use_local_garnet: True
   app_to_run: "tests/conv_3_3"
   waves: False
+  # When True, drop --interconnect-only so `aha garnet` builds the global buffer
+  # (needed for `aha test`/`make sim` to find global_buffer_param.h). Default
+  # False keeps Tile_PE's historical interconnect-only build byte-identical.
+  build_glb: False
 
 postconditions:
   - assert File( 'outputs/run.vcd' )

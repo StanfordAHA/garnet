@@ -1,8 +1,21 @@
 #!/bin/bash
 
 # Build up the flags we want to pass to python garnet.v
-flags="--width $array_width --height $array_height --pipeline_config_interval $pipeline_config_interval -v --interconnect-only"
-map_flags="--width $array_width --height $array_height --pipeline_config_interval $pipeline_config_interval --interconnect-only"
+flags="--width $array_width --height $array_height --pipeline_config_interval $pipeline_config_interval -v"
+map_flags="--width $array_width --height $array_height --pipeline_config_interval $pipeline_config_interval"
+
+# build_glb (param, default False): when False we keep the historical
+# interconnect-only build (Tile_PE's flow -- byte-identical to before). When
+# True we DROP --interconnect-only so `aha garnet`/`aha map` run the standard
+# full-SoC flow that generates the global buffer, so `aha test` -> `make sim`
+# finds global_buffer/header/global_buffer_param.h (its Makefile has only a
+# guard recipe for it -> exit 13 if a full build never produced it). Tile_MemCore
+# sets build_glb=True; the fabric-context (--cgra) power path needs the glb to
+# stream the app through real memory.
+if [ "${build_glb}" != "True" ]; then
+  flags="$flags --interconnect-only"
+  map_flags="$map_flags --interconnect-only"
+fi
 
 if [ ${PWR_AWARE} = "False" ]; then
   flags="$flags --no-pd"

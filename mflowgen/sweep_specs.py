@@ -200,29 +200,46 @@ def build_argparser():
                    help="Build with behavioral (simulatable) SRAM instead of a "
                         "hardened macro. Needed for spec geometries with no "
                         "matching physical SRAM macro in the tech map.")
-    p.add_argument("--power", action="store_true",
-                   help="After the build, run the app-driven PRE-SYNTHESIS + "
-                        "POST-SYNTHESIS power flow for each spec instead of "
-                        "stopping at signoff. Sets RTL_POWER=True and "
-                        "SYNTH_POWER=True (adds the RTL + post-synth power "
-                        "nodes; the construct disables power-aware PnR when "
-                        "either is set) and makes the 'post-rtl-power' "
-                        "(RTL-sim activity on the signoff netlist via the Genus "
-                        "namemap) and 'post-synth-power' leaves, which pull "
-                        "synth + the 'application' sim (default app conv_3_3) "
-                        "as dependencies. Supersedes --stop-after. Add "
-                        "--include-pnr-power for the gate-level PnR leaf too. "
-                        "NOTE: needs docker + Cadence (Innovus/Xcelium) + "
-                        "PrimeTime, i.e. the build machine, not /aha.")
+    # ---- App-driven power. Both paths are "round-trips" (the spec config is
+    # sent up for app compilation either way); they differ in SCOPE:
+    #   --cgra     : app runs on the whole CGRA fabric -> tile power in fabric
+    #                context (container + Cadence/ADK path).
+    #   --per-tile : each memtile is simulated in isolation on the app's exact
+    #                access pattern (clockwork round-trip; container-free,
+    #                self-checked against golden).
+    # They compose: pass both for fabric + isolated power side by side. ----
+    p.add_argument("--cgra", "--power", dest="cgra", action="store_true",
+                   help="After the build, run the CGRA-fabric app-driven "
+                        "PRE-SYNTHESIS + POST-SYNTHESIS power flow for each "
+                        "spec instead of stopping at signoff. Sets "
+                        "RTL_POWER=True and SYNTH_POWER=True (adds the RTL + "
+                        "post-synth power nodes; the construct disables "
+                        "power-aware PnR when either is set) and makes the "
+                        "'post-rtl-power' (RTL-sim activity on the signoff "
+                        "netlist via the Genus namemap) and 'post-synth-power' "
+                        "leaves, which pull synth + the 'application' sim "
+                        "(default app conv_3_3, run on the full fabric) as "
+                        "dependencies. Add --include-pnr-power for the "
+                        "gate-level PnR leaf too. (--power is a back-compat "
+                        "alias.) NOTE: needs docker + Cadence (Innovus/Xcelium) "
+                        "+ PrimeTime, i.e. the build machine, not /aha.")
+    p.add_argument("--per-tile", dest="per_tile", action="store_true",
+                   help="After the build, run the PER-TILE clockwork round-trip "
+                        "power flow: the app is compiled against the spec and "
+                        "each memtile is simulated in isolation on the exact "
+                        "read/write stream it sees, self-checked against golden, "
+                        "then powered at synth level. Sets PER_TILE_POWER=True "
+                        "(adds the round-trip power node) and makes the "
+                        "'per-tile-power' leaf. Container-free (uses the lake "
+                        "spec testbench + xrun), but the power step needs "
+                        "PrimeTime. Composes with --cgra.")
     p.add_argument("--include-pnr-power", dest="include_pnr_power",
                    action="store_true",
-                   help="Additionally make the 'post-pnr-power' leaf "
-                        "(gate-level power on the post-signoff routed netlist). "
-                        "The node is always in the graph; this is what triggers "
-                        "building it. Combine with --power for all three levels, "
-                        "or use alone for just PnR power. Also supersedes "
-                        "--stop-after. Same build-machine requirements as "
-                        "--power.")
+                   help="With --cgra, additionally make the 'post-pnr-power' "
+                        "leaf (gate-level power on the post-signoff routed "
+                        "netlist). The node is always in the graph; this is what "
+                        "triggers building it. Also supersedes --stop-after. "
+                        "Same build-machine requirements as --cgra.")
     p.add_argument("--dry-run", action="store_true",
                    help="Print each config's workspace + commands, run nothing.")
     p.add_argument("--skip-existing", action="store_true",
@@ -533,21 +550,25 @@ def _run_one(cfg, cfg_dir, args):
     env["USE_SIM_SRAM"] = "True" if args.use_sim_sram else "False"
 
     # Power leaves replace the plain --stop-after target when requested.
-    #   --power              -> pre-synth (RTL) + post-synth power
-    #   --include-pnr-power  -> gate-level post-signoff (PnR) power
-    # The two are independent and composable. RTL_POWER/SYNTH_POWER must be set
-    # BEFORE `mflowgen run` -- the construct reads them at graph-materialization
-    # time to add the RTL / post-synth power nodes (and disable power-aware PnR).
-    # post-pnr-power is ALWAYS in the graph, so its leaf needs no env toggle.
-    # Every leaf pulls its netlist + the 'application' sim as dependencies, so
-    # making them runs the whole chain.
+    #   --cgra               -> fabric app power: pre-synth (RTL) + post-synth
+    #   --include-pnr-power  -> (with --cgra) gate-level post-signoff (PnR)
+    #   --per-tile           -> isolated per-memtile clockwork round-trip power
+    # All composable. The *_POWER env vars must be set BEFORE `mflowgen run` --
+    # the construct reads them at graph-materialization time to add the matching
+    # power nodes (RTL/SYNTH also disable power-aware PnR). post-pnr-power is
+    # ALWAYS in the graph, so its leaf needs no env toggle. Every leaf pulls its
+    # netlist + the app compile/sim as dependencies, so making them runs the
+    # whole chain.
     build_targets = []
-    if args.power:
+    if args.cgra:
         env["RTL_POWER"] = "True"
         env["SYNTH_POWER"] = "True"
         build_targets += ["post-rtl-power", "post-synth-power"]
     if args.include_pnr_power:
         build_targets.append("post-pnr-power")
+    if args.per_tile:
+        env["PER_TILE_POWER"] = "True"
+        build_targets.append("per-tile-power")
     if not build_targets:
         build_targets = [str(args.stop_after)]
 
@@ -563,8 +584,10 @@ def _run_one(cfg, cfg_dir, args):
     if args.dry_run:
         dry_env_keys = ["LAKE_SPEC_CONFIG", "LAKE_SPEC_MODE", "DUAL_PORT",
                         "USE_NON_SPLIT_FIFOS", "USE_SIM_SRAM"]
-        if args.power:
+        if args.cgra:
             dry_env_keys += ["SYNTH_POWER", "RTL_POWER"]
+        if args.per_tile:
+            dry_env_keys += ["PER_TILE_POWER"]
         for k in dry_env_keys:
             print(f"        DRY-RUN env: {k}={env[k]}", flush=True)
         print(f"        DRY-RUN cmd: mflowgen run --design {args.graph}",

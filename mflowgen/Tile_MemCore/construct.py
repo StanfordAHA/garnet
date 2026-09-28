@@ -158,6 +158,10 @@ def construct():
 
     testbench = custom_step('/../common/testbench')
     application = custom_step('/../common/application')
+    # Build the global buffer in the app run so `aha test`/`make sim` finds
+    # global_buffer_param.h (interconnect-only skips it -> exit 13). Tile_PE
+    # leaves the default (False) so its flow is byte-identical.
+    application.set_param('build_glb', True)
     lib2db = custom_step('/../common/synopsys-dc-lib2db')
     if want_drc_pm:
         drc_pm = custom_step('/../common/gf-mentor-calibre-drcplus-pm')
