@@ -10,11 +10,6 @@ inputs:
 outputs:
   - design.v
   - header
-  # Context-A lake collateral + the spec that produced it (real for a lake-spec
-  # build, empty otherwise). Consumed by the --per-tile round-trip flow's
-  # verify-lake-collateral cross-check; harmless/unused for non-spec builds.
-  - lake_collateral.json
-  - spec_config.json
 
 parameters:
   array_width: 4
