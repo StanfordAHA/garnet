@@ -252,6 +252,14 @@ def build_argparser():
 def main(argv=None):
     args = build_argparser().parse_args(argv)
 
+    if args.per_tile:
+        # Parked: the round-trip graph node ('per-tile-power') is not wired into
+        # Tile_MemCore yet, so fail up front instead of after mflowgen run.
+        print("*** --per-tile is not implemented yet (the 'per-tile-power' node "
+              "is not in the Tile_MemCore graph). For isolated per-spec power, "
+              "run lake's ASPLOS_EXP/run_synth_pool.py instead.", file=sys.stderr)
+        return 2
+
     if args.rtl_only:
         args.stop_after = "rtl"
 
