@@ -956,8 +956,8 @@ class Garnet(Generator):
         for c_id, ((placement, routing), p_id_to_name) in partition_result.items():
             bitstream = []
             bitstream += self.interconnect.get_route_bitstream(routing)
-            bitstream += self.get_placement_bitstream(placement, routing, p_id_to_name,
-                                                      instance_to_instr)
+            bitstream += self.get_placement_bitstream(placement, routing, halide_src,
+                                                      p_id_to_name, instance_to_instr)
             skip_addr = self.interconnect.get_skip_addr()
             bitstream = compress_config_data(
                 bitstream, skip_compression=skip_addr)
