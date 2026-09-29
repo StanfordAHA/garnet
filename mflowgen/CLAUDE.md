@@ -42,8 +42,14 @@ Key flags:
   symlinks that `docker cp` rejects ("invalid symlink …").
 - `--use-sim-sram` — behavioral SRAM instead of a hardened macro (for
   geometries with no matching physical macro).
-- `--power` — after the build, run the **pre-synth (RTL) + post-synth**
-  app-driven power flow instead of stopping at `--stop-after`. Sets
+- `--cgra-power` (alias `--power`) — after the build, run the **pre-synth
+  (RTL) + post-synth** app-driven power flow instead of stopping at
+  `--stop-after`. **Not usable for lake-spec configs yet:** the `application`
+  step runs the app on the *default* MemCore in the stock
+  `stanfordaha/garnet:latest` container (no spec flags, upstream aha/clockwork,
+  2020-era VCD/place paths), so the stimulus replayed into the spec tile is
+  wrong and the power numbers are meaningless. Plain PnR sweeps (no power flag)
+  are unaffected. Sets
   `RTL_POWER=True` + `SYNTH_POWER=True` in the env (the construct reads them at
   graph-materialization time — they must be set *before* `mflowgen run`; either
   also disables power-aware PnR), then makes `post-rtl-power` +
@@ -51,11 +57,11 @@ Key flags:
 - `--include-pnr-power` — **additional, composable** flag that also makes the
   gate-level `post-pnr-power` leaf (post-signoff routed netlist). That node is
   *always* in the graph (no env toggle needed); this flag is what triggers
-  building it. Use with `--power` for all three levels, or alone for just PnR
+  building it. Use with `--cgra-power` for all three levels, or alone for just PnR
   power. Both power flags supersede `--stop-after`. Reports land under
   `*-tile-post-{rtl,synth,pnr}-power/reports/*.rpt`. Requires docker + Cadence +
   PrimeTime → build machine only. Typical full run (all three levels):
-  `./mflowgen/sweep_specs.py --preset full --power --include-pnr-power
+  `./mflowgen/sweep_specs.py --preset full --cgra-power --include-pnr-power
   --parallel-jobs 6 --config-jobs 2
   --out-dir /sim/mstrange/BUILD_CGRA/sweep_out/tile_memcore_pnr`.
 
@@ -133,12 +139,12 @@ Shared front of the chain (all under `common/`):
 The tile builds can emit power at **three points in the flow**, each a
 self-contained sub-graph (`common/tile-post-{rtl,synth,pnr}-power/`) wired into
 `Tile_PE` / `Tile_MemCore` construct.py and driven all at once by
-`sweep_specs.py --power`:
+`sweep_specs.py --cgra-power`:
 
 | Level | Node / ptpx flavor | Netlist powered | Node present when | Built by |
 |---|---|---|---|---|
-| **RTL** (pre-synth) | `tile-post-rtl-power` → `synopsys-ptpx-rtl` | signoff netlist, RTL-sim activity bound via `design.namemap` | `RTL_POWER=True` (else absent) | `--power` |
-| **Synth** | `tile-post-synth-power` → `synopsys-ptpx-synth` | post-synthesis netlist | `SYNTH_POWER=True` (else absent) | `--power` |
+| **RTL** (pre-synth) | `tile-post-rtl-power` → `synopsys-ptpx-rtl` | signoff netlist, RTL-sim activity bound via `design.namemap` | `RTL_POWER=True` (else absent) | `--cgra-power` |
+| **Synth** | `tile-post-synth-power` → `synopsys-ptpx-synth` | post-synthesis netlist | `SYNTH_POWER=True` (else absent) | `--cgra-power` |
 | **PnR** | `tile-post-pnr-power` → `synopsys-ptpx-gl` | routed/signoff netlist (post-signoff — see below) | **always in graph** | `--include-pnr-power` |
 
 - **RTL level is the earliest "run an app before synthesis" power.** It sims
@@ -170,7 +176,7 @@ Entry points:
   three-level table above), so a tile build also emits that app's tile power.
   The pnr sub-graph can be driven directly via
   `common/tile-post-pnr-power/run_all_tiles.py` (iterates
-  `inputs/tiles_<design>.list`); at sweep scope `--power` builds RTL+synth and
+  `inputs/tiles_<design>.list`); at sweep scope `--cgra-power` builds RTL+synth and
   `--include-pnr-power` adds PnR (see the sweep_specs flags above).
 
 Gaps: **no full-chip app→dynamic-power** (`full_chip`/`soc` power steps are
