@@ -1250,7 +1250,10 @@ def pnr(garnet, args, app):
     from mini_mapper import get_total_cycle_from_app
     total_cycle = get_total_cycle_from_app(args.app)
 
-    if len(outputs) > 1:
+    # Only strip a real valid port. Ready-valid apps have no 1-bit valid IO
+    # (valid == ""), so a multi-output RV app (e.g. gaussian, unroll=2) would
+    # otherwise raise ValueError here.
+    if len(outputs) > 1 and valid in outputs:
         outputs.remove(valid)
     config = {
         "input_filename": args.input,
