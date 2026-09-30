@@ -63,9 +63,16 @@ tile workspace would be wiped by `make clean-all`). `--standalone-only` skips
 the tile builds (add the baseline to a finished sweep). Graph kwargs mirror
 lake's `ASPLOS_EXP/create_mflowgen_experiments.py`, but `python_command` calls
 `thesis_sweep.py` directly with `sys.executable`. Lake comes from `--lake-dir`
-(default `$LAKE_PATH`, else garnet's sibling `lake`) and must be the one this
-Python imports (preflight warns otherwise) — on the build machine that host
-lake needs `git pull` (gen_rtl's in-container THESIS checkout doesn't cover it).
+(default `$LAKE_PATH`, else garnet's sibling `lake`), which the script puts
+first on `PYTHONPATH` for the standalone mflowgen run/make — no `pip install
+-e lake` needed, but lake's deps (kratos, magma, fault, networkx, …) must be in
+the venv (build machine's `/home/mstrange/venv` has them). Preflight imports
+`lake.spec.spec` and prints the real ImportError. On the build machine that
+host lake needs `git pull` (gen_rtl's in-container THESIS checkout doesn't
+cover it). `--standalone-rtl container` (opt-in, untested — no docker on
+/aha) instead runs `thesis_sweep.py` via `standalone_spec_rtl.sh` in the aha
+image at lake origin/THESIS, so standalone + tile RTL share one lake/kratos;
+default host mode uses the venv's kratos, a possible correlation confound.
 
 Every run (and `--correlate-only`/`--zip-only`) writes
 `<out-dir>/correlation.csv`: per config, `{standalone_synth,tile_synth}_
