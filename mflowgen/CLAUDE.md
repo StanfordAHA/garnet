@@ -40,6 +40,14 @@ Key flags:
   `garnet/sweep_out` because `gen_rtl` `docker cp`s the garnet tree into the
   build container and an in-tree mflowgen workspace holds absolute adk
   symlinks that `docker cp` rejects ("invalid symlink …").
+- `--zip` / `--zip-only` / `--zip-path` — portable results archive for moving
+  between machines. `--zip` runs after the sweep (even on failures);
+  `--zip-only` archives an existing `--out-dir` and exits (all workspaces with a
+  `spec_config.json`, or just the `--preset/--only/--skip` selection). Default
+  path is next to out-dir: `<out-dir>_<host>_<timestamp>.zip`. Contents =
+  `results.csv` + per-config JSON/logs/`done.flag`/per-step `mflowgen-run.log`
+  + `ARTIFACT_GLOBS` reports, pulled straight from the workspaces (not
+  `artifacts/`) so failed configs still contribute. No workspace DBs.
 - `--use-sim-sram` — behavioral SRAM instead of a hardened macro (for
   geometries with no matching physical macro).
 - `--cgra-power` (alias `--power`) — after the build, run the **pre-synth

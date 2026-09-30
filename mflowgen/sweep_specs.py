@@ -33,6 +33,12 @@ Examples:
 
     # Full sweep through signoff, 8-way make
     ./mflowgen/sweep_specs.py --parallel-jobs 8
+
+    # Same, and zip the results for moving to another machine when done
+    ./mflowgen/sweep_specs.py --parallel-jobs 8 --zip
+
+    # Zip the results of an earlier run (no build)
+    ./mflowgen/sweep_specs.py --zip-only --out-dir /path/to/tile_memcore_pnr
 """
 
 from pathlib import Path
@@ -43,9 +49,11 @@ import json
 import os
 import shutil
 import subprocess
+import socket
 import sys
 import threading
 import time
+import zipfile
 
 
 # Directory holding this script == <garnet>/mflowgen. Everything path-related
@@ -251,6 +259,20 @@ def build_argparser():
                    help="Skip configs whose workspace already has done.flag.")
     p.add_argument("--list", action="store_true",
                    help="Print the selected config names and exit.")
+    p.add_argument("--zip", action="store_true",
+                   help="When the sweep finishes (pass or fail), zip the results "
+                        "for moving between machines: results.csv plus, per "
+                        "config, spec/collateral JSON, top-level logs, per-step "
+                        "mflowgen-run.log, and the PPA/power reports (see "
+                        "ARTIFACT_GLOBS). Workspaces themselves are not included.")
+    p.add_argument("--zip-only", action="store_true",
+                   help="Standalone: zip the results already in --out-dir from a "
+                        "previous run and exit (no build). Archives every config "
+                        "workspace found there, or only the selected ones if "
+                        "--preset/--only/--skip is given.")
+    p.add_argument("--zip-path", metavar="PATH",
+                   help="Where to write the zip for --zip/--zip-only (default: "
+                        "next to --out-dir, named <out-dir>_<host>_<timestamp>.zip).")
     return p
 
 
@@ -280,6 +302,14 @@ def main(argv=None):
 
     if args.make:
         return _run_make_passthrough(configs, args)
+
+    if args.zip_only:
+        # Only narrow to the selection when the user actually made one; otherwise
+        # archive every workspace in --out-dir (it may hold --extra-specs configs
+        # from the earlier run that are not in today's default list).
+        selected = args.preset or args.only or args.skip
+        names = {_config_name(c) for c in configs} if selected else None
+        return 0 if _zip_results(Path(args.out_dir).resolve(), names, args) else 1
 
     _preflight(args)
 
@@ -330,12 +360,17 @@ def main(argv=None):
                 record(fut.result())
 
     if args.dry_run:
+        if args.zip:
+            print(f"DRY-RUN zip: {_default_zip_path(out_dir, args)}", flush=True)
         print("\nDry run: nothing executed.", flush=True)
         return 0
 
     print(f"\nDone: {len(rows) - failures} ok, {failures} failed. "
           f"Results: {results_csv}", flush=True)
-    return 1 if failures else 0
+    zip_ok = True
+    if args.zip:
+        zip_ok = _zip_results(out_dir, {_config_name(c) for c in configs}, args)
+    return 1 if failures or not zip_ok else 0
 
 
 def _preflight(args):
@@ -686,29 +721,126 @@ def _check_step_exists(step, cfg_dir, env):
         f"    Run `make list` in {cfg_dir} to see all targets.")
 
 
+# Workspace-relative globs for the small subset of files that summarize PPA.
+# Shared by _collect_artifacts (copy into artifacts/) and _zip_results.
+ARTIFACT_GLOBS = [
+    "*-cadence-innovus-signoff/outputs/*.lib",
+    "*-cadence-innovus-signoff/outputs/*.lef",
+    "*-cadence-innovus-signoff/outputs/*.gds",
+    "*-cadence-innovus-signoff/reports/*.rpt",
+    "*-cadence-innovus-signoff/reports/*.summary",
+    "*-synopsys-pt-timing-signoff/reports/*.rpt",
+    "*-cadence-genus-synthesis/reports/*.rpt",
+    # post-{rtl,synth,pnr}-power steps (common/tile-post-*-power): per-tile
+    # power.hier copies land in outputs/reports/<tile_id>.hier.
+    "*-post-*-power/outputs/reports/*",
+]
+
+# Extra per-workspace files that only go into the zip: provenance + logs, so a
+# failed config can still be debugged on the other machine.
+ZIP_EXTRA_GLOBS = [
+    "*.json",               # spec_config.json, lake_collateral.json
+    "*.log",                # mflowgen_run.log, make_clean.log, make.log
+    "done.flag",
+    "*/mflowgen-run.log",   # per-step log
+]
+
+
 def _collect_artifacts(cfg_dir):
     """Copy the small subset of files that summarize PPA into artifacts/."""
     art = cfg_dir / "artifacts"
     art.mkdir(exist_ok=True)
 
-    interesting_globs = [
-        "*-cadence-innovus-signoff/outputs/*.lib",
-        "*-cadence-innovus-signoff/outputs/*.lef",
-        "*-cadence-innovus-signoff/outputs/*.gds",
-        "*-cadence-innovus-signoff/reports/*.rpt",
-        "*-cadence-innovus-signoff/reports/*.summary",
-        "*-synopsys-pt-timing-signoff/reports/*.rpt",
-        "*-tile-post-pnr-power/reports/*.rpt",
-        "*-cadence-genus-synthesis/reports/*.rpt",
-    ]
-    for pat in interesting_globs:
+    for pat in ARTIFACT_GLOBS:
         for src in cfg_dir.glob(pat):
-            dst = art / src.parent.parent.name / src.name
+            # artifacts/<NN-step>/<file>
+            dst = art / src.relative_to(cfg_dir).parts[0] / src.name
             dst.parent.mkdir(parents=True, exist_ok=True)
             try:
                 shutil.copy2(src, dst)
             except OSError:
                 pass
+
+
+def _default_zip_path(out_dir, args):
+    if args.zip_path:
+        return Path(args.zip_path).resolve()
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    host = socket.gethostname().split(".")[0]
+    return out_dir.parent / f"{out_dir.name}_{host}_{stamp}.zip"
+
+
+def _zip_results(out_dir, names, args):
+    """Zip the sweep results under out_dir; return True on success.
+
+    names: config names to include, or None for every workspace found in
+    out_dir (any subdir holding a spec_config.json). Files are pulled straight
+    from the workspaces (not from artifacts/), so configs that failed partway
+    still contribute whatever reports/logs they got to. Paths inside the zip
+    mirror the workspace layout under a single top-level dir named after the
+    zip, so unpacking several archives side by side does not collide.
+    """
+    if not out_dir.is_dir():
+        print(f"*** ERROR: no results dir to zip: {out_dir}", file=sys.stderr,
+              flush=True)
+        return False
+
+    found = sorted(d.name for d in out_dir.iterdir()
+                   if (d / "spec_config.json").is_file())
+    if names is not None:
+        missing = sorted(names - set(found))
+        if missing:
+            print(f"*** WARNING: no workspace in {out_dir} for: "
+                  f"{', '.join(missing)}", file=sys.stderr, flush=True)
+        found = [n for n in found if n in names]
+
+    files = sorted(out_dir.glob("*.csv"))
+    for name in found:
+        cfg_dir = out_dir / name
+        seen = set()
+        for pat in ZIP_EXTRA_GLOBS + ARTIFACT_GLOBS:
+            for src in cfg_dir.glob(pat):
+                if src.is_file() and src not in seen:
+                    seen.add(src)
+                    files.append(src)
+
+    zip_path = _default_zip_path(out_dir, args)
+    root = zip_path.stem
+    print(f"\nZipping {len(found)} config(s), {len(files)} file(s) from "
+          f"{out_dir}\n        -> {zip_path}", flush=True)
+    if not found:
+        print("*** WARNING: no config workspaces found; zip will hold only "
+              "results.csv (if any).", file=sys.stderr, flush=True)
+    if args.dry_run:
+        for f in files:
+            print(f"        DRY-RUN add: {root}/{f.relative_to(out_dir)}",
+                  flush=True)
+        return True
+
+    zip_path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = zip_path.with_name(zip_path.name + ".partial")
+    skipped = 0
+    try:
+        with zipfile.ZipFile(tmp, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+            for f in files:
+                try:
+                    # write() follows symlinks, so mflowgen's outputs/ links
+                    # are stored as their real contents.
+                    zf.write(f, f"{root}/{f.relative_to(out_dir)}")
+                except OSError as e:
+                    skipped += 1
+                    print(f"        skip {f}: {e}", file=sys.stderr, flush=True)
+        tmp.replace(zip_path)
+    except OSError as e:
+        print(f"*** ERROR: writing {zip_path} failed: {e}", file=sys.stderr,
+              flush=True)
+        tmp.unlink(missing_ok=True)
+        return False
+
+    size_mb = zip_path.stat().st_size / 1e6
+    note = f", {skipped} unreadable file(s) skipped" if skipped else ""
+    print(f"Wrote {zip_path} ({size_mb:.1f} MB{note})", flush=True)
+    return True
 
 
 def _sh(cmd, cwd, env, log):
