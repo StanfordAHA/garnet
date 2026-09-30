@@ -15,14 +15,22 @@ For each spec point:
     5. Copy PPA-ish outputs into artifacts/ and append a row to results.csv.
 
 The spec JSON is read back inside the build by cgra/util_onyx.py, which
-derives mem_width = data_width * vec_width and mem_depth from
-storage_capacity. Only keys that file reads have any effect on the RTL:
-vec_width, data_width, storage_capacity (plus dual_port via its own env
-knob). The remaining keys are recorded for provenance and to keep config
-names aligned with the collateral sweeps in aha.
+passes the whole dict to lake's build_spec(**spec) for the tile's
+SpecMemoryController (so every build_spec kwarg -- ports, dual_port,
+vec_capacity, ... -- shapes the RTL), and derives the tile's SRAM
+mem_width = data_width * vec_width and mem_depth from storage_capacity.
+
+With --standalone-synth, each spec point is ALSO synthesized on its own
+(lake's pd/thesis graph: the bare `lakespec` module from
+tests/test_spec/thesis_sweep.py, no tile wrapper) under
+<out-dir>/standalone_synth/<config>/, at the tile's clock period. After
+any run, <out-dir>/correlation.csv lines up standalone synth -> tile synth
+-> tile PnR area/slack per config.
 
 Requires a garnet whose garnet.py accepts --lake-spec-config (i.e. the
 modern_gf lineage). On a garnet without it, the rtl step fails in argparse.
+--standalone-synth additionally needs the sibling lake checkout (--lake-dir)
+with `lake` importable by this Python.
 
 Examples:
     # List what would run, touch nothing
@@ -39,6 +47,12 @@ Examples:
 
     # Zip the results of an earlier run (no build)
     ./mflowgen/sweep_specs.py --zip-only --out-dir /path/to/tile_memcore_pnr
+
+    # Full set: tile PnR + standalone spec synth, then correlation.csv
+    ./mflowgen/sweep_specs.py --preset full --standalone-synth --zip
+
+    # Add standalone synth to an already-finished tile sweep
+    ./mflowgen/sweep_specs.py --preset full --standalone-only --out-dir ...
 """
 
 from pathlib import Path
@@ -47,6 +61,7 @@ import concurrent.futures
 import csv
 import json
 import os
+import re
 import shutil
 import subprocess
 import socket
@@ -60,6 +75,15 @@ import zipfile
 # is derived from it so the script is relocatable across machines.
 MFLOWGEN_DIR = Path(__file__).resolve().parent
 GARNET_DIR = MFLOWGEN_DIR.parent
+
+# --standalone-synth: lake's per-spec mflowgen graph, built under
+# <out-dir>/STANDALONE_SUBDIR/<config>/ (a sibling tree, NOT inside the tile
+# workspace, where `make clean-all` would wipe it) up to STANDALONE_TARGET.
+STANDALONE_SUBDIR = "standalone_synth"
+STANDALONE_TARGET = "cadence-genus-synthesis"
+# Where the lake rtl step's python_command writes the spec RTL + testbench;
+# the step copies <test_dir>/inputs/lakespec.sv etc. into its outputs.
+STANDALONE_TEST_DIR = "TEST/lakespec"
 
 
 # ---------------------------------------------------------------------------
@@ -273,6 +297,37 @@ def build_argparser():
     p.add_argument("--zip-path", metavar="PATH",
                    help="Where to write the zip for --zip/--zip-only (default: "
                         "next to --out-dir, named <out-dir>_<host>_<timestamp>.zip).")
+    # ---- Standalone spec synthesis (correlation baseline) ----
+    p.add_argument("--standalone-synth", action="store_true",
+                   help="Also synthesize each spec point STANDALONE -- the bare "
+                        "lake `lakespec` module, no tile wrapper -- through lake's "
+                        "pd/thesis mflowgen graph up to cadence-genus-synthesis, "
+                        "in <out-dir>/standalone_synth/<config>/. Runs after the "
+                        "config's tile build (pass or fail). Pair with the normal "
+                        "tile build for the standalone-synth -> tile-synth -> "
+                        "tile-PnR correlation in correlation.csv. --fresh, "
+                        "--skip-existing and --clean-all apply to it too; --clean "
+                        "<steps> does not (tile step names).")
+    p.add_argument("--standalone-only", action="store_true",
+                   help="Like --standalone-synth but skip the tile builds entirely "
+                        "(e.g. to add the standalone baseline to a finished tile "
+                        "sweep in the same --out-dir). With --make, targets the "
+                        "standalone workspaces instead of the tile ones.")
+    p.add_argument("--lake-dir", metavar="DIR",
+                   default=os.environ.get("LAKE_PATH", str(GARNET_DIR.parent / "lake")),
+                   help="Lake checkout providing pd/thesis and "
+                        "tests/test_spec/thesis_sweep.py for --standalone-synth "
+                        "(default: $LAKE_PATH, else the garnet checkout's sibling "
+                        "lake, as gen_rtl.sh does: %(default)s).")
+    p.add_argument("--standalone-clock-ps", type=float, default=None, metavar="PS",
+                   help="Clock period for the standalone synth, in ps (the lake "
+                        "graph's unit). Default: the tile's own clock_period read "
+                        "from <--graph>/construct.py (ns, x1000) so both syntheses "
+                        "target the same frequency.")
+    p.add_argument("--correlate-only", action="store_true",
+                   help="Rebuild <out-dir>/correlation.csv from existing "
+                        "workspaces (tile + standalone) and exit; no build. "
+                        "Selection works like --zip-only.")
     return p
 
 
@@ -289,6 +344,8 @@ def main(argv=None):
 
     if args.rtl_only:
         args.stop_after = "rtl"
+    if args.standalone_only:
+        args.standalone_synth = True
 
     configs = _collect_configs(args)
     if not configs:
@@ -303,15 +360,26 @@ def main(argv=None):
     if args.make:
         return _run_make_passthrough(configs, args)
 
-    if args.zip_only:
+    if args.zip_only or args.correlate_only:
         # Only narrow to the selection when the user actually made one; otherwise
-        # archive every workspace in --out-dir (it may hold --extra-specs configs
+        # cover every workspace in --out-dir (it may hold --extra-specs configs
         # from the earlier run that are not in today's default list).
+        out_dir = Path(args.out_dir).resolve()
         selected = args.preset or args.only or args.skip
         names = {_config_name(c) for c in configs} if selected else None
-        return 0 if _zip_results(Path(args.out_dir).resolve(), names, args) else 1
+        if not out_dir.is_dir():
+            print(f"*** ERROR: no results dir: {out_dir}", file=sys.stderr,
+                  flush=True)
+            return 1
+        if not args.dry_run:
+            _write_correlation(out_dir, _discover_configs(out_dir, names))
+        if args.correlate_only and not args.zip_only:
+            return 0
+        return 0 if _zip_results(out_dir, names, args) else 1
 
     _preflight(args)
+    if args.standalone_synth:
+        _preflight_standalone(args)
 
     out_dir = Path(args.out_dir).resolve()
     if out_dir == GARNET_DIR or GARNET_DIR in out_dir.parents:
@@ -330,6 +398,11 @@ def main(argv=None):
     print(f"garnet:   {GARNET_DIR}", flush=True)
     print(f"graph:    {args.graph}", flush=True)
     print(f"out_dir:  {out_dir}", flush=True)
+    if args.standalone_synth:
+        print(f"lake:     {Path(args.lake_dir).resolve()}  (standalone synth @ "
+              f"{args.standalone_clock_ps:g} ps"
+              f"{', tile builds skipped' if args.standalone_only else ''})",
+              flush=True)
     print(f"Sweeping {len(configs)} spec point(s).", flush=True)
 
     rows = []
@@ -343,7 +416,7 @@ def main(argv=None):
         if row is None:
             return
         with results_lock:
-            if row["status"] == "FAIL":
+            if "FAIL" in (row["status"], row["standalone_status"]):
                 failures += 1
             rows.append(row)
             _write_results(results_csv, rows)
@@ -367,10 +440,62 @@ def main(argv=None):
 
     print(f"\nDone: {len(rows) - failures} ok, {failures} failed. "
           f"Results: {results_csv}", flush=True)
+    # Every workspace in out_dir, not just this run's configs, so a partial
+    # re-run (--only, --standalone-only) doesn't drop rows for the others.
+    _write_correlation(out_dir, _discover_configs(out_dir, None))
     zip_ok = True
     if args.zip:
         zip_ok = _zip_results(out_dir, {_config_name(c) for c in configs}, args)
     return 1 if failures or not zip_ok else 0
+
+
+def _tile_clock_ps(graph):
+    """The tile graph's clock_period (ns, per Tile_MemCore's `set_units -time
+    ns` constraints) as ps, or None if construct.py doesn't spell it out."""
+    try:
+        text = (Path(graph) / "construct.py").read_text()
+    except OSError:
+        return None
+    m = re.search(r"['\"]clock_period['\"]\s*:\s*([0-9.]+)", text)
+    if not m:
+        return None
+    ps = round(float(m.group(1)) * 1000, 3)
+    return int(ps) if ps.is_integer() else ps
+
+
+def _preflight_standalone(args):
+    """Resolve the standalone clock and check the lake side exists."""
+    lake = Path(args.lake_dir).resolve()
+    for rel in ("pd/thesis/.mflowgen.yml", "tests/test_spec/thesis_sweep.py"):
+        if not (lake / rel).is_file():
+            raise SystemExit(
+                f"*** ERROR: --standalone-synth needs {lake / rel}\n"
+                "    Point --lake-dir (or $LAKE_PATH) at a lake THESIS checkout.")
+
+    if args.standalone_clock_ps is None:
+        args.standalone_clock_ps = _tile_clock_ps(args.graph)
+        if args.standalone_clock_ps is None:
+            raise SystemExit(
+                f"*** ERROR: no 'clock_period' in {args.graph}/construct.py to "
+                "match; pass --standalone-clock-ps explicitly.")
+
+    # The lake graph's construct imports lake, and the rtl step runs
+    # thesis_sweep.py with this interpreter -- both must see THIS lake, or the
+    # standalone RTL silently comes from some other checkout.
+    proc = subprocess.run(
+        [sys.executable, "-c",
+         "import lake, os; print(os.path.dirname(os.path.dirname("
+         "os.path.abspath(lake.__file__))))"],
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    if proc.returncode != 0:
+        raise SystemExit(f"*** ERROR: `import lake` fails under {sys.executable}; "
+                         f"pip install -e {lake}")
+    imported = Path(proc.stdout.strip()).resolve()
+    if imported != lake:
+        print(f"*** WARNING: this Python imports lake from {imported}, not "
+              f"--lake-dir {lake}.\n    The standalone RTL would be generated by "
+              "that lake's code; pip install -e the right checkout.",
+              file=sys.stderr, flush=True)
 
 
 def _preflight(args):
@@ -498,15 +623,31 @@ def _config_name(cfg):
 # Per-config runner
 # ---------------------------------------------------------------------------
 def _process_config(idx, total, cfg, out_dir, args):
-    """Build one config; return its results row (or None for a dry-run).
+    """Build one config (tile, then standalone if asked); return its results
+    row (or None for a dry-run).
 
     Self-contained (catches its own build errors and returns a FAIL row) so it
     is safe to run either serially or concurrently via a thread pool.
     """
     name = _config_name(cfg)
     cfg_dir = out_dir / name
+    print(f"\n[{idx}/{total}] {name}", flush=True)
 
-    print(f"\n[{idx}/{total}] {name}\n        workspace: {cfg_dir}", flush=True)
+    if args.standalone_only:
+        row = None if args.dry_run else _row(name, cfg, cfg_dir, "SKIP",
+                                             "standalone-only", 0.0)
+    else:
+        row = _process_tile(name, cfg, cfg_dir, args)
+
+    if args.standalone_synth:
+        sa = _process_standalone(name, cfg, out_dir / STANDALONE_SUBDIR / name, args)
+        if row is not None:
+            row.update(sa)
+    return row
+
+
+def _process_tile(name, cfg, cfg_dir, args):
+    print(f"        workspace: {cfg_dir}", flush=True)
 
     # --fresh: completely remove the workspace before building (total wipe,
     # stronger than mflowgen's clean-all). Done before the skip-existing check
@@ -541,6 +682,123 @@ def _process_config(idx, total, cfg, out_dir, args):
         return _row(name, cfg, cfg_dir, "FAIL", str(e)[:200], 0.0)
 
 
+def _process_standalone(name, cfg, sa_dir, args):
+    """Standalone counterpart of _process_tile; returns the row's
+    standalone_* fields ({} for a dry-run)."""
+    print(f"        standalone workspace: {sa_dir}", flush=True)
+
+    if args.fresh and sa_dir.exists():
+        if args.dry_run:
+            print(f"        DRY-RUN: rm -rf {sa_dir}", flush=True)
+        else:
+            print(f"        FRESH: rm -rf {sa_dir}", flush=True)
+            shutil.rmtree(sa_dir)
+
+    done_flag = sa_dir / "done.flag"
+    if args.skip_existing and done_flag.exists():
+        print(f"        SKIP: {name} standalone (done.flag present)", flush=True)
+        return {"standalone_status": "SKIP", "standalone_notes": "already_done"}
+
+    def result(status, notes):
+        print(f"        {status}: {name} standalone ({notes})", flush=True)
+        return {"standalone_status": status, "standalone_notes": notes}
+
+    try:
+        duration = _run_standalone(cfg, sa_dir, args)
+        if args.dry_run:
+            return {}
+        done_flag.write_text("ok\n")
+        return result("PASS", f"{duration:.0f}s")
+    except subprocess.CalledProcessError as e:
+        return result("FAIL", f"exit_code={e.returncode}")
+    except Exception as e:  # noqa: BLE001 -- record and press on
+        return result("FAIL", str(e)[:200])
+
+
+def _standalone_graph_kwargs(cfg, args):
+    """--graph-kwargs for lake's pd/thesis graph, mirroring what lake's
+    ASPLOS_EXP/create_mflowgen_experiments.py passes, for this spec point.
+
+    The rtl step runs `python_command` (thesis_sweep.py, i.e. lake's
+    build_four_port_wide_fetch -- the standalone twin of the build_spec the
+    tile uses) and copies the RTL from test_dir. Defaults match build_spec's
+    so an omitted key means the same thing on both sides.
+    """
+    lake = Path(args.lake_dir).resolve()
+    sc = cfg.get("storage_capacity", 4096)
+    dw = cfg.get("data_width", 16)
+    fw = cfg.get("vec_width", 4)
+    dims = cfg.get("dims", 6)
+    inp = cfg.get("in_ports", 2)
+    outp = cfg.get("out_ports", 2)
+    dp = bool(cfg.get("dual_port", False))
+    vc = cfg.get("vec_capacity", 2)
+
+    cmd = [sys.executable, str(lake / "tests/test_spec/thesis_sweep.py"),
+           "--storage_capacity", sc, "--data_width", dw, "--fetch_width", fw,
+           "--dimensionality", dims, "--in_ports", inp, "--out_ports", outp,
+           "--vec_capacity", vc, "--clock_count_width", 64,
+           "--outdir", STANDALONE_TEST_DIR, "--physical"]
+    if dp:
+        cmd.append("--dual_port")
+    for key in ("max_extent", "max_sequence_width"):
+        if cfg.get(key) is not None:
+            cmd += [f"--{key}", cfg[key]]
+
+    return {
+        "clock_period": args.standalone_clock_ps,
+        "storage_capacity": sc,
+        "data_width": dw,
+        "fetch_width": fw,
+        "dimensionality": dims,
+        "in_ports": inp,
+        "out_ports": outp,
+        "dual_port": dp,
+        "vec_capacity": vc,
+        # Quoted so the rtl step's `$python_command` stays one exported string.
+        "python_command": '"' + " ".join(str(c) for c in cmd) + '"',
+        "test_dir": STANDALONE_TEST_DIR,
+    }
+
+
+def _run_standalone(cfg, sa_dir, args):
+    t0 = time.time()
+    design = Path(args.lake_dir).resolve() / "pd" / "thesis"
+    run_cmd = ["mflowgen", "run", "--design", str(design),
+               "--graph-kwargs", str(_standalone_graph_kwargs(cfg, args))]
+    make_cmd = ["make", STANDALONE_TARGET]
+    if args.parallel_jobs > 0:
+        make_cmd.insert(1, f"-j{args.parallel_jobs}")
+    # Only clean-all carries over: --clean names tile-graph steps.
+    clean_cmd = ["make", "clean-all"] if args.clean_all and not args.fresh else []
+
+    if args.dry_run:
+        print(f"        DRY-RUN cmd: {' '.join(run_cmd)}", flush=True)
+        if clean_cmd:
+            print(f"        DRY-RUN cmd: {' '.join(clean_cmd)}", flush=True)
+        print(f"        DRY-RUN cmd: {' '.join(make_cmd)}", flush=True)
+        return 0.0
+
+    def write_spec():
+        # Provenance, and what _discover_configs keys on (so even a workspace
+        # whose `mflowgen run` failed gets correlated/zipped).
+        with open(sa_dir / "spec_config.json", "w") as f:
+            json.dump(cfg, f, indent=2, sort_keys=True)
+
+    sa_dir.mkdir(parents=True, exist_ok=True)
+    write_spec()
+    env = os.environ.copy()
+    _sh(run_cmd, cwd=sa_dir, env=env, log=sa_dir / "mflowgen_run.log")
+    if clean_cmd:
+        _sh(clean_cmd, cwd=sa_dir, env=env, log=sa_dir / "make_clean.log")
+        write_spec()  # clean-all deletes loose files in the workspace
+
+    _check_step_exists(STANDALONE_TARGET, sa_dir, env)
+    _sh(make_cmd, cwd=sa_dir, env=env, log=sa_dir / "make.log")
+    _collect_artifacts(sa_dir)
+    return time.time() - t0
+
+
 def _run_make_passthrough(configs, args):
     """Run `make <targets>` in each selected workspace and exit (no build).
 
@@ -553,6 +811,8 @@ def _run_make_passthrough(configs, args):
     """
     targets = args.make.replace(",", " ").split()
     out_dir = Path(args.out_dir).resolve()
+    if args.standalone_only:
+        out_dir = out_dir / STANDALONE_SUBDIR
     env = os.environ.copy()
     rc = 0
     for cfg in configs:
@@ -731,6 +991,9 @@ ARTIFACT_GLOBS = [
     "*-cadence-innovus-signoff/reports/*.summary",
     "*-synopsys-pt-timing-signoff/reports/*.rpt",
     "*-cadence-genus-synthesis/reports/*.rpt",
+    # Genus's write_snapshot -tag final: final_{area,gates,qor,time}.rpt --
+    # the synth area/QoR numbers (_write_correlation parses these).
+    "*-cadence-genus-synthesis/results_syn/final*.rpt",
     # post-{rtl,synth,pnr}-power steps (common/tile-post-*-power): per-tile
     # power.hier copies land in outputs/reports/<tile_id>.hier.
     "*-post-*-power/outputs/reports/*",
@@ -774,35 +1037,28 @@ def _zip_results(out_dir, names, args):
     """Zip the sweep results under out_dir; return True on success.
 
     names: config names to include, or None for every workspace found in
-    out_dir (any subdir holding a spec_config.json). Files are pulled straight
-    from the workspaces (not from artifacts/), so configs that failed partway
-    still contribute whatever reports/logs they got to. Paths inside the zip
-    mirror the workspace layout under a single top-level dir named after the
-    zip, so unpacking several archives side by side does not collide.
+    out_dir (see _discover_configs; covers both the tile workspace and its
+    standalone_synth/ twin). Files are pulled straight from the workspaces
+    (not from artifacts/), so configs that failed partway still contribute
+    whatever reports/logs they got to. Paths inside the zip mirror the
+    workspace layout under a single top-level dir named after the zip, so
+    unpacking several archives side by side does not collide.
     """
     if not out_dir.is_dir():
         print(f"*** ERROR: no results dir to zip: {out_dir}", file=sys.stderr,
               flush=True)
         return False
 
-    found = sorted(d.name for d in out_dir.iterdir()
-                   if (d / "spec_config.json").is_file())
-    if names is not None:
-        missing = sorted(names - set(found))
-        if missing:
-            print(f"*** WARNING: no workspace in {out_dir} for: "
-                  f"{', '.join(missing)}", file=sys.stderr, flush=True)
-        found = [n for n in found if n in names]
-
+    found = _discover_configs(out_dir, names)
     files = sorted(out_dir.glob("*.csv"))
     for name in found:
-        cfg_dir = out_dir / name
-        seen = set()
-        for pat in ZIP_EXTRA_GLOBS + ARTIFACT_GLOBS:
-            for src in cfg_dir.glob(pat):
-                if src.is_file() and src not in seen:
-                    seen.add(src)
-                    files.append(src)
+        for cfg_dir in (out_dir / name, out_dir / STANDALONE_SUBDIR / name):
+            seen = set()
+            for pat in ZIP_EXTRA_GLOBS + ARTIFACT_GLOBS:
+                for src in cfg_dir.glob(pat):
+                    if src.is_file() and src not in seen:
+                        seen.add(src)
+                        files.append(src)
 
     zip_path = _default_zip_path(out_dir, args)
     root = zip_path.stem
@@ -843,6 +1099,178 @@ def _zip_results(out_dir, names, args):
     return True
 
 
+def _discover_configs(out_dir, names):
+    """Config names with a workspace (tile or standalone) under out_dir, i.e.
+    a spec_config.json in <out_dir>/<name>/ or <out_dir>/standalone_synth/
+    <name>/. names: restrict to these (warning about any with no workspace),
+    or None for all."""
+    found = set()
+    for parent in (out_dir, out_dir / STANDALONE_SUBDIR):
+        if parent.is_dir():
+            found |= {d.name for d in parent.iterdir()
+                      if (d / "spec_config.json").is_file()}
+    if names is not None:
+        missing = sorted(set(names) - found)
+        if missing:
+            print(f"*** WARNING: no workspace in {out_dir} for: "
+                  f"{', '.join(missing)}", file=sys.stderr, flush=True)
+        found &= set(names)
+    return sorted(found)
+
+
+# ---------------------------------------------------------------------------
+# Correlation: standalone synth -> tile synth -> tile PnR
+# ---------------------------------------------------------------------------
+# Report parsing is fail-soft: a missing/unparseable report is a blank cell,
+# never an error, so correlation.csv can be regenerated mid-sweep. Areas are
+# um^2 as the tools report them.
+#
+# SRAM is split out because the two flows need not pick the same macros: the
+# standalone lake graph maps the whole word onto ONE GF_Tech_Map macro, while
+# the tile's CoreCombiner prefers 2 half-width columns (lake CLAUDE.md 5.1).
+# Compare the *_logic_area columns for the controller/wrapper cost.
+SRAM_CELL_PREFIX = "IN12LP_"   # GF12 SRAM compiler macros (lake tech_maps.py)
+
+
+def _first(ws, pattern):
+    hits = sorted(ws.glob(pattern))
+    return hits[0] if hits else None
+
+
+def _read_lines(path):
+    if path is None:
+        return []
+    try:
+        return path.read_text(errors="replace").splitlines()
+    except OSError:
+        return []
+
+
+def _nums(line):
+    out = []
+    for tok in line.split():
+        try:
+            out.append(float(tok))
+        except ValueError:
+            pass
+    return out
+
+
+def _top_row_nums(path):
+    """Numeric fields of the top-design row of a hierarchical area report:
+    the first non-blank line after the first ----- rule. Works for Genus
+    final_area.rpt ([cells, cell_area, net_area, total_area]) and Innovus
+    signoff.area.rpt ([insts, total, buf, inv, comb, flop, latch, cg, macro,
+    physical]) regardless of whether a Module column is populated."""
+    lines = _read_lines(path)
+    for i, line in enumerate(lines):
+        if re.match(r"^\s*-{10,}\s*$", line):
+            for nxt in lines[i + 1:]:
+                if nxt.strip():
+                    return _nums(nxt)
+            break
+    return []
+
+
+def _genus_sram(gates_rpt):
+    """(total SRAM macro area, 'name x count; ...') from Genus final_gates.rpt
+    rows `<cell> <instances> <area> <library>` for SRAM_CELL_PREFIX cells."""
+    area, macros = 0.0, []
+    for line in _read_lines(gates_rpt):
+        toks = line.split()
+        if not toks or not toks[0].startswith(SRAM_CELL_PREFIX):
+            continue
+        n = _nums(line)
+        if len(n) >= 2:
+            area += n[1]
+            macros.append(f"{toks[0]} x{n[0]:g}")
+    return (area if macros else None), "; ".join(macros)
+
+
+def _genus_wns(qor_rpt):
+    """Worst Critical Path Slack (ps) over the cost-group table of Genus
+    final_qor.rpt, i.e. the rows between the two ----- rules under the
+    `Cost / Critical / Violating` header, like `ideal_clock 495.3 0.0 0`.
+    Rows without a numeric slack ('default  No paths') are skipped."""
+    slacks, in_table, rules = [], False, 0
+    for line in _read_lines(qor_rpt):
+        if not in_table:
+            in_table = "Critical" in line and "Violating" in line
+            continue
+        if re.match(r"^\s*-{10,}\s*$", line):
+            rules += 1
+            if rules == 2:
+                break
+            continue
+        toks = line.split()
+        if rules == 1 and len(toks) >= 2:
+            try:
+                slacks.append(float(toks[1]))
+            except ValueError:
+                pass
+    return min(slacks) if slacks else None
+
+
+def _pt_setup_wns(ws):
+    """Worst setup slack from PrimeTime signoff (<design>.timing.setup.rpt),
+    in library time units (ns for gf12)."""
+    slacks = []
+    for rpt in ws.glob("*-synopsys-pt-timing-signoff/reports/*.timing.setup.rpt"):
+        for line in _read_lines(rpt):
+            m = re.match(r"^\s*slack\s*\([^)]*\)\s+(-?\d+(?:\.\d+)?)", line)
+            if m:
+                slacks.append(float(m.group(1)))
+    return min(slacks) if slacks else None
+
+
+def _synth_metrics(ws, prefix):
+    area_n = _top_row_nums(_first(ws, "*-cadence-genus-synthesis/results_syn/final_area.rpt"))
+    cell = area_n[1] if len(area_n) >= 4 else None
+    total = area_n[3] if len(area_n) >= 4 else None
+    sram, macros = _genus_sram(_first(ws, "*-cadence-genus-synthesis/results_syn/final_gates.rpt"))
+    return {
+        f"{prefix}_cell_area": cell,
+        f"{prefix}_total_area": total,
+        f"{prefix}_sram_area": sram,
+        f"{prefix}_logic_area": (cell - sram) if None not in (cell, sram) else None,
+        f"{prefix}_wns_ps": _genus_wns(_first(ws, "*-cadence-genus-synthesis/results_syn/final_qor.rpt")),
+        f"{prefix}_sram_macros": macros,
+    }
+
+
+def _pnr_metrics(ws):
+    n = _top_row_nums(_first(ws, "*-cadence-innovus-signoff/reports/signoff.area.rpt"))
+    total = n[1] if len(n) >= 2 else None
+    macro = n[8] if len(n) >= 10 else None
+    return {
+        "tile_pnr_total_area": total,
+        "tile_pnr_macro_area": macro,
+        "tile_pnr_logic_area": (total - macro) if None not in (total, macro) else None,
+        "tile_pnr_setup_wns_ns": _pt_setup_wns(ws),
+    }
+
+
+def _write_correlation(out_dir, names):
+    """Write <out_dir>/correlation.csv: per config, standalone synth vs tile
+    synth vs tile PnR area/slack, pulled from whichever workspaces exist."""
+    rows = []
+    for name in names:
+        row = {"config_name": name}
+        row.update(_synth_metrics(out_dir / STANDALONE_SUBDIR / name, "standalone_synth"))
+        row.update(_synth_metrics(out_dir / name, "tile_synth"))
+        row.update(_pnr_metrics(out_dir / name))
+        rows.append({k: (f"{v:.3f}" if isinstance(v, float) else v)
+                     for k, v in row.items()})
+    if not rows:
+        return
+    path = out_dir / "correlation.csv"
+    with open(path, "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=list(rows[0]))
+        writer.writeheader()
+        writer.writerows(rows)
+    print(f"Correlation: {path}", flush=True)
+
+
 def _sh(cmd, cwd, env, log):
     """Run a command tee-ing to a log file; raise on non-zero exit."""
     log = Path(log)
@@ -876,6 +1304,9 @@ def _row(name, cfg, cfg_dir, status, notes, duration_s):
         "duration_s": f"{duration_s:.1f}",
         "workspace": str(cfg_dir),
         "notes": notes,
+        # Filled in by _process_standalone under --standalone-synth.
+        "standalone_status": "",
+        "standalone_notes": "",
     }
 
 

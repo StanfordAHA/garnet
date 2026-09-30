@@ -48,6 +48,51 @@ Key flags:
   `results.csv` + per-config JSON/logs/`done.flag`/per-step `mflowgen-run.log`
   + `ARTIFACT_GLOBS` reports, pulled straight from the workspaces (not
   `artifacts/`) so failed configs still contribute. No workspace DBs.
+  Genus area/QoR live in `results_syn/final_*.rpt`, NOT `reports/`.
+- `--standalone-synth` / `--standalone-only` / `--correlate-only` —
+  standalone-spec baseline for the standalone-synth → tile-synth → tile-PnR
+  correlation. See "Standalone spec synth + correlation" below.
+
+### Standalone spec synth + correlation
+
+`--standalone-synth` also builds each spec point through **lake's**
+`pd/thesis` graph (bare `lakespec` from `tests/test_spec/thesis_sweep.py`,
+no tile wrapper) up to `cadence-genus-synthesis`, in
+`<out-dir>/standalone_synth/<config>/` (sibling tree — a nested dir inside the
+tile workspace would be wiped by `make clean-all`). `--standalone-only` skips
+the tile builds (add the baseline to a finished sweep). Graph kwargs mirror
+lake's `ASPLOS_EXP/create_mflowgen_experiments.py`, but `python_command` calls
+`thesis_sweep.py` directly with `sys.executable`. Lake comes from `--lake-dir`
+(default `$LAKE_PATH`, else garnet's sibling `lake`) and must be the one this
+Python imports (preflight warns otherwise) — on the build machine that host
+lake needs `git pull` (gen_rtl's in-container THESIS checkout doesn't cover it).
+
+Every run (and `--correlate-only`/`--zip-only`) writes
+`<out-dir>/correlation.csv`: per config, `{standalone_synth,tile_synth}_
+{cell,total,sram,logic}_area` + `_wns_ps` + `_sram_macros` (Genus
+`final_{area,gates,qor}.rpt`), and `tile_pnr_{total,macro,logic}_area`
+(Innovus `signoff.area.rpt`) + `tile_pnr_setup_wns_ns` (PT
+`*.timing.setup.rpt`). Parsers are fail-soft (blank cell). Validated against
+lake's sample `signoff.area.rpt` and synthetic Genus/PT reports only — eyeball
+the first real CSV.
+
+Apples-to-apples caveats:
+- **Clock:** tile `clock_period` is ns (`set_units -time ns`, 1.1); lake's is
+  ps with no set_units. Standalone defaults to the tile's value ×1000 (1100 ps),
+  read from `<--graph>/construct.py`; override `--standalone-clock-ps`.
+- **SRAM macros differ:** standalone maps the full word onto ONE
+  `GF_Tech_Map` macro (e.g. `W01024B064`); the tile's CoreCombiner prefers 2
+  half-width columns (2× `W01024B032`). Compare `*_logic_area`, and check the
+  `*_sram_macros` columns.
+- **Storage placement:** `thesis_sweep` builds `remote_storage=False` (SRAM
+  inside `lakespec`); garnet's `build_spec` uses `remote_storage=True` (SRAM in
+  the MemoryTileBuilder wrapper, shared with StrgRAM + StencilValid). Tile synth
+  also includes the SB/CB interconnect.
+- **Lake graph needed fixes (2026-09-29):** `mflowgen run` on `lake/pd/thesis`
+  had been failing since the roundtrip nodes landed (`25a9c33b`):
+  `synopsys-vcs-sim-synth` lacked a `testbench.sv` input, and the two
+  `clockwork-roundtrip-sim-*` steps had unescaped `{`/`}` (mflowgen formats
+  commands — use `{{`/`}}`).
 - `--use-sim-sram` — behavioral SRAM instead of a hardened macro (for
   geometries with no matching physical macro).
 - `--cgra-power` (alias `--power`) — after the build, run the **pre-synth
