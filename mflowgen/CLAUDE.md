@@ -164,9 +164,11 @@ lake's sample `signoff.area.rpt` and synthetic Genus/PT reports only — eyeball
 the first real CSV.
 
 Apples-to-apples caveats:
-- **Clock:** tile `clock_period` is ns (`set_units -time ns`, 1.1); lake's is
-  ps with no set_units. Standalone defaults to the tile's value ×1000 (1100 ps),
-  read from `<--graph>/construct.py`; override `--standalone-clock-ps`.
+- **Clock:** tile `clock_period` is ns (`set_units -time ns`, 1.333 ≈ 750 MHz
+  as of 2026-09-30; sweeps before that ran at 1.1); lake's is ps with no
+  set_units. Standalone defaults to the tile's value ×1000 (1333 ps), read from
+  `<--graph>/construct.py`; override `--standalone-clock-ps`. The 1.1 ns PnR
+  sweep missed setup on all six `full` configs (In→Reg up to −128 ps).
 - **SRAM macros differ:** standalone maps the full word onto ONE
   `GF_Tech_Map` macro (e.g. `W01024B064`); the tile's CoreCombiner prefers 2
   half-width columns (2× `W01024B032`). Compare `*_logic_area`, and check the
