@@ -97,8 +97,11 @@ set_output_delay -clock ${clock_name} ${o_delay} [all_outputs]
 
 # Set timing on pass through clock
 # Set clock min delay and max delay
+# clk_out also gets o_delay from the all_outputs constraint above, so add it
+# back here (as Tile_PE does) to leave clock_max_delay for the feedthrough
+# itself. clk has no input delay (all_inputs -no_clocks), so no pt_i_delay.
 set clock_max_delay 0.05
-set_max_delay -to $pt_clk_out $clock_max_delay
+set_max_delay -to $pt_clk_out [expr ${clock_max_delay} + ${o_delay}]
 
 # Min and max delay a little more than our clock
 set min_w_in [expr ${clock_max_delay} + ${pt_i_delay} + ${o_delay}]

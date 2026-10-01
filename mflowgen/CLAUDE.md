@@ -232,6 +232,12 @@ Apples-to-apples caveats:
   a 1-bit scalar `mode` (or none), so `set_case_analysis … mode[0]` aborts
   Genus with TUI-61. `_obj_exists` detects `mode[0]` once and skips the
   case-analysis when absent.
+- **`Tile_MemCore/constraints/common.tcl`** — `clk_out` max delay. The
+  blanket `set_output_delay … [all_outputs]` (0.1×period) also lands on
+  `clk_out`, so the old `set_max_delay -to $pt_clk_out 0.05` left a bare wire
+  at −60 ps in every Genus run at 1.1 ns (and worse at slower clocks). The max
+  delay is now `clock_max_delay + o_delay`, matching Tile_PE, so the 50 ps
+  budget is the feedthrough's own (2026-09-30).
 - **`Tile_MemCore/custom-init/outputs/floorplan.tcl`** — die-grow for tall
   spec macros. `core_height` is FIXED (tile must abut PE tiles), but a
   low-mux spec SRAM can be taller than that → macro at negative y →
