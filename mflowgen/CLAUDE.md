@@ -37,9 +37,11 @@ Key flags:
   `spec_config.json` because util_onyx passes that file to
   `build_spec(**spec)`; it lives in `sweep_meta.json` instead.
 - `--pnr-set NAMES` / `--synth-stop` — per-config stop target: configs in
-  `--pnr-set` (names and/or presets) build to `--stop-after` and are
-  scheduled first; the rest stop at `--synth-stop` (default
-  `cadence-genus-synthesis`). Names are checked against spec-set × modes
+  `--pnr-set` (names and/or presets) build to `--stop-after` in their own
+  pool of `--pnr-jobs` slots (default 1), concurrently with the
+  `--config-jobs` pool of synth-only configs (so PnR neither takes the
+  synth slots nor delays the synths; load = config_jobs + pnr_jobs); the
+  rest stop at `--synth-stop` (default `cadence-genus-synthesis`). Names are checked against spec-set × modes
   before `--only/--skip/--preset`, so narrowed re-runs keep the same flag.
   `done.flag` records the targets (`ok <targets>`), so `--skip-existing`
   resumes a synth-only workspace that was later moved into `--pnr-set`.
@@ -84,7 +86,7 @@ spec inside the MemTile, static + RV, Genus synth for all, full PnR for the
 well enough to project PnR for the other 184 without building them:
 
     ./mflowgen/sweep_specs.py --spec-set thesis --runtime-mode static,rv \
-        --pnr-set full12 --parallel-jobs 6 --config-jobs 4 --zip \
+        --pnr-set full12 --config-jobs 4 --pnr-jobs 2 --zip \
         --out-dir /sim/mstrange/BUILD_CGRA/sweep_out/tile_memcore_thesis
 
 `correlation.csv` gains `runtime_mode`, `targets` and, per row,

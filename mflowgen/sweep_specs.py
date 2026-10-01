@@ -69,7 +69,7 @@ Examples:
     # Whole thesis set in the tile, static + RV: synth for all, PnR for the
     # 12 anchors; correlation.csv + correlation_fit.csv project the rest
     ./mflowgen/sweep_specs.py --spec-set thesis --runtime-mode static,rv \\
-        --pnr-set full12 --parallel-jobs 6 --config-jobs 4 --zip
+        --pnr-set full12 --config-jobs 4 --pnr-jobs 2 --zip
 """
 
 from pathlib import Path
@@ -273,10 +273,19 @@ def build_argparser():
                    help="Comma-separated config names and/or preset names "
                         "(e.g. full12) that build to --stop-after; every other "
                         "selected config stops at --synth-stop. Unset: all "
-                        "configs build to --stop-after. Names must be in the "
-                        "selection. These configs are scheduled first.")
+                        "configs build to --stop-after. Names must exist in "
+                        "--spec-set x --runtime-mode. They build in their own "
+                        "--pnr-jobs pool.")
     p.add_argument("--synth-stop", default="cadence-genus-synthesis",
                    help="Stop target for configs NOT in --pnr-set "
+                        "(default: %(default)s).")
+    p.add_argument("--pnr-jobs", type=int, default=1, metavar="N",
+                   help="With --pnr-set: build up to N --pnr-set configs "
+                        "concurrently in their own pool, alongside the "
+                        "--config-jobs pool that runs the synth-only configs, so "
+                        "the long PnR builds neither take the synth slots nor "
+                        "make the synths wait. Total load is config_jobs + "
+                        "pnr_jobs builds. Ignored without --pnr-set "
                         "(default: %(default)s).")
     p.add_argument("--stop-after", default="cadence-innovus-signoff",
                    help="Step name or number to run up to via `make`. Must be a "
@@ -311,6 +320,8 @@ def build_argparser():
                         "(make -jN within a build); effective load is roughly "
                         "config_jobs x parallel_jobs. Mind RAM and Genus/Innovus "
                         "licenses -- e.g. 2 configs x -j6 is a common sweet spot. "
+                        "With --pnr-set this is the synth-only pool; the "
+                        "--pnr-set configs get --pnr-jobs. "
                         "Forced to 1 under --dry-run.")
     p.add_argument("--clean", default="",
                    help="Comma-separated step names/numbers to `make clean-<step>` "
@@ -551,16 +562,39 @@ def main(argv=None):
             rows.append(row)
             _write_results(results_csv, rows)
 
-    if n_jobs == 1:
-        for i, cfg in enumerate(configs, start=1):
+    # One pool, or with --pnr-set two concurrent ones: the --pnr-set configs
+    # (hours of PnR each) get their own --pnr-jobs slots so they neither
+    # occupy the synth slots nor hold back the synth-only configs.
+    numbered = list(enumerate(configs, start=1))
+    if args.pnr_names is None or args.dry_run:
+        pools = [("", numbered, n_jobs)]
+    else:
+        pools = [("PnR", [(i, c) for i, c in numbered
+                          if _config_name(c) in args.pnr_names],
+                  max(1, args.pnr_jobs)),
+                 ("synth-only", [(i, c) for i, c in numbered
+                                 if _config_name(c) not in args.pnr_names],
+                  n_jobs)]
+        pools = [p for p in pools if p[1]]
+
+    if len(pools) == 1 and pools[0][2] == 1:
+        for i, cfg in pools[0][1]:
             record(_process_config(i, total, cfg, out_dir, args))
     else:
-        print(f"Running up to {n_jobs} configs concurrently.", flush=True)
-        with concurrent.futures.ThreadPoolExecutor(max_workers=n_jobs) as ex:
+        print("Running up to " + " + ".join(
+            f"{w} {label + ' ' if label else ''}config(s)" for label, _, w in pools)
+            + " concurrently.", flush=True)
+        executors = [concurrent.futures.ThreadPoolExecutor(max_workers=w)
+                     for _, _, w in pools]
+        try:
             futs = [ex.submit(_process_config, i, total, cfg, out_dir, args)
-                    for i, cfg in enumerate(configs, start=1)]
+                    for ex, (_, group, _) in zip(executors, pools)
+                    for i, cfg in group]
             for fut in concurrent.futures.as_completed(futs):
                 record(fut.result())
+        finally:
+            for ex in executors:
+                ex.shutdown(wait=True)
 
     if args.dry_run:
         if args.zip:
