@@ -402,6 +402,10 @@ floorplan, `mode[0]` guard) apply — the pond is flops, no macro.
   `/aha/clockwork/CLAUDE.md` "Pond (regfile level)". Without a pond collateral,
   clockwork assumes the default 32-word / 4-level pond. The RV pond has input
   filter hardware by default (broadcast-banked weight ponds).
+- GOTCHA for private garnet trees: `garnet.py --verilog` writes the GLB / GLC /
+  matrix-unit headers under `$GARNET_HOME` (env default `/aha/garnet`, the shared
+  tree), not next to itself — pin `GARNET_HOME` to the private copy or the build
+  rewrites the shared headers other sessions simulate against.
 
 ## Build-machine note
 
