@@ -20,6 +20,18 @@ SpecMemoryController (so every build_spec kwarg -- ports, dual_port,
 vec_capacity, ... -- shapes the RTL), and derives the tile's SRAM
 mem_width = data_width * vec_width and mem_depth from storage_capacity.
 
+Spec sets (--spec-set): `default` is the 6 curated DEFAULT_SPEC_POINTS;
+`thesis` is every spec of the standalone thesis synthesis sweep (lake
+ASPLOS_EXP/all_experiments_thesis_v2.sh) plus those 6. Each spec is built
+once per runtime mode in --runtime-mode (static, rv, or both); RV configs
+get an `_rv` name suffix and select build_spec_rv in garnet.
+
+--pnr-set splits the stop target per config: the named configs build to
+--stop-after (signoff by default), every other config stops at --synth-stop
+(Genus synthesis). With the 12 PnR anchors (`full12` = the 6 static
+`full` points + their RV twins) correlation.csv fits tile PnR area against
+tile synth area and projects PnR area for the synth-only configs.
+
 With --standalone-synth, each spec point is ALSO synthesized on its own
 (lake's pd/thesis graph: the bare `lakespec` module from
 tests/test_spec/thesis_sweep.py, no tile wrapper) under
@@ -53,6 +65,11 @@ Examples:
 
     # Add standalone synth to an already-finished tile sweep
     ./mflowgen/sweep_specs.py --preset full --standalone-only --out-dir ...
+
+    # Whole thesis set in the tile, static + RV: synth for all, PnR for the
+    # 12 anchors; correlation.csv + correlation_fit.csv project the rest
+    ./mflowgen/sweep_specs.py --spec-set thesis --runtime-mode static,rv \\
+        --pnr-set full12 --parallel-jobs 6 --config-jobs 4 --zip
 """
 
 from pathlib import Path
@@ -145,6 +162,84 @@ PRESETS = {
         "fw4_dw16_sc8192_dp_in4_out4_vc2",
     ],
 }
+# RV twins of `full` (needs --runtime-mode rv or static,rv), and the 12
+# synth-vs-PnR correlation anchors: the static `full` points plus their twins.
+PRESETS["full_rv"] = [n + "_rv" for n in PRESETS["full"]]
+PRESETS["full12"] = PRESETS["full"] + PRESETS["full_rv"]
+
+# build_spec()/build_spec_rv() kwargs with their defaults (lake
+# spec/spec_memory_controller.py). An omitted key means the default on both
+# sides, so it doubles as the dedup key and the naming defaults.
+SPEC_DEFAULTS = dict(storage_capacity=4096, data_width=16, vec_width=4, dims=6,
+                     in_ports=2, out_ports=2, dual_port=False, vec_capacity=2,
+                     max_extent=None, max_sequence_width=None)
+
+# Config keys that drive the sweep, not the RTL. They are stripped before
+# spec_config.json is written: util_onyx passes that file to
+# build_spec(**spec), which would reject them.
+SWEEP_ONLY_KEYS = ("runtime_mode",)
+RUNTIME_MODES = ("static", "rv")
+
+
+def _thesis_spec_points():
+    """Every spec of the standalone thesis synthesis sweep, as build_spec
+    kwargs: a 1:1 mirror of lake's ASPLOS_EXP/all_experiments_thesis_v2.sh
+    (create_mflowgen_experiments.py grids, frequency/build_dir dropped).
+
+    aha's sweep_thesis_collateral.enumerate_thesis_configs() lists the same
+    grids but folds the max_sequence_width points together (they share
+    collateral). They do not share RTL -- it sizes the address generator's
+    stride registers -- so they stay separate here.
+    """
+    pts = []
+    # PORT_EXP
+    for dw in (8, 16, 32):
+        pts.append(dict(storage_capacity=8192, data_width=dw, vec_width=4,
+                        in_ports=2, out_ports=2))
+    for fw, vc, dw in [(fw, vc, dw) for fw in (2, 4, 8) for vc in (2, 4, 8)
+                       for dw in (8, 16)]:
+        pts.append(dict(storage_capacity=8192, data_width=dw, vec_width=fw,
+                        vec_capacity=vc, in_ports=2, out_ports=2))
+    for fw, vc in [(fw, vc) for fw in (2, 4) for vc in (2, 4, 8)]:
+        pts.append(dict(storage_capacity=8192, data_width=32, vec_width=fw,
+                        vec_capacity=vc, in_ports=2, out_ports=2))
+    for vc in (2, 4, 8):
+        pts.append(dict(storage_capacity=8192, data_width=64, vec_width=2,
+                        vec_capacity=vc, in_ports=2, out_ports=2))
+    # ITERATION_DOMAIN_EXP: dims x max_extent
+    for dims in range(1, 7):
+        for me in (64, 256, 1024, 4096):
+            pts.append(dict(storage_capacity=8192, data_width=16, vec_width=1,
+                            dims=dims, max_extent=me, in_ports=2, out_ports=2))
+    # AFFINE_PATTERN_GENERATOR_EXP: dims x max_sequence_width
+    for dims in range(1, 7):
+        for msw in (64, 256, 1024, 4096, 16384):
+            pts.append(dict(storage_capacity=8192, data_width=16, vec_width=1,
+                            dims=dims, max_sequence_width=msw,
+                            in_ports=2, out_ports=2))
+    # MEMORY_EXP: (fetch width, dual port, ports, capacities)
+    for fw, dp, ports, caps in (
+            (1, True, 1, (1024, 2048, 4096, 8192, 16384)),
+            (2, True, 2, (1024, 2048, 4096, 8192, 16384)),
+            (4, True, 4, (1024, 2048, 4096, 8192)),
+            (2, False, 1, (2048, 4096, 8192, 16384, 32768)),
+            (4, False, 2, (4096, 8192, 16384, 32768)),
+            (8, False, 4, (8192, 16384, 32768))):
+        for sc in caps:
+            pt = dict(storage_capacity=sc, data_width=16, vec_width=fw,
+                      in_ports=ports, out_ports=ports)
+            if dp:
+                pt["dual_port"] = True
+            pts.append(pt)
+    return pts
+
+
+# --spec-set choices. `thesis` keeps the curated 6 (first, so their dicts and
+# names win the dedup) so the `full`/`full12` PnR anchors are always in it.
+SPEC_SETS = {
+    "default": DEFAULT_SPEC_POINTS,
+    "thesis": DEFAULT_SPEC_POINTS + _thesis_spec_points(),
+}
 
 
 def build_argparser():
@@ -161,8 +256,28 @@ def build_argparser():
                    help="mflowgen graph directory. Tile_MemCore, tile_array "
                         "and full_chip all forward the lake-spec knobs down "
                         "to the memory-core RTL step (default: %(default)s).")
-    p.add_argument("--runtime-mode", choices=["static", "rv"], default="static",
-                   help="Lake runtime mode -> --lake-spec-mode (default: %(default)s).")
+    p.add_argument("--runtime-mode", default="static", metavar="MODES",
+                   help="Comma-separated lake runtime modes -> --lake-spec-mode: "
+                        "static, rv, or static,rv to build every spec in both. "
+                        "RV configs are named <config>_rv; specs build_spec_rv "
+                        "rejects (vec_width>1 with vec_capacity>2) are skipped "
+                        "for rv. A spec dict may pin its own 'runtime_mode' "
+                        "(--extra-specs). Default: %(default)s.")
+    p.add_argument("--spec-set", choices=sorted(SPEC_SETS), default="default",
+                   help="Built-in spec list: 'default' = the 6 curated "
+                        "DEFAULT_SPEC_POINTS; 'thesis' = every spec of the "
+                        "standalone thesis synthesis sweep (lake "
+                        "all_experiments_thesis_v2.sh) plus those 6. "
+                        "Default: %(default)s.")
+    p.add_argument("--pnr-set", default="", metavar="NAMES",
+                   help="Comma-separated config names and/or preset names "
+                        "(e.g. full12) that build to --stop-after; every other "
+                        "selected config stops at --synth-stop. Unset: all "
+                        "configs build to --stop-after. Names must be in the "
+                        "selection. These configs are scheduled first.")
+    p.add_argument("--synth-stop", default="cadence-genus-synthesis",
+                   help="Stop target for configs NOT in --pnr-set "
+                        "(default: %(default)s).")
     p.add_argument("--stop-after", default="cadence-innovus-signoff",
                    help="Step name or number to run up to via `make`. Must be a "
                         "real mflowgen step name (see `make list` in a "
@@ -355,15 +470,21 @@ def main(argv=None):
         args.stop_after = "rtl"
     if args.standalone_only:
         args.standalone_synth = True
+    args.modes = _parse_modes(args.runtime_mode)
 
     configs = _collect_configs(args)
     if not configs:
         print("No spec points selected; nothing to do.", flush=True)
         return 0
+    args.pnr_names = _resolve_pnr_set(args, configs)
+    if args.pnr_names is not None:
+        # The PnR builds take hours; start them first so they aren't the tail.
+        configs.sort(key=lambda c: _config_name(c) not in args.pnr_names)
 
     if args.list:
         for cfg in configs:
             print(_config_name(cfg))
+        _print_selection_summary(configs, args, file=sys.stderr)
         return 0
 
     if args.make:
@@ -412,7 +533,7 @@ def main(argv=None):
               f"{args.standalone_clock_ps:g} ps, RTL on {args.standalone_rtl}"
               f"{', tile builds skipped' if args.standalone_only else ''})",
               flush=True)
-    print(f"Sweeping {len(configs)} spec point(s).", flush=True)
+    _print_selection_summary(configs, args)
 
     rows = []
     failures = 0
@@ -575,8 +696,40 @@ def _preflight(args):
 # ---------------------------------------------------------------------------
 # Config selection
 # ---------------------------------------------------------------------------
+def _parse_modes(text):
+    modes = [m.strip() for m in text.split(",") if m.strip()]
+    bad = [m for m in modes if m not in RUNTIME_MODES]
+    if not modes or bad:
+        raise SystemExit(f"*** ERROR: --runtime-mode takes a comma list of "
+                         f"{'/'.join(RUNTIME_MODES)}, got '{text}'")
+    return list(dict.fromkeys(modes))
+
+
+def _mode(cfg):
+    return cfg.get("runtime_mode", "static")
+
+
+def _spec_key(spec):
+    """Hardware identity of a spec: its build_spec kwargs, defaults filled."""
+    return tuple(spec.get(k, v) for k, v in SPEC_DEFAULTS.items())
+
+
+def _spec_kwargs(cfg):
+    """The build_spec kwargs of a config, i.e. what goes in spec_config.json."""
+    return {k: v for k, v in cfg.items() if k not in SWEEP_ONLY_KEYS}
+
+
+def _unsupported_reason(spec, mode):
+    """Why `mode` can't build this spec (None if it can). Mirrors the check
+    at the top of lake's build_spec_rv, which raises."""
+    if (mode == "rv" and spec.get("vec_width", 4) > 1
+            and spec.get("vec_capacity", 2) > 2):
+        return "build_spec_rv supports vec_capacity <= 2 for vec_width > 1"
+    return None
+
+
 def _collect_configs(args):
-    configs = [] if args.replace else list(DEFAULT_SPEC_POINTS)
+    specs = [] if args.replace else list(SPEC_SETS[args.spec_set])
 
     if args.extra_specs:
         with open(args.extra_specs) as f:
@@ -584,7 +737,30 @@ def _collect_configs(args):
         if not isinstance(payload, list):
             raise SystemExit(f"*** ERROR: --extra-specs must be a JSON list, "
                              f"got {type(payload).__name__}")
-        configs.extend(payload)
+        specs.extend(payload)
+
+    # One config per (spec, mode). A spec that pins runtime_mode keeps it.
+    configs, seen_specs = [], set()
+    args.skipped_rv = []
+    for spec in specs:
+        pinned = spec.get("runtime_mode")
+        if pinned is not None and pinned not in RUNTIME_MODES:
+            raise SystemExit(f"*** ERROR: spec {spec} has runtime_mode "
+                             f"'{pinned}'; expected one of {RUNTIME_MODES}")
+        for mode in ([pinned] if pinned else args.modes):
+            key = (_spec_key(spec), mode)
+            if key in seen_specs:
+                continue  # same hardware listed twice (e.g. default + thesis)
+            seen_specs.add(key)
+            cfg = dict(spec, runtime_mode=mode)
+            reason = _unsupported_reason(spec, mode)
+            if reason:
+                args.skipped_rv.append((_config_name(cfg), reason))
+                continue
+            configs.append(cfg)
+    # Before --preset/--only/--skip narrow it: --pnr-set is checked against
+    # this, so a narrowed re-run can keep the same --pnr-set.
+    args.all_names = {_config_name(c) for c in configs}
 
     if args.preset:
         want = PRESETS[args.preset]
@@ -594,7 +770,8 @@ def _collect_configs(args):
             raise SystemExit(
                 f"*** ERROR: preset '{args.preset}' names configs not in the spec "
                 f"list: {', '.join(missing)}\n"
-                f"    The preset is stale -- update PRESETS in sweep_specs.py.")
+                f"    RV names need --runtime-mode rv (or static,rv); otherwise "
+                f"the preset is stale -- update PRESETS in sweep_specs.py.")
         preset_names = set(want)
         configs = [c for c in configs if _config_name(c) in preset_names]
 
@@ -621,8 +798,10 @@ def _collect_configs(args):
 
 
 def _config_name(cfg):
-    """Stable name per spec point. Matches the naming used by the collateral
-    sweeps in aha, so per-config dirs line up across both."""
+    """Stable name per config. Matches the naming used by the collateral
+    sweeps in aha (so per-config dirs line up across both), plus `_msw<N>`
+    for max_sequence_width (aha folds those; their RTL differs) and `_rv`
+    for runtime mode rv. Static names are unchanged from earlier sweeps."""
     fw = cfg.get("vec_width", 4)
     dw = cfg.get("data_width", 16)
     sc = cfg.get("storage_capacity", 4096)
@@ -632,6 +811,7 @@ def _config_name(cfg):
     vc = cfg.get("vec_capacity", 2)
     dims = cfg.get("dims", 6)
     me = cfg.get("max_extent")
+    msw = cfg.get("max_sequence_width")
 
     parts = [f"fw{fw}_dw{dw}_sc{sc}"]
     parts.append("dp" if dp else "sp")
@@ -642,7 +822,60 @@ def _config_name(cfg):
         parts.append(f"dim{dims}")
     if me is not None:
         parts.append(f"me{me}")
+    if msw is not None:
+        parts.append(f"msw{msw}")
+    if _mode(cfg) == "rv":
+        parts.append("rv")
     return "_".join(parts)
+
+
+def _resolve_pnr_set(args, configs):
+    """--pnr-set -> set of config names (None when unset). Each item is a
+    preset name or a config name, and must exist in the spec set x runtime
+    modes (before --preset/--only/--skip, which may narrow the selection to
+    only some or none of them)."""
+    items = [s.strip() for s in args.pnr_set.split(",") if s.strip()]
+    if not items:
+        return None
+    names = set()
+    for item in items:
+        names.update(PRESETS.get(item, [item]))
+    missing = sorted(names - args.all_names)
+    if missing:
+        raise SystemExit(
+            f"*** ERROR: --pnr-set names configs not in --spec-set "
+            f"'{args.spec_set}' x --runtime-mode '{args.runtime_mode}': "
+            f"{', '.join(missing)}\n    Use --list to see available names.")
+    return names
+
+
+def _stop_target(cfg, args):
+    """make target for one config: --stop-after, or --synth-stop for configs
+    outside --pnr-set. --rtl-only applies to all."""
+    if args.rtl_only or args.pnr_names is None:
+        return str(args.stop_after)
+    if _config_name(cfg) in args.pnr_names:
+        return str(args.stop_after)
+    return str(args.synth_stop)
+
+
+def _print_selection_summary(configs, args, file=None):
+    file = file or sys.stdout
+    by_mode = {m: sum(1 for c in configs if _mode(c) == m) for m in RUNTIME_MODES}
+    modes = ", ".join(f"{n} {m}" for m, n in by_mode.items() if n)
+    print(f"Sweeping {len(configs)} config(s) ({modes}) from spec set "
+          f"'{args.spec_set}'.", file=file, flush=True)
+    targets = {}
+    for c in configs:
+        t = " ".join(_build_targets(c, args))
+        targets[t] = targets.get(t, 0) + 1
+    for t, n in targets.items():
+        print(f"  {n:4d} -> {t}", file=file, flush=True)
+    reasons = {}
+    for _, reason in args.skipped_rv:
+        reasons[reason] = reasons.get(reason, 0) + 1
+    for reason, n in reasons.items():
+        print(f"  {n:4d} rv config(s) skipped: {reason}", file=file, flush=True)
 
 
 # ---------------------------------------------------------------------------
@@ -661,12 +894,22 @@ def _process_config(idx, total, cfg, out_dir, args):
 
     if args.standalone_only:
         row = None if args.dry_run else _row(name, cfg, cfg_dir, "SKIP",
-                                             "standalone-only", 0.0)
+                                             "standalone-only", 0.0, "")
     else:
         row = _process_tile(name, cfg, cfg_dir, args)
 
     if args.standalone_synth:
-        sa = _process_standalone(name, cfg, out_dir / STANDALONE_SUBDIR / name, args)
+        if _mode(cfg) == "rv":
+            # lake's standalone builder (thesis_sweep.py's
+            # build_four_port_wide_fetch) forces opt_rv=False, so it can only
+            # build the static spec. Don't file static RTL under an _rv name.
+            print(f"        SKIP: {name} standalone (no standalone RV build)",
+                  flush=True)
+            sa = {"standalone_status": "SKIP",
+                  "standalone_notes": "no standalone RV build"}
+        else:
+            sa = _process_standalone(name, cfg, out_dir / STANDALONE_SUBDIR / name,
+                                     args)
         if row is not None:
             row.update(sa)
     return row
@@ -688,24 +931,38 @@ def _process_tile(name, cfg, cfg_dir, args):
     if not args.dry_run:
         cfg_dir.mkdir(parents=True, exist_ok=True)
     done_flag = cfg_dir / "done.flag"
+    targets = " ".join(_build_targets(cfg, args))
 
-    if args.skip_existing and done_flag.exists():
+    if args.skip_existing and _done_for(done_flag, targets):
         print(f"        SKIP: {name} (done.flag present)", flush=True)
-        return _row(name, cfg, cfg_dir, "SKIP", "already_done", 0.0)
+        return _row(name, cfg, cfg_dir, "SKIP", "already_done", 0.0, targets)
 
     try:
         duration = _run_one(cfg, cfg_dir, args)
         if args.dry_run:
             return None
-        done_flag.write_text("ok\n")
+        done_flag.write_text(f"ok {targets}\n")
         print(f"        PASS: {name} ({duration:.0f}s)", flush=True)
-        return _row(name, cfg, cfg_dir, "PASS", "", duration)
+        return _row(name, cfg, cfg_dir, "PASS", "", duration, targets)
     except subprocess.CalledProcessError as e:
         print(f"        FAIL: {name} (exit {e.returncode})", flush=True)
-        return _row(name, cfg, cfg_dir, "FAIL", f"exit_code={e.returncode}", 0.0)
+        return _row(name, cfg, cfg_dir, "FAIL", f"exit_code={e.returncode}", 0.0,
+                    targets)
     except Exception as e:  # noqa: BLE001 -- record and press on
         print(f"        FAIL: {name} ({str(e)[:120]})", flush=True)
-        return _row(name, cfg, cfg_dir, "FAIL", str(e)[:200], 0.0)
+        return _row(name, cfg, cfg_dir, "FAIL", str(e)[:200], 0.0, targets)
+
+
+def _done_for(done_flag, targets):
+    """done.flag reads `ok <targets>`. --skip-existing only skips a workspace
+    built to the same targets, so moving a synth-only config into --pnr-set
+    resumes it (make reuses the finished steps). A bare `ok` (written before
+    targets were recorded) counts as done."""
+    try:
+        words = done_flag.read_text().split()
+    except OSError:
+        return False
+    return words[:1] == ["ok"] and (len(words) == 1 or " ".join(words[1:]) == targets)
 
 
 def _process_standalone(name, cfg, sa_dir, args):
@@ -816,8 +1073,7 @@ def _run_standalone(cfg, sa_dir, args):
     def write_spec():
         # Provenance, and what _discover_configs keys on (so even a workspace
         # whose `mflowgen run` failed gets correlated/zipped).
-        with open(sa_dir / "spec_config.json", "w") as f:
-            json.dump(cfg, f, indent=2, sort_keys=True)
+        _write_spec_files(cfg, sa_dir, STANDALONE_TARGET)
 
     sa_dir.mkdir(parents=True, exist_ok=True)
     write_spec()
@@ -880,39 +1136,48 @@ def _clean_targets(args):
     return ["make", *(f"clean-{s}" for s in steps)]
 
 
+def _build_targets(cfg, args):
+    """make targets for one tile build.
+
+    Power leaves replace the plain stop target when requested.
+      --cgra-power         -> fabric app power: pre-synth (RTL) + post-synth
+      --include-pnr-power  -> (with --cgra-power) gate-level post-signoff (PnR)
+      --per-tile           -> isolated per-memtile clockwork round-trip power
+    All composable. Every leaf pulls its netlist + the app compile/sim as
+    dependencies, so making them runs the whole chain. Otherwise the target
+    is --stop-after, or --synth-stop for configs outside --pnr-set.
+    """
+    targets = []
+    if args.cgra_power:
+        targets += ["post-rtl-power", "post-synth-power"]
+    if args.include_pnr_power:
+        targets.append("post-pnr-power")
+    if args.per_tile:
+        targets.append("per-tile-power")
+    return targets or [_stop_target(cfg, args)]
+
+
 def _run_one(cfg, cfg_dir, args):
     t0 = time.time()
 
     spec_path = cfg_dir / "spec_config.json"
     env = os.environ.copy()
     env["LAKE_SPEC_CONFIG"] = str(spec_path)
-    env["LAKE_SPEC_MODE"] = args.runtime_mode
+    env["LAKE_SPEC_MODE"] = _mode(cfg)
     env["DUAL_PORT"] = "True" if cfg.get("dual_port", False) else "False"
     env["USE_NON_SPLIT_FIFOS"] = "True" if args.non_split_fifos else "False"
     env["USE_SIM_SRAM"] = "True" if args.use_sim_sram else "False"
 
-    # Power leaves replace the plain --stop-after target when requested.
-    #   --cgra-power         -> fabric app power: pre-synth (RTL) + post-synth
-    #   --include-pnr-power  -> (with --cgra-power) gate-level post-signoff (PnR)
-    #   --per-tile           -> isolated per-memtile clockwork round-trip power
-    # All composable. The *_POWER env vars must be set BEFORE `mflowgen run` --
-    # the construct reads them at graph-materialization time to add the matching
-    # power nodes (RTL/SYNTH also disable power-aware PnR). post-pnr-power is
-    # ALWAYS in the graph, so its leaf needs no env toggle. Every leaf pulls its
-    # netlist + the app compile/sim as dependencies, so making them runs the
-    # whole chain.
-    build_targets = []
+    # The *_POWER env vars must be set BEFORE `mflowgen run` -- the construct
+    # reads them at graph-materialization time to add the matching power nodes
+    # (RTL/SYNTH also disable power-aware PnR). post-pnr-power is ALWAYS in the
+    # graph, so its leaf needs no env toggle.
     if args.cgra_power:
         env["RTL_POWER"] = "True"
         env["SYNTH_POWER"] = "True"
-        build_targets += ["post-rtl-power", "post-synth-power"]
-    if args.include_pnr_power:
-        build_targets.append("post-pnr-power")
     if args.per_tile:
         env["PER_TILE_POWER"] = "True"
-        build_targets.append("per-tile-power")
-    if not build_targets:
-        build_targets = [str(args.stop_after)]
+    build_targets = _build_targets(cfg, args)
 
     make_cmd = ["make", *build_targets]
     if args.parallel_jobs > 0:
@@ -949,8 +1214,7 @@ def _run_one(cfg, cfg_dir, args):
     # so writing spec_config.json earlier would let clean-all erase it and make
     # the rtl step fail with "lake_spec_config file not found". mflowgen run only
     # needs the path (baked from LAKE_SPEC_CONFIG env), not the contents.
-    with open(spec_path, "w") as f:
-        json.dump(cfg, f, indent=2, sort_keys=True)
+    _write_spec_files(cfg, cfg_dir, " ".join(build_targets))
 
     for _t in build_targets:
         _check_step_exists(_t, cfg_dir, env)
@@ -958,6 +1222,17 @@ def _run_one(cfg, cfg_dir, args):
 
     _collect_artifacts(cfg_dir)
     return time.time() - t0
+
+
+def _write_spec_files(cfg, ws, targets):
+    """spec_config.json = build_spec kwargs only (util_onyx passes it as
+    **kwargs); sweep_meta.json = how the sweep built it (correlation reads
+    runtime_mode/targets from it)."""
+    with open(ws / "spec_config.json", "w") as f:
+        json.dump(_spec_kwargs(cfg), f, indent=2, sort_keys=True)
+    with open(ws / "sweep_meta.json", "w") as f:
+        json.dump({"config_name": _config_name(cfg), "runtime_mode": _mode(cfg),
+                   "targets": targets}, f, indent=2, sort_keys=True)
 
 
 def _check_step_exists(step, cfg_dir, env):
@@ -1284,25 +1559,130 @@ def _pnr_metrics(ws):
     }
 
 
-def _write_correlation(out_dir, names):
-    """Write <out_dir>/correlation.csv: per config, standalone synth vs tile
-    synth vs tile PnR area/slack, pulled from whichever workspaces exist."""
-    rows = []
-    for name in names:
-        row = {"config_name": name}
-        row.update(_synth_metrics(out_dir / STANDALONE_SUBDIR / name, "standalone_synth"))
-        row.update(_synth_metrics(out_dir / name, "tile_synth"))
-        row.update(_pnr_metrics(out_dir / name))
-        rows.append({k: (f"{v:.3f}" if isinstance(v, float) else v)
-                     for k, v in row.items()})
-    if not rows:
-        return
-    path = out_dir / "correlation.csv"
+def _sweep_meta(ws, name):
+    """runtime_mode/targets a workspace was built with (sweep_meta.json);
+    workspaces from before it existed fall back to the name suffix."""
+    try:
+        meta = json.loads((ws / "sweep_meta.json").read_text())
+    except (OSError, ValueError):
+        meta = {}
+    mode = meta.get("runtime_mode") or ("rv" if name.endswith("_rv") else "static")
+    return {"runtime_mode": mode, "targets": meta.get("targets", "")}
+
+
+# Tile synth -> tile PnR fits: (label, synth column, PnR column). Both sides
+# are instance areas (Genus cell area vs Innovus signoff instance area). The
+# die itself is sized from synth area at floorplan (fixed height, width =
+# area/density), so it carries no extra information. `logic` drops the SRAM
+# macros, which are identical in synth and PnR.
+PNR_FITS = (
+    ("total", "tile_synth_cell_area", "tile_pnr_total_area"),
+    ("logic", "tile_synth_logic_area", "tile_pnr_logic_area"),
+)
+MIN_FIT_POINTS = 3
+
+
+def _linfit(points):
+    """Least-squares y = a + b*x over [(x, y)]; None if degenerate."""
+    n = len(points)
+    if n < MIN_FIT_POINTS:
+        return None
+    mx = sum(x for x, _ in points) / n
+    my = sum(y for _, y in points) / n
+    sxx = sum((x - mx) ** 2 for x, _ in points)
+    syy = sum((y - my) ** 2 for _, y in points)
+    sxy = sum((x - mx) * (y - my) for x, y in points)
+    if sxx == 0:
+        return None
+    b = sxy / sxx
+    a = my - b * mx
+    errs = [abs(y - (a + b * x)) / y * 100 for x, y in points if y]
+    return {
+        "n": n, "slope": b, "intercept": a,
+        "r2": (sxy * sxy / (sxx * syy)) if syy else 1.0,
+        "mean_abs_pct_err": sum(errs) / len(errs) if errs else None,
+        "max_abs_pct_err": max(errs) if errs else None,
+        "x_min": min(x for x, _ in points), "x_max": max(x for x, _ in points),
+    }
+
+
+def _fit_and_project(rows):
+    """Fit PnR area on synth area per group (all / static / rv) over rows with
+    both, then add projected PnR area to every row with a synth area. A row
+    uses its own mode's fit when that has MIN_FIT_POINTS, else the pooled
+    one; proj_extrapolated flags synth areas outside the fitted range.
+    Returns the fit-table rows."""
+    groups = {"all": rows}
+    for mode in RUNTIME_MODES:
+        groups[mode] = [r for r in rows if r["runtime_mode"] == mode]
+    table, fits = [], {}
+    for label, xcol, ycol in PNR_FITS:
+        for group, members in groups.items():
+            pts = [(r[xcol], r[ycol]) for r in members
+                   if isinstance(r[xcol], float) and isinstance(r[ycol], float)]
+            fit = _linfit(pts)
+            fits[(label, group)] = fit
+            if fit:
+                table.append({"metric": label, "group": group,
+                              "synth_column": xcol, "pnr_column": ycol, **fit})
+    for r in rows:
+        for label, xcol, ycol in PNR_FITS:
+            fit, used = fits.get((label, r["runtime_mode"])), r["runtime_mode"]
+            if not fit:
+                fit, used = fits.get((label, "all")), "all"
+            x = r[xcol]
+            if fit and isinstance(x, float):
+                r[f"{ycol}_proj"] = fit["intercept"] + fit["slope"] * x
+                r[f"{ycol}_proj_fit"] = used
+                r[f"{ycol}_proj_extrapolated"] = (
+                    "yes" if not fit["x_min"] <= x <= fit["x_max"] else "no")
+            else:
+                r[f"{ycol}_proj"] = None
+                r[f"{ycol}_proj_fit"] = ""
+                r[f"{ycol}_proj_extrapolated"] = ""
+    return table
+
+
+def _write_csv(path, rows):
+    rows = [{k: (f"{v:.3f}" if isinstance(v, float) else v) for k, v in r.items()}
+            for r in rows]
     with open(path, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=list(rows[0]))
         writer.writeheader()
         writer.writerows(rows)
+
+
+def _write_correlation(out_dir, names):
+    """Write <out_dir>/correlation.csv: per config, standalone synth vs tile
+    synth vs tile PnR area/slack, pulled from whichever workspaces exist, plus
+    PnR area projected from tile synth area; and correlation_fit.csv, the
+    synth->PnR fits behind the projection (once >= MIN_FIT_POINTS configs
+    have both)."""
+    rows = []
+    for name in names:
+        row = {"config_name": name}
+        row.update(_sweep_meta(out_dir / name, name))
+        row.update(_synth_metrics(out_dir / STANDALONE_SUBDIR / name, "standalone_synth"))
+        row.update(_synth_metrics(out_dir / name, "tile_synth"))
+        row.update(_pnr_metrics(out_dir / name))
+        rows.append(row)
+    if not rows:
+        return
+    table = _fit_and_project(rows)
+    path = out_dir / "correlation.csv"
+    _write_csv(path, rows)
     print(f"Correlation: {path}", flush=True)
+    if not table:
+        return
+    fit_path = out_dir / "correlation_fit.csv"
+    _write_csv(fit_path, table)
+    print(f"Synth->PnR fit: {fit_path}", flush=True)
+    pct = lambda v: "n/a" if v is None else f"{v:.2f}%"  # noqa: E731
+    for t in table:
+        print(f"  {t['metric']:5s} {t['group']:6s} n={t['n']:<3d} "
+              f"pnr = {t['slope']:.4f} * synth + {t['intercept']:.1f}   "
+              f"R^2={t['r2']:.4f}   |err| mean {pct(t['mean_abs_pct_err'])} "
+              f"max {pct(t['max_abs_pct_err'])}", flush=True)
 
 
 def _sh(cmd, cwd, env, log):
@@ -1324,9 +1704,11 @@ def _sh(cmd, cwd, env, log):
         raise subprocess.CalledProcessError(proc.returncode, cmd)
 
 
-def _row(name, cfg, cfg_dir, status, notes, duration_s):
+def _row(name, cfg, cfg_dir, status, notes, duration_s, targets):
     return {
         "config_name": name,
+        "runtime_mode": _mode(cfg),
+        "targets": targets,
         "storage_capacity": cfg.get("storage_capacity", 4096),
         "data_width": cfg.get("data_width", 16),
         "vec_width": cfg.get("vec_width", 4),
@@ -1334,6 +1716,9 @@ def _row(name, cfg, cfg_dir, status, notes, duration_s):
         "out_ports": cfg.get("out_ports", 2),
         "dual_port": cfg.get("dual_port", False),
         "vec_capacity": cfg.get("vec_capacity", 2),
+        "dims": cfg.get("dims", 6),
+        "max_extent": cfg.get("max_extent", ""),
+        "max_sequence_width": cfg.get("max_sequence_width", ""),
         "status": status,
         "duration_s": f"{duration_s:.1f}",
         "workspace": str(cfg_dir),

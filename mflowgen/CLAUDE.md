@@ -22,10 +22,33 @@ target chain up to `--stop-after` (default `cadence-innovus-signoff`).
 Results (pass/fail, macro, workspace) go to `<out-dir>/results.csv`.
 
 Key flags:
-- `--preset {smoke4,full}` — named subsets of `DEFAULT_SPEC_POINTS`.
+- `--spec-set {default,thesis}` — `default` = the 6 `DEFAULT_SPEC_POINTS`;
+  `thesis` = `_thesis_spec_points()` (1:1 mirror of lake
+  `ASPLOS_EXP/all_experiments_thesis_v2.sh`, the standalone synthesis set)
+  ∪ those 6 → 107 unique specs. Unlike aha's `enumerate_thesis_configs()`,
+  the 30 `max_sequence_width` points are kept (they share collateral but
+  size the AG stride regs, so their RTL differs); names get `_msw<N>`.
+- `--runtime-mode static,rv` — comma list; one config per (spec, mode).
+  RV configs are named `<config>_rv` and get `LAKE_SPEC_MODE=rv` →
+  `build_spec_rv`. Specs with `vec_width>1 && vec_capacity>2` are skipped
+  for rv (committed `build_spec_rv` raises on them): thesis → 107 static +
+  89 rv = 196 configs, 18 rv skipped. Static names are unchanged from older
+  sweeps. Mode is a sweep-only key (`SWEEP_ONLY_KEYS`): it is stripped from
+  `spec_config.json` because util_onyx passes that file to
+  `build_spec(**spec)`; it lives in `sweep_meta.json` instead.
+- `--pnr-set NAMES` / `--synth-stop` — per-config stop target: configs in
+  `--pnr-set` (names and/or presets) build to `--stop-after` and are
+  scheduled first; the rest stop at `--synth-stop` (default
+  `cadence-genus-synthesis`). Names are checked against spec-set × modes
+  before `--only/--skip/--preset`, so narrowed re-runs keep the same flag.
+  `done.flag` records the targets (`ok <targets>`), so `--skip-existing`
+  resumes a synth-only workspace that was later moved into `--pnr-set`.
+- `--preset {smoke4,full,full_rv,full12}` — named subsets.
   `smoke4` = a diverse 4-config regression (single/multi controller,
-  single/dual port, small/large geom). `full` = all 6 points.
-  `--only <names>` / `--skip <names>` also select. `--list` prints and exits.
+  single/dual port, small/large geom). `full` = all 6 default points (static).
+  `full_rv` = their RV twins; `full12` = both — the synth↔PnR correlation
+  anchors. `--only <names>` / `--skip <names>` also select. `--list` prints
+  names (stdout) + a mode/target summary (stderr) and exits.
 - `--rtl-only` — stop after the RTL step (fast; runs locally, see below).
 - `--fresh` — `rm -rf` each workspace first (total wipe). `--clean <steps>` /
   `--clean-all` map to mflowgen's own `make clean-*` (keeps Makefile).
@@ -52,6 +75,61 @@ Key flags:
 - `--standalone-synth` / `--standalone-only` / `--correlate-only` —
   standalone-spec baseline for the standalone-synth → tile-synth → tile-PnR
   correlation. See "Standalone spec synth + correlation" below.
+
+### Thesis-set synth sweep + synth→PnR projection (2026-09-30)
+
+The run that motivated `--spec-set/--pnr-set`: every standalone-synthesis
+spec inside the MemTile, static + RV, Genus synth for all, full PnR for the
+12 `full12` anchors, to test whether tile synth area predicts tile PnR area
+well enough to project PnR for the other 184 without building them:
+
+    ./mflowgen/sweep_specs.py --spec-set thesis --runtime-mode static,rv \
+        --pnr-set full12 --parallel-jobs 6 --config-jobs 4 --zip \
+        --out-dir /sim/mstrange/BUILD_CGRA/sweep_out/tile_memcore_thesis
+
+`correlation.csv` gains `runtime_mode`, `targets` and, per row,
+`tile_pnr_{total,logic}_area_proj` (+ `_proj_fit` = which fit, `_proj_
+extrapolated` = synth area outside the fitted range). `correlation_fit.csv`
+holds the least-squares fits PnR = a + b·synth (stdlib, no numpy) for
+`total` (Genus cell area → Innovus signoff instance total) and `logic`
+(minus SRAM macros) over groups all/static/rv; a row uses its own mode's
+fit when it has ≥3 points, else the pooled one. Instance area, not die:
+the floorplan sizes the die from synth area (fixed height, width =
+area/density), so die area adds no information. Re-run the analysis any
+time with `--correlate-only`. Unit-tested on synthetic reports only.
+
+**RTL-validated locally (2026-09-30):** all 196 configs generate tile RTL
+(exact gen_rtl flags: `--width 4 --height 2 --pipeline_config_interval 8 -v
+--glb_tile_mem_size 256 --no-pd --use-non-split-fifos [--dual-port]
+--lake-spec-config … --lake-spec-mode …`) on committed garnet `8c5962fd` +
+lake `origin/THESIS` `82a78497`, each with exactly one hardened macro family
+(27 distinct; dual-port → SDPB). ~9% of `garnet.py` runs hit the flaky
+native crash (SIGSEGV, or SIGABRT `malloc_consolidate(): invalid chunk
+size`), mode-independent; 16/196 needed a retry, max 3 attempts. The
+container path (`aha garnet`, `aha/util/garnet.py` `retry()`: 3× on
+SIGSEGV/SIGBUS/SIGABRT) covers that; gen_rtl's NON-container path runs bare
+`python garnet.py` with no retry. Gotcha for a pristine checkout (`git
+archive`/fresh clone, non-container): `garnet.py` writes
+`matrix_unit/header/matrix_unit_regspace.*` but git doesn't track the empty
+dir → FileNotFoundError; `mkdir -p matrix_unit/header global_buffer/header
+global_buffer/systemRDL/output global_controller/header
+global_controller/systemRDL/output` first. Never validate in the shared
+`/aha/garnet` (other sessions sim against its `garnet.v`/GLB headers) — use a
+private copy.
+
+Caveats:
+- **Static tile RTL on committed code is the pre-fix static spec.**
+  Committed lake `build_spec` hardcodes `config_passthru=False` (the
+  1976-bit config shadow reg) and committed util_onyx forces
+  `use_rv_mem_pond=True` for any lake spec. The fixes (config passthru,
+  hybrid-port FIFO bypass, static RAM/pond) were uncommitted in another
+  session as of 2026-09-30 (memory `reference-spec-cgra-app-sim`). Static
+  area numbers include those artifacts until that lands.
+- **No standalone RV synth exists.** lake's standalone builder
+  (`thesis_sweep.py` → `build_four_port_wide_fetch`) forces
+  `opt_rv = False` (its `--opt_rv` only switches the test vectors), and the
+  experiment scripts never pass it. `--standalone-synth` skips `_rv`
+  configs (SKIP row) instead of filing static RTL under an RV name.
 
 ### Standalone spec synth + correlation
 
