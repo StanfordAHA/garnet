@@ -1482,17 +1482,38 @@ def _top_row_nums(path):
 
 
 def _genus_sram(gates_rpt):
-    """(total SRAM macro area, 'name x count; ...') from Genus final_gates.rpt
-    rows `<cell> <instances> <area> <library>` for SRAM_CELL_PREFIX cells."""
+    """(total SRAM macro area, 'name x count; ...') from the per-cell table of
+    Genus final_gates.rpt: the `<cell> <instances> <area> <library>` rows
+    between the `Gate  Instances  Area  Library` header and its closing
+    rule/`total` line, for SRAM_CELL_PREFIX cells.
+
+    Only that table. report_gates follows it with per-Library and per-Type
+    summaries, and a compiler SRAM's library is named after the macro
+    (gen_srams.sh links IN12LP_MEM_genviews' <macro>_<corner>.lib as-is), so
+    its Library row also starts with SRAM_CELL_PREFIX: scanning every line
+    counted each macro twice (and drove *_logic_area negative)."""
     area, macros = 0.0, []
+    in_table, rows_seen = False, False
     for line in _read_lines(gates_rpt):
         toks = line.split()
-        if not toks or not toks[0].startswith(SRAM_CELL_PREFIX):
+        if not in_table:
+            in_table = (len(toks) >= 3 and toks[0] == "Gate"
+                        and "Instances" in toks and "Area" in toks)
             continue
-        n = _nums(line)
-        if len(n) >= 2:
-            area += n[1]
-            macros.append(f"{toks[0]} x{n[0]:g}")
+        if re.match(r"^\s*-{10,}\s*$", line):
+            if rows_seen:
+                break        # closing rule of the Gate table
+            continue         # the rule under the header
+        if not toks:
+            continue
+        if toks[0] == "total":
+            break
+        rows_seen = True
+        if toks[0].startswith(SRAM_CELL_PREFIX):
+            n = _nums(line)
+            if len(n) >= 2:
+                area += n[1]
+                macros.append(f"{toks[0]} x{n[0]:g}")
     return (area if macros else None), "; ".join(macros)
 
 
@@ -1537,11 +1558,19 @@ def _synth_metrics(ws, prefix):
     cell = area_n[1] if len(area_n) >= 4 else None
     total = area_n[3] if len(area_n) >= 4 else None
     sram, macros = _genus_sram(_first(ws, "*-cadence-genus-synthesis/results_syn/final_gates.rpt"))
+    logic = (cell - sram) if None not in (cell, sram) else None
+    if logic is not None and logic < 0:
+        # Cell area includes the macros, so this is a report-format surprise,
+        # not a real number: leave it blank rather than feed it to the fit.
+        print(f"*** WARNING: {ws.name} {prefix}: SRAM area {sram:.1f} > cell area "
+              f"{cell:.1f}; leaving {prefix}_logic_area blank", file=sys.stderr,
+              flush=True)
+        logic = None
     return {
         f"{prefix}_cell_area": cell,
         f"{prefix}_total_area": total,
         f"{prefix}_sram_area": sram,
-        f"{prefix}_logic_area": (cell - sram) if None not in (cell, sram) else None,
+        f"{prefix}_logic_area": logic,
         f"{prefix}_wns_ps": _genus_wns(_first(ws, "*-cadence-genus-synthesis/results_syn/final_qor.rpt")),
         f"{prefix}_sram_macros": macros,
     }
