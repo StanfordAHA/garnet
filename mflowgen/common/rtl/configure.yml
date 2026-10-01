@@ -54,6 +54,13 @@ parameters:
   # geometry has no matching physical SRAM macro in the tech map.
   use_sim_sram: False
 
+  # PE-tile pond knobs (Tile_PE). Empty/False -> default pond.
+  # lake_pond_spec_config points at a pond spec JSON, forwarded as
+  # --lake-pond-spec-config (shipped into the container like lake_spec_config).
+  # no_pond passes --no-pond: PE tiles are built without a pond.
+  lake_pond_spec_config: ""
+  no_pond: False
+
   ############################################################################
   # To try out a new docker image e.g. 'stanfordaha/garnet:cst' or 'stanfordaha/garnet@sha256:1e4a0bf29f3bad8e3...'
   #   - set 'save_verilog_to_tmpdir' to "True"

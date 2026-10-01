@@ -1090,6 +1090,8 @@ def parse_args():
     parser.add_argument('--lake-spec-mode', type=str, default="",
                         choices=["", "rv", "static"],
                         help="Memory controller mode: rv (ready-valid) or static")
+    parser.add_argument('--lake-pond-spec-config', type=str, default="",
+                        help="JSON file with lake spec parameters for the PE-tile pond")
 
     # Daemon choices are maybe ['help', 'launch', 'use', 'kill', 'force', 'status', 'wait']
     parser.add_argument('--daemon', type=str, choices=GarnetDaemon.choices, default=None)
@@ -1304,6 +1306,8 @@ def main():
         os.environ["LAKE_SPEC_CONFIG"] = args.lake_spec_config
     if args.lake_spec_mode:
         os.environ["LAKE_SPEC_MODE"] = args.lake_spec_mode
+    if args.lake_pond_spec_config:
+        os.environ["LAKE_POND_SPEC_CONFIG"] = args.lake_pond_spec_config
     # "launch" => ERROR if daemon exists already else continue
     # "force"  => kill existing daemon, then continue
     # "status" => echo daemon status and exit

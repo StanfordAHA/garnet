@@ -61,8 +61,29 @@ from lake.top.reduce_pe_cluster import ReducePECluster
 from lassen.sim import PE_fc
 import magma as m
 from peak import family
-from lake.spec.spec_memory_controller import SpecMemoryController, build_four_port_wide_fetch_rv, build_pond_rv
+from lake.spec.spec_memory_controller import SpecMemoryController, build_four_port_wide_fetch_rv, \
+    build_cgra_pond, resolve_cgra_pond_params
 import os
+
+
+def load_pond_spec_params(rv):
+    """Pond geometry from LAKE_POND_SPEC_CONFIG (garnet.py --lake-pond-spec-config), or
+    None when unset. The JSON holds lake build_cgra_pond geometry keys ({} = default);
+    lake validates them, the same factory generates the pond's compiler collateral
+    (lake.utils.pond_collateral)."""
+    path = os.environ.get("LAKE_POND_SPEC_CONFIG", "")
+    if not path:
+        return None
+    import json
+    with open(path) as f:
+        params = json.load(f)
+    try:
+        resolved = resolve_cgra_pond_params(params, rv=rv)
+    except ValueError as e:
+        raise ValueError(f"{path}: {e}") from None
+    if resolved["data_width"] != 16:
+        raise ValueError(f"{path}: pond data_width must be 16 to match the CGRA fabric")
+    return params
 
 
 def get_actual_size(width: int, height: int, io_sides: List[IOSide]):
@@ -114,7 +135,7 @@ def get_cc_args(width, height, io_sides, garnet_args):
         args.sb_option, "Invalid Switchbox Type"
     )
     args.add_pd = not args.no_pd,
-    args.add_pond = not args.no_pond,
+    args.add_pond = not args.no_pond  # (no trailing comma: a 1-tuple is always truthy)
     args.pond_area_opt = not args.no_pond_area_opt,
     args.pond_area_opt_dual_config = not args.no_pond_area_opt_dual_config,
 
@@ -490,6 +511,33 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
 
     remove_fabric_cols = num_fabric_cols_removed > 0
 
+    # PE-tile pond. Default: the RV spec pond (64 B, 4 dims) in RV mode, else the legacy
+    # LakeTop PondCore. LAKE_POND_SPEC_CONFIG opts in to a lake-spec pond in both modes,
+    # sized from the JSON: build_pond_rv in RV mode, build_pond (static) otherwise.
+    pond_spec_params = load_pond_spec_params(rv=use_rv_mem_pond) if add_pond else None
+    static_spec_pond = pond_spec_params is not None and not use_rv_mem_pond
+
+    def make_pond():
+        if not use_rv_mem_pond and not static_spec_pond:
+            return PondCore(gate_flush=not harden_flush, ready_valid=ready_valid)
+        geom = resolve_cgra_pond_params(pond_spec_params, rv=use_rv_mem_pond)
+        pond_spec = build_cgra_pond(pond_spec_params, rv=use_rv_mem_pond, comply_17=ready_valid)
+        pond_cap, pond_data_width = geom["storage_capacity"], geom["data_width"]
+        # fifo_depth 0: the tile FIFOs are passthroughs (accumulation loops, static timing)
+        return CoreCombinerCore(data_width=16,
+                                controllers_list=[SpecMemoryController(spec=pond_spec)],
+                                use_sim_sram=True,
+                                tech_map_name=tm,
+                                pnr_tag="M",
+                                name="PondCore",
+                                input_prefix="PondTop_",
+                                fifo_depth=0,
+                                dual_port=False,
+                                rf=True,
+                                mem_width=pond_data_width,
+                                mem_depth=pond_cap // (pond_data_width // 8),
+                                new_pond=True)
+
     # Try to center the MU IO tiles
     num_mu_io_tiles = int(mu_oc_0 / 2)
     mu_io_startX = int(((input_width - num_fabric_cols_removed) - num_mu_io_tiles) / 2) + num_fabric_cols_removed
@@ -540,34 +588,6 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
                     core = IOCore()
 
             else:
-                if use_rv_mem_pond:
-                    pond_cap = 64
-                    pond_data_width = 16
-                    pond_dims = 4
-                    pond_use_sim_sram = True
-                    pond_use_rf = True
-                    # Set the pond fifo depth to 0 for accumulation loop
-                    pond_fifo_depth = 0
-                    pond_depth = pond_cap // (pond_data_width // 8)
-
-                    # print("Adding pond spec...")
-                    pond_spec = build_pond_rv(storage_capacity=pond_cap, data_width=pond_data_width, dims=pond_dims, physical=not pond_use_sim_sram,
-                                            reg_file=pond_use_rf, opt_rv=True)
-
-                    pond_core_core_combiner_core = CoreCombinerCore(data_width=16,
-                                                                    controllers_list=[SpecMemoryController(spec=pond_spec)],
-                                                                    use_sim_sram=True,
-                                                                    tech_map_name=tm,
-                                                                    pnr_tag="M",
-                                                                    name="PondCore",
-                                                                    input_prefix="PondTop_",
-                                                                    fifo_depth=pond_fifo_depth,
-                                                                    dual_port=False,
-                                                                    rf=pond_use_rf,
-                                                                    mem_width=pond_data_width,
-                                                                    mem_depth=pond_depth,
-                                                                    new_pond=True)
-
                 # now override this...to just use the altcore list to not waste space
                 if altcore is not None:
                     altcore_used = True
@@ -578,17 +598,11 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
                         core = core_type(**core_kwargs)
                         if add_pond and core_type == CoreCombinerCore and "alu" in core.get_modes_supported():
                             intercore_mapping = core.get_port_remap()['alu']
-                            if use_rv_mem_pond:
-                                additional_core[(x, y)] = pond_core_core_combiner_core
-                            else:
-                                additional_core[(x, y)] = PondCore(gate_flush=not harden_flush, ready_valid=ready_valid)
+                            additional_core[(x, y)] = make_pond()
 
                         # Try adding pond?
                         elif add_pond and altcore[altcore_ind][0] == OnyxPECore:
-                            if use_rv_mem_pond:
-                                additional_core[(x, y)] = pond_core_core_combiner_core
-                            else:
-                                additional_core[(x, y)] = PondCore(gate_flush=not harden_flush, ready_valid=ready_valid)
+                            additional_core[(x, y)] = make_pond()
                 else:
                     if tile_layout_option == 0:
                         use_mem_core = (x - x_min) % tile_max >= mem_tile_ratio
@@ -600,10 +614,7 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
                     else:
                         core = PeakCore(pe_fc, ready_valid=ready_valid)
                         if add_pond:
-                            if use_rv_mem_pond:
-                                additional_core[(x, y)] = pond_core_core_combiner_core
-                            else:
-                                additional_core[(x, y)] = PondCore(gate_flush=not harden_flush, ready_valid=ready_valid)
+                            additional_core[(x, y)] = make_pond()
 
             cores[(x, y)] = core
 
@@ -633,7 +644,9 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
                     intercore_mapping["res"]: [
                         f"PondTop_input_width_{bit_width_str}_num_0"]}
             else:
-                inter_core_connection_1 = {f"PondTop_output_width_1_num_0": [intercore_mapping["bit0"]]}
+                # The static spec pond has no 1-bit valid output
+                inter_core_connection_1 = {} if static_spec_pond else \
+                    {f"PondTop_output_width_1_num_0": [intercore_mapping["bit0"]]}
                 inter_core_connection_16 = {
                     f"PondTop_output_width_{bit_width_str}_num_0": [
                         intercore_mapping["data0"],
@@ -649,7 +662,7 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
                 inter_core_connection_16 = {f"PondTop_output_width_{bit_width_str}_num_0": ["data0", "data1", "data2"],
                                             "res": [f"PondTop_input_width_{bit_width_str}_num_0"]}
             else:
-                inter_core_connection_1 = {"PondTop_output_width_1_num_0": ["bit0"]}
+                inter_core_connection_1 = {} if static_spec_pond else {"PondTop_output_width_1_num_0": ["bit0"]}
                 inter_core_connection_16 = {f"PondTop_output_width_{bit_width_str}_num_0": ["data0", "data1", "data2"],
                                             "res": [f"PondTop_input_width_{bit_width_str}_num_0",
                                                     f"PondTop_input_width_{bit_width_str}_num_1"]}

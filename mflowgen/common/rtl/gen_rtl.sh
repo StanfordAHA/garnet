@@ -108,6 +108,19 @@ if [ -n "$lake_spec_config" ]; then
     [ -n "$lake_spec_mode" ] && flags+=" --lake-spec-mode $lake_spec_mode"
 fi
 
+# PE-tile pond knobs. Empty/False -> default pond (no-op for other consumers).
+[ "$no_pond" == True ] && flags+=" --no-pond"
+POND_CFG_HOST=""
+if [ -n "$lake_pond_spec_config" ]; then
+    POND_CFG_HOST="$(readlink -f "$lake_pond_spec_config" 2>/dev/null || echo "$lake_pond_spec_config")"
+    if [ ! -f "$POND_CFG_HOST" ]; then
+        echo "*** ERROR: lake_pond_spec_config file not found: $lake_pond_spec_config" >&2
+        exit 1
+    fi
+    POND_CFG_CTR="/tmp/lake_pond_spec_config.json"
+    flags+=" --lake-pond-spec-config $POND_CFG_CTR"
+fi
+
 # Use aha docker container for all dependencies
 if [ "$use_container" == True ]; then
       echo "Use aha docker container for all dependencies"
@@ -205,6 +218,10 @@ if [ "$use_container" == True ]; then
         echo "--- gen_rtl: shipping lake_spec_config -> $SPEC_CFG_CTR"
         docker cp "$SPEC_CFG_HOST" ${container_name}:${SPEC_CFG_CTR}
       fi
+      if [ -n "$POND_CFG_HOST" ]; then
+        echo "--- gen_rtl: shipping lake_pond_spec_config -> $POND_CFG_CTR"
+        docker cp "$POND_CFG_HOST" ${container_name}:${POND_CFG_CTR}
+      fi
 
 
       # Update container for amber config if necessary
@@ -249,6 +266,7 @@ if [ "$use_container" == True ]; then
          export WHICH_SOC='$WHICH_SOC'
          export LAKE_SPEC_CONFIG='$SPEC_CFG_CTR'
          export LAKE_SPEC_MODE='$lake_spec_mode'
+         export LAKE_POND_SPEC_CONFIG='$POND_CFG_CTR'
          export USE_NON_SPLIT_FIFOS='$use_non_split_fifos'
 
          function checkpip {
@@ -400,6 +418,10 @@ else    # if NOT [ $use_container == True ]
           flags="${flags/--lake-spec-config ${SPEC_CFG_CTR}/--lake-spec-config ${SPEC_CFG_HOST}}"
       fi
       [ -n "$lake_spec_mode"     ] && export LAKE_SPEC_MODE="$lake_spec_mode"
+      if [ -n "$POND_CFG_HOST" ]; then
+          export LAKE_POND_SPEC_CONFIG="$POND_CFG_HOST"
+          flags="${flags/--lake-pond-spec-config ${POND_CFG_CTR}/--lake-pond-spec-config ${POND_CFG_HOST}}"
+      fi
       [ "$use_non_split_fifos" == True ] && export USE_NON_SPLIT_FIFOS=1
 
       if [ $interconnect_only == True ]; then

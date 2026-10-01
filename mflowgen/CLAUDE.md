@@ -362,6 +362,47 @@ Gaps: **no full-chip app→dynamic-power** (`full_chip`/`soc` power steps are
 power-grid/IR-drop only). The lake `pd/thesis` MemCore power flow is
 **synthetic idle/active** bitstreams (`power-test-gen/`), not real apps.
 
+## PE-tile pond knobs (Tile_PE with / without / spec pond) (2026-09-30)
+
+`Tile_PE` uses the same shared `common/rtl` step as Tile_MemCore (whole-chip
+`garnet.py` → synth picks the `Tile_PE` top), so it builds on the build machine
+as-is; none of the MemCore-specific nodes (spec SRAM macro, die-grow
+floorplan, `mode[0]` guard) apply — the pond is flops, no macro.
+
+- `NO_POND=True mflowgen run --design .../Tile_PE` → rtl param `no_pond` →
+  `garnet.py --no-pond`. **`--no-pond` never worked in onyx before
+  2026-09-30**: `get_cc_args` had `args.add_pond = not args.no_pond,` (trailing
+  comma → 1-tuple → always truthy); fixed. The same bug is still on
+  `args.add_pd = not args.no_pd,` → `--no-pd` (passed whenever PWR_AWARE is
+  False, incl. every MemCore sweep build) is a no-op; NOT fixed because fixing
+  it changes existing RTL — user decision.
+- `LAKE_POND_SPEC_CONFIG=<pond.json> mflowgen run ...` → rtl param
+  `lake_pond_spec_config` → `garnet.py --lake-pond-spec-config` (env
+  `LAKE_POND_SPEC_CONFIG`; gen_rtl ships the file into the container like
+  `lake_spec_config`). In `cgra/util_onyx.py` `make_pond()`: set → a lake-spec
+  pond in both modes (`build_pond` static / `build_pond_rv` in RV mode), sized
+  from the JSON; `{}` = default geometry (64 B, 4 dims). Keys: `storage_capacity`,
+  `dims`, `data_width` (must be 16 = fabric), static also `max_extent`,
+  `max_sequence_width`; unknown keys raise. Unset → unchanged: RV spec pond in
+  RV mode, legacy `PondCore` otherwise (static spec pond is opt-in until a
+  full-CGRA app run validates it). The static spec pond drops the legacy
+  1-bit valid → PE `bit0` inter-core wire.
+- Verified locally (private garnet copies, 4x2): no-flag builds unchanged
+  (static-spec byte-identical; RV identical up to one module's position in the
+  file; default differs only by pre-existing kratos nondeterminism in the sparse
+  MemCore FSMs, which differs between two runs of the same code even with
+  `PYTHONHASHSEED=0`); `--no-pond` removes the pond from Tile_PE; spec ponds
+  elaborate with the requested geometry; garnet's `CoreCombinerCore`
+  `get_config_bitstream` takes clockwork's static pond instrs (8 real configs).
+- The pond spec is built by lake's `build_cgra_pond` (single factory shared with
+  the pond's compiler collateral, `lake.utils.pond_collateral`); the static pond
+  defaults to 16-bit iteration ranges like the legacy pond. Compiler side: clockwork
+  takes the pond as its `regfile` level from `LAKE_COLLATERAL_JSON_REGFILE`
+  (`aha map --pond-collateral`, or auto from `LAKE_POND_SPEC_CONFIG`); see
+  `/aha/clockwork/CLAUDE.md` "Pond (regfile level)". Without a pond collateral,
+  clockwork assumes the default 32-word / 4-level pond. The RV pond has input
+  filter hardware by default (broadcast-banked weight ponds).
+
 ## Build-machine note
 
 The sweep runs from a **standalone** garnet checkout at

@@ -73,6 +73,11 @@ def construct():
         'interconnect_only': False,
         'rtl_docker_image': 'default',  # Current default is 'stanfordaha/garnet:latest'
 
+        # Pond knobs. Empty/False -> default pond. Forwarded to garnet.py by
+        # the rtl step (see common/rtl/gen_rtl.sh).
+        'lake_pond_spec_config': os.environ.get('LAKE_POND_SPEC_CONFIG', ''),
+        'no_pond': os.environ.get('NO_POND', 'False') == 'True',
+
         # Power Domains
         'PWR_AWARE': pwr_aware,
         'core_density_target': 0.6,
