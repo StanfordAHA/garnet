@@ -492,7 +492,13 @@ class Garnet(Generator):
             (reset_port_name, valid_port_name, en_port_name)
 
     def pack_ponds(self, netlist_info):
-        packed_ponds = {}
+        # A pond goes into the tile of the PE it shares the most inter-core connections
+        # with (on a tie, the PE of the latest such connection, as before). A static
+        # accumulation pond also takes an init-constant PE on its second input; that PE must
+        # not displace the accumulating PE, whose feedback loop through the pond has to stay
+        # inside the tile.
+        pond_pe_conns = {}
+        n_seen = 0
 
         for edge_id in list(netlist_info['netlist']):
             conns = netlist_info['netlist'][edge_id]
@@ -502,10 +508,13 @@ class Garnet(Generator):
             for (sink, sink_port) in conns[1:]:
                 pond_to_pe = source_port in inter_core_conns and source[0] == "M" and sink_port in inter_core_conns[source_port] and sink[0] == 'p'
                 pe_to_pond = source_port in inter_core_conns and source[0] == "p" and sink_port in inter_core_conns[source_port] and sink[0] == 'M'
-                if pond_to_pe:
-                    packed_ponds[source] = sink
-                elif pe_to_pond:
-                    packed_ponds[sink] = source
+                if pond_to_pe or pe_to_pond:
+                    pond, pe = (source, sink) if pond_to_pe else (sink, source)
+                    n_seen += 1
+                    count, _ = pond_pe_conns.setdefault(pond, {}).get(pe, (0, 0))
+                    pond_pe_conns[pond][pe] = (count + 1, n_seen)
+
+        packed_ponds = {pond: max(pes, key=pes.get) for pond, pes in pond_pe_conns.items()}
 
         for edge_id, conns in netlist_info['netlist'].items():
             new_conns = []

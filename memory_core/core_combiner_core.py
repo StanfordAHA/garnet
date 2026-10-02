@@ -205,6 +205,12 @@ class CoreCombinerCore(LakeCoreBase):
                 for name, v in config_pre:
                     configs = [self.get_config_data(name, v)] + configs
 
+                # A static lake spec marks its data ports hybrid (like the PE's): run them
+                # in static mode - bypass the MemTile fifos, hold valid/ready high.
+                if instr['mode'] == 'UB' and hasattr(self.dut, "get_hybrid_bypass_regs"):
+                    for name in self.dut.get_hybrid_bypass_regs("lakespec"):
+                        configs = [self.get_config_data(name, 1)] + configs
+
                 # Add in preloaded memory
                 if "init" in instr and instr['init'] is not None:
                     # this is SRAM content

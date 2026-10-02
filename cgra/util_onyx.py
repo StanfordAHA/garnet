@@ -191,8 +191,10 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
         import json as json_mod
         with open(lake_spec_config) as _f:
             _spec_params = json_mod.load(_f)
-        # Both modes use SpecMemoryController
-        use_rv_mem_pond = True
+        # Both modes use SpecMemoryController; only the RV spec also brings the RV RAM and
+        # pond. A static app runs every block static (StrgRAM for ROMs, the static PondCore).
+        if lake_spec_mode == "rv":
+            use_rv_mem_pond = True
         spec_vec_width = _spec_params.get("vec_width", 1)
         spec_data_width = _spec_params.get("data_width", 16)
         mem_width = spec_data_width * spec_vec_width
@@ -259,7 +261,9 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
             if lake_spec_mode == "rv":
                 spec = build_spec_rv(**_spec_params)
             else:
-                spec = build_spec(**_spec_params)
+                # The MemTile's configuration register space holds the config, so
+                # skip the spec's hardened copy (its load enable is never driven here).
+                spec = build_spec(**dict(_spec_params, config_passthru=True))
             strg_ub = SpecMemoryController(spec=spec)
         elif use_rv_mem_pond:
             # strg_ub = StrgUBVec(mem_width=mem_width, mem_depth=mem_depth, comply_with_17=True)

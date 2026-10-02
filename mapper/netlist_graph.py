@@ -73,7 +73,10 @@ class NetlistGraph:
                 node.add_source(source_node)
         # merge pond connections into pe
         for node in self.pond_nodes:
-            assert len(node.sources) == 1
+            # A static accumulation pond also takes its init constant on a second input,
+            # so only fold single-source ponds into their PE.
+            if len(node.sources) != 1 or not node.sinks:
+                continue
             pond_source = node.sources[0]
             pond_sink = node.sinks[0]
             pond_source.remove_sink(node)
