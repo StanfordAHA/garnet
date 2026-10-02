@@ -1332,7 +1332,10 @@ ARTIFACT_GLOBS = [
     "*-cadence-innovus-signoff/outputs/*.gds",
     "*-cadence-innovus-signoff/reports/*.rpt",
     "*-cadence-innovus-signoff/reports/*.summary",
+    # PT signoff: <design>.timing.{setup,hold}.rpt = top-100 PBA paths.
     "*-synopsys-pt-timing-signoff/reports/*.rpt",
+    # Tile synth: <design>.timing.setup.top100{,.summary}.rpt = top-100
+    # worst setup paths (Tile_MemCore custom-genus-scripts/generate-results.tcl).
     "*-cadence-genus-synthesis/reports/*.rpt",
     # Genus's write_snapshot -tag final: final_{area,gates,qor,time}.rpt --
     # the synth area/QoR numbers (_write_correlation parses these).

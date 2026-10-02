@@ -120,13 +120,19 @@ global_controller/systemRDL/output` first. Never validate in the shared
 private copy.
 
 Caveats:
-- **Static tile RTL on committed code is the pre-fix static spec.**
-  Committed lake `build_spec` hardcodes `config_passthru=False` (the
-  1976-bit config shadow reg) and committed util_onyx forces
-  `use_rv_mem_pond=True` for any lake spec. The fixes (config passthru,
-  hybrid-port FIFO bypass, static RAM/pond) were uncommitted in another
-  session as of 2026-09-30 (memory `reference-spec-cgra-app-sim`). Static
-  area numbers include those artifacts until that lands.
+- **Static tile RTL changed on 2026-10-01.** The static-MemCore fixes
+  (config passthru instead of the 1976-bit config shadow reg, static-port
+  FIFO bypass, static RAM/pond instead of the forced RV ones) landed in
+  garnet `27da971d` + lake THESIS `ebd0948e`. Builds from before those
+  commits carry the pre-fix static RTL (and the 196/196 RTL check above
+  predates them); don't mix the two in one correlation.
+- **Timing paths in the zip:** every tile synth writes the top-100 worst
+  setup paths (one per endpoint) to `<step>/reports/Tile_MemCore.timing.
+  setup.top100{,.summary}.rpt` (custom-genus-scripts/generate-results.tcl;
+  legacy-UI `report timing -num_paths`, since `report_timing -max_paths`
+  errors in this step's `common_ui false` Genus). Genus `final_time.rpt`
+  has the top 50; PnR configs also get PT signoff's top-100 PBA setup/hold
+  (`*-synopsys-pt-timing-signoff/reports/*.timing.{setup,hold}.rpt`).
 - **No standalone RV synth exists.** lake's standalone builder
   (`thesis_sweep.py` → `build_four_port_wide_fetch`) forces
   `opt_rv = False` (its `--opt_rv` only switches the test vectors), and the

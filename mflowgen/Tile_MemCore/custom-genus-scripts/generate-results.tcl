@@ -11,6 +11,21 @@ if { $uniquify_with_design_name == True } {
 }
 
 write_snapshot -directory results_syn -tag final
+
+# Top-100 worst setup paths, one per endpoint (write_snapshot's
+# final_time.rpt stops at 50): full paths + a one-line-per-path summary.
+# This step runs Genus in the LEGACY UI (designer-interface.tcl sets
+# common_ui false), so it is `report timing -num_paths`; the common-UI
+# `report_timing -max_paths` errors here (checked on Genus 19.10/20.11).
+# catch: a report must never fail synthesis.
+file mkdir reports
+if {[catch {report timing -num_paths 100 > reports/${design_name}.timing.setup.top100.rpt} err]} {
+  puts "WARNING: generate-results: top-100 timing report failed: $err"
+}
+if {[catch {report timing -num_paths 100 -summary > reports/${design_name}.timing.setup.top100.summary.rpt} err]} {
+  puts "WARNING: generate-results: top-100 timing summary failed: $err"
+}
+
 # write_design -innovus -basename results_syn/syn_out
 write_design -basename results_syn/syn_out
 write_sdf -version "OVI 2.1" -recrem split -setuphold split > results_syn/syn_out.sdf
