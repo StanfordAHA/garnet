@@ -433,6 +433,40 @@ NOT run here: gf12 synth/signoff netlists, gen_sram `sram.v`, adk cell models,
 ptpx (no ADK) and the docker path — check the first build-machine run's
 `*-memtile-power-sim-*/logs/sim.log` PASS lines and power reports.
 
+**Local generic power, end to end (2026-10-06, freepdk45, SRAM as flops,
+100 MHz, DC netlist, gate-level sim, PT; 100% nets annotated).** Idle / active
+total mW:
+
+| spec | standalone `lakespec` | Tile_MemCore |
+|---|---|---|
+| fw1 DP 1×1 1 KB | 5.31 / 7.86 | 9.47 / 12.8 |
+| fw2 SP 1×1 2 KB | 9.39 / 17.8 | 15.7 / 30.7 |
+| fw4 SP 2×2 4 KB | 18.9 / 33.4 | 30.0 / 60.3 |
+| fw4 SP 2×2 4 KB RV | — (no standalone RV) | 30.1 / 76.6 |
+| fw4 SP 2×2 4 KB dw8 | 18.8 / 27.8 | — |
+
+The storage flops are the largest share (54–95%), and SB + CB are ~1.3 mW. Every
+sim printed its PASS line, and memtile_power.csv parsed the real PT reports.
+Four things to know when reading synth-level numbers:
+- **The tile pays ~4 mW of clock that the standalone design doesn't, at
+  synth level only.** MemoryTileBuilder gates the core clock in logic
+  (`NOR2(mode, ~clk)` → lakespec, `INV` → SRAM/FIFOs). Before CTS, those
+  gates each drive thousands of flop clock pins, and PT books their nets as
+  `clock_network` switching: 3.9 mW at fw2 2 KB, the same in idle and active.
+  The standalone clock comes straight from a port and is ideal (≈0). This is
+  most of the tile's higher idle number, so compare standalone vs tile on
+  `report_power` groups or at the PnR level (real clock tree).
+- **The NanGate freepdk `DFFR_X1` model needs `+define+TETRAMAX` in gate
+  sims.** Without it, the model's `ng_xbuf` drives its own RN pin, so async
+  reset goes X and the RV tile fails. Seen with freepdk; the gf12 cell
+  models were not checked (no gf12 ADK on /aha).
+- **Don't apply an RTL-sim SAIF to a gate netlist without a name map.** Lake
+  `pd/thesis` synth-level ptpx does this, and PT annotated only ~4% of nets
+  (power not credible); a gate-level sim gives 100%. The tile flow simulates
+  the netlist, so it is fine.
+- **Use DC `analyze`+`elaborate` on garnet.v.** `read_file` black-boxes the
+  parameterized coreir templates (LBR-1).
+
 ## Helper scripts (build machine can't run Claude)
 
 - **`watch_step.sh`** — follow the active mflowgen step live (auto-hops as
