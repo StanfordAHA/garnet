@@ -294,17 +294,25 @@ Apples-to-apples caveats:
   config` env is NOT exported to the init step), so the default onyx build is
   byte-identical. Preferring `cols=2` macros (lake §5.1) keeps macros short,
   so most configs never trip the grow branch.
-- **`Tile_MemCore/pre-route/`** — lake-spec builds only (the default onyx
-  graph is unchanged). Supplies `pre-route.tcl`, sourced first in the route
-  step's `order` (after the design restore, before `run_route.tcl`'s
-  `addFiller` + `routeDesign -placementCheck`); same hook as
-  `full_chip/pre-route`. It sets `setFillerMode -fitGap true` (in a `catch`)
-  so addFiller can move a cell to close 1-site gaps: GF12's smallest filler
-  is 2 sites, so an unremovable 1-site gap is an unfillable FillerGap and
-  routeDesign aborts with NRIG-76. Seen 2026-10-01 on static
-  `fw4_dw16_sc8192_dp_in4_out4_vc2` at 1.333 ns (5 unfilled sites). Every
-  route log shows the second "addFiller without DRC checking" pass placing
-  DRC-violating `FILL_incr` cells — those routed fine but are a latent
+- **`Tile_MemCore/custom-init/outputs/fix-tap-gaps.tcl`** — lake-spec builds
+  only (`construct.py` adds it to custom-init's outputs and to init's `order`
+  right after the endcap/well-tap script; the default onyx graph is
+  unchanged). GF12's smallest filler is 2 sites and taps/endcaps are fixed,
+  so a well tap that lands exactly one site from a fixed neighbor leaves a
+  hole nothing can fill or move → `SPFillerGapViolation` → route's
+  `routeDesign -placementCheck` aborts with NRIG-76. It depends on where a
+  macro halo edge falls against the tap grid (i.e. die width): static
+  `fw4_dw16_sc8192_dp_in4_out4_vc2` hit it in 116 rows (TAPX14 one site short
+  of the ROWCAPRX8 beside the second SRAM), its wider `_rv` twin didn't. The
+  script measures each tap's clearance to fixed cells directly (not via
+  checkPlace, whose filler-gap check needs the place step's
+  `place_detail_legalization_inst_gap`) and moves offenders one site, widening
+  the gap to 2 (or abutting if widening would leave a new 1-site gap). Init
+  log prints `INFO: fix-tap-gaps: N well taps had a 1-site gap ...`.
+  Superseded a 2026-10-06 route-step `setFillerMode -fitGap true` hook that
+  changed nothing (fitGap only moves placed cells, not fixed ones). Every
+  route log also shows the second "addFiller without DRC checking" pass
+  placing DRC-violating `FILL_incr` cells — those route fine but are a latent
   signoff-DRC issue.
 
 ## Local RTL validation (no ADK/Cadence on /aha)
