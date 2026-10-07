@@ -909,6 +909,18 @@ class Garnet(Generator):
             if 'U' in id or 'u' in id or 'V' in id or 'v' in id:
                 mu_io_loc_to_id.setdefault(loc, []).append(id)
 
+        # 2026-10-01: record each register block's bus width so canal can tell a
+        # d_reg's own (16/17-bit) register from a 1-bit routing register at the same
+        # tile + track name when it assigns register pre-fill (extra_data).
+        if id_to_metadata is not None and netlist is not None and bus is not None:
+            reg_width = {}
+            for net_id, conns in netlist.items():
+                for blk, _ in conns:
+                    if isinstance(blk, str) and blk.startswith("r") and net_id in bus:
+                        reg_width[blk] = bus[net_id]
+            id_to_metadata = {k: (dict(v, width=reg_width[k]) if k in reg_width and isinstance(v, dict) else v)
+                              for k, v in id_to_metadata.items()}
+
         bitstream += self.interconnect.get_route_bitstream(routing, use_fifo=dense_ready_valid, id_to_name=id_to_name,
                                                            reg_loc_to_id=reg_loc_to_id, id_to_metadata=id_to_metadata)
 
