@@ -1992,7 +1992,10 @@ def _memtile_power_metrics(ws):
     except (AttributeError, OSError, ValueError):
         meta = {}
     for variant in MEMTILE_POWER_VARIANTS:
-        row[f"{variant}_window_cycles"] = meta.get("variants", {}).get(variant, {}).get("window")
+        # One window for both variants (same stimulus) since 2026-10-06;
+        # older power_tests.json kept it per variant.
+        row[f"{variant}_window_cycles"] = meta.get(
+            "window", meta.get("variants", {}).get(variant, {}).get("window"))
     # Pre-formatted: _write_csv's fixed 3 decimals would zero sub-mW powers.
     fmt = lambda v: None if v is None else f"{v:.6g}"  # noqa: E731
     for level in ("synth", "pnr"):
