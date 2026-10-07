@@ -76,6 +76,15 @@ Examples:
     # 12 anchors; correlation.csv + correlation_fit.csv project the rest
     ./mflowgen/sweep_specs.py --spec-set thesis --runtime-mode static,rv \\
         --pnr-set full12 --config-jobs 4 --pnr-jobs 2 --zip
+
+    # The 16-bit thesis specs, hierarchy kept in synth (like lake's standalone
+    # flow), idle/active power: synth all, PnR 12 of them; the synth->PnR model
+    # is fit on 8 (dw16_fit8) and checked on the 4 held out (dw16_val4) ->
+    # pnr_validation.csv
+    ./mflowgen/sweep_specs.py --spec-set thesis --data-width 16 \\
+        --runtime-mode static,rv --flatten-effort 0 --memtile-power \\
+        --pnr-set dw16_pnr12 --validate-set dw16_val4 \\
+        --config-jobs 4 --pnr-jobs 2 --zip
 """
 
 from pathlib import Path
@@ -175,6 +184,27 @@ PRESETS = {
 # synth-vs-PnR correlation anchors: the static `full` points plus their twins.
 PRESETS["full_rv"] = [n + "_rv" for n in PRESETS["full"]]
 PRESETS["full12"] = PRESETS["full"] + PRESETS["full_rv"]
+# 16-bit thesis set (--spec-set thesis --data-width 16): 12 PnR builds, 8 to fit
+# the synth->PnR model and 4 held out to check it (--validate-set dw16_val4).
+# Fit: 4 specs x {static, rv} spanning the size range -- smallest (fw1 1x1),
+# dual-port, fw4 2x2 sc8192 (the ports + SRAM of the big cluster below) and the
+# largest (fw8 4x4 32 KB). Validate: 2 points from the fw1 sp 2x2 sc8192
+# dims x max_extent / max_sequence_width cluster (108 of the 172 dw16 configs,
+# none in full12), a dual-port 4x4 and a vec_capacity point.
+PRESETS["dw16_fit8"] = [
+    "fw1_dw16_sc4096_sp_in1_out1",
+    "fw2_dw16_sc4096_dp_in2_out2_vc2",
+    "fw4_dw16_sc8192_sp_in2_out2_vc2",
+    "fw8_dw16_sc32768_sp_in4_out4_vc2",
+]
+PRESETS["dw16_fit8"] += [n + "_rv" for n in PRESETS["dw16_fit8"]]
+PRESETS["dw16_val4"] = [
+    "fw1_dw16_sc8192_sp_in2_out2_me4096",
+    "fw1_dw16_sc8192_sp_in2_out2_dim4_msw1024_rv",
+    "fw4_dw16_sc8192_dp_in4_out4_vc2_rv",
+    "fw4_dw16_sc8192_sp_in2_out2_vc4",
+]
+PRESETS["dw16_pnr12"] = PRESETS["dw16_fit8"] + PRESETS["dw16_val4"]
 
 # build_spec()/build_spec_rv() kwargs with their defaults (lake
 # spec/spec_memory_controller.py). An omitted key means the default on both
@@ -283,6 +313,11 @@ def build_argparser():
                         "standalone thesis synthesis sweep (lake "
                         "all_experiments_thesis_v2.sh) plus those 6. "
                         "Default: %(default)s.")
+    p.add_argument("--data-width", default="", metavar="WIDTHS",
+                   help="Comma-separated data widths: keep only the specs with "
+                        "one of these data_width values (e.g. 16). Applied before "
+                        "--preset/--only/--skip, and --pnr-set/--validate-set "
+                        "names must survive it. Default: all.")
     p.add_argument("--pnr-set", default="", metavar="NAMES",
                    help="Comma-separated config names and/or preset names "
                         "(e.g. full12) that build to --stop-after; every other "
@@ -290,6 +325,16 @@ def build_argparser():
                         "configs build to --stop-after. Names must exist in "
                         "--spec-set x --runtime-mode. They build in their own "
                         "--pnr-jobs pool.")
+    p.add_argument("--validate-set", default="", metavar="NAMES",
+                   help="Comma-separated config/preset names (e.g. dw16_val4) "
+                        "of PnR configs held OUT of the synth->PnR fits: their "
+                        "PnR area and idle/active power are predicted from the "
+                        "model fit on the other PnR configs and compared with "
+                        "the real result in <out-dir>/pnr_validation.csv. Must be "
+                        "in --pnr-set when that is given. Recorded per workspace "
+                        "(sweep_meta.json pnr_role), so --correlate-only "
+                        "reproduces the split without it; passing it there "
+                        "overrides the recorded roles.")
     p.add_argument("--synth-stop", default="cadence-genus-synthesis",
                    help="Stop target for configs NOT in --pnr-set "
                         "(default: %(default)s).")
@@ -349,6 +394,14 @@ def build_argparser():
     p.add_argument("--clean-all", action="store_true",
                    help="`make clean-all` before building (full rebuild -- redoes the "
                         "expensive RTL step). Takes precedence over --clean.")
+    p.add_argument("--clean-stale", action="store_true",
+                   help="mflowgen does not rebuild a finished step when only its "
+                        "parameters change (e.g. a new --flatten-effort on an "
+                        "existing workspace), so after `mflowgen run` the sweep "
+                        "compares each built step's parameters with the graph's "
+                        "and FAILS the config if any differ. With this flag it "
+                        "instead runs `make clean-<step>` for those steps (their "
+                        "downstream steps rebuild too) and builds.")
     p.add_argument("--fresh", action="store_true",
                    help="Completely delete each config's workspace dir (rm -rf) "
                         "before building -- a total wipe, unlike --clean-all which is "
@@ -372,6 +425,15 @@ def build_argparser():
                    help="Build with behavioral (simulatable) SRAM instead of a "
                         "hardened macro. Needed for spec geometries with no "
                         "matching physical SRAM macro in the tech map.")
+    p.add_argument("--flatten-effort", type=int, choices=range(4), default=None,
+                   metavar="N",
+                   help="Genus flatten_effort for the tile synth (env FLATTEN, "
+                        "read by Tile_MemCore/construct.py). 0 keeps the design "
+                        "hierarchy (auto_ungroup none), like lake's standalone "
+                        "pd/thesis synth, so area/power reports break down per "
+                        "submodule; 1-3 let Genus ungroup (auto_ungroup both: the "
+                        "Genus node only distinguishes 0 from non-zero). Default: "
+                        "the graph's own value (3 for Tile_MemCore).")
     # ---- App-driven power. Both paths are "round-trips" (the spec config is
     # sent up for app compilation either way); they differ in SCOPE:
     #   --cgra-power : app runs on the whole CGRA fabric -> tile power in fabric
@@ -520,6 +582,7 @@ def main(argv=None):
         print("No spec points selected; nothing to do.", flush=True)
         return 0
     args.pnr_names = _resolve_pnr_set(args, configs)
+    args.validate_names = _resolve_validate_set(args)
     if args.pnr_names is not None:
         # The PnR builds take hours; start them first so they aren't the tail.
         configs.sort(key=lambda c: _config_name(c) not in args.pnr_names)
@@ -545,9 +608,7 @@ def main(argv=None):
                   flush=True)
             return 1
         if not args.dry_run:
-            found = _discover_configs(out_dir, names)
-            _write_correlation(out_dir, found)
-            _write_memtile_power(out_dir, found)
+            _write_reports(out_dir, _discover_configs(out_dir, names), args)
         if args.correlate_only and not args.zip_only:
             return 0
         return 0 if _zip_results(out_dir, names, args) else 1
@@ -555,6 +616,8 @@ def main(argv=None):
     _preflight(args)
     if args.standalone_synth:
         _preflight_standalone(args)
+    # Recorded in every workspace's build_manifest.json.
+    args.provenance = _sweep_provenance(args)
 
     out_dir = Path(args.out_dir).resolve()
     if out_dir == GARNET_DIR or GARNET_DIR in out_dir.parents:
@@ -641,9 +704,7 @@ def main(argv=None):
           f"Results: {results_csv}", flush=True)
     # Every workspace in out_dir, not just this run's configs, so a partial
     # re-run (--only, --standalone-only) doesn't drop rows for the others.
-    found = _discover_configs(out_dir, None)
-    _write_correlation(out_dir, found)
-    _write_memtile_power(out_dir, found)
+    _write_reports(out_dir, _discover_configs(out_dir, None), args)
     zip_ok = True
     if args.zip:
         zip_ok = _zip_results(out_dir, {_config_name(c) for c in configs}, args)
@@ -763,6 +824,17 @@ def _preflight(args):
             "    docker cp rejects ('invalid symlink ...'). Remove it and re-run:\n"
             f"      rm -rf {stale}")
 
+    # --flatten-effort travels as env FLATTEN, which only some graphs read.
+    if args.flatten_effort is not None:
+        try:
+            reads = "FLATTEN" in (graph / "construct.py").read_text()
+        except OSError:
+            reads = True
+        if not reads:
+            print(f"*** WARNING: {graph / 'construct.py'} does not read FLATTEN; "
+                  "--flatten-effort has no effect on this graph.",
+                  file=sys.stderr, flush=True)
+
 
 # ---------------------------------------------------------------------------
 # Config selection
@@ -809,6 +881,15 @@ def _collect_configs(args):
             raise SystemExit(f"*** ERROR: --extra-specs must be a JSON list, "
                              f"got {type(payload).__name__}")
         specs.extend(payload)
+
+    if args.data_width:
+        try:
+            widths = {int(w) for w in args.data_width.split(",") if w.strip()}
+        except ValueError:
+            raise SystemExit(f"*** ERROR: --data-width takes a comma list of "
+                             f"integers, got '{args.data_width}'")
+        specs = [s for s in specs
+                 if s.get("data_width", SPEC_DEFAULTS["data_width"]) in widths]
 
     # One config per (spec, mode). A spec that pins runtime_mode keeps it.
     configs, seen_specs = [], set()
@@ -900,12 +981,12 @@ def _config_name(cfg):
     return "_".join(parts)
 
 
-def _resolve_pnr_set(args, configs):
-    """--pnr-set -> set of config names (None when unset). Each item is a
-    preset name or a config name, and must exist in the spec set x runtime
-    modes (before --preset/--only/--skip, which may narrow the selection to
-    only some or none of them)."""
-    items = [s.strip() for s in args.pnr_set.split(",") if s.strip()]
+def _resolve_names(args, text, flag):
+    """A comma list of preset and/or config names -> set of config names
+    (None when empty). Every name must exist in the spec set x runtime modes
+    (x --data-width), before --preset/--only/--skip, which may narrow the
+    selection to only some or none of them."""
+    items = [s.strip() for s in text.split(",") if s.strip()]
     if not items:
         return None
     names = set()
@@ -913,11 +994,41 @@ def _resolve_pnr_set(args, configs):
         names.update(PRESETS.get(item, [item]))
     missing = sorted(names - args.all_names)
     if missing:
+        widths = f" x --data-width '{args.data_width}'" if args.data_width else ""
         raise SystemExit(
-            f"*** ERROR: --pnr-set names configs not in --spec-set "
-            f"'{args.spec_set}' x --runtime-mode '{args.runtime_mode}': "
+            f"*** ERROR: {flag} names configs not in --spec-set "
+            f"'{args.spec_set}' x --runtime-mode '{args.runtime_mode}'{widths}: "
             f"{', '.join(missing)}\n    Use --list to see available names.")
     return names
+
+
+def _resolve_pnr_set(args, configs):
+    """--pnr-set -> set of config names (None when unset)."""
+    return _resolve_names(args, args.pnr_set, "--pnr-set")
+
+
+def _resolve_validate_set(args):
+    """--validate-set -> set of config names (None when unset). They are
+    validation points for the synth->PnR model, so they must build PnR."""
+    names = _resolve_names(args, args.validate_set, "--validate-set")
+    if names and args.pnr_names is not None:
+        outside = sorted(names - args.pnr_names)
+        if outside:
+            raise SystemExit(
+                f"*** ERROR: --validate-set configs must also be in --pnr-set "
+                f"(they need PnR results): {', '.join(outside)}")
+    return names
+
+
+def _pnr_role(cfg, args):
+    """Role in the synth->PnR model: 'validate' (PnR, held out of the fits),
+    'fit' (PnR, fits them) or 'synth' (no PnR result)."""
+    if _config_name(cfg) in (args.validate_names or ()):
+        return "validate"
+    if args.include_pnr_power or any(h in _stop_target(cfg, args)
+                                     for h in SIGNOFF_OR_LATER):
+        return "fit"
+    return "synth"
 
 
 def _stop_target(cfg, args):
@@ -942,6 +1053,13 @@ def _print_selection_summary(configs, args, file=None):
         targets[t] = targets.get(t, 0) + 1
     for t, n in targets.items():
         print(f"  {n:4d} -> {t}", file=file, flush=True)
+    roles = {}
+    for c in configs:
+        role = _pnr_role(c, args)
+        roles[role] = roles.get(role, 0) + 1
+    if roles.get("validate"):
+        print(f"  PnR model: fit on {roles.get('fit', 0)}, validated on "
+              f"{roles['validate']} held-out config(s)", file=file, flush=True)
     reasons = {}
     for _, reason in args.skipped_rv:
         reasons[reason] = reasons.get(reason, 0) + 1
@@ -1027,8 +1145,12 @@ def _process_tile(name, cfg, cfg_dir, args):
     targets = " ".join(_all_targets(cfg, args))
 
     if args.skip_existing and _done_for(done_flag, targets):
-        print(f"        SKIP: {name} (done.flag present)", flush=True)
-        return _row(name, cfg, cfg_dir, "SKIP", "already_done", 0.0, targets)
+        changed = _changed_settings(cfg_dir, _build_settings(_tile_env(cfg, cfg_dir, args)))
+        if not changed:
+            print(f"        SKIP: {name} (done.flag present)", flush=True)
+            return _row(name, cfg, cfg_dir, "SKIP", "already_done", 0.0, targets)
+        print(f"        {name}: done.flag present but built with other settings "
+              f"({changed}); rebuilding", flush=True)
     # done.flag = the latest build of this workspace succeeded. Drop an older
     # run's flag while rebuilding, so a failed re-run doesn't read as done
     # (watch_step.sh --summary).
@@ -1045,13 +1167,16 @@ def _process_tile(name, cfg, cfg_dir, args):
         done_flag.write_text(f"ok {done}\n")
         print(f"        PASS: {name} ({duration:.0f}s){' ' + notes if notes else ''}",
               flush=True)
+        _finish_manifest(cfg_dir, "PASS", notes, duration)
         return _row(name, cfg, cfg_dir, "PASS", notes, duration, targets)
     except subprocess.CalledProcessError as e:
         print(f"        FAIL: {name} (exit {e.returncode})", flush=True)
+        _finish_manifest(cfg_dir, "FAIL", f"exit_code={e.returncode}", None)
         return _row(name, cfg, cfg_dir, "FAIL", f"exit_code={e.returncode}", 0.0,
                     targets)
     except Exception as e:  # noqa: BLE001 -- record and press on
         print(f"        FAIL: {name} ({str(e)[:120]})", flush=True)
+        _finish_manifest(cfg_dir, "FAIL", str(e), None)
         return _row(name, cfg, cfg_dir, "FAIL", str(e)[:200], 0.0, targets)
 
 
@@ -1088,8 +1213,11 @@ def _process_standalone(name, cfg, sa_dir, args):
 
     def result(status, notes):
         print(f"        {status}: {name} standalone ({notes})", flush=True)
+        _finish_manifest(sa_dir, status, notes,
+                         duration if status == "PASS" else None)
         return {"standalone_status": status, "standalone_notes": notes}
 
+    duration = None
     try:
         duration = _run_standalone(cfg, sa_dir, args)
         if args.dry_run:
@@ -1192,7 +1320,12 @@ def _run_standalone(cfg, sa_dir, args):
         _sh(clean_cmd, cwd=sa_dir, env=env, log=sa_dir / "make_clean.log")
         write_spec()  # clean-all deletes loose files in the workspace
 
+    _handle_stale_steps(sa_dir, env, args)
     _check_step_exists(STANDALONE_TARGET, sa_dir, env)
+    _write_manifest(sa_dir, cfg, args, "standalone",
+                    settings={k: env[k] for k in ("PYTHONPATH", "LAKE_PATH") if k in env},
+                    targets={"build": [STANDALONE_TARGET]}, graph=str(design),
+                    graph_kwargs=_standalone_graph_kwargs(cfg, args))
     _sh(make_cmd, cwd=sa_dir, env=env, log=sa_dir / "make.log")
     _collect_artifacts(sa_dir)
     return time.time() - t0
@@ -1285,9 +1418,9 @@ def _all_targets(cfg, args):
     return _build_targets(cfg, args) + _memtile_power_targets(cfg, args)
 
 
-def _run_one(cfg, cfg_dir, args):
-    t0 = time.time()
-
+def _tile_env(cfg, cfg_dir, args):
+    """Environment for a config's `mflowgen run` + make: the knobs construct.py
+    and common/rtl/gen_rtl.sh read (BUILD_ENV_KEYS)."""
     spec_path = cfg_dir / "spec_config.json"
     env = os.environ.copy()
     env["LAKE_SPEC_CONFIG"] = str(spec_path)
@@ -1295,6 +1428,9 @@ def _run_one(cfg, cfg_dir, args):
     env["DUAL_PORT"] = "True" if cfg.get("dual_port", False) else "False"
     env["USE_NON_SPLIT_FIFOS"] = "True" if args.non_split_fifos else "False"
     env["USE_SIM_SRAM"] = "True" if args.use_sim_sram else "False"
+    # Genus flatten_effort; unset -> the graph's own default.
+    if args.flatten_effort is not None:
+        env["FLATTEN"] = str(args.flatten_effort)
 
     # The *_POWER env vars must be set BEFORE `mflowgen run` -- the construct
     # reads them at graph-materialization time to add the matching power nodes
@@ -1307,6 +1443,13 @@ def _run_one(cfg, cfg_dir, args):
         env["PER_TILE_POWER"] = "True"
     if args.memtile_power:
         env["MEMTILE_POWER"] = "True"
+    return env
+
+
+def _run_one(cfg, cfg_dir, args):
+    t0 = time.time()
+
+    env = _tile_env(cfg, cfg_dir, args)
     build_targets = _build_targets(cfg, args)
     power_targets = _memtile_power_targets(cfg, args)
 
@@ -1324,6 +1467,8 @@ def _run_one(cfg, cfg_dir, args):
     if args.dry_run:
         dry_env_keys = ["LAKE_SPEC_CONFIG", "LAKE_SPEC_MODE", "DUAL_PORT",
                         "USE_NON_SPLIT_FIFOS", "USE_SIM_SRAM"]
+        if args.flatten_effort is not None:
+            dry_env_keys += ["FLATTEN"]
         if args.cgra_power:
             dry_env_keys += ["SYNTH_POWER", "RTL_POWER"]
         if args.per_tile:
@@ -1341,17 +1486,26 @@ def _run_one(cfg, cfg_dir, args):
             print(f"        DRY-RUN cmd: {' '.join(power_cmd)}", flush=True)
         return 0.0, ""
 
+    def write_manifest():
+        _write_manifest(cfg_dir, cfg, args, "tile", settings=_build_settings(env),
+                        targets={"build": build_targets, "memtile_power": power_targets},
+                        graph=str(args.graph))
+
+    write_manifest()    # so a config that fails in `mflowgen run` has one too
     _sh(["mflowgen", "run", "--design", str(args.graph)],
         cwd=cfg_dir, env=env, log=cfg_dir / "mflowgen_run.log")
     if clean_cmd:
         _sh(clean_cmd, cwd=cfg_dir, env=env, log=cfg_dir / "make_clean.log")
+    _handle_stale_steps(cfg_dir, env, args)
 
     # Write the spec AFTER any clean. `make clean-all` deletes every file in the
     # workspace except Makefile/.mflowgen* (find -maxdepth 1 ... -exec rm -rf),
     # so writing spec_config.json earlier would let clean-all erase it and make
     # the rtl step fail with "lake_spec_config file not found". mflowgen run only
     # needs the path (baked from LAKE_SPEC_CONFIG env), not the contents.
-    _write_spec_files(cfg, cfg_dir, " ".join(build_targets + power_targets))
+    _write_spec_files(cfg, cfg_dir, " ".join(build_targets + power_targets),
+                      _pnr_role(cfg, args))
+    write_manifest()    # now with the graph's step parameters
 
     for _t in build_targets + power_targets:
         _check_step_exists(_t, cfg_dir, env)
@@ -1368,15 +1522,250 @@ def _run_one(cfg, cfg_dir, args):
     return time.time() - t0, notes
 
 
-def _write_spec_files(cfg, ws, targets):
+def _write_spec_files(cfg, ws, targets, pnr_role=None):
     """spec_config.json = build_spec kwargs only (util_onyx passes it as
     **kwargs); sweep_meta.json = how the sweep built it (correlation reads
-    runtime_mode/targets from it)."""
+    runtime_mode/targets/pnr_role from it)."""
     with open(ws / "spec_config.json", "w") as f:
         json.dump(_spec_kwargs(cfg), f, indent=2, sort_keys=True)
+    meta = {"config_name": _config_name(cfg), "runtime_mode": _mode(cfg),
+            "targets": targets}
+    if pnr_role:
+        meta["pnr_role"] = pnr_role
     with open(ws / "sweep_meta.json", "w") as f:
-        json.dump({"config_name": _config_name(cfg), "runtime_mode": _mode(cfg),
-                   "targets": targets}, f, indent=2, sort_keys=True)
+        json.dump(meta, f, indent=2, sort_keys=True)
+
+
+# ---------------------------------------------------------------------------
+# Build manifest + stale-step check
+# ---------------------------------------------------------------------------
+# <workspace>/build_manifest.json records everything that went into a build:
+# the sweep command line and every parsed flag, the env knobs the sweep
+# exported, the spec, the targets, the git state of garnet/lake/mflowgen at
+# sweep start, and each graph step's parameters as mflowgen resolved them
+# (the `export key=value` lines of .mflowgen/<step>/mflowgen-run, i.e. exactly
+# what the step's scripts see). Written after `mflowgen run`, finished with
+# the result (+ the rtl step's garnet flags / lake commit) when the build ends.
+MANIFEST_FILE = "build_manifest.json"
+
+# Env vars that shape a tile build: what _tile_env exports, plus knobs the
+# graphs read from an inherited env. Recorded in the manifest; --skip-existing
+# rebuilds a done workspace whose recorded values differ.
+BUILD_ENV_KEYS = ("LAKE_SPEC_CONFIG", "LAKE_SPEC_MODE", "DUAL_PORT",
+                  "USE_NON_SPLIT_FIFOS", "USE_SIM_SRAM", "FLATTEN",
+                  "RTL_POWER", "SYNTH_POWER", "PER_TILE_POWER", "MEMTILE_POWER",
+                  "APP_BUNDLE", "LAKE_POND_SPEC_CONFIG", "NO_POND")
+
+_EXPORT_RE = re.compile(r"^export (\w+)=(.*)$")
+
+
+def _build_settings(env):
+    return {k: env[k] for k in BUILD_ENV_KEYS if k in env}
+
+
+def _read_manifest(ws):
+    try:
+        return json.loads((ws / MANIFEST_FILE).read_text())
+    except (OSError, ValueError):
+        return None
+
+
+def _changed_settings(ws, settings):
+    """'KEY a->b, ...' for build settings that differ from the ones recorded
+    in ws's manifest; '' if they match or no manifest records them."""
+    old = (_read_manifest(ws) or {}).get("settings")
+    if old is None:
+        return ""
+    keys = sorted(set(old) | set(settings))
+    return ", ".join(f"{k} {old.get(k)}->{settings.get(k)}"
+                     for k in keys if old.get(k) != settings.get(k))
+
+
+def _step_params(run_script):
+    """{param: value} exported by an mflowgen-run script (lists are
+    comma-joined, as mflowgen writes them)."""
+    params = {}
+    for line in _read_lines(run_script):
+        m = _EXPORT_RE.match(line)
+        if m:
+            params[m.group(1)] = m.group(2)
+    return params
+
+
+def _step_dirs(root):
+    """<N>-<name> dirs under root, in step-number order."""
+    if not root.is_dir():
+        return []
+    dirs = [d for d in root.iterdir()
+            if d.is_dir() and re.match(r"^\d+-", d.name)]
+    return sorted(dirs, key=lambda d: int(d.name.split("-", 1)[0]))
+
+
+def _graph_params(ws):
+    """{step: params} as the last `mflowgen run` configured them."""
+    return {d.name: _step_params(d / "mflowgen-run")
+            for d in _step_dirs(ws / ".mflowgen") if (d / "mflowgen-run").is_file()}
+
+
+def _stale_steps(ws):
+    """[(step, 'param built->now; ...')] for steps that already ran with
+    other parameters than the graph now gives them. mflowgen copies the run
+    script into the step dir when the step executes, and its make rules do not
+    depend on parameters, so make would keep these results."""
+    stale = []
+    for step, now in _graph_params(ws).items():
+        built_dir = ws / step
+        if not (built_dir / ".execstamp").exists():
+            continue
+        built = _step_params(built_dir / "mflowgen-run")
+        if not built:
+            continue
+        diff = [f"{k} {built.get(k)}->{now.get(k)}"
+                for k in sorted(set(built) | set(now)) if built.get(k) != now.get(k)]
+        if diff:
+            stale.append((step, "; ".join(diff)))
+    return stale
+
+
+def _handle_stale_steps(ws, env, args):
+    """Fail on stale steps (see _stale_steps), or clean them with
+    --clean-stale so make rebuilds them and everything downstream."""
+    stale = _stale_steps(ws)
+    if not stale:
+        return
+    for step, diff in stale:
+        print(f"        stale step {step}: {diff}", flush=True)
+    if not args.clean_stale:
+        raise RuntimeError(
+            "built steps have other parameters than the graph now: "
+            + ", ".join(step for step, _ in stale)
+            + " -- rerun with --clean-stale (rebuilds them) or --fresh")
+    steps = [step.split("-", 1)[0] for step, _ in stale]
+    _sh(["make", *(f"clean-{n}" for n in steps)], cwd=ws, env=env,
+        log=ws / "make_clean_stale.log")
+
+
+def _git_state(path):
+    """Commit, branch, subject and modified tracked files of a git checkout
+    (fail-soft: {'path', 'commit': None} when it isn't one)."""
+    def git(*a):
+        try:
+            p = subprocess.run(["git", "-C", str(path), *a], stdout=subprocess.PIPE,
+                               stderr=subprocess.DEVNULL, text=True, timeout=60)
+        except (OSError, subprocess.SubprocessError):
+            return None
+        return p.stdout.strip() if p.returncode == 0 else None
+    state = {"path": str(path), "commit": git("rev-parse", "HEAD")}
+    if state["commit"]:
+        state["branch"] = git("rev-parse", "--abbrev-ref", "HEAD")
+        state["subject"] = git("log", "-1", "--format=%s")
+        dirty = git("status", "--porcelain", "--untracked-files=no") or ""
+        state["modified"] = dirty.splitlines()[:200]
+    return state
+
+
+def _jsonable(v):
+    if isinstance(v, (set, frozenset)):
+        return sorted(_jsonable(x) for x in v)
+    if isinstance(v, (list, tuple)):
+        return [_jsonable(x) for x in v]
+    if isinstance(v, dict):
+        return {str(k): _jsonable(x) for k, x in v.items()}
+    if isinstance(v, (str, int, float, bool)) or v is None:
+        return v
+    return str(v)
+
+
+def _sweep_provenance(args):
+    """Sweep-wide part of every build_manifest.json, taken once at start."""
+    try:
+        spec = importlib.util.find_spec("mflowgen")
+    except (ImportError, ValueError):
+        spec = None
+    lake = Path(args.lake_dir).resolve()
+    lake_state = _git_state(lake)
+    if lake_state["commit"]:
+        # The container rtl step builds lake origin/THESIS (gen_rtl.sh); this
+        # is that ref as of the host lake's last fetch.
+        lake_state["origin_THESIS"] = None
+        try:
+            lake_state["origin_THESIS"] = subprocess.run(
+                ["git", "-C", str(lake), "rev-parse", "origin/THESIS"],
+                stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True,
+                timeout=60).stdout.strip() or None
+        except (OSError, subprocess.SubprocessError):
+            pass
+    sources = {"garnet": _git_state(GARNET_DIR), "lake": lake_state}
+    if spec and spec.origin:
+        sources["mflowgen"] = _git_state(Path(spec.origin).resolve().parent.parent)
+    derived = ("all_names", "skipped_rv", "provenance")
+    return {
+        "argv": [sys.executable] + sys.argv,
+        "cwd": os.getcwd(),
+        "host": socket.gethostname(),
+        "user": os.environ.get("USER", ""),
+        "pid": os.getpid(),
+        "started": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        "mflowgen": shutil.which("mflowgen"),
+        "args": {k: _jsonable(v) for k, v in sorted(vars(args).items())
+                 if k not in derived},
+        "sources": sources,
+    }
+
+
+def _write_manifest(ws, cfg, args, kind, settings, targets, graph,
+                    graph_kwargs=None):
+    manifest = {
+        "manifest_version": 1,
+        "kind": kind,                       # tile | standalone
+        "config_name": _config_name(cfg),
+        "runtime_mode": _mode(cfg),
+        "pnr_role": _pnr_role(cfg, args) if kind == "tile" else "",
+        "spec": _spec_kwargs(cfg),
+        "graph": graph,
+        "graph_kwargs": _jsonable(graph_kwargs),
+        "settings": settings,
+        "targets": targets,
+        "written": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        "sweep": getattr(args, "provenance", None),
+        "steps": _graph_params(ws),
+        "result": None,
+    }
+    (ws / MANIFEST_FILE).write_text(json.dumps(manifest, indent=2) + "\n")
+
+
+def _rtl_provenance(ws):
+    """What the rtl step actually ran, from its log: the `aha garnet` flags
+    and the lake commit it checked out (container mode; fail-soft)."""
+    out = {}
+    lines = _read_lines(_first(ws, "*-rtl/mflowgen-run.log"))
+    for i, line in enumerate(lines):
+        m = re.match(r"^--- (?:DEFAULT rtl build|INTERCONNECT_ONLY): aha garnet (.*)$", line)
+        if m:
+            out["garnet_flags"] = m.group(1).strip()
+        if "changing lake to GF-enabled lake" in line:
+            for nxt in lines[i + 1:i + 40]:
+                m = re.match(r"^([0-9a-f]{7,40}) (\S.*)$", nxt.strip())
+                if m:
+                    out["lake_commit"] = f"{m.group(1)} {m.group(2)}"
+                    break
+    return out
+
+
+def _finish_manifest(ws, status, notes, duration_s):
+    """Add the build's result to ws's manifest (if this run wrote one)."""
+    manifest = _read_manifest(ws)
+    if manifest is None:
+        return
+    manifest["result"] = {
+        "status": status, "notes": notes,
+        "duration_s": None if duration_s is None else round(duration_s, 1),
+        "finished": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        "executed_steps": [d.name for d in _step_dirs(ws)
+                           if (d / ".execstamp").exists()],
+        "rtl": _rtl_provenance(ws),
+    }
+    (ws / MANIFEST_FILE).write_text(json.dumps(manifest, indent=2) + "\n")
 
 
 def _check_step_exists(step, cfg_dir, env):
@@ -1857,14 +2246,29 @@ def _pnr_metrics(ws):
 
 
 def _sweep_meta(ws, name):
-    """runtime_mode/targets a workspace was built with (sweep_meta.json);
-    workspaces from before it existed fall back to the name suffix."""
+    """runtime_mode/targets/pnr_role a workspace was built with
+    (sweep_meta.json); workspaces from before it existed fall back to the name
+    suffix (and no role)."""
     try:
         meta = json.loads((ws / "sweep_meta.json").read_text())
     except (OSError, ValueError):
         meta = {}
     mode = meta.get("runtime_mode") or ("rv" if name.endswith("_rv") else "static")
-    return {"runtime_mode": mode, "targets": meta.get("targets", "")}
+    return {"runtime_mode": mode, "targets": meta.get("targets", ""),
+            "pnr_role": meta.get("pnr_role", "")}
+
+
+def _apply_roles(rows, validate_names):
+    """--validate-set, when given, overrides the pnr_role recorded at build
+    time. Only 'validate' matters to the fits: those rows are left out of them
+    and their PnR results are predicted instead."""
+    if validate_names is None:
+        return
+    for r in rows:
+        if r["config_name"] in validate_names:
+            r["pnr_role"] = "validate"
+        elif r["pnr_role"] == "validate":
+            r["pnr_role"] = "fit"
 
 
 # Tile synth -> tile PnR fits: (label, synth column, PnR column). Both sides
@@ -1876,6 +2280,13 @@ PNR_FITS = (
     ("total", "tile_synth_cell_area", "tile_pnr_total_area"),
     ("logic", "tile_synth_logic_area", "tile_pnr_logic_area"),
 )
+# PnR total area as synth SRAM macro area + the `logic` fit's projection: the
+# macros carry over unchanged, so they are not scaled by a fitted slope (the
+# `total` fit does scale them).
+VIA_LOGIC_COL = "tile_pnr_total_area_proj_via_logic"
+# --memtile-power: idle/active power of the Genus netlist -> of the signoff one.
+POWER_FITS = tuple((f"{v}_power", f"synth_{v}_total_power", f"pnr_{v}_total_power")
+                   for v in MEMTILE_POWER_VARIANTS)
 MIN_FIT_POINTS = 3
 
 
@@ -1903,31 +2314,42 @@ def _linfit(points):
     }
 
 
-def _fit_and_project(rows):
-    """Fit PnR area on synth area per group (all / static / rv) over rows with
-    both, then add projected PnR area to every row with a synth area. A row
-    uses its own mode's fit when that has MIN_FIT_POINTS, else the pooled
-    one; proj_extrapolated flags synth areas outside the fitted range.
-    Returns the fit-table rows."""
+def _pct_err(pred, actual):
+    """(pred - actual) / actual in %, None unless both are numbers."""
+    if not isinstance(pred, float) or not isinstance(actual, float) or not actual:
+        return None
+    return (pred - actual) / actual * 100
+
+
+def _fit_and_project(rows, fits=PNR_FITS):
+    """Fit PnR on synth per group (all / static / rv) over the rows that have
+    both and are not held out (pnr_role 'validate'), then add the projected
+    PnR value to every row with a synth value. A row uses its own mode's fit
+    when that has MIN_FIT_POINTS, else the pooled one; proj_extrapolated flags
+    synth values outside the fitted range; proj_err_pct = (projected - actual)
+    / actual where PnR ran: the in-sample residual for fit rows, the prediction
+    error for held-out ones. Returns the fit-table rows; val_* = the held-out
+    rows' prediction errors under that fit."""
     groups = {"all": rows}
     for mode in RUNTIME_MODES:
         groups[mode] = [r for r in rows if r["runtime_mode"] == mode]
-    table, fits = [], {}
-    for label, xcol, ycol in PNR_FITS:
+    table, fitted = [], {}
+    for label, xcol, ycol in fits:
         for group, members in groups.items():
             pts = [(r[xcol], r[ycol]) for r in members
-                   if isinstance(r[xcol], float) and isinstance(r[ycol], float)]
+                   if r.get("pnr_role") != "validate"
+                   and isinstance(r.get(xcol), float) and isinstance(r.get(ycol), float)]
             fit = _linfit(pts)
-            fits[(label, group)] = fit
+            fitted[(label, group)] = fit
             if fit:
                 table.append({"metric": label, "group": group,
                               "synth_column": xcol, "pnr_column": ycol, **fit})
     for r in rows:
-        for label, xcol, ycol in PNR_FITS:
-            fit, used = fits.get((label, r["runtime_mode"])), r["runtime_mode"]
+        for label, xcol, ycol in fits:
+            fit, used = fitted.get((label, r["runtime_mode"])), r["runtime_mode"]
             if not fit:
-                fit, used = fits.get((label, "all")), "all"
-            x = r[xcol]
+                fit, used = fitted.get((label, "all")), "all"
+            x = r.get(xcol)
             if fit and isinstance(x, float):
                 r[f"{ycol}_proj"] = fit["intercept"] + fit["slope"] * x
                 r[f"{ycol}_proj_fit"] = used
@@ -1937,11 +2359,20 @@ def _fit_and_project(rows):
                 r[f"{ycol}_proj"] = None
                 r[f"{ycol}_proj_fit"] = ""
                 r[f"{ycol}_proj_extrapolated"] = ""
+            r[f"{ycol}_proj_err_pct"] = _pct_err(r[f"{ycol}_proj"], r.get(ycol))
+    for t in table:
+        col = t["pnr_column"]
+        errs = [abs(r[f"{col}_proj_err_pct"]) for r in rows
+                if r.get("pnr_role") == "validate" and r[f"{col}_proj_fit"] == t["group"]
+                and r[f"{col}_proj_err_pct"] is not None]
+        t["val_n"] = len(errs)
+        t["val_mean_abs_pct_err"] = sum(errs) / len(errs) if errs else None
+        t["val_max_abs_pct_err"] = max(errs) if errs else None
     return table
 
 
-def _write_csv(path, rows):
-    rows = [{k: (f"{v:.3f}" if isinstance(v, float) else v) for k, v in r.items()}
+def _write_csv(path, rows, fmt="{:.3f}"):
+    rows = [{k: (fmt.format(v) if isinstance(v, float) else v) for k, v in r.items()}
             for r in rows]
     with open(path, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=list(rows[0]))
@@ -1949,12 +2380,44 @@ def _write_csv(path, rows):
         writer.writerows(rows)
 
 
-def _write_correlation(out_dir, names):
+def _print_fits(table):
+    pct = lambda v: "n/a" if v is None else f"{v:.2f}%"  # noqa: E731
+    for t in table:
+        held = (f"   held-out n={t['val_n']} |err| mean {pct(t['val_mean_abs_pct_err'])} "
+                f"max {pct(t['val_max_abs_pct_err'])}" if t["val_n"] else "")
+        print(f"  {t['metric']:12s} {t['group']:6s} n={t['n']:<3d} "
+              f"pnr = {t['slope']:.4g} * synth + {t['intercept']:.4g}   "
+              f"R^2={t['r2']:.4f}   |err| mean {pct(t['mean_abs_pct_err'])} "
+              f"max {pct(t['max_abs_pct_err'])}{held}", flush=True)
+
+
+def _validation_rows(rows, metrics):
+    """pnr_validation.csv rows: per held-out config and metric, the synth
+    value, the PnR value the model predicts, the real one and the error.
+    metrics: (metric, synth column, PnR column, projected column, column
+    whose fit made the projection)."""
+    out = []
+    for r in rows:
+        if r.get("pnr_role") != "validate":
+            continue
+        for metric, xcol, ycol, pcol, fcol in metrics:
+            out.append({
+                "config_name": r["config_name"], "runtime_mode": r["runtime_mode"],
+                "metric": metric, "synth": r.get(xcol),
+                "pnr_predicted": r.get(pcol), "pnr_actual": r.get(ycol),
+                "err_pct": _pct_err(r.get(pcol), r.get(ycol)),
+                "fit": r.get(f"{fcol}_proj_fit", ""),
+                "extrapolated": r.get(f"{fcol}_proj_extrapolated", ""),
+            })
+    return out
+
+
+def _write_correlation(out_dir, names, validate_names=None):
     """Write <out_dir>/correlation.csv: per config, standalone synth vs tile
     synth vs tile PnR area/slack, pulled from whichever workspaces exist, plus
     PnR area projected from tile synth area; and correlation_fit.csv, the
     synth->PnR fits behind the projection (once >= MIN_FIT_POINTS configs
-    have both)."""
+    have both). Returns the held-out configs' pnr_validation.csv rows."""
     rows = []
     for name in names:
         row = {"config_name": name}
@@ -1964,22 +2427,30 @@ def _write_correlation(out_dir, names):
         row.update(_pnr_metrics(out_dir / name))
         rows.append(row)
     if not rows:
-        return
+        return []
+    _apply_roles(rows, validate_names)
     table = _fit_and_project(rows)
+    for r in rows:
+        sram, logic = r["tile_synth_sram_area"], r["tile_pnr_logic_area_proj"]
+        r[VIA_LOGIC_COL] = (sram + logic if isinstance(sram, float)
+                            and isinstance(logic, float) else None)
+        r[VIA_LOGIC_COL + "_err_pct"] = _pct_err(r[VIA_LOGIC_COL], r["tile_pnr_total_area"])
     path = out_dir / "correlation.csv"
     _write_csv(path, rows)
     print(f"Correlation: {path}", flush=True)
-    if not table:
-        return
-    fit_path = out_dir / "correlation_fit.csv"
-    _write_csv(fit_path, table)
-    print(f"Synth->PnR fit: {fit_path}", flush=True)
-    pct = lambda v: "n/a" if v is None else f"{v:.2f}%"  # noqa: E731
-    for t in table:
-        print(f"  {t['metric']:5s} {t['group']:6s} n={t['n']:<3d} "
-              f"pnr = {t['slope']:.4f} * synth + {t['intercept']:.1f}   "
-              f"R^2={t['r2']:.4f}   |err| mean {pct(t['mean_abs_pct_err'])} "
-              f"max {pct(t['max_abs_pct_err'])}", flush=True)
+    if table:
+        fit_path = out_dir / "correlation_fit.csv"
+        _write_csv(fit_path, table)
+        print(f"Synth->PnR fit: {fit_path}", flush=True)
+        _print_fits(table)
+    return _validation_rows(rows, [
+        ("total_area", "tile_synth_cell_area", "tile_pnr_total_area",
+         "tile_pnr_total_area_proj", "tile_pnr_total_area"),
+        ("total_area_via_logic", "tile_synth_cell_area", "tile_pnr_total_area",
+         VIA_LOGIC_COL, "tile_pnr_logic_area"),
+        ("logic_area", "tile_synth_logic_area", "tile_pnr_logic_area",
+         "tile_pnr_logic_area_proj", "tile_pnr_logic_area"),
+    ])
 
 
 def _memtile_power_metrics(ws):
@@ -1996,24 +2467,24 @@ def _memtile_power_metrics(ws):
         # older power_tests.json kept it per variant.
         row[f"{variant}_window_cycles"] = meta.get(
             "window", meta.get("variants", {}).get(variant, {}).get("window"))
-    # Pre-formatted: _write_csv's fixed 3 decimals would zero sub-mW powers.
-    fmt = lambda v: None if v is None else f"{v:.6g}"  # noqa: E731
     for level in ("synth", "pnr"):
         total = {}
         for variant in MEMTILE_POWER_VARIANTS:
             n = _top_row_nums(_first(ws, f"*-memtile-power-{level}-{variant}/outputs/power.hier"))
             for i, part in enumerate(("internal", "switching", "leakage", "total")):
-                row[f"{level}_{variant}_{part}_power"] = fmt(n[i]) if len(n) >= 4 else None
+                row[f"{level}_{variant}_{part}_power"] = n[i] if len(n) >= 4 else None
             total[variant] = n[3] if len(n) >= 4 else None
         idle, active = total["idle"], total["active"]
-        row[f"{level}_active_over_idle"] = fmt(active / idle) if idle and active is not None else None
+        row[f"{level}_active_over_idle"] = active / idle if idle and active is not None else None
     return row
 
 
-def _write_memtile_power(out_dir, names):
+def _write_memtile_power(out_dir, names, validate_names=None):
     """<out_dir>/memtile_power.csv: idle + active Tile_MemCore power per
-    config (--memtile-power), synth and PnR netlists. Fail-soft like
-    correlation.csv: blank cells for anything not built."""
+    config (--memtile-power), synth and PnR netlists, with the PnR power
+    projected from the synth power (memtile_power_fit.csv), like the area in
+    correlation.csv. Fail-soft: blank cells for anything not built. Returns
+    the held-out configs' pnr_validation.csv rows."""
     rows = []
     for name in names:
         ws = out_dir / name
@@ -2023,10 +2494,42 @@ def _write_memtile_power(out_dir, names):
         row.update(_sweep_meta(ws, name))
         row.update(_memtile_power_metrics(ws))
         rows.append(row)
-    if rows:
-        path = out_dir / "memtile_power.csv"
-        _write_csv(path, rows)
-        print(f"MemTile idle/active power: {path}", flush=True)
+    if not rows:
+        return []
+    _apply_roles(rows, validate_names)
+    table = _fit_and_project(rows, POWER_FITS)
+    # 6 significant digits: a fixed 3 decimals would zero sub-mW powers.
+    path = out_dir / "memtile_power.csv"
+    _write_csv(path, rows, fmt="{:.6g}")
+    print(f"MemTile idle/active power: {path}", flush=True)
+    if table:
+        fit_path = out_dir / "memtile_power_fit.csv"
+        _write_csv(fit_path, table, fmt="{:.6g}")
+        print(f"Synth->PnR power fit: {fit_path}", flush=True)
+        _print_fits(table)
+    return _validation_rows(rows, [(label, x, y, y + "_proj", y) for label, x, y in POWER_FITS])
+
+
+def _write_reports(out_dir, names, args):
+    """correlation.csv, memtile_power.csv (each + its *_fit.csv) and, when
+    PnR configs are held out of the fits (--validate-set), pnr_validation.csv:
+    the model's PnR prediction vs the real PnR result for each of them."""
+    validate = getattr(args, "validate_names", None)
+    val = _write_correlation(out_dir, names, validate)
+    val += _write_memtile_power(out_dir, names, validate)
+    if not val:
+        return
+    path = out_dir / "pnr_validation.csv"
+    _write_csv(path, val, fmt="{:.6g}")
+    print(f"PnR prediction vs held-out PnR: {path}", flush=True)
+    for metric in dict.fromkeys(v["metric"] for v in val):
+        errs = [abs(v["err_pct"]) for v in val
+                if v["metric"] == metric and v["err_pct"] is not None]
+        pending = sum(1 for v in val if v["metric"] == metric and v["err_pct"] is None)
+        stats = (f"|err| mean {sum(errs) / len(errs):.2f}% max {max(errs):.2f}%"
+                 if errs else "no PnR result yet")
+        print(f"  {metric:22s} n={len(errs)}{f' (+{pending} pending)' if pending else ''}"
+              f"  {stats}", flush=True)
 
 
 def _sh(cmd, cwd, env, log):

@@ -94,6 +94,41 @@ Key flags:
 - `--memtile-power` — idle + active power of each spec MemTile (synth
   netlist always, signoff netlist for configs that run PnR) →
   `<out-dir>/memtile_power.csv`. See "MemTile idle/active power" below.
+- `--flatten-effort N` (2026-10-07) → env `FLATTEN` → Tile_MemCore
+  `flatten_effort` (construct default still 3; Tile_PE already read `FLATTEN`).
+  The Genus node only tells 0 (`auto_ungroup none`: hierarchy kept, as lake's
+  standalone `pd/thesis` synth runs) from non-zero (`auto_ungroup both`).
+  Tile builds before this flag were all flattened while the standalone synths
+  kept hierarchy — a standalone-vs-tile synth confound in older correlations.
+  Checked locally (Genus 20.11 + Innovus 23.1, freepdk45 toy design): with 0
+  the area report keeps per-instance rows (top row first, so the correlation
+  parsers are unchanged); floorplan.tcl's `get_property [get_cells *] area`
+  returns top-level hinsts with their summed leaf area, so die sizing is
+  unchanged; `dbGet -p top.insts.name *<leaf>` can match several hinsts, but the
+  tile's SRAM leaf names (`..._H_0_0`, `_H_1_0`, one MemCore) stay unique.
+- `--data-width 16[,32]` — keep only specs of those widths (before presets and
+  --pnr-set/--validate-set name checks).
+- `--validate-set NAMES` — PnR configs held OUT of the synth→PnR fits; their
+  PnR area + idle/active power are predicted and compared in
+  `pnr_validation.csv` (see the dw16 section below). Stored as `pnr_role` in
+  sweep_meta.json, so `--correlate-only` reproduces the split (the flag there
+  overrides it).
+- `build_manifest.json` in every tile/standalone workspace: argv + every
+  parsed flag, the env knobs exported (`settings`), spec, targets, git state
+  of garnet/lake (+ host `origin/THESIS`)/mflowgen at sweep start, and every
+  step's parameters as resolved by `mflowgen run` (the `export` lines of
+  `.mflowgen/<step>/mflowgen-run`); finished with status, executed steps and
+  the rtl step's `aha garnet` flags + lake commit (container mode). Zipped.
+- Stale steps / `--clean-stale`: mflowgen's make rules don't depend on step
+  parameters, so a finished step is NOT rebuilt when only its params change
+  (e.g. a new `--flatten-effort` on an existing workspace). After `mflowgen
+  run` the sweep diffs each executed step's own `mflowgen-run` (copied in when
+  it ran) against `.mflowgen/`'s and FAILS the config listing `step: param
+  old->new`; `--clean-stale` instead `make clean-<N>`s those steps (downstream
+  rebuilds by timestamp). `--skip-existing` only skips a done workspace whose
+  manifest `settings` match (no manifest → skips as before). Expect this to
+  fire when resuming workspaces built before a garnet change to a step's
+  params (e.g. d4fc47e3 changed init/route `order`).
 
 ### Thesis-set synth sweep + synth→PnR projection (2026-09-30)
 
@@ -155,6 +190,41 @@ Caveats:
   `opt_rv = False` (its `--opt_rv` only switches the test vectors), and the
   experiment scripts never pass it. `--standalone-synth` skips `_rv`
   configs (SKIP row) instead of filing static RTL under an RV name.
+
+### dw16 synth sweep + held-out PnR validation (2026-10-07)
+
+User plan: other data widths aren't at parity yet, so a good synth sweep of the
+16-bit thesis specs (hierarchy kept, idle/active power) with 12 PnR builds: 8
+fit the synth→PnR model, 4 are held out to validate its predictions.
+
+    ./mflowgen/sweep_specs.py --spec-set thesis --data-width 16 \
+        --runtime-mode static,rv --flatten-effort 0 --memtile-power \
+        --pnr-set dw16_pnr12 --validate-set dw16_val4 \
+        --config-jobs 4 --pnr-jobs 2 --zip --out-dir <NEW dir>
+
+172 configs (89 static + 83 RV; 6 RV skipped, fw>1 & vc>2). 108 of them are
+one cluster — fw1 sp 2×2 sc8192, varying dims × max_extent/max_sequence_width
+— which `full12` never touches. Presets: `dw16_fit8` = fw1 sp 1×1 sc4096, fw2
+dp 2×2 sc4096, fw4 sp 2×2 sc8192, fw8 sp 4×4 sc32768, each static + RV (4 per
+mode, so each mode gets its own fit; MIN_FIT_POINTS = 3). `dw16_val4` = two
+cluster points (`..._me4096` static, `..._dim4_msw1024_rv`), fw4 dp 4×4 RV,
+fw4 sp 2×2 vc4 static. Picked by structure (no dw16 synth data existed);
+`_proj_extrapolated` flags a held-out point outside its fit's synth range.
+
+Outputs (also from `--correlate-only`): correlation.csv gains `pnr_role`,
+`*_proj_err_pct` (fit rows: residual; validate rows: prediction error) and
+`tile_pnr_total_area_proj_via_logic` = synth SRAM macro area + the `logic`
+fit (macros carry over unchanged, so their area isn't scaled by a fitted
+slope the way the direct `total` fit scales it); correlation_fit.csv gains
+`val_n/val_mean_abs_pct_err/val_max_abs_pct_err`. memtile_power.csv now
+projects `pnr_{idle,active}_total_power` from the synth-netlist power the same
+way (memtile_power_fit.csv). `pnr_validation.csv`: per held-out config ×
+{total_area, total_area_via_logic, logic_area, idle_power, active_power} the
+synth value, predicted PnR, actual PnR, error. Validated only on synthetic
+reports (fits match numpy; roles, override, legacy no-role out-dir) + stub-ADK
+graph materialization. Unchecked until real data: Genus SRAM area (.lib) vs
+Innovus macro area (LEF) — via_logic assumes they're equal; compare
+`tile_synth_sram_area` with `tile_pnr_macro_area` in the first real CSV.
 
 ### Standalone spec synth + correlation
 

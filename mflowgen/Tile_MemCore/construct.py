@@ -44,6 +44,11 @@ def construct():
     if synth_power or rtl_power:
         pwr_aware = False
 
+    # Genus flatten_effort: 0 keeps the design hierarchy (auto_ungroup none),
+    # as lake's standalone pd/thesis synth does; any other value lets Genus
+    # ungroup (auto_ungroup both). sweep_specs.py --flatten-effort sets FLATTEN.
+    flatten = int(os.environ.get('FLATTEN', 3))
+
     want_drc_pm = True
 
     # TSMC override(s)
@@ -67,7 +72,7 @@ def construct():
         'adk_view': adk_view,
 
         # Synthesis
-        'flatten_effort': 3,
+        'flatten_effort': flatten,
         'topographical': True,
         'read_hdl_defines': read_hdl_defines,
 
