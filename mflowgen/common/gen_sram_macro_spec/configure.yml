@@ -57,4 +57,6 @@ postconditions:
    # Sanity check to see if we at least got one sram
    - assert File( 'outputs/sram_tt.lib' )
    # Clock target must not be faster than the macro (see check_sram_period.py)
-   - assert 'status: FAIL' not in File( 'reports/sram_period.rpt' )
+   # (Quoted: an unquoted ": " makes YAML read the line as a mapping, which
+   # mflowgen rejects -- KeyError 'pytest' at `mflowgen run`.)
+   - "assert 'status: FAIL' not in File( 'reports/sram_period.rpt' )"
