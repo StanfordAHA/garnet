@@ -1754,12 +1754,19 @@ def _write_correlation(out_dir, names):
 
 
 def _sh(cmd, cwd, env, log):
-    """Run a command tee-ing to a log file; raise on non-zero exit."""
+    """Run a command tee-ing to a log file; raise on non-zero exit.
+
+    stdin is /dev/null: a Genus/Innovus script error otherwise drops the tool
+    to its interactive prompt, where it waits on the sweep's terminal forever
+    (or is stopped by SIGTTIN when the sweep is backgrounded) and the sweep
+    never returns. With no stdin the prompt reads EOF and the tool exits, so
+    the step fails its postconditions and the config is recorded as FAIL.
+    """
     log = Path(log)
     log.parent.mkdir(parents=True, exist_ok=True)
     print(f"        $ {' '.join(cmd)}  (log: {log.name})", flush=True)
     with open(log, "w") as f:
-        proc = subprocess.run(cmd, cwd=str(cwd), env=env,
+        proc = subprocess.run(cmd, cwd=str(cwd), env=env, stdin=subprocess.DEVNULL,
                               stdout=f, stderr=subprocess.STDOUT, text=True)
     if proc.returncode != 0:
         try:

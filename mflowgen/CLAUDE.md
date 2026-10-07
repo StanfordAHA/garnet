@@ -60,6 +60,10 @@ Key flags:
 - `--parallel-jobs N` — `make -jN` within a build. `--config-jobs M` — build
   M configs concurrently (independent workspaces). Effective load ≈ M×N;
   mind RAM + Genus/Innovus licenses (2 configs × -j6 is a sweet spot).
+- Builds run with stdin = /dev/null (`_sh`). Before 2026-10-06 they inherited
+  the terminal, so a Genus/Innovus script error left the tool at its
+  interactive prompt and the sweep never returned (5 days on a route error).
+  Now the tool reads EOF and exits, and the config is recorded FAIL.
 - `--out-dir` (default `sweep_out/tile_memcore_pnr`) — **keep it OUTSIDE the
   garnet checkout.** `_preflight` hard-errors on a stale in-tree
   `garnet/sweep_out` because `gen_rtl` `docker cp`s the garnet tree into the
