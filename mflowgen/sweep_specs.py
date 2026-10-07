@@ -87,6 +87,7 @@ import importlib.util
 import json
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import socket
@@ -567,6 +568,7 @@ def main(argv=None):
             file=sys.stderr, flush=True)
     if not args.dry_run:
         out_dir.mkdir(parents=True, exist_ok=True)
+        _write_plan(out_dir, configs, args)
     results_csv = out_dir / "results.csv"
 
     print(f"garnet:   {GARNET_DIR}", flush=True)
@@ -950,6 +952,28 @@ def _print_selection_summary(configs, args, file=None):
 # ---------------------------------------------------------------------------
 # Per-config runner
 # ---------------------------------------------------------------------------
+PLAN_FILE = "sweep_plan.txt"
+
+
+def _write_plan(out_dir, configs, args):
+    """<out-dir>/sweep_plan.txt: every workspace this run will build (relative
+    to out-dir, then its make targets), mirroring _process_config, under a
+    `# pid= host= started=` header. watch_step.sh --summary reads it to list
+    the configs not started yet and to tell whether this sweep is alive. Each
+    run overwrites it."""
+    host = socket.gethostname().split(".")[0]
+    lines = [f"# pid={os.getpid()} host={host} "
+             f"started={time.strftime('%Y-%m-%dT%H:%M:%S')}",
+             "# " + shlex.join([sys.executable] + sys.argv)]
+    for cfg in configs:
+        name = _config_name(cfg)
+        if not args.standalone_only:
+            lines.append(f"{name} {' '.join(_all_targets(cfg, args))}")
+        if args.standalone_synth and _mode(cfg) != "rv":
+            lines.append(f"{STANDALONE_SUBDIR}/{name} standalone")
+    (out_dir / PLAN_FILE).write_text("\n".join(lines) + "\n")
+
+
 def _process_config(idx, total, cfg, out_dir, args):
     """Build one config (tile, then standalone if asked); return its results
     row (or None for a dry-run).
@@ -1005,6 +1029,11 @@ def _process_tile(name, cfg, cfg_dir, args):
     if args.skip_existing and _done_for(done_flag, targets):
         print(f"        SKIP: {name} (done.flag present)", flush=True)
         return _row(name, cfg, cfg_dir, "SKIP", "already_done", 0.0, targets)
+    # done.flag = the latest build of this workspace succeeded. Drop an older
+    # run's flag while rebuilding, so a failed re-run doesn't read as done
+    # (watch_step.sh --summary).
+    if not args.dry_run:
+        done_flag.unlink(missing_ok=True)
 
     try:
         duration, notes = _run_one(cfg, cfg_dir, args)
@@ -1054,6 +1083,8 @@ def _process_standalone(name, cfg, sa_dir, args):
     if args.skip_existing and done_flag.exists():
         print(f"        SKIP: {name} standalone (done.flag present)", flush=True)
         return {"standalone_status": "SKIP", "standalone_notes": "already_done"}
+    if not args.dry_run:
+        done_flag.unlink(missing_ok=True)   # see _process_tile
 
     def result(status, notes):
         print(f"        {status}: {name} standalone ({notes})", flush=True)
@@ -1510,7 +1541,8 @@ def _zip_results(out_dir, names, args):
         return False
 
     found = _discover_configs(out_dir, names)
-    files = sorted(out_dir.glob("*.csv"))
+    # sweep_plan.txt: the run's command line + its workspaces (provenance)
+    files = sorted(out_dir.glob("*.csv")) + sorted(out_dir.glob(PLAN_FILE))
     sram_cfgs, no_datasheet = 0, []
     for name in found:
         for cfg_dir in (out_dir / name, out_dir / STANDALONE_SUBDIR / name):

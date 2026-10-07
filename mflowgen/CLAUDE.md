@@ -423,7 +423,48 @@ ptpx (no ADK) and the docker path — check the first build-machine run's
 
 - **`watch_step.sh`** — follow the active mflowgen step live (auto-hops as
   steps advance; maintains a `current-step.log` symlink). `--symlink-only`,
-  `--list`.
+  `--list`. `--summary <out-dir>` (2026-10-06): whole-sweep status — done /
+  running (step, time in step, log-quiet time, last log line; flags a
+  Genus/Innovus/PT prompt = tool stopped on an error, with the pid to kill) /
+  failed-stopped (step it died in) / not started, plus whether sweep_specs.py
+  is alive and a verdict line. Running = a live `make`/`mflowgen` whose cwd is
+  the workspace (/proc scan); `.time_start` without `.time_end` alone can't
+  tell running from died (step scripts are `set -e`; `--list` now checks
+  processes too). Not-started needs `<out-dir>/sweep_plan.txt` (written by
+  sweep_specs at each run start: `# pid= host= started=` + command + one
+  `workspace targets` line per config); for a run that predates it,
+  `sweep_specs.py <same selection flags> --list > <out-dir>/sweep_plan.txt`
+  Without a plan pid header it finds the sweep by matching a running
+  `python … sweep_specs.py`'s `--out-dir` (resolved against its cwd). While
+  the sweep zips, it shows the `.zip.partial` size and the file being
+  compressed (from the sweep's `/proc/<pid>/fd`). For a RUNNING config with
+  no unfinished step it shows what `make` still waits on (its child
+  processes) and, for a step `tee`, every other process holding that step's
+  output pipe (found via `/proc/*/fd`, so daemons that `cd /` are caught),
+  with the pid to kill. Tested on a fake sweep tree, a real `make` running
+  mflowgen's `./mflowgen-run 2>&1 | tee` recipe with a stray daemon holding
+  the pipe (killing it let make finish), and a stub-ADK sweep on /aha (bash 5).
+- **"Last step done but the sweep never moves on":** mflowgen runs each step as
+  `./mflowgen-run 2>&1 | tee mflowgen-run.log`, and make only continues once
+  that `tee` sees EOF, i.e. once EVERY process holding the pipe exits. A step
+  can finish (`.time_end` written, outputs there) while a background child it
+  started keeps the pipe open: make, and sweep_specs, then wait forever and
+  that config never prints PASS. Second silent phase after all configs pass:
+  `--zip`, which prints `Zipping …` then nothing until `Wrote`, deflating
+  every step log twice (`make.log` = all step logs again, via that tee) + the
+  PnR configs' `design-merged.gds`.
+- **Why a sweep looks hung:** sweep_specs prints a config's PASS/FAIL only
+  when its whole build ends, and waits for every config (both `--pnr-set`
+  pools) before `Done:` + correlation + zip. With `--pnr-set full12
+  --pnr-jobs 2` the synth pool finishes long before the 12 PnR builds, so
+  hours of silence is normal. Tool-prompt hangs are fixed by stdin=/dev/null
+  (Key flags above; reproduced with Genus 20.11 here): at EOF Genus exits
+  **0**, so it's the node postconditions (Genus `outputs/design.v`, Innovus
+  `outputs/design.checkpoint`) that fail the step. PT signoff has no
+  postconditions, so a PT script error now passes with missing reports.
+- `done.flag` = the latest build of that workspace passed: sweep_specs deletes
+  it when it starts rebuilding a workspace (so a failed re-run never reads as
+  done).
 - **`logclip.sh`** — copy a build log to your LOCAL clipboard over ssh+tmux
   via OSC 52. Default = active step; `--all`, `--make`, `--step <NN-name>`,
   `--lines N`. Needs tmux `set-clipboard on` + `allow-passthrough on`.
