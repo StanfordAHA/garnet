@@ -1340,6 +1340,8 @@ ARTIFACT_GLOBS = [
     # Genus's write_snapshot -tag final: final_{area,gates,qor,time}.rpt --
     # the synth area/QoR numbers (_write_correlation parses these).
     "*-cadence-genus-synthesis/results_syn/final*.rpt",
+    # SRAM macro min cycle time vs the clock target (check_sram_period.py).
+    "*-gen_sram_macro_spec/reports/*.rpt",
     # post-{rtl,synth,pnr}-power steps (common/tile-post-*-power): per-tile
     # power.hier copies land in outputs/reports/<tile_id>.hier.
     "*-post-*-power/outputs/reports/*",

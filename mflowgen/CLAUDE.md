@@ -232,7 +232,16 @@ Apples-to-apples caveats:
   the exact macro name from `design.v` (`get_macro_name.py`, regex fallback
   for uniquified `..._H_0_0` instances) and builds it via `IN12LP_MEM_
   genviews`. Selected in construct.py when `lake_spec_config` and not
-  `use_sim_sram`.
+  `use_sim_sram`. Then `check_sram_period.py` fails the step if
+  `clock_period` (ns, via `update_params`) is shorter than the macro's
+  minimum cycle time at `$corner` (TT), or half of it is under the min clock
+  high/low. Source: the genviews datasheet `genviews-output/doc/
+  <macro>_<corner>.csv` ("Clock Cycle Time"), else the lib's CLK
+  `minimum_period` checks — one per `MA_VD*` state, uncharacterized ones are
+  `999999` placeholders and are dropped. Unparseable → warns and passes.
+  Result in `reports/sram_period.rpt` (zipped). E.g. S1DB `W02048B008M16S2`
+  is 437 ps TT / 594 ps SSPG, far under the 1.333 ns target. The datasheet
+  CSVs are Synopsys-confidential: never commit them (garnet is public).
 - **`Tile_MemCore/constraints/constraints.tcl`** — mode case-analysis guard.
   The classic onyx MemCore has a 2-bit `mode[1:0]` bus; spec MemCores declare
   a 1-bit scalar `mode` (or none), so `set_case_analysis … mode[0]` aborts

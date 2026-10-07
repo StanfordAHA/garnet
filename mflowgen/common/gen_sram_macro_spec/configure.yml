@@ -14,6 +14,9 @@ name: gen_sram_macro_spec
 commands:
   - echo "Generating spec-matched SRAM macro from RTL..."
   - python get_macro_name.py
+  # Fail here, before synthesis, if clock_period is shorter than the macro's
+  # minimum cycle time at $corner. Writes reports/sram_period.rpt.
+  - python check_sram_period.py
 
 inputs:
   - adk
@@ -43,6 +46,9 @@ parameters:
   num_subarrays: 2
   corner: "TT_0P800V_025C"
   bc_corner: "FFPG_0P945V_125C"
+  # Target clock period in ns (overwritten by the graph's clock_period via
+  # update_params); check_sram_period.py compares it to the macro's limit.
+  clock_period: 1.0
   partial_write: False
   leakage_opt: False
   redundancy: False
@@ -50,3 +56,5 @@ parameters:
 postconditions:
    # Sanity check to see if we at least got one sram
    - assert File( 'outputs/sram_tt.lib' )
+   # Clock target must not be faster than the macro (see check_sram_period.py)
+   - assert 'status: FAIL' not in File( 'reports/sram_period.rpt' )
