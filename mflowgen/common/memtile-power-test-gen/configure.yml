@@ -1,0 +1,56 @@
+#=========================================================================
+# memtile-power-test-gen
+#=========================================================================
+# Idle + active (max-activity) power-test stimulus for this spec's MemCore
+# tile: the tile-level port of lake pd/thesis/power-test-gen. Rebuilds the
+# CGRA in Python with the rtl step's garnet.py flags, programs one MEM tile
+# through its own config bus (routes + lake-spec core config), and writes one
+# self-checking testbench per variant plus the random input streams both
+# variants run on. memtile-power-sim runs each on a netlist (synth or
+# signoff) and dumps run.saif for ptpx.
+# See gen_memtile_power_tests.py and garnet/mflowgen/CLAUDE.md
+# ("MemTile idle/active power").
+
+name: memtile-power-test-gen
+
+inputs:
+  - design.v              # tile RTL from the rtl step (pin list of Tile_MemCore)
+
+outputs:
+  - testbench.idle.sv
+  - testbench.active.sv
+  - input_data.hex
+  - power_tests.json
+
+commands:
+  - bash run.sh
+
+parameters:
+  # Must match the rtl step (Tile_MemCore's graph parameters override the
+  # lake-spec knobs + PWR_AWARE for both steps).
+  array_width: 4
+  array_height: 2
+  glb_tile_mem_size: 256
+  pipeline_config_interval: 8
+  PWR_AWARE: True
+  use_container: True
+  use_local_garnet: True
+  rtl_docker_image: default
+  lake_spec_config: ""
+  lake_spec_mode: ""
+  dual_port: False
+  use_sim_sram: False
+
+  # Measurement window (cycles after flush release). Shortened per spec when
+  # its iteration domain cannot keep the ports busy that long (power_tests.json).
+  sim_cycles: 1000
+  clock_period: 1.0
+  # Input data seed: lake's standalone power tests give the same spec the
+  # same streams for the same seed.
+  seed: 1
+
+postconditions:
+  - assert File( 'outputs/testbench.idle.sv' )
+  - assert File( 'outputs/testbench.active.sv' )
+  - assert File( 'outputs/input_data.hex' )
+  - assert File( 'outputs/power_tests.json' )

@@ -66,6 +66,12 @@ Examples:
     # Add standalone synth to an already-finished tile sweep
     ./mflowgen/sweep_specs.py --preset full --standalone-only --out-dir ...
 
+    # Idle + active MemTile power on the synth netlist for the 6 default
+    # specs, static + RV (without --stop-after the configs run PnR and the
+    # signoff netlist is powered too; --pnr-set limits that to some configs)
+    ./mflowgen/sweep_specs.py --preset full --runtime-mode static,rv \\
+        --stop-after cadence-genus-synthesis --memtile-power
+
     # Whole thesis set in the tile, static + RV: synth for all, PnR for the
     # 12 anchors; correlation.csv + correlation_fit.csv project the rest
     ./mflowgen/sweep_specs.py --spec-set thesis --runtime-mode static,rv \\
@@ -179,6 +185,11 @@ SPEC_DEFAULTS = dict(storage_capacity=4096, data_width=16, vec_width=4, dims=6,
 # build_spec(**spec), which would reject them.
 SWEEP_ONLY_KEYS = ("runtime_mode",)
 RUNTIME_MODES = ("static", "rv")
+
+# --memtile-power: the two stimulus variants (common/memtile-power-test-gen)
+# and the stop targets that leave a signoff netlist to power the PnR level on.
+MEMTILE_POWER_VARIANTS = ("idle", "active")
+SIGNOFF_OR_LATER = ("signoff", "genlibdb", "lib2db", "calibre", "pegasus")
 
 
 def _thesis_spec_points():
@@ -396,6 +407,19 @@ def build_argparser():
                         "'per-tile-power' leaf. Container-free (uses the lake "
                         "spec testbench + xrun), but the power step needs "
                         "PrimeTime. Composes with --cgra-power.")
+    p.add_argument("--memtile-power", dest="memtile_power", action="store_true",
+                   help="Also measure each spec MemTile's IDLE and ACTIVE (max "
+                        "sustainable traffic) power: lake's standalone idle/active "
+                        "power tests ported to the tile. Sets MEMTILE_POWER=True "
+                        "(adds memtile-power-test-gen + per-level/variant sim and "
+                        "ptpx nodes) and adds the memtile-power-synth-{idle,active} "
+                        "leaves (Genus netlist) to every config, plus "
+                        "memtile-power-pnr-{idle,active} (signoff netlist) for "
+                        "configs that build through PnR. The normal stop target is "
+                        "kept, so area results are unchanged. Writes "
+                        "<out-dir>/memtile_power.csv. Needs xrun (or VCS) + "
+                        "PrimeTime, and docker for the stimulus generator unless "
+                        "the rtl step runs without a container.")
     p.add_argument("--include-pnr-power", dest="include_pnr_power",
                    action="store_true",
                    help="With --cgra-power, additionally make the 'post-pnr-power' "
@@ -477,6 +501,10 @@ def main(argv=None):
               "run lake's ASPLOS_EXP/run_synth_pool.py instead.", file=sys.stderr)
         return 2
 
+    if args.rtl_only and args.memtile_power:
+        print("*** --memtile-power needs synthesis; drop --rtl-only.",
+              file=sys.stderr)
+        return 2
     if args.rtl_only:
         args.stop_after = "rtl"
     if args.standalone_only:
@@ -513,7 +541,9 @@ def main(argv=None):
                   flush=True)
             return 1
         if not args.dry_run:
-            _write_correlation(out_dir, _discover_configs(out_dir, names))
+            found = _discover_configs(out_dir, names)
+            _write_correlation(out_dir, found)
+            _write_memtile_power(out_dir, found)
         if args.correlate_only and not args.zip_only:
             return 0
         return 0 if _zip_results(out_dir, names, args) else 1
@@ -606,7 +636,9 @@ def main(argv=None):
           f"Results: {results_csv}", flush=True)
     # Every workspace in out_dir, not just this run's configs, so a partial
     # re-run (--only, --standalone-only) doesn't drop rows for the others.
-    _write_correlation(out_dir, _discover_configs(out_dir, None))
+    found = _discover_configs(out_dir, None)
+    _write_correlation(out_dir, found)
+    _write_memtile_power(out_dir, found)
     zip_ok = True
     if args.zip:
         zip_ok = _zip_results(out_dir, {_config_name(c) for c in configs}, args)
@@ -901,7 +933,7 @@ def _print_selection_summary(configs, args, file=None):
           f"'{args.spec_set}'.", file=file, flush=True)
     targets = {}
     for c in configs:
-        t = " ".join(_build_targets(c, args))
+        t = " ".join(_all_targets(c, args))
         targets[t] = targets.get(t, 0) + 1
     for t, n in targets.items():
         print(f"  {n:4d} -> {t}", file=file, flush=True)
@@ -965,19 +997,23 @@ def _process_tile(name, cfg, cfg_dir, args):
     if not args.dry_run:
         cfg_dir.mkdir(parents=True, exist_ok=True)
     done_flag = cfg_dir / "done.flag"
-    targets = " ".join(_build_targets(cfg, args))
+    targets = " ".join(_all_targets(cfg, args))
 
     if args.skip_existing and _done_for(done_flag, targets):
         print(f"        SKIP: {name} (done.flag present)", flush=True)
         return _row(name, cfg, cfg_dir, "SKIP", "already_done", 0.0, targets)
 
     try:
-        duration = _run_one(cfg, cfg_dir, args)
+        duration, notes = _run_one(cfg, cfg_dir, args)
         if args.dry_run:
             return None
-        done_flag.write_text(f"ok {targets}\n")
-        print(f"        PASS: {name} ({duration:.0f}s)", flush=True)
-        return _row(name, cfg, cfg_dir, "PASS", "", duration, targets)
+        # A failed --memtile-power leaf leaves done.flag at the build targets,
+        # so --skip-existing retries just the power leaves next time.
+        done = targets if not notes else " ".join(_build_targets(cfg, args))
+        done_flag.write_text(f"ok {done}\n")
+        print(f"        PASS: {name} ({duration:.0f}s){' ' + notes if notes else ''}",
+              flush=True)
+        return _row(name, cfg, cfg_dir, "PASS", notes, duration, targets)
     except subprocess.CalledProcessError as e:
         print(f"        FAIL: {name} (exit {e.returncode})", flush=True)
         return _row(name, cfg, cfg_dir, "FAIL", f"exit_code={e.returncode}", 0.0,
@@ -1070,7 +1106,7 @@ def _standalone_graph_kwargs(cfg, args):
         cmd = [sys.executable, str(lake / "tests/test_spec/thesis_sweep.py"),
                *sweep_args, "--outdir", STANDALONE_TEST_DIR]
 
-    return {
+    kwargs = {
         "clock_period": args.standalone_clock_ps,
         "storage_capacity": sc,
         "data_width": dw,
@@ -1084,6 +1120,11 @@ def _standalone_graph_kwargs(cfg, args):
         "python_command": '"' + " ".join(str(c) for c in cmd) + '"',
         "test_dir": STANDALONE_TEST_DIR,
     }
+    # Also as plain kwargs: lake's power-test-gen rebuilds the spec from them.
+    for key in ("max_extent", "max_sequence_width"):
+        if cfg.get(key) is not None:
+            kwargs[key] = cfg[key]
+    return kwargs
 
 
 def _run_standalone(cfg, sa_dir, args):
@@ -1180,6 +1221,8 @@ def _build_targets(cfg, args):
     All composable. Every leaf pulls its netlist + the app compile/sim as
     dependencies, so making them runs the whole chain. Otherwise the target
     is --stop-after, or --synth-stop for configs outside --pnr-set.
+
+    --memtile-power leaves come on top: see _memtile_power_targets.
     """
     targets = []
     if args.cgra_power:
@@ -1189,6 +1232,23 @@ def _build_targets(cfg, args):
     if args.per_tile:
         targets.append("per-tile-power")
     return targets or [_stop_target(cfg, args)]
+
+
+def _memtile_power_targets(cfg, args):
+    """--memtile-power leaves, made AFTER the build targets in their own make
+    (a power failure is a note on the row, not a failed config): synth level
+    always, PnR level when the config builds through signoff (synth-only
+    configs have no signoff netlist)."""
+    if not getattr(args, "memtile_power", False):
+        return []
+    levels = ["synth"]
+    if args.include_pnr_power or any(h in _stop_target(cfg, args) for h in SIGNOFF_OR_LATER):
+        levels.append("pnr")
+    return [f"memtile-power-{lvl}-{v}" for lvl in levels for v in MEMTILE_POWER_VARIANTS]
+
+
+def _all_targets(cfg, args):
+    return _build_targets(cfg, args) + _memtile_power_targets(cfg, args)
 
 
 def _run_one(cfg, cfg_dir, args):
@@ -1211,11 +1271,16 @@ def _run_one(cfg, cfg_dir, args):
         env["SYNTH_POWER"] = "True"
     if args.per_tile:
         env["PER_TILE_POWER"] = "True"
+    if args.memtile_power:
+        env["MEMTILE_POWER"] = "True"
     build_targets = _build_targets(cfg, args)
+    power_targets = _memtile_power_targets(cfg, args)
 
     make_cmd = ["make", *build_targets]
+    power_cmd = ["make", *power_targets]
     if args.parallel_jobs > 0:
         make_cmd.insert(1, f"-j{args.parallel_jobs}")
+        power_cmd.insert(1, f"-j{args.parallel_jobs}")
 
     # Steps to force-clean before building (see --clean / --clean-all). These
     # run after `mflowgen run` (so the Makefile + clean-<name> targets exist)
@@ -1229,6 +1294,8 @@ def _run_one(cfg, cfg_dir, args):
             dry_env_keys += ["SYNTH_POWER", "RTL_POWER"]
         if args.per_tile:
             dry_env_keys += ["PER_TILE_POWER"]
+        if args.memtile_power:
+            dry_env_keys += ["MEMTILE_POWER"]
         for k in dry_env_keys:
             print(f"        DRY-RUN env: {k}={env[k]}", flush=True)
         print(f"        DRY-RUN cmd: mflowgen run --design {args.graph}",
@@ -1236,7 +1303,9 @@ def _run_one(cfg, cfg_dir, args):
         if clean_cmd:
             print(f"        DRY-RUN cmd: {' '.join(clean_cmd)}", flush=True)
         print(f"        DRY-RUN cmd: {' '.join(make_cmd)}", flush=True)
-        return 0.0
+        if power_targets:
+            print(f"        DRY-RUN cmd: {' '.join(power_cmd)}", flush=True)
+        return 0.0, ""
 
     _sh(["mflowgen", "run", "--design", str(args.graph)],
         cwd=cfg_dir, env=env, log=cfg_dir / "mflowgen_run.log")
@@ -1248,14 +1317,21 @@ def _run_one(cfg, cfg_dir, args):
     # so writing spec_config.json earlier would let clean-all erase it and make
     # the rtl step fail with "lake_spec_config file not found". mflowgen run only
     # needs the path (baked from LAKE_SPEC_CONFIG env), not the contents.
-    _write_spec_files(cfg, cfg_dir, " ".join(build_targets))
+    _write_spec_files(cfg, cfg_dir, " ".join(build_targets + power_targets))
 
-    for _t in build_targets:
+    for _t in build_targets + power_targets:
         _check_step_exists(_t, cfg_dir, env)
     _sh(make_cmd, cwd=cfg_dir, env=env, log=cfg_dir / "make.log")
 
+    notes = ""
+    if power_targets:
+        try:
+            _sh(power_cmd, cwd=cfg_dir, env=env, log=cfg_dir / "make_memtile_power.log")
+        except subprocess.CalledProcessError as e:
+            notes = f"memtile_power_failed(exit {e.returncode}, make_memtile_power.log)"
+
     _collect_artifacts(cfg_dir)
-    return time.time() - t0
+    return time.time() - t0, notes
 
 
 def _write_spec_files(cfg, ws, targets):
@@ -1345,6 +1421,12 @@ ARTIFACT_GLOBS = [
     # post-{rtl,synth,pnr}-power steps (common/tile-post-*-power): per-tile
     # power.hier copies land in outputs/reports/<tile_id>.hier.
     "*-post-*-power/outputs/reports/*",
+    # --memtile-power: idle/active ptpx reports, the stimulus description
+    # (tile, routes, programs, window) and each sim's self-check log.
+    "*-memtile-power-*-idle/outputs/power.*",
+    "*-memtile-power-*-active/outputs/power.*",
+    "*-memtile-power-test-gen/outputs/power_tests.json",
+    "*-memtile-power-sim-*/logs/sim.log",
 ]
 
 # Extra per-workspace files that only go into the zip: provenance + logs, so a
@@ -1751,6 +1833,50 @@ def _write_correlation(out_dir, names):
               f"pnr = {t['slope']:.4f} * synth + {t['intercept']:.1f}   "
               f"R^2={t['r2']:.4f}   |err| mean {pct(t['mean_abs_pct_err'])} "
               f"max {pct(t['max_abs_pct_err'])}", flush=True)
+
+
+def _memtile_power_metrics(ws):
+    """Per (level, variant): PrimeTime's top-row [internal, switching,
+    leakage, total] power of Tile_MemCore (the tool's report units, W unless
+    the library sets others), plus the stimulus window from power_tests.json."""
+    row = {}
+    try:
+        meta = json.loads(_first(ws, "*-memtile-power-test-gen/outputs/power_tests.json").read_text())
+    except (AttributeError, OSError, ValueError):
+        meta = {}
+    for variant in MEMTILE_POWER_VARIANTS:
+        row[f"{variant}_window_cycles"] = meta.get("variants", {}).get(variant, {}).get("window")
+    # Pre-formatted: _write_csv's fixed 3 decimals would zero sub-mW powers.
+    fmt = lambda v: None if v is None else f"{v:.6g}"  # noqa: E731
+    for level in ("synth", "pnr"):
+        total = {}
+        for variant in MEMTILE_POWER_VARIANTS:
+            n = _top_row_nums(_first(ws, f"*-memtile-power-{level}-{variant}/outputs/power.hier"))
+            for i, part in enumerate(("internal", "switching", "leakage", "total")):
+                row[f"{level}_{variant}_{part}_power"] = fmt(n[i]) if len(n) >= 4 else None
+            total[variant] = n[3] if len(n) >= 4 else None
+        idle, active = total["idle"], total["active"]
+        row[f"{level}_active_over_idle"] = fmt(active / idle) if idle and active is not None else None
+    return row
+
+
+def _write_memtile_power(out_dir, names):
+    """<out_dir>/memtile_power.csv: idle + active Tile_MemCore power per
+    config (--memtile-power), synth and PnR netlists. Fail-soft like
+    correlation.csv: blank cells for anything not built."""
+    rows = []
+    for name in names:
+        ws = out_dir / name
+        if not _first(ws, "*-memtile-power-test-gen"):
+            continue
+        row = {"config_name": name}
+        row.update(_sweep_meta(ws, name))
+        row.update(_memtile_power_metrics(ws))
+        rows.append(row)
+    if rows:
+        path = out_dir / "memtile_power.csv"
+        _write_csv(path, rows)
+        print(f"MemTile idle/active power: {path}", flush=True)
 
 
 def _sh(cmd, cwd, env, log):

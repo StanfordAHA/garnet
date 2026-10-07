@@ -1,0 +1,35 @@
+#=========================================================================
+# memtile-power-sim
+#=========================================================================
+# Simulates one MemTile power test (testbench.<variant>.sv from
+# memtile-power-test-gen, wired to this step's testbench.sv) on a Tile_MemCore
+# netlist and writes the measurement window's switching activity to run.saif
+# for synopsys-ptpx-{synth,gl}. Tile_MemCore instantiates it once per
+# (netlist level, variant): design.v is the Genus netlist for the synth level
+# and the signoff design.vcs.v for the PnR level.
+
+name: memtile-power-sim
+
+inputs:
+  - adk
+  - design.v
+  - sram.v
+  - testbench.sv
+  - input_data.hex      # the random streams the testbench reads
+
+outputs:
+  - run.saif
+
+commands:
+  - bash run_sim.sh
+
+parameters:
+  clock_period: 1.0
+  # idle | active -- must match the testbench wired in (run_sim.sh checks its PASS line).
+  variant: idle
+  # XCELIUM (xrun) or VCS
+  tool: XCELIUM
+
+postconditions:
+  - assert File( 'outputs/run.saif' )
+  - assert 'PASS window=' in File( 'logs/sim.log' )

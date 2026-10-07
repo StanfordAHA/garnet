@@ -35,6 +35,11 @@ def construct():
     # RTL-activity power (RTL sim -> ptpx-rtl on the signoff netlist via the
     # Genus design.namemap). Independent opt-in from SYNTH_POWER.
     rtl_power = os.environ.get('RTL_POWER') == 'True'
+    # Idle + active (max-activity) power of the lake-spec MemCore tile under
+    # synthetic stimulus (lake's standalone power tests, ported to the tile):
+    # memtile-power-test-gen -> memtile-power-sim-<level>-<variant> ->
+    # memtile-power-<level>-<variant> (ptpx), level = synth | pnr.
+    memtile_power = os.environ.get('MEMTILE_POWER') == 'True'
     # power domains do not work with post-synth / rtl power
     if synth_power or rtl_power:
         pwr_aware = False
@@ -175,6 +180,28 @@ def construct():
     if rtl_power:
         post_rtl_power = custom_step('/../common/tile-post-rtl-power')
     post_pnr_power = custom_step('/../common/tile-post-pnr-power')
+
+    # MemTile idle/active power: one stimulus generator; per netlist level and
+    # variant a sim (-> run.saif) and a ptpx step. The synth level powers the
+    # Genus netlist, the pnr level the signoff netlist (only built when made).
+    if memtile_power and not parameters['lake_spec_config']:
+        print('WARNING: MEMTILE_POWER=True ignored: no lake spec (LAKE_SPEC_CONFIG)')
+        memtile_power = False
+    if memtile_power:
+        memtile_power_gen = custom_step('/../common/memtile-power-test-gen')
+        memtile_power_tests = []  # (level, variant, sim, ptpx)
+        for level in ('synth', 'pnr'):
+            for variant in ('idle', 'active'):
+                sim = custom_step('/../common/memtile-power-sim')
+                sim.set_name(f'memtile-power-sim-{level}-{variant}')
+                sim.set_param('variant', variant)
+                if level == 'synth':
+                    ptpx = custom_step('/../common/synopsys-ptpx-synth')
+                else:
+                    ptpx = custom_step('/../common/synopsys-ptpx-gl')
+                ptpx.set_name(f'memtile-power-{level}-{variant}')
+                ptpx.extend_inputs(['sram_tt.db'])
+                memtile_power_tests.append((level, variant, sim, ptpx))
 
     # Power aware setup
     if pwr_aware:
@@ -376,6 +403,11 @@ def construct():
     if rtl_power:
         g.add_step(post_rtl_power)
     g.add_step(post_pnr_power)
+    if memtile_power:
+        g.add_step(memtile_power_gen)
+        for _, _, sim, ptpx in memtile_power_tests:
+            g.add_step(sim)
+            g.add_step(ptpx)
 
     # Power aware step
     if pwr_aware:
@@ -501,6 +533,23 @@ def construct():
         reverse_connect(post_rtl_power, synth)
         reverse_connect(post_rtl_power, signoff)
         reverse_connect(post_rtl_power, testbench)
+
+    if memtile_power:
+        g.connect(rtl.o('design.v'), memtile_power_gen.i('design.v'))
+        for level, variant, sim, ptpx in memtile_power_tests:
+            g.connect_by_name(adk, sim)
+            g.connect_by_name(adk, ptpx)
+            g.connect(memtile_power_gen.o(f'testbench.{variant}.sv'), sim.i('testbench.sv'))
+            g.connect(memtile_power_gen.o('input_data.hex'), sim.i('input_data.hex'))
+            g.connect(gen_sram.o('sram.v'), sim.i('sram.v'))
+            if level == 'synth':
+                g.connect(synth.o('design.v'), sim.i('design.v'))
+                g.connect_by_name(synth, ptpx)    # design.v/.sdc/.spef
+            else:
+                g.connect(signoff.o('design.vcs.v'), sim.i('design.v'))
+                g.connect_by_name(signoff, ptpx)  # design.vcs{,.pg}.v, .pt.sdc, .spef.gz
+            g.connect_by_name(gen_sram, ptpx)     # sram_tt.db
+            g.connect(sim.o('run.saif'), ptpx.i('run.saif'))
 
     reverse_connect(debugcalibre, adk)
     reverse_connect(debugcalibre, synth)

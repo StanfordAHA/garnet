@@ -81,6 +81,9 @@ Key flags:
 - `--standalone-synth` / `--standalone-only` / `--correlate-only` —
   standalone-spec baseline for the standalone-synth → tile-synth → tile-PnR
   correlation. See "Standalone spec synth + correlation" below.
+- `--memtile-power` — idle + active power of each spec MemTile (synth
+  netlist always, signoff netlist for configs that run PnR) →
+  `<out-dir>/memtile_power.csv`. See "MemTile idle/active power" below.
 
 ### Thesis-set synth sweep + synth→PnR projection (2026-09-30)
 
@@ -287,6 +290,116 @@ But garnet.py runs here, so RTL gen is verifiable locally in ~1 min/config.
 See memory `reference_local_memcore_rtl_validation` and the scratch harness
 that sweeps all 6 points' RTL gen (serial — garnet.py writes one
 `garnet.v`; **with retry** for the flaky coreir SIGSEGV, lake §5.3).
+
+## MemTile idle/active power (`--memtile-power`, 2026-10-01)
+
+Lake's standalone idle/active power tests (`lake/pd/thesis/power-test-gen`,
+which drive a bare `lakespec`) ported to the whole `Tile_MemCore`, so every
+sweep spec gets an idle and a max-activity power number for the tile as it
+sits in the CGRA. `MEMTILE_POWER=True` (set by the flag) adds to the graph:
+
+- `memtile-power-test-gen` (`common/memtile-power-test-gen/`): rebuilds the
+  CGRA in Python with the rtl step's exact garnet.py flags (container: same
+  image, host garnet+lake copied in, lake at origin/THESIS, like gen_rtl;
+  `use_container=False` runs in `$GARNET_HOME` like gen_rtl's host path), takes
+  the first MEM tile and emits `testbench.{idle,active}.sv`, `input_data.hex`
+  and `power_tests.json` (tile, routes, input tracks, port programs, config
+  writes, window). Needs lake with `lake/utils/power_test_programs.py` (the
+  container takes lake origin/THESIS, so it must be pushed there).
+  Config goes in through the tile's own config bus: routes from canal
+  (`get_route_bitstream`), core config via `configure_placement` with the
+  spec's `gen_bitstream` forced to `over=True` (our program is already
+  port-level), merged per address with gemstone `compress_config_data`.
+  Routing: a 16-bit spec port is one 17-bit core pin -> input k on WEST
+  track k, output k on EAST track k (pipeline reg bypassed). Any other data
+  width (dw 8/32/64 thesis points, ~20% of the set) is BIT-BLASTED by
+  MemoryTileBuilder onto 1-bit core pins `port_<i>_<bit>` (+ 1-bit
+  `port_<i>_valid/_ready`) -> data bits spread over the 20 1-bit tracks
+  (shared once they run out: correlated but toggling), valid/ready pins on one
+  track held at 1, the unused comply_17 MSB on a quiet track; output bits take
+  free 1-bit SB_OUTs, interleaved across ports, the rest unobserved. Unused SB
+  outputs and CBs whose default source is a random track get their select
+  moved to a static one -- an undriven track, else the track held at 1
+  (bit-blasted specs drive nearly every 1-bit track) -- select only, no RV
+  `_enable`; any left on a random source are listed as `unquieted_muxes`
+  in power_tests.json.
+- `memtile-power-sim-{synth,pnr}-{idle,active}` (`common/memtile-power-sim/`):
+  xrun (or VCS, param `tool`) on the Genus netlist / signoff `design.vcs.v` +
+  gen_sram `sram.v` + adk stdcells. Reset with flush high, config writes,
+  flush release, then a SAIF over `window` cycles only (Xcelium: tb `$stop`s
+  + `cmd.tcl` `dumpsaif`; VCS: `$toggle_*`). The step FAILS unless the tb
+  prints `MEMTILE_POWER_TEST <variant> PASS` (idle: no SB data output moves;
+  active: every routed output changes ≥ half the elements the program should
+  deliver) — a broken stimulus never produces a power number.
+- `memtile-power-{synth,pnr}-{idle,active}`: the stock
+  `synopsys-ptpx-synth` / `synopsys-ptpx-gl` (+ `sram_tt.db`), strip path
+  `testbench/dut`.
+
+Stimulus (2026-10-06; user decisions): programs + input data come from lake
+`lake/utils/power_test_programs.py`, shared with lake's standalone power tests
+(`pd/thesis/power-test-gen`) -- same spec + `seed` -> same programs and the
+same input words per cycle in both flows. Idle and active get the SAME
+stimulus (routes, valid/ready, data); only the spec program differs, so
+active − idle is the memory's own work.
+- **input data** = a fresh random `data_width`-bit word per spec input port
+  per cycle from flush release (`input_streams`, `input_data.hex`, read by
+  the tb; track-major). 16-bit ports: the word on the 17-bit track (bit 16 =
+  unused comply_17 bit, 0); bit-blasted ports: bit b of the word on its
+  track (a shared track carries its first pin's bit).
+- **idle** = the empty application (tile_en=1, lakespec mode, all controllers
+  cleared) with the stimulus applied: no port fires, every switch-box data
+  output must stay quiet. (An unconfigured tile — tile_en=0 — is NOT
+  measured.)
+- **active, static spec** = maximum *sustainable* traffic: every port moves
+  one SRAM word per period P and streams its fw elements at one per cycle;
+  P = fw when the memory keeps up, else the number of ports sharing a memory
+  port (SP: in+out, DP: max(in, out)); SRAM accesses slotted so the memory
+  port(s) are busy every cycle. Readers re-read what their writer stored 2
+  words earlier (RTL-checked: outputs replay the input stream 16 cycles
+  later). Within-word timing = lake's static wide-fetch linear test. The
+  first standalone program (overlapping SIPO/PISO schedules: outputs moved
+  2–4 times in 1000 cycles) was replaced by this one on both sides.
+- **active, RV spec** = lake `test_spec_rv_programs` `stream`: writer i →
+  reader i trailing by the zero-lag margin `2*fw*vc+4`, dependence at level
+  0; valid/ready held high on the routed pins. 1-dimensional specs can't take
+  that (lake refuses non-barrier constraints at the top level of a
+  power-of-2-dims domain; without one the reader races over unwritten words):
+  they run `barrier` instead -- writers, then readers -- both phases sized to
+  the window.
+- Domains are sized from the generated HW (`2**extent_width`, SG stride
+  width); a spec that cannot keep its ports busy for `sim_cycles` (e.g.
+  dims=1, max_extent=64) gets a shorter window, recorded in
+  `power_tests.json` and `memtile_power.csv` (`*_window_cycles`).
+
+The sweep makes the power leaves in a SECOND make after the config's build
+targets (`make_memtile_power.log`): a power failure is a note on a PASS row
+(`memtile_power_failed(...)`) and leaves done.flag at the build targets, so
+`--skip-existing` retries only the power leaves.
+
+`memtile_power.csv` (written with correlation.csv, also by
+`--correlate-only`): per config, `{synth,pnr}_{idle,active}_{internal,
+switching,leakage,total}_power` (PT report units) + `*_active_over_idle`.
+
+Validated on /aha (2026-10-01, tile RTL from garnet.py `--use_sim_sram`):
+idle + active PASS for 21 spec×mode points -- static and RV; SP and DP; fw
+1/2/4/8; 1×1, 2×2, 4×4; dw 8/16/32/64 (bit-blasted); dims 1/2/4/6 with
+max_extent 64/256 and max_sequence_width 64 -- under xrun (VCS too for fw4
+2×2: same results, SAIF root `testbench/dut`, 1000-cycle window). Active
+outputs stream at the program's rate (16-bit outputs ~980/1000 cycles at P=fw)
+and fw4 2×2 outputs replay the input stream exactly (16-cycle latency). Graph
+materializes with the right wiring (stub ADK, `PYTHONPATH=garnet/mflowgen`);
+`make memtile-power-test-gen` passes in a real workspace (host mode).
+2026-10-06 (shared programs + random streams): standalone (thesis_sweep RTL,
+VCS, validate_sim.py) fw4 SP 2×2 / fw2 DP 2×2 / fw1 SP 1×1 idle + active PASS,
+active outputs stream (≈986/1000, 996/1000, 498/1000 = P 2); tile fw4 SP 2×2
+static+RV, fw2 DP 2×2, fw4 dw8/dw32 static, fw4 dw32 RV, 1-D RV idle + active
+PASS; fw4 SP 2×2 tile input tracks = the standalone streams word for word
+(1064/1064). lake `pd/thesis` graph materializes (it did NOT before: the
+power sims were fed an undeclared `testbench.sv`) and `make power-test-gen`
+passes on a 2-D max_extent-64 spec.
+NOT run here: gf12 synth/signoff netlists, gen_sram `sram.v`, adk cell models,
+ptpx (no ADK) and the docker path — check the first build-machine run's
+`*-memtile-power-sim-*/logs/sim.log` PASS lines and power reports.
 
 ## Helper scripts (build machine can't run Claude)
 
