@@ -82,6 +82,8 @@ from pathlib import Path
 import argparse
 import concurrent.futures
 import csv
+import functools
+import importlib.util
 import json
 import os
 import re
@@ -437,8 +439,9 @@ def build_argparser():
                    help="When the sweep finishes (pass or fail), zip the results "
                         "for moving between machines: results.csv plus, per "
                         "config, spec/collateral JSON, top-level logs, per-step "
-                        "mflowgen-run.log, and the PPA/power reports (see "
-                        "ARTIFACT_GLOBS). Workspaces themselves are not included.")
+                        "mflowgen-run.log, the PPA/power reports and the SRAM "
+                        "macro datasheet (see ARTIFACT_GLOBS). Workspaces "
+                        "themselves are not included.")
     p.add_argument("--zip-only", action="store_true",
                    help="Standalone: zip the results already in --out-dir from a "
                         "previous run and exit (no build). Archives every config "
@@ -1400,6 +1403,11 @@ def _check_step_exists(step, cfg_dir, env):
         f"    Run `make list` in {cfg_dir} to see all targets.")
 
 
+# The spec SRAM step (common/gen_sram_macro_spec) and the compiler datasheet
+# its collect_datasheet.py links out of genviews-output/.
+SRAM_STEP_GLOB = "*-gen_sram_macro_spec"
+SRAM_DATASHEET_GLOB = SRAM_STEP_GLOB + "/outputs/sram_datasheet/*"
+
 # Workspace-relative globs for the small subset of files that summarize PPA.
 # Shared by _collect_artifacts (copy into artifacts/) and _zip_results.
 ARTIFACT_GLOBS = [
@@ -1418,6 +1426,7 @@ ARTIFACT_GLOBS = [
     "*-cadence-genus-synthesis/results_syn/final*.rpt",
     # SRAM macro min cycle time vs the clock target (check_sram_period.py).
     "*-gen_sram_macro_spec/reports/*.rpt",
+    SRAM_DATASHEET_GLOB,   # the spec SRAM macro's datasheet
     # post-{rtl,synth,pnr}-power steps (common/tile-post-*-power): per-tile
     # power.hier copies land in outputs/reports/<tile_id>.hier.
     "*-post-*-power/outputs/reports/*",
@@ -1436,7 +1445,28 @@ ZIP_EXTRA_GLOBS = [
     "*.log",                # mflowgen_run.log, make_clean.log, make.log
     "done.flag",
     "*/mflowgen-run.log",   # per-step log
+    # Every file the SRAM compiler produced (+ its -help when no datasheet
+    # matched), to fix the datasheet match from the zip alone.
+    SRAM_STEP_GLOB + "/genviews_manifest.txt",
 ]
+
+@functools.lru_cache(maxsize=None)
+def _datasheet_finder():
+    """collect_datasheet.find_datasheets, loaded from this checkout's node."""
+    path = MFLOWGEN_DIR / "common" / "gen_sram_macro_spec" / "collect_datasheet.py"
+    spec = importlib.util.spec_from_file_location("collect_datasheet", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod.find_datasheets
+
+
+def _old_sram_datasheets(cfg_dir):
+    """Datasheets of SRAM steps that ran before collect_datasheet.py existed
+    (no outputs/sram_datasheet/), found in their genviews-output/ with the
+    same match rule, so a --zip-only of an older sweep still carries them."""
+    return [f for step in cfg_dir.glob(SRAM_STEP_GLOB)
+            if not (step / "outputs" / "sram_datasheet").is_dir()
+            for f in _datasheet_finder()(step / "genviews-output")]
 
 
 def _collect_artifacts(cfg_dir):
@@ -1481,6 +1511,7 @@ def _zip_results(out_dir, names, args):
 
     found = _discover_configs(out_dir, names)
     files = sorted(out_dir.glob("*.csv"))
+    sram_cfgs, no_datasheet = 0, []
     for name in found:
         for cfg_dir in (out_dir / name, out_dir / STANDALONE_SUBDIR / name):
             seen = set()
@@ -1489,11 +1520,27 @@ def _zip_results(out_dir, names, args):
                     if src.is_file() and src not in seen:
                         seen.add(src)
                         files.append(src)
+            old = [f for f in _old_sram_datasheets(cfg_dir) if f not in seen]
+            files += old
+            if any(cfg_dir.glob(SRAM_STEP_GLOB)):
+                sram_cfgs += 1
+                if not old and not any(f.is_file() for f in
+                                       cfg_dir.glob(SRAM_DATASHEET_GLOB)):
+                    no_datasheet.append(name)
 
     zip_path = _default_zip_path(out_dir, args)
     root = zip_path.stem
     print(f"\nZipping {len(found)} config(s), {len(files)} file(s) from "
           f"{out_dir}\n        -> {zip_path}", flush=True)
+    if sram_cfgs:
+        print(f"        SRAM macro datasheet: {sram_cfgs - len(no_datasheet)}/"
+              f"{sram_cfgs} config(s) with a gen_sram_macro_spec step",
+              flush=True)
+    if no_datasheet:
+        print(f"*** WARNING: no SRAM datasheet for: {', '.join(no_datasheet)}"
+              f"\n    (unfinished SRAM step, or the compiler wrote none: see "
+              f"{SRAM_STEP_GLOB}/genviews_manifest.txt)", file=sys.stderr,
+              flush=True)
     if not found:
         print("*** WARNING: no config workspaces found; zip will hold only "
               "results.csv (if any).", file=sys.stderr, flush=True)

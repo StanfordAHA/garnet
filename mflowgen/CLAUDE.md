@@ -78,6 +78,10 @@ Key flags:
   + `ARTIFACT_GLOBS` reports, pulled straight from the workspaces (not
   `artifacts/`) so failed configs still contribute. No workspace DBs.
   Genus area/QoR live in `results_syn/final_*.rpt`, NOT `reports/`.
+  Includes the SRAM macro datasheet (see `gen_sram_macro_spec` below) +
+  `genviews_manifest.txt`; workspaces whose SRAM step predates the collector
+  get theirs from `genviews-output/` (same match rule). Prints `SRAM macro
+  datasheet: N/M` and names the configs without one.
 - `--standalone-synth` / `--standalone-only` / `--correlate-only` —
   standalone-spec baseline for the standalone-synth → tile-synth → tile-PnR
   correlation. See "Standalone spec synth + correlation" below.
@@ -249,6 +253,20 @@ Apples-to-apples caveats:
   Result in `reports/sram_period.rpt` (zipped). E.g. S1DB `W02048B008M16S2`
   is 437 ps TT / 594 ps SSPG, far under the 1.333 ns target. The datasheet
   CSVs are Synopsys-confidential: never commit them (garnet is public).
+  `collect_datasheet.py` (2026-10-01) links the
+  compiler's datasheet into `outputs/sram_datasheet/` and lists every file
+  genviews wrote in `genviews_manifest.txt` (+ the compiler's `-help` when no
+  datasheet matched). The compiler writes one CSV per corner at
+  `genviews-output/doc/<macro>_<corner>.csv` (the file check_sram_period.py
+  reads); the match takes everything under `doc/`, with `*datasheet*` and
+  `.ds/.pdf/.html` as fallbacks (checked on that layout 2026-10-06; no ADK on
+  /aha, so the first build-machine manifest is still worth a look).
+  Fail-soft (never fails the step). Runs before check_sram_period.py, so a
+  too-fast clock still leaves the datasheet behind.
+  Deliberately NOT a declared mflowgen output: mflowgen stamps each declared
+  output (`outputs/.execstamp.<name>`), so a new one would make every existing
+  workspace re-run gen_sram and all of synth/PnR on its next make. The fixed
+  `gen_sram_macro` (default/`use_sim_sram`) step collects no datasheet.
 - **`Tile_MemCore/constraints/constraints.tcl`** — mode case-analysis guard.
   The classic onyx MemCore has a 2-bit `mode[1:0]` bus; spec MemCores declare
   a 1-bit scalar `mode` (or none), so `set_case_analysis … mode[0]` aborts

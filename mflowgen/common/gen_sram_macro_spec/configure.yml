@@ -14,6 +14,12 @@ name: gen_sram_macro_spec
 commands:
   - echo "Generating spec-matched SRAM macro from RTL..."
   - python get_macro_name.py
+  # The compiler's datasheet -> outputs/sram_datasheet/ (+ genviews_manifest.txt).
+  # Not listed under outputs: nothing consumes it, and a new declared output
+  # would re-run this step and all of synth/PnR in existing workspaces.
+  # Never fails the step (see collect_datasheet.py); runs before the period
+  # check so a too-fast clock still leaves the datasheet to look at.
+  - python collect_datasheet.py
   # Fail here, before synthesis, if clock_period is shorter than the macro's
   # minimum cycle time at $corner. Writes reports/sram_period.rpt.
   - python check_sram_period.py
