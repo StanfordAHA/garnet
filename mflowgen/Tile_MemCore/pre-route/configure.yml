@@ -1,0 +1,12 @@
+#=========================================================================
+# Tile_MemCore pre-route (lake-spec builds only)
+#=========================================================================
+# Supplies pre-route.tcl to the route step, which sources it (order index 0)
+# after restoring the postcts_hold design and before run_route.tcl adds
+# fillers and runs `routeDesign -placementCheck`. Same pattern as
+# full_chip/pre-route.
+
+name: pre-route
+
+outputs:
+  - pre-route.tcl

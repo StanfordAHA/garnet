@@ -156,6 +156,11 @@ def construct():
         custom_lvs = custom_step('/custom-lvs-rules')
         custom_power = custom_step('/../common/custom-power-leaf')
 
+    # Lake-spec builds: pre-route.tcl lets addFiller close unfillable 1-site
+    # gaps (see pre-route/outputs/pre-route.tcl). Not added for the default
+    # onyx MemCore so its graph stays unchanged.
+    pre_route = custom_step('/pre-route') if parameters['lake_spec_config'] else None
+
     testbench = custom_step('/../common/testbench')
     application = custom_step('/../common/application')
     # Build the global buffer in the app run so `aha test`/`make sim` finds
@@ -349,6 +354,9 @@ def construct():
     g.add_step(cts)
     g.add_step(postcts_hold)
     g.add_step(route)
+    if pre_route:
+        route.extend_inputs(['pre-route.tcl'])
+        g.add_step(pre_route)
     g.add_step(postroute)
     g.add_step(postroute_hold)
     g.add_step(signoff)
@@ -446,6 +454,8 @@ def construct():
     g.connect_by_name(place, cts)
     g.connect_by_name(cts, postcts_hold)
     g.connect_by_name(postcts_hold, route)
+    if pre_route:
+        g.connect_by_name(pre_route, route)
     g.connect_by_name(route, postroute)
     g.connect_by_name(postroute, postroute_hold)
     g.connect_by_name(postroute_hold, signoff)
@@ -574,6 +584,12 @@ def construct():
     pin_idx = order.index('pin-assignments.tcl')  # find pin-assignments.tcl
     order.insert(pin_idx + 1, 'edge-blockages.tcl')  # add here
     init.update_params({'order': order})
+
+    # route -- source pre-route.tcl first (right after the design restore)
+    if pre_route:
+        order = route.get_param('order')
+        order.insert(0, 'pre-route.tcl')
+        route.update_params({'order': order})
 
     # Adding new input for genlibdb node to run
 

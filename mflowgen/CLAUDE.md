@@ -267,6 +267,18 @@ Apples-to-apples caveats:
   config` env is NOT exported to the init step), so the default onyx build is
   byte-identical. Preferring `cols=2` macros (lake §5.1) keeps macros short,
   so most configs never trip the grow branch.
+- **`Tile_MemCore/pre-route/`** — lake-spec builds only (the default onyx
+  graph is unchanged). Supplies `pre-route.tcl`, sourced first in the route
+  step's `order` (after the design restore, before `run_route.tcl`'s
+  `addFiller` + `routeDesign -placementCheck`); same hook as
+  `full_chip/pre-route`. It sets `setFillerMode -fitGap true` (in a `catch`)
+  so addFiller can move a cell to close 1-site gaps: GF12's smallest filler
+  is 2 sites, so an unremovable 1-site gap is an unfillable FillerGap and
+  routeDesign aborts with NRIG-76. Seen 2026-10-01 on static
+  `fw4_dw16_sc8192_dp_in4_out4_vc2` at 1.333 ns (5 unfilled sites). Every
+  route log shows the second "addFiller without DRC checking" pass placing
+  DRC-violating `FILL_incr` cells — those routed fine but are a latent
+  signoff-DRC issue.
 
 ## Local RTL validation (no ADK/Cadence on /aha)
 
