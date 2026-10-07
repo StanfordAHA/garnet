@@ -349,6 +349,9 @@ def construct():
     pt_signoff.extend_inputs(['glb_top_tt.db'])
     pt_signoff.extend_inputs(['global_controller_tt.db'])
     pt_signoff.extend_inputs(['sram_tt.db'])
+    # pt.tcl's last write is design.sdf: without it the script stopped early
+    # (see Tile_MemCore/construct.py).
+    pt_signoff.extend_postconditions(["assert File( 'outputs/design.sdf' )"])
 
     if which_soc == 'onyx':
         pt_signoff.extend_inputs(['sram_2_tt.db'])

@@ -1473,7 +1473,7 @@ ARTIFACT_GLOBS = [
 # failed config can still be debugged on the other machine.
 ZIP_EXTRA_GLOBS = [
     "*.json",               # spec_config.json, lake_collateral.json
-    "*.log",                # mflowgen_run.log, make_clean.log, make.log
+    "*.log",                # mflowgen_run.log, make_clean.log, make.log (tail)
     "done.flag",
     "*/mflowgen-run.log",   # per-step log
     # Every file the SRAM compiler produced (+ its -help when no datasheet
@@ -1524,6 +1524,39 @@ def _default_zip_path(out_dir, args):
     return out_dir.parent / f"{out_dir.name}_{host}_{stamp}.zip"
 
 
+# A workspace's top-level make*.log is make's stdout: every step's output again
+# (mflowgen runs steps as `./mflowgen-run 2>&1 | tee mflowgen-run.log`, and the
+# per-step logs are zipped) plus make's own lines and the postcondition results.
+# Up to MAKE_LOG_FULL_MAX it goes in whole, else only its last lines, which
+# hold the failure and the last postconditions.
+MAKE_LOG_FULL_MAX = 4 << 20
+MAKE_LOG_TAIL_LINES = 2000
+# Files this large (merged GDS, Innovus logs) are deflated at level 1: several
+# times faster than the default 6 for a slightly bigger zip. Already-compressed
+# files are stored as-is.
+ZIP_FAST_MIN = 16 << 20
+ZIP_STORED_SUFFIXES = (".gz", ".bz2", ".xz", ".zst", ".zip", ".tgz")
+ZIP_PROGRESS_S = 30
+
+
+def _log_tail(path, max_lines):
+    """Last max_lines lines of a file (bytes), read backwards from the end."""
+    with open(path, "rb") as f:
+        pos = f.seek(0, os.SEEK_END)
+        data = b""
+        while pos > 0 and data.count(b"\n") <= max_lines:
+            step = min(1 << 16, pos)
+            pos -= step
+            f.seek(pos)
+            data = f.read(step) + data
+    return b"".join(data.splitlines(keepends=True)[-max_lines:])
+
+
+def _fmt_s(seconds):
+    m, s = divmod(int(seconds), 60)
+    return f"{m // 60}h{m % 60:02d}m" if m >= 60 else f"{m}m{s:02d}s"
+
+
 def _zip_results(out_dir, names, args):
     """Zip the sweep results under out_dir; return True on success.
 
@@ -1544,6 +1577,7 @@ def _zip_results(out_dir, names, args):
     # sweep_plan.txt: the run's command line + its workspaces (provenance)
     files = sorted(out_dir.glob("*.csv")) + sorted(out_dir.glob(PLAN_FILE))
     sram_cfgs, no_datasheet = 0, []
+    tails = set()   # big top-level make*.log: zipped as their last lines
     for name in found:
         for cfg_dir in (out_dir / name, out_dir / STANDALONE_SUBDIR / name):
             seen = set()
@@ -1552,6 +1586,10 @@ def _zip_results(out_dir, names, args):
                     if src.is_file() and src not in seen:
                         seen.add(src)
                         files.append(src)
+                        if (src.parent == cfg_dir and src.name.startswith("make")
+                                and src.suffix == ".log"
+                                and src.stat().st_size > MAKE_LOG_FULL_MAX):
+                            tails.add(src)
             old = [f for f in _old_sram_datasheets(cfg_dir) if f not in seen]
             files += old
             if any(cfg_dir.glob(SRAM_STEP_GLOB)):
@@ -1562,8 +1600,13 @@ def _zip_results(out_dir, names, args):
 
     zip_path = _default_zip_path(out_dir, args)
     root = zip_path.stem
-    print(f"\nZipping {len(found)} config(s), {len(files)} file(s) from "
-          f"{out_dir}\n        -> {zip_path}", flush=True)
+    total = sum(f.stat().st_size for f in files if f not in tails)
+    print(f"\nZipping {len(found)} config(s), {len(files)} file(s), "
+          f"{total / 1e9:.2f} GB from {out_dir}\n        -> {zip_path}", flush=True)
+    if tails:
+        print(f"        {len(tails)} make log(s) over {MAKE_LOG_FULL_MAX >> 20} MB "
+              f"go in as their last {MAKE_LOG_TAIL_LINES} lines (the rest repeats "
+              f"the per-step logs)", flush=True)
     if sram_cfgs:
         print(f"        SRAM macro datasheet: {sram_cfgs - len(no_datasheet)}/"
               f"{sram_cfgs} config(s) with a gen_sram_macro_spec step",
@@ -1578,23 +1621,47 @@ def _zip_results(out_dir, names, args):
               "results.csv (if any).", file=sys.stderr, flush=True)
     if args.dry_run:
         for f in files:
-            print(f"        DRY-RUN add: {root}/{f.relative_to(out_dir)}",
+            tail = f" (last {MAKE_LOG_TAIL_LINES} lines)" if f in tails else ""
+            print(f"        DRY-RUN add: {root}/{f.relative_to(out_dir)}{tail}",
                   flush=True)
         return True
 
     zip_path.parent.mkdir(parents=True, exist_ok=True)
     tmp = zip_path.with_name(zip_path.name + ".partial")
     skipped = 0
+    t0 = last = time.time()
+    done = 0
     try:
         with zipfile.ZipFile(tmp, "w", compression=zipfile.ZIP_DEFLATED) as zf:
-            for f in files:
+            for i, f in enumerate(files, 1):
+                arc = f"{root}/{f.relative_to(out_dir)}"
                 try:
-                    # write() follows symlinks, so mflowgen's outputs/ links
-                    # are stored as their real contents.
-                    zf.write(f, f"{root}/{f.relative_to(out_dir)}")
+                    if f in tails:
+                        size = f.stat().st_size
+                        head = (f"[sweep_specs zip: last {MAKE_LOG_TAIL_LINES} lines of "
+                                f"{size / 1e6:.1f} MB; the rest repeats the per-step "
+                                f"NN-*/mflowgen-run.log files]\n").encode()
+                        zf.writestr(arc, head + _log_tail(f, MAKE_LOG_TAIL_LINES))
+                    else:
+                        # write() follows symlinks, so mflowgen's outputs/
+                        # links are stored as their real contents.
+                        size = f.stat().st_size
+                        if f.name.endswith(ZIP_STORED_SUFFIXES):
+                            zf.write(f, arc, compress_type=zipfile.ZIP_STORED)
+                        elif size >= ZIP_FAST_MIN:
+                            zf.write(f, arc, compresslevel=1)
+                        else:
+                            zf.write(f, arc)
+                        done += size
                 except OSError as e:
                     skipped += 1
                     print(f"        skip {f}: {e}", file=sys.stderr, flush=True)
+                now = time.time()
+                if now - last >= ZIP_PROGRESS_S:
+                    last = now
+                    print(f"        zip: {i}/{len(files)} files, {done / 1e9:.2f}/"
+                          f"{total / 1e9:.2f} GB in, {tmp.stat().st_size / 1e6:.0f} MB "
+                          f"out, {_fmt_s(now - t0)}", flush=True)
         tmp.replace(zip_path)
     except OSError as e:
         print(f"*** ERROR: writing {zip_path} failed: {e}", file=sys.stderr,
@@ -1604,7 +1671,8 @@ def _zip_results(out_dir, names, args):
 
     size_mb = zip_path.stat().st_size / 1e6
     note = f", {skipped} unreadable file(s) skipped" if skipped else ""
-    print(f"Wrote {zip_path} ({size_mb:.1f} MB{note})", flush=True)
+    print(f"Wrote {zip_path} ({size_mb:.1f} MB{note}, {_fmt_s(time.time() - t0)})",
+          flush=True)
     return True
 
 

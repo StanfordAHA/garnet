@@ -246,6 +246,10 @@ def construct():
     # Add sram macro inputs to downstream nodes
     synth.extend_inputs(['sram_tt.lib', 'sram.lef'])
     pt_signoff.extend_inputs(['sram_tt.db'])
+    # pt.tcl's last write is design.sdf; without it the script stopped early
+    # (sweep_specs runs tools with stdin=/dev/null, so a Tcl error exits
+    # pt_shell instead of hanging and the step would otherwise pass).
+    pt_signoff.extend_postconditions(["assert File( 'outputs/design.sdf' )"])
     genlibdb.extend_inputs(['sram_tt.lib', 'sram_tt.db'])
 
     # These steps need timing and lef info for srams

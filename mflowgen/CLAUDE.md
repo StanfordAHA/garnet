@@ -81,7 +81,13 @@ Key flags:
   Includes the SRAM macro datasheet (see `gen_sram_macro_spec` below) +
   `genviews_manifest.txt`; workspaces whose SRAM step predates the collector
   get theirs from `genviews-output/` (same match rule). Prints `SRAM macro
-  datasheet: N/M` and names the configs without one.
+  datasheet: N/M` and names the configs without one. Speed (2026-10-06): a
+  top-level `make*.log` over 4 MB goes in as its last 2000 lines (it is make's
+  stdout = every step log again via mflowgen's tee, plus make's own lines and
+  the postcondition results), files >= 16 MB (merged GDS, Innovus logs) are
+  deflated at level 1, `.gz`/... are stored; prints the input size up front,
+  a progress line every 30 s, the elapsed time at the end. Synthetic 2-config
+  PnR-shaped benchmark: 99 s -> 24 s, 543 -> 463 MB.
 - `--standalone-synth` / `--standalone-only` / `--correlate-only` —
   standalone-spec baseline for the standalone-synth → tile-synth → tile-PnR
   correlation. See "Standalone spec synth + correlation" below.
@@ -449,10 +455,8 @@ ptpx (no ADK) and the docker path — check the first build-machine run's
   that `tee` sees EOF, i.e. once EVERY process holding the pipe exits. A step
   can finish (`.time_end` written, outputs there) while a background child it
   started keeps the pipe open: make, and sweep_specs, then wait forever and
-  that config never prints PASS. Second silent phase after all configs pass:
-  `--zip`, which prints `Zipping …` then nothing until `Wrote`, deflating
-  every step log twice (`make.log` = all step logs again, via that tee) + the
-  PnR configs' `design-merged.gds`.
+  that config never prints PASS. After all configs pass, `--zip` is the last
+  long phase (now with progress lines, see `--zip` above).
 - **Why a sweep looks hung:** sweep_specs prints a config's PASS/FAIL only
   when its whole build ends, and waits for every config (both `--pnr-set`
   pools) before `Done:` + correlation + zip. With `--pnr-set full12
@@ -460,8 +464,11 @@ ptpx (no ADK) and the docker path — check the first build-machine run's
   hours of silence is normal. Tool-prompt hangs are fixed by stdin=/dev/null
   (Key flags above; reproduced with Genus 20.11 here): at EOF Genus exits
   **0**, so it's the node postconditions (Genus `outputs/design.v`, Innovus
-  `outputs/design.checkpoint`) that fail the step. PT signoff has no
-  postconditions, so a PT script error now passes with missing reports.
+  `outputs/design.checkpoint`) that fail the step. The stock PT signoff node
+  has none, so Tile_MemCore / tile_array / full_chip add
+  `assert File( 'outputs/design.sdf' )` (pt.tcl's last write; a dangling
+  outputs/ link fails `File`). The `--memtile-power` ptpx steps are covered by
+  their own `cp reports/*.power.{hier,cell}.rpt` under `set -e`.
 - `done.flag` = the latest build of that workspace passed: sweep_specs deletes
   it when it starts rebuilding a workspace (so a failed re-run never reads as
   done).

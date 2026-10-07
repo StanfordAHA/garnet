@@ -182,6 +182,9 @@ def construct():
     synth.extend_inputs(['Tile_MemCore_tt.lib'])
     pt_signoff.extend_inputs(['Tile_PE_tt.db'])
     pt_signoff.extend_inputs(['Tile_MemCore_tt.db'])
+    # pt.tcl's last write is design.sdf: without it the script stopped early
+    # (see Tile_MemCore/construct.py).
+    pt_signoff.extend_postconditions(["assert File( 'outputs/design.sdf' )"])
     genlib.extend_inputs(['Tile_PE_tt.lib'])
     genlib.extend_inputs(['Tile_MemCore_tt.lib'])
 
