@@ -29,7 +29,11 @@ Key flags:
   `ASPLOS_EXP/all_experiments_thesis_v2.sh`, the standalone synthesis set)
   ∪ those 6 → 107 unique specs. Unlike aha's `enumerate_thesis_configs()`,
   the 30 `max_sequence_width` points are kept (they share collateral but
-  size the AG stride regs, so their RTL differs); names get `_msw<N>`.
+  size the static ScheduleGenerator's stride regs, so their RTL differs);
+  names get `_msw<N>`. RV ignores it: lake `build_spec_rv` computes
+  `stride_width` but `ReadyValidScheduleGenerator` takes none (and no
+  AddressGenerator takes it in either mode), so the 30 `_msw*_rv` configs are
+  6 distinct designs, one per dims (identical area in the 2026-10-06 sweep).
 - `--runtime-mode static,rv` — comma list; one config per (spec, mode).
   RV configs are named `<config>_rv` and get `LAKE_SPEC_MODE=rv` →
   `build_spec_rv`. Specs with `vec_width>1 && vec_capacity>2` are skipped
@@ -210,6 +214,24 @@ global_buffer/systemRDL/output global_controller/header
 global_controller/systemRDL/output` first. Never validate in the shared
 `/aha/garnet` (other sessions sim against its `garnet.v`/GLB headers) — use a
 private copy.
+
+**Result (zip `tile_memcore_thesis_r8cad-gf12_20261006-221414`, 2026-10-06):**
+all 196 configs synthesized and all 12 `full12` anchors through signoff
+(flattened, 1.333 ns). Synth meets timing except the
+three `fw2_dw64_*` builds (−7…−10 ps). Every PnR anchor misses setup (WNS −13…
+−229 ps, mostly In2Reg/In2Out; Reg2Reg ≥ −76 ps). Innovus/Genus std-cell area
+is 1.05–1.10× (fit 1.082·synth − 72 µm²). Last failures, now fixed: static
+`fw4_dw16_sc8192_dp_in4_out4_vc2` route (NRIG-76 → `fix-tap-gaps.tcl` below) and
+`fw1_dw16_sc8192_sp_in2_out2_dim1_msw256_rv` RTL gen (flaky SIGSEGV; passed on
+re-run). Ingested by lake `THESIS/pipeline/tile_sweep.py` (lake CLAUDE.md §1.8).
+RTL lake commit is mixed — each rtl log prints the commit it checked out on the
+line after `Mek Mek Mek`/`Reset branch 'THESIS'`. `82a78497` (pre static fix):
+all PORT_EXP, ITERATION_DOMAIN_EXP, default points and all 12 PnR anchors, 47
+of 60 AFFINE. `ebd0948e`: all MEMORY_EXP, 12 AFFINE (dims 6, + dims 5 at the
+largest msw). `577c6beb`: the 10-06 re-run of `..._dim1_msw256_rv`, +4.5%
+std-cell area over its 82a78497 neighbors. AFFINE static shows no step
+between 82a78497 and ebd0948e builds. A fresh `--out-dir` (as the dw16 plan
+below uses) rebuilds every config at one lake commit.
 
 Caveats:
 - **Static tile RTL changed on 2026-10-01.** The static-MemCore fixes
@@ -457,7 +479,9 @@ Apples-to-apples caveats:
   checkPlace, whose filler-gap check needs the place step's
   `place_detail_legalization_inst_gap`) and moves offenders one site, widening
   the gap to 2 (or abutting if widening would leave a new 1-site gap). Init
-  log prints `INFO: fix-tap-gaps: N well taps had a 1-site gap ...`.
+  log prints `INFO: fix-tap-gaps: N well taps had a 1-site gap ...`. Verified
+  on that config's re-run (zip `..._20261006-221414`): 116 found, 116 moved,
+  CTS checkPlace clean, route → signoff passed.
   Superseded a 2026-10-06 route-step `setFillerMode -fitGap true` hook that
   changed nothing (fitGap only moves placed cells, not fixed ones). Every
   route log also shows the second "addFiller without DRC checking" pass
@@ -840,3 +864,7 @@ do NOT update it — `git pull` there directly. Lake fixes flow via
 origin/THESIS (gen_rtl checks it out in-container). Keep `sweep_out` out of
 that checkout (docker-cp symlink breakage). See memory
 `project_build_machine_standalone_garnet`.
+
+aha's `mek` branch tracks the tips of garnet `modern_gf` and lake `THESIS`:
+after pushing either, bump its gitlink on `mek` (`git update-index --cacheinfo
+160000,<sha>,garnet` (or `lake`), commit `Bump garnet: <what>`, push).
