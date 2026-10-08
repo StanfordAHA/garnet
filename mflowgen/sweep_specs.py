@@ -85,6 +85,15 @@ Examples:
         --runtime-mode static,rv --flatten-effort 0 --memtile-power \\
         --pnr-set dw16_pnr12 --validate-set dw16_val4 \\
         --config-jobs 4 --pnr-jobs 2 --zip
+
+    # Whole-graph smoke test of one spec (lake build_spec defaults = the
+    # default onyx MemCore geometry): standalone synth + its idle/active power,
+    # tile PnR through PT signoff + tile idle/active power (synth + signoff
+    # netlists), then the tile's signoff checks
+    ./mflowgen/sweep_specs.py --spec-set thesis --only fw4_dw16_sc4096_sp_in2_out2_vc2 \\
+        --flatten-effort 0 --memtile-power --standalone-synth \\
+        --stop-after synopsys-pt-timing-signoff \\
+        --also-make synopsys-ptpx-genlibdb,synopsys-dc-lib2db,drc,lvs,drcplus-pm --zip
 """
 
 from pathlib import Path
@@ -116,6 +125,10 @@ GARNET_DIR = MFLOWGEN_DIR.parent
 # workspace, where `make clean-all` would wipe it) up to STANDALONE_TARGET.
 STANDALONE_SUBDIR = "standalone_synth"
 STANDALONE_TARGET = "cadence-genus-synthesis"
+# --memtile-power with --standalone-synth: lake's own idle/active power tests
+# on the standalone synth netlist (pd/thesis power-test-gen -> VCS -> ptpx).
+STANDALONE_POWER_TARGETS = ("synopsys-ptpx-synth-idle-power",
+                            "synopsys-ptpx-synth-active-power")
 # Where the lake rtl step's python_command writes the spec RTL + testbench;
 # the step copies <test_dir>/inputs/lakespec.sv etc. into its outputs.
 STANDALONE_TEST_DIR = "TEST/lakespec"
@@ -484,7 +497,19 @@ def build_argparser():
                         "kept, so area results are unchanged. Writes "
                         "<out-dir>/memtile_power.csv. Needs xrun (or VCS) + "
                         "PrimeTime, and docker for the stimulus generator unless "
-                        "the rtl step runs without a container.")
+                        "the rtl step runs without a container. With "
+                        "--standalone-synth, the standalone build also makes "
+                        "lake's own idle/active power leaves (synopsys-ptpx-synth-"
+                        "{idle,active}-power, same programs + input streams) -> "
+                        "standalone_* columns of memtile_power.csv.")
+    p.add_argument("--also-make", default="", metavar="TARGETS",
+                   help="Comma-separated extra tile-graph targets made after the "
+                        "build (and --memtile-power) targets, e.g. "
+                        "synopsys-ptpx-genlibdb,synopsys-dc-lib2db,drc,lvs. A name "
+                        "that is not a step resolves to the one step ending in "
+                        "-<name> (drc/lvs are mentor-calibre-* or cadence-pegasus-* "
+                        "depending on `calibre` on PATH). A failure is a note on "
+                        "the row, not a failed config.")
     p.add_argument("--include-pnr-power", dest="include_pnr_power",
                    action="store_true",
                    help="With --cgra-power, additionally make the 'post-pnr-power' "
@@ -1180,16 +1205,18 @@ def _process_tile(name, cfg, cfg_dir, args):
         return _row(name, cfg, cfg_dir, "FAIL", str(e)[:200], 0.0, targets)
 
 
-def _done_for(done_flag, targets):
+def _done_for(done_flag, targets, bare_ok=None):
     """done.flag reads `ok <targets>`. --skip-existing only skips a workspace
     built to the same targets, so moving a synth-only config into --pnr-set
     resumes it (make reuses the finished steps). A bare `ok` (written before
-    targets were recorded) counts as done."""
+    targets were recorded) counts as done, or as `ok <bare_ok>` if given."""
     try:
         words = done_flag.read_text().split()
     except OSError:
         return False
-    return words[:1] == ["ok"] and (len(words) == 1 or " ".join(words[1:]) == targets)
+    if words == ["ok"]:
+        return bare_ok is None or bare_ok == targets
+    return words[:1] == ["ok"] and " ".join(words[1:]) == targets
 
 
 def _process_standalone(name, cfg, sa_dir, args):
@@ -1205,7 +1232,8 @@ def _process_standalone(name, cfg, sa_dir, args):
             shutil.rmtree(sa_dir)
 
     done_flag = sa_dir / "done.flag"
-    if args.skip_existing and done_flag.exists():
+    targets = " ".join(_standalone_targets(args))
+    if args.skip_existing and _done_for(done_flag, targets, bare_ok=STANDALONE_TARGET):
         print(f"        SKIP: {name} standalone (done.flag present)", flush=True)
         return {"standalone_status": "SKIP", "standalone_notes": "already_done"}
     if not args.dry_run:
@@ -1219,11 +1247,13 @@ def _process_standalone(name, cfg, sa_dir, args):
 
     duration = None
     try:
-        duration = _run_standalone(cfg, sa_dir, args)
+        duration, notes = _run_standalone(cfg, sa_dir, args)
         if args.dry_run:
             return {}
-        done_flag.write_text("ok\n")
-        return result("PASS", f"{duration:.0f}s")
+        # As for the tile: a failed power leaf leaves done.flag at the synth
+        # target, so --skip-existing retries just the power leaves.
+        done_flag.write_text(f"ok {targets if not notes else STANDALONE_TARGET}\n")
+        return result("PASS", " ".join(filter(None, [f"{duration:.0f}s", notes])))
     except subprocess.CalledProcessError as e:
         return result("FAIL", f"exit_code={e.returncode}")
     except Exception as e:  # noqa: BLE001 -- record and press on
@@ -1289,14 +1319,25 @@ def _standalone_graph_kwargs(cfg, args):
     return kwargs
 
 
+def _standalone_targets(args):
+    """The standalone build's make targets: synth, plus lake's idle/active
+    power leaves under --memtile-power."""
+    power = list(STANDALONE_POWER_TARGETS) if args.memtile_power else []
+    return [STANDALONE_TARGET] + power
+
+
 def _run_standalone(cfg, sa_dir, args):
+    """Build one standalone workspace; returns (duration, notes)."""
     t0 = time.time()
     design = Path(args.lake_dir).resolve() / "pd" / "thesis"
     run_cmd = ["mflowgen", "run", "--design", str(design),
                "--graph-kwargs", str(_standalone_graph_kwargs(cfg, args))]
     make_cmd = ["make", STANDALONE_TARGET]
+    power_targets = _standalone_targets(args)[1:]
+    power_cmd = ["make", *power_targets]
     if args.parallel_jobs > 0:
         make_cmd.insert(1, f"-j{args.parallel_jobs}")
+        power_cmd.insert(1, f"-j{args.parallel_jobs}")
     # Only clean-all carries over: --clean names tile-graph steps.
     clean_cmd = ["make", "clean-all"] if args.clean_all and not args.fresh else []
 
@@ -1305,12 +1346,14 @@ def _run_standalone(cfg, sa_dir, args):
         if clean_cmd:
             print(f"        DRY-RUN cmd: {' '.join(clean_cmd)}", flush=True)
         print(f"        DRY-RUN cmd: {' '.join(make_cmd)}", flush=True)
-        return 0.0
+        if power_targets:
+            print(f"        DRY-RUN cmd: {' '.join(power_cmd)}", flush=True)
+        return 0.0, ""
 
     def write_spec():
         # Provenance, and what _discover_configs keys on (so even a workspace
         # whose `mflowgen run` failed gets correlated/zipped).
-        _write_spec_files(cfg, sa_dir, STANDALONE_TARGET)
+        _write_spec_files(cfg, sa_dir, " ".join(_standalone_targets(args)))
 
     sa_dir.mkdir(parents=True, exist_ok=True)
     write_spec()
@@ -1321,14 +1364,21 @@ def _run_standalone(cfg, sa_dir, args):
         write_spec()  # clean-all deletes loose files in the workspace
 
     _handle_stale_steps(sa_dir, env, args)
-    _check_step_exists(STANDALONE_TARGET, sa_dir, env)
+    for target in [STANDALONE_TARGET] + power_targets:
+        _check_step_exists(target, sa_dir, env)
     _write_manifest(sa_dir, cfg, args, "standalone",
                     settings={k: env[k] for k in ("PYTHONPATH", "LAKE_PATH") if k in env},
-                    targets={"build": [STANDALONE_TARGET]}, graph=str(design),
-                    graph_kwargs=_standalone_graph_kwargs(cfg, args))
+                    targets={"build": [STANDALONE_TARGET], "power": power_targets},
+                    graph=str(design), graph_kwargs=_standalone_graph_kwargs(cfg, args))
     _sh(make_cmd, cwd=sa_dir, env=env, log=sa_dir / "make.log")
+    notes = ""
+    if power_targets:
+        try:
+            _sh(power_cmd, cwd=sa_dir, env=env, log=sa_dir / "make_power.log")
+        except subprocess.CalledProcessError as e:
+            notes = f"power_failed(exit {e.returncode}, make_power.log)"
     _collect_artifacts(sa_dir)
-    return time.time() - t0
+    return time.time() - t0, notes
 
 
 def _run_make_passthrough(configs, args):
@@ -1414,8 +1464,14 @@ def _memtile_power_targets(cfg, args):
     return [f"memtile-power-{lvl}-{v}" for lvl in levels for v in MEMTILE_POWER_VARIANTS]
 
 
+def _also_make_targets(args):
+    """--also-make names as given (resolved per workspace by _resolve_targets)."""
+    return [t.strip() for t in getattr(args, "also_make", "").split(",") if t.strip()]
+
+
 def _all_targets(cfg, args):
-    return _build_targets(cfg, args) + _memtile_power_targets(cfg, args)
+    return (_build_targets(cfg, args) + _memtile_power_targets(cfg, args)
+            + _also_make_targets(args))
 
 
 def _tile_env(cfg, cfg_dir, args):
@@ -1452,12 +1508,14 @@ def _run_one(cfg, cfg_dir, args):
     env = _tile_env(cfg, cfg_dir, args)
     build_targets = _build_targets(cfg, args)
     power_targets = _memtile_power_targets(cfg, args)
+    also_targets = _also_make_targets(args)
 
     make_cmd = ["make", *build_targets]
     power_cmd = ["make", *power_targets]
-    if args.parallel_jobs > 0:
-        make_cmd.insert(1, f"-j{args.parallel_jobs}")
-        power_cmd.insert(1, f"-j{args.parallel_jobs}")
+    jobs = [f"-j{args.parallel_jobs}"] if args.parallel_jobs > 0 else []
+    if jobs:
+        make_cmd.insert(1, jobs[0])
+        power_cmd.insert(1, jobs[0])
 
     # Steps to force-clean before building (see --clean / --clean-all). These
     # run after `mflowgen run` (so the Makefile + clean-<name> targets exist)
@@ -1484,6 +1542,8 @@ def _run_one(cfg, cfg_dir, args):
         print(f"        DRY-RUN cmd: {' '.join(make_cmd)}", flush=True)
         if power_targets:
             print(f"        DRY-RUN cmd: {' '.join(power_cmd)}", flush=True)
+        if also_targets:
+            print(f"        DRY-RUN cmd: make {' '.join(jobs + also_targets)}", flush=True)
         return 0.0, ""
 
     def write_manifest():
@@ -1509,14 +1569,21 @@ def _run_one(cfg, cfg_dir, args):
 
     for _t in build_targets + power_targets:
         _check_step_exists(_t, cfg_dir, env)
+    also_cmd = ["make", *jobs, *_resolve_targets(also_targets, cfg_dir, env)]
     _sh(make_cmd, cwd=cfg_dir, env=env, log=cfg_dir / "make.log")
 
-    notes = ""
+    notes = []
     if power_targets:
         try:
             _sh(power_cmd, cwd=cfg_dir, env=env, log=cfg_dir / "make_memtile_power.log")
         except subprocess.CalledProcessError as e:
-            notes = f"memtile_power_failed(exit {e.returncode}, make_memtile_power.log)"
+            notes.append(f"memtile_power_failed(exit {e.returncode}, make_memtile_power.log)")
+    if also_targets:
+        try:
+            _sh(also_cmd, cwd=cfg_dir, env=env, log=cfg_dir / "make_also.log")
+        except subprocess.CalledProcessError as e:
+            notes.append(f"also_make_failed(exit {e.returncode}, make_also.log)")
+    notes = " ".join(notes)
 
     _collect_artifacts(cfg_dir)
     return time.time() - t0, notes
@@ -1779,36 +1846,7 @@ def _check_step_exists(step, cfg_dir, env):
     """
     if str(step).isdigit():
         return
-    try:
-        proc = subprocess.run(["make", "list"], cwd=str(cfg_dir), env=env,
-                              stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                              text=True, timeout=120)
-    except (OSError, subprocess.SubprocessError):
-        return  # Can't check; let make speak for itself.
-    if proc.returncode != 0:
-        return
-
-    # `make list` prints one node per line as " -  23 : cadence-innovus-signoff"
-    # (see mflowgen/backends/makefile_syntax.py: make_list). Generic targets
-    # use "-- description" instead of ":". Collect both ids and names.
-    names, targets = set(), set()
-    for line in proc.stdout.splitlines():
-        line = line.strip()
-        if not line.startswith("-"):
-            continue
-        line = line.lstrip("-").strip()
-        if " : " in line:
-            num, name = line.split(" : ", 1)
-            num, name = num.strip(), name.strip()
-            targets.add(num)
-            if name:
-                targets.add(name)
-                names.add(name)
-        else:
-            tok = line.split()[0] if line else ""
-            if tok:
-                targets.add(tok)
-                names.add(tok)
+    names, targets = _make_list(cfg_dir, env)
 
     # If we parsed no step *names*, our parse of `make list` is wrong (or its
     # format changed). Stay quiet rather than block a legitimate build -- make
@@ -1821,6 +1859,68 @@ def _check_step_exists(step, cfg_dir, env):
     raise SystemExit(
         f"*** ERROR: '{step}' is not a step in this graph.{hint}\n"
         f"    Run `make list` in {cfg_dir} to see all targets.")
+
+
+def _resolve_targets(items, cfg_dir, env):
+    """--also-make names -> make targets: a step name/number as is, else the
+    one step whose name ends in -<item> (drc -> mentor-calibre-drc or
+    cadence-pegasus-drc; mflowgen's debug-<step> targets don't count).
+    Unknown or ambiguous names raise."""
+    names, targets = _make_list(cfg_dir, env, steps_only=True)
+    if not names:
+        return list(items)   # can't parse `make list`; let make complain
+    out = []
+    for item in items:
+        if item in targets:
+            out.append(item)
+            continue
+        hits = sorted(n for n in names if n.endswith("-" + item))
+        if len(hits) != 1:
+            raise RuntimeError(f"--also-make '{item}': "
+                               + (f"ambiguous ({', '.join(hits)})" if hits
+                                  else "no such step (see `make list`)"))
+        out.append(hits[0])
+    return out
+
+
+def _make_list(cfg_dir, env, steps_only=False):
+    """(names, all targets incl. step numbers) from `make list` in a
+    configured workspace; two empty sets if it can't be read. names = the
+    graph's steps, plus the generic targets unless steps_only."""
+    names, targets = set(), set()
+    try:
+        proc = subprocess.run(["make", "list"], cwd=str(cfg_dir), env=env,
+                              stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                              text=True, timeout=120)
+    except (OSError, subprocess.SubprocessError):
+        return names, targets
+    if proc.returncode != 0:
+        return names, targets
+
+    # `make list` prints one node per line as " -  23 : cadence-innovus-signoff"
+    # (see mflowgen/backends/makefile_syntax.py: make_list). Generic targets
+    # use "-- description" instead of ":". Collect both ids and names.
+    for line in proc.stdout.splitlines():
+        line = line.strip()
+        if not line.startswith("-"):
+            continue
+        line = line.lstrip("-").strip()
+        if " : " in line:
+            num, name = line.split(" : ", 1)
+            num, name = num.strip(), name.strip()
+            targets.add(num)
+            if name:
+                targets.add(name)
+                # Steps are numbered; " - debug-14 : debug-<step>" is not one.
+                if num.isdigit() or not steps_only:
+                    names.add(name)
+        else:
+            tok = line.split()[0] if line else ""
+            if tok:
+                targets.add(tok)
+                if not steps_only:
+                    names.add(tok)
+    return names, targets
 
 
 # The spec SRAM step (common/gen_sram_macro_spec) and the compiler datasheet
@@ -1856,6 +1956,9 @@ ARTIFACT_GLOBS = [
     "*-memtile-power-*-active/outputs/power.*",
     "*-memtile-power-test-gen/outputs/power_tests.json",
     "*-memtile-power-sim-*/logs/sim.log",
+    # Standalone (lake pd/thesis) idle/active ptpx under --memtile-power; its
+    # VCS sims' PASS lines are in their per-step mflowgen-run.log.
+    "*-synopsys-ptpx-synth-*-power/outputs/power.*",
 ]
 
 # Extra per-workspace files that only go into the zip: provenance + logs, so a
@@ -2479,20 +2582,38 @@ def _memtile_power_metrics(ws):
     return row
 
 
+def _standalone_power_metrics(sa_ws):
+    """Lake's idle/active power of the standalone synth netlist
+    (synopsys-ptpx-synth-{idle,active}-power, top row = lakespec)."""
+    row, total = {}, {}
+    for variant in MEMTILE_POWER_VARIANTS:
+        n = _top_row_nums(_first(sa_ws, f"*-synopsys-ptpx-synth-{variant}-power/outputs/power.hier"))
+        for i, part in enumerate(("internal", "switching", "leakage", "total")):
+            row[f"standalone_{variant}_{part}_power"] = n[i] if len(n) >= 4 else None
+        total[variant] = n[3] if len(n) >= 4 else None
+    idle, active = total["idle"], total["active"]
+    row["standalone_active_over_idle"] = active / idle if idle and active is not None else None
+    return row
+
+
 def _write_memtile_power(out_dir, names, validate_names=None):
     """<out_dir>/memtile_power.csv: idle + active Tile_MemCore power per
     config (--memtile-power), synth and PnR netlists, with the PnR power
     projected from the synth power (memtile_power_fit.csv), like the area in
-    correlation.csv. Fail-soft: blank cells for anything not built. Returns
-    the held-out configs' pnr_validation.csv rows."""
+    correlation.csv, and the standalone spec's idle + active power (lake's
+    tests on its synth netlist) when --standalone-synth built them.
+    Fail-soft: blank cells for anything not built. Returns the held-out
+    configs' pnr_validation.csv rows."""
     rows = []
     for name in names:
-        ws = out_dir / name
-        if not _first(ws, "*-memtile-power-test-gen"):
+        ws, sa_ws = out_dir / name, out_dir / STANDALONE_SUBDIR / name
+        if not (_first(ws, "*-memtile-power-test-gen")
+                or _first(sa_ws, "*-synopsys-ptpx-synth-*-power")):
             continue
         row = {"config_name": name}
         row.update(_sweep_meta(ws, name))
         row.update(_memtile_power_metrics(ws))
+        row.update(_standalone_power_metrics(sa_ws))
         rows.append(row)
     if not rows:
         return []

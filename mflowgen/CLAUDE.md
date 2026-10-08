@@ -94,6 +94,9 @@ Key flags:
 - `--memtile-power` — idle + active power of each spec MemTile (synth
   netlist always, signoff netlist for configs that run PnR) →
   `<out-dir>/memtile_power.csv`. See "MemTile idle/active power" below.
+  With `--standalone-synth` it also runs lake's standalone idle/active power.
+- `--also-make TARGETS` — extra tile targets (genlibdb, DRC, LVS, ...) made
+  last; failure is a note. See "Whole-graph smoke run" below.
 - `--flatten-effort N` (2026-10-07) → env `FLATTEN` → Tile_MemCore
   `flatten_effort` (construct default still 3; Tile_PE already read `FLATTEN`).
   The Genus node only tells 0 (`auto_ungroup none`: hierarchy kept, as lake's
@@ -225,6 +228,44 @@ reports (fits match numpy; roles, override, legacy no-role out-dir) + stub-ADK
 graph materialization. Unchecked until real data: Genus SRAM area (.lib) vs
 Innovus macro area (LEF) — via_logic assumes they're equal; compare
 `tile_synth_sram_area` with `tile_pnr_macro_area` in the first real CSV.
+
+### Whole-graph smoke run: one spec, standalone + tile (2026-10-07)
+
+To check the flow end to end before a big sweep (user request), one static
+config: `fw4_dw16_sc4096_sp_in2_out2_vc2` = lake `build_spec()` defaults = the
+default onyx MemCore geometry (64-bit × 512 words, fw4, 2 in / 2 out):
+
+    ./mflowgen/sweep_specs.py --spec-set thesis --only fw4_dw16_sc4096_sp_in2_out2_vc2 \
+        --flatten-effort 0 --memtile-power --standalone-synth \
+        --stop-after synopsys-pt-timing-signoff \
+        --also-make synopsys-ptpx-genlibdb,synopsys-dc-lib2db,drc,lvs,drcplus-pm \
+        --parallel-jobs 6 --zip --out-dir <new dir>
+
+Tile: make `synopsys-pt-timing-signoff` (rtl → SRAM → synth → PnR →
+signoff → PT), then `memtile-power-{synth,pnr}-{idle,active}`, then the
+`--also-make` targets. Standalone (lake pd/thesis, host `--lake-dir`):
+`cadence-genus-synthesis`, then `synopsys-ptpx-synth-{idle,active}-power`.
+- `--also-make` (new): extra tile targets in a third make (`make_also.log`);
+  failure = row note `also_make_failed(...)`, done.flag keeps the build
+  targets so `--skip-existing` retries them. A name that isn't a step resolves
+  to the one numbered step ending in `-<name>` (`drc`/`lvs` → mentor-calibre-*
+  if `calibre` is on PATH at `mflowgen run`, else cadence-pegasus-*;
+  `debug-<step>` targets excluded). Resolved right after `mflowgen run`, so a
+  bad name fails before the build. DRC postconditions don't check violation
+  counts; LVS fails on `INCORRECT`.
+- `--memtile-power` + `--standalone-synth` (new) also makes lake's standalone
+  idle/active power leaves (second make, `make_power.log`, failure = note;
+  standalone done.flag now `ok <targets>`, a bare `ok` = synth only) →
+  `standalone_{idle,active}_*_power` + `standalone_active_over_idle` columns of
+  memtile_power.csv; `*-synopsys-ptpx-synth-*-power/outputs/power.*` zipped.
+- Not covered: app-driven power (application/testbench/post-pnr-power need an
+  app bundle for spec tiles), RV mode, debug-calibre. Build machine needs the
+  standalone garnet AND its sibling lake pulled (the standalone flow uses the
+  host lake; lake ≥ 577c6beb for the shared power programs).
+- Checked on /aha (stub ADK): dry-run sequence; both graphs materialize, every
+  target name resolves/exists, tile build reaches gen_rtl (no docker here),
+  standalone reaches lake gen_sram (no SRAM compiler); make-sequencing + notes
+  + done.flag on a scratch graph; standalone power columns on synthetic reports.
 
 ### Standalone spec synth + correlation
 
