@@ -317,6 +317,10 @@ signoff → PT), then `memtile-power-{synth,pnr}-{idle,active}`, then the
   standalone done.flag now `ok <targets>`, a bare `ok` = synth only) →
   `standalone_{idle,active}_*_power` + `standalone_active_over_idle` columns of
   memtile_power.csv; `*-synopsys-ptpx-synth-*-power/outputs/power.*` zipped.
+  Needs lake >= `6a79216c` on the host `--lake-dir`: before it, those leaves
+  powered RTL-sim activity (~2–4% of nets annotated, idle ≈ active). For a
+  standalone workspace built earlier, `make clean-<N>` its
+  `synopsys-vcs-sim-{idle,active}-power` steps.
 - Not covered: app-driven power (application/testbench/post-pnr-power need an
   app bundle for spec tiles), RV mode, debug-calibre. Build machine needs the
   standalone garnet AND its sibling lake pulled (the standalone flow uses the
@@ -633,10 +637,11 @@ Four things to know when reading synth-level numbers:
   sims.** Without it, the model's `ng_xbuf` drives its own RN pin, so async
   reset goes X and the RV tile fails. Seen with freepdk; the gf12 cell
   models were not checked (no gf12 ADK on /aha).
-- **Don't apply an RTL-sim SAIF to a gate netlist without a name map.** Lake
-  `pd/thesis` synth-level ptpx does this, and PT annotated only ~4% of nets
-  (power not credible); a gate-level sim gives 100%. The tile flow simulates
-  the netlist, so it is fine.
+- **Don't apply an RTL-sim SAIF to a gate netlist without a name map.** PT
+  matched only ~2–4% of nets that way, and idle came out ≈ active; a sim of
+  the netlist itself gives 100%. Lake `pd/thesis` synth-level idle/active
+  power did this until lake `6a79216c` (2026-10-07), which simulates the
+  Genus netlist. The tile flow always simulated the netlist.
 - **Use DC `analyze`+`elaborate` on garnet.v.** `read_file` black-boxes the
   parameterized coreir templates (LBR-1).
 
