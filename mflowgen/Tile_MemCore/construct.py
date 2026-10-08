@@ -175,6 +175,12 @@ def construct():
     if parameters['lake_spec_config']:
         custom_init.extend_outputs(['fix-tap-gaps.tcl'])
 
+    # Lake-spec builds: fix-pt-sdc.tcl rewrites signoff's design.pt.sdc so
+    # PrimeTime's read_sdc reads all of it (writeTimingCon emits
+    # append_to_collection, which isn't SDC; see custom-signoff/outputs/
+    # fix-pt-sdc.tcl). Not added for the default onyx MemCore.
+    custom_signoff = custom_step('/custom-signoff') if parameters['lake_spec_config'] else None
+
     testbench = custom_step('/../common/testbench')
     application = custom_step('/../common/application')
     # Build the global buffer in the app run so `aha test`/`make sim` finds
@@ -259,6 +265,12 @@ def construct():
     # (sweep_specs runs tools with stdin=/dev/null, so a Tcl error exits
     # pt_shell instead of hanging and the step would otherwise pass).
     pt_signoff.extend_postconditions(["assert File( 'outputs/design.sdf' )"])
+    if custom_signoff:
+        # A truncated SDC read is otherwise silent: the step passes and the
+        # timing report just lacks the dropped constraints.
+        for step in (pt_signoff, genlibdb):
+            step.extend_postconditions(
+                ["assert 'Errors reading SDC' not in File( 'mflowgen-run.log' )"])
     genlibdb.extend_inputs(['sram_tt.lib', 'sram_tt.db'])
 
     # These steps need timing and lef info for srams
@@ -397,6 +409,9 @@ def construct():
     g.add_step(postroute)
     g.add_step(postroute_hold)
     g.add_step(signoff)
+    if custom_signoff:
+        signoff.extend_inputs(custom_signoff.all_outputs())
+        g.add_step(custom_signoff)
     g.add_step(pt_signoff)
     g.add_step(genlibdb_constraints)
     g.add_step(genlibdb)
@@ -499,6 +514,8 @@ def construct():
     g.connect_by_name(route, postroute)
     g.connect_by_name(postroute, postroute_hold)
     g.connect_by_name(postroute_hold, signoff)
+    if custom_signoff:
+        g.connect_by_name(custom_signoff, signoff)
     g.connect_by_name(signoff, drc)
     g.connect_by_name(signoff, lvs)
 
@@ -736,6 +753,13 @@ def construct():
         taps = 'pd-add-endcaps-welltaps.tcl' if pwr_aware else 'add-endcaps-welltaps.tcl'
         order.insert(order.index(taps) + 1, 'fix-tap-gaps.tcl')
         init.update_params({'order': order})
+
+    # signoff -- lake-spec: fix-pt-sdc.tcl right after generate-results.tcl
+    # writes <design>.pt.sdc
+    if custom_signoff:
+        order = signoff.get_param('order')
+        order.insert(order.index('generate-results.tcl') + 1, 'fix-pt-sdc.tcl')
+        signoff.update_params({'order': order})
 
     return g
 

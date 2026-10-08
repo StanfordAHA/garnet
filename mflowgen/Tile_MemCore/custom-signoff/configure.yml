@@ -1,0 +1,10 @@
+#=========================================================================
+# Tile_MemCore custom signoff scripts (lake-spec builds only)
+#=========================================================================
+# Supplies fix-pt-sdc.tcl to the signoff step, which sources it right after
+# generate-results.tcl writes <design>.pt.sdc (see the script header).
+
+name: custom-signoff
+
+outputs:
+  - fix-pt-sdc.tcl

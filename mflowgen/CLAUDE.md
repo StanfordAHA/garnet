@@ -339,6 +339,22 @@ signoff → PT), then `memtile-power-{synth,pnr}-{idle,active}`, then the
   app bundle for spec tiles), RV mode, debug-calibre. Build machine needs the
   standalone garnet AND its sibling lake pulled (the standalone flow uses the
   host lake; lake ≥ 577c6beb for the shared power programs).
+- **Result (zip `STANDALONE_r8cad-gf12_20261007-224116`, 2026-10-07):** RTL at
+  lake 577c6beb, hierarchy kept (`port_sg_0`/`port_ag_0`/`memoryport_0_storage_0`
+  rows in the tile area report), synth meets 1.333 ns (tile +0.2 ps, standalone
+  +1.6 ps), SRAM period PASS, fix-tap-gaps moved 34 taps, Innovus signoff WNS
+  −90 ps (In2Out), tile memtile power 100% SAIF-annotated at synth and PnR
+  (idle 1.59 / active 10.5 mW synth, 2.04 / 11.6 mW PnR). Not valid: PT signoff
+  + genlibdb (truncated SDC, fixed by fix-pt-sdc.tcl above); standalone power
+  (simulated the RTL — run predates lake 6a79216c — 50.8% nets / 0.29% cells
+  annotated, active/idle 1.49 vs the tile's 6.6). `--also-make` DRC/LVS/DRC+
+  failed on setup, not on the design: `inputs/adk/run-drc-pm.csh` missing,
+  `GF_PDK_HOME` unset (`drcenv-block.sh`), Calibre `ixl_cal_2013.2` too old for
+  the LVS deck (`device::enclosure_parallel_measurements`); lib2db never started
+  (make stops after the first failure). Innovus's own `verify_drc` caps at 1000
+  (≈980 C5/K1 shorts + M3 EOL spacing) and `verifyConnectivity` finds 9 VSS
+  opens on every PnR build so far (also the 2026-10-06 thesis anchors) — a
+  flow-wide power-grid issue, fine for PPA but not DRC-clean.
 - Checked on /aha (stub ADK): dry-run sequence; both graphs materialize, every
   target name resolves/exists, tile build reaches gen_rtl (no docker here),
   standalone reaches lake gen_sram (no SRAM compiler); make-sequencing + notes
@@ -370,7 +386,9 @@ Every run (and `--correlate-only`/`--zip-only`) writes
 {cell,total,sram,logic}_area` + `_wns_ps` + `_sram_macros` (Genus
 `final_{area,gates,qor}.rpt`), and `tile_pnr_{total,macro,logic}_area`
 (Innovus `signoff.area.rpt`) + `tile_pnr_setup_wns_ns` (PT
-`*.timing.setup.rpt`). Parsers are fail-soft (blank cell). Validated against
+`*.timing.setup.rpt`; PT prints gf12 times in ps, converted to ns from the
+report's clock edges since 2026-10-07 — earlier CSVs hold ps). Parsers are
+fail-soft (blank cell). Validated against
 lake's sample `signoff.area.rpt` and synthetic Genus/PT reports only — eyeball
 the first real CSV.
 
@@ -505,6 +523,25 @@ Apples-to-apples caveats:
   route log also shows the second "addFiller without DRC checking" pass
   placing DRC-violating `FILL_incr` cells — those route fine but are a latent
   signoff-DRC issue.
+- **`Tile_MemCore/custom-signoff/outputs/fix-pt-sdc.tcl`** (2026-10-07) —
+  lake-spec builds only (new `custom-signoff` step feeding signoff; sourced
+  right after `generate-results.tcl`). `writeTimingCon` splits long object lists
+  into `set __coll_N [get_ports {...}]` + `append_to_collection __coll_N [...]`,
+  and `append_to_collection` isn't SDC: PrimeTime's `read_sdc` stops at the
+  first one (CMD-005 / "Errors reading SDC file") and silently drops the rest.
+  All four readers of `design.pt.sdc` hit it (PT signoff, genlibdb, PnR-level
+  memtile power idle/active); synth-level power reads Genus's SDC and was fine.
+  On the 2026-10-07 smoke run reading stopped at line 4283, and the lost
+  constraints included the 2-cycle `config_config_addr -> read_config_data`
+  multicycle, so PT reported −1229 ps on that path vs Innovus's −90 ps. The
+  script folds each collection's appends into its `set` line (same `get_*`,
+  not referenced in between; else left and counted), keeps
+  `<design>.pt.sdc.orig`, and logs `INFO: fix-pt-sdc: folded N ...; M left`.
+  PT signoff and genlibdb (lake-spec) also get the postcondition
+  `'Errors reading SDC' not in File( 'mflowgen-run.log' )`. Checked locally on
+  the real SDC lines PT echoed (442-port collection preserved) + edge cases,
+  and both graphs materialize; not yet run through PT. Workspaces whose signoff
+  already ran need it re-run (`--clean-stale` sees the new signoff `order`).
 
 ## Local RTL validation (no ADK/Cadence on /aha)
 
