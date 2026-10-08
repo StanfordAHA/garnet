@@ -538,7 +538,9 @@ def construct():
         reverse_connect(post_rtl_power, application)
         reverse_connect(post_rtl_power, gen_sram)
         reverse_connect(post_rtl_power, rtl)
-        reverse_connect(post_rtl_power, synth)
+        # only the name map: by name, synth's netlist design.v also landed on
+        # the RTL design.v input (two sources; the RTL sim got a netlist)
+        g.connect(synth.o('design.namemap'), post_rtl_power.i('design.namemap'))
         reverse_connect(post_rtl_power, signoff)
         reverse_connect(post_rtl_power, testbench)
 

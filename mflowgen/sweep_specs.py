@@ -128,6 +128,9 @@ STANDALONE_SUBDIR = "standalone_synth"
 STANDALONE_TARGET = "cadence-genus-synthesis"
 # --memtile-power with --standalone-synth: lake's own idle/active power tests
 # on the standalone synth netlist (pd/thesis power-test-gen -> VCS -> ptpx).
+# The app-driven standalone power leaf (lake app-power-gen; graph kwarg
+# app_bundle), made for a static config with an app bundle (--app-bundle-dir).
+STANDALONE_APP_POWER_TARGET = "synopsys-ptpx-synth-app-power"
 STANDALONE_POWER_TARGETS = ("synopsys-ptpx-synth-idle-power",
                             "synopsys-ptpx-synth-active-power")
 # Where the lake rtl step's python_command writes the spec RTL + testbench;
@@ -1261,7 +1264,7 @@ def _process_standalone(name, cfg, sa_dir, args):
             shutil.rmtree(sa_dir)
 
     done_flag = sa_dir / "done.flag"
-    targets = " ".join(_standalone_targets(args))
+    targets = " ".join(_standalone_targets(cfg, args))
     if args.skip_existing and _done_for(done_flag, targets, bare_ok=STANDALONE_TARGET):
         print(f"        SKIP: {name} standalone (done.flag present)", flush=True)
         return {"standalone_status": "SKIP", "standalone_notes": "already_done"}
@@ -1341,6 +1344,11 @@ def _standalone_graph_kwargs(cfg, args):
         "python_command": '"' + " ".join(str(c) for c in cmd) + '"',
         "test_dir": STANDALONE_TEST_DIR,
     }
+    # The standalone lakespec is static: an app bundle replays into it only
+    # from a static run (lake app-power-gen checks the spec too).
+    bundle = _app_bundle(cfg, args)
+    if bundle and _mode(cfg) == "static":
+        kwargs["app_bundle"] = str(bundle)
     # Also as plain kwargs: lake's power-test-gen rebuilds the spec from them.
     for key in ("max_extent", "max_sequence_width"):
         if cfg.get(key) is not None:
@@ -1348,10 +1356,13 @@ def _standalone_graph_kwargs(cfg, args):
     return kwargs
 
 
-def _standalone_targets(args):
+def _standalone_targets(cfg, args):
     """The standalone build's make targets: synth, plus lake's idle/active
-    power leaves under --memtile-power."""
+    power leaves under --memtile-power, plus the app-driven leaf when the
+    config has a static app bundle (--app-bundle-dir)."""
     power = list(STANDALONE_POWER_TARGETS) if args.memtile_power else []
+    if "app_bundle" in _standalone_graph_kwargs(cfg, args):
+        power.append(STANDALONE_APP_POWER_TARGET)
     return [STANDALONE_TARGET] + power
 
 
@@ -1362,7 +1373,7 @@ def _run_standalone(cfg, sa_dir, args):
     run_cmd = ["mflowgen", "run", "--design", str(design),
                "--graph-kwargs", str(_standalone_graph_kwargs(cfg, args))]
     make_cmd = ["make", STANDALONE_TARGET]
-    power_targets = _standalone_targets(args)[1:]
+    power_targets = _standalone_targets(cfg, args)[1:]
     power_cmd = ["make", *power_targets]
     if args.parallel_jobs > 0:
         make_cmd.insert(1, f"-j{args.parallel_jobs}")
@@ -1382,7 +1393,7 @@ def _run_standalone(cfg, sa_dir, args):
     def write_spec():
         # Provenance, and what _discover_configs keys on (so even a workspace
         # whose `mflowgen run` failed gets correlated/zipped).
-        _write_spec_files(cfg, sa_dir, " ".join(_standalone_targets(args)))
+        _write_spec_files(cfg, sa_dir, " ".join(_standalone_targets(cfg, args)))
 
     sa_dir.mkdir(parents=True, exist_ok=True)
     write_spec()
@@ -2065,6 +2076,8 @@ ARTIFACT_GLOBS = LAYOUT_GLOBS + [
     # Standalone (lake pd/thesis) idle/active ptpx under --memtile-power; its
     # VCS sims' PASS lines are in their per-step mflowgen-run.log.
     "*-synopsys-ptpx-synth-*-power/outputs/power.*",
+    # --app-bundle-dir standalone app power: which app + MEM tile it replayed.
+    "*-app-power-gen/outputs/app_stimulus.json",
 ]
 
 # Extra per-workspace files that only go into the zip: provenance + logs, so a
@@ -2692,15 +2705,45 @@ def _memtile_power_metrics(ws):
 
 def _standalone_power_metrics(sa_ws):
     """Lake's idle/active power of the standalone synth netlist
-    (synopsys-ptpx-synth-{idle,active}-power, top row = lakespec)."""
+    (synopsys-ptpx-synth-{idle,active}-power, top row = lakespec), and the
+    app-driven power (synopsys-ptpx-synth-app-power: one MEM tile of an app
+    bundle replayed into the lakespec; standalone_app = app:tile)."""
     row, total = {}, {}
-    for variant in MEMTILE_POWER_VARIANTS:
+    try:
+        stim = json.loads(_first(sa_ws, "*-app-power-gen/outputs/app_stimulus.json").read_text())
+        row["standalone_app"] = f"{stim.get('app')}:{stim.get('tile')}"
+    except (AttributeError, OSError, ValueError):
+        row["standalone_app"] = None
+    for variant in MEMTILE_POWER_VARIANTS + ("app",):
         n = _top_row_nums(_first(sa_ws, f"*-synopsys-ptpx-synth-{variant}-power/outputs/power.hier"))
         for i, part in enumerate(("internal", "switching", "leakage", "total")):
             row[f"standalone_{variant}_{part}_power"] = n[i] if len(n) >= 4 else None
         total[variant] = n[3] if len(n) >= 4 else None
     idle, active = total["idle"], total["active"]
     row["standalone_active_over_idle"] = active / idle if idle and active is not None else None
+    row["standalone_app_over_idle"] = (total["app"] / idle
+                                       if idle and total["app"] is not None else None)
+    return row
+
+
+def _tile_app_power_metrics(ws, standalone_app):
+    """App-driven Tile_MemCore power (--cgra-power with an app bundle):
+    tile-post-{rtl,synth,pnr}-power write one report per placed MEM tile
+    (outputs/reports/<Tile_X.._Y..>.hier). tile_app = the tile reported: the
+    one the standalone replay used (standalone_app = app:tile), else the
+    first."""
+    row = {"tile_app": None}
+    want = standalone_app.rsplit(":", 1)[-1] if standalone_app else None
+    for level in ("rtl", "synth", "pnr"):
+        reps = sorted(ws.glob(f"*-post-{level}-power/outputs/reports/Tile_X*.hier"))
+        pick = next((r for r in reps if r.stem == want), reps[0] if reps else None)
+        # the tile's own row (ptpx-rtl's -verbose report puts a wireload
+        # table first, so not simply the first row after a rule)
+        n = next((_nums(l) for l in _read_lines(pick)
+                  if l.split()[:1] in (["Tile_MemCore"], ["Tile_PE"]) and len(_nums(l)) >= 4), [])
+        row[f"tile_{level}_app_total_power"] = n[3] if len(n) >= 4 else None
+        if pick is not None and row["tile_app"] is None:
+            row["tile_app"] = pick.stem
     return row
 
 
@@ -2716,12 +2759,14 @@ def _write_memtile_power(out_dir, names, validate_names=None):
     for name in names:
         ws, sa_ws = out_dir / name, out_dir / STANDALONE_SUBDIR / name
         if not (_first(ws, "*-memtile-power-test-gen")
-                or _first(sa_ws, "*-synopsys-ptpx-synth-*-power")):
+                or _first(sa_ws, "*-synopsys-ptpx-synth-*-power")
+                or _first(ws, "*-post-*-power/outputs/reports/Tile_X*.hier")):
             continue
         row = {"config_name": name}
         row.update(_sweep_meta(ws, name))
         row.update(_memtile_power_metrics(ws))
         row.update(_standalone_power_metrics(sa_ws))
+        row.update(_tile_app_power_metrics(ws, row.get("standalone_app")))
         rows.append(row)
     if not rows:
         return []

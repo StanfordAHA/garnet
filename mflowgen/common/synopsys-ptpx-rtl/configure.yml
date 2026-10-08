@@ -24,6 +24,8 @@ outputs:
 #-------------------------------------------------------------------------
 
 commands:
+  # Genus writes the name map as Conformal LEC commands; PT needs Tcl.
+  - python3 namemap_to_pt.py inputs/design.namemap namemap.pt.tcl
   - pt_shell -file pt_px.tcl
   # Surface the hierarchical power report as a named output, matching
   # synopsys-ptpx-gl/-synth so tile-post-rtl-power's run.sh can collect it.

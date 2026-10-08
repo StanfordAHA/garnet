@@ -11,6 +11,7 @@ outputs:
   - design.pt.sdc
   - design.namemap
   - testbench.sv
+  - cmd.tcl           # SAIF window (testbench step)
   - sram.v
   - sram_tt.db
   - test_vectors.txt

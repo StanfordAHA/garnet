@@ -4,6 +4,13 @@ sed -i "1 i\`define CLK_PERIOD ${clock_period}" inputs/testbench.sv
 
 # Default arguments
 ARGS="-sv -timescale 1ns/1ps -access +rwc"
+# Zero-initialize state, as `aha test` does (-xminitialize 0) when it records
+# the app run these sims replay: an uninitialized (e.g. behavioral SRAM) array
+# otherwise stays X, reads of not-yet-written words come out X, and PT books
+# X-state flops at absurd internal power (1-4 W per MEM tile, freepdk45).
+# -delay_udp_xminitialize extends it to the stdcell flops' UDP state (gate
+# sims; without it -xminitialize leaves them X).
+ARGS="$ARGS -xminitialize 0 -delay_udp_xminitialize -xminit_log logs/xminit.log"
 ARGS="$ARGS -ALLOWREDEFINITION"
 if [ -f "inputs/cmd.tcl" ]; then
   ARGS="$ARGS -input inputs/cmd.tcl"
@@ -34,6 +41,16 @@ if [ -d "inputs/adk" ]; then
         ARGS="$ARGS inputs/adk/stdcells-ulvt-pwr.v"
     fi
   fi
+fi
+
+# ChipWare simulation models for an RTL design (Tile_PE's RTL instantiates
+# CW_fp_*; netlists don't need them): $CW_SIM_DIR, else next to `genus`.
+CW_SIM_DIR=${CW_SIM_DIR:-}
+if [ -z "$CW_SIM_DIR" ] && command -v genus > /dev/null 2>&1; then
+  CW_SIM_DIR=$(dirname $(dirname $(readlink -f $(command -v genus))))/share/synth/lib/chipware/sim/verilog/CW
+fi
+if [ -n "$CW_SIM_DIR" ] && [ -d "$CW_SIM_DIR" ]; then
+  ARGS="$ARGS -y $CW_SIM_DIR +libext+.v+.sv"
 fi
 
 # Set-up testbench

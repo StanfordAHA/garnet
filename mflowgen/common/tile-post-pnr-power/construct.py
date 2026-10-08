@@ -6,6 +6,7 @@
 # Date   :
 
 import os
+import sys
 from mflowgen.components import Graph, Step
 
 
@@ -17,11 +18,13 @@ def construct():
     # Parameters
     # -----------------------------------------------------------------------
 
-    adk_name = 'tsmc16'
-    adk_view = 'multivt'
-
-    if adk_name == 'gf12-adk':
-        adk_view = 'view-standard'
+    # The parent tile graph's ADK + view (its adk/adk_view params, exported
+    # to this step); was hard-coded tsmc16, wrong on the gf12 build machine.
+    sys.path.insert(0, os.path.join(os.environ.get('GARNET_HOME', ''), 'mflowgen'))
+    from common.get_sys_adk import get_sys_adk
+    adk_name = os.environ.get('adk') or get_sys_adk()
+    adk_view = os.environ.get('adk_view') or \
+        ('view-standard' if adk_name == 'gf12-adk' else 'multivt')
 
     # autopep8: off
     parameters = {

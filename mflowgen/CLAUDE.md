@@ -819,11 +819,114 @@ over 7539 cycles (xrun with `-initmem0 -initreg0 -xminitialize 0`, as
 `aha test` uses, and the ChipWare `CW_fp_*` models for Tile_PE; without the
 init flags one MEM tile's unused output is X). The application + testbench
 step scripts were run with a bundle as mflowgen would run them. NOT run here:
-the gf12 netlists / ptpx steps (no ADK); the per-tile sims in
-`cadence-xcelium-sim` do not zero-initialize, so check the first
-build-machine `tile-post-*-power` logs for X mismatches. The bundle generator
-lives in the generating session's scratchpad for now (see memory
-`reference_spec_cgra_app_sim`).
+the gf12 netlists / ptpx steps (no ADK). (`cadence-xcelium-sim` now
+zero-initializes like `aha test`; see "Local app-driven power".)
+
+**Making bundles: `common/application/gen_app_bundle.py`** (run in /aha, not
+on the build machine; needs xrun on PATH and aha's venv):
+
+    python3 mflowgen/common/application/gen_app_bundle.py \
+        --config fw4_dw16_sc4096_sp_in2_out2_vc2_rv --app tests/conv_3_3 \
+        --bundle-dir <dir> [--aha-dir <private aha tree>] [--pond-spec pond.json]
+
+`--config` takes a sweep_specs config name (spec + mode as the sweep writes
+them; the bundle lands in `<dir>/<config>`, the layout `--app-bundle-dir`
+reads). Steps: collateral → `aha halide/map --collateral` → `garnet.py
+--verilog` (spec flags, `--use_sim_sram`, 16x16 default) → `aha pnr` → `aha
+test` with `DUMP_ARGS=-input probe.tcl` (tests/test_app/Makefile now takes
+`DUMP_ARGS` from the env), which must print `comparison passed`; RV runs get
+aha's per-stage ready-valid env. `--skip-to` resumes. Extra outputs beside the
+five the application step copies: `core.vcd` + `core_ports.json` (each MEM
+tile's lake controller, `lakespec_mem_flat`, at its ports: config_memory,
+port data/valid/ready, flush — the standalone-lakespec replay input),
+`garnet.v.gz`, `design.place`, the bitstream, `logs/`. `garnet.py --verilog`
+rewrites the GLB/GLC headers of `$GARNET_HOME`, so on a shared /aha use a
+private aha tree (`--aha-dir`, run through `aha --dir`).
+
+**Per-tile power sub-graphs ADK (fixed 2026-10-07):**
+`common/tile-post-{rtl,synth,pnr}-power/construct.py` hard-coded
+`adk_name = 'tsmc16'`. Without a tsmc16 ADK the per-tile `mflowgen run` died
+("Could not find adk tsmc16"); with one it silently powered gf12 netlists with
+tsmc16 libraries. They now take the parent graph's `adk`/`adk_view` (new
+params of the three steps, exported by mflowgen; fallback `get_sys_adk()`).
+
+**RTL power level (`tile-post-rtl-power`) never produced a report; fixed
+2026-10-07.** Found by running the sub-graph locally:
+- its RTL sim compiled the signoff netlist too (`cadence-xcelium-sim` takes
+  every `inputs/*.v`; by-name edges handed it `design.vcs.v`), and the
+  netlist's tile module replaced the RTL one (`-ALLOWREDEFINITION`). Now
+  explicit edges: design.v, testbench.sv, cmd.tcl, test vectors (+ sram.v).
+- `cmd.tcl` (the SAIF window) was not passed → no run.saif. Now an input of
+  the step and its setup.
+- Tile_PE's RTL needs ChipWare `CW_fp_*` sim models: `run_sim.sh` adds `-y
+  $CW_SIM_DIR` (default: next to `genus` on PATH,
+  `<genus>/share/synth/lib/chipware/sim/verilog/CW`); harmless for netlists.
+- Genus `write_name_mapping` (= `design.namemap`) is Conformal LEC syntax
+  (`add mapped point <rtl>/q <inst>/Q -type DFF DFF`), which PT cannot
+  `source`. `synopsys-ptpx-rtl/namemap_to_pt.py` turns it into
+  `set_rtl_to_gate_name` per register (Q pin's net; QN and ports skipped).
+- Tile_MemCore wired `synth` into `post-rtl-power` by name, so `design.v` had
+  two sources (rtl + Genus netlist; the last link wins). Now only
+  `design.namemap` comes from synth. (Tile_PE has no RTL-level node.) Still
+  ambiguous, untouched: `post-pnr-power`'s `design.sdf` comes from both
+  `cadence-innovus-signoff` and `synopsys-pt-timing-signoff` (since 2022).
+Local result (Tile_PE, freepdk45): every register's Q net annotated from the
+RTL SAIF (50% of sequential nets = all Q; QN implied), total within ~10% of
+the synth level (2.65 vs 3.00 mW; switching power equal).
+
+**Local app-driven power, end to end (2026-10-07, /aha, freepdk45 at
+100 MHz, `--use_sim_sram` SRAM as flops).** Bundle
+`fw4_dw16_sc4096_sp_in2_out2_vc2` (static conv_3_3, 16x16) from
+`gen_app_bundle.py`; RV twin `..._rv` likewise. Every tile of both bundles
+replays bit-exactly at RTL (12 + 11 tiles). Tile netlists from Genus with
+mflowgen's naming styles; then the real step scripts on a local freepdk45 ADK
+(scratchpad `localadk/`, a `view-local` with a compiled `stdcells.db`):
+`common/testbench` (bundle mode) → `tile-post-synth-power/run_all_tiles.py`
+→ per tile `cadence-xcelium-sim` + `synopsys-ptpx-synth`; 100% of nets
+annotated.
+- **Zero-init (fixed 2026-10-07):** `cadence-xcelium-sim` ran with no X
+  initialization, while `aha test` (which records the bundle) uses
+  `-xminitialize 0`. The MEM tile's SRAM (flops under `--use_sim_sram`) then
+  stayed X: the line buffer's warm-up taps came out X for 1200 cycles, and PT
+  booked the X-state flops at 1.5–3.8 W per tile. `run_sim.sh` now passes
+  `-xminitialize 0 -delay_udp_xminitialize` (the second reaches the stdcell
+  flops' UDP state; `-initreg0`/`-initmem0` and time-0 `deposit`s on the UDP
+  output do not). Replays then match on every cycle (no X at cycles 0–1
+  either). With gf12 SRAM macros the array is not flops, but the macro
+  model's warm-up reads are the same story.
+- **Tile_MemCore at synth level = pre-CTS clock artifact (open; user
+  decision).** Both MEM tiles replay with 0 mismatches. RTL level gives
+  34.8 mW (stencil-valid tile) and 31.9 mW (conv line buffer). Synth level
+  gives 4.4 W and 3.5 W, ~99.9% internal power of the 32K SRAM-array flops.
+  Their clock is the gated `gclk` (`AND2(clk, tile_en)`), one unbuffered net
+  with 31.6 pF of load in Genus's SPEF. PT does not treat it as a clock
+  network (`clock_network` group empty) and puts a 72 ns transition on
+  every CK pin (139 ns without the SPEF); each flop's internal power then
+  comes off the far end of the lib table. `set_ideal_network` /
+  `set_ideal_transition` on `clk` or `gclk` change nothing.
+  `set_annotated_transition 0.05` on all CK pins gives 36.4 mW, matching
+  the RTL level. On gf12 the array is a macro, but thousands of controller
+  flops still hang off unbuffered gated clocks, so synth-level tile power is
+  inflated there too. RTL level (no slews) and PnR level (after CTS) don't
+  have this problem. A fix would be pre-CTS clock-pin transitions in
+  `synopsys-ptpx-synth`; that is not done, pending a decision. Tile_PE: 3.0–3.8 mW per placed PE (2.2 mW
+clock-dominated internal; switching 0.09–0.58 mW tracks the PE's activity).
+- Gotcha: a Genus netlist WITHOUT mflowgen's `hdl_array_naming_style %s_%d`
+  (and bus/uniquify styles) has escaped array nets (`\x[20] [16]`) that
+  Xcelium's SAIF spells in a way PT's `read_saif` rejects ("syntax error",
+  0% annotated, power = defaults). mflowgen's genus step sets them; any
+  hand-run synthesis must too.
+- Standalone (lake `app-power-gen`, see lake CLAUDE.md §2): conv_3_3's line
+  buffer tile replayed into the standalone lakespec reproduces the tile's
+  lakespec outputs in value and cycle; idle 18.9 / app 30.5 / active
+  33.4 mW. `sweep_specs --standalone-synth --app-bundle-dir` passes the
+  bundle (static configs) as graph kwarg `app_bundle` and makes
+  `synopsys-ptpx-synth-app-power`.
+- `memtile_power.csv` gains `standalone_app` (app:tile),
+  `standalone_app_{internal,switching,leakage,total}_power`,
+  `standalone_app_over_idle`, `tile_app` and
+  `tile_{rtl,synth,pnr}_app_total_power` (that MEM tile's
+  `*-post-<level>-power/outputs/reports/<tile>.hier`).
 
 The dormant `--per-tile` flag (`common/tile-per-tile-power`, untracked since
 2026-09-27, never wired into the graph) was an earlier attempt that powers only

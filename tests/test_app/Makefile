@@ -198,10 +198,12 @@ else
     @echo "TOOL env var must be one of: VCS, VERILATOR, or XCELIUM"
 endif
 
+# DUMP_ARGS from the environment replaces the default dump script (e.g. the
+# tile-port VCD probes of mflowgen/common/application/gen_app_bundle.py).
 ifeq ($(TOOL), XCELIUM)
-	DUMP_ARGS = -input dump_shm.tcl
+	DUMP_ARGS ?= -input dump_shm.tcl
 else ifeq ($(TOOL), VCS)
-	DUMP_ARGS = -ucli -i dump_fsdb.tcl
+	DUMP_ARGS ?= -ucli -i dump_fsdb.tcl
 endif
 
 $(APP0_NAME)/bin/design_meta.json:

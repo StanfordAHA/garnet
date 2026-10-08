@@ -28,7 +28,8 @@ current_design ${pt_design_name}
 file mkdir ${pt_reports}
 link_design > ${pt_reports}/${pt_design_name}.link.rpt
 create_clock ${pt_clk} -name ideal_clock1 -period ${pt_clk_period}
-source inputs/design.namemap > ${pt_reports}/${pt_design_name}.map.rpt
+# namemap.pt.tcl = inputs/design.namemap in PrimeTime syntax (namemap_to_pt.py)
+source namemap.pt.tcl > ${pt_reports}/${pt_design_name}.map.rpt
 
 report_activity_file_check inputs/run.saif -strip_path ${pt_uut} \
   > ${pt_reports}/${pt_design_name}.activity.pre.rpt

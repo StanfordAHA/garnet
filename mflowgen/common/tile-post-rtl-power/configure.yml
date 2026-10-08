@@ -22,6 +22,7 @@ inputs:
   - sram.v
   - sram_tt.db
   - testbench.sv
+  - cmd.tcl
   - tile_tbs
 
 outputs:
@@ -40,6 +41,9 @@ commands:
 #-------------------------------------------------------------------------
 
 parameters:
+  # The parent graph's ADK; the per-tile sub-graph uses the same one.
+  adk: ''
+  adk_view: ''
   clock_period: 1.0
   design_name: undefined
   testbench_name: tb

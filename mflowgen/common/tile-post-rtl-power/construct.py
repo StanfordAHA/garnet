@@ -11,6 +11,7 @@
 # swapping the gate-level sim for an RTL sim and ptpx-gl for ptpx-rtl.
 
 import os
+import sys
 from mflowgen.components import Graph, Step
 
 
@@ -22,11 +23,13 @@ def construct():
     # Parameters
     # -----------------------------------------------------------------------
 
-    adk_name = 'tsmc16'
-    adk_view = 'multivt'
-
-    if adk_name == 'gf12-adk':
-        adk_view = 'view-standard'
+    # The parent tile graph's ADK + view (its adk/adk_view params, exported
+    # to this step); was hard-coded tsmc16, wrong on the gf12 build machine.
+    sys.path.insert(0, os.path.join(os.environ.get('GARNET_HOME', ''), 'mflowgen'))
+    from common.get_sys_adk import get_sys_adk
+    adk_name = os.environ.get('adk') or get_sys_adk()
+    adk_view = os.environ.get('adk_view') or \
+        ('view-standard' if adk_name == 'gf12-adk' else 'multivt')
 
     # autopep8: off
     parameters = {
@@ -83,7 +86,17 @@ def construct():
 
     g.connect_by_name(adk, rtl_sim)
     g.connect_by_name(adk, pt_power_rtl)
-    g.connect_by_name(setup, rtl_sim)      # design.v (RTL) + test vectors
+    # Explicit edges: cadence-xcelium-sim compiles every inputs/*.v, so
+    # by-name wiring also handed it the signoff netlist (design.vcs.v), whose
+    # tile module then replaced the RTL one (-ALLOWREDEFINITION): a gate-level
+    # sim with no RTL names. cmd.tcl (the SAIF window) was not passed at all,
+    # so no run.saif was written.
+    rtl_files = ['design.v', 'testbench.sv', 'cmd.tcl',
+                 'test_vectors.txt', 'test_outputs.txt']
+    if design == 'Tile_MemCore':
+        rtl_files.append('sram.v')
+    for f in rtl_files:
+        g.connect(setup.o(f), rtl_sim.i(f))
     g.connect_by_name(setup, pt_power_rtl) # design.vcs.v + spef + sdc + namemap
     g.connect_by_name(rtl_sim, pt_power_rtl)  # run.saif
 
