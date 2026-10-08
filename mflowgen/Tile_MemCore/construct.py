@@ -108,6 +108,9 @@ def construct():
         # Power analysis
         "use_sdf": False,  # uses sdf but not the way it is in xrun node
         'app_to_run': 'tests/conv_3_3',
+        # App bundle recorded on the lake-spec CGRA (sweep_specs --app-bundle-dir;
+        # common/application). Empty -> the app runs in the stock container.
+        'app_bundle': os.environ.get('APP_BUNDLE', ''),
         'saif_instance': 'testbench/dut',
         'testbench_name': 'testbench',
         'strip_path': 'testbench/dut',

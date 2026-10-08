@@ -4,6 +4,10 @@ inputs:
   - run.vcd
   - tiles_Tile_MemCore.list
   - tiles_Tile_PE.list
+  # From the application step: "{}" unless it used an app bundle, whose tile
+  # scope/clock and per-design port lists then replace defines.py.
+  - tile_ports.json
+  - manifest.json
 
 outputs:
   - cmd.tcl

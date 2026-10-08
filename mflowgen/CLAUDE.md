@@ -320,11 +320,12 @@ Apples-to-apples caveats:
   geometries with no matching physical macro).
 - `--cgra-power` (alias `--power`) — after the build, run the **pre-synth
   (RTL) + post-synth** app-driven power flow instead of stopping at
-  `--stop-after`. **Not usable for lake-spec configs yet:** the `application`
-  step runs the app on the *default* MemCore in the stock
-  `stanfordaha/garnet:latest` container (no spec flags, upstream aha/clockwork,
-  2020-era VCD/place paths), so the stimulus replayed into the spec tile is
-  wrong and the power numbers are meaningless. Plain PnR sweeps (no power flag)
+  `--stop-after`. **For lake-spec configs pass `--app-bundle-dir`** (see "App
+  bundles" below): without a bundle the `application` step runs the app on the
+  *default* MemCore in the stock `stanfordaha/garnet:latest` container (no spec
+  flags, upstream aha/clockwork, 2020-era VCD/place paths), so the stimulus
+  replayed into the spec tile is wrong and the power numbers are meaningless
+  (the sweep warns per config). Plain PnR sweeps (no power flag)
   are unaffected. Sets
   `RTL_POWER=True` + `SYNTH_POWER=True` in the env (the construct reads them at
   graph-materialization time — they must be set *before* `mflowgen run`; either
@@ -693,6 +694,61 @@ Entry points:
 Gaps: **no full-chip app→dynamic-power** (`full_chip`/`soc` power steps are
 power-grid/IR-drop only). The lake `pd/thesis` MemCore power flow is
 **synthetic idle/active** bitstreams (`power-test-gen/`), not real apps.
+
+### App bundles: real-app power on lake-spec tiles (2026-10-06)
+
+The stock `application` step runs the app in `stanfordaha/garnet:latest` on
+the DEFAULT MemCore, so for a lake-spec tile its stimulus is wrong. Fix
+(user decision, option A): record the app run where the spec toolchain lives
+(/aha: lake-spec garnet + spec collateral in clockwork + the static/RV
+recipe, memory `reference_spec_cgra_app_sim`) as an **app bundle**, and
+replay it here.
+
+A bundle is one directory per (spec, mode, app): `run.vcd` (every placed MEM
+and PE tile's ports, `-depth 1 -ports` probes, from a bit-accurate `aha test`
+run on the spec CGRA), `tiles_Tile_{MemCore,PE}.list`, `tile_ports.json`
+(each tile module's ports from that garnet.v) and `manifest.json` (app, mode,
+spec, scope `top.dut.Interconnect_inst0`, clock `{scope}.{tile}.clk`,
+garnet.v md5, toolchain versions).
+
+- `common/application`: param `app_bundle` (Tile_* construct: env
+  `APP_BUNDLE`) → copies the five files instead of running the container;
+  `check_bundle.py` fails the step unless the bundle's spec + mode equal this
+  build's `lake_spec_config` / `lake_spec_mode` (`app_bundle_check`, off for
+  Tile_PE; missing spec keys take lake `build_spec`'s defaults, so a bundle
+  spec without `vec_capacity` matches a sweep `_vc2` config). Without a
+  bundle it writes `{}` for the two JSON outputs.
+- `common/testbench/generate_testbench.py`: scope, sampling clock and the
+  per-design port lists come from the bundle (17-bit SB buses + valid/ready,
+  flush, config pass-through ...); clock inputs (`clk`, `clk_pass_through`) are
+  driven by the tb clock, clock outputs are not compared. `{}` inputs → the
+  old `Interconnect_tb` scope + `defines.py` lists (legacy path unchanged).
+  `$sdf_annotate` is skipped under `+define+NO_SDF` (RTL replay). The step
+  needs Xcelium's `simvisdbutil` on PATH (`module load xcelium`); its run.sh
+  now has `set -e` (before 2026-10-07 a generator crash still "passed" the
+  step with no testbench.sv).
+- `sweep_specs.py --app-bundle-dir DIR`: config `<name>` uses `DIR/<name>/`
+  (the sweep's config name, e.g. `fw4_dw16_sc8192_sp_in2_out2_vc2` or
+  `..._vc2_rv`; `_tile_env` sets `APP_BUNDLE`); `--cgra-power` without one
+  warns that the config's power comes from the default MemCore.
+
+Validated on /aha: static conv_3_3 on spec `fw4_dw16_sc8192_sp_in2_out2`
+(16x16): bundle sim bit-accurate; per-tile replay of all 12 placed tiles
+(2 MEM, 10 PE) on the tile RTL from the same garnet.v = 0 output mismatches
+over 7539 cycles (xrun with `-initmem0 -initreg0 -xminitialize 0`, as
+`aha test` uses, and the ChipWare `CW_fp_*` models for Tile_PE; without the
+init flags one MEM tile's unused output is X). The application + testbench
+step scripts were run with a bundle as mflowgen would run them. NOT run here:
+the gf12 netlists / ptpx steps (no ADK); the per-tile sims in
+`cadence-xcelium-sim` do not zero-initialize, so check the first
+build-machine `tile-post-*-power` logs for X mismatches. The bundle generator
+lives in the generating session's scratchpad for now (see memory
+`reference_spec_cgra_app_sim`).
+
+The dormant `--per-tile` flag (`common/tile-per-tile-power`, untracked since
+2026-09-27, never wired into the graph) was an earlier attempt that powers only
+the lake memory core in isolation; bundles cover the whole tile (interconnect +
+config) for MEM and PE tiles at all three power levels.
 
 ## PE-tile pond knobs (Tile_PE with / without / spec pond) (2026-09-30)
 

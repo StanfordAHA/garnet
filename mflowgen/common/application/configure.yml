@@ -4,6 +4,10 @@ outputs:
   - run.vcd
   - tiles_Tile_PE.list
   - tiles_Tile_MemCore.list
+  # From an app bundle (app_bundle): the tile scope + clock in run.vcd and each
+  # tile design's ports. "{}" when the app runs here (legacy scope/ports).
+  - tile_ports.json
+  - manifest.json
 
 commands:
   - ./run.sh
@@ -27,6 +31,17 @@ parameters:
   # (needed for `aha test`/`make sim` to find global_buffer_param.h). Default
   # False keeps Tile_PE's historical interconnect-only build byte-identical.
   build_glb: False
+  # App bundle (directory): run.vcd + tiles_*.list + tile_ports.json +
+  # manifest.json from an app run on the lake-spec CGRA, generated where the
+  # spec toolchain lives (/aha; see mflowgen/CLAUDE.md "App-driven power").
+  # Set -> use it instead of running app_to_run in the stock container (which
+  # runs it on the default MemCore). Its spec/mode must match this build's.
+  app_bundle: ""
+  lake_spec_config: ""
+  lake_spec_mode: ""
+  # Check the bundle's spec + mode against lake_spec_config/_mode. Tile_PE turns
+  # it off: the PE tile has no MEM spec (mismatched ports still fail the tb).
+  app_bundle_check: True
 
 postconditions:
   - assert File( 'outputs/run.vcd' )

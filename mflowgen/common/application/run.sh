@@ -1,5 +1,26 @@
 #!/bin/bash
 
+# App bundle: an app run already recorded on the lake-spec CGRA (see
+# mflowgen/CLAUDE.md "App-driven power"). Use it instead of running the app on
+# the default MemCore in the stock container.
+if [ -n "${app_bundle}" ]; then
+  set -e
+  mkdir -p outputs
+  for f in run.vcd tiles_Tile_PE.list tiles_Tile_MemCore.list tile_ports.json manifest.json; do
+    if [ ! -f "${app_bundle}/$f" ]; then
+      echo "*** ERROR: app_bundle ${app_bundle} has no $f" >&2
+      exit 1
+    fi
+  done
+  if [ "${app_bundle_check}" = "True" ]; then
+    python3 check_bundle.py "${app_bundle}/manifest.json" "${lake_spec_config}" "${lake_spec_mode}"
+  fi
+  for f in run.vcd tiles_Tile_PE.list tiles_Tile_MemCore.list tile_ports.json manifest.json; do
+    cp "${app_bundle}/$f" outputs/
+  done
+  exit 0
+fi
+
 # Build up the flags we want to pass to python garnet.v
 flags="--width $array_width --height $array_height --pipeline_config_interval $pipeline_config_interval -v"
 map_flags="--width $array_width --height $array_height --pipeline_config_interval $pipeline_config_interval"
@@ -63,6 +84,9 @@ docker cp $container_name:/aha/garnet/temp/16.graph ../16.graph
 docker cp $container_name:/aha/garnet/temp/garnet/waveforms.vcd ../outputs/run.vcd
 grep '#m' ../design.place | awk '{printf "%s,%02X,%02X\n",$1,$2,$3}' > ../outputs/tiles_Tile_MemCore.list
 grep '#p' ../design.place | awk '{printf "%s,%02X,%02X\n",$1,$2,$3}' > ../outputs/tiles_Tile_PE.list
+# No bundle: the testbench step keeps its legacy scope and port lists
+echo '{}' > ../outputs/tile_ports.json
+echo '{}' > ../outputs/manifest.json
 # Kill the container
 docker kill $container_name
 echo "killed docker container $container_name"

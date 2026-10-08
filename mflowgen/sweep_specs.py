@@ -517,6 +517,15 @@ def build_argparser():
                         "netlist). The node is always in the graph; this is what "
                         "triggers building it. Also supersedes --stop-after. "
                         "Same build-machine requirements as --cgra-power.")
+    p.add_argument("--app-bundle-dir", dest="app_bundle_dir", default=None,
+                   help="Directory of app bundles recorded on the lake-spec CGRA "
+                        "(one per config, at <dir>/<config name>/: run.vcd, "
+                        "tiles_*.list, tile_ports.json, manifest.json; generated "
+                        "in /aha, see mflowgen/CLAUDE.md 'App bundles'). A "
+                        "config with a bundle replays that app run into its "
+                        "power steps (APP_BUNDLE) instead of running the app on "
+                        "the default MemCore in the stock container. Use with "
+                        "--cgra-power / --include-pnr-power.")
     p.add_argument("--dry-run", action="store_true",
                    help="Print each config's workspace + commands, run nothing.")
     p.add_argument("--skip-existing", action="store_true",
@@ -1474,6 +1483,15 @@ def _all_targets(cfg, args):
             + _also_make_targets(args))
 
 
+def _app_bundle(cfg, args):
+    """<--app-bundle-dir>/<config name> if it holds an app bundle, else None."""
+    if args.app_bundle_dir:
+        b = Path(args.app_bundle_dir).resolve() / _config_name(cfg)
+        if (b / "manifest.json").is_file():
+            return b
+    return None
+
+
 def _tile_env(cfg, cfg_dir, args):
     """Environment for a config's `mflowgen run` + make: the knobs construct.py
     and common/rtl/gen_rtl.sh read (BUILD_ENV_KEYS)."""
@@ -1499,6 +1517,9 @@ def _tile_env(cfg, cfg_dir, args):
         env["PER_TILE_POWER"] = "True"
     if args.memtile_power:
         env["MEMTILE_POWER"] = "True"
+    bundle = _app_bundle(cfg, args)
+    if bundle:
+        env["APP_BUNDLE"] = str(bundle)
     return env
 
 
@@ -1506,6 +1527,12 @@ def _run_one(cfg, cfg_dir, args):
     t0 = time.time()
 
     env = _tile_env(cfg, cfg_dir, args)
+    if (args.cgra_power or args.include_pnr_power) and not env.get("APP_BUNDLE"):
+        # The application step then runs the app on the DEFAULT MemCore
+        # (stock container), so the power numbers don't describe this spec.
+        print(f"        WARNING: no app bundle for {_config_name(cfg)}"
+              f"{' in ' + args.app_bundle_dir if args.app_bundle_dir else ''}: "
+              "its power steps replay the app run on the DEFAULT MemCore", flush=True)
     build_targets = _build_targets(cfg, args)
     power_targets = _memtile_power_targets(cfg, args)
     also_targets = _also_make_targets(args)
@@ -1533,6 +1560,8 @@ def _run_one(cfg, cfg_dir, args):
             dry_env_keys += ["PER_TILE_POWER"]
         if args.memtile_power:
             dry_env_keys += ["MEMTILE_POWER"]
+        if env.get("APP_BUNDLE"):
+            dry_env_keys += ["APP_BUNDLE"]
         for k in dry_env_keys:
             print(f"        DRY-RUN env: {k}={env[k]}", flush=True)
         print(f"        DRY-RUN cmd: mflowgen run --design {args.graph}",

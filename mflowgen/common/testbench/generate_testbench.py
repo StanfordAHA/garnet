@@ -1,14 +1,40 @@
 import os
 import csv
+import json
 import re
 from defines import inputs, outputs, scope
 import subprocess
 
+# A lake-spec app bundle (application step, app_bundle param) records the scope of
+# the tiles in its run.vcd, the clock to sample on, and each tile design's ports
+# (taken from the garnet.v the app ran on). Without one, the historical
+# Interconnect_tb scope and the fixed port lists in defines.py apply.
+CLOCK_PORTS = ("clk", "clk_pass_through")
+CLOCK_OUT_PORTS = ("clk_out", "clk_pass_through_out_bot", "clk_pass_through_out_right")
+clock_template = "Interconnect_tb.clk"
+if os.path.exists("inputs/manifest.json"):
+    manifest = json.load(open("inputs/manifest.json"))  # "{}" without a bundle
+    scope = manifest.get("scope", scope)
+    clock_template = manifest.get("clock", clock_template)
 
-def generate_raw(tile):
+
+def tile_ports(design):
+    """(inputs, outputs, clock inputs) of the DUT: from the bundle if present."""
+    all_ports = json.load(open("inputs/tile_ports.json")) if os.path.exists("inputs/tile_ports.json") else {}
+    if design in all_ports:
+        ports = all_ports[design]
+        ins = [n for n, _ in ports["inputs"] if n not in CLOCK_PORTS]
+        outs = [n for n, _ in ports["outputs"] if n not in CLOCK_OUT_PORTS]
+        clks = [n for n, _ in ports["inputs"] if n in CLOCK_PORTS]
+        return ins, outs, clks
+    return inputs, outputs, None
+
+
+def generate_raw(tile, inputs, outputs):
     sv = open('waveform_to_csv.sh', 'w')
 
     waveform = 'run'
+    clock = clock_template.format(scope=scope, tile=tile)
 
     input_signals = ' '.join([f'-signal {scope}.{tile}.{i}' for i in inputs])
     output_signals = ' '.join([f'-signal {scope}.{tile}.{o}' for o in outputs])
@@ -19,7 +45,7 @@ def generate_raw(tile):
         "-radix hex",
         "-64bit",
         "-notime",
-        "-expression \"Interconnect_tb.clk == 1'b1\"",
+        f"-expression \"{clock} == 1'b1\"",
     ]
     flag_string = ' '.join(flags)
 
@@ -80,7 +106,7 @@ def convert_raw(signals, input_file, output_file):
     return num_test_vectors, widths
 
 
-def create_testbench(design, inputs, outputs, input_widths, output_widths, num_test_vectors):
+def create_testbench(design, inputs, outputs, input_widths, output_widths, num_test_vectors, clock_inputs=None):
     pwr_aware = os.environ.get("PWR_AWARE") == "True"
 
     tb = open("testbench.sv", "w")
@@ -151,8 +177,14 @@ module testbench;
         tb.write('''        .VDD(VDD),
         .VSS(VSS),
 ''')
-    if design == 'Tile_PE':
+    if clock_inputs is None and design == 'Tile_PE':
         tb.write('''        .clk_pass_through(clk_pass_through),
+        .clk_pass_through_out_bot(clk_pass_through_out_bot),
+        .clk_pass_through_out_right(clk_pass_through_out_right),
+''')
+    elif clock_inputs and "clk_pass_through" in clock_inputs:
+        # bundle: clk_pass_through carries the clock in the CGRA too
+        tb.write('''        .clk_pass_through(clk),
         .clk_pass_through_out_bot(clk_pass_through_out_bot),
         .clk_pass_through_out_right(clk_pass_through_out_right),
 ''')
@@ -191,9 +223,11 @@ module testbench;
     tb.write('''
     end
 
+`ifndef NO_SDF
     initial begin
         $sdf_annotate("inputs/design.sdf", testbench.dut,,"testbench_sdf.log","MAXIMUM");
     end
+`endif
 
 endmodule''')
 
@@ -202,6 +236,7 @@ endmodule''')
 
 def main():
     design = os.environ.get('design_name')
+    ins, outs, clks = tile_ports(design)
     f = open(f'inputs/tiles_{design}.list', 'r')
     i = 0
     for line in f:
@@ -210,11 +245,11 @@ def main():
         y = fields[-1]
         tile = f"Tile_X{x}_Y{y}"
 
-        generate_raw(tile)
-        num_test_vectors, input_widths = convert_raw(inputs, "raw_input.csv", f"outputs/tile_tbs/{tile}/test_vectors.txt")
-        _, output_widths = convert_raw(outputs, "raw_output.csv", f"outputs/tile_tbs/{tile}/test_outputs.txt")
+        generate_raw(tile, ins, outs)
+        num_test_vectors, input_widths = convert_raw(ins, "raw_input.csv", f"outputs/tile_tbs/{tile}/test_vectors.txt")
+        _, output_widths = convert_raw(outs, "raw_output.csv", f"outputs/tile_tbs/{tile}/test_outputs.txt")
         if i == 0:
-            create_testbench(design, inputs, outputs, input_widths, output_widths, num_test_vectors)
+            create_testbench(design, ins, outs, input_widths, output_widths, num_test_vectors, clks)
         i += 1
 
 

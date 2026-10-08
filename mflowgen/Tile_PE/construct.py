@@ -85,6 +85,10 @@ def construct():
         # Power analysis
         "use_sdf": False,  # uses sdf but not the way it is in xrun node
         'app_to_run': 'tests/conv_3_3',
+        # App bundle recorded on the lake-spec CGRA (common/application). The PE
+        # tile has no MEM spec to check it against.
+        'app_bundle': os.environ.get('APP_BUNDLE', ''),
+        'app_bundle_check': False,
         'saif_instance': 'testbench/dut',
         'testbench_name': 'testbench',
         'strip_path': 'testbench/dut',
