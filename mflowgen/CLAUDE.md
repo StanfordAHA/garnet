@@ -872,4 +872,9 @@ that checkout (docker-cp symlink breakage). See memory
 
 aha's `mek` branch tracks the tips of garnet `modern_gf` and lake `THESIS`:
 after pushing either, bump its gitlink on `mek` (`git update-index --cacheinfo
-160000,<sha>,garnet` (or `lake`), commit `Bump garnet: <what>`, push).
+160000,<sha>,garnet` (or `lake`), commit `Bump garnet: <what>`, push). Other
+sessions bump it too, so first `git fetch` both repos, fast-forward `mek`, and
+only bump when `git merge-base --is-ancestor <current gitlink> <new sha>`
+holds (gate the update on it with `&&`); otherwise set it to the branch tip.
+2026-10-07: 8840857 skipped that check and moved garnet back a commit
+(fixed in 294a61b).
