@@ -915,8 +915,8 @@ params of the three steps, exported by mflowgen; fallback `get_sys_adk()`).
   ambiguous, untouched: `post-pnr-power`'s `design.sdf` comes from both
   `cadence-innovus-signoff` and `synopsys-pt-timing-signoff` (since 2022).
 Local result (Tile_PE, freepdk45): every register's Q net annotated from the
-RTL SAIF (50% of sequential nets = all Q; QN implied), total within ~10% of
-the synth level (2.65 vs 3.00 mW; switching power equal).
+RTL SAIF (50% of sequential nets = all Q; QN implied); totals equal the
+synth level (PE 2.66 / 3.08 mW; MEM 34.8 / 31.9 vs synth 34.8 / 32.9).
 
 **Local app-driven power, end to end (2026-10-07, /aha, freepdk45 at
 100 MHz, `--use_sim_sram` SRAM as flops).** Bundle
@@ -927,7 +927,9 @@ mflowgen's naming styles; then the real step scripts on a local freepdk45 ADK
 (scratchpad `localadk/`, a `view-local` with a compiled `stdcells.db`):
 `common/testbench` (bundle mode) → `tile-post-synth-power/run_all_tiles.py`
 → per tile `cadence-xcelium-sim` + `synopsys-ptpx-synth`; 100% of nets
-annotated.
+annotated. Results (with both fixes below): Tile_PE 2.7–3.5 mW per placed PE
+(1.8–2.2 mW internal; switching 0.09–0.58 mW tracks the PE's activity);
+Tile_MemCore 34.8 mW (stencil-valid tile) / 32.9 mW (conv line buffer).
 - **Zero-init (fixed 2026-10-07):** `cadence-xcelium-sim` ran with no X
   initialization, while `aha test` (which records the bundle) uses
   `-xminitialize 0`. The MEM tile's SRAM (flops under `--use_sim_sram`) then
@@ -949,8 +951,7 @@ annotated.
   `current_design` and with Innovus's `append_to_collection` folded, then
   `read_sdc` that. Each step fails on "Errors reading SDC". With it, the MEM
   tiles' synth level gives 34.8 / 32.9 mW, matching the RTL level
-  (34.8 / 31.9); `clock_network` ≈ 86%. Tile_PE: 3.0–3.8 mW per placed PE (2.2 mW
-clock-dominated internal; switching 0.09–0.58 mW tracks the PE's activity).
+  (34.8 / 31.9); `clock_network` ≈ 86%.
 - Gotcha: a Genus netlist WITHOUT mflowgen's `hdl_array_naming_style %s_%d`
   (and bus/uniquify styles) has escaped array nets (`\x[20] [16]`) that
   Xcelium's SAIF spells in a way PT's `read_saif` rejects ("syntax error",
