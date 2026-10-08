@@ -18,7 +18,9 @@ is e.g. `fw2_dw16_sc4096_dp_in2_out2_vc2`.
 
 Per config it writes `spec_config.json` into the workspace, runs `mflowgen
 run` against `--graph` (default `mflowgen/Tile_MemCore`), then makes the
-target chain up to `--stop-after` (default `cadence-innovus-signoff`).
+target chain up to `--stop-after` (default `synopsys-pt-timing-signoff` since
+2026-10-07; before that `cadence-innovus-signoff`, which never ran PT, so
+older sweeps have blank `tile_pnr_setup_wns_ns` -- see "PT signoff" below).
 Results (pass/fail, macro, workspace) go to `<out-dir>/results.csv`.
 
 Key flags:
@@ -131,7 +133,42 @@ Key flags:
   rebuilds by timestamp). `--skip-existing` only skips a done workspace whose
   manifest `settings` match (no manifest → skips as before). Expect this to
   fire when resuming workspaces built before a garnet change to a step's
-  params (e.g. d4fc47e3 changed init/route `order`).
+  params (e.g. d4fc47e3 changed init/route `order`). A failed `mflowgen run`
+  or stale check puts the workspace's previous Makefile/.mflowgen back
+  (`_materialize_graph`, backup in `.mflowgen.prev`), so the workspace keeps
+  the graph its steps were built with. Sweeps 2026-10-07 fb50802c..2ea43d98
+  lacked that restore: a plain re-run there already overwrote the graph.
+- `--reuse-graph`: in a workspace with a Makefile, skip `mflowgen run` and make
+  against the graph it was built with (manifest `graph_reused: true`; a
+  target that graph lacks fails that config only). For adding a step to an
+  old sweep without the current graph's changes rebuilding finished steps.
+
+### PT signoff (default stop target since 2026-10-07)
+
+`synopsys-pt-timing-signoff` (stock mflowgen node + `sram_tt.db`) is
+PrimeTime STA on the routed result: it links the signoff netlist
+(`design.vcs.v`) against the ADK stdcell .db + SRAM .db, sources the SDC
+Innovus wrote (`design.pt.sdc`, derived from our constraints), reads the
+extracted RC (`design.spef.gz`), `update_timing -full`, and writes
+check_constraints/check_timing/global timing/clock skew/coverage reports,
+the top-100 setup and hold paths with exhaustive path-based analysis
+(`<design>.timing.{setup,hold}.rpt`; correlation.csv's `tile_pnr_setup_wns_ns`
+= the worst setup slack there), and `design.sdf` (back-annotated delays for
+gate-level sim). It consumes constraints, it doesn't make them, and changes
+nothing in the design. One scenario: the typical and bc .db both go on the
+link path with no `set_min_library`, so hold is checked against the first
+library that has the cell (typical), not a real fast corner. Innovus signoff
+itself only writes `signoff.area.rpt` here (no timeDesign).
+
+To add PT to a finished sweep (old default stop): rerun the same command with
+`--skip-existing --reuse-graph`. Synth-only configs skip (same targets); PnR
+configs' done.flag says `ok cadence-innovus-signoff`, so they resume and make
+only PT against their own graph (PT has been in every Tile_MemCore graph since
+"add PT step to all flows"). Then `--correlate-only` fills the WNS column.
+Checked on a scratch graph that changed a built step's params and inputs:
+plain re-run → stale FAIL + graph restored; `--reuse-graph` → only the new
+target runs, upstream outputs untouched; `--clean-stale` → adopts the new
+graph and rebuilds.
 
 ### Thesis-set synth sweep + synth→PnR projection (2026-09-30)
 

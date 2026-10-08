@@ -11,7 +11,8 @@ For each spec point:
     3. Run `mflowgen run --design <graph>` there with LAKE_SPEC_CONFIG /
        LAKE_SPEC_MODE / DUAL_PORT / USE_NON_SPLIT_FIFOS exported, so
        construct.py + common/rtl/gen_rtl.sh forward the knobs to garnet.py.
-    4. Drive `make` up to --stop-after (default: cadence-innovus-signoff).
+    4. Drive `make` up to --stop-after (default: synopsys-pt-timing-signoff,
+       i.e. PnR through signoff, then PrimeTime STA on the routed netlist).
     5. Copy PPA-ish outputs into artifacts/ and append a row to results.csv.
 
 The spec JSON is read back inside the build by cgra/util_onyx.py, which
@@ -359,12 +360,25 @@ def build_argparser():
                         "make the synths wait. Total load is config_jobs + "
                         "pnr_jobs builds. Ignored without --pnr-set "
                         "(default: %(default)s).")
-    p.add_argument("--stop-after", default="cadence-innovus-signoff",
+    p.add_argument("--stop-after", default="synopsys-pt-timing-signoff",
                    help="Step name or number to run up to via `make`. Must be a "
                         "real mflowgen step name (see `make list` in a "
                         "configured workspace), not the local variable name used "
                         "in construct.py. Common: rtl, cadence-genus-synthesis, "
-                        "cadence-innovus-signoff (default: %(default)s).")
+                        "cadence-innovus-signoff (PnR without PrimeTime timing), "
+                        "synopsys-pt-timing-signoff (default: %(default)s; "
+                        "signoff + PrimeTime STA, which correlation.csv's "
+                        "tile_pnr_setup_wns_ns reads).")
+    p.add_argument("--reuse-graph", action="store_true",
+                   help="In a workspace that already has a Makefile, skip `mflowgen "
+                        "run` and make the targets against the graph the workspace "
+                        "was built with. Use to add a step (e.g. PT signoff, now "
+                        "the default --stop-after) to an existing sweep: rerun it "
+                        "with --skip-existing --reuse-graph and only the missing "
+                        "steps run, even if the current graph changed steps the "
+                        "workspace already built (which would otherwise rebuild "
+                        "them or trip the stale-step check). Workspaces without a "
+                        "Makefile still get `mflowgen run`.")
     p.add_argument("--rtl-only", action="store_true",
                    help="Shortcut for --stop-after rtl; fastest check that the "
                         "spec plumbing reaches garnet.py.")
@@ -1367,12 +1381,11 @@ def _run_standalone(cfg, sa_dir, args):
     sa_dir.mkdir(parents=True, exist_ok=True)
     write_spec()
     env = _standalone_env(args)
-    _sh(run_cmd, cwd=sa_dir, env=env, log=sa_dir / "mflowgen_run.log")
+    _materialize_graph(sa_dir, run_cmd, env, clean_cmd,
+                       args.reuse_graph and (sa_dir / "Makefile").is_file(), args)
     if clean_cmd:
-        _sh(clean_cmd, cwd=sa_dir, env=env, log=sa_dir / "make_clean.log")
         write_spec()  # clean-all deletes loose files in the workspace
 
-    _handle_stale_steps(sa_dir, env, args)
     for target in [STANDALONE_TARGET] + power_targets:
         _check_step_exists(target, sa_dir, env)
     _write_manifest(sa_dir, cfg, args, "standalone",
@@ -1575,17 +1588,16 @@ def _run_one(cfg, cfg_dir, args):
             print(f"        DRY-RUN cmd: make {' '.join(jobs + also_targets)}", flush=True)
         return 0.0, ""
 
+    reuse = args.reuse_graph and (cfg_dir / "Makefile").is_file()
+
     def write_manifest():
         _write_manifest(cfg_dir, cfg, args, "tile", settings=_build_settings(env),
                         targets={"build": build_targets, "memtile_power": power_targets},
-                        graph=str(args.graph))
+                        graph=str(args.graph), graph_reused=reuse)
 
     write_manifest()    # so a config that fails in `mflowgen run` has one too
-    _sh(["mflowgen", "run", "--design", str(args.graph)],
-        cwd=cfg_dir, env=env, log=cfg_dir / "mflowgen_run.log")
-    if clean_cmd:
-        _sh(clean_cmd, cwd=cfg_dir, env=env, log=cfg_dir / "make_clean.log")
-    _handle_stale_steps(cfg_dir, env, args)
+    _materialize_graph(cfg_dir, ["mflowgen", "run", "--design", str(args.graph)],
+                       env, clean_cmd, reuse, args)
 
     # Write the spec AFTER any clean. `make clean-all` deletes every file in the
     # workspace except Makefile/.mflowgen* (find -maxdepth 1 ... -exec rm -rf),
@@ -1597,7 +1609,8 @@ def _run_one(cfg, cfg_dir, args):
     write_manifest()    # now with the graph's step parameters
 
     for _t in build_targets + power_targets:
-        _check_step_exists(_t, cfg_dir, env)
+        # A reused graph may predate a step: fail this config, not the sweep.
+        _check_step_exists(_t, cfg_dir, env, exc=RuntimeError if reuse else SystemExit)
     also_cmd = ["make", *jobs, *_resolve_targets(also_targets, cfg_dir, env)]
     _sh(make_cmd, cwd=cfg_dir, env=env, log=cfg_dir / "make.log")
 
@@ -1723,6 +1736,54 @@ def _stale_steps(ws):
     return stale
 
 
+# What `mflowgen run` writes in a workspace (step dirs are untouched).
+GRAPH_FILES = ("Makefile", ".mflowgen", ".mflowgen.yml")
+GRAPH_BACKUP = ".mflowgen.prev"   # `make clean-all` spares .mflowgen*
+
+
+def _materialize_graph(ws, run_cmd, env, clean_cmd, reuse, args):
+    """`mflowgen run` (skipped when reuse: --reuse-graph and a Makefile),
+    then the --clean targets and the stale-step check. If any of that fails,
+    the workspace gets its previous graph back: `mflowgen run` overwrites the
+    Makefile and .mflowgen, so a re-run with a changed graph that fails the
+    stale check would otherwise leave the workspace unable to make anything
+    against the graph its steps were built with (--reuse-graph)."""
+    backup = ws / GRAPH_BACKUP
+    if reuse:
+        print("        reusing the workspace's graph (--reuse-graph): no `mflowgen run`",
+              flush=True)
+    elif (ws / "Makefile").is_file():
+        shutil.rmtree(backup, ignore_errors=True)
+        backup.mkdir()
+        for name in GRAPH_FILES:
+            src = ws / name
+            if src.is_dir():
+                shutil.copytree(src, backup / name, symlinks=True)
+            elif src.exists():
+                shutil.copy2(src, backup / name)
+    try:
+        if not reuse:
+            _sh(run_cmd, cwd=ws, env=env, log=ws / "mflowgen_run.log")
+        if clean_cmd:
+            _sh(clean_cmd, cwd=ws, env=env, log=ws / "make_clean.log")
+        _handle_stale_steps(ws, env, args)
+    except BaseException:
+        if backup.is_dir():
+            for name in GRAPH_FILES:
+                dst = ws / name
+                if dst.is_dir():
+                    shutil.rmtree(dst)
+                elif dst.exists():
+                    dst.unlink()
+                if (backup / name).exists():
+                    shutil.move(str(backup / name), str(dst))
+            print("        restored the workspace's previous graph (Makefile, .mflowgen)",
+                  flush=True)
+        raise
+    finally:
+        shutil.rmtree(backup, ignore_errors=True)
+
+
 def _handle_stale_steps(ws, env, args):
     """Fail on stale steps (see _stale_steps), or clean them with
     --clean-stale so make rebuilds them and everything downstream."""
@@ -1810,7 +1871,7 @@ def _sweep_provenance(args):
 
 
 def _write_manifest(ws, cfg, args, kind, settings, targets, graph,
-                    graph_kwargs=None):
+                    graph_kwargs=None, graph_reused=False):
     manifest = {
         "manifest_version": 1,
         "kind": kind,                       # tile | standalone
@@ -1820,6 +1881,9 @@ def _write_manifest(ws, cfg, args, kind, settings, targets, graph,
         "spec": _spec_kwargs(cfg),
         "graph": graph,
         "graph_kwargs": _jsonable(graph_kwargs),
+        # --reuse-graph kept an older `mflowgen run`: `steps` is what that graph
+        # gave each step; `settings` is only this run's request.
+        "graph_reused": graph_reused,
         "settings": settings,
         "targets": targets,
         "written": time.strftime("%Y-%m-%dT%H:%M:%S"),
@@ -1864,7 +1928,7 @@ def _finish_manifest(ws, status, notes, duration_s):
     (ws / MANIFEST_FILE).write_text(json.dumps(manifest, indent=2) + "\n")
 
 
-def _check_step_exists(step, cfg_dir, env):
+def _check_step_exists(step, cfg_dir, env, exc=SystemExit):
     """Validate --stop-after against the configured graph's real targets.
 
     mflowgen derives make targets from step names, which are not the local
@@ -1885,7 +1949,7 @@ def _check_step_exists(step, cfg_dir, env):
 
     near = sorted(n for n in names if step in n or n in step)
     hint = f"\n    Did you mean: {', '.join(near)}" if near else ""
-    raise SystemExit(
+    raise exc(
         f"*** ERROR: '{step}' is not a step in this graph.{hint}\n"
         f"    Run `make list` in {cfg_dir} to see all targets.")
 
