@@ -36,7 +36,10 @@ report_activity_file_check inputs/run.saif -strip_path ${pt_uut} \
 
 read_saif inputs/run.saif -strip_path ${pt_uut}
 read_parasitics -format spef inputs/design.spef.gz
-read_sdc inputs/design.pt.sdc > ${pt_reports}/${pt_design_name}.sdc.rpt
+# read_sdc stops at the first non-SDC line: read_sdc_compat.tcl. Not
+# redirected: the step's postcondition checks the log for read errors.
+source read_sdc_compat.tcl
+read_sdc_compat inputs/design.pt.sdc
 
 update_power > ${pt_reports}/${pt_design_name}.update.rpt
 report_switching_activity > ${pt_reports}/${pt_design_name}.sw.rpt 

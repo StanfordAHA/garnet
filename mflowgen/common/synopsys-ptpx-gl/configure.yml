@@ -42,3 +42,11 @@ parameters:
   PWR_AWARE: True
   batch: False
   chkpt: False # Turn this on to save periodically during ptpx flow
+
+#-------------------------------------------------------------------------
+# Assertions
+#-------------------------------------------------------------------------
+
+postconditions:
+  # A truncated SDC read is otherwise silent (read_sdc_compat.tcl).
+  - assert 'Errors reading SDC' not in File( 'mflowgen-run.log' )

@@ -938,22 +938,18 @@ annotated.
   output do not). Replays then match on every cycle (no X at cycles 0–1
   either). With gf12 SRAM macros the array is not flops, but the macro
   model's warm-up reads are the same story.
-- **Tile_MemCore at synth level = pre-CTS clock artifact (open; user
-  decision).** Both MEM tiles replay with 0 mismatches. RTL level gives
-  34.8 mW (stencil-valid tile) and 31.9 mW (conv line buffer). Synth level
-  gives 4.4 W and 3.5 W, ~99.9% internal power of the 32K SRAM-array flops.
-  Their clock is the gated `gclk` (`AND2(clk, tile_en)`), one unbuffered net
-  with 31.6 pF of load in Genus's SPEF. PT does not treat it as a clock
-  network (`clock_network` group empty) and puts a 72 ns transition on
-  every CK pin (139 ns without the SPEF); each flop's internal power then
-  comes off the far end of the lib table. `set_ideal_network` /
-  `set_ideal_transition` on `clk` or `gclk` change nothing.
-  `set_annotated_transition 0.05` on all CK pins gives 36.4 mW, matching
-  the RTL level. On gf12 the array is a macro, but thousands of controller
-  flops still hang off unbuffered gated clocks, so synth-level tile power is
-  inflated there too. RTL level (no slews) and PnR level (after CTS) don't
-  have this problem. A fix would be pre-CTS clock-pin transitions in
-  `synopsys-ptpx-synth`; that is not done, pending a decision. Tile_PE: 3.0–3.8 mW per placed PE (2.2 mW
+- **ptpx steps read the SDC through `read_sdc_compat.tcl` (2026-10-08).**
+  PrimeTime's `read_sdc` stops at the first non-SDC line and drops the rest.
+  Genus writes `current_design Tile_*` at line 13 of its SDC, so every
+  synth-level tile power (`post-synth-power`, `memtile-power-synth-*`) ran
+  with NO clock. The symptom locally: the gated SRAM clock was treated as
+  data, with a 72 ns CK slew and 4.4 W per MEM tile (I first misread that as
+  a pre-CTS artifact). Fix (same file as lake 33eae24e, copies in
+  `synopsys-ptpx-{synth,gl,rtl}/`): write `<sdc>.compat.sdc` without
+  `current_design` and with Innovus's `append_to_collection` folded, then
+  `read_sdc` that. Each step fails on "Errors reading SDC". With it, the MEM
+  tiles' synth level gives 34.8 / 32.9 mW, matching the RTL level
+  (34.8 / 31.9); `clock_network` ≈ 86%. Tile_PE: 3.0–3.8 mW per placed PE (2.2 mW
 clock-dominated internal; switching 0.09–0.58 mW tracks the PE's activity).
 - Gotcha: a Genus netlist WITHOUT mflowgen's `hdl_array_naming_style %s_%d`
   (and bus/uniquify styles) has escaped array nets (`\x[20] [16]`) that

@@ -66,7 +66,9 @@ read_saif $ptpx_saif -strip_path $ptpx_strip_path
 
 # Read in the SDC and parasitics
 
-read_sdc -echo $ptpx_sdc
+# read_sdc stops at Genus's `current_design` line (no clock): read_sdc_compat.tcl
+source read_sdc_compat.tcl
+read_sdc_compat $ptpx_sdc
 
 check_constraints -verbose \
   > reports/$ptpx_design_name.checkconstraints.rpt
