@@ -2446,6 +2446,33 @@ def _pt_setup_wns(ws):
     return round(min(slacks) * (1e-3 if edges and min(edges) > 50 else 1.0), 6)
 
 
+INNOVUS_WNS_GROUPS = ("all", "reg2reg", "in2reg", "reg2out", "in2out")
+
+
+def _innovus_signoff_wns(ws):
+    """Innovus's own signoff setup WNS per path group, in ns, from the
+    `Setup mode | all | ... | Reg2Reg |` table of the signoff step's
+    reports/signoff.summary (the foundation flow's timeDesign -signoff; the
+    table lake's THESIS/pipeline/tile_sweep.py reads too). Independent of PT:
+    still there for sweeps that stopped at cadence-innovus-signoff."""
+    out = {f"tile_pnr_innovus_wns_{g}_ns": None for g in INNOVUS_WNS_GROUPS}
+    lines = _read_lines(_first(ws, "*-cadence-innovus-signoff/reports/signoff.summary"))
+    hdr = next((i for i, l in enumerate(lines) if "Setup mode" in l and "|" in l), None)
+    if hdr is None:
+        return out
+    row = next((l for l in lines[hdr + 1:] if "WNS (ns):" in l), None)
+    if row is None:
+        return out
+    cols = [c.strip().lower() for c in lines[hdr].split("|")[2:-1]]
+    for c, v in zip(cols, (v.strip() for v in row.split("|")[2:-1])):
+        if c in INNOVUS_WNS_GROUPS:
+            try:
+                out[f"tile_pnr_innovus_wns_{c}_ns"] = float(v)
+            except ValueError:
+                pass   # N/A: no paths in that group
+    return out
+
+
 def _synth_metrics(ws, prefix):
     area_n = _top_row_nums(_first(ws, "*-cadence-genus-synthesis/results_syn/final_area.rpt"))
     cell = area_n[1] if len(area_n) >= 4 else None
@@ -2478,6 +2505,7 @@ def _pnr_metrics(ws):
         "tile_pnr_macro_area": macro,
         "tile_pnr_logic_area": (total - macro) if None not in (total, macro) else None,
         "tile_pnr_setup_wns_ns": _pt_setup_wns(ws),
+        **_innovus_signoff_wns(ws),
     }
 
 
