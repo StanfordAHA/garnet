@@ -362,6 +362,16 @@ signoff → PT), then `memtile-power-{synth,pnr}-{idle,active}`, then the
   (≈980 C5/K1 shorts + M3 EOL spacing) and `verifyConnectivity` finds 9 VSS
   opens on every PnR build so far (also the 2026-10-06 thesis anchors) — a
   flow-wide power-grid issue, fine for PPA but not DRC-clean.
+  Signoff timing (Innovus `signoff.summary`): WNS −0.090 / TNS −1.948 ns,
+  227 violating paths, all IO-facing (In2Out −90 ps ×91, In2Reg −33 ×76,
+  CriticalPassThrough −11 ×58, Reg2Out −9 ×2); Reg2Reg −0.000, hold met
+  (+9 ps), synth met by only +0.2 ps. DRVs: 1 max_tran (−9 ps), 1 max_fanout.
+  Antenna 0, SI glitches 0, density 70.5%. Genus log clean (only the
+  intended `mode[0]` probe SDC-208 ×2 and 2 unused decoder regs).
+  **The three MMMC views (UNIFIED_BUFFER / FIFO / SRAM) are identical on a
+  spec MemCore**: constraints.tcl skips the per-mode case analysis (no
+  `mode[0]` pin), so PnR times the same constraints 3× -- dropping to one
+  view would save PnR runtime, not change results.
 - Checked on /aha (stub ADK): dry-run sequence; both graphs materialize, every
   target name resolves/exists, tile build reaches gen_rtl (no docker here),
   standalone reaches lake gen_sram (no SRAM compiler); make-sequencing + notes
