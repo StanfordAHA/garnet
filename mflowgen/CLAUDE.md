@@ -930,6 +930,8 @@ mflowgen's naming styles; then the real step scripts on a local freepdk45 ADK
 annotated. Results (with both fixes below): Tile_PE 2.7–3.5 mW per placed PE
 (1.8–2.2 mW internal; switching 0.09–0.58 mW tracks the PE's activity);
 Tile_MemCore 34.8 mW (stencil-valid tile) / 32.9 mW (conv line buffer).
+(Hand-run Genus here: its default SDC needs the compat read; mflowgen's own
+genus step writes a strict SDC.)
 - **Zero-init (fixed 2026-10-07):** `cadence-xcelium-sim` ran with no X
   initialization, while `aha test` (which records the bundle) uses
   `-xminitialize 0`. The MEM tile's SRAM (flops under `--use_sim_sram`) then
@@ -942,15 +944,21 @@ Tile_MemCore 34.8 mW (stencil-valid tile) / 32.9 mW (conv line buffer).
   model's warm-up reads are the same story.
 - **ptpx steps read the SDC through `read_sdc_compat.tcl` (2026-10-08).**
   PrimeTime's `read_sdc` stops at the first non-SDC line and drops the rest.
-  Genus writes `current_design Tile_*` at line 13 of its SDC, so every
-  synth-level tile power (`post-synth-power`, `memtile-power-synth-*`) ran
-  with NO clock. The symptom locally: the gated SRAM clock was treated as
-  data, with a 72 ns CK slew and 4.4 W per MEM tile (I first misread that as
-  a pre-CTS artifact). Fix (same file as lake 33eae24e, copies in
-  `synopsys-ptpx-{synth,gl,rtl}/`): write `<sdc>.compat.sdc` without
-  `current_design` and with Innovus's `append_to_collection` folded, then
-  `read_sdc` that. Each step fails on "Errors reading SDC". With it, the MEM
-  tiles' synth level gives 34.8 / 32.9 mW, matching the RTL level
+  Genus's DEFAULT SDC has `current_design <top>` at line 13, so a flow that
+  reads it runs power with NO clock: lake's standalone ptpx (fixed in lake
+  33eae24e) and my local freepdk45 harness, which used `write_sdc` output
+  (symptom: the gated SRAM clock became a data net, 72 ns CK slew, 4.4 W per
+  MEM tile; I first misread that as a pre-CTS artifact). **The mflowgen
+  Tile_MemCore / Tile_PE synth level was NOT affected:**
+  `custom-genus-scripts/copy_sdc.tcl` makes synth's `design.sdc` the
+  `write_sdc -strict` output, which has no `current_design`. The 2026-10-07
+  gf12 smoke run's `memtile-power-synth-*` read the whole SDC (clock 1333,
+  100% annotated). So in garnet 6ac4d73f (copies of lake's file in
+  `synopsys-ptpx-{synth,gl,rtl}/`, each step failing on "Errors reading
+  SDC"), the compat read is a no-op for those steps and the guard is the
+  value. Its commit message ("synth-level tile power had no clock") overstates
+  it: that applied to the local harness only. With a clocked SDC, the local
+  MEM tiles' synth level gives 34.8 / 32.9 mW, matching the RTL level
   (34.8 / 31.9); `clock_network` ≈ 86%.
 - Gotcha: a Genus netlist WITHOUT mflowgen's `hdl_array_naming_style %s_%d`
   (and bus/uniquify styles) has escaped array nets (`\x[20] [16]`) that
