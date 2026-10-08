@@ -94,6 +94,16 @@ Key flags:
   deflated at level 1, `.gz`/... are stored; prints the input size up front,
   a progress line every 30 s, the elapsed time at the end. Synthetic 2-config
   PnR-shaped benchmark: 99 s -> 24 s, 543 -> 463 MB.
+- `--zip-slim` (2026-10-07) — with `--zip`/`--zip-only`: skip the signoff
+  layout/library views (`LAYOUT_GLOBS`: merged GDS, LEF, LIB = most of a PnR
+  config's bytes; nothing parses them), name gets `_slim`. Everything the
+  CSVs, lake `THESIS/pipeline/tile_sweep.py` and the follow-up analyses read
+  stays. **Pulling results to /aha** (the build machine can't reach /aha;
+  the user copies files over): on the build machine, any time, also while
+  the sweep runs (read-only on the workspaces; rewrites only the out-dir
+  CSVs) `./mflowgen/sweep_specs.py --zip-only --zip-slim --out-dir <dir>`,
+  then copy `<dir>_<host>_<ts>_slim.zip` into `/aha/sweep_out/`. PT's
+  `reports/*.report` (global timing, check_timing, ...) are zipped too.
 - `--standalone-synth` / `--standalone-only` / `--correlate-only` —
   standalone-spec baseline for the standalone-synth → tile-synth → tile-PnR
   correlation. See "Standalone spec synth + correlation" below.

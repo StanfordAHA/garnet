@@ -558,6 +558,12 @@ def build_argparser():
                         "previous run and exit (no build). Archives every config "
                         "workspace found there, or only the selected ones if "
                         "--preset/--only/--skip is given.")
+    p.add_argument("--zip-slim", action="store_true",
+                   help="With --zip/--zip-only: leave out the signoff layout and "
+                        "library views (merged GDS, LEF, LIB), which are most of a "
+                        "PnR config's size and which no report or CSV needs. Keeps "
+                        "every report, log, manifest and CSV. Default zip name "
+                        "gets a _slim suffix.")
     p.add_argument("--zip-path", metavar="PATH",
                    help="Where to write the zip for --zip/--zip-only (default: "
                         "next to --out-dir, named <out-dir>_<host>_<timestamp>.zip).")
@@ -2023,14 +2029,21 @@ SRAM_DATASHEET_GLOB = SRAM_STEP_GLOB + "/outputs/sram_datasheet/*"
 
 # Workspace-relative globs for the small subset of files that summarize PPA.
 # Shared by _collect_artifacts (copy into artifacts/) and _zip_results.
-ARTIFACT_GLOBS = [
+# Layout/library views of the signoff: most of a PnR config's zip size (the
+# merged GDS), and no report reads them. --zip-slim leaves them out.
+LAYOUT_GLOBS = [
     "*-cadence-innovus-signoff/outputs/*.lib",
     "*-cadence-innovus-signoff/outputs/*.lef",
     "*-cadence-innovus-signoff/outputs/*.gds",
+]
+ARTIFACT_GLOBS = LAYOUT_GLOBS + [
     "*-cadence-innovus-signoff/reports/*.rpt",
+    # signoff.summary = Innovus's own signoff timing (WNS/TNS per path group).
     "*-cadence-innovus-signoff/reports/*.summary",
-    # PT signoff: <design>.timing.{setup,hold}.rpt = top-100 PBA paths.
+    # PT signoff: <design>.timing.{setup,hold}.rpt = top-100 PBA paths;
+    # *.report = check_timing/constraints, global timing, clock skew, coverage.
     "*-synopsys-pt-timing-signoff/reports/*.rpt",
+    "*-synopsys-pt-timing-signoff/reports/*.report",
     # Tile synth: <design>.timing.setup.top100{,.summary}.rpt = top-100
     # worst setup paths (Tile_MemCore custom-genus-scripts/generate-results.tcl).
     "*-cadence-genus-synthesis/reports/*.rpt",
@@ -2106,7 +2119,8 @@ def _default_zip_path(out_dir, args):
         return Path(args.zip_path).resolve()
     stamp = time.strftime("%Y%m%d-%H%M%S")
     host = socket.gethostname().split(".")[0]
-    return out_dir.parent / f"{out_dir.name}_{host}_{stamp}.zip"
+    slim = "_slim" if args.zip_slim else ""
+    return out_dir.parent / f"{out_dir.name}_{host}_{stamp}{slim}.zip"
 
 
 # A workspace's top-level make*.log is make's stdout: every step's output again
@@ -2166,7 +2180,8 @@ def _zip_results(out_dir, names, args):
     for name in found:
         for cfg_dir in (out_dir / name, out_dir / STANDALONE_SUBDIR / name):
             seen = set()
-            for pat in ZIP_EXTRA_GLOBS + ARTIFACT_GLOBS:
+            for pat in ZIP_EXTRA_GLOBS + [g for g in ARTIFACT_GLOBS
+                                          if not (args.zip_slim and g in LAYOUT_GLOBS)]:
                 for src in cfg_dir.glob(pat):
                     if src.is_file() and src not in seen:
                         seen.add(src)
