@@ -2424,14 +2424,26 @@ def _genus_wns(qor_rpt):
 
 def _pt_setup_wns(ws):
     """Worst setup slack from PrimeTime signoff (<design>.timing.setup.rpt),
-    in library time units (ns for gf12)."""
-    slacks = []
+    in ns.
+
+    PT prints in its main library's time unit, which is ps for gf12 (the
+    SDC's `set_units -time ns` doesn't change that; the 2026-10-07 smoke run
+    reported -1229.256 for a -1.229 ns slack). The report doesn't name the
+    unit, so it's read off the capture edges ("clock <c> (rise edge) ... 1333.000"):
+    no clock here has a period anywhere near 50 ns, so edges above 50 are ps."""
+    slacks, edges = [], []
     for rpt in ws.glob("*-synopsys-pt-timing-signoff/reports/*.timing.setup.rpt"):
         for line in _read_lines(rpt):
             m = re.match(r"^\s*slack\s*\([^)]*\)\s+(-?\d+(?:\.\d+)?)", line)
             if m:
                 slacks.append(float(m.group(1)))
-    return min(slacks) if slacks else None
+            # the edge time is the last column (Path); earlier ones are Trans/Incr
+            e = re.match(r"^\s*clock \S+ \((?:rise|fall) edge\)\s.*?(\d+(?:\.\d+)?)\s*$", line)
+            if e and float(e.group(1)) > 0:
+                edges.append(float(e.group(1)))
+    if not slacks:
+        return None
+    return round(min(slacks) * (1e-3 if edges and min(edges) > 50 else 1.0), 6)
 
 
 def _synth_metrics(ws, prefix):
