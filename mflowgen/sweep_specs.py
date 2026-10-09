@@ -375,13 +375,16 @@ def build_argparser():
     p.add_argument("--reuse-graph", action="store_true",
                    help="In a workspace that already has a Makefile, skip `mflowgen "
                         "run` and make the targets against the graph the workspace "
-                        "was built with. Use to add a step (e.g. PT signoff, now "
-                        "the default --stop-after) to an existing sweep: rerun it "
-                        "with --skip-existing --reuse-graph and only the missing "
-                        "steps run, even if the current graph changed steps the "
-                        "workspace already built (which would otherwise rebuild "
-                        "them or trip the stale-step check). Workspaces without a "
-                        "Makefile still get `mflowgen run`.")
+                        "was built with. Use to add a step to an existing sweep: "
+                        "rerun it with --skip-existing --reuse-graph and only the "
+                        "missing steps run, even if the current graph changed steps "
+                        "the workspace already built (which would otherwise rebuild "
+                        "them or trip the stale-step check). NOT for PT on a "
+                        "workspace signed off before garnet 618adedd: its "
+                        "design.pt.sdc lacks fix-pt-sdc.tcl, so PT reads a truncated "
+                        "SDC (use --correlate-only for Innovus's signoff WNS "
+                        "instead). Workspaces without a Makefile still get "
+                        "`mflowgen run`.")
     p.add_argument("--rtl-only", action="store_true",
                    help="Shortcut for --stop-after rtl; fastest check that the "
                         "spec plumbing reaches garnet.py.")

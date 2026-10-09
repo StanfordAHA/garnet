@@ -185,15 +185,18 @@ thesis-run result above came from there. correlation.csv has it as
 the 2026-10-07 smoke run: Innovus all -0.090 (in2out), reg2reg -0.000; PT
 -1.229 from the truncated SDC.
 
-To add PT to a finished sweep (old default stop): rerun the same command with
-`--skip-existing --reuse-graph`. Synth-only configs skip (same targets); PnR
-configs' done.flag says `ok cadence-innovus-signoff`, so they resume and make
-only PT against their own graph (PT has been in every Tile_MemCore graph since
-"add PT step to all flows"). Then `--correlate-only` fills the WNS column.
-Checked on a scratch graph that changed a built step's params and inputs:
-plain re-run → stale FAIL + graph restored; `--reuse-graph` → only the new
-target runs, upstream outputs untouched; `--clean-stale` → adopts the new
-graph and rebuilds.
+**Don't backfill PT on a sweep whose signoff ran before 618adedd** (any sweep
+from before 2026-10-08, e.g. the thesis run). `--skip-existing --reuse-graph`
+would make only PT against the workspace's own graph, but that graph's signoff
+wrote the unfixed `design.pt.sdc` (no `fix-pt-sdc.tcl`) and has no "Errors
+reading SDC" guard, so PT silently reads the truncated SDC again. For timing on
+such sweeps use `--correlate-only`: it fills `tile_pnr_innovus_wns_*_ns` from
+the existing `signoff.summary`. Sweeps whose graph already has the fix can
+add PT with `--skip-existing --clean-stale` (a newer garnet re-runs signoff
+onward). `--reuse-graph` itself was checked on a scratch graph that changed a
+built step's params and inputs: plain re-run → stale FAIL + graph restored;
+`--reuse-graph` → only the new target runs, upstream outputs untouched;
+`--clean-stale` → adopts the new graph and rebuilds.
 
 ### Thesis-set synth sweep + synth→PnR projection (2026-09-30)
 
