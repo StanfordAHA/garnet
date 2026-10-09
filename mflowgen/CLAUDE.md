@@ -308,9 +308,13 @@ way (memtile_power_fit.csv). `pnr_validation.csv`: per held-out config ×
 {total_area, total_area_via_logic, logic_area, idle_power, active_power} the
 synth value, predicted PnR, actual PnR, error. Validated only on synthetic
 reports (fits match numpy; roles, override, legacy no-role out-dir) + stub-ADK
-graph materialization. Unchecked until real data: Genus SRAM area (.lib) vs
-Innovus macro area (LEF) — via_logic assumes they're equal; compare
-`tile_synth_sram_area` with `tile_pnr_macro_area` in the first real CSV.
+graph materialization. Genus SRAM area (.lib `area`) and Innovus macro area
+(LEF footprint) differ: 5769.8 vs 5624.9 (0.975) on the 2026-10-07 smoke run.
+Since 2026-10-08 via_logic scales the synth SRAM area by the fit configs'
+PnR/synth macro ratio (`_sram_macro_ratios`: same macros if any fit config
+has them, else the fit mean, else 1.0; per-row `tile_sram_pnr_over_synth_used`).
+Synthetic check with 0.970-0.980 ratios: held-out error 0.35% vs 0.76%
+uncalibrated, and no longer all-positive.
 
 ### Whole-graph smoke run: one spec, standalone + tile (2026-10-07)
 
@@ -375,6 +379,14 @@ signoff → PT), then `memtile-power-{synth,pnr}-{idle,active}`, then the
   spec MemCore**: constraints.tcl skips the per-mode case analysis (no
   `mode[0]` pin), so PnR times the same constraints 3× -- dropping to one
   view would save PnR runtime, not change results.
+  DRC triage (2026-10-08, from the per-step logs): NanoRoute ends at 0 DRC
+  violations in route, postroute and postroute_hold, so the 984 shorts are
+  not signal routing. They appear only at signoff `verify_drc`, all on C5/K1,
+  the coarse power-mesh layers (`ADK_POWER_MESH_{BOT,TOP}_LAYER` in
+  custom-power-leaf/power-strategy-dualmesh.tcl): power-grid shorts (mesh vs
+  mesh, the SRAM macro, or the tile edge). The per-violation reports
+  (`<design>.{drc,conn,antenna}.rpt` in the signoff step dir) are zipped
+  since 2026-10-08 (`*-cadence-innovus-signoff/*.rpt`); read them next.
 - Checked on /aha (stub ADK): dry-run sequence; both graphs materialize, every
   target name resolves/exists, tile build reaches gen_rtl (no docker here),
   standalone reaches lake gen_sram (no SRAM compiler); make-sequencing + notes

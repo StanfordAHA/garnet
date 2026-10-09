@@ -2021,6 +2021,10 @@ LAYOUT_GLOBS = [
 ]
 ARTIFACT_GLOBS = LAYOUT_GLOBS + [
     "*-cadence-innovus-signoff/reports/*.rpt",
+    # verify_drc / verifyConnectivity / verifyProcessAntenna reports
+    # (<design>.{drc,conn,antenna}.rpt in the step dir): the nets and
+    # locations behind the signoff DRC shorts and VSS opens.
+    "*-cadence-innovus-signoff/*.rpt",
     # signoff.summary = Innovus's own signoff timing (WNS/TNS per path group).
     "*-cadence-innovus-signoff/reports/*.summary",
     # PT signoff: <design>.timing.{setup,hold}.rpt = top-100 PBA paths;
@@ -2648,6 +2652,26 @@ def _validation_rows(rows, metrics):
     return out
 
 
+def _sram_macro_ratios(rows):
+    """PnR macro area / synth SRAM area, from the PnR configs that fit the
+    model. The macros carry over unchanged, but Genus counts the .lib `area`
+    and Innovus the LEF footprint, which differ (2026-10-07 smoke run:
+    5624.9 / 5769.8 = 0.975). Returns row -> ratio: the mean over fit rows
+    with the same macros (`tile_synth_sram_macros`) if any, else the mean
+    over all fit rows, else 1.0."""
+    by_macro, every = {}, []
+    for r in rows:
+        sram, macro = r.get("tile_synth_sram_area"), r.get("tile_pnr_macro_area")
+        if (r.get("pnr_role") != "validate" and isinstance(sram, float)
+                and isinstance(macro, float) and sram > 0):
+            by_macro.setdefault(r.get("tile_synth_sram_macros"), []).append(macro / sram)
+            every.append(macro / sram)
+    mean = lambda v: sum(v) / len(v)  # noqa: E731
+    overall = mean(every) if every else 1.0
+    return lambda r: mean(by_macro[r.get("tile_synth_sram_macros")]) \
+        if r.get("tile_synth_sram_macros") in by_macro else overall
+
+
 def _write_correlation(out_dir, names, validate_names=None):
     """Write <out_dir>/correlation.csv: per config, standalone synth vs tile
     synth vs tile PnR area/slack, pulled from whichever workspaces exist, plus
@@ -2666,9 +2690,12 @@ def _write_correlation(out_dir, names, validate_names=None):
         return []
     _apply_roles(rows, validate_names)
     table = _fit_and_project(rows)
+    ratio = _sram_macro_ratios(rows)
     for r in rows:
         sram, logic = r["tile_synth_sram_area"], r["tile_pnr_logic_area_proj"]
-        r[VIA_LOGIC_COL] = (sram + logic if isinstance(sram, float)
+        k = ratio(r)
+        r["tile_sram_pnr_over_synth_used"] = k
+        r[VIA_LOGIC_COL] = (sram * k + logic if isinstance(sram, float)
                             and isinstance(logic, float) else None)
         r[VIA_LOGIC_COL + "_err_pct"] = _pct_err(r[VIA_LOGIC_COL], r["tile_pnr_total_area"])
     path = out_dir / "correlation.csv"
