@@ -375,10 +375,12 @@ signoff → PT), then `memtile-power-{synth,pnr}-{idle,active}`, then the
   (+9 ps), synth met by only +0.2 ps. DRVs: 1 max_tran (−9 ps), 1 max_fanout.
   Antenna 0, SI glitches 0, density 70.5%. Genus log clean (only the
   intended `mode[0]` probe SDC-208 ×2 and 2 unused decoder regs).
-  **The three MMMC views (UNIFIED_BUFFER / FIFO / SRAM) are identical on a
-  spec MemCore**: constraints.tcl skips the per-mode case analysis (no
-  `mode[0]` pin), so PnR times the same constraints 3× -- dropping to one
-  view would save PnR runtime, not change results.
+  The three MMMC views (UNIFIED_BUFFER / FIFO / SRAM) were identical on a
+  spec MemCore (no `mode[0]` pin, so no per-mode case analysis); spec builds
+  use one mode since 2026-10-08 (constraints.tcl bullet below). IO-path
+  slack stays as is (user decision 2026-10-08): it is recorded per config in
+  correlation.csv (`tile_synth_wns_ps`, PT `tile_pnr_setup_wns_ns`,
+  `tile_pnr_innovus_wns_{all,reg2reg,in2reg,reg2out,in2out}_ns`).
   DRC triage (2026-10-08, from the per-step logs): NanoRoute ends at 0 DRC
   violations in route, postroute and postroute_hold, so the 984 shorts are
   not signal routing. They appear only at signoff `verify_drc`, all on C5/K1,
@@ -516,7 +518,16 @@ Apples-to-apples caveats:
   The classic onyx MemCore has a 2-bit `mode[1:0]` bus; spec MemCores declare
   a 1-bit scalar `mode` (or none), so `set_case_analysis … mode[0]` aborts
   Genus with TUI-61. `_obj_exists` detects `mode[0]` once and skips the
-  case-analysis when absent.
+  case-analysis when absent. **One timing mode for spec MemCores (2026-10-08,
+  user decision):** without the case analysis FIFO and SRAM were copies of
+  UNIFIED_BUFFER, synthesized and PnR-timed 3x. With no `mode[0]` Genus now
+  creates only UNIFIED_BUFFER; `custom-genus-scripts/copy_sdc.tcl` links only
+  the `syn_out.cstr_mode_*.sdc` Genus wrote, and `custom-flowgen-setup/
+  setup.tcl` builds analysis views for the `inputs/sdc/*.sdc` present (all
+  three if none). The onyx MemCore (mode pin) keeps 3 modes + 6 case analyses
+  (checked in tclsh with stubbed Genus commands against the old script). Only
+  script content changed, so built workspaces keep their 3 modes until synth
+  is rebuilt (same constraints, so same timing).
 - **`Tile_MemCore/constraints/common.tcl`** — `clk_out` max delay. The
   blanket `set_output_delay … [all_outputs]` (0.1×period) also lands on
   `clk_out`, so the old `set_max_delay -to $pt_clk_out 0.05` left a bare wire

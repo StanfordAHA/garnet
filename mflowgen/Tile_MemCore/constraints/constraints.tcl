@@ -71,6 +71,12 @@ if { $has_mode } {
     set_case_analysis 0 MemCore_inst0/$module/mode[1]
 }
 
+# FIFO and SRAM differ from UNIFIED_BUFFER only by the mode case analysis, so a
+# spec MemCore (no mode pin) would get three identical modes -- synthesized and
+# then timed 3x by PnR. Keep just UNIFIED_BUFFER there; copy_sdc.tcl and
+# custom-flowgen-setup carry only the modes synthesis wrote to PnR.
+if { $has_mode } {
+
 create_mode -name FIFO
 set_constraint_mode FIFO
 
@@ -91,4 +97,6 @@ source -echo -verbose ${common_cnst}
 if { $has_mode } {
     set_case_analysis 0 MemCore_inst0/$module/mode[0]
     set_case_analysis 1 MemCore_inst0/$module/mode[1]
+}
+
 }

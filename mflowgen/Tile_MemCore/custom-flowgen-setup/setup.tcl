@@ -1,4 +1,13 @@
-set active_scenarios [list UNIFIED_BUFFER FIFO SRAM]
+# The constraint modes synthesis wrote an SDC for: UNIFIED_BUFFER, FIFO and
+# SRAM for the onyx MemCore, only UNIFIED_BUFFER for a spec MemCore (no mode
+# pin, so the other two would be identical; see constraints.tcl).
+set active_scenarios {}
+foreach s [list UNIFIED_BUFFER FIFO SRAM] {
+    if {[file exists inputs/sdc/${s}.sdc]} { lappend active_scenarios $s }
+}
+if {![llength ${active_scenarios}]} {
+    set active_scenarios [list UNIFIED_BUFFER FIFO SRAM]
+}
 
 set c_modes {}
 foreach s ${active_scenarios} {
