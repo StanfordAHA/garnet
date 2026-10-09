@@ -33,19 +33,29 @@ set_case_analysis 1 $rmux_outputs
 #set fifo_reg_outputs [get_pins -of_objects $fifo_regs -filter "direction==out"]
 #set_case_analysis 0 $fifo_reg_outputs
 
+# The FIFO registers below exist only with split FIFOs. A non-split-FIFO
+# fabric (USE_NON_SPLIT_FIFOS=1, canal RegFIFO: no passthru, registered full)
+# has none and no loop through its FIFOs, and an empty selection is a PT error
+# that fails the step's 'Error:' postcondition. So skip what is absent.
 if { $WHICH_SOC != "amber" } {
 # set Fifo start high
-set fifo_regs [get_cells -hier *REG*start_value]
-set fifo_reg_outputs [get_pins -of_objects $fifo_regs -filter "direction==out"]
-set_case_analysis 1 $fifo_reg_outputs
+set fifo_regs [get_cells -quiet -hier *REG*start_value]
+if { [sizeof_collection $fifo_regs] > 0 } {
+    set fifo_reg_outputs [get_pins -of_objects $fifo_regs -filter "direction==out"]
+    set_case_analysis 1 $fifo_reg_outputs
+}
 
 # set Fifo value high
-set fifo_regs [get_cells -hier *REG*end_value]
-set fifo_reg_outputs [get_pins -of_objects $fifo_regs -filter "direction==out"]
-set_case_analysis 1 $fifo_reg_outputs
+set fifo_regs [get_cells -quiet -hier *REG*end_value]
+if { [sizeof_collection $fifo_regs] > 0 } {
+    set fifo_reg_outputs [get_pins -of_objects $fifo_regs -filter "direction==out"]
+    set_case_analysis 1 $fifo_reg_outputs
+}
 
 # Ensure that fifos are not empty so data is registered
-set empty_n_regs [get_cells -hier REG_T*SplitFifo*empty_n_reg]
-set empty_n_reg_outputs [get_pins -of_objects $empty_n_regs -filter "direction==out"]
-set_case_analysis 1 $empty_n_reg_outputs
+set empty_n_regs [get_cells -quiet -hier REG_T*SplitFifo*empty_n_reg]
+if { [sizeof_collection $empty_n_regs] > 0 } {
+    set empty_n_reg_outputs [get_pins -of_objects $empty_n_regs -filter "direction==out"]
+    set_case_analysis 1 $empty_n_reg_outputs
+}
 }
