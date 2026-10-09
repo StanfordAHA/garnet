@@ -990,10 +990,11 @@ genus step writes a strict SDC.)
   `tile_{rtl,synth,pnr}_app_total_power` (that MEM tile's
   `*-post-<level>-power/outputs/reports/<tile>.hier`).
 
-The dormant `--per-tile` flag (`common/tile-per-tile-power`, untracked since
-2026-09-27, never wired into the graph) was an earlier attempt that powers only
-the lake memory core in isolation; bundles cover the whole tile (interconnect +
-config) for MEM and PE tiles at all three power levels.
+The old `--per-tile` flag (powered only the lake memory core in isolation, via
+lake `pd/thesis/roundtrip-power`; never wired into the graph) was deleted on
+2026-10-08 with its untracked `common/tile-per-tile-power` step (user
+decision): bundles cover the whole tile (interconnect + config) for MEM and PE
+tiles at all three power levels.
 
 ## PE-tile pond knobs (Tile_PE with / without / spec pond) (2026-09-30)
 

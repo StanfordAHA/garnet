@@ -467,14 +467,8 @@ def build_argparser():
                         "submodule; 1-3 let Genus ungroup (auto_ungroup both: the "
                         "Genus node only distinguishes 0 from non-zero). Default: "
                         "the graph's own value (3 for Tile_MemCore).")
-    # ---- App-driven power. Both paths are "round-trips" (the spec config is
-    # sent up for app compilation either way); they differ in SCOPE:
-    #   --cgra-power : app runs on the whole CGRA fabric -> tile power in fabric
-    #                  context (container + Cadence/ADK path).
-    #   --per-tile   : each memtile is simulated in isolation on the app's exact
-    #                  access pattern (clockwork round-trip; container-free,
-    #                  self-checked against golden).
-    # They compose: pass both for fabric + isolated power side by side. ----
+    # ---- App-driven power: --cgra-power runs the app on the whole CGRA fabric
+    # -> tile power in fabric context (app bundle or container + Cadence/ADK). ----
     p.add_argument("--cgra-power", "--power", dest="cgra_power",
                    action="store_true",
                    help="After the build, run the CGRA-fabric app-driven "
@@ -495,16 +489,6 @@ def build_argparser():
                         "app on the DEFAULT MemCore in the stock container, so "
                         "for lake-spec configs the stimulus does not match the "
                         "spec tile and the power numbers are not meaningful yet.")
-    p.add_argument("--per-tile", dest="per_tile", action="store_true",
-                   help="After the build, run the PER-TILE clockwork round-trip "
-                        "power flow: the app is compiled against the spec and "
-                        "each memtile is simulated in isolation on the exact "
-                        "read/write stream it sees, self-checked against golden, "
-                        "then powered at synth level. Sets PER_TILE_POWER=True "
-                        "(adds the round-trip power node) and makes the "
-                        "'per-tile-power' leaf. Container-free (uses the lake "
-                        "spec testbench + xrun), but the power step needs "
-                        "PrimeTime. Composes with --cgra-power.")
     p.add_argument("--memtile-power", dest="memtile_power", action="store_true",
                    help="Also measure each spec MemTile's IDLE and ACTIVE (max "
                         "sustainable traffic) power: lake's standalone idle/active "
@@ -618,14 +602,6 @@ def build_argparser():
 
 def main(argv=None):
     args = build_argparser().parse_args(argv)
-
-    if args.per_tile:
-        # Parked: the round-trip graph node ('per-tile-power') is not wired into
-        # Tile_MemCore yet, so fail up front instead of after mflowgen run.
-        print("*** --per-tile is not implemented yet (the 'per-tile-power' node "
-              "is not in the Tile_MemCore graph). For isolated per-spec power, "
-              "run lake's ASPLOS_EXP/run_synth_pool.py instead.", file=sys.stderr)
-        return 2
 
     if args.rtl_only and args.memtile_power:
         print("*** --memtile-power needs synthesis; drop --rtl-only.",
@@ -1476,7 +1452,6 @@ def _build_targets(cfg, args):
     Power leaves replace the plain stop target when requested.
       --cgra-power         -> fabric app power: pre-synth (RTL) + post-synth
       --include-pnr-power  -> (with --cgra-power) gate-level post-signoff (PnR)
-      --per-tile           -> isolated per-memtile clockwork round-trip power
     All composable. Every leaf pulls its netlist + the app compile/sim as
     dependencies, so making them runs the whole chain. Otherwise the target
     is --stop-after, or --synth-stop for configs outside --pnr-set.
@@ -1488,8 +1463,6 @@ def _build_targets(cfg, args):
         targets += ["post-rtl-power", "post-synth-power"]
     if args.include_pnr_power:
         targets.append("post-pnr-power")
-    if args.per_tile:
-        targets.append("per-tile-power")
     return targets or [_stop_target(cfg, args)]
 
 
@@ -1546,8 +1519,6 @@ def _tile_env(cfg, cfg_dir, args):
     if args.cgra_power:
         env["RTL_POWER"] = "True"
         env["SYNTH_POWER"] = "True"
-    if args.per_tile:
-        env["PER_TILE_POWER"] = "True"
     if args.memtile_power:
         env["MEMTILE_POWER"] = "True"
     bundle = _app_bundle(cfg, args)
@@ -1589,8 +1560,6 @@ def _run_one(cfg, cfg_dir, args):
             dry_env_keys += ["FLATTEN"]
         if args.cgra_power:
             dry_env_keys += ["SYNTH_POWER", "RTL_POWER"]
-        if args.per_tile:
-            dry_env_keys += ["PER_TILE_POWER"]
         if args.memtile_power:
             dry_env_keys += ["MEMTILE_POWER"]
         if env.get("APP_BUNDLE"):
@@ -1682,7 +1651,7 @@ MANIFEST_FILE = "build_manifest.json"
 # rebuilds a done workspace whose recorded values differ.
 BUILD_ENV_KEYS = ("LAKE_SPEC_CONFIG", "LAKE_SPEC_MODE", "DUAL_PORT",
                   "USE_NON_SPLIT_FIFOS", "USE_SIM_SRAM", "FLATTEN",
-                  "RTL_POWER", "SYNTH_POWER", "PER_TILE_POWER", "MEMTILE_POWER",
+                  "RTL_POWER", "SYNTH_POWER", "MEMTILE_POWER",
                   "APP_BUNDLE", "LAKE_POND_SPEC_CONFIG", "NO_POND")
 
 _EXPORT_RE = re.compile(r"^export (\w+)=(.*)$")
