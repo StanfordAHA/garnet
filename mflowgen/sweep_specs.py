@@ -110,6 +110,7 @@ import shlex
 import shutil
 import subprocess
 import socket
+import statistics
 import sys
 import threading
 import time
@@ -2405,21 +2406,26 @@ def _pt_setup_wns(ws):
     PT prints in its main library's time unit, which is ps for gf12 (the
     SDC's `set_units -time ns` doesn't change that; the 2026-10-07 smoke run
     reported -1229.256 for a -1.229 ns slack). The report doesn't name the
-    unit, so it's read off the capture edges ("clock <c> (rise edge) ... 1333.000"):
-    no clock here has a period anywhere near 50 ns, so edges above 50 are ps."""
-    slacks, edges = [], []
+    unit, so it's read off the path's time scale: capture edges ("clock <c>
+    (rise edge) ... 1333.000") and `max_delay`/`min_delay` budgets (in2out
+    paths have no clock edge: on the 2026-10-08 dw16 sweep two RV tiles' top
+    100 were all `max_delay 699.900` paths, and with no edge to go by -11.968
+    ps came out as -11.968 ns). No clock here has a period anywhere near 50 ns,
+    so a median above 50 is ps."""
+    slacks, scale = [], []
     for rpt in ws.glob("*-synopsys-pt-timing-signoff/reports/*.timing.setup.rpt"):
         for line in _read_lines(rpt):
             m = re.match(r"^\s*slack\s*\([^)]*\)\s+(-?\d+(?:\.\d+)?)", line)
             if m:
                 slacks.append(float(m.group(1)))
             # the edge time is the last column (Path); earlier ones are Trans/Incr
-            e = re.match(r"^\s*clock \S+ \((?:rise|fall) edge\)\s.*?(\d+(?:\.\d+)?)\s*$", line)
+            e = re.match(r"^\s*(?:clock \S+ \((?:rise|fall) edge\)|max_delay|min_delay)\s.*?(\d+(?:\.\d+)?)\s*$", line)
             if e and float(e.group(1)) > 0:
-                edges.append(float(e.group(1)))
+                scale.append(float(e.group(1)))
     if not slacks:
         return None
-    return round(min(slacks) * (1e-3 if edges and min(edges) > 50 else 1.0), 6)
+    ps = scale and statistics.median(scale) > 50
+    return round(min(slacks) * (1e-3 if ps else 1.0), 6)
 
 
 INNOVUS_WNS_GROUPS = ("all", "reg2reg", "in2reg", "reg2out", "in2out")
