@@ -700,9 +700,13 @@ PASS; fw4 SP 2×2 tile input tracks = the standalone streams word for word
 (1064/1064). lake `pd/thesis` graph materializes (it did NOT before: the
 power sims were fed an undeclared `testbench.sv`) and `make power-test-gen`
 passes on a 2-D max_extent-64 spec.
-NOT run here: gf12 synth/signoff netlists, gen_sram `sram.v`, adk cell models,
-ptpx (no ADK) and the docker path — check the first build-machine run's
-`*-memtile-power-sim-*/logs/sim.log` PASS lines and power reports.
+**On gf12 (dw16 sweep, zip `NEW_SWEEP_r8cad-gf12_20261009-132919`, checked
+2026-10-09):** 172 configs (static + RV). All 368 power sims PASS (172 synth
+× 2 variants + 12 PnR × 2). All 368 PT runs are 100% annotated with no SDC
+errors. Synth-level active/idle is 3.4–15.9× (median 6.7); PnR-level is
+4.3–8.1×. Idle is 0.55–3.5 mW at synth; active is 4.8–22 mW. The window is
+1000 cycles, except two short-domain specs (235 / 272 cycles). The docker
+path is still unexercised.
 
 **Local generic power, end to end (2026-10-06, freepdk45, SRAM as flops,
 100 MHz, DC netlist, gate-level sim, PT; 100% nets annotated).** Idle / active
