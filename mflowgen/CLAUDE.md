@@ -316,6 +316,23 @@ has them, else the fit mean, else 1.0; per-row `tile_sram_pnr_over_synth_used`).
 Synthetic check with 0.970-0.980 ratios: held-out error 0.35% vs 0.76%
 uncalibrated, and no longer all-positive.
 
+**Result (zip `NEW_SWEEP_r8cad-gf12_20261009-213941_slim`, 2026-10-09):** all
+172 PASS (power sims, 100% SAIF annotation, SDC read, SRAM period all clean;
+fix-pt-sdc folded 46–65 lines per PnR tile, 0 left). The zip's CSVs are the
+corrected ones (reproduce byte-for-byte with `--correlate-only` at cbfac590).
+Held-out error: total area 0.38% mean / 0.81% max, logic 1.01 / 1.61%, idle and
+active power ~3 / 6%. Leave-one-out over all 12 PnR builds agrees: per-mode
+direct total-area fit ≤0.83% (the via-logic estimate doesn't beat it), power
+≤6.3% active / ≤7.5% static idle; the pooled fit is much worse for power (11.8%).
+**Tile RTL was generated at 8 lake commits** (gen_rtl takes `origin/THESIS` at
+RTL time and the sweep spanned two days). The only RTL-changing one is
+`8748240d` (RV comparison-network wrap fix, dims 2/4/8): all 9 dims-2 RV configs
+and 5 of 9 dims-4 RV configs predate it (+6% comparison network, +0.84% tile
+area on the measured dims-4 pair, power identical), including held-out
+`..._dim4_msw1024_rv`. garnet RTL generation is the same across the two garnet
+commits used (fb50802c, ecb52e48). Ingested per block by lake
+`THESIS/pipeline/tile_sweep.py` (lake CLAUDE.md §1.8).
+
 ### Whole-graph smoke run: one spec, standalone + tile (2026-10-07)
 
 To check the flow end to end before a big sweep (user request), one static
