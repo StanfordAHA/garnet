@@ -348,8 +348,17 @@ after pulling garnet. Regenerated: held-out |err| total area 0.38% (max
 0.81%), via_logic 0.61% (was 1.10%; max 0.82%), logic 1.01%, idle power
 3.11% (max 5.97%), active 3.09% (max 5.85%); fw4_dp_4x4_rv is extrapolated
 (total area, active power). PnR timing: PT PBA WNS -6 to -49 ps, mostly in2out
-`max_delay` paths but reg2reg too (PBA to -24.6 ps on fw4 dp 4×4 RV; GBA
--3 to -40 ps on 9 of 12); PT hold violations on 3 tiles are only the clk→clk_out
+feed-throughs (config bus, flush, SB ready→valid; `max_delay` 699.9 ps). PBA
+reg2reg misses only on 4 tiles (-0.9/-1.1/-9.2/-17.4 ps; GBA -3 to -40 on 9
+of 12). The -24.6 / -14.0 are in2reg (`stall`/`flush` → SB FIFO); I first
+miscounted them as reg2reg, because PT prints short port names' "(input
+port)" on the name's line. Synth critical paths (Genus top-100 of all 172,
+2026-10-11): every config closes at 0 ps (one +1). Static tiles are limited
+by the `flush` input's fan-out to schedule-gen / address-gen / FIFO
+registers (79 of 89). RV tiles are limited by config registers → address-gen
+registers (70 of 83). Real datapath paths are under 1% of the top 100, so the
+limits are IO budgets and quasi-static config/flush, not the memory datapath.
+PT hold violations on 3 tiles are only the clk→clk_out
 feed-through (-0.5 to -16.5 ps). Innovus: verify_drc 1000 everywhere (the
 edge-blockage artifact, see smoke run); VSS opens 9 on sp tiles, but 109/110 on
 fw2 dp 2×2 and 214 on fw4 dp 4×4 RV.
