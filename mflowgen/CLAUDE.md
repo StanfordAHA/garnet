@@ -630,9 +630,13 @@ sits in the CGRA. `MEMTILE_POWER=True` (set by the flag) adds to the graph:
   (`get_route_bitstream`), core config via `configure_placement` with the
   spec's `gen_bitstream` forced to `over=True` (our program is already
   port-level), merged per address with gemstone `compress_config_data`.
-  Routing: a 16-bit spec port is one 17-bit core pin -> input k on WEST
-  track k, output k on EAST track k (pipeline reg bypassed). Any other data
-  width (dw 8/32/64 thesis points, ~20% of the set) is BIT-BLASTED by
+  Routing: since garnet e30c6792 (2026-10-11) the fabric is built at the
+  spec's data width, so every spec port is one (dw+1)-bit core pin on the
+  fabric's data track (`max(ic.get_bit_widths())`, e.g. B33 at dw32) ->
+  input k on WEST track k, output k on EAST track k (pipeline reg bypassed);
+  input_data.hex digits and the tb `stim` width follow the track width.
+  Bit-blasting is kept only for tile RTL built before e30c6792: there a
+  non-16-bit port (dw 8/32/64 thesis points, ~20% of the set) was split by
   MemoryTileBuilder onto 1-bit core pins `port_<i>_<bit>` (+ 1-bit
   `port_<i>_valid/_ready`) -> data bits spread over the 20 1-bit tracks
   (shared once they run out: correlated but toggling), valid/ready pins on one
@@ -640,8 +644,8 @@ sits in the CGRA. `MEMTILE_POWER=True` (set by the flag) adds to the graph:
   free 1-bit SB_OUTs, interleaved across ports, the rest unobserved. Unused SB
   outputs and CBs whose default source is a random track get their select
   moved to a static one -- an undriven track, else the track held at 1
-  (bit-blasted specs drive nearly every 1-bit track) -- select only, no RV
-  `_enable`; any left on a random source are listed as `unquieted_muxes`
+  (old bit-blasted tiles drive nearly every 1-bit track) -- select only, no
+  RV `_enable`; any left on a random source are listed as `unquieted_muxes`
   in power_tests.json.
 - `memtile-power-sim-{synth,pnr}-{idle,active}` (`common/memtile-power-sim/`):
   xrun (or VCS, param `tool`) on the Genus netlist / signoff `design.vcs.v` +
@@ -663,9 +667,9 @@ stimulus (routes, valid/ready, data); only the spec program differs, so
 active − idle is the memory's own work.
 - **input data** = a fresh random `data_width`-bit word per spec input port
   per cycle from flush release (`input_streams`, `input_data.hex`, read by
-  the tb; track-major). 16-bit ports: the word on the 17-bit track (bit 16 =
-  unused comply_17 bit, 0); bit-blasted ports: bit b of the word on its
-  track (a shared track carries its first pin's bit).
+  the tb; track-major). The word goes on the port's (dw+1)-bit track (bit dw =
+  unused comply_17 bit, 0). On pre-e30c6792 bit-blasted ports, bit b of the
+  word goes on its track (a shared track carries its first pin's bit).
 - **idle** = the empty application (tile_en=1, lakespec mode, all controllers
   cleared) with the stimulus applied: no port fires, every switch-box data
   output must stay quiet. (An unconfigured tile — tile_en=0 — is NOT
@@ -702,7 +706,8 @@ switching,leakage,total}_power` (PT report units) + `*_active_over_idle`.
 
 Validated on /aha (2026-10-01, tile RTL from garnet.py `--use_sim_sram`):
 idle + active PASS for 21 spec×mode points -- static and RV; SP and DP; fw
-1/2/4/8; 1×1, 2×2, 4×4; dw 8/16/32/64 (bit-blasted); dims 1/2/4/6 with
+1/2/4/8; 1×1, 2×2, 4×4; dw 8/16/32/64 (bit-blasted, pre-e30c6792 RTL; the
+whole-word tracks were checked by a16b3973 on dw 8/32/64); dims 1/2/4/6 with
 max_extent 64/256 and max_sequence_width 64 -- under xrun (VCS too for fw4
 2×2: same results, SAIF root `testbench/dut`, 1000-cycle window). Active
 outputs stream at the program's rate (16-bit outputs ~980/1000 cycles at P=fw)
