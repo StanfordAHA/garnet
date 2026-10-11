@@ -287,3 +287,18 @@ addStripe -nets $power_nets -layer $pmesh_bot -direction horizontal \
 if $::env(PWR_AWARE) {
 sroute -allowJogging 0 -allowLayerChange 0 -connect  {secondaryPowerPin} -secondaryPinNet VDD -powerDomains TOP
 }
+
+#-------------------------------------------------------------------------
+# Remove floating M3 stripe pieces
+#-------------------------------------------------------------------------
+# The SRAM M3 PG-net-only halo (Tile_MemCore custom-init floorplan.tcl) cuts
+# the M3 stripes over each macro. A macro that reaches within a row of the
+# core edge (the tall dual-port SRAMs) leaves stripe pieces between the halo
+# and the edge that cross no followpin: they float, 101-206 verifyConnectivity
+# opens per dual-port Tile_MemCore (pg_diag 2026-10-10). Only wires with no
+# connection at all are removed, so a design without them is unchanged.
+
+set M3_name [dbGet [dbGetLayerByZ 3].name]
+if {[catch {editTrim -type float -nets $power_nets -layers $M3_name} trim_err]} {
+  puts "WARNING: editTrim of floating $M3_name power stripes failed: $trim_err"
+}
