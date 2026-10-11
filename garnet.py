@@ -15,7 +15,7 @@ import json
 import archipelago
 import archipelago.power
 import archipelago.io
-from lassen.sim import PE_fc as lassen_fc
+from lassen.sim import PE_fc as lassen_fc, gen_PE_fc
 
 from daemon.daemon import GarnetDaemon
 
@@ -56,6 +56,13 @@ class Garnet(Generator):
         args.config_data_width = self.config_data_width
 
         self.ready_valid = not args.dense_only
+        # Data track width: the GLB/CGRA word (lake spec data_width, default 16)
+        # plus the ready-valid bit
+        self.data_width = args.glb_params.cgra_data_width
+        self.data_track_width = self.data_width + 1 if self.ready_valid else self.data_width
+        # The mapper (MetaMapper, mapper/netlist_util) works at the fabric's data width
+        from metamapper.data_width import set_data_width
+        set_data_width(self.data_width)
         # size
         self.width = args.width
         self.height = args.height
@@ -441,9 +448,10 @@ class Garnet(Generator):
         outputs = []
         for _, net in netlist.items():
             for blk_id, port in net:
-                if port in ("io2f_16", "io2f_17"):
+                # io2f_<w> / f2io_<w>: data IO at any track width (16, 17, ...)
+                if port.startswith("io2f_") and port[5:].isdigit() and port != "io2f_1":
                     inputs.append(blk_id)
-                elif port in ("f2io_16", "f2io_17"):
+                elif port.startswith("f2io_") and port[5:].isdigit() and port != "f2io_1":
                     outputs.append(blk_id)
                 elif port == "io2f_1":
                     inputs.append(blk_id)
@@ -461,9 +469,9 @@ class Garnet(Generator):
         for blk_id in inputs:
             x, y = placement[blk_id]
             if self.ready_valid:
-                bit_width = 17
+                bit_width = self.data_track_width
             elif blk_id[0] == "I":
-                bit_width = 16
+                bit_width = self.data_width
             else:
                 bit_width = 1
             name = f"glb2io_{bit_width}_X{x:02X}_Y{y:02X}"
@@ -477,9 +485,9 @@ class Garnet(Generator):
         for blk_id in outputs:
             x, y = placement[blk_id]
             if self.ready_valid:
-                bit_width = 17
+                bit_width = self.data_track_width
             elif blk_id[0] == "I":
-                bit_width = 16
+                bit_width = self.data_width
             else:
                 bit_width = 1
             name = f"io2glb_{bit_width}_X{x:02X}_Y{y:02X}"
@@ -529,6 +537,25 @@ class Garnet(Generator):
         self.pes_with_packed_ponds = {pe: pond for pond, pe in packed_ponds.items()}
 
 
+    def check_app_data_width(self, app):
+        """The app's data ports must be this fabric's data width (the lake spec's data_width).
+        The compiler took its width from the lake collateral; a collateral from another spec
+        (or none: 16) gives a netlist the fabric cannot carry."""
+        with open(app) as f:
+            design = json.load(f)
+        top = design.get("top")
+        if not top:
+            return
+        ns, mod = top.split(".", 1)
+        port_type = design["namespaces"][ns]["modules"][mod]["type"]
+        widths = {t[1] for _, t in port_type[1]
+                  if isinstance(t, list) and t[0] == "Array" and t[1] > 1}
+        if widths and self.data_width not in widths:
+            raise RuntimeError(
+                f"{app}: the app's data ports are {sorted(widths)} bits wide, but this CGRA's "
+                f"data width is {self.data_width} (lake spec data_width). Recompile the app "
+                f"(`aha map`) with the same spec's collateral (--collateral or LAKE_SPEC_CONFIG).")
+
     def load_netlist(self, app, load_only, pipeline_input_broadcasts,
                      input_broadcast_branch_factor, input_broadcast_max_leaves, pipeline_output, use_dense_ready_valid=False):
 
@@ -544,8 +571,9 @@ class Garnet(Generator):
         from metamapper.io_tiles import IO_fc, BitIO_fc
 
         app_dir = os.path.dirname(app)
+        self.check_app_data_width(app)
 
-        if self.pe_fc == lassen_fc:
+        if self.pe_fc in (lassen_fc, gen_PE_fc(self.data_width)):
             pe_header = f"{app_dir}/lassen_header.json"
         else:
             pe_header = f"{app_dir}/pe_header.json"
@@ -563,7 +591,7 @@ class Garnet(Generator):
         cutil.load_libs(["cgralib", "commonlib", "float"])
         c.run_passes(["flatten"])
 
-        all_nodes = gen_CoreIRNodes(16)
+        all_nodes = gen_CoreIRNodes(self.data_width)
         arch_nodes = Nodes("Arch")
 
         putil.load_and_link_peak(
@@ -725,17 +753,11 @@ class Garnet(Generator):
             netlist_info['netlist'][netlist_id] = connections_list
 
         pond_remap = {}
-        if self.ready_valid:
-            pond_remap["data_in_pond_0"] = "PondTop_input_width_17_num_0"
-            pond_remap["data_out_pond_0"] = "PondTop_output_width_17_num_0"
-            pond_remap["data_in_pond_1"] = "PondTop_input_width_17_num_1"
-            pond_remap["data_out_pond_1"] = "PondTop_output_width_17_num_1"
-
-        else:
-            pond_remap["data_in_pond_0"] = "PondTop_input_width_16_num_0"
-            pond_remap["data_out_pond_0"] = "PondTop_output_width_16_num_0"
-            pond_remap["data_in_pond_1"] = "PondTop_input_width_16_num_1"
-            pond_remap["data_out_pond_1"] = "PondTop_output_width_16_num_1"
+        w = self.data_track_width
+        pond_remap["data_in_pond_0"] = f"PondTop_input_width_{w}_num_0"
+        pond_remap["data_out_pond_0"] = f"PondTop_output_width_{w}_num_0"
+        pond_remap["data_in_pond_1"] = f"PondTop_input_width_{w}_num_1"
+        pond_remap["data_out_pond_1"] = f"PondTop_output_width_{w}_num_1"
 
         if not self.amber_pond:
             for name, mapping in netlist_info["netlist"].items():
@@ -743,6 +765,17 @@ class Garnet(Generator):
                     (inst_name, port_name) = mapping[i]
                     if port_name in pond_remap:
                         mapping[i] = (inst_name, pond_remap[port_name])
+
+        # The mapper labels data IO ports io2f_17/f2io_17 (io2f_16/f2io_16 dense); the IO
+        # tile's ports are named after the data track width
+        if self.data_width != 16:
+            io_remap = {f"{d}_{w}{s}": f"{d}_{self.data_track_width}{s}"
+                        for d in ("io2f", "f2io") for w in (16, 17) for s in ("", "_0", "_1", "_2", "_3")}
+            for name, mapping in netlist_info["netlist"].items():
+                for i in range(len(mapping)):
+                    (inst_name, port_name) = mapping[i]
+                    if port_name in io_remap:
+                        mapping[i] = (inst_name, io_remap[port_name])
 
         self.pack_ponds(netlist_info)
 
@@ -1116,6 +1149,7 @@ def parse_args():
     if args.standalone and not args.interconnect_only:
         raise Exception("--standalone must be specified with "
                         "--interconnect-only as well")
+    # lassen PE at the fabric data width (16 -> lassen_fc itself)
     args.pe_fc = lassen_fc
     if args.pe:
         from peak_gen.peak_wrapper import wrapped_peak_class
@@ -1139,6 +1173,7 @@ def parse_args():
         io_sides = [IOSide.North]
 
     from global_buffer.design.global_buffer_parameter import gen_global_buffer_params
+    from cgra.util import lake_spec_data_width
 
     num_cgra_cols_including_io = args.width
 
@@ -1156,6 +1191,7 @@ def parse_args():
         num_prr=args.width // 2,
         glb_tile_mem_size=args.glb_tile_mem_size,
         bank_data_width=64,
+        cgra_data_width=lake_spec_data_width(args.lake_spec_config) if args.lake_spec_config else 16,
         cfg_addr_width=32,
         cfg_data_width=32,
         cgra_axi_addr_width=13,
@@ -1165,6 +1201,10 @@ def parse_args():
         include_multi_bank_hw=args.include_multi_bank_hw,
         include_mu_glb_hw=args.include_mu_glb_hw,
         include_glb_ring_switch=include_glb_ring_switch)
+
+    # lassen PE at the fabric data width (16 -> lassen_fc itself)
+    if args.pe_fc is lassen_fc:
+        args.pe_fc = gen_PE_fc(args.glb_params.cgra_data_width)
 
 
     # for a in vars(args).items(): print(f'arg {a} has type {type(a)}')

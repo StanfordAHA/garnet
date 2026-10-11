@@ -58,7 +58,7 @@ from lake.top.fiber_access import FiberAccess
 from lake.modules.onyx_pe import OnyxPE
 from lake.modules.onyx_dense_pe import OnyxDensePE
 from lake.top.reduce_pe_cluster import ReducePECluster
-from lassen.sim import PE_fc
+from lassen.sim import PE_fc, gen_PE_fc
 import magma as m
 from peak import family
 from lake.spec.spec_memory_controller import SpecMemoryController, build_four_port_wide_fetch_rv, \
@@ -66,7 +66,19 @@ from lake.spec.spec_memory_controller import SpecMemoryController, build_four_po
 import os
 
 
-def load_pond_spec_params(rv):
+def lake_spec_data_width(path=None):
+    """Data width of the lake spec MemCore (path, else LAKE_SPEC_CONFIG), 16 without
+    one. The CGRA fabric is built at this width: data tracks of data_width bits plus
+    the ready-valid bit, and the PE, IO, pond and GLB words to match."""
+    path = path if path is not None else os.environ.get("LAKE_SPEC_CONFIG", "")
+    if not path:
+        return 16
+    import json
+    with open(path) as f:
+        return json.load(f).get("data_width", 16)
+
+
+def load_pond_spec_params(rv, data_width=16):
     """Pond geometry from LAKE_POND_SPEC_CONFIG (garnet.py --lake-pond-spec-config), or
     None when unset. The JSON holds lake build_cgra_pond geometry keys ({} = default);
     lake validates them, the same factory generates the pond's compiler collateral
@@ -81,8 +93,10 @@ def load_pond_spec_params(rv):
         resolved = resolve_cgra_pond_params(params, rv=rv)
     except ValueError as e:
         raise ValueError(f"{path}: {e}") from None
-    if resolved["data_width"] != 16:
-        raise ValueError(f"{path}: pond data_width must be 16 to match the CGRA fabric")
+    if "data_width" not in params:
+        params["data_width"] = data_width
+    elif params["data_width"] != data_width:
+        raise ValueError(f"{path}: pond data_width must be {data_width} to match the CGRA fabric")
     return params
 
 
@@ -224,13 +238,19 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
 
     true_dual_port = bool(lake_spec_config) and dual_port
 
-    # currently only add 16bit io cores
+    # Fabric data width: the lake spec's data_width (16 without a spec). Data tracks
+    # are fabric_dw bits, plus 1 on the ready-valid fabric (16 -> [1, 17]).
+    fabric_dw = lake_spec_data_width() if lake_spec_config else 16
+    if fabric_dw != 16:
+        assert scgra, "the dense-only fabric is 16-bit (it does not build the lake spec MemCore)"
+        assert not using_matrix_unit, "the matrix-unit IO is 16-bit"
+
     # bit_widths = [1, 16, 17]
     ready_valid = scgra
     if ready_valid:
-        bit_widths = [1, 17]
+        bit_widths = [1, fabric_dw + 1]
     else:
-        bit_widths = [1, 16]
+        bit_widths = [1, fabric_dw]
     track_length = 1
 
     fifo_depth = 2
@@ -253,7 +273,7 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
     clk_enable = True
     physical_sram = not use_sim_sram
 
-    pe_child = PE_fc(family.MagmaFamily())
+    pe_child = gen_PE_fc(fabric_dw)(family.MagmaFamily())
     m.compile(f"garnet_PE",
               pe_child,
               output="coreir-verilog",
@@ -297,10 +317,13 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
         else:
             strg_ub = StrgUBVec(mem_width=mem_width, mem_depth=mem_depth, comply_with_17=True)
 
+        # ROM/RAM data and address arrive on the data tracks
         if use_rv_mem_pond:
-            strg_ram = StrgRAMRV(memory_width=mem_width, memory_depth=mem_depth, comply_with_17=True)
+            strg_ram = StrgRAMRV(data_width=fabric_dw, addr_width=fabric_dw,
+                                 memory_width=mem_width, memory_depth=mem_depth, comply_with_17=True)
         else:
-            strg_ram = StrgRAM(memory_width=mem_width, memory_depth=mem_depth, comply_with_17=True)
+            strg_ram = StrgRAM(data_width=fabric_dw, addr_width=fabric_dw,
+                               memory_width=mem_width, memory_depth=mem_depth, comply_with_17=True)
 
         stencil_valid = StencilValid()
 
@@ -334,23 +357,24 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
             controllers.append(strg_ram)
             controllers.append(stencil_valid)
 
-        isect = Intersect(fifo_depth=fifo_depth, perf_debug=perf_debug)
+        isect = Intersect(data_width=fabric_dw, fifo_depth=fifo_depth, perf_debug=perf_debug)
 
-        crd_drop = CrdDrop(fifo_depth=fifo_depth, lift_config=True, perf_debug=perf_debug)
+        crd_drop = CrdDrop(data_width=fabric_dw, fifo_depth=fifo_depth, lift_config=True, perf_debug=perf_debug)
 
-        locator = Locator(fifo_depth=fifo_depth, perf_debug=perf_debug)
+        locator = Locator(data_width=fabric_dw, fifo_depth=fifo_depth, perf_debug=perf_debug)
 
         # crd_hold = CrdHold( fifo_depth=fifo_depth, lift_config=True, perf_debug=perf_debug)
 
-        reduce_pe_cluster = ReducePECluster(fifo_depth=fifo_depth, perf_debug=perf_debug, pe_prefix=pe_prefix)
+        reduce_pe_cluster = ReducePECluster(data_width=fabric_dw, fifo_depth=fifo_depth, perf_debug=perf_debug,
+                                            pe_prefix=pe_prefix)
 
-        repeat = Repeat(fifo_depth=fifo_depth, perf_debug=perf_debug)
+        repeat = Repeat(data_width=fabric_dw, fifo_depth=fifo_depth, perf_debug=perf_debug)
 
-        rsg = RepeatSignalGenerator(passthru=False, fifo_depth=fifo_depth, perf_debug=perf_debug)
+        rsg = RepeatSignalGenerator(data_width=fabric_dw, passthru=False, fifo_depth=fifo_depth, perf_debug=perf_debug)
 
-        stream_arb = StreamArbiter(fifo_depth=fifo_depth, perf_debug=perf_debug)
+        stream_arb = StreamArbiter(data_width=fabric_dw, fifo_depth=fifo_depth, perf_debug=perf_debug)
 
-        pass_through = PassThrough(fifo_depth=fifo_depth, perf_debug=perf_debug)
+        pass_through = PassThrough(data_width=fabric_dw, fifo_depth=fifo_depth, perf_debug=perf_debug)
 
         controllers_2 = []
 
@@ -365,6 +389,7 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
         controllers_2.append(pass_through)
 
         altcore = [(CoreCombinerCore, {'controllers_list': controllers_2,
+                                       'data_width': fabric_dw,
                                        'use_sim_sram': not physical_sram,
                                        'tech_map_name': tm,
                                        'pnr_tag': "p",
@@ -377,6 +402,7 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
                                        'true_dual_port': true_dual_port,
                                        'rf': rf}),
                    (CoreCombinerCore, {'controllers_list': controllers_2,
+                                       'data_width': fabric_dw,
                                        'use_sim_sram': not physical_sram,
                                        'tech_map_name': tm,
                                        'pnr_tag': "p",
@@ -389,6 +415,7 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
                                        'true_dual_port': true_dual_port,
                                        'rf': rf}),
                    (CoreCombinerCore, {'controllers_list': controllers_2,
+                                       'data_width': fabric_dw,
                                        'use_sim_sram': not physical_sram,
                                        'tech_map_name': tm,
                                        'pnr_tag': "p",
@@ -401,6 +428,7 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
                                        'true_dual_port': true_dual_port,
                                        'rf': rf}),
                    (CoreCombinerCore, {'controllers_list': controllers,
+                                       'data_width': fabric_dw,
                                        'use_sim_sram': not physical_sram,
                                        'tech_map_name': tm,
                                        'pnr_tag': "m",
@@ -439,6 +467,7 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
         physical_sram = not use_sim_sram
 
         altcore = [(CoreCombinerCore, {'controllers_list': controllers_2,
+                                       'data_width': fabric_dw,
                                        'use_sim_sram': not physical_sram,
                                        'tech_map_name': tm,
                                        'pnr_tag': "p",
@@ -452,6 +481,7 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
                                        'true_dual_port': true_dual_port,
                                        'rf': rf}),
                    (CoreCombinerCore, {'controllers_list': controllers_2,
+                                       'data_width': fabric_dw,
                                        'use_sim_sram': not physical_sram,
                                        'tech_map_name': tm,
                                        'pnr_tag': "p",
@@ -465,6 +495,7 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
                                        'true_dual_port': true_dual_port,
                                        'rf': rf}),
                    (CoreCombinerCore, {'controllers_list': controllers_2,
+                                       'data_width': fabric_dw,
                                        'use_sim_sram': not physical_sram,
                                        'tech_map_name': tm,
                                        'pnr_tag': "p",
@@ -478,6 +509,7 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
                                        'true_dual_port': true_dual_port,
                                        'rf': rf}),
                    (CoreCombinerCore, {'controllers_list': controllers,
+                                       'data_width': fabric_dw,
                                        'use_sim_sram': not physical_sram,
                                        'tech_map_name': tm,
                                        'pnr_tag': "m",
@@ -514,7 +546,11 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
     # PE-tile pond. Default: the RV spec pond (64 B, 4 dims) in RV mode, else the legacy
     # LakeTop PondCore. LAKE_POND_SPEC_CONFIG opts in to a lake-spec pond in both modes,
     # sized from the JSON: build_pond_rv in RV mode, build_pond (static) otherwise.
-    pond_spec_params = load_pond_spec_params(rv=use_rv_mem_pond) if add_pond else None
+    pond_spec_params = load_pond_spec_params(rv=use_rv_mem_pond, data_width=fabric_dw) if add_pond else None
+    if add_pond and pond_spec_params is None and fabric_dw != 16:
+        # The legacy PondCore and the default RV pond are 16-bit: use the spec pond
+        # (static build_pond / build_pond_rv) at the fabric width
+        pond_spec_params = {"data_width": fabric_dw}
     static_spec_pond = pond_spec_params is not None and not use_rv_mem_pond
 
     def make_pond():
@@ -524,7 +560,7 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
         pond_spec = build_cgra_pond(pond_spec_params, rv=use_rv_mem_pond, comply_17=ready_valid)
         pond_cap, pond_data_width = geom["storage_capacity"], geom["data_width"]
         # fifo_depth 0: the tile FIFOs are passthroughs (accumulation loops, static timing)
-        return CoreCombinerCore(data_width=16,
+        return CoreCombinerCore(data_width=fabric_dw,
                                 controllers_list=[SpecMemoryController(spec=pond_spec)],
                                 use_sim_sram=True,
                                 tech_map_name=tm,
@@ -580,7 +616,8 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
                     or y in range(y_min) \
                     or y in range(y_max + 1, height):
                 if ready_valid:
-                    core = IOCoreReadyValid(allow_bypass=False, include_E64_HW=include_E64_hw)
+                    core = IOCoreReadyValid(data_width=fabric_dw, tracks_supported=[1, fabric_dw + 1],
+                                            allow_bypass=False, include_E64_HW=include_E64_hw)
                 elif use_io_valid:
                     core = IOCoreValid(config_addr_width=reg_addr_width,
                                        config_data_width=config_data_width)
@@ -630,7 +667,7 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
 
     # pond may have inter-core connection
     if add_pond:
-        bit_width_str = 17 if ready_valid else 16
+        bit_width_str = bit_widths[-1]
         # remap
         if intercore_mapping is not None:
             if use_rv_mem_pond:
@@ -706,7 +743,7 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
     # outputs.remove("io2glb_17_valid")
 
     if add_pond:
-        bit_width_str = 17 if ready_valid else 16
+        bit_width_str = bit_widths[-1]
         for core in additional_core.values():
             if isinstance(core, list):
                 for actual_core in core:
@@ -764,7 +801,7 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
         pipeline_regs = []
     ics = {}
 
-    bit_width_str = 17 if ready_valid else 16
+    bit_width_str = bit_widths[-1]
     track_list = list(range(num_tracks))
 
     io_in = {"f2io_1": [0], f"f2io_{bit_width_str}": [0], "f2io_1_0": [0], f"f2io_{bit_width_str}_0": [0], f"f2io_{bit_width_str}_1": [0], f"f2io_{bit_width_str}_2": [0], f"f2io_{bit_width_str}_3": [0]}

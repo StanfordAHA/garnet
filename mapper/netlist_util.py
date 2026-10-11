@@ -1,3 +1,4 @@
+from metamapper.data_width import data_width  # garnet sets it to the fabric width
 import os
 import math
 import re
@@ -61,9 +62,9 @@ class CreateBuses(Visitor):
             self.bid_to_width[bid] = 1
             self.i += 1
             return bid
-        elif adt == BitVector[16]:
+        elif adt == BitVector[data_width()]:
             bid = f"e{self.i}"
-            self.bid_to_width[bid] = 17 if self.ready_valid else 16
+            self.bid_to_width[bid] = data_width() + 1 if self.ready_valid else data_width()
             self.i += 1
             return bid
         elif issubclass(adt, BitVector):
@@ -284,7 +285,7 @@ class CreateIDs(Visitor):
         if isinstance(child, Input):
             if node.type == Bit:
                 id = f"i"
-            elif node.type == BitVector[16]:
+            elif node.type == BitVector[data_width()]:
                 if "MU" in child.iname:
                     node_name_parse_list = child.iname.split("stencil_")[2].split("_read")
                     if len(node_name_parse_list) > 1:
@@ -324,7 +325,7 @@ class CreateIDs(Visitor):
         Visitor.generic_visit(self, node)
         if node.type == Bit:
             id = f"r"
-        elif node.type == BitVector[16]:
+        elif node.type == BitVector[data_width()]:
             id = f"r"
         else:
             raise NotImplementedError(f"{node}, {node.type}")
@@ -368,23 +369,23 @@ def flatten_adt(adt, path=()):
 
 
 class IO_Input_t(Product):
-    io2f_16 = BitVector[16]
+    io2f_16 = BitVector[data_width()]
     io2f_1 = Bit
 
 
 class IO_Input_t_rv(Product):
-    io2f_17 = BitVector[16]
-    io2f_17_0 = BitVector[16]
-    io2f_17_1 = BitVector[16]
-    io2f_17_2 = BitVector[16]
-    io2f_17_3 = BitVector[16]
-    mu2io_17_0 = BitVector[16]
-    mu2io_17_1 = BitVector[16]
+    io2f_17 = BitVector[data_width()]
+    io2f_17_0 = BitVector[data_width()]
+    io2f_17_1 = BitVector[data_width()]
+    io2f_17_2 = BitVector[data_width()]
+    io2f_17_3 = BitVector[data_width()]
+    mu2io_17_0 = BitVector[data_width()]
+    mu2io_17_1 = BitVector[data_width()]
     io2f_1 = Bit
 
 
 class IO_Output_t(Product):
-    f2io_16 = BitVector[16]
+    f2io_16 = BitVector[data_width()]
     f2io_1 = Bit
 
 
@@ -446,7 +447,7 @@ class FlattenIO(Visitor):
                 child_t = self.opath_to_type[new_path]
                 if child_t == Bit:
                     combine_children = [
-                        Constant(type=BitVector[16], value=Unbound),
+                        Constant(type=BitVector[data_width()], value=Unbound),
                         new_child,
                     ]
                 else:
@@ -575,7 +576,7 @@ RegisterSource, RegisterSink = Common.create_dag_node(
     "Register",
     1,
     True,
-    static_attrs=dict(input_t=BitVector[16], output_t=BitVector[16]),
+    static_attrs=dict(input_t=BitVector[data_width()], output_t=BitVector[data_width()]),
 )
 BitRegisterSource, BitRegisterSink = Common.create_dag_node(
     "Register", 1, True, static_attrs=dict(input_t=Bit, output_t=Bit)

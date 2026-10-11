@@ -38,7 +38,11 @@ class IOCoreReadyValid(LakeCoreBase):
         self.use_almost_full = use_almost_full
         self.include_E64_HW = include_E64_HW
 
+        # Data track width: data_width + the ready-valid bit (17)
+        self.data_track = max(tracks_supported)
+
         cache_key = (self.data_width,
+                     tuple(tracks_supported),
                      self.config_data_width,
                      self.config_addr_width,
                      self.allow_bypass,
@@ -144,12 +148,12 @@ class IOCoreReadyValid(LakeCoreBase):
                 ]
         else:
             configs_pre = [
-                ('glb2io_17_valid_reg_sel', 1),
-                ('glb2io_17_valid_reg_value', 1),
+                (f'glb2io_{self.data_track}_valid_reg_sel', 1),
+                (f'glb2io_{self.data_track}_valid_reg_value', 1),
                 ('glb2io_1_valid_reg_sel', 1),
                 ('glb2io_1_valid_reg_value', 1),
-                ('io2glb_17_ready_reg_sel', 1),
-                ('io2glb_17_ready_reg_value', 1),
+                (f'io2glb_{self.data_track}_ready_reg_sel', 1),
+                (f'io2glb_{self.data_track}_ready_reg_value', 1),
                 ('io2glb_1_ready_reg_sel', 1),
                 ('io2glb_1_ready_reg_value', 1),
             ]

@@ -1,4 +1,4 @@
-from kratos import Generator, always_ff, always_comb, posedge, const, resize, ext, clog2, clock_en
+from kratos import Generator, always_ff, always_comb, posedge, const, resize, ext, clog2, clock_en, IfStmt
 import kratos as kts
 from global_buffer.design.glb_loop_iter import GlbLoopIter
 from global_buffer.design.glb_sched_gen import GlbSchedGen
@@ -15,7 +15,10 @@ class GlbStoreDma(Generator):
         super().__init__("glb_store_dma")
         self._params = _params
         self.header = GlbHeader(self._params)
-        assert self._params.bank_data_width == self._params.cgra_data_width * 4
+        # A bank word holds `lanes` CGRA words (4 x 16b in a 64b bank)
+        assert self._params.bank_data_width % self._params.cgra_data_width == 0
+        self.lanes = self._params.bank_data_width // self._params.cgra_data_width
+        self.strm_data_sel_width = max(1, self._params.bank_byte_offset - self._params.cgra_byte_offset)
 
         self.clk = self.clock("clk")
         self.reset = self.reset("reset")
@@ -67,7 +70,7 @@ class GlbStoreDma(Generator):
         self.strm_wr_addr_w = self.var("strm_wr_addr_w", width=self._params.glb_addr_width)
         self.last_strm_wr_addr_r = self.var("last_strm_wr_addr_r", width=self._params.glb_addr_width)
         self.strm_wr_en_w = self.var("strm_wr_en_w", width=1)
-        self.strm_data_sel = self.var("strm_data_sel", self._params.bank_byte_offset - self._params.cgra_byte_offset)
+        self.strm_data_sel = self.var("strm_data_sel", self.strm_data_sel_width)
 
         self.bank_addr_match = self.var("bank_addr_match", 1)
         self.bank_wr_en = self.var("bank_wr_en", 1)
@@ -119,6 +122,12 @@ class GlbStoreDma(Generator):
         self.rv_is_addrdata = self.var("rv_is_addrdata", 1)
         self.rv_base_addr = self.var("rv_num_base_addr", self._params.glb_addr_width)
         self.rv_num_data_cnt = self.var("rv_num_data_cnt", self._params.cgra_data_width)
+        # Sparse RV address offset: the stream word, cut to the GLB address width when wider
+        if self._params.cgra_data_width > self._params.glb_addr_width:
+            self.rv_addr_offset = self.var("rv_addr_offset", self._params.glb_addr_width)
+            self.wire(self.rv_addr_offset, self.data_fifo2dma[self._params.glb_addr_width - 1, 0])
+        else:
+            self.rv_addr_offset = self.data_fifo2dma
         self.rv_num_seg_cnt = self.var("rv_num_seg_cnt", 2)  # we would have a max of 2 seg
         self.rv_num_seg_cnt_total = self.var("rv_num_seg_cnt_total", 2)
         self.rv_num_blocks_cnt = self.var("rv_num_blocks_cnt", self._params.axi_data_width)
@@ -148,8 +157,14 @@ class GlbStoreDma(Generator):
         self.add_always(self.qualified_iter_step_valid_comb)
         self.add_always(self.strm_wr_packet_comb)
         self.add_always(self.last_strm_wr_addr_ff)
-        self.add_always(self.strm_data_sel_comb)
-        self.add_always(self.bank_wr_packet_cache_comb)
+        if self.lanes > 1:
+            self.add_always(self.strm_data_sel_comb)
+        else:
+            self.wire(self.strm_data_sel, const(0, 1))
+        if self.lanes == 4:
+            self.add_always(self.bank_wr_packet_cache_comb)
+        else:
+            self.add_bank_wr_packet_cache_lanes()
         self.add_always(self.bank_wr_packet_cache_ff)
         self.add_always(self.bank_wr_packet_logic)
         self.add_always(self.wr_packet_ff)
@@ -553,6 +568,36 @@ class GlbStoreDma(Generator):
                 self.bank_wr_strb_cache_w = self.bank_wr_strb_cache_r
                 self.bank_wr_data_cache_w = self.bank_wr_data_cache_r
 
+    def add_bank_wr_packet_cache_lanes(self):
+        """bank_wr_packet_cache_comb for any lane count: write the stream word into
+        lane strm_data_sel of the cached bank word and set that lane's strobes."""
+        w = self._params.cgra_data_width
+        sw = self.cgra_strb_width
+        comb = self.combinational()
+        comb.add_stmt(self.bank_wr_strb_cache_w.assign(self.bank_wr_strb_cache_r))
+        comb.add_stmt(self.bank_wr_data_cache_w.assign(self.bank_wr_data_cache_r))
+        clear = IfStmt(self.bank_wr_en)
+        clear.then_(self.bank_wr_strb_cache_w.assign(0), self.bank_wr_data_cache_w.assign(0))
+        comb.add_stmt(clear)
+        top = None
+        prev = None
+        for lane in range(self.lanes):
+            stmt = IfStmt(self.strm_data_sel == lane)
+            stmt.then_(self.bank_wr_strb_cache_w[sw * (lane + 1) - 1, sw * lane].assign(
+                           const(self.cgra_strb_value, sw)),
+                       self.bank_wr_data_cache_w[w * (lane + 1) - 1, w * lane].assign(self.strm_wr_data_w))
+            if prev is None:
+                top = stmt
+            else:
+                prev.else_(stmt)
+            prev = stmt
+        if self.lanes > 1:
+            prev.else_(self.bank_wr_strb_cache_w.assign(self.bank_wr_strb_cache_r),
+                       self.bank_wr_data_cache_w.assign(self.bank_wr_data_cache_r))
+        wr = IfStmt(self.strm_wr_en_w)
+        wr.then_(top)
+        comb.add_stmt(wr)
+
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def bank_wr_packet_cache_ff(self):
         if self.reset:
@@ -677,7 +722,7 @@ class GlbStoreDma(Generator):
         if self.reset:
             self.rv_base_addr = 0
         elif self.rv_is_addrdata:
-            self.rv_base_addr = self.current_dma_header["start_addr"] + self.data_fifo2dma
+            self.rv_base_addr = self.current_dma_header["start_addr"] + self.rv_addr_offset
 
     @always_comb
     def data_addr_gen_start_addr_comb(self):

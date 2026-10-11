@@ -1085,6 +1085,108 @@ floorplan, `mode[0]` guard) apply — the pond is flops, no macro.
   tree), not next to itself — pin `GARNET_HOME` to the private copy or the build
   rewrites the shared headers other sessions simulate against.
 
+## Fabric data width follows the spec's `data_width` (2026-10-06)
+
+Before this, a spec with `data_width != 16` built a normal 16/17-bit fabric.
+lake flattened the MemCore's (dw+1)-bit ports into dw+1 single-bit pins on the
+1-bit network: 70 in + 71 out at dw32, a garnet.v of 5.0 MB vs 2.7 MB. So
+**Tile_MemCore synth/PnR numbers for dw 8/32/64 specs built before this change
+measure the wrong tile** (17-bit SB plus a bloated 1-bit SB). Now
+`util_onyx.lake_spec_data_width()` (spec JSON, 16 without one) sets the whole
+fabric:
+
+- tracks `[1, dw+1]` (RV fabric; `[1, dw]` dense-only, which asserts dw == 16);
+  switch-box pins `SB_*_B{dw+1}`, IO `glb2io_/io2glb_/f2io_/io2f_{dw+1}`;
+- PE = lassen `gen_PE_fc(dw)`: the integer PE at dw bits with the same
+  instruction layout (`inst` = 36 + 3·dw bits: 60/84/132/228), and **no bf16
+  FPU / FP-custom units at dw != 16** (FP ops return 0); 16 is `PE_fc` itself;
+- MEM: StrgRAM/StrgRAMRV `data_width=addr_width=dw`; at dw8 the ROM address
+  (8 bits) is zero-extended, so it only reaches the low 256 words;
+- pond: always a spec pond at dw (static `build_pond` / `build_pond_rv`); a
+  `--lake-pond-spec-config` with another `data_width` raises;
+- GLB `cgra_data_width=dw`, `lanes = 64/dw` per bank word (generic lane logic;
+  the 4-lane blocks are kept for dw16). E64 / multi-bank / MU GLB and the
+  matrix-unit IO are 16-bit only (asserted).
+- lake side (token layout, legal widths, config word): lake CLAUDE.md §5.4.
+
+Verified (scratchpad `a16b3973-.../scratchpad`): dw16 garnet.v byte-identical
+to the pre-change tree under `PYTHONHASHSEED=0`, static + rv. Without a fixed
+seed, garnet.v is NOT run-to-run deterministic: the no-spec build reorders
+`scanner_pipe` FSM default assignments even between two runs of one tree, so
+diff seeded builds. dw 8/32/64 static + rv were checked with
+`tests/check_widths.py`, the GLB lanes in Xcelium, the lassen ALU against a
+Python model, and the memtile power tests (whole-word B{dw+1} tracks now).
+
+**Apps on dw 8/32/64 fabrics.** Applied UNCOMMITTED to the shared trees on 2026-10-08
+(Halide-to-Hardware, clockwork, MetaMapper, lassen, garnet, archipelago, aha). The shared
+libHalide and libclkwrk.so were rebuilt. Shared-toolchain checks:
+- 16-bit compile: byte-identical to before.
+- dw32: gaussian RV.
+- dw64: pointwise_wide static.
+- dw8: gaussian8 RV.
+- The shared trees hold the current code (uncommitted). The scratchpad patches
+  `a16b3973-.../scratchpad/p32/patches/*.patch` and the private tree `p32/aha` are the 2026-10-08
+  env-knob version, superseded on 2026-10-10 (see "One source of truth" below).
+- Driver: `s32/e2e2.sh` (`DW=`, `MODE=`, `FW=`, `APP=`, stages; `MAPSPEC=`/`MAPCOLL=` to
+  compile against another spec or collateral). It runs the shared toolchain with a private
+  garnet copy.
+- **Results, bit-accurate:**
+  - dw32: pointwise and pointwise_wide (4×4 static); gaussian static + RV, pointwise RV (8×8).
+  - dw64 (fw2): pointwise and pointwise_wide static + RV, gaussian RV.
+  - dw64 (fw4): gaussian static.
+  - dw8: pointwise8 and gaussian8 static + RV. These are uint8 / bounded-value apps, since a
+    16-bit app's values don't fit in 8 bits.
+- **`pointwise_wide`** computes `uint16((uint32(in)*1000)>>4)`; a 16-bit datapath would get 3528
+  of 4096 pixels wrong.
+- **Static fw=2 line buffers (not a width issue):** static gaussian / conv_3_3 on a **fw=2** spec
+  failed at dw16 and dw64 alike. Both clockwork root causes are fixed in clockwork 9fdfe6bf
+  (pushed; aha mek d413f51), so gaussian static fw2 now passes at dw16 and dw64. See
+  clockwork/CLAUDE.md "Static fw=2 line buffers".
+- **One source of truth: the lake spec's `data_width`** (2026-10-10; this replaced the
+  `CGRA_DATA_WIDTH` env knob, which nothing reads any more):
+  - **Fabric:** garnet builds from `--lake-spec-config` (`lake_spec_data_width`). Tracks are
+    [1, dw+1], or [1, dw] with `--dense-only`, the same as stock's 16/17.
+  - **Compiler:** the spec's lake collateral carries `data_width` at every level (lake
+    `Spec.extract_compiler_information`). Halide (`cgra_data_width()` in `CoreIRCompute.cpp`),
+    clockwork (`cgra_data_width()` in `options.cpp` → `DATAPATH_WIDTH`), MetaMapper
+    (`metamapper.data_width.data_width()`), `hardware_targets.mk` and `raw2txt.py` all read it
+    from `LAKE_COLLATERAL_JSON_MEM`. Without one the width is 16.
+  - **`aha map`:** sets the collateral before the first `make`. That matters because the Halide
+    generator runs in `make compare`/`tree`, before `make map`. With no `--collateral` and
+    `LAKE_SPEC_CONFIG` set, it generates the MEM collateral from that spec, the way the pond
+    collateral comes from `LAKE_POND_SPEC_CONFIG`. It errors if the collateral, spec or pond
+    collateral widths differ. See `aha/util/map.py` `set_lake_collaterals` and
+    `aha/util/data_width.py`.
+  - **PnR:** `Garnet.__init__` calls MetaMapper's `set_data_width(self.data_width)`, so the
+    mapper and `mapper/netlist_util.py` work at the fabric width. `check_app_data_width` refuses
+    an app whose top data ports are a different width. `aha pnr` passes the width to
+    `parse_design_meta.py --data-width`.
+  - **`aha test`:** reads `CGRA_DATA_WIDTH` from the GLB header garnet generated
+    (`global_buffer/header/global_buffer_param.svh`). The testbench compiles that same header.
+  - **Verified 2026-10-10 on the shared toolchain** (s32 tree, driver `s32/e2e2.sh`, which has
+    no env knob):
+    - Compile outputs (gaussian static, dw 8/16/32/64) are byte-identical to the old env-knob
+      toolchain. Two known exceptions: 3ed21ea3's `port_mappings` fix (the old reference
+      lacked it), and at dw8 MetaMapper node-id suffixes. The suffixes come from unsorted rule
+      glob order, and the output is identical once they are normalized.
+    - E2E bit-accurate: gaussian dw32 static + RV, dw64 fw2 static, dw16 static. Both mismatch
+      errors fire.
+- **What changed, per repo:**
+  - Halide: `inst_bitwidth` plus buffer, C-model and data-file widths.
+  - clockwork: `DATAPATH_WIDTH` from the collateral, plus IO/Mem widths.
+  - MetaMapper: `data_width()`, `gen_PE_fc(W)` and header widths.
+  - lassen: `scripts/widen_rewrite_rules.py`. It widened the 51 integer rewrite
+    rules mechanically, and all 51 pass SMT verify against `gen_PE_fc(32)`.
+  - garnet: netlist bus width, IO port renames and the app width check.
+  - archipelago: the STA B17 fallback.
+  - testbench: lanes = 64/dw.
+  - aha: map/pnr/test plumbing (above).
+  - lake: collateral `data_width`.
+- **Default behaviour is unchanged:** at 16 (no spec, or a dw16 spec) the outputs match the
+  stock toolchain, and Halide keeps its native widths.
+- **Width is not a make dependency.** `make clean` the app when switching
+  widths, or stale 16/32-bit artifacts get mixed.
+
 ## Build-machine note
 
 The sweep runs from a **standalone** garnet checkout at

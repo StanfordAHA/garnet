@@ -1,4 +1,4 @@
-from kratos import Generator, always_ff, always_comb, posedge, resize, clog2, ext, const, clock_en
+from kratos import Generator, always_ff, always_comb, posedge, resize, clog2, ext, const, clock_en, IfStmt
 from global_buffer.design.glb_loop_iter import GlbLoopIter
 from global_buffer.design.glb_sched_gen import GlbSchedGen
 from global_buffer.design.glb_addr_gen import GlbAddrGen
@@ -14,7 +14,10 @@ class GlbLoadDma(Generator):
         super().__init__("glb_load_dma")
         self._params = _params
         self.header = GlbHeader(self._params)
-        assert self._params.bank_data_width == self._params.cgra_data_width * 4
+        # A bank word holds `lanes` CGRA words (4 x 16b in a 64b bank)
+        assert self._params.bank_data_width % self._params.cgra_data_width == 0
+        self.lanes = self._params.bank_data_width // self._params.cgra_data_width
+        self.strm_data_sel_width = max(1, self._params.bank_byte_offset - self._params.cgra_byte_offset)
         assert self._params.tile2sram_rd_delay >= self._params.flush_crossbar_pipeline_depth
 
         self.clk = self.clock("clk")
@@ -73,8 +76,8 @@ class GlbLoadDma(Generator):
         self.strm_data_valid = self.var("strm_data_valid", 1)
         self.strm_ctrl_muxed = self.var("strm_ctrl_muxed", 1)
         self.strm_data_sel_w = self.var(
-            "strm_data_sel_w", self._params.bank_byte_offset - self._params.cgra_byte_offset)
-        self.strm_data_sel = self.var("strm_data_sel", self._params.bank_byte_offset - self._params.cgra_byte_offset)
+            "strm_data_sel_w", self.strm_data_sel_width)
+        self.strm_data_sel = self.var("strm_data_sel", self.strm_data_sel_width)
 
         self.strm_rd_en_w = self.var("strm_rd_en_w", 1)
         self.strm_rd_addr_w = self.var("strm_rd_addr_w", self._params.glb_addr_width)
@@ -167,7 +170,10 @@ class GlbLoadDma(Generator):
         self.add_always(self.bank_rdrq_packet_logic)
         self.add_always(self.rdrs_packet_logic)
         self.add_always(self.bank_rdrs_data_cache_ff)
-        self.add_always(self.strm_data_logic)
+        if self.lanes == 4:
+            self.add_always(self.strm_data_logic)
+        else:
+            self.add_strm_data_logic_lanes()
         self.add_always(self.done_pulse_ctrl)
         self.add_always(self.done_pulse_muxed)
         self.add_always(self.done_pulse_anded_comb)
@@ -581,6 +587,27 @@ class GlbLoadDma(Generator):
         else:
             self.strm_data = self.bank_rdrs_data_cache_r[self._params.cgra_data_width - 1, 0]
 
+    def add_strm_data_logic_lanes(self):
+        """strm_data_logic for any lane count: strm_data = lane strm_data_sel of the
+        cached bank word (lane 0 for an out-of-range select)."""
+        w = self._params.cgra_data_width
+        comb = self.combinational()
+        if self.lanes == 1:
+            comb.add_stmt(self.strm_data.assign(self.bank_rdrs_data_cache_r[w - 1, 0]))
+            return
+        top = None
+        prev = None
+        for lane in range(self.lanes):
+            stmt = IfStmt(self.strm_data_sel == lane)
+            stmt.then_(self.strm_data.assign(self.bank_rdrs_data_cache_r[w * (lane + 1) - 1, w * lane]))
+            if prev is None:
+                top = stmt
+            else:
+                prev.else_(stmt)
+            prev = stmt
+        prev.else_(self.strm_data.assign(self.bank_rdrs_data_cache_r[w - 1, 0]))
+        comb.add_stmt(top)
+
     def add_strm_rd_en_pipeline(self):
         maximum_latency = (2 * self._params.max_num_chain
                            + self._params.chain_latency_overhead + self._params.tile2sram_rd_delay)
@@ -605,11 +632,14 @@ class GlbLoadDma(Generator):
         maximum_latency = (2 * self._params.max_num_chain
                            + self._params.chain_latency_overhead + self._params.tile2sram_rd_delay)
         latency_width = clog2(maximum_latency)
-        self.wire(self.strm_data_sel_w,
-                  self.strm_rd_addr_w[self._params.bank_byte_offset - 1, self._params.cgra_byte_offset])
-        self.strm_data_sel_arr = self.var("strm_data_sel_arr", width=self._params.bank_byte_offset
-                                          - self._params.cgra_byte_offset, size=maximum_latency, explicit_array=True)
-        self.strm_data_sel_pipeline = Pipeline(width=self._params.bank_byte_offset - self._params.cgra_byte_offset,
+        if self.lanes > 1:
+            self.wire(self.strm_data_sel_w,
+                      self.strm_rd_addr_w[self._params.bank_byte_offset - 1, self._params.cgra_byte_offset])
+        else:
+            self.wire(self.strm_data_sel_w, const(0, 1))
+        self.strm_data_sel_arr = self.var("strm_data_sel_arr", width=self.strm_data_sel_width,
+                                          size=maximum_latency, explicit_array=True)
+        self.strm_data_sel_pipeline = Pipeline(width=self.strm_data_sel_width,
                                                depth=maximum_latency,
                                                flatten_output=True)
         self.add_child("strm_data_sel_pipeline",

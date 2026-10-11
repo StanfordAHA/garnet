@@ -254,6 +254,8 @@ def gen_global_buffer_params(**kwargs):
     cfg_addr_width = kwargs.pop('cfg_addr_width', 32)
     cfg_data_width = kwargs.pop('cfg_data_width', 32)
     is_sram_stub = kwargs.pop('is_sram_stub', 0)
+    # CGRA data word (= fabric data track width without the ready-valid bit)
+    cgra_data_width = kwargs.pop('cgra_data_width', 16)
 
     # config_port_pipeline not used by TSMC (yet)
     # pop() returns True if config_port_pipeline not exists
@@ -268,6 +270,13 @@ def gen_global_buffer_params(**kwargs):
         config_port_pipeline_depth = 1
     else:
         config_port_pipeline_depth = 0
+
+    # The E64 / multi-bank / matrix-unit DMAs pack 4 x 16-bit words per 64-bit bank word
+    if cgra_data_width != 16:
+        assert not (include_E64_hw or include_multi_bank_hw or include_mu_glb_hw), \
+            f"cgra_data_width={cgra_data_width}: E64, multi-bank and MU GLB modes are 16-bit only"
+    assert bank_data_width % cgra_data_width == 0, \
+        f"bank_data_width {bank_data_width} must hold whole {cgra_data_width}-bit CGRA words"
 
     # Check if there is unused kwargs
     if kwargs:
@@ -296,6 +305,7 @@ def gen_global_buffer_params(**kwargs):
                                 banks_per_tile=banks_per_tile,
                                 bank_data_width=bank_data_width,
                                 bank_addr_width=bank_addr_width,
+                                cgra_data_width=cgra_data_width,
                                 cgra_axi_addr_width=cgra_axi_addr_width,
                                 axi_data_width=axi_data_width,
                                 cgra_cfg_addr_width=cfg_addr_width,

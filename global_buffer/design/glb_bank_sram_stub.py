@@ -16,7 +16,7 @@ class GlbBankSramStub(Generator):
         self._params = _params
         self.addr_width = addr_width
         self.data_width = data_width
-        assert self.data_width == 4 * self._params.cgra_data_width
+        assert self.data_width % self._params.cgra_data_width == 0
 
         self.RESET = self.reset("RESET")
         self.CLK = self.clock("CLK")

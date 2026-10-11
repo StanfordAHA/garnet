@@ -130,8 +130,10 @@ def glb_interconnect_wiring(garnet):
                             garnet.interconnect.ports.config[i * col_per_glb + j].write)
 
     # input/output stream ports wiring
+    # The GLB stream word is cgra_data_width bits; the ready-valid data track adds a bit
+    cgra_dw = garnet.glb_params.cgra_data_width
     for i in range(num_glb_tiles):
-        data_bit_width = 17 if garnet.ready_valid else 16
+        data_bit_width = cgra_dw + 1 if garnet.ready_valid else cgra_dw
         for j in range(col_per_glb):
             if IOSide.West in garnet.io_sides:
                 x = i * col_per_glb + j + 1
@@ -143,12 +145,12 @@ def glb_interconnect_wiring(garnet):
             glb2io_16_port = f"glb2io_{data_bit_width}_X{x:02X}_Y{0:02X}"
             glb2io_1_port = f"glb2io_1_X{x:02X}_Y{0:02X}"
             garnet.wire(garnet.global_buffer.ports[f"strm_data_f2g_{i}_{j}"],
-                        garnet.interconnect.ports[io2glb_16_port][0:16])
+                        garnet.interconnect.ports[io2glb_16_port][0:cgra_dw])
             garnet.wire(garnet.global_buffer.ports[f"strm_ctrl_f2g_{i}_{j}"],
                         garnet.interconnect.ports[io2glb_1_port])
 
             garnet.wire(garnet.global_buffer.ports[f"strm_data_g2f_{i}_{j}"],
-                        garnet.interconnect.ports[glb2io_16_port][0:16])
+                        garnet.interconnect.ports[glb2io_16_port][0:cgra_dw])
             garnet.wire(garnet.global_buffer.ports[f"strm_ctrl_g2f_{i}_{j}"],
                         garnet.interconnect.ports[glb2io_1_port])
             if garnet.ready_valid:
@@ -174,7 +176,7 @@ def glb_interconnect_wiring(garnet):
                 garnet.wire(garnet.global_buffer.ports[f"strm_data_g2f_rdy_{i}_{j}"][0],
                             garnet.interconnect.ports[glb2io_16_rdy_port])
                 garnet.wire(Const(0),
-                            garnet.interconnect.ports[glb2io_16_port][16])
+                            garnet.interconnect.ports[glb2io_16_port][cgra_dw])
             else:
                 garnet.wire(garnet.global_buffer.ports[f"strm_data_f2g_vld_{i}_{j}"][0],
                             Const(0))

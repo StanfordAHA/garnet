@@ -105,10 +105,11 @@ def spec_controller(core):
 
 def spec_port_pins(core, idx):
     """Tile core pins of spec port idx, from the MemCore's lakespec port remap.
-    A 16-bit spec port is one 17-bit pin (comply_17: data + an unused MSB);
-    any other data width is bit-blasted onto 1-bit pins `port_<i>_<bit>`
-    (MSB = the unused comply_17 bit) with its own 1-bit `port_<i>_valid` /
-    `port_<i>_ready` pins."""
+    A spec port is one (data_width + 1)-bit pin on the fabric's data track
+    (comply_17: data + an unused MSB). A port whose width matches no track is
+    bit-blasted onto 1-bit pins `port_<i>_<bit>` (MSB = the unused comply_17
+    bit) with its own 1-bit `port_<i>_valid` / `port_<i>_ready` pins (RTL
+    built before the fabric followed the spec data width)."""
     remap = core.get_port_remap()["lakespec"]
     bits, word, valid, ready = {}, [], None, None
     for k, v in remap.items():
@@ -147,7 +148,7 @@ def _ordered(nodes, sides):
 def plan_routes(ic, x, y, in_ports, out_ports):
     """Route every spec port of the tile to switch-box tracks.
 
-    Inputs take SB_IN tracks in WEST, NORTH, SOUTH, EAST order (16-bit port k
+    Inputs take SB_IN tracks in WEST, NORTH, SOUTH, EAST order (word port k
     -> WEST track k). Data pins get their own random track while tracks last,
     then share them (a 32-bit port bit-blasted onto 1-bit pins needs more than
     the 20 1-bit tracks: shared bits are correlated but all toggle). 1-bit
@@ -158,10 +159,11 @@ def plan_routes(ic, x, y, in_ports, out_ports):
 
     Returns (routes, drive {SB_IN pin: 'rand'|'one'}, observed {SB_OUT pin:
     width}, source {random SB_IN pin: (spec port name, bit or None)} -- the
-    port word (None: the whole word, on a 17-bit track) or word bit the track
+    port word (None: the whole word, on a data track) or word bit the track
     carries; a shared track carries its first pin's bit)."""
     from canal.cyclone import SwitchBoxIO, RegisterMuxNode
-    tiles = {w: ic.get_graph(w).get_tile(x, y) for w in (1, 17)}
+    data_track = max(ic.get_bit_widths())
+    tiles = {w: ic.get_graph(w).get_tile(x, y) for w in (1, data_track)}
     routes, drive, observed, source = {}, {}, {}, {}
 
     def route_in(src, pin):
@@ -180,7 +182,7 @@ def plan_routes(ic, x, y, in_ports, out_ports):
     for _, p in out_ports:
         one_pins += [p["ready"]] if p["ready"] else []
 
-    for w in (17, 1):
+    for w in (data_track, 1):
         rands = [q for q in rand_pins if _pin_width(q) == w]
         ones = [q for q in one_pins if _pin_width(q) == w]
         zeros = [q for q in zero_pins if _pin_width(q) == w]
@@ -223,16 +225,16 @@ def plan_routes(ic, x, y, in_ports, out_ports):
     return routes, drive, observed, source
 
 
-def track_streams(source, streams, width):
+def track_streams(source, streams, width, dw=16):
     """{random SB_IN pin: per-cycle values}: the spec port's random words
     (lake power_test_programs.input_streams) on a word track, masked to the
-    16 data bits (bit 16 is the unused comply_17 bit), or one bit of them on
+    dw data bits (bit dw is the unused comply_17 bit), or one bit of them on
     a 1-bit track."""
     out = {}
     for pin, (port, bit) in source.items():
         words = streams[port]
         if bit is None:
-            out[pin] = [w & ((1 << min(width[pin], 16)) - 1) for w in words]
+            out[pin] = [w & ((1 << min(width[pin], dw)) - 1) for w in words]
         else:
             out[pin] = [(w >> bit) & 1 for w in words]
     return out
@@ -253,7 +255,7 @@ def quiet_unused_muxes(ic, x, y, drive, routes):
     tile_circuit = ic.tile_circuits[(x, y)]
     used = {str(seg[i]) for segs in routes.values() for seg in segs for i in range(1, len(seg))}
     cfg, stuck = [], []
-    for width in (1, 17):
+    for width in (1, max(ic.get_bit_widths())):
         tile = ic.get_graph(width).get_tile(x, y)
         muxes = [n for n in tile.switchbox.get_all_sbs() if n.io == SwitchBoxIO.SB_OUT]
         muxes += list(tile.ports.values())   # CBs (core outputs have no sources)
@@ -375,7 +377,8 @@ def write_testbench(path, variant, pins, cfg, tile_id, window, drive, rand, n_st
     w("    // value in cycle t after flush release; lake power_test_programs).")
     w(f"    localparam integer N_STREAM = {n_stream};")
     w(f"    localparam integer N_TRACKS = {max(len(rand), 1)};")
-    w("    reg [16:0] stim [0:N_TRACKS * N_STREAM - 1];")
+    stim_w = max([width[n] for n in rand] + [17])
+    w(f"    reg [{stim_w - 1}:0] stim [0:N_TRACKS * N_STREAM - 1];")
     if rand:
         w("    initial $readmemh(\"inputs/input_data.hex\", stim);")
     w("    reg stim_on = 1'b0;")
@@ -521,14 +524,15 @@ def main():
     quiet, unquieted = quiet_unused_muxes(ic, x, y, drive, routes)
     pins = tile_pins_from_rtl(a.design_v)
     n_stream = ptp.stream_length(window)
-    tracks = track_streams(source, ptp.input_streams(a.seed, n_in, n_stream, dw),
-                           {n: w for _, w, n in pins})
+    pin_width = {n: w for _, w, n in pins}
+    tracks = track_streams(source, ptp.input_streams(a.seed, n_in, n_stream, dw), pin_width, dw)
     rand = sorted(tracks)
 
     os.makedirs(a.outdir, exist_ok=True)
+    hex_digits = (max([pin_width[p] for p in rand] + [17]) + 3) // 4   # 5 for 17-bit tracks
     with open(os.path.join(a.outdir, "input_data.hex"), "w") as f:
         for pin in rand:
-            f.writelines(f"{v:05x}\n" for v in tracks[pin])
+            f.writelines(f"{v:0{hex_digits}x}\n" for v in tracks[pin])
     meta = {"tile": [x, y], "tile_id": ic.get_tile_id(x, y), "runtime_mode": mode,
             "spec_config": spec_cfg, "rv_spec": bool(spec.any_rv_sg),
             "requested_cycles": a.sim_cycles, "window": window, "seed": a.seed,

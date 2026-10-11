@@ -57,16 +57,11 @@ task ProcDriver_write_data();
     proc_lock.get(1);
     assert (BANK_DATA_WIDTH == 64);
     size = data_q.size();  // 0x1000 = 2^12 = 4K??
-    for (int i = 0; i < size; i += 4) begin
-        if ((i + 1) == size) begin
-            bdata = data_q[i];
-        end else if ((i + 2) == size) begin
-            bdata = {data_q[i+1], data_q[i]};
-        end else if ((i + 3) == size) begin
-            bdata = {data_q[i+2], data_q[i+1], data_q[i]};
-        end else begin
-            bdata = {data_q[i+3], data_q[i+2], data_q[i+1], data_q[i]};
-        end
+    // BANK_DATA_WIDTH / CGRA_DATA_WIDTH words per bank word (4 x 16-bit), lane 0 lowest
+    for (int i = 0; i < size; i += BANK_DATA_WIDTH / CGRA_DATA_WIDTH) begin
+        bdata = '0;
+        for (int l = 0; l < BANK_DATA_WIDTH / CGRA_DATA_WIDTH && i + l < size; l++)
+            bdata[l*CGRA_DATA_WIDTH +: CGRA_DATA_WIDTH] = data_q[i+l];
         ProcDriver_write_waddr = cur_addr;
         ProcDriver_write_wdata = bdata;
         ProcDriver_write();
@@ -218,7 +213,7 @@ endtask
 int num_words, num_trans;
 task ProcDriver_read_data();
     num_words = data_q.size();        // Should be 4K / 0x1000?
-    num_trans = (num_words + 3) / 4;  // Should be 1K
+    num_trans = (num_words + BANK_DATA_WIDTH / CGRA_DATA_WIDTH - 1) / (BANK_DATA_WIDTH / CGRA_DATA_WIDTH);
 
     $display("Num words: %d\n", num_words);
     $display("Num transactions: %d\n", num_trans);
@@ -253,23 +248,9 @@ task ProcDriver_read_data();
 
                 if (`DBG_PROCDRIVER) $display("\n[%0t] FOO got data word %0x", $time, p_ifc.rd_data);
 
-                data_q[i*4] = p_ifc.rd_data & 'hFFFF;
-                if (`DBG_PROCDRIVER) $display("[%0t] -- 0 data_q[%04d] <= %0x", $time, i*4, data_q[i*4]);
-
-                if ((i * 4 + 1) < num_words) begin
-                    data_q[i*4+1] = (p_ifc.rd_data & (('hFFFF) << 16)) >> 16;
-                    if (`DBG_PROCDRIVER) $display("[%0t] -- 1 data_q[%04d] <= %0x", $time, i*4+1, data_q[i*4+1]);
-                end
-
-                if ((i * 4 + 2) < num_words) begin
-                    data_q[i*4+2] = (p_ifc.rd_data & (('hFFFF) << 32)) >> 32;
-                    if (`DBG_PROCDRIVER) $display("[%0t] -- 2 data_q[%04d] <= %0x", $time, i*4+2, data_q[i*4+2]);
-                end
-
-                if ((i * 4 + 3) < num_words) begin
-                    data_q[i*4+3] = (p_ifc.rd_data & (('hFFFF) << 48)) >> 48;
-                    if (`DBG_PROCDRIVER)
-                      $display("[%0t] -- 3 data_q[%04d] <= %0x", $time, i*4+3, data_q[i*4+3]);
+                for (int l = 0; l < BANK_DATA_WIDTH / CGRA_DATA_WIDTH; l++) begin
+                    if ((i * (BANK_DATA_WIDTH / CGRA_DATA_WIDTH) + l) < num_words)
+                        data_q[i*(BANK_DATA_WIDTH / CGRA_DATA_WIDTH)+l] = p_ifc.rd_data[l*CGRA_DATA_WIDTH +: CGRA_DATA_WIDTH];
                 end
 
                 if (`DBG_PROCDRIVER) $display("");

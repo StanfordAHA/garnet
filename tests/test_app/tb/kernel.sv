@@ -175,7 +175,7 @@ typedef struct {
     bit [CGRA_AXI_DATA_WIDTH-1:0] data;
 } Config;
 
-typedef bit [15:0] data_array_t[];
+typedef bit [CGRA_DATA_WIDTH-1:0] data_array_t[];  // one CGRA data word per element
 typedef bitstream_entry_t bitstream_t[];
 
 typedef struct {
@@ -431,7 +431,7 @@ function Kernel::new(string app_dir, int dpr);
         output_filenames[i] = get_output_filename(kernel_info, i);
         output_size[i] = get_output_size(kernel_info, i);
         // convert byte size to 16bit size
-        output_data[i] = new[(output_size[i] >> 1)];
+        output_data[i] = new[(output_size[i] >> CGRA_BYTE_OFFSET)];
 
         io_info = get_output_info(kernel_info, i);
         num_io_tiles = get_num_io_tiles(io_info, i);
@@ -510,11 +510,11 @@ endfunction
 
 
 function data_array_t Kernel::parse_input_data(int idx);
-    int num_pixel = (input_size[idx] >> 1);  // Pixel is 2byte (16bit) size
+    int num_pixel = (input_size[idx] >> CGRA_BYTE_OFFSET);  // one CGRA data word per pixel
     data_array_t result = new[num_pixel];
     // FIXME: VCS does not support to read input to dynamic memory
     // Use temporary register
-    bit [15:0] result_tmp[2048*1440-1:0];
+    bit [CGRA_DATA_WIDTH-1:0] result_tmp[2048*1440-1:0];
 
     int fp = $fopen(input_filenames[idx], "rb");
     int name_len = input_filenames[idx].len();
@@ -546,7 +546,7 @@ function data_array_t Kernel::parse_input_data(int idx);
             cnt = cnt + 1;
         end
         // The total size in byte is the number of pixels times 2
-        cnt = cnt * 2;
+        cnt = cnt << CGRA_BYTE_OFFSET;
     end
     assert_(cnt == input_size[idx], $sformatf(
             "Unable to read input data. Parsed size is %0d, while expected size is %0d\n",
@@ -558,11 +558,11 @@ function data_array_t Kernel::parse_input_data(int idx);
 endfunction
 
 function data_array_t Kernel::parse_mu_input_data(int idx);
-    int num_pixel = (mu_input_size[idx] >> 1);  // Pixel is 2byte (16bit) size
+    int num_pixel = (mu_input_size[idx] >> CGRA_BYTE_OFFSET);  // one CGRA data word per pixel
     data_array_t result = new[num_pixel];
     // FIXME: VCS does not support to read input to dynamic memory
     // Use temporary register
-    bit [15:0] result_tmp[2048*1440-1:0];
+    bit [CGRA_DATA_WIDTH-1:0] result_tmp[2048*1440-1:0];
 
     int fp = $fopen(mu_input_filenames[idx], "rb");
     int name_len = mu_input_filenames[idx].len();
@@ -594,7 +594,7 @@ function data_array_t Kernel::parse_mu_input_data(int idx);
             cnt = cnt + 1;
         end
         // The total size in byte is the number of pixels times 2
-        cnt = cnt * 2;
+        cnt = cnt << CGRA_BYTE_OFFSET;
     end
     assert_(cnt == mu_input_size[idx], $sformatf(
             "Unable to read MU input data. Parsed size is %0d, while expected size is %0d\n",
@@ -607,11 +607,11 @@ endfunction
 
 
 function data_array_t Kernel::parse_gold_data(int idx);
-    int num_pixel = (output_size[idx] >> 1);  // Pixel is 2byte (16bit) size
+    int num_pixel = (output_size[idx] >> CGRA_BYTE_OFFSET);  // one CGRA data word per pixel
     data_array_t result = new[num_pixel];
     // FIXME: VCS does not support to read input to dynamic memory
     // Use temporary register
-    bit [15:0] result_tmp[2048*1440-1:0];
+    bit [CGRA_DATA_WIDTH-1:0] result_tmp[2048*1440-1:0];
     int fp = $fopen(output_filenames[idx], "rb");
     int name_len = output_filenames[idx].len();
     string tmp;
@@ -641,7 +641,7 @@ function data_array_t Kernel::parse_gold_data(int idx);
             cnt = cnt + 1;
         end
         // The total size in byte is the number of pixels times 2
-        cnt = cnt * 2;
+        cnt = cnt << CGRA_BYTE_OFFSET;
     end
     assert_(cnt == output_size[idx], $sformatf(
             "Unable to read output data. Parsed size is %d, while expected size is %d\n",
