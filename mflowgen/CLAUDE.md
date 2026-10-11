@@ -370,12 +370,25 @@ feed-throughs (config bus, flush, SB ready→valid; `max_delay` 699.9 ps). PBA
 reg2reg misses only on 4 tiles (-0.9/-1.1/-9.2/-17.4 ps; GBA -3 to -40 on 9
 of 12). The -24.6 / -14.0 are in2reg (`stall`/`flush` → SB FIFO); I first
 miscounted them as reg2reg, because PT prints short port names' "(input
-port)" on the name's line. Synth critical paths (Genus top-100 of all 172,
-2026-10-11): every config closes at 0 ps (one +1). Static tiles are limited
-by the `flush` input's fan-out to schedule-gen / address-gen / FIFO
-registers (79 of 89). RV tiles are limited by config registers → address-gen
-registers (70 of 83). Real datapath paths are under 1% of the top 100, so the
-limits are IO budgets and quasi-static config/flush, not the memory datapath.
+port)" on the name's line. Critical paths (2026-10-11, full #1-path reports):
+- **Synth, static tiles (89):** `flush` → flush mux → schedule-gen /
+  iteration / address counters. `flush` is a pass-through input with a
+  *fixed* `pt_i_delay` 0.700 ns (constraints/common.tcl), so about 0.6 ns of
+  logic (20–32 stages) is left at 1.333 ns.
+- **Synth, RV tiles (83):** a full-cycle internal path (about 1.3 ns, 36–74
+  stages) through the RV controller: config reg or iteration counter →
+  `rv_comp_network`/`lfcompblock` (dependence check) → `port_sg` step →
+  arbiter → `port_id` → `port_ag` update. It is real logic: 6 configs start
+  it at an iteration counter, so relaxing config-register paths wouldn't
+  help.
+- **PnR, SB `ready`→`valid`:** the SB feed-through budget is a fixed
+  `sb_delay` 0.3 ns plus i/o delays, and the miss grows with tile size
+  (Spearman −0.89: −2 ps at 10k µm², −49 ps at 50k µm²).
+- **PnR, pass-through `*_out`:** about 80 ps in-tile window
+  (clock_max_delay 0.05 + margin 0.03); misses −6 to −19 ps.
+- **PnR, reg→reg:** only the RV-controller path, at most −17.4 ps.
+- **At 900 MHz:** the fixed budgets don't move, the static flush path loses
+  222 of its ~600 ps, and the RV path must shrink ~15%.
 PT hold violations on 3 tiles are only the clk→clk_out
 feed-through (-0.5 to -16.5 ps). Innovus: verify_drc 1000 everywhere (the
 edge-blockage artifact, see smoke run); VSS opens 9 on sp tiles, but 109/110 on
