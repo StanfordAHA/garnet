@@ -165,6 +165,11 @@ set die_area [box_area [dbGet top.fPlan.box]]
 lassign [run_conn before] opens sp_opens
 set open_cells {}
 set cell_boxes {}
+# Opens whose only content is a row of column caps (gf12 *COLCAP*) are their
+# VPW/VNW well pins on the SXCUT/NW marker layers: no metal and no devices,
+# isolated because cap rows hold no well taps (2026-10-11). Counted apart.
+set n_capwell 0
+set n_other 0
 set fh [open opens.txt w]
 if {[catch {
   out $fh "opens (all): [llength $opens] ([count_by_net $opens]); special-wire-only check: [llength $sp_opens] ([count_by_net $sp_opens])"
@@ -201,6 +206,14 @@ if {[catch {
     }
     out $fh "  instances overlapping: [llength $insts] (non-physical-only core cells: $logic)"
     if {[llength $insts]} { lappend cell_boxes [grow $box 0.05] }
+    set capall [expr {[llength $insts] > 0}]
+    foreach c [array names ic] { if {![string match "*COLCAP*" $c]} { set capall 0 } }
+    if {$capall} {
+      incr n_capwell
+      out $fh "  => cap-row well pins only (no metal; see header)"
+    } else {
+      incr n_other
+    }
     foreach c [array names ic] { if {[lsearch $open_cells $c] < 0} { lappend open_cells $c } }
     foreach c [lsort [array names ic]] { out $fh "    $c x$ic($c)" }
     foreach i [lrange $insts 0 4] {
@@ -222,6 +235,11 @@ if {[catch {
       }
     }
   }
+  set main [expr {[llength $opens] - $n_capwell - $n_other}]
+  set cls "opens [llength $opens]: $n_capwell cap-row well pins (expected), $main net main-piece markers, $n_other other"
+  out $fh ""
+  out $fh $cls
+  set cf [open opens_class.txt w]; out $cf $cls; close $cf
 } e]} { out $errs "opens: $e" }
 close $fh
 

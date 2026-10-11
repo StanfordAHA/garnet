@@ -48,7 +48,7 @@ run_one() {
   ( cd "$d" && PG_DIAG_CKPT=$(readlink -f "$ck") PG_DIAG_TOP=${PG_DIAG_TOP:-Tile_MemCore} \
       PG_DIAG_TRIALS=${PG_DIAG_TRIALS:-vias} PG_DIAG_DRC=${PG_DIAG_DRC:-1} \
       innovus -64 -nowin -overwrite -files "$tcl" -log innovus.log < /dev/null > innovus.stdout 2>&1 )
-  echo "DONE  $name ($(date +%H:%M:%S)): $(head -1 "$d/opens.txt" 2>/dev/null || echo 'no opens.txt, see innovus.log')"
+  echo "DONE  $name ($(date +%H:%M:%S)): $(cat "$d/opens_class.txt" 2>/dev/null || head -1 "$d/opens.txt" 2>/dev/null || echo 'no opens.txt, see innovus.log')"
 }
 
 for ws in "$@"; do
