@@ -49,6 +49,12 @@ def construct():
     # ungroup (auto_ungroup both). sweep_specs.py --flatten-effort sets FLATTEN.
     flatten = int(os.environ.get('FLATTEN', 3))
 
+    # Clock period in ns (constraints use `set_units -time ns`). It reaches
+    # every step with a clock_period parameter: constraints (and the
+    # clock-scaled IO budgets), synth, PnR, PT and the power testbenches.
+    # sweep_specs.py --clock-mhz sets CLOCK_PERIOD; unset -> 1.333 ns (~750 MHz).
+    clock_period = float(os.environ.get('CLOCK_PERIOD', 1.333))
+
     want_drc_pm = True
 
     # TSMC override(s)
@@ -67,7 +73,7 @@ def construct():
     parameters = {
         'construct_path': __file__,
         'design_name': 'Tile_MemCore',
-        'clock_period': 1.333,
+        'clock_period': clock_period,
         'adk': adk_name,
         'adk_view': adk_view,
 

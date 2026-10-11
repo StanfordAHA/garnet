@@ -113,6 +113,24 @@ Key flags:
   With `--standalone-synth` it also runs lake's standalone idle/active power.
 - `--also-make TARGETS` — extra tile targets (genlibdb, DRC, LVS, ...) made
   last; failure is a note. See "Whole-graph smoke run" below.
+- `--clock-mhz MHZ` (2026-10-11) sets the tile clock as env `CLOCK_PERIOD`
+  (ns = 1000/MHZ, rounded to 1 ps); Tile_MemCore construct.py
+  `clock_period`, default 1.333.
+  - Through `update_params` it reaches constraints (the clock-scaled IO
+    budgets: i_delay 0.2T, o_delay 0.1T, SB in→out max_delay T), synth,
+    gen_sram's period check, and the power test-gen / sim (`CLK_PERIOD`).
+    Innovus and PT take it from the synth SDC. Verified by materializing the
+    graph at 900 MHz: every clocked step gets `clock_period=1.111`.
+  - The standalone synth follows (1111 ps) unless `--standalone-clock-ps`.
+  - Exported only when it differs from the graph default, so `--clock-mhz
+    750` on an old 1.333 ns sweep is a no-op, not a "changed settings"
+    rebuild.
+  - A different clock re-materializes the graph, and the stale-step check
+    then fails or (`--clean-stale`) re-runs every clocked step. Give each
+    clock its own `--out-dir`.
+  - correlation.csv / memtile_power.csv gain `clock_period_ns` and
+    `clock_mhz`. Read from the manifest, else the synth step's parameter,
+    else the Genus top-100 capture edge, so old zips read 1.333 / 750.2.
 - `--flatten-effort N` (2026-10-07) → env `FLATTEN` → Tile_MemCore
   `flatten_effort` (construct default still 3; Tile_PE already read `FLATTEN`).
   The Genus node only tells 0 (`auto_ungroup none`: hierarchy kept, as lake's
@@ -575,7 +593,8 @@ Apples-to-apples caveats:
 - **Clock:** tile `clock_period` is ns (`set_units -time ns`, 1.333 ≈ 750 MHz
   as of 2026-09-30; sweeps before that ran at 1.1); lake's is ps with no
   set_units. Standalone defaults to the tile's value ×1000 (1333 ps), read from
-  `<--graph>/construct.py`; override `--standalone-clock-ps`. The 1.1 ns PnR
+  `<--graph>/construct.py`, or `--clock-mhz` (2026-10-11); override
+  `--standalone-clock-ps`. The 1.1 ns PnR
   sweep missed setup on all six `full` configs (In→Reg up to −128 ps).
 - **SRAM macros differ:** standalone maps the full word onto ONE
   `GF_Tech_Map` macro (e.g. `W01024B064`); the tile's CoreCombiner prefers 2

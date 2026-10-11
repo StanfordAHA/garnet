@@ -468,6 +468,16 @@ def build_argparser():
                         "submodule; 1-3 let Genus ungroup (auto_ungroup both: the "
                         "Genus node only distinguishes 0 from non-zero). Default: "
                         "the graph's own value (3 for Tile_MemCore).")
+    p.add_argument("--clock-mhz", type=float, default=None, metavar="MHZ",
+                   help="Tile clock frequency in MHz: env CLOCK_PERIOD = 1000/MHZ ns "
+                        "rounded to 1 ps, read by Tile_MemCore/construct.py. It sets "
+                        "the constraints (and the clock-scaled IO budgets), synth, "
+                        "PnR, PT and the power testbench clock; the standalone synth "
+                        "follows unless --standalone-clock-ps. Default: the graph's "
+                        "own clock_period (Tile_MemCore 1.333 ns, ~750 MHz). A new "
+                        "clock on an existing workspace re-runs every timing step, "
+                        "so give each clock its own --out-dir (or --clean-stale). "
+                        "Recorded as clock_period_ns / clock_mhz in the CSVs.")
     # ---- App-driven power: --cgra-power runs the app on the whole CGRA fabric
     # -> tile power in fabric context (app bundle or container + Cadence/ADK). ----
     p.add_argument("--cgra-power", "--power", dest="cgra_power",
@@ -591,9 +601,9 @@ def build_argparser():
                         "sides share one lake + kratos (see standalone_spec_rtl.sh).")
     p.add_argument("--standalone-clock-ps", type=float, default=None, metavar="PS",
                    help="Clock period for the standalone synth, in ps (the lake "
-                        "graph's unit). Default: the tile's own clock_period read "
-                        "from <--graph>/construct.py (ns, x1000) so both syntheses "
-                        "target the same frequency.")
+                        "graph's unit). Default: --clock-mhz, else the tile's own "
+                        "clock_period read from <--graph>/construct.py (ns, x1000), "
+                        "so both syntheses target the same frequency.")
     p.add_argument("--correlate-only", action="store_true",
                    help="Rebuild <out-dir>/correlation.csv from existing "
                         "workspaces (tile + standalone) and exit; no build. "
@@ -748,14 +758,24 @@ def main(argv=None):
     return 1 if failures or not zip_ok else 0
 
 
+def _clock_period_ps(args):
+    """--clock-mhz as a period in whole ps (1 ps resolution, so 750 MHz is the
+    graph's own 1.333 ns), or None when the flag is unset."""
+    if args.clock_mhz is None:
+        return None
+    return int(round(1e6 / args.clock_mhz))
+
+
 def _tile_clock_ps(graph):
-    """The tile graph's clock_period (ns, per Tile_MemCore's `set_units -time
-    ns` constraints) as ps, or None if construct.py doesn't spell it out."""
+    """The tile graph's default clock_period (ns, per Tile_MemCore's `set_units
+    -time ns` constraints) as ps, or None if construct.py doesn't spell it out:
+    the CLOCK_PERIOD env default, or a literal 'clock_period': <ns>."""
     try:
         text = (Path(graph) / "construct.py").read_text()
     except OSError:
         return None
-    m = re.search(r"['\"]clock_period['\"]\s*:\s*([0-9.]+)", text)
+    m = (re.search(r"['\"]CLOCK_PERIOD['\"]\s*,\s*([0-9.]+)", text)
+         or re.search(r"['\"]clock_period['\"]\s*:\s*([0-9.]+)", text))
     if not m:
         return None
     ps = round(float(m.group(1)) * 1000, 3)
@@ -772,7 +792,7 @@ def _preflight_standalone(args):
                 "    Point --lake-dir (or $LAKE_PATH) at a lake THESIS checkout.")
 
     if args.standalone_clock_ps is None:
-        args.standalone_clock_ps = _tile_clock_ps(args.graph)
+        args.standalone_clock_ps = _clock_period_ps(args) or _tile_clock_ps(args.graph)
         if args.standalone_clock_ps is None:
             raise SystemExit(
                 f"*** ERROR: no 'clock_period' in {args.graph}/construct.py to "
@@ -870,6 +890,19 @@ def _preflight(args):
         if not reads:
             print(f"*** WARNING: {graph / 'construct.py'} does not read FLATTEN; "
                   "--flatten-effort has no effect on this graph.",
+                  file=sys.stderr, flush=True)
+
+    # --clock-mhz travels as env CLOCK_PERIOD (ns), likewise graph-specific.
+    if args.clock_mhz is not None:
+        if args.clock_mhz <= 0:
+            raise SystemExit("*** ERROR: --clock-mhz must be positive.")
+        try:
+            reads = "CLOCK_PERIOD" in (graph / "construct.py").read_text()
+        except OSError:
+            reads = True
+        if not reads:
+            print(f"*** WARNING: {graph / 'construct.py'} does not read CLOCK_PERIOD; "
+                  "--clock-mhz has no effect on this graph.",
                   file=sys.stderr, flush=True)
 
 
@@ -1512,6 +1545,13 @@ def _tile_env(cfg, cfg_dir, args):
     # Genus flatten_effort; unset -> the graph's own default.
     if args.flatten_effort is not None:
         env["FLATTEN"] = str(args.flatten_effort)
+    # Tile clock in ns; unset -> the graph's own clock_period. A clock equal
+    # to that default isn't exported, so `--clock-mhz 750` on an existing
+    # 1.333 ns sweep doesn't read as changed settings (manifests from before
+    # this flag record no CLOCK_PERIOD) and rebuild it.
+    ps = _clock_period_ps(args)
+    if ps is not None and ps != _tile_clock_ps(args.graph):
+        env["CLOCK_PERIOD"] = f"{ps / 1000:g}"
 
     # The *_POWER env vars must be set BEFORE `mflowgen run` -- the construct
     # reads them at graph-materialization time to add the matching power nodes
@@ -1559,6 +1599,8 @@ def _run_one(cfg, cfg_dir, args):
                         "USE_NON_SPLIT_FIFOS", "USE_SIM_SRAM"]
         if args.flatten_effort is not None:
             dry_env_keys += ["FLATTEN"]
+        if "CLOCK_PERIOD" in env:
+            dry_env_keys += ["CLOCK_PERIOD"]
         if args.cgra_power:
             dry_env_keys += ["SYNTH_POWER", "RTL_POWER"]
         if args.memtile_power:
@@ -1651,7 +1693,7 @@ MANIFEST_FILE = "build_manifest.json"
 # graphs read from an inherited env. Recorded in the manifest; --skip-existing
 # rebuilds a done workspace whose recorded values differ.
 BUILD_ENV_KEYS = ("LAKE_SPEC_CONFIG", "LAKE_SPEC_MODE", "DUAL_PORT",
-                  "USE_NON_SPLIT_FIFOS", "USE_SIM_SRAM", "FLATTEN",
+                  "USE_NON_SPLIT_FIFOS", "USE_SIM_SRAM", "FLATTEN", "CLOCK_PERIOD",
                   "RTL_POWER", "SYNTH_POWER", "MEMTILE_POWER",
                   "APP_BUNDLE", "LAKE_POND_SPEC_CONFIG", "NO_POND")
 
@@ -2500,8 +2542,35 @@ def _sweep_meta(ws, name):
     except (OSError, ValueError):
         meta = {}
     mode = meta.get("runtime_mode") or ("rv" if name.endswith("_rv") else "static")
+    ns = _ws_clock_ns(ws)
     return {"runtime_mode": mode, "targets": meta.get("targets", ""),
-            "pnr_role": meta.get("pnr_role", "")}
+            "pnr_role": meta.get("pnr_role", ""),
+            "clock_period_ns": ns,
+            # a string, so the CSV shows 750.2 rather than 750.200
+            "clock_mhz": f"{1000 / ns:.1f}" if ns else None}
+
+
+def _ws_clock_ns(ws):
+    """Tile clock period (ns) a workspace was built at: the manifest's
+    CLOCK_PERIOD (--clock-mhz), else the synth step's clock_period parameter
+    (as run, then as the graph configures it), else the capture edge in
+    Genus's top-100 setup report (ps; a zip carries only that). None if none
+    of them is there."""
+    ns = ((_read_manifest(ws) or {}).get("settings") or {}).get("CLOCK_PERIOD")
+    for run in ("*-cadence-genus-synthesis/mflowgen-run",
+                ".mflowgen/*-cadence-genus-synthesis/mflowgen-run"):
+        if ns is None:
+            ns = _step_params(_first(ws, run)).get("clock_period")
+    try:
+        if ns is not None and float(ns) > 0:
+            return float(ns)
+    except ValueError:
+        pass
+    for line in _read_lines(_first(ws, "*-cadence-genus-synthesis/reports/*.timing.setup.top100.rpt")):
+        m = re.search(r"\(clock \S+\)\s+capture\s+(\d+(?:\.\d+)?)", line)
+        if m and float(m.group(1)) > 0:
+            return float(m.group(1)) / 1000
+    return None
 
 
 def _apply_roles(rows, validate_names):
