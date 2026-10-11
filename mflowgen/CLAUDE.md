@@ -332,6 +332,30 @@ area on the measured dims-4 pair, power identical), including held-out
 `..._dim4_msw1024_rv`. garnet RTL generation is the same across the two garnet
 commits used (fb50802c, ecb52e48). Ingested per block by lake
 `THESIS/pipeline/tile_sweep.py` (lake CLAUDE.md §1.8).
+**Earlier review (cfc4174c, first zip `NEW_SWEEP_r8cad-gf12_20261009-132919`, 2026-10-09):**
+all 172 PASS (96 built, 76 `already_done` from the 2026-10-07 launch); every
+manifest has FLATTEN 0 / MEMTILE_POWER / non-split FIFOs; 368 power sims PASS,
+368 PT power runs 100% annotated with no SDC errors; SRAM period PASS; Genus
+met timing everywhere (WNS ≥ 0) with no errors or black boxes. Garnet
+was pulled mid-run, so step scripts are mixed: 101 synths have 3 timing modes,
+71 have 1 (d79bf443). The same config synthesized both ways differs by 0.18%
+in logic area with identical power, so mixing them doesn't matter. The
+sweep's Python dates from between 505c1e8c and 546b1e46, so its CSVs lacked
+the SRAM calibration, and the PT unit check misread two RV tiles whose top
+100 are all in2out `max_delay` paths (-11.968 ps as -11.968 ns; fixed in
+2519107d). Rerun `--correlate-only` with the same args (seconds, no rebuild)
+after pulling garnet. Regenerated: held-out |err| total area 0.38% (max
+0.81%), via_logic 0.61% (was 1.10%; max 0.82%), logic 1.01%, idle power
+3.11% (max 5.97%), active 3.09% (max 5.85%); fw4_dp_4x4_rv is extrapolated
+(total area, active power). PnR timing: PT PBA WNS -6 to -49 ps, mostly in2out
+`max_delay` paths but reg2reg too (PBA to -24.6 ps on fw4 dp 4×4 RV; GBA
+-3 to -40 ps on 9 of 12); PT hold violations on 3 tiles are only the clk→clk_out
+feed-through (-0.5 to -16.5 ps). Innovus: verify_drc 1000 everywhere (the
+edge-blockage artifact, see smoke run); VSS opens 9 on sp tiles, but 109/110 on
+fw2 dp 2×2 and 214 on fw4 dp 4×4 RV.
+Extracted (minus GDS) with the regenerated CSVs and an analysis handoff at
+`/aha/sweep_out/dw16_NEW_SWEEP_20261009/` (`HANDOFF.md`; build-machine CSVs in
+`csv_as_zipped/`).
 
 ### Whole-graph smoke run: one spec, standalone + tile (2026-10-07)
 
@@ -384,8 +408,9 @@ signoff → PT), then `memtile-power-{synth,pnr}-{idle,active}`, then the
   the LVS deck (`device::enclosure_parallel_measurements`); lib2db never started
   (make stops after the first failure). Innovus's own `verify_drc` caps at 1000
   (≈980 C5/K1 shorts + M3 EOL spacing) and `verifyConnectivity` finds 9 VSS
-  opens on every PnR build so far (also the 2026-10-06 thesis anchors) — a
-  flow-wide power-grid issue, fine for PPA but not DRC-clean.
+  opens on every PnR build so far (also the 2026-10-06 thesis anchors). The
+  DRC count is an edge-blockage artifact; the VSS opens are real (triage
+  below).
   Signoff timing (Innovus `signoff.summary`): WNS −0.090 / TNS −1.948 ns,
   227 violating paths, all IO-facing (In2Out −90 ps ×91, In2Reg −33 ×76,
   CriticalPassThrough −11 ×58, Reg2Out −9 ×2); Reg2Reg −0.000, hold met
@@ -398,14 +423,108 @@ signoff → PT), then `memtile-power-{synth,pnr}-{idle,active}`, then the
   slack stays as is (user decision 2026-10-08): it is recorded per config in
   correlation.csv (`tile_synth_wns_ps`, PT `tile_pnr_setup_wns_ns`,
   `tile_pnr_innovus_wns_{all,reg2reg,in2reg,reg2out,in2out}_ns`).
-  DRC triage (2026-10-08, from the per-step logs): NanoRoute ends at 0 DRC
-  violations in route, postroute and postroute_hold, so the 984 shorts are
-  not signal routing. They appear only at signoff `verify_drc`, all on C5/K1,
-  the coarse power-mesh layers (`ADK_POWER_MESH_{BOT,TOP}_LAYER` in
-  custom-power-leaf/power-strategy-dualmesh.tcl): power-grid shorts (mesh vs
-  mesh, the SRAM macro, or the tile edge). The per-violation reports
-  (`<design>.{drc,conn,antenna}.rpt` in the signoff step dir) are zipped
-  since 2026-10-08 (`*-cadence-innovus-signoff/*.rpt`); read them next.
+  DRC triage (2026-10-08, from `Tile_MemCore.geom.rpt` of the 21:53 re-zip;
+  the verify_drc report is `<design>.geom.rpt`, zipped since 546b1e46 with
+  `.conn.rpt`/`.antenna.rpt`): all 1000 listed violations are wires vs
+  **Routing Blockage**, not metal vs metal. 984 are tile pin stubs inside
+  common/init-scripts/edge-blockages.tcl's 0.18 µm all-layer edge blockage
+  (C5 on top 321 / bottom 189, K1 on left 255 / right 219; the blockage is
+  made after pin assignment and pins must cross it by design); 16 are M3
+  EndOfLine spacing to a blockage in the interior (likely the SRAM M3
+  `-pgnetonly` halo in custom-init/floorplan.tcl). Routing blockages aren't
+  in the GDS, and NanoRoute ends at 0 DRC in route/postroute/postroute_hold,
+  so no real routing DRC is known; but verify_drc stops at its default
+  `-limit 1000`, so anything past the artifacts is hidden (Innovus 22/23 has
+  no "ignore routing blockage" option; raise `set_verify_drc_mode -limit`).
+  Antenna: none. VSS opens (`.conn.rpt`): 1 special-wire open spanning the
+  die + 8 regular-routing VSS pieces: full-width bands just inside the
+  bottom/top edges (y 0.45–0.69, 108.69–108.93; x 1.5–197.3), bands along
+  the SRAM columns' edges (x 50.5–91.3 and 107.7–148.5 at y 20.4–20.6 and
+  89.7–90.0), and short pieces beside them (y 27.1–27.3 at x 48.3–49.8 and
+  149.4–150.6).
+  **Root causes (pg_diag run 2026-10-10 on the smoke tile + fw2 dp 2×2 + fw4
+  dp 4×4 RV; reports in cfc4174c's scratchpad `pgd/`):** no logic cell sits
+  on any open. Two kinds:
+  - **Column caps.** Every non-stripe open is a row of
+    `SC7P5T_NOM1COLCAPNX3_SSC14R` cells (physical-only, from the gf12 ADK's
+    `adk_add_end_caps`, 3276 per tile) at a row-region edge: core top/bottom
+    (777 each), the rows above/below each SRAM (162), and a few beside them.
+    These are sp opens 2–9, plus 6 per dp tile. The M1 VSS followpin beside
+    them is connected (152 V1 vias). What stays open is the caps' **VPW well
+    pin**. The ADK's `setEndCapMode` puts the bottom-edge cap NX3 on both
+    `-topEdge` and `-bottomEdge`. NX3's PG pins (pg_diag v2 `cells.txt`) are
+    VSS on M1, VPW on `SXCUT` (lower 0.24 µm), and VNW on NW; it has no VDD
+    pin. `globalnetconnect.tcl` ties VPW to VSS, but a well shape reaches
+    VSS only through a well tap. Cap rows hold no taps, and the cap's VPW
+    faces outward (to the core edge or the SRAM), so each cap row is an
+    isolated VSS piece. The open boxes match the VPW rects exactly (e.g.
+    0.448–0.688, 108.688–108.928).
+    These are not metal and touch no devices: an abstract-level artifact of
+    the ADK's edge caps, the same on every gf12 tile (full chip too). No
+    flow change:
+    - tapping cap rows (`setEndCapMode -boundary_tap true`) changes cell
+      count and area mid-sweep;
+    - untying cap VPW from VSS would make the LVS netlist wrong.
+
+    pg_diag (b7ebb5c0) counts them as "cap-row well pins (expected)".
+    Tapeout-only leftovers: init's `verifyWellTap` reports 6 violations, and
+    2 real M2 EOL DRCs on fw4 dp 4×4 RV; Calibre never ran.
+  - **Floating M3 stubs (dp only).** 101 and 206 opens are 0.096 × 1.144 µm M3
+    VDD/VSS stripe pieces between the SRAM's M3 PG-only halo (to y 112.124)
+    and the core top. The tall dual-port macros leave no row there, so the
+    pieces cross no followpin.
+    Fix: `editTrim -type float -nets $power_nets -layers M3` at the end of
+    `common/custom-power-leaf/outputs/power-strategy-dualmesh.tcl` (garnet
+    9cfaa55d, in catch; it removes only unconnected wires, so tiles without
+    stubs are unchanged). **Verified on gf12** (pg_diag v2 2026-10-11, Innovus
+    22.13, in memory): dp opens 109 → 7 and 214 → 7. It removed exactly the
+    101/206 stubs, and all VDD opens are gone; the sp tile is unchanged (111
+    M3 wires before and after). It applies to power steps run after the
+    pull. Already-built dp tiles keep the stubs, which is harmless for area
+    and power.
+
+  Re-dropping M1..M3 power vias closes nothing. Forcing them
+  (`ignore_DRC true`) adds 248–1503 vias, still closes nothing, and creates
+  real V2/M2/M3 DRC. Full verify_drc (limit 100000) is 1122–1135 violations,
+  all wire vs routing blockage. The only real geometry is 2 M2 same-mask EOL
+  spacing on fw4 dp 4×4 RV.
+  **`mflowgen/bin/pg_diag.sh <out> <workspace>...`** (garnet 72894fb0, v2
+  17671722) is read-only. It restores each workspace's signoff checkpoint
+  from `<out>/<name>/` (never saved) and writes:
+  - `summary.txt`;
+  - `opens.txt`: per open, the wires/vias/cells/blockages in its box;
+  - `cells.txt`: PG pin shapes of the cells on opens and of all COLCAPs;
+  - `adk_endcaps.txt`: the ADK's endcap procs;
+  - `drc_summary.txt`: verify_drc split into blockage artifacts vs real;
+    `PG_DIAG_DRC=0` skips it;
+  - `trials.txt`: `PG_DIAG_TRIALS`, any of `trim pins vias`, applied in order.
+
+  It packs them into `<out>.tgz`. Innovus 22.13 runs it fine.
+- **Rerun (zip `STANDALONE_r8cad-gf12_20261008-202805`, started 20:14, garnet
+  before 546b1e46/d79bf443, so 3 modes and no DRC/conn .rpt in the zip):**
+  standalone `--standalone-only --fresh`, then tile `--clean-stale` (signoff,
+  PT and PnR power rebuilt). PT signoff now reads the whole SDC: PBA WNS
+  −11.4 ps (In2Out, the `tile_pnr_setup_wns_ns` column = PBA top-100), GBA
+  `report_global_timing` −25.2 ps (Reg2Reg ×10, In2Reg −14.8, In2Out −11.4),
+  hold met; Innovus still −90 ps / 9 VSS opens / 1000 DRC. Tile power
+  unchanged (synth 1.59 / 10.5 mW, PnR 2.04 / 11.6 mW, 100% annotated, sims
+  PASS). Two failures, both fixed after the run: (1) genlibdb's `'Error:'`
+  postcondition, from 9 SEL-005 (no split-FIFO regs under
+  `USE_NON_SPLIT_FIFOS`; lib/db were written) — garnet 8baba3c4; (2) lake
+  standalone ptpx-synth-{idle,active}: the netlist sims PASS and 99.96% of nets are
+  annotated (idle 0.143 / active 1.08 mW, 7.6x), but read_sdc stopped at
+  Genus's first of 155 `set_dont_use` lines (the SDC's tail: nothing but
+  the other 154 was lost; this Genus SDC has no `set_load` at all) and the
+  "Errors reading SDC" postcondition failed —
+  read_sdc_compat drops synthesis-only directives since lake 5ed60bd1 /
+  garnet 1eba1483. Rerun: pull garnet + lake; standalone `--standalone-only
+  --make "clean-synopsys-ptpx-synth-idle-power
+  clean-synopsys-ptpx-synth-active-power"`, then `--standalone-only
+  --memtile-power`; tile `--clean custom-genlibdb-constraints` (rebuilds
+  genlibdb + lib2db) with `--zip --zip-slim`. **Verified** in the re-zip
+  `STANDALONE_r8cad-gf12_20261008-215342` (2026-10-08): genlibdb 0 errors,
+  lib2db built, both standalone ptpx postconditions pass (dropped 1
+  current_design + 155 set_dont_use), power identical to 3 digits.
 - Checked on /aha (stub ADK): dry-run sequence; both graphs materialize, every
   target name resolves/exists, tile build reaches gen_rtl (no docker here),
   standalone reaches lake gen_sram (no SRAM compiler); make-sequencing + notes
@@ -545,6 +664,13 @@ Apples-to-apples caveats:
   (checked in tclsh with stubbed Genus commands against the old script). Only
   script content changed, so built workspaces keep their 3 modes until synth
   is rebuilt (same constraints, so same timing).
+  What `mode` selects (lake `memtile_builder.finalize_controllers`: one value per
+  non-exclusive controller, in `util_onyx` append order; StencilValid is
+  exclusive, on `mode_excl`): spec MemTile 1-bit `mode` 0 = spec controller,
+  1 = StrgRAM (ROMs: camera_pipeline_2x2 has 12, unsharp 1; needed). The one
+  unpinned mode times both. Onyx `mode[1:0]` 0 = FiberAccess (sparse),
+  1 = StrgUBVec, 2 = StrgRAM, so its constraint-mode names are legacy:
+  "UNIFIED_BUFFER" pins sparse, "FIFO" pins UB, and no FIFO controller exists.
 - **`Tile_MemCore/constraints/common.tcl`** — `clk_out` max delay. The
   blanket `set_output_delay … [all_outputs]` (0.1×period) also lands on
   `clk_out`, so the old `set_max_delay -to $pt_clk_out 0.05` left a bare wire
