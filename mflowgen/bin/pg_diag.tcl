@@ -16,7 +16,14 @@
 #   conn_*.rpt      verifyConnectivity reports (before / after each trial)
 #   drc.rpt         verify_drc with a high limit; drc_summary.txt classifies it
 #                   (wire vs Routing Blockage = edge/halo artifact, or real)
-#   trials.txt      in-memory fixes tried and the opens / DRC they leave
+#   cells.txt       PG pin shapes of the library cells sitting on opens, every
+#                   *COLCAP* cell, and one logic cell for reference
+#   trials.txt      in-memory fixes tried (PG_DIAG_TRIALS, in order) and the
+#                   opens / DRC they leave:
+#                     trim  editTrim -type float on the M3 stripes
+#                     pins  M1..M2 vias onto std-cell PG pins in the opens
+#                     vias  re-drop M1..M3 power vias, then forced
+#   PG_DIAG_DRC=0 skips the full-design verify_drc.
 
 proc out {fh args} { puts $fh [join $args " "]; flush $fh }
 
@@ -156,6 +163,8 @@ set m3 [dbGet [dbGetLayerByZ $topz].name]
 set die_area [box_area [dbGet top.fPlan.box]]
 
 lassign [run_conn before] opens sp_opens
+set open_cells {}
+set cell_boxes {}
 set fh [open opens.txt w]
 if {[catch {
   out $fh "opens (all): [llength $opens] ([count_by_net $opens]); special-wire-only check: [llength $sp_opens] ([count_by_net $sp_opens])"
@@ -191,6 +200,8 @@ if {[catch {
       if {![attr $i isPhysOnly 0] && [attr $i cell.baseClass] eq "core"} { incr logic }
     }
     out $fh "  instances overlapping: [llength $insts] (non-physical-only core cells: $logic)"
+    if {[llength $insts]} { lappend cell_boxes [grow $box 0.05] }
+    foreach c [array names ic] { if {[lsearch $open_cells $c] < 0} { lappend open_cells $c } }
     foreach c [lsort [array names ic]] { out $fh "    $c x$ic($c)" }
     foreach i [lrange $insts 0 4] {
       out $fh "    e.g. [dbGet $i.name] [dbGet $i.cell.name] box=[dbGet $i.box] orient=[dbGet $i.orient] physOnly=[attr $i isPhysOnly ?]"
@@ -234,7 +245,39 @@ proc drc_classes {} {
   return [join $s "\n"]
 }
 
+#-------------------------------------------------------------------------
+# cells.txt: PG pin shapes of the cells on the opens
+#-------------------------------------------------------------------------
+set fh [open cells.txt w]
 if {[catch {
+  set ref {}
+  foreach i [dbGet -e top.insts] {
+    if {![attr $i isPhysOnly 1] && [attr $i cell.baseClass] eq "core"} { set ref [dbGet $i.cell.name]; break }
+  }
+  set names $open_cells
+  foreach c [dbGet -e head.libCells.name] {
+    if {[string match "*COLCAP*" $c] && [lsearch $names $c] < 0} { lappend names $c }
+  }
+  if {$ref ne "" && [lsearch $names $ref] < 0} { lappend names $ref }
+  foreach c $names {
+    set lc [dbGet -p head.libCells.name $c]
+    if {$lc eq ""} { continue }
+    out $fh "$c size=[attr $lc size] class=[attr $lc baseClass]/[attr $lc subClass] [expr {$c eq $ref ? {(reference logic cell)} : {}}] [expr {[lsearch $open_cells $c] >= 0 ? {(on opens)} : {}}]"
+    foreach t [dbGet -e $lc.pgTerms] {
+      foreach pn [dbGet -e $t.pins] {
+        foreach ls [dbGet -e $pn.allShapes] {
+          foreach sh [dbGet -e $ls.shapes] {
+            out $fh "  pg [dbGet $t.name] layer=[dbGet $ls.layer.name] rect=[attr $sh rect]"
+          }
+        }
+      }
+    }
+  }
+} e]} { out $errs "cells: $e" }
+close $fh
+
+set do_drc [expr {[info exists ::env(PG_DIAG_DRC)] ? $::env(PG_DIAG_DRC) : 1}]
+if {$do_drc && [catch {
   clearDrc
   set_verify_drc_mode -limit 100000
   verify_drc -report drc.rpt
@@ -245,40 +288,78 @@ if {[catch {
 } e]} { out $errs "drc: $e" }
 
 #-------------------------------------------------------------------------
-# trials.txt: in-memory via fixes (never saved)
+# trials.txt: in-memory fixes (never saved), applied in PG_DIAG_TRIALS order
 #-------------------------------------------------------------------------
+proc nsw {nets layer} {
+  set c 0
+  foreach n $nets {
+    foreach w [dbGet -e [dbGet -p top.nets.name $n].sWires] { if {[lname [dbGet $w.layer]] eq $layer} { incr c } }
+  }
+  return $c
+}
+
+set trials [expr {[info exists ::env(PG_DIAG_TRIALS)] ? $::env(PG_DIAG_TRIALS) : "vias"}]
+set m2 [dbGet [dbGetLayerByZ 2].name]
 set fh [open trials.txt w]
-if {[catch {
-  set small {}
-  foreach o $opens {
-    set b [lindex $o 1]
-    if {[box_area $b] <= 0.25 * $die_area} { lappend small [grow $b 0.5] }
-  }
-  out $fh "baseline: opens [llength $opens] ([count_by_net $opens])"
-  if {[llength $small]} {
-    set nets [lsort -unique [lmap o $opens {lindex [lindex $o 0] end}]]
-    # T1: what the flow's own via generator does when asked again (DRC-clean vias only)
-    setViaGenMode -reset
-    setViaGenMode -ignore_DRC false
-    set v0 [llength [dbGet -e top.nets.sVias]]
-    editPowerVia -add_vias 1 -nets $nets -bottom_layer $m1 -top_layer $m3 -area $small
-    set v1 [llength [dbGet -e top.nets.sVias]]
-    lassign [run_conn t1] o1 s1
-    out $fh "T1 editPowerVia $m1..$m3 in the open boxes, ignore_DRC false: +[expr {$v1-$v0}] vias, opens [llength $o1] ([count_by_net $o1])"
-    # T2: force the vias, then see which DRCs that creates in those boxes
-    setViaGenMode -ignore_DRC true
-    editPowerVia -add_vias 1 -nets $nets -bottom_layer $m1 -top_layer $m3 -area $small
-    set v2 [llength [dbGet -e top.nets.sVias]]
-    lassign [run_conn t2] o2 s2
-    out $fh "T2 same with ignore_DRC true: +[expr {$v2-$v1}] more vias, opens [llength $o2] ([count_by_net $o2])"
-    clearDrc
-    set_verify_drc_mode -limit 100000
-    verify_drc -report drc_after_t2.rpt
-    out $fh "  verify_drc after T2 (compare drc_summary.txt, before any trial):"
-    out $fh "  [string map {"\n" "\n  "} [drc_classes]]"
-    set_verify_drc_mode -reset
-  }
-} e]} { out $errs "trials: $e" }
+set small {}
+foreach o $opens {
+  set b [lindex $o 1]
+  if {[box_area $b] <= 0.25 * $die_area} { lappend small [grow $b 0.5] }
+}
+set nets [lsort -unique [lmap o $opens {lindex [lindex $o 0] end}]]
+out $fh "baseline: opens [llength $opens] ([count_by_net $opens]); trials in order: $trials"
+foreach tr $trials {
+  if {[catch {
+    switch -- $tr {
+      trim {
+        set w0 [nsw $nets $m3]
+        editTrim -type float -nets $nets -layers $m3
+        set w1 [nsw $nets $m3]
+        lassign [run_conn trim] o1 s1
+        out $fh "trim: editTrim -type float -nets {$nets} -layers $m3: $m3 special wires $w0 -> $w1, opens [llength $o1] ([count_by_net $o1])"
+      }
+      pins {
+        if {![llength $cell_boxes]} { out $fh "pins: no opens with cells on them" }
+        foreach ign [expr {[llength $cell_boxes] ? {false true} : {}}] {
+          setViaGenMode -reset
+          setViaGenMode -ignore_DRC $ign
+          set v0 [llength [dbGet -e top.nets.sVias]]
+          editPowerVia -add_vias 1 -nets $nets -bottom_layer $m1 -top_layer $m2 \
+              -skip_via_on_pin {pad block cover physicalpin} -area $cell_boxes
+          set v1 [llength [dbGet -e top.nets.sVias]]
+          lassign [run_conn pins_$ign] o1 s1
+          out $fh "pins: editPowerVia $m1..$m2 onto std-cell pins in [llength $cell_boxes] cell opens, ignore_DRC $ign: +[expr {$v1-$v0}] vias, opens [llength $o1] ([count_by_net $o1])"
+        }
+        setViaGenMode -reset
+      }
+      vias {
+        if {![llength $small]} { out $fh "vias: no small opens"; set small {{0 0 0 0}} }
+        setViaGenMode -reset
+        setViaGenMode -ignore_DRC false
+        set v0 [llength [dbGet -e top.nets.sVias]]
+        editPowerVia -add_vias 1 -nets $nets -bottom_layer $m1 -top_layer $m3 -area $small
+        set v1 [llength [dbGet -e top.nets.sVias]]
+        lassign [run_conn t1] o1 s1
+        out $fh "vias T1 editPowerVia $m1..$m3 in the open boxes, ignore_DRC false: +[expr {$v1-$v0}] vias, opens [llength $o1] ([count_by_net $o1])"
+        setViaGenMode -ignore_DRC true
+        editPowerVia -add_vias 1 -nets $nets -bottom_layer $m1 -top_layer $m3 -area $small
+        set v2 [llength [dbGet -e top.nets.sVias]]
+        lassign [run_conn t2] o2 s2
+        out $fh "vias T2 same with ignore_DRC true: +[expr {$v2-$v1}] more vias, opens [llength $o2] ([count_by_net $o2])"
+        setViaGenMode -reset
+        if {$do_drc} {
+          clearDrc
+          set_verify_drc_mode -limit 100000
+          verify_drc -report drc_after_t2.rpt
+          out $fh "  verify_drc after T2 (compare drc_summary.txt, before any trial):"
+          out $fh "  [string map {"\n" "\n  "} [drc_classes]]"
+          set_verify_drc_mode -reset
+        }
+      }
+      default { out $fh "unknown trial $tr" }
+    }
+  } e]} { out $errs "trial $tr: $e" }
+}
 close $fh
 
 close $errs

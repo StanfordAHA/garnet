@@ -10,7 +10,9 @@
 #
 # Usage:  mflowgen/bin/pg_diag.sh <out dir> <workspace>...
 #   env:  JOBS=2 (Innovus runs at once; each takes an invs + invs_20nm
-#         license), PG_DIAG_TOP=Tile_MemCore
+#         license), PG_DIAG_TOP=Tile_MemCore, PG_DIAG_TRIALS="vias" (any of
+#         trim pins vias, applied in order), PG_DIAG_DRC=1 (0 skips the
+#         full-design verify_drc)
 #
 # What it answers (VSS opens in garnet open issue garnet/pnr-drc-vss-opens):
 # which wires/vias/cells sit in each verifyConnectivity open, whether std
@@ -33,8 +35,18 @@ run_one() {
   ck=$(ls -d "$ws"/*-cadence-innovus-signoff/checkpoints/design.checkpoint/save.enc.dat 2>/dev/null | head -1)
   if [ -z "$ck" ]; then echo "SKIP $name: no signoff checkpoint under $ws"; return; fi
   d="$out/$name"; mkdir -p "$d"
+  # how the ADK places endcaps / well taps (adk.tcl of the workspace's adk step)
+  local adk
+  adk=$(ls "$ws"/*-adk/outputs/adk/adk.tcl 2>/dev/null | head -1)
+  if [ -n "$adk" ]; then
+    { echo "# $adk"; grep -n -i -E "END_CAP|WELL_TAP|ENDCAP|COLCAP|TAPCELL" "$adk"
+      for p in adk_set_end_cap_mode adk_add_end_caps adk_set_well_tap_mode adk_add_well_taps; do
+        awk -v p="$p" '$1=="proc" && $2==p {f=1} f {print} f && /^}/ {f=0}' "$adk"
+      done; } > "$d/adk_endcaps.txt" 2>&1
+  fi
   echo "START $name ($(date +%H:%M:%S))"
   ( cd "$d" && PG_DIAG_CKPT=$(readlink -f "$ck") PG_DIAG_TOP=${PG_DIAG_TOP:-Tile_MemCore} \
+      PG_DIAG_TRIALS=${PG_DIAG_TRIALS:-vias} PG_DIAG_DRC=${PG_DIAG_DRC:-1} \
       innovus -64 -nowin -overwrite -files "$tcl" -log innovus.log < /dev/null > innovus.stdout 2>&1 )
   echo "DONE  $name ($(date +%H:%M:%S)): $(head -1 "$d/opens.txt" 2>/dev/null || echo 'no opens.txt, see innovus.log')"
 }
