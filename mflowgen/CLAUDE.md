@@ -1122,14 +1122,14 @@ diff seeded builds. dw 8/32/64 static + rv were checked with
 `tests/check_widths.py`, the GLB lanes in Xcelium, the lassen ALU against a
 Python model, and the memtile power tests (whole-word B{dw+1} tracks now).
 
-**Apps on dw 8/32/64 fabrics.** Applied UNCOMMITTED to the shared trees on 2026-10-08
+**Apps on dw 8/32/64 fabrics.** Committed 2026-10-11 (aha mek 30abb17: lassen 52f023e, lake 2f20b666, garnet e30c6792, Halide 571fba524, MetaMapper 373c5c0, archipelago 31285ac, clockwork 1cc6da51); applied to the shared trees on 2026-10-08
 (Halide-to-Hardware, clockwork, MetaMapper, lassen, garnet, archipelago, aha). The shared
 libHalide and libclkwrk.so were rebuilt. Shared-toolchain checks:
 - 16-bit compile: byte-identical to before.
 - dw32: gaussian RV.
 - dw64: pointwise_wide static.
 - dw8: gaussian8 RV.
-- The shared trees hold the current code (uncommitted). The scratchpad patches
+- The commits above hold the current code. The scratchpad patches
   `a16b3973-.../scratchpad/p32/patches/*.patch` and the private tree `p32/aha` are the 2026-10-08
   env-knob version, superseded on 2026-10-10 (see "One source of truth" below).
 - Driver: `s32/e2e2.sh` (`DW=`, `MODE=`, `FW=`, `APP=`, stages; `MAPSPEC=`/`MAPCOLL=` to
@@ -1176,6 +1176,24 @@ libHalide and libclkwrk.so were rebuilt. Shared-toolchain checks:
       glob order, and the output is identical once they are normalized.
     - E2E bit-accurate: gaussian dw32 static + RV, dw64 fw2 static, dw16 static. Both mismatch
       errors fire.
+  - **More checks 2026-10-11** (committed code, small arrays, `s32/e2e2.sh`), all bit-accurate:
+    - dw32 static: `tests/{arith,ucomp,conv_2_1,boolean_ops,ternary,absolute,scomp}`
+      (4×4), `tests/conv_3_3` fw2 (4×8), and `apps/scalar_reduction` (pond, 16×8).
+    - dw32 RV: `tests/{arith,ucomp,conv_2_1}`, and `apps/pointwise` fw2.
+    - dw64 RV fw2: `tests/{arith,conv_2_1}`.
+    - dw8 RV: `tests/mem_transpose_test`.
+  - **Expected differences:** `tests/{ushift,sshift}` at dw32 differ from the gold only above
+    bit 15 (all 4096 pixels equal mod 2^16). Their uint16/int16 programs rely on 16-bit wrap,
+    which a 32-bit PE does not do (see "arithmetic width" below).
+  - **Blocked by coreir:** `commonlib.{u,s}{min,max}` assert width == 16 (`tests/uminmax`,
+    `apps/unsharp` at dw32: "NYI non 16"). The source fix and a rebuilt library are ready, but
+    installing the library is waiting for the user (OPEN_ISSUES coreir/commonlib-minmax-width;
+    coreir/CLAUDE.md).
+  - **Not width-related:** `tests/mem_{filter,slice,transpose}_test` fail on a lake-spec MEM at
+    dw16 too (OPEN_ISSUES cross-repo/spec-mem-unit-tests). dw64 fw4 specs have no SRAM macro,
+    so garnet fails "No valid macros"; use fw2 at dw64.
+  - **Arithmetic width:** compute runs at the fabric width, so an app relying on 16-bit
+    wraparound gives different results at other widths.
 - **What changed, per repo:**
   - Halide: `inst_bitwidth` plus buffer, C-model and data-file widths.
   - clockwork: `DATAPATH_WIDTH` from the collateral, plus IO/Mem widths.
