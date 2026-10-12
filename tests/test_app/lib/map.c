@@ -1,6 +1,7 @@
 #include "map.h"
 
 #include <assert.h>
+#include <stdlib.h>
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
@@ -114,6 +115,66 @@ void update_bs_configuration(struct BitstreamInfo *bs_info) {
     add_config(config_info,
                (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_PCFG_DMA_HEADER_NUM_CFG_R,
                size);
+}
+
+// The GLB byte range [*lo, *hi) an IO tile's address generator touches, for a tile in the plain
+// layout. Returns 0 for the special modes (E64 packing, multi-bank, MU tiling, bank toggle, GLB
+// tiling, output padding), whose layouts this does not model.
+static int io_tile_glb_range(struct KernelInfo *kernel, struct IOTileInfo *t, long *lo, long *hi) {
+    if (t->is_fake_io || t->hacked_for_mu_tiling || t->bank_toggle_mode) return 0;
+    if (t->E64_packed && (get_exchange_64_config() || get_E64_multi_bank_mode_config())) return 0;
+    if (kernel->num_glb_tiling > 1 || getenv("pad_o_left") != NULL || getenv("pad_o_right") != NULL) return 0;
+    long last = 0;  // last word touched, relative to the start
+    for (int i = 0; i < t->loop_dim; i++) {
+        if (t->data_stride[i] < 0 || t->extent[i] < 1) return 0;
+        last += (long)(t->extent[i] - 1) * t->data_stride[i];
+    }
+    *lo = t->start_addr;
+    *hi = t->start_addr + ((last + 1) << CGRA_BYTE_OFFSET);
+    return 1;
+}
+
+// Each IO tile gets one GLB bank (inputs bank 2*tile, outputs 2*tile+1). Data larger than that
+// runs into the neighbouring bank, where another IO tile's data overwrites it (or is overwritten)
+// and the app silently computes garbage, e.g. on a 32-bit CGRA, whose words take twice the bytes.
+// Refuse overlapping IO regions and regions past the end of the GLB.
+static void check_io_tile_glb_ranges(struct KernelInfo *kernel) {
+    static struct { long lo, hi; const char *kind; int io, blk; } r[2 * MAX_NUM_IO * MAX_NUM_IO_TILES];
+    int n = 0;
+    long glb_bytes = ((long)NUM_GLB_TILES * BANKS_PER_TILE) << BANK_ADDR_WIDTH;
+    for (int pass = 0; pass < 2; pass++) {
+        int num = pass == 0 ? kernel->num_inputs : kernel->num_outputs;
+        for (int i = 0; i < num; i++) {
+            struct IOInfo *io = pass == 0 ? get_input_info(kernel, i) : get_output_info(kernel, i);
+            for (int j = 0; j < io->num_io_tiles; j++) {
+                long lo, hi;
+                if (!io_tile_glb_range(kernel, get_io_tile_info(io, j), &lo, &hi)) continue;
+                r[n].lo = lo; r[n].hi = hi; r[n].kind = pass == 0 ? "input" : "output";
+                r[n].io = i; r[n].blk = j; n++;
+            }
+        }
+    }
+    int bad = 0;
+    for (int a = 0; a < n; a++) {
+        if (r[a].hi > glb_bytes) {
+            printf("ERROR: GLB: %s_%d_block_%d needs bytes [0x%lx, 0x%lx), past the end of the "
+                   "%ld-byte GLB.\n", r[a].kind, r[a].io, r[a].blk, r[a].lo, r[a].hi, glb_bytes);
+            bad = 1;
+        }
+        for (int b = a + 1; b < n; b++) {
+            if (r[a].lo < r[b].hi && r[b].lo < r[a].hi) {
+                printf("ERROR: GLB: %s_%d_block_%d [0x%lx, 0x%lx) overlaps %s_%d_block_%d "
+                       "[0x%lx, 0x%lx).\n", r[a].kind, r[a].io, r[a].blk, r[a].lo, r[a].hi,
+                       r[b].kind, r[b].io, r[b].blk, r[b].lo, r[b].hi);
+                bad = 1;
+            }
+        }
+    }
+    if (bad) {
+        printf("ERROR: GLB: IO data does not fit its %ld-byte GLB bank (%d-byte CGRA words); "
+               "use a larger --glb_tile_mem_size.\n", 1L << BANK_ADDR_WIDTH, 1 << CGRA_BYTE_OFFSET);
+        exit(1);
+    }
 }
 
 int glb_map(void *kernel_, int dpr_enabled) {
@@ -292,6 +353,8 @@ int glb_map(void *kernel_, int dpr_enabled) {
 
     // book keeping last output tile
     last_output_tile = tile;
+
+    check_io_tile_glb_ranges(kernel);
 
     // unset padding var after a kernel is mapped
     if(getenv("pad_o_left") != NULL) unsetenv("pad_o_left");

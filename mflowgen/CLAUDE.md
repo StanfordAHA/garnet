@@ -1344,7 +1344,7 @@ fabric:
 - GLB `cgra_data_width=dw`, `lanes = 64/dw` per bank word (generic lane logic;
   the 4-lane blocks are kept for dw16). E64 / multi-bank / MU GLB and the
   matrix-unit IO are 16-bit only (asserted).
-- lake side (token layout, legal widths, config word): lake CLAUDE.md §5.4.
+- lake side (token layout, legal widths, config word): lake CLAUDE.md §5.5.
 
 Verified (scratchpad `a16b3973-.../scratchpad`): dw16 garnet.v byte-identical
 to the pre-change tree under `PYTHONHASHSEED=0`, static + rv. Without a fixed
@@ -1425,8 +1425,13 @@ libHalide and libclkwrk.so were rebuilt. Shared-toolchain checks:
     - `apps/unsharp` at dw32, static + RV (16×8, `--glb_tile_mem_size 256`). This needed
       Halide 176cfdc04: `mult_middle`/`mult_high` are used only at 16, because on a W-bit PE
       they shift by W/2 and W.
-    - With 128 KB GLB tiles, unsharp's 204 KB (32-bit) input overflows silently (OPEN_ISSUES
-      cross-repo/glb-overflow-silent).
+    - With 128 KB GLB tiles, unsharp's 204 KB (32-bit) input ran into the output's GLB bank
+      and came back wrong. The testbench (`tests/test_app/lib/map.c`
+      `check_io_tile_glb_ranges`) now refuses that at sim start. Each IO tile gets one GLB bank
+      (inputs bank 2·tile, outputs 2·tile+1); IO tiles in the plain layout whose byte ranges
+      overlap, or run past the GLB, give "ERROR: GLB: ... overlaps ..." and exit(1). The
+      E64 / multi-bank / MU-tiling / bank-toggle / GLB-tiling / padding layouts are not checked.
+      Wide data needs a bigger `--glb_tile_mem_size`.
   - **Not width-related:** `tests/mem_{filter,slice,transpose}_test` fail on a lake-spec MEM at
     dw16 too (OPEN_ISSUES cross-repo/spec-mem-unit-tests). dw64 fw4 specs have no SRAM macro,
     so garnet fails "No valid macros"; use fw2 at dw64.
