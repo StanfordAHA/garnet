@@ -11,16 +11,21 @@ was recorded on. Fails (exit 1, every problem listed) unless:
                   lake-spec bundle does not match). Skipped when not given.
   --design-v      this build's RTL (the rtl step's design.v) has the tile module
                   --design-name with exactly the ports the bundle recorded
-                  (tile_ports.json), and for Tile_MemCore, its lake controller
-                  has exactly the ports in core_ports.json. Spec + mode cannot
+                  (tile_ports.json), and the tile's lake core is the same
+                  module with the same ports: Tile_MemCore's controller
+                  (core_ports.json), Tile_PE's pond (the bundle's garnet.v.gz;
+                  an RV-mode CGRA has the RV spec pond, which the Tile_PE graph
+                  does not build, so Tile_PE takes a static bundle). Spec + mode cannot
                   see a changed controller: lake 144e2062 pruned the RV
                   comparators of the SAME spec, which shrank config_memory
                   (1421 bits for fw4 sc8192 rv), and a bundle recorded before it
                   replayed config writes into the wrong bits without an error.
 """
 import argparse
+import gzip
 import json
 import os
+import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -33,6 +38,11 @@ SPEC_DEFAULTS = dict(storage_capacity=4096, data_width=16, vec_width=4, dims=6,
                      in_ports=2, out_ports=2, dual_port=False, vec_capacity=2,
                      max_extent=None, max_sequence_width=None)
 MAX_LISTED = 8
+# The lake-generated core of each tile (outermost match under the tile):
+# MEM controller (static / RV spec) and PE pond (legacy PondTop, spec pond).
+LAKE_CORES = {"Tile_MemCore": CORE_MODULE_RE,
+              "Tile_PE": re.compile(r"^(PondTop|lakespec_pond)(_W|_flat)?$")}
+CORE_NAMES = {"Tile_MemCore": "lake controller", "Tile_PE": "pond"}
 
 
 def norm(spec):
@@ -70,9 +80,24 @@ def check_spec(manifest, spec_path, mode):
     return problems
 
 
+def recorded_core(bundle_dir, design, bundle_mods):
+    """(module, ports) of the tile's lake core the bundle was recorded on:
+    core_ports.json (MEM controller), else the bundle's own garnet.v.gz;
+    (None, None) when neither has one."""
+    core_json = os.path.join(bundle_dir, "core_ports.json")
+    if design == "Tile_MemCore" and os.path.isfile(core_json):
+        core = json.load(open(core_json))
+        return core.get("module"), core
+    if bundle_mods is not None:
+        _, mod = find_instance_path(bundle_mods, design, LAKE_CORES[design])
+        if mod is not None:
+            return mod, module_ports(bundle_mods[mod][0])
+    return None, None
+
+
 def check_rtl(bundle_dir, design_v, design):
-    """Problems between the bundle's recorded tile (+ MEM controller) ports
-    and this build's RTL."""
+    """Problems between the bundle's recorded tile (+ its lake core: MEM
+    controller / PE pond) and this build's RTL."""
     mods = verilog_modules(open(design_v, errors="replace").read())
     if design not in mods:
         return [f"{design_v} has no module {design}"]
@@ -80,17 +105,21 @@ def check_rtl(bundle_dir, design_v, design):
     if design not in tile_ports:
         return [f"bundle tile_ports.json has no {design} (recorded designs: {sorted(tile_ports)})"]
     problems = port_diff(f"{design} ports:", tile_ports[design], module_ports(mods[design][0]))
-    core_json = os.path.join(bundle_dir, "core_ports.json")
-    if design == "Tile_MemCore" and os.path.isfile(core_json):
-        core = json.load(open(core_json))
-        _, core_mod = find_instance_path(mods, design, CORE_MODULE_RE)
-        if core_mod is None:
-            problems.append(f"no lake controller ({CORE_MODULE_RE.pattern}) under {design} in {design_v}; "
-                            f"the bundle recorded {core.get('module')}")
-        else:
-            if core_mod != core.get("module"):
-                problems.append(f"lake controller module {core_mod} != the bundle's {core.get('module')}")
-            problems += port_diff(f"lake controller {core_mod} ports:", core, module_ports(mods[core_mod][0]))
+    if design not in LAKE_CORES:
+        return problems
+    gz = os.path.join(bundle_dir, "garnet.v.gz")
+    bundle_mods = verilog_modules(gzip.open(gz, "rt", errors="replace").read()) if os.path.isfile(gz) else None
+    rec_mod, rec_ports = recorded_core(bundle_dir, design, bundle_mods)
+    _, mod = find_instance_path(mods, design, LAKE_CORES[design])
+    what = CORE_NAMES[design]
+    if rec_mod is None and bundle_mods is None:
+        print(f"WARNING: bundle has no core_ports.json / garnet.v.gz: {what} not checked", file=sys.stderr)
+    elif rec_mod != mod:
+        hint = (" (an RV-mode CGRA's PE tile has the RV spec pond; the Tile_PE graph builds the"
+                " default pond: use a static bundle for Tile_PE)") if design == "Tile_PE" else ""
+        problems.append(f"{what} module {mod} != the bundle's {rec_mod}{hint}")
+    elif mod is not None:
+        problems += port_diff(f"{what} {mod} ports:", rec_ports, module_ports(mods[mod][0]))
     return problems
 
 

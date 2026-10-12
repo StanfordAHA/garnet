@@ -1115,6 +1115,71 @@ port data/valid/ready, flush — the standalone-lakespec replay input),
 `garnet.v.gz`, `design.place`, the bitstream, `logs/`. `garnet.py --verilog`
 rewrites the GLB/GLC headers of `$GARNET_HOME`, so on a shared /aha use a
 private aha tree (`--aha-dir`, run through `aha --dir`).
+A private tree = a dir of symlinks to every `/aha` entry except `garnet`
+(its own `git clone`), plus a private app copy under
+`Halide-to-Hardware/apps/hardware_benchmarks/<x>/<app>` (same `../../hw_support`
+depth), so static and RV bundles can run concurrently (~26 / ~33 min at 16x16).
+
+**Pipeclean bundles (2026-10-11, session 1fa8a391):** conv_3_3 on
+`fw4_dw16_sc8192_sp_in2_out2_vc2` and `..._vc2_rv` (16x16), packed as
+`/aha/sweep_out/app_bundles_pipeclean_lakee4fabdc1.tgz`. Recorded on lake
+fe2e786d (the port-order fix before its rebase onto c357c6f7 = e4fabdc1) +
+garnet a881563f + clockwork cbbd089a; `aha test` bit-accurate (3844 words).
+Verified against what the build machine builds from lake e4fabdc1 (4x2
+`--no-pd` builds, other hash seed; tile modules do not depend on the array
+size): `check_bundle.py` OK for both MEM tiles and for Tile_PE with the static
+bundle, and every tile replays with 0 mismatches (static 2 MEM + 10 PE over
+7539 cycles, RV 1 MEM over 8843). The RV bundle's PE tiles carry the RV spec
+pond (see "Bundle guards"): Tile_PE gets the static bundle. Two earlier sets were
+deleted as stale: lake 04191ea5 (before 144e2062's comparator pruning) and
+144e2062 (before the port-order fix).
+
+**Bundle guards (garnet a881563f, 2026-10-11, session 1fa8a391; tests:
+`tests/test_app_bundle_guards`, 18).** Both failure modes used to be silent:
+- *Bundle recorded on another tile* -> `application` fails up front. The step
+  gets the rtl step's `design.v` (Tile_MemCore + Tile_PE wire it; an
+  unconnected input elsewhere only warns) and `check_bundle.py --design-v
+  --design-name $design_name` compares the tile module's ports with
+  `tile_ports.json` and, for Tile_MemCore, the lake controller's
+  (`lakespec(_mem)?(_flat)?`) ports with `core_ports.json`, as {name: width}.
+  Spec + mode alone missed lake 144e2062 (same spec, pruned RV comparators,
+  config_memory 1621 -> 1421 bits for fw4 sc8192 rv): an old-network RV build
+  now fails with `config_memory 1421 -> 1621`; a static build vs an RV bundle
+  fails on the controller module + ports. For Tile_PE (spec/mode check off) it
+  compares the pond module + ports with the bundle's own `garnet.v.gz`.
+  **Tile_PE takes a static bundle**: an RV-mode CGRA's PE tile carries the RV
+  spec pond (`lakespec_pond`), while the Tile_PE graph has no mode knob and
+  builds the default `PondTop`; the check says so.
+- *Tile that does not replay the recording* -> tile-post-{rtl,synth,pnr}-power
+  fail at the end. `run_all_tiles.py` (one file, three identical copies; a test
+  checks) writes per tile `outputs/reports/<tile>.replay.json` (the tb's `cycle
+  N: <port>: got X, expected Y` lines, sim reached `$finish`, power report
+  present) and `replay_summary.txt`. Param `replay_check` (env `REPLAY_CHECK`
+  through the tile graphs): `auto` (default) = fail with an app bundle, warn on
+  the legacy stock-container path; `fail`; `warn`. Reports are written first.
+  `memtile_power.csv`: `tile_{rtl,synth,pnr}_replay_exact` = `<exact>/<tiles>`.
+- Power domains: the tile graphs build `garnet.py --no-pd` (`pwr_aware =
+  False`), `gen_app_bundle.py` builds with them. Checked harmless: same tile
+  ports, and both pipeclean bundles replay with 0 mismatches on `--no-pd` 4x2
+  tiles (tile modules do not depend on the array size).
+
+**garnet.v run-to-run determinism (functional part fixed in lake e4fabdc1).**
+kratos `get_port_names()` is a Python set and lake iterated it unsorted, so
+`CoreCombinerCore`'s read-only configs (pass-through inputs of the core's
+`read_config_data` mux) came in hash-seed order: module `PE`'s
+`mux_aoi_10_32_inst0` I[7] was the reduce cluster's `onyxpeintf_O2`/`O3`/`O4`/`O4`
+in four builds, while RTL (`garnet.py --verilog`) and bitstream (`aha pnr`)
+are separate processes. Fixed: 4x2 builds under PYTHONHASHSEED 1 and 2 differ
+in 0 lines after normalizing (strip trailing commas, sort; 6 before). Still
+textually different (port-connection order from kratos `util.to_magma`, kratos
+C++ FSM default-assignment order), so compare two garnet.v that way, never by
+md5. The build machine's rtl step uses the container's kratos but the host's
+lake (copied in), so a lake pull brings the fix there.
+Tile_PE has no `use_non_split_fifos` param, but that is fine:
+`common/rtl/gen_rtl.sh` passes `--use-non-split-fifos` to garnet.py
+unconditionally, so every tile graph builds the non-split switch-box FIFOs the
+bundles record (canal `circuit.py` builds `FifoRegWrapper` per that env; it
+changes RTL, not just the bitstream).
 
 **Per-tile power sub-graphs ADK (fixed 2026-10-07):**
 `common/tile-post-{rtl,synth,pnr}-power/construct.py` hard-coded

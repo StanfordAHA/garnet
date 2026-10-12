@@ -226,3 +226,54 @@ def test_sweep_specs_replay_column(tmp_path):
     row = ss._tile_app_power_metrics(tmp_path, None)
     assert row["tile_synth_replay_exact"] == "1/2"
     assert row["tile_rtl_replay_exact"] is None and row["tile_pnr_replay_exact"] is None
+
+
+PE_V = """module Tile_PE (
+    input clk,
+    input [16:0] SB_T0_EAST_SB_IN_B17,
+    output [31:0] read_config_data
+);
+PondCore PondCore_inst0 (
+    .clk(clk)
+);
+endmodule
+module PondCore (
+    input clk
+);
+{pond} {pond}_inst0 (
+    .clk(clk)
+);
+endmodule
+module {pond} (
+    input logic clk,
+    input logic [{cfg_hi}:0] config_memory
+);
+endmodule
+"""
+
+
+def make_pe_bundle(tmp_path, pond="PondTop", cfg_hi=99):
+    import gzip
+    b = tmp_path / "pe_bundle"
+    b.mkdir()
+    (b / "manifest.json").write_text(json.dumps({"app": "tests/conv_3_3", "mode": "static"}))
+    (b / "tile_ports.json").write_text(json.dumps({"Tile_PE": {
+        "inputs": [["clk", 1], ["SB_T0_EAST_SB_IN_B17", 17]], "outputs": [["read_config_data", 32]]}}))
+    with gzip.open(b / "garnet.v.gz", "wt") as f:
+        f.write(PE_V.format(pond=pond, cfg_hi=cfg_hi))
+    return b / "manifest.json"
+
+
+@pytest.mark.parametrize("built,cfg_hi,rc,msg", [
+    ("PondTop", 99, 0, "app bundle OK (Tile_PE ports"),
+    ("lakespec_pond", 99, 1, "pond module lakespec_pond != the bundle's PondTop (an RV-mode"),
+    ("PondTop", 63, 1, "pond PondTop ports: inputs width changed: config_memory 100 -> 64"),
+])
+def test_check_bundle_pe_pond(tmp_path, capsys, built, cfg_hi, rc, msg):
+    m = make_pe_bundle(tmp_path)
+    dv = tmp_path / "design.v"
+    dv.write_text(PE_V.format(pond=built, cfg_hi=cfg_hi))
+    cb = load(APP / "check_bundle.py", "check_bundle")
+    assert cb.main([str(m), "--design-v", str(dv), "--design-name", "Tile_PE"]) == rc
+    out = capsys.readouterr()
+    assert msg in (out.out + out.err)
