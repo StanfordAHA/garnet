@@ -12,9 +12,20 @@ if [ -n "${app_bundle}" ]; then
       exit 1
     fi
   done
+  chk=()
   if [ "${app_bundle_check}" = "True" ]; then
-    python3 check_bundle.py "${app_bundle}/manifest.json" "${lake_spec_config}" "${lake_spec_mode}"
+    chk+=(--spec "${lake_spec_config}" --mode "${lake_spec_mode}")
   fi
+  # This build's RTL (the rtl step's design.v, wired in by Tile_MemCore /
+  # Tile_PE): the tile's ports, and the MEM tile's lake controller ports, must
+  # be the ones the bundle recorded. Spec + mode alone miss a changed
+  # controller (see check_bundle.py).
+  if [ -f inputs/design.v ]; then
+    chk+=(--design-v inputs/design.v --design-name "${design_name}")
+  else
+    echo "WARNING: no inputs/design.v: app bundle not checked against this build's RTL" >&2
+  fi
+  python3 check_bundle.py "${app_bundle}/manifest.json" "${chk[@]}"
   for f in run.vcd tiles_Tile_PE.list tiles_Tile_MemCore.list tile_ports.json manifest.json; do
     cp "${app_bundle}/$f" outputs/
   done

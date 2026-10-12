@@ -2858,6 +2858,16 @@ def _tile_app_power_metrics(ws, standalone_app):
         row[f"tile_{level}_app_total_power"] = n[3] if len(n) >= 4 else None
         if pick is not None and row["tile_app"] is None:
             row["tile_app"] = pick.stem
+        # run_all_tiles.py's per-tile replay check: "<exact>/<tiles>"; a tile
+        # that did not replay the recorded app run exactly has not-the-app power
+        reps = sorted(ws.glob(f"*-post-{level}-power/outputs/reports/Tile_X*.replay.json"))
+        ok = 0
+        for r in reps:
+            try:
+                ok += not json.loads(r.read_text()).get("problems")
+            except (OSError, ValueError):
+                pass
+        row[f"tile_{level}_replay_exact"] = f"{ok}/{len(reps)}" if reps else None
     return row
 
 

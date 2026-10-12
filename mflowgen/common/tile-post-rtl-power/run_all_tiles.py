@@ -1,19 +1,119 @@
-import subprocess
+"""Per-tile app-driven power: run this level's per-tile sub-graph (./run.sh,
+which makes the tile's xcelium sim + ptpx and copies its power.hier to
+outputs/reports/<tile>.hier) for every placed tile of design_name, then check
+that each tile's simulation replayed the recorded app run exactly.
+
+The tile testbench (common/testbench) prints one line per output port and
+cycle that differs from the recording ("cycle N: <port>: got X, expected Y",
+X included). A replay that differs means the tile is not the one the app ran
+on (stale app bundle, other RTL), so its power describes some other activity.
+Per tile: outputs/reports/<tile>.replay.json; all tiles:
+outputs/reports/replay_summary.txt.
+
+Parameter replay_check: "fail" exits non-zero after all tiles ran (reports
+are still written) if any tile mismatched, did not finish its sim, or has no
+power report; "warn" only prints; "auto" (default) = "fail" with an app bundle
+(app_bundle set), else "warn" (the legacy stock-container app run was never
+checked against the tile). Identical copy in
+tile-post-{rtl,synth,pnr}-power (tests/test_app_bundle_guards checks that).
+"""
+import glob
+import json
 import os
+import re
+import subprocess
+import sys
+
+MISMATCH = re.compile(r"cycle\s+(\d+):\s*(\S+):\s+got\s+(\S+),\s+expected\s+(\S+)")
+FINISHED = re.compile(r"Simulation complete via \$finish")
+MAX_EXAMPLES = 5
+
+
+def tile_ids(design):
+    ids = []
+    with open(f"./inputs/tiles_{design}.list") as f:
+        for line in f:
+            fields = line.strip().split(",")
+            if len(fields) >= 2:
+                ids.append(f"Tile_X{fields[-2]}_Y{fields[-1]}")
+    return ids
+
+
+def sim_log(tile_dir):
+    """The tile sub-graph's xcelium log (xrun.log, else the step's run log)."""
+    for name in ("xrun.log", "mflowgen-run.log"):
+        logs = sorted(glob.glob(os.path.join(tile_dir, "*-cadence-xcelium-sim", name)))
+        if logs:
+            return logs[-1]
+    return None
+
+
+def replay_result(log_text):
+    """{'finished', 'mismatches', 'ports': {port: n}, 'examples'} of a tile sim log."""
+    ports, examples, n = {}, [], 0
+    for m in MISMATCH.finditer(log_text):
+        n += 1
+        ports[m.group(2)] = ports.get(m.group(2), 0) + 1
+        if len(examples) < MAX_EXAMPLES:
+            examples.append(f"cycle {m.group(1)}: {m.group(2)}: got {m.group(3)}, expected {m.group(4)}")
+    return {"finished": bool(FINISHED.search(log_text)), "mismatches": n,
+            "ports": ports, "examples": examples}
+
+
+def problems_of(res):
+    out = []
+    if not res["report"]:
+        out.append("no power report")
+    if res["sim_log"] is None:
+        out.append("no sim log")
+    elif not res["finished"]:
+        out.append("sim did not reach $finish")
+    if res["mismatches"]:
+        out.append(f"{res['mismatches']} replay mismatches ({', '.join(f'{p} {c}' for p, c in sorted(res['ports'].items()))})")
+    return out
+
+
+def check_tile(tile, run_rc):
+    log = sim_log(tile)
+    res = replay_result(open(log, errors="replace").read()) if log else \
+        {"finished": False, "mismatches": None, "ports": {}, "examples": []}
+    res.update(tile=tile, sim_log=log, run_rc=run_rc,
+               report=os.path.isfile(f"outputs/reports/{tile}.hier"))
+    res["problems"] = problems_of(res)
+    with open(f"outputs/reports/{tile}.replay.json", "w") as f:
+        json.dump(res, f, indent=1)
+    return res
 
 
 def main():
-    design = os.environ.get('design_name')
-    f = open(f'./inputs/tiles_{design}.list', 'r')
+    design = os.environ.get("design_name")
+    mode = os.environ.get("replay_check") or "auto"
+    if mode == "auto":
+        mode = "fail" if os.environ.get("app_bundle") else "warn"
+    os.makedirs("outputs/reports", exist_ok=True)
+    results = []
+    for tile in tile_ids(design):
+        os.environ["tile_id"] = tile
+        rc = subprocess.run(["./run.sh"]).returncode
+        results.append(check_tile(tile, rc))
 
-    for line in f:
-        fields = line.strip().split(',')
-        x = fields[-2]
-        y = fields[-1]
-        tile_id = f"Tile_X{x}_Y{y}"
-        os.environ["tile_id"] = tile_id
-        subprocess.run(['./run.sh'])
+    lines = [f"{r['tile']}: {'; '.join(r['problems']) or 'OK'}" for r in results]
+    bad = [r for r in results if r["problems"]]
+    lines.append(f"{design}: {len(results) - len(bad)}/{len(results)} tiles replayed exactly")
+    with open("outputs/reports/replay_summary.txt", "w") as f:
+        f.write("\n".join(lines) + "\n")
+    print("\n".join(lines))
+    for r in bad:
+        for e in r["examples"]:
+            print(f"  {r['tile']}: {e}")
+    if bad:
+        print(f"*** {'ERROR' if mode == 'fail' else 'WARNING'}: {len(bad)} {design} tile(s) did not "
+              f"replay the app run exactly; their power is not the app's (replay_check={mode})",
+              file=sys.stderr)
+        if mode == "fail":
+            return 1
+    return 0
 
 
-if __name__ == '__main__':
-    main()
+if __name__ == "__main__":
+    sys.exit(main())

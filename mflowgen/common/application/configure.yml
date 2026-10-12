@@ -1,5 +1,10 @@
 name: application
 
+inputs:
+  # This build's RTL (rtl step). Only read with an app_bundle: check_bundle.py
+  # compares it with the ports the bundle recorded. Unconnected is fine.
+  - design.v
+
 outputs:
   - run.vcd
   - tiles_Tile_PE.list
@@ -40,8 +45,11 @@ parameters:
   lake_spec_config: ""
   lake_spec_mode: ""
   # Check the bundle's spec + mode against lake_spec_config/_mode. Tile_PE turns
-  # it off: the PE tile has no MEM spec (mismatched ports still fail the tb).
+  # it off: the PE tile has no MEM spec. The RTL port check (inputs/design.v)
+  # runs either way.
   app_bundle_check: True
+  # Tile module the RTL port check compares (set by the tile graph).
+  design_name: undefined
 
 postconditions:
   - assert File( 'outputs/run.vcd' )

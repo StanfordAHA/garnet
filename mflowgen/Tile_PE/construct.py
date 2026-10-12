@@ -88,6 +88,9 @@ def construct():
         # App bundle recorded on the lake-spec CGRA (common/application). The PE
         # tile has no MEM spec to check it against.
         'app_bundle': os.environ.get('APP_BUNDLE', ''),
+        # Per-tile replay check of the tile-post-*-power steps (run_all_tiles.py):
+        # auto = fail with an app bundle, warn without; or fail / warn.
+        'replay_check': os.environ.get('REPLAY_CHECK', 'auto'),
         'app_bundle_check': False,
         'saif_instance': 'testbench/dut',
         'testbench_name': 'testbench',
@@ -410,6 +413,9 @@ def construct():
     g.connect_by_name(signoff, pt_signoff)
 
     g.connect_by_name(application, testbench)
+    # The tile RTL, so an app bundle is checked against this build's ports
+    # (common/application/check_bundle.py).
+    g.connect(rtl.o('design.v'), application.i('design.v'))
     if synth_power:
         g.connect_by_name(application, post_synth_power)
         g.connect_by_name(synth, post_synth_power)

@@ -117,6 +117,9 @@ def construct():
         # App bundle recorded on the lake-spec CGRA (sweep_specs --app-bundle-dir;
         # common/application). Empty -> the app runs in the stock container.
         'app_bundle': os.environ.get('APP_BUNDLE', ''),
+        # Per-tile replay check of the tile-post-*-power steps (run_all_tiles.py):
+        # auto = fail with an app bundle, warn without; or fail / warn.
+        'replay_check': os.environ.get('REPLAY_CHECK', 'auto'),
         'saif_instance': 'testbench/dut',
         'testbench_name': 'testbench',
         'strip_path': 'testbench/dut',
@@ -538,6 +541,9 @@ def construct():
     g.connect_by_name(signoff, pt_signoff)
 
     g.connect_by_name(application, testbench)
+    # The tile RTL, so an app bundle is checked against this build's ports
+    # (common/application/check_bundle.py).
+    g.connect(rtl.o('design.v'), application.i('design.v'))
 
     def reverse_connect(node1, node2):
         g.connect_by_name(node2, node1)

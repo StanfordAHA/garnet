@@ -51,3 +51,8 @@ parameters:
   waves: True
   PWR_AWARE: False
   use_sdf: False
+  # App bundle the tile stimulus came from (set by the tile graph); with one,
+  # replay_check "auto" fails the step when a tile does not replay exactly.
+  app_bundle: ""
+  # auto | fail | warn (run_all_tiles.py). env REPLAY_CHECK via the tile graph.
+  replay_check: auto
