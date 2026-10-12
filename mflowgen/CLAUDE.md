@@ -1352,10 +1352,16 @@ libHalide and libclkwrk.so were rebuilt. Shared-toolchain checks:
   - **Expected differences:** `tests/{ushift,sshift}` at dw32 differ from the gold only above
     bit 15 (all 4096 pixels equal mod 2^16). Their uint16/int16 programs rely on 16-bit wrap,
     which a 32-bit PE does not do (see "arithmetic width" below).
-  - **Blocked by coreir:** `commonlib.{u,s}{min,max}` assert width == 16 (`tests/uminmax`,
-    `apps/unsharp` at dw32: "NYI non 16"). The source fix and a rebuilt library are ready, but
-    installing the library is waiting for the user (OPEN_ISSUES coreir/commonlib-minmax-width;
-    coreir/CLAUDE.md).
+  - **Min/max, ROMs and unsharp (later on 2026-10-11, private tree p32/p33 from the committed
+    HEADs):** all bit-accurate:
+    - `tests/{uminmax,sminmax}` at dw32 static. coreir f32ab1b9 dropped commonlib's
+      width==16 asserts, and the rebuilt `libcoreir-commonlib.so` is installed.
+    - `tests/rom` static at dw16 and dw32.
+    - `apps/unsharp` at dw32, static + RV (16×8, `--glb_tile_mem_size 256`). This needed
+      Halide 176cfdc04: `mult_middle`/`mult_high` are used only at 16, because on a W-bit PE
+      they shift by W/2 and W.
+    - With 128 KB GLB tiles, unsharp's 204 KB (32-bit) input overflows silently (OPEN_ISSUES
+      cross-repo/glb-overflow-silent).
   - **Not width-related:** `tests/mem_{filter,slice,transpose}_test` fail on a lake-spec MEM at
     dw16 too (OPEN_ISSUES cross-repo/spec-mem-unit-tests). dw64 fw4 specs have no SRAM macro,
     so garnet fails "No valid macros"; use fw2 at dw64.
