@@ -77,6 +77,13 @@ def construct():
         # the rtl step (see common/rtl/gen_rtl.sh).
         'lake_pond_spec_config': os.environ.get('LAKE_POND_SPEC_CONFIG', ''),
         'no_pond': os.environ.get('NO_POND', 'False') == 'True',
+        # Lake spec + mode of the CGRA this PE tile is from (env as for
+        # Tile_MemCore; the rtl step forwards them to garnet.py). The PE tile
+        # depends on the mode: in an RV CGRA it has the RV spec pond
+        # (cgra/util_onyx.py), else the default PondTop. Set them to power an RV
+        # app bundle's PE tiles; unset = the default PE tile, as before.
+        'lake_spec_config': os.environ.get('LAKE_SPEC_CONFIG', ''),
+        'lake_spec_mode': os.environ.get('LAKE_SPEC_MODE', ''),
 
         # Power Domains
         'PWR_AWARE': pwr_aware,
@@ -85,13 +92,14 @@ def construct():
         # Power analysis
         "use_sdf": False,  # uses sdf but not the way it is in xrun node
         'app_to_run': 'tests/conv_3_3',
-        # App bundle recorded on the lake-spec CGRA (common/application). The PE
-        # tile has no MEM spec to check it against.
+        # App bundle recorded on the lake-spec CGRA (common/application). Its
+        # tile ports + pond are always checked against this build's RTL; its
+        # spec + mode only when this build has a lake spec (app_bundle_check).
         'app_bundle': os.environ.get('APP_BUNDLE', ''),
         # Per-tile replay check of the tile-post-*-power steps (run_all_tiles.py):
         # auto = fail with an app bundle, warn without; or fail / warn.
         'replay_check': os.environ.get('REPLAY_CHECK', 'auto'),
-        'app_bundle_check': False,
+        'app_bundle_check': bool(os.environ.get('LAKE_SPEC_CONFIG')),
         'saif_instance': 'testbench/dut',
         'testbench_name': 'testbench',
         'strip_path': 'testbench/dut',

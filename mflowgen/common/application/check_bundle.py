@@ -14,8 +14,9 @@ was recorded on. Fails (exit 1, every problem listed) unless:
                   (tile_ports.json), and the tile's lake core is the same
                   module with the same ports: Tile_MemCore's controller
                   (core_ports.json), Tile_PE's pond (the bundle's garnet.v.gz;
-                  an RV-mode CGRA has the RV spec pond, which the Tile_PE graph
-                  does not build, so Tile_PE takes a static bundle). Spec + mode cannot
+                  an RV-mode CGRA's PE tile has the RV spec pond, so an RV
+                  bundle needs Tile_PE built with LAKE_SPEC_CONFIG /
+                  LAKE_SPEC_MODE = the bundle's spec + mode). Spec + mode cannot
                   see a changed controller: lake 144e2062 pruned the RV
                   comparators of the SAME spec, which shrank config_memory
                   (1421 bits for fw4 sc8192 rv), and a bundle recorded before it
@@ -115,8 +116,8 @@ def check_rtl(bundle_dir, design_v, design):
     if rec_mod is None and bundle_mods is None:
         print(f"WARNING: bundle has no core_ports.json / garnet.v.gz: {what} not checked", file=sys.stderr)
     elif rec_mod != mod:
-        hint = (" (an RV-mode CGRA's PE tile has the RV spec pond; the Tile_PE graph builds the"
-                " default pond: use a static bundle for Tile_PE)") if design == "Tile_PE" else ""
+        hint = (" (an RV-mode CGRA's PE tile has the RV spec pond: build Tile_PE with"
+                " LAKE_SPEC_CONFIG / LAKE_SPEC_MODE set to the bundle's spec + mode)") if design == "Tile_PE" else ""
         problems.append(f"{what} module {mod} != the bundle's {rec_mod}{hint}")
     elif mod is not None:
         problems += port_diff(f"{what} {mod} ports:", rec_ports, module_ports(mods[mod][0]))

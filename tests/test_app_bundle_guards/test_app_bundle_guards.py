@@ -266,7 +266,7 @@ def make_pe_bundle(tmp_path, pond="PondTop", cfg_hi=99):
 
 @pytest.mark.parametrize("built,cfg_hi,rc,msg", [
     ("PondTop", 99, 0, "app bundle OK (Tile_PE ports"),
-    ("lakespec_pond", 99, 1, "pond module lakespec_pond != the bundle's PondTop (an RV-mode"),
+    ("lakespec_pond", 99, 1, "pond module lakespec_pond != the bundle's PondTop (an RV-mode CGRA's PE tile has the RV spec pond: build Tile_PE with LAKE_SPEC_CONFIG"),
     ("PondTop", 63, 1, "pond PondTop ports: inputs width changed: config_memory 100 -> 64"),
 ])
 def test_check_bundle_pe_pond(tmp_path, capsys, built, cfg_hi, rc, msg):

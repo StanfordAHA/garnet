@@ -1120,19 +1120,21 @@ A private tree = a dir of symlinks to every `/aha` entry except `garnet`
 `Halide-to-Hardware/apps/hardware_benchmarks/<x>/<app>` (same `../../hw_support`
 depth), so static and RV bundles can run concurrently (~26 / ~33 min at 16x16).
 
-**Pipeclean bundles (2026-10-11, session 1fa8a391):** conv_3_3 on
+**Pipeclean bundles (2026-10-11/12, session 1fa8a391):** conv_3_3 on
 `fw4_dw16_sc8192_sp_in2_out2_vc2` and `..._vc2_rv` (16x16), packed as
-`/aha/sweep_out/app_bundles_pipeclean_lakee4fabdc1.tgz`. Recorded on lake
-fe2e786d (the port-order fix before its rebase onto c357c6f7 = e4fabdc1) +
-garnet a881563f + clockwork cbbd089a; `aha test` bit-accurate (3844 words).
-Verified against what the build machine builds from lake e4fabdc1 (4x2
-`--no-pd` builds, other hash seed; tile modules do not depend on the array
-size): `check_bundle.py` OK for both MEM tiles and for Tile_PE with the static
-bundle, and every tile replays with 0 mismatches (static 2 MEM + 10 PE over
-7539 cycles, RV 1 MEM over 8843). The RV bundle's PE tiles carry the RV spec
-pond (see "Bundle guards"): Tile_PE gets the static bundle. Two earlier sets were
-deleted as stale: lake 04191ea5 (before 144e2062's comparator pruning) and
-144e2062 (before the port-order fix).
+`/aha/sweep_out/app_bundles_pipeclean_lakee4fabdc1.tgz`; `aha test`
+bit-accurate (3844 words). Static: recorded on lake fe2e786d (the port-order
+fix before its rebase onto c357c6f7 = e4fabdc1; c357c6f7 only touches the RV
+pond and bitstream encoding) + garnet a881563f. RV: re-recorded 2026-10-12 on
+lake e4fabdc1 (c357c6f7's 12-bit RV pond; the 10-11 RV bundle's PE tiles were
+stale: pond config_memory 557 vs 573) + garnet 2fc80dd6. Verified against
+4x2 `--no-pd` builds from lake e4fabdc1 with other hash seeds (= what the build
+machine builds; tile modules do not depend on the array size):
+`check_bundle.py` OK and 0 replay mismatches on every tile (static 2 MEM + 10
+PE over 7539 cycles on a no-spec build = Tile_PE's default; RV 1 MEM + 10 PE
+over 8843 on an RV build = Tile_PE with the RV spec knobs). Two earlier sets
+were deleted as stale (lake 04191ea5: before 144e2062's comparator pruning;
+144e2062: before the port-order fix).
 
 **Bundle guards (garnet a881563f, 2026-10-11, session 1fa8a391; tests:
 `tests/test_app_bundle_guards`, 18).** Both failure modes used to be silent:
@@ -1145,11 +1147,14 @@ deleted as stale: lake 04191ea5 (before 144e2062's comparator pruning) and
   Spec + mode alone missed lake 144e2062 (same spec, pruned RV comparators,
   config_memory 1621 -> 1421 bits for fw4 sc8192 rv): an old-network RV build
   now fails with `config_memory 1421 -> 1621`; a static build vs an RV bundle
-  fails on the controller module + ports. For Tile_PE (spec/mode check off) it
+  fails on the controller module + ports. For Tile_PE it always
   compares the pond module + ports with the bundle's own `garnet.v.gz`.
-  **Tile_PE takes a static bundle**: an RV-mode CGRA's PE tile carries the RV
-  spec pond (`lakespec_pond`), while the Tile_PE graph has no mode knob and
-  builds the default `PondTop`; the check says so.
+  **RV bundles on Tile_PE (2026-10-12):** an RV-mode CGRA's PE tile carries
+  the RV spec pond (`lakespec_pond`), so build Tile_PE with
+  `LAKE_SPEC_CONFIG` / `LAKE_SPEC_MODE` = the bundle's spec + mode (the rtl
+  step forwards them to garnet.py; the application step then also checks spec
+  + mode). Unset = the default PE tile (`PondTop`), which matches static
+  bundles. A mismatch fails with a hint saying so.
 - *Tile that does not replay the recording* -> tile-post-{rtl,synth,pnr}-power
   fail at the end. `run_all_tiles.py` (one file, three identical copies; a test
   checks) writes per tile `outputs/reports/<tile>.replay.json` (the tb's `cycle
