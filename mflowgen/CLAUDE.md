@@ -1163,10 +1163,14 @@ were deleted as stale (lake 04191ea5: before 144e2062's comparator pruning;
   through the tile graphs): `auto` (default) = fail with an app bundle, warn on
   the legacy stock-container path; `fail`; `warn`. Reports are written first.
   `memtile_power.csv`: `tile_{rtl,synth,pnr}_replay_exact` = `<exact>/<tiles>`.
-- Power domains: the tile graphs build `garnet.py --no-pd` (`pwr_aware =
-  False`), `gen_app_bundle.py` builds with them. Checked harmless: same tile
-  ports, and both pipeclean bundles replay with 0 mismatches on `--no-pd` 4x2
-  tiles (tile modules do not depend on the array size).
+- Power domains: the tile graphs pass `garnet.py --no-pd` (`pwr_aware =
+  False`), `gen_app_bundle.py` does not. Today that changes nothing:
+  `--no-pd` is a no-op (OPEN_ISSUES `garnet/no-pd-tuple`, a trailing-comma
+  tuple in `cgra/util_onyx.py`), so every build, the bundles' and mine
+  included, has power domains, and the 0-mismatch replays on `--no-pd` 4x2
+  tiles say nothing about PD-less tiles. If that bug is fixed, re-check: tile
+  ports are compared by `check_bundle.py`; a moved config register shows up as
+  replay mismatches.
 
 **garnet.v run-to-run determinism (functional part fixed in lake e4fabdc1).**
 kratos `get_port_names()` is a Python set and lake iterated it unsorted, so
