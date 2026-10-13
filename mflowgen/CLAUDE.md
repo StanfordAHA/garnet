@@ -1465,25 +1465,34 @@ libHalide and libclkwrk.so were rebuilt. Shared-toolchain checks:
   stock toolchain, and Halide keeps its native widths.
 - **Width is not a make dependency.** `make clean` the app when switching
   widths, or stale 16/32-bit artifacts get mixed.
-- **Container steps (build machine), fixed 2026-10-12.** `common/rtl/gen_rtl.sh`,
+- **Container steps (build machine), fixed 2026-10-12 (garnet 69f236e0 + e650254f).** `common/rtl/gen_rtl.sh`,
   `common/memtile-power-test-gen/run.sh` and `common/application/run.sh` run garnet.py in
   `stanfordaha/garnet:latest`, which has aha master's lassen (d2a4411) and MetaMapper (a6fe971).
   Only host garnet and lake are copied in. From e30c6792 until this fix, garnet imported lassen
   `gen_PE_fc` and `metamapper.data_width` at construction, so every container step failed with
   `ImportError: cannot import name 'gen_PE_fc'`, at dw16 too. Both live only on the
   `cgra-data-width` branches. Now:
-  - The three steps check out lassen `cgra-data-width` in the container (`git fetch origin
-    cgra-data-width && git checkout -B cgra-data-width FETCH_HEAD`, like lake THESIS). The
-    branch is a strict superset of d2a4411; at 16 bits it builds the same PE.
+  - The three steps check out lassen `cgra-data-width` in the container: `GIT_TERMINAL_PROMPT=0
+    git fetch https://github.com/StanfordAHA/lassen.git cgra-data-width && git checkout -f -B
+    cgra-data-width FETCH_HEAD`. On failure they print `git -C /aha/lassen remote -v`. The branch
+    is a strict superset of d2a4411; at 16 bits it builds the same PE.
+  - **Fetch by URL, not `origin`** (e650254f, 1fa8a391). 69f236e0 used `git fetch origin`, which
+    died on the build machine with "could not read Username for 'https://github.com'": the
+    image's /aha/lassen `origin` isn't anonymously readable. Lake gets away with `origin`
+    because it's docker-cp'd from the host with the host's remote. `-f` covers a dirty image
+    tree.
   - MetaMapper is not switched: its `cgra-data-width` is based on mek's a34e725, which lacks
     three of a6fe971's commits (84-bit inst schema, node sort). Instead RTL generation no longer
     imports MetaMapper's `data_width` (see "PnR" above), and `mapper/netlist_util.py` falls back
     to 16 when MetaMapper lacks it. Mapping at another width with such a MetaMapper raises a
     clear ImportError, so the legacy application path (no `--app-bundle-dir`) maps at 16 only.
-  - Checked locally with the image's pins (lassen d2a4411 moved by that exact command to
-    52f023e, MetaMapper a6fe971, canal 4e6f931): 4x2 builds at dw16 and dw32 with gen_rtl's
-    flags. The dw16 garnet.v is byte-identical to the mek-pinned build (`PYTHONHASHSEED=0`).
-    Scratchpad `a16b3973-.../scratchpad/dwp/ctr/`.
+  - Checked locally with the image's pins (lassen d2a4411 → 52f023e, MetaMapper a6fe971, canal
+    4e6f931): 4x2 builds at dw16 and dw32 with gen_rtl's flags. The dw16 garnet.v is
+    byte-identical to the mek-pinned build (`PYTHONHASHSEED=0`). Scratchpad
+    `a16b3973-.../scratchpad/dwp/ctr/`. That local lassen clone had an https origin set by hand,
+    so the check missed the image's remote. The URL fetch was then checked against an
+    unreadable origin plus an edited tracked file; it checks out 52f023e. Without docker here,
+    the container itself is only exercised on the build machine.
   - Once lassen's branch is merged to master and aha master's image is rebuilt, the lassen
     checkout lines can go.
 - **dw 8/32/64 Tile_MemCore PPA (needs the build machine; not run yet).** The thesis set has 24
@@ -1494,7 +1503,7 @@ libHalide and libclkwrk.so were rebuilt. Shared-toolchain checks:
           --runtime-mode static,rv --flatten-effort 0 --memtile-power \
           --config-jobs 4 --zip --out-dir <NEW dir>
 
-  The build machine's garnet must include this fix. Pre-checked on /aha 2026-10-12 in the
+  The build machine's garnet must be at e650254f or later. Pre-checked on /aha 2026-10-12 in the
   image-like environment above, with gen_rtl's exact garnet.py flags:
   - All 24 build tile RTL on the first attempt.
   - Each has exactly one SRAM macro family, and `get_macro_name.find_macro_name` returns it:
