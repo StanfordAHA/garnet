@@ -306,8 +306,12 @@ if [ "$use_container" == True ]; then
          # garnet builds its PE with lassen gen_PE_fc (any data width), which is on
          # lassen branch cgra-data-width, not in the image (aha master pins lassen
          # d2a4411, an ancestor of that branch). At 16 bits it is the image PE.
-         ( cd /aha/lassen && GIT_TERMINAL_PROMPT=0 git fetch https://github.com/StanfordAHA/lassen.git cgra-data-width && git checkout -f -B cgra-data-width FETCH_HEAD && git log -1 --oneline ) \
-           || { git -C /aha/lassen remote -v; echo '*** ERROR: gen_rtl: lassen cgra-data-width checkout failed (see above)'; exit 1; }
+         # Fetched through a fresh bare repo: the image checkout carries a stale
+         # GitHub auth header in its own git config (the build machine got
+         # could not read Username for any github URL), which a bare repo does
+         # not inherit. On failure, print the config key names (not values).
+         ( rm -rf /tmp/lassen_cdw.git && git init -q --bare /tmp/lassen_cdw.git && GIT_TERMINAL_PROMPT=0 git --git-dir=/tmp/lassen_cdw.git fetch -q https://github.com/StanfordAHA/lassen.git cgra-data-width:refs/heads/cgra-data-width && cd /aha/lassen && git fetch -q /tmp/lassen_cdw.git cgra-data-width && git checkout -f -B cgra-data-width FETCH_HEAD && git log -1 --oneline ) \
+           || { git -C /aha/lassen remote -v; git -C /aha/lassen config --show-origin --name-only --get-regexp '^(http|credential|url)[.]'; echo '*** ERROR: gen_rtl: lassen cgra-data-width checkout failed (see above)'; exit 1; }
 
          # FIXME note that 'if' statements below will fail if e.g. 'interconnect_only' not set
          # Easy fix is not obvious since we are already inside a double-quoted string :(
