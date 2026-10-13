@@ -59,7 +59,8 @@ if [ "$use_container" == True ]; then
         git config --global --add safe.directory /aha/lake
         ( cd /aha/lake && git fetch origin THESIS && git checkout -B THESIS origin/THESIS && git log -1 --oneline )
         # lassen gen_PE_fc (branch cgra-data-width), as in gen_rtl.sh
-        ( cd /aha/lassen && git fetch origin cgra-data-width && git checkout -B cgra-data-width FETCH_HEAD && git log -1 --oneline )
+        ( cd /aha/lassen && GIT_TERMINAL_PROMPT=0 git fetch https://github.com/StanfordAHA/lassen.git cgra-data-width && git checkout -f -B cgra-data-width FETCH_HEAD && git log -1 --oneline ) \
+            || { git -C /aha/lassen remote -v; echo '*** ERROR: lassen cgra-data-width checkout failed'; exit 1; }
         cd /aha/garnet
         export LAKE_SPEC_CONFIG=$W/spec_config.json LAKE_SPEC_MODE=$MODE USE_NON_SPLIT_FIFOS=True
         for try in 1 2 3; do

@@ -80,7 +80,7 @@ docker exec $container_name /bin/bash -c \
   "source /cad/modules/tcl/init/bash;
    module load xcelium;
    source /aha/bin/activate;
-   (cd /aha/lassen && git fetch origin cgra-data-width && git checkout -B cgra-data-width FETCH_HEAD) || exit 1;
+   (cd /aha/lassen && GIT_TERMINAL_PROMPT=0 git fetch https://github.com/StanfordAHA/lassen.git cgra-data-width && git checkout -f -B cgra-data-width FETCH_HEAD) || { git -C /aha/lassen remote -v; exit 1; };
    aha garnet ${flags};
    cd garnet;
    aha halide ${app_to_run};
