@@ -80,7 +80,7 @@ docker exec $container_name /bin/bash -c \
   "source /cad/modules/tcl/init/bash;
    module load xcelium;
    source /aha/bin/activate;
-   (rm -rf /tmp/lassen_cdw.git && git init -q --bare /tmp/lassen_cdw.git && GIT_TERMINAL_PROMPT=0 git --git-dir=/tmp/lassen_cdw.git fetch -q https://github.com/StanfordAHA/lassen.git cgra-data-width:refs/heads/cgra-data-width && cd /aha/lassen && git fetch -q /tmp/lassen_cdw.git cgra-data-width && git checkout -f -B cgra-data-width FETCH_HEAD) || { git -C /aha/lassen remote -v; git -C /aha/lassen config --show-origin --name-only --get-regexp '^(http|credential|url)[.]'; exit 1; };
+   (rm -rf /tmp/lassen_cdw.git && git init -q --bare /tmp/lassen_cdw.git && GIT_TERMINAL_PROMPT=0 git --git-dir=/tmp/lassen_cdw.git fetch -q https://github.com/StanfordAHA/lassen.git thesis:refs/heads/thesis && cd /aha/lassen && git fetch -q /tmp/lassen_cdw.git thesis && git checkout -f -B thesis FETCH_HEAD) || { git -C /aha/lassen remote -v; git -C /aha/lassen config --show-origin --name-only --get-regexp '^(http|credential|url)[.]'; exit 1; };
    aha garnet ${flags};
    cd garnet;
    aha halide ${app_to_run};

@@ -58,9 +58,9 @@ if [ "$use_container" == True ]; then
         git config --global --add safe.directory /aha/garnet
         git config --global --add safe.directory /aha/lake
         ( cd /aha/lake && git fetch origin THESIS && git checkout -B THESIS origin/THESIS && git log -1 --oneline )
-        # lassen gen_PE_fc (branch cgra-data-width), as in gen_rtl.sh
-        ( rm -rf /tmp/lassen_cdw.git && git init -q --bare /tmp/lassen_cdw.git && GIT_TERMINAL_PROMPT=0 git --git-dir=/tmp/lassen_cdw.git fetch -q https://github.com/StanfordAHA/lassen.git cgra-data-width:refs/heads/cgra-data-width && cd /aha/lassen && git fetch -q /tmp/lassen_cdw.git cgra-data-width && git checkout -f -B cgra-data-width FETCH_HEAD && git log -1 --oneline ) \
-            || { git -C /aha/lassen remote -v; git -C /aha/lassen config --show-origin --name-only --get-regexp '^(http|credential|url)[.]'; echo '*** ERROR: lassen cgra-data-width checkout failed'; exit 1; }
+        # lassen gen_PE_fc (branch thesis), as in gen_rtl.sh
+        ( rm -rf /tmp/lassen_cdw.git && git init -q --bare /tmp/lassen_cdw.git && GIT_TERMINAL_PROMPT=0 git --git-dir=/tmp/lassen_cdw.git fetch -q https://github.com/StanfordAHA/lassen.git thesis:refs/heads/thesis && cd /aha/lassen && git fetch -q /tmp/lassen_cdw.git thesis && git checkout -f -B thesis FETCH_HEAD && git log -1 --oneline ) \
+            || { git -C /aha/lassen remote -v; git -C /aha/lassen config --show-origin --name-only --get-regexp '^(http|credential|url)[.]'; echo '*** ERROR: lassen thesis checkout failed'; exit 1; }
         cd /aha/garnet
         export LAKE_SPEC_CONFIG=$W/spec_config.json LAKE_SPEC_MODE=$MODE USE_NON_SPLIT_FIFOS=True
         for try in 1 2 3; do

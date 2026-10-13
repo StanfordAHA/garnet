@@ -1465,34 +1465,41 @@ libHalide and libclkwrk.so were rebuilt. Shared-toolchain checks:
   stock toolchain, and Halide keeps its native widths.
 - **Width is not a make dependency.** `make clean` the app when switching
   widths, or stale 16/32-bit artifacts get mixed.
-- **Container steps (build machine), fixed 2026-10-12 (garnet 69f236e0 + e650254f).** `common/rtl/gen_rtl.sh`,
+- **Container steps (build machine), fixed 2026-10-12 (garnet 69f236e0, 84621c08).** `common/rtl/gen_rtl.sh`,
   `common/memtile-power-test-gen/run.sh` and `common/application/run.sh` run garnet.py in
   `stanfordaha/garnet:latest`, which has aha master's lassen (d2a4411) and MetaMapper (a6fe971).
   Only host garnet and lake are copied in. From e30c6792 until this fix, garnet imported lassen
   `gen_PE_fc` and `metamapper.data_width` at construction, so every container step failed with
-  `ImportError: cannot import name 'gen_PE_fc'`, at dw16 too. Both live only on the
-  `cgra-data-width` branches. Now:
-  - The three steps check out lassen `cgra-data-width` in the container: `GIT_TERMINAL_PROMPT=0
-    git fetch https://github.com/StanfordAHA/lassen.git cgra-data-width && git checkout -f -B
-    cgra-data-width FETCH_HEAD`. On failure they print `git -C /aha/lassen remote -v`. The branch
-    is a strict superset of d2a4411; at 16 bits it builds the same PE.
-  - **Fetch by URL, not `origin`** (e650254f, 1fa8a391). 69f236e0 used `git fetch origin`, which
-    died on the build machine with "could not read Username for 'https://github.com'": the
-    image's /aha/lassen `origin` isn't anonymously readable. Lake gets away with `origin`
-    because it's docker-cp'd from the host with the host's remote. `-f` covers a dirty image
-    tree.
-  - MetaMapper is not switched: its `cgra-data-width` is based on mek's a34e725, which lacks
-    three of a6fe971's commits (84-bit inst schema, node sort). Instead RTL generation no longer
-    imports MetaMapper's `data_width` (see "PnR" above), and `mapper/netlist_util.py` falls back
-    to 16 when MetaMapper lacks it. Mapping at another width with such a MetaMapper raises a
-    clear ImportError, so the legacy application path (no `--app-bundle-dir`) maps at 16 only.
-  - Checked locally with the image's pins (lassen d2a4411 → 52f023e, MetaMapper a6fe971, canal
-    4e6f931): 4x2 builds at dw16 and dw32 with gen_rtl's flags. The dw16 garnet.v is
+  `ImportError: cannot import name 'gen_PE_fc'`, at dw16 too. Both live only on our personal
+  branches (lassen and MetaMapper `thesis`). Now:
+  - The three steps check out lassen `thesis` (aha mek's lassen) in the container. It's fetched
+    from `https://github.com/StanfordAHA/lassen.git` into a fresh bare repo
+    (`/tmp/lassen_cdw.git`, `GIT_TERMINAL_PROMPT=0`), then from that path into /aha/lassen,
+    with `checkout -f -B thesis FETCH_HEAD`. On failure they print the remote and the git-config
+    key names. The branch is a strict superset of d2a4411; at 16 bits it builds the same PE.
+  - **Why a bare repo** (1fa8a391, 84621c08). The image's /aha/lassen git config carries a stale
+    GitHub auth header (`http.<url>.extraheader`). Any github.com fetch from that repo gets a 401,
+    which shows up as "could not read Username for 'https://github.com'". That happens with
+    `origin` (69f236e0) and with an explicit URL (e650254f) alike, although the remote is public
+    and anonymous fetches work in the container. A fresh bare repo has no such config. Lake's
+    `origin` fetch works because lake is docker-cp'd from the host.
+  - **Rerunning an existing workspace needs `--clean rtl`**: mflowgen doesn't re-copy a step's
+    scripts, so an old workspace keeps the old fetch.
+  - The branch was `cgra-data-width` until 2026-10-12, then `thesis` (user: personal branches
+    named `thesis` for repos outside clockwork/lake/garnet). Both point at 52f023e today.
+  - MetaMapper is not switched: its `thesis` is based on mek's a34e725, which lacks three of
+    a6fe971's commits (84-bit inst schema, node sort). Instead RTL generation no longer imports
+    MetaMapper's `data_width` (see "PnR" above), and `mapper/netlist_util.py` falls back to 16
+    when MetaMapper lacks it. Mapping at another width with such a MetaMapper raises a clear
+    ImportError, so the legacy application path (no `--app-bundle-dir`) maps at 16 only.
+  - **Checked locally** with the image's pins (lassen d2a4411 → 52f023e, MetaMapper a6fe971,
+    canal 4e6f931): 4x2 builds at dw16 and dw32 with gen_rtl's flags. The dw16 garnet.v is
     byte-identical to the mek-pinned build (`PYTHONHASHSEED=0`). Scratchpad
-    `a16b3973-.../scratchpad/dwp/ctr/`. That local lassen clone had an https origin set by hand,
-    so the check missed the image's remote. The URL fetch was then checked against an
-    unreadable origin plus an edited tracked file; it checks out 52f023e. Without docker here,
-    the container itself is only exercised on the build machine.
+    `a16b3973-.../scratchpad/dwp/ctr/`.
+    - Those checks never used the image's git config, which is why the auth header was missed.
+    - The bare-repo fetch of `thesis` was then checked on a clone with a fake `extraheader` and
+      an edited tracked file: it checks out 52f023e.
+    - Without docker here, only the build machine runs the container itself.
   - Once lassen's branch is merged to master and aha master's image is rebuilt, the lassen
     checkout lines can go.
 - **dw 8/32/64 Tile_MemCore PPA (needs the build machine; not run yet).** The thesis set has 24
@@ -1503,7 +1510,7 @@ libHalide and libclkwrk.so were rebuilt. Shared-toolchain checks:
           --runtime-mode static,rv --flatten-effort 0 --memtile-power \
           --config-jobs 4 --zip --out-dir <NEW dir>
 
-  The build machine's garnet must be at e650254f or later. Pre-checked on /aha 2026-10-12 in the
+  The build machine's garnet must be at 84621c08 or later, and existing workspaces need `--clean rtl`. Pre-checked on /aha 2026-10-12 in the
   image-like environment above, with gen_rtl's exact garnet.py flags:
   - All 24 build tile RTL on the first attempt.
   - Each has exactly one SRAM macro family, and `get_macro_name.find_macro_name` returns it:
