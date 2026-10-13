@@ -60,9 +60,6 @@ class Garnet(Generator):
         # plus the ready-valid bit
         self.data_width = args.glb_params.cgra_data_width
         self.data_track_width = self.data_width + 1 if self.ready_valid else self.data_width
-        # The mapper (MetaMapper, mapper/netlist_util) works at the fabric's data width
-        from metamapper.data_width import set_data_width
-        set_data_width(self.data_width)
         # size
         self.width = args.width
         self.height = args.height
@@ -559,8 +556,11 @@ class Garnet(Generator):
     def load_netlist(self, app, load_only, pipeline_input_broadcasts,
                      input_broadcast_branch_factor, input_broadcast_max_leaves, pipeline_output, use_dense_ready_valid=False):
 
+        # The mapper (MetaMapper, mapper/netlist_util) works at the fabric's data width.
+        # Set here, not in __init__, so RTL generation does not need MetaMapper's data_width.
+        from mapper.netlist_util import create_netlist_info, print_netlist_info, set_data_width
+        set_data_width(self.data_width)
         import metamapper.peak_util as putil
-        from mapper.netlist_util import create_netlist_info, print_netlist_info
         from metamapper.coreir_mapper import Mapper  # not used?
         from metamapper.map_design_top import map_design_top
         from metamapper.node import Nodes

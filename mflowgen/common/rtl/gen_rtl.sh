@@ -303,6 +303,12 @@ if [ "$use_container" == True ]; then
          git config --global --add safe.directory /aha/garnet;
          git config --global --add safe.directory /aha/lake;
 
+         # garnet builds its PE with lassen gen_PE_fc (any data width), which is on
+         # lassen branch cgra-data-width, not in the image (aha master pins lassen
+         # d2a4411, an ancestor of that branch). At 16 bits it is the image PE.
+         ( cd /aha/lassen && git fetch origin cgra-data-width && git checkout -B cgra-data-width FETCH_HEAD && git log -1 --oneline ) \
+           || { echo '*** ERROR: gen_rtl: lassen cgra-data-width checkout failed (see above)'; exit 1; }
+
          # FIXME note that 'if' statements below will fail if e.g. 'interconnect_only' not set
          # Easy fix is not obvious since we are already inside a double-quoted string :(
 

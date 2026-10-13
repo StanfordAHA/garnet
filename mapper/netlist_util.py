@@ -1,4 +1,16 @@
-from metamapper.data_width import data_width  # garnet sets it to the fabric width
+try:
+    from metamapper.data_width import data_width, set_data_width  # garnet sets it to the fabric width
+except ImportError:
+    # A MetaMapper without data_width (before branch cgra-data-width, e.g. the
+    # stanfordaha/garnet image the mflowgen container steps run in) maps 16-bit data only.
+    def data_width():
+        return 16
+
+    def set_data_width(width):
+        if width != 16:
+            raise ImportError(
+                f"mapping for a {width}-bit CGRA needs MetaMapper with metamapper.data_width "
+                f"(branch cgra-data-width); this MetaMapper maps 16-bit data only")
 import os
 import math
 import re

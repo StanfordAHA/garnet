@@ -1337,7 +1337,8 @@ Before this, a spec with `data_width != 16` built a normal 16/17-bit fabric.
 lake flattened the MemCore's (dw+1)-bit ports into dw+1 single-bit pins on the
 1-bit network: 70 in + 71 out at dw32, a garnet.v of 5.0 MB vs 2.7 MB. So
 **Tile_MemCore synth/PnR numbers for dw 8/32/64 specs built before this change
-measure the wrong tile** (17-bit SB plus a bloated 1-bit SB). Now
+measure the wrong tile** (17-bit SB plus a bloated 1-bit SB). Re-running them is
+the build-machine sweep in "dw 8/32/64 Tile_MemCore PPA" below (RTL pre-checked here). Now
 `util_onyx.lake_spec_data_width()` (spec JSON, 16 without one) sets the whole
 fabric:
 
@@ -1403,8 +1404,10 @@ libHalide and libclkwrk.so were rebuilt. Shared-toolchain checks:
     collateral comes from `LAKE_POND_SPEC_CONFIG`. It errors if the collateral, spec or pond
     collateral widths differ. See `aha/util/map.py` `set_lake_collaterals` and
     `aha/util/data_width.py`.
-  - **PnR:** `Garnet.__init__` calls MetaMapper's `set_data_width(self.data_width)`, so the
-    mapper and `mapper/netlist_util.py` work at the fabric width. `check_app_data_width` refuses
+  - **PnR:** `Garnet.load_netlist` calls `set_data_width(self.data_width)` (MetaMapper's, via
+    `mapper/netlist_util.py`), so the mapper and `netlist_util` work at the fabric width. It
+    was in `Garnet.__init__` until 2026-10-12; moving it means RTL generation never needs
+    MetaMapper's `data_width` (see "Container steps" below). `check_app_data_width` refuses
     an app whose top data ports are a different width. `aha pnr` passes the width to
     `parse_design_meta.py --data-width`.
   - **`aha test`:** reads `CGRA_DATA_WIDTH` from the GLB header garnet generated
@@ -1453,7 +1456,8 @@ libHalide and libclkwrk.so were rebuilt. Shared-toolchain checks:
   - lassen: `scripts/widen_rewrite_rules.py`. It widened the 51 integer rewrite
     rules mechanically, and all 51 pass SMT verify against `gen_PE_fc(32)`.
   - garnet: netlist bus width, IO port renames and the app width check.
-  - archipelago: the STA B17 fallback.
+  - archipelago: the STA B17 fallback (31285ac; measured to hold, see archipelago/CLAUDE.md)
+    and width-generic port/graph names (6d37530).
   - testbench: lanes = 64/dw.
   - aha: map/pnr/test plumbing (above).
   - lake: collateral `data_width`.
@@ -1461,6 +1465,44 @@ libHalide and libclkwrk.so were rebuilt. Shared-toolchain checks:
   stock toolchain, and Halide keeps its native widths.
 - **Width is not a make dependency.** `make clean` the app when switching
   widths, or stale 16/32-bit artifacts get mixed.
+- **Container steps (build machine), fixed 2026-10-12.** `common/rtl/gen_rtl.sh`,
+  `common/memtile-power-test-gen/run.sh` and `common/application/run.sh` run garnet.py in
+  `stanfordaha/garnet:latest`, which has aha master's lassen (d2a4411) and MetaMapper (a6fe971).
+  Only host garnet and lake are copied in. From e30c6792 until this fix, garnet imported lassen
+  `gen_PE_fc` and `metamapper.data_width` at construction, so every container step failed with
+  `ImportError: cannot import name 'gen_PE_fc'`, at dw16 too. Both live only on the
+  `cgra-data-width` branches. Now:
+  - The three steps check out lassen `cgra-data-width` in the container (`git fetch origin
+    cgra-data-width && git checkout -B cgra-data-width FETCH_HEAD`, like lake THESIS). The
+    branch is a strict superset of d2a4411; at 16 bits it builds the same PE.
+  - MetaMapper is not switched: its `cgra-data-width` is based on mek's a34e725, which lacks
+    three of a6fe971's commits (84-bit inst schema, node sort). Instead RTL generation no longer
+    imports MetaMapper's `data_width` (see "PnR" above), and `mapper/netlist_util.py` falls back
+    to 16 when MetaMapper lacks it. Mapping at another width with such a MetaMapper raises a
+    clear ImportError, so the legacy application path (no `--app-bundle-dir`) maps at 16 only.
+  - Checked locally with the image's pins (lassen d2a4411 moved by that exact command to
+    52f023e, MetaMapper a6fe971, canal 4e6f931): 4x2 builds at dw16 and dw32 with gen_rtl's
+    flags. The dw16 garnet.v is byte-identical to the mek-pinned build (`PYTHONHASHSEED=0`).
+    Scratchpad `a16b3973-.../scratchpad/dwp/ctr/`.
+  - Once lassen's branch is merged to master and aha master's image is rebuilt, the lassen
+    checkout lines can go.
+- **dw 8/32/64 Tile_MemCore PPA (needs the build machine; not run yet).** The thesis set has 24
+  configs at these widths (18 static, 6 RV; 12 RV skipped for fw>1 and vc>2). Command, mirroring
+  the dw16 run. Which configs also get PnR (`--pnr-set`/`--validate-set`) is the user's call:
+
+      ./mflowgen/sweep_specs.py --spec-set thesis --data-width 8,32,64 \
+          --runtime-mode static,rv --flatten-effort 0 --memtile-power \
+          --config-jobs 4 --zip --out-dir <NEW dir>
+
+  The build machine's garnet must include this fix. Pre-checked on /aha 2026-10-12 in the
+  image-like environment above, with gen_rtl's exact garnet.py flags:
+  - All 24 build tile RTL on the first attempt.
+  - Each has exactly one SRAM macro family, and `get_macro_name.find_macro_name` returns it:
+    W04096B008 (fw2 dw8), W02048B016 (fw4 dw8), W01024B032 (fw8 dw8, fw2 dw32) and W00512B064
+    (fw4 dw32, fw2 dw64).
+  - MEM pins are `MEM_{input,output}_width_{dw+1}`, and the switch boxes are B1 + B{dw+1}.
+  - memtile-power-test-gen runs for fw4 dw32 static + RV.
+  - Scratchpad `a16b3973-.../scratchpad/dwp/ppa/` (`check24.py`, `check24.txt`).
 
 ## Build-machine note
 
