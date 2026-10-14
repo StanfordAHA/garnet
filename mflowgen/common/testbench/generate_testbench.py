@@ -13,6 +13,17 @@ CLOCK_PORTS = ("clk", "clk_pass_through")
 CLOCK_OUT_PORTS = ("clk_out", "clk_pass_through_out_bot", "clk_pass_through_out_right")
 clock_template = "Interconnect_tb.clk"
 app_bundle = False
+
+# App replays drive each input when the tile's SDC says it arrives
+# (Tile_{MemCore,PE}/constraints/common.tcl, onyx; a test checks these): the
+# passthrough inputs at pt_i_delay, the rest at i_delay = a fraction of the
+# period. A PnR netlist sees its clock ~0.2 ns after the testbench's edge (clock
+# tree), so inputs driven earlier than STA assumed race it: the fixed 0.2 ns
+# corrupted the RV MEM tile's config registers (hold) at PnR level on gf12.
+PT_INPUT_PREFIXES = ("stall", "config_config_data", "config_config_addr", "config_read", "config_write",
+                     "reset", "flush", "read_config_data_in")
+PT_INPUT_DELAY_NS = 0.7
+INPUT_DELAY_FRACTION = {"Tile_MemCore": 0.2, "Tile_PE": 0.3}
 if os.path.exists("inputs/manifest.json"):
     manifest = json.load(open("inputs/manifest.json"))  # "{}" without a bundle
     app_bundle = bool(manifest)
@@ -109,16 +120,26 @@ def convert_raw(signals, input_file, output_file):
 
 
 def create_testbench(design, inputs, outputs, input_widths, output_widths, num_test_vectors, clock_inputs=None,
-                     hold_reset=False):
+                     hold_reset=False, sdc_inputs=False):
     """hold_reset (app bundle replays): the recording starts from simulator
     zero-init, but a gate-level tile's flops are X until its first reset (gf12:
     every output X until then, and the MEM tile's SRAM clock, clk & the tile_en
     config flop, X at the first edge, which makes the macro model invalidate its
     whole array). So drive reset from time 0 until the first recorded reset and
     check outputs only from that cycle on; the state before it is undefined in
-    hardware too."""
+    hardware too.
+
+    sdc_inputs (app bundle replays): drive the inputs at their SDC arrival
+    times (PT_INPUT_DELAY_NS, INPUT_DELAY_FRACTION) instead of 0.2 ns."""
     pwr_aware = os.environ.get("PWR_AWARE") == "True"
     hold_reset = hold_reset and "reset" in inputs
+    sdc_inputs = sdc_inputs and design in INPUT_DELAY_FRACTION
+
+    def addr(i):
+        """The vector index register that drives input i."""
+        if not sdc_inputs:
+            return 'test_vector_addr'
+        return 'pt_addr' if i.startswith(PT_INPUT_PREFIXES) else 'in_addr'
 
     tb = open("testbench.sv", "w")
 
@@ -126,6 +147,9 @@ def create_testbench(design, inputs, outputs, input_widths, output_widths, num_t
     tb.write(f'`timescale 1ns/1ps\n')                           # noqa
     tb.write(f'`define NUM_TEST_VECTORS {num_test_vectors}\n')  # noqa
     tb.write(f'`define ASSIGNMENT_DELAY 0.2 \n')                # noqa
+    if sdc_inputs:
+        tb.write(f'`define IN_ASSIGNMENT_DELAY ({INPUT_DELAY_FRACTION[design]} * `CLK_PERIOD)\n')
+        tb.write(f'`define PT_ASSIGNMENT_DELAY {PT_INPUT_DELAY_NS}\n')
     tb.write(f'\n')                                             # noqa
 
     input_base = 0
@@ -156,6 +180,8 @@ module testbench;
     reg [{output_base}-1: 0] test_output;
 
 ''')
+    if sdc_inputs:
+        tb.write('    reg [ADDR_WIDTH - 1 : 0] in_addr, pt_addr;  // test_vector_addr as the inputs see it\n')
 
     has_app_start = hold_reset and "flush" in inputs
     if hold_reset:
@@ -163,12 +189,13 @@ module testbench;
     if has_app_start:
         tb.write('    integer app_start;    // first flush after it\n')
     for i in inputs:
+        a = addr(i)
         if hold_reset and i == 'reset':
-            tb.write(f'    wire {i} = test_vectors[test_vector_addr][`SLICE_{i.upper()}] | (test_vector_addr < first_reset);\n')
+            tb.write(f'    wire {i} = test_vectors[{a}][`SLICE_{i.upper()}] | ({a} < first_reset);\n')
         elif 'reset' not in i:
-            tb.write(f'    wire [{input_widths[i]-1}:0] {i} = test_vectors[test_vector_addr][`SLICE_{i.upper()}];\n')
+            tb.write(f'    wire [{input_widths[i]-1}:0] {i} = test_vectors[{a}][`SLICE_{i.upper()}];\n')
         else:
-            tb.write(f'    wire {i} = test_vectors[test_vector_addr][`SLICE_{i.upper()}];\n')
+            tb.write(f'    wire {i} = test_vectors[{a}][`SLICE_{i.upper()}];\n')
     for o in outputs:
         tb.write(f'    wire [{output_widths[o]-1}:0] {o};\n')
 
@@ -231,6 +258,12 @@ module testbench;
       #(`CLK_PERIOD * 4);
       forever #(`CLK_PERIOD/2) clk = ~clk;
     end''' if hold_reset else 'always #(`CLK_PERIOD/2) clk =~clk;'
+    init_addrs = '''
+      in_addr <= 0;
+      pt_addr <= 0;''' if sdc_inputs else ''
+    step_addrs = '''
+        in_addr <= # `IN_ASSIGNMENT_DELAY (test_vector_addr + 1);
+        pt_addr <= # `PT_ASSIGNMENT_DELAY (test_vector_addr + 1);''' if sdc_inputs else ''
     tb.write(f'''        .clk(clk),
         .clk_out(clk_out)
     );
@@ -241,13 +274,13 @@ module testbench;
       $readmemh("inputs/test_vectors.txt", test_vectors);
       $readmemh("inputs/test_outputs.txt", test_outputs);{replay_setup}
       clk <= 0;
-      test_vector_addr <= 0;
+      test_vector_addr <= 0;{init_addrs}
     end
 
     always @ (posedge clk) begin
         // Don't change the inputs right after the clock edge because
         // that will cause problems in gate level simulation
-        test_vector_addr <= # `ASSIGNMENT_DELAY (test_vector_addr + 1);
+        test_vector_addr <= # `ASSIGNMENT_DELAY (test_vector_addr + 1);{step_addrs}
         test_vector <= test_vectors[test_vector_addr];
         test_output <= test_outputs[test_vector_addr];
 
@@ -320,7 +353,7 @@ def main():
             for name in ("test_vectors.txt", "test_outputs.txt"):
                 pad_vectors(f"outputs/tile_tbs/{tile}/{name}", num_test_vectors)
     create_testbench(design, ins, outs, widths[0], widths[1], num_test_vectors, clks,
-                     hold_reset=app_bundle)
+                     hold_reset=app_bundle, sdc_inputs=app_bundle)
 
 
 if __name__ == '__main__':

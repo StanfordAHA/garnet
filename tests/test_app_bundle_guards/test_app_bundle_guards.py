@@ -231,6 +231,53 @@ def test_testbench_holds_reset_until_first_recorded(tmp_path, monkeypatch, bundl
     assert (r["checked_from"], r["app_start"]) == (2, 2404)
 
 
+@pytest.mark.parametrize("design,frac", [("Tile_MemCore", 0.2), ("Tile_PE", 0.3), ("Tile_Other", None)])
+def test_testbench_sdc_input_timing(tmp_path, monkeypatch, design, frac):
+    """Bundle replays drive passthrough inputs (config, stall, reset, flush) at
+    the SDC's pt_i_delay and the rest at i_delay, not all at 0.2 ns (a PnR
+    netlist's clock arrives ~0.2 ns late: config registers raced it)."""
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "inputs").mkdir()
+    (tmp_path / "inputs" / "manifest.json").write_text(json.dumps({"scope": "tb.dut"}))
+    gt = load(TB_GEN, "generate_testbench")
+    ins = ["reset", "flush", "config_config_data", "stall", "SB_IN"]
+    gt.create_testbench(design, ins, ["SB_OUT"], {"reset": 1, "flush": 1, "config_config_data": 32, "stall": 1,
+                                                  "SB_IN": 17}, {"SB_OUT": 17}, 10, ["clk"],
+                        hold_reset=True, sdc_inputs=True)
+    tb = (tmp_path / "testbench.sv").read_text()
+    if frac is None:   # no SDC values for this design: inputs as before
+        assert "pt_addr" not in tb and "wire [16:0] SB_IN = test_vectors[test_vector_addr]" in tb
+        return
+    assert f"`define IN_ASSIGNMENT_DELAY ({frac} * `CLK_PERIOD)" in tb
+    assert "`define PT_ASSIGNMENT_DELAY 0.7" in tb
+    assert "wire [16:0] SB_IN = test_vectors[in_addr][`SLICE_SB_IN];" in tb
+    for pt in ("flush", "stall"):
+        assert f"wire [0:0] {pt} = test_vectors[pt_addr][`SLICE_{pt.upper()}];" in tb
+    assert "wire [31:0] config_config_data = test_vectors[pt_addr]" in tb
+    assert "wire reset = test_vectors[pt_addr][`SLICE_RESET] | (pt_addr < first_reset);" in tb
+    assert "in_addr <= # `IN_ASSIGNMENT_DELAY (test_vector_addr + 1);" in tb
+    assert "pt_addr <= # `PT_ASSIGNMENT_DELAY (test_vector_addr + 1);" in tb
+
+
+@pytest.mark.parametrize("design", ["Tile_MemCore", "Tile_PE"])
+def test_testbench_sdc_input_timing_matches_constraints(monkeypatch, tmp_path, design):
+    """generate_testbench.py's input arrival times are copies of the tile SDC
+    (constraints/common.tcl, onyx branch): fail when the two drift apart."""
+    monkeypatch.chdir(tmp_path)
+    gt = load(TB_GEN, "generate_testbench")
+    tcl = (MFLOWGEN / design / "constraints" / "common.tcl").read_text()
+    assert float(re.search(r"^set pt_i_delay ([0-9.]+)", tcl, re.M).group(1)) == gt.PT_INPUT_DELAY_NS
+    # the last i_delay is the onyx one (Tile_PE sets the amber value first)
+    fracs = re.findall(r"^set i_delay \[expr ([0-9.]+) \* \$\{clock_period\}\]", tcl, re.M)
+    assert float(fracs[-1]) == gt.INPUT_DELAY_FRACTION[design]
+    pt_block = re.search(r'^set pt_inputs \[get_ports "(.*?)"\]', tcl, re.M | re.S).group(1)
+    pt = {p.rstrip("*") for p in pt_block.replace("\\", " ").split()}
+    pt |= set(re.search(r"^set pt_read_data_inputs \[get_ports (\S+)\]", tcl, re.M).group(1).split())
+    assert pt == set(gt.PT_INPUT_PREFIXES)
+    for group in ("pt_inputs", "pt_read_data_inputs"):
+        assert re.search(rf"set_input_delay -clock \$\{{clock_name\}} \$\{{pt_i_delay\}} \${group}\b", tcl), group
+
+
 # ------------------------------------------------------------ check_bundle --
 
 DESIGN_V = """module Tile_MemCore (

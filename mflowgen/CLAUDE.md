@@ -1212,6 +1212,27 @@ were deleted as stale (lake 04191ea5: before 144e2062's comparator pruning;
   `logs/xminit.log` on the build machine says what `-xminitialize` covered).
   mflowgen exports params unquoted, so a param value with spaces breaks
   `mflowgen-run`: use a flag (as `app_replay` does).
+- **gf12 run 3 (2026-10-13/14, garnet db83c42f; zip
+  `/aha/app_power_pipeclean_r8cad-gf12_20261013-232235.zip`):** static passes
+  at RTL, synth and PnR (X07_Y05: 3564 `pre_app_x`); RV passes at RTL and
+  synth, fails at PnR: 26123 known-value mismatches from cycle 2310 (`valid`s
+  1 where the recording has 0), 16 hold/setup violations, all on config
+  registers (MemCore, SB B17) during configuration. Cause: the testbench drove
+  every input 0.2 ns after its edge (`ASSIGNMENT_DELAY`), but the PnR netlist
+  sees its clock ~0.208 ns after it (clock tree), and the tile SDC
+  (`constraints/common.tcl`) has the passthrough inputs (`stall`, `config_*`,
+  `reset`, `flush`, `read_config_data_in`) arrive at `pt_i_delay` = 0.7 ns, so
+  PnR fixed hold for 0.7 ns: config data raced the clock (static's run had 3
+  such violations and was lucky). Synth level has an ideal clock. **Fix
+  (garnet, 2026-10-14):** bundle testbenches (`sdc_inputs`) drive each input at
+  its SDC arrival: passthrough at `PT_INPUT_DELAY_NS` = 0.7, the rest at
+  `INPUT_DELAY_FRACTION` x period (MEM 0.2, PE 0.3 = onyx `i_delay`), through
+  `pt_addr` / `in_addr`; `test_vector_addr` (checks, bookkeeping) is unchanged.
+  `test_testbench_sdc_input_timing_matches_constraints` fails if the constants
+  drift from either tile's `common.tcl`. Verified by delaying the DUT clock
+  0.5 ns in the local gate emulation: db83c42f's tb 22753 / 38012 known-value
+  mismatches (X03_Y02 / X07_Y05; 182 / 864 violations), new tb 0 / 0 (no
+  violations, 3564 pre-app X); without the delay also 0 / 0.
 - RTL vs synth power of the run-2 static X07_Y05 (both X-tainted at synth):
   the SRAM macro books 48 uW at RTL level vs 4.0 mW at synth level; check on a
   clean replay before trusting either.
