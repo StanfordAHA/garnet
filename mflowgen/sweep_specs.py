@@ -2128,6 +2128,7 @@ ZIP_EXTRA_GLOBS = [
     SRAM_STEP_GLOB + "/genviews_manifest.txt",
 ]
 
+
 @functools.lru_cache(maxsize=None)
 def _datasheet_finder():
     """collect_datasheet.find_datasheets, loaded from this checkout's node."""

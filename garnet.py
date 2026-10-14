@@ -29,7 +29,6 @@ from canal.logic import ReadyValidLoopBack
 from matrix_unit.cgra2mu_ready_and import cgra2mu_ready_and
 from matrix_unit.mu2cgra_pipeline_unit import mu2cgra_pipeline_unit
 from kratos.util import to_magma
-import json
 
 # set the debug mode to false to speed up construction
 from gemstone.generator.generator import set_debug_mode
@@ -266,7 +265,6 @@ class Garnet(Generator):
             else:
                 self.wire(self.ports.cgra2mu_ready, self.convert(self.cgra2mu_ready_and.ports.anded_ready_out, magma.bit))
 
-
             # Matrix unit <-> GLB ports connection
             if self.include_mu_glb_hw:
                 self.wire(self.global_buffer.ports.mu_tl_addr_in, self.ports.mu_tl_addr_in)
@@ -360,11 +358,11 @@ class Garnet(Generator):
         return map_app(halide_src, retiming=True)
 
     def update_mu_io_config(self, placement, routing, id_to_name, instrs, mu_io_loc_to_id):
-         from canal.cyclone import PortNode
-         for _, route in routing.items():
+        from canal.cyclone import PortNode
+        for _, route in routing.items():
             for segment in route:
                 # Check if segment[0] is of PortNode type
-                if not(isinstance(segment[0], PortNode)):
+                if not (isinstance(segment[0], PortNode)):
                     continue
                 node_0_name = segment[0].name
                 if node_0_name.startswith("mu2io_17_"):
@@ -386,7 +384,6 @@ class Garnet(Generator):
                     # Add the new instruction to the instrs
                     instrs[instance] = (1, node_config_kwargs)
 
-
     def get_placement_bitstream(self, placement, routing, halide_src, id_to_name, instrs, active_core_ports=None, PE_fifos_bypass_config=None, PE_fifos_bypass_dump=None, mu_io_loc_to_id=None):
         # Replace partial tile name with coordinate in PE_fifos_bypass_config
         if PE_fifos_bypass_config is not None:
@@ -406,10 +403,8 @@ class Garnet(Generator):
                 del PE_fifos_bypass_config[k]
             PE_fifos_bypass_config.update(updates)
 
-
         # Update MU I/O tile configurations based on routing result
         self.update_mu_io_config(placement, routing, id_to_name, instrs, mu_io_loc_to_id)
-
 
         result = []
         for node, (x, y) in placement.items():
@@ -525,14 +520,13 @@ class Garnet(Generator):
             new_conns = []
             for conn in conns:
                 is_path_balance_pond = "path_balance_pond" in netlist_info["id_to_name"][conn[0]]
-                if conn[0] in packed_ponds and not(is_path_balance_pond):
+                if conn[0] in packed_ponds and not (is_path_balance_pond):
                     new_conns.append((packed_ponds[conn[0]], conn[1]))
                 else:
                     new_conns.append(conn)
             netlist_info['netlist'][edge_id] = new_conns
 
         self.pes_with_packed_ponds = {pe: pond for pond, pe in packed_ponds.items()}
-
 
     def check_app_data_width(self, app):
         """The app's data ports must be this fabric's data width (the lake spec's data_width).
@@ -793,8 +787,6 @@ class Garnet(Generator):
         return (netlist_info["id_to_name"], netlist_info["instance_to_instrs"], netlist_info["netlist"],
                 netlist_info["buses"], netlist_info["active_core_ports"], netlist_info["id_to_metadata"])
 
-
-
     def place_and_route(self, args, load_only=False):
 
         # place_and_route() used to have a bunch of parameters with defaults
@@ -931,7 +923,6 @@ class Garnet(Generator):
 
         dense_ready_valid = "DENSE_READY_VALID" in os.environ and os.environ.get("DENSE_READY_VALID") == "1"
 
-
         mu_io_loc_to_id = {}
         reg_loc_to_id = {}
 
@@ -972,20 +963,18 @@ class Garnet(Generator):
 
         # For dumping PE fifo bypass config to a json
         PE_fifos_bypass_dump = {
-                "input_fifo_bypass": {},
-                "output_fifo_bypass": {},
-                "prim_outfifo_bypass": {}
+            "input_fifo_bypass": {},
+            "output_fifo_bypass": {},
+            "prim_outfifo_bypass": {}
         }
 
         bitstream += self.get_placement_bitstream(placement, routing, halide_src, id_to_name,
                                                   instance_to_instr, active_core_ports, PE_fifos_bypass_config=PE_fifos_bypass_config, PE_fifos_bypass_dump=PE_fifos_bypass_dump, mu_io_loc_to_id=mu_io_loc_to_id)
 
-
         bin_path = os.path.dirname(halide_src)
         pe_fifo_bypass_dump_path = os.path.join(bin_path, "pe_id_to_fifo_bypass_config.json")
         with open(pe_fifo_bypass_dump_path, "w") as f:
             json.dump(PE_fifos_bypass_dump, f, indent=4)
-
 
         skip_addr = self.interconnect.get_skip_addr()
         bitstream = compress_config_data(bitstream, skip_compression=skip_addr)
@@ -1180,7 +1169,7 @@ def parse_args():
     if IOSide.West in io_sides:
         num_cgra_cols_including_io += 1
 
-    include_glb_ring_switch = not(args.exclude_glb_ring_switch)
+    include_glb_ring_switch = not (args.exclude_glb_ring_switch)
     args.glb_params = gen_global_buffer_params(
         num_glb_tiles=args.width // 2,
         num_cgra_cols=args.width,
@@ -1205,7 +1194,6 @@ def parse_args():
     # lassen PE at the fabric data width (16 -> lassen_fc itself)
     if args.pe_fc is lassen_fc:
         args.pe_fc = gen_PE_fc(args.glb_params.cgra_data_width)
-
 
     # for a in vars(args).items(): print(f'arg {a} has type {type(a)}')
     return args, io_sides

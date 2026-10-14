@@ -86,11 +86,11 @@ def construct():
         # Lake-spec knobs. Broadcast to the top-level rtl step and forwarded
         # explicitly to the tile_array subgraph (which forwards to
         # Tile_MemCore). Empty defaults preserve baseline behavior.
-        'lake_spec_config':    os.environ.get('LAKE_SPEC_CONFIG', ''),
-        'lake_spec_mode':      os.environ.get('LAKE_SPEC_MODE', ''),
-        'dual_port':           os.environ.get('DUAL_PORT',           'False') == 'True',
+        'lake_spec_config': os.environ.get('LAKE_SPEC_CONFIG', ''),
+        'lake_spec_mode': os.environ.get('LAKE_SPEC_MODE', ''),
+        'dual_port': os.environ.get('DUAL_PORT', 'False') == 'True',
         'use_non_split_fifos': os.environ.get('USE_NON_SPLIT_FIFOS', 'False') == 'True',
-        'use_sim_sram':        os.environ.get('USE_SIM_SRAM',        'False') == 'True',
+        'use_sim_sram': os.environ.get('USE_SIM_SRAM', 'False') == 'True',
         # glb tile memory size (unit: KB)
         # 'glb_tile_mem_size' : 64,  #  64x16 => 1M global buffer
         'glb_tile_mem_size': 256,   # 256*16 => 4M global buffer
@@ -269,20 +269,20 @@ def construct():
 
     # Turn off formatting b/c want these columns to line up
     # autopep8: off
-    info           = default_step('info')  # noqa
+    info = default_step('info')  # noqa
     # constraints  = default_step('constraints')
-    synth          = default_step('cadence-genus-synthesis')    # noqa
-    iflow          = default_step('cadence-innovus-flowsetup')  # noqa
-    init           = default_step('cadence-innovus-init')       # noqa
-    power          = default_step('cadence-innovus-power')      # noqa
-    place          = default_step('cadence-innovus-place')      # noqa
-    cts            = default_step('cadence-innovus-cts')        # noqa
-    postcts_hold   = default_step('cadence-innovus-postcts_hold')  # noqa
-    route          = default_step('cadence-innovus-route')         # noqa
-    postroute      = default_step('cadence-innovus-postroute')     # noqa
+    synth = default_step('cadence-genus-synthesis')    # noqa
+    iflow = default_step('cadence-innovus-flowsetup')  # noqa
+    init = default_step('cadence-innovus-init')       # noqa
+    power = default_step('cadence-innovus-power')      # noqa
+    place = default_step('cadence-innovus-place')      # noqa
+    cts = default_step('cadence-innovus-cts')        # noqa
+    postcts_hold = default_step('cadence-innovus-postcts_hold')  # noqa
+    route = default_step('cadence-innovus-route')         # noqa
+    postroute = default_step('cadence-innovus-postroute')     # noqa
     postroute_hold = default_step('cadence-innovus-postroute_hold')  # noqa
-    signoff        = default_step('cadence-innovus-signoff')         # noqa
-    pt_signoff     = default_step('synopsys-pt-timing-signoff')      # noqa
+    signoff = default_step('cadence-innovus-signoff')         # noqa
+    pt_signoff = default_step('synopsys-pt-timing-signoff')      # noqa
     # autopep8: on
 
     if which("calibre") is not None:

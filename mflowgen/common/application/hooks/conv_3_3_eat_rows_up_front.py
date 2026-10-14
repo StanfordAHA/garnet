@@ -20,7 +20,9 @@ The MEM instance gets a third in/out port pair, so map and PnR need
 METAMAPPER_MEM_PORTS=3 (MetaMapper's cgralib.Mem has 2 by default).
 usage: conv_3_3_eat_rows_up_front.py <app>/bin
        (env LAKE_SPEC_CONFIG: in_ports, out_ports, filter_fifo_depth)"""
-import json, os, sys
+import json
+import os
+import sys
 
 bin_dir = sys.argv[1]
 path = os.path.join(bin_dir, "design_top.json")

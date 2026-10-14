@@ -52,11 +52,11 @@ def construct():
         # Broadcast via g.update_params(parameters) below into both the
         # top-level rtl step and the Tile_MemCore subgraph. Empty defaults
         # preserve baseline behavior for consumers that don't set env.
-        'lake_spec_config':    os.environ.get('LAKE_SPEC_CONFIG', ''),
-        'lake_spec_mode':      os.environ.get('LAKE_SPEC_MODE', ''),
-        'dual_port':           os.environ.get('DUAL_PORT',           'False') == 'True',
+        'lake_spec_config': os.environ.get('LAKE_SPEC_CONFIG', ''),
+        'lake_spec_mode': os.environ.get('LAKE_SPEC_MODE', ''),
+        'dual_port': os.environ.get('DUAL_PORT', 'False') == 'True',
         'use_non_split_fifos': os.environ.get('USE_NON_SPLIT_FIFOS', 'False') == 'True',
-        'use_sim_sram':        os.environ.get('USE_SIM_SRAM',        'False') == 'True',
+        'use_sim_sram': os.environ.get('USE_SIM_SRAM', 'False') == 'True',
 
         # Power Domains
         # 'PWR_AWARE': True,
@@ -140,24 +140,24 @@ def construct():
     # Default steps
 
     # autopep8: off
-    info           = Step('info',                           default=True)  # noqa
+    info = Step('info', default=True)  # noqa
     # constraints  = Step( 'constraints',                   default=True)  # noqa
     # dc           = Step( 'synopsys-dc-synthesis',         default=True)  # noqa
-    synth          = Step('cadence-genus-synthesis',        default=True)  # noqa
-    iflow          = Step('cadence-innovus-flowsetup',      default=True)  # noqa
-    init           = Step('cadence-innovus-init',           default=True)  # noqa
-    power          = Step('cadence-innovus-power',          default=True)  # noqa
-    place          = Step('cadence-innovus-place',          default=True)  # noqa
-    cts            = Step('cadence-innovus-cts',            default=True)  # noqa
-    postcts_hold   = Step('cadence-innovus-postcts_hold',   default=True)  # noqa
-    route          = Step('cadence-innovus-route',          default=True)  # noqa
-    postroute      = Step('cadence-innovus-postroute',      default=True)  # noqa
+    synth = Step('cadence-genus-synthesis', default=True)  # noqa
+    iflow = Step('cadence-innovus-flowsetup', default=True)  # noqa
+    init = Step('cadence-innovus-init', default=True)  # noqa
+    power = Step('cadence-innovus-power', default=True)  # noqa
+    place = Step('cadence-innovus-place', default=True)  # noqa
+    cts = Step('cadence-innovus-cts', default=True)  # noqa
+    postcts_hold = Step('cadence-innovus-postcts_hold', default=True)  # noqa
+    route = Step('cadence-innovus-route', default=True)  # noqa
+    postroute = Step('cadence-innovus-postroute', default=True)  # noqa
     postroute_hold = Step('cadence-innovus-postroute_hold', default=True)  # noqa
-    signoff        = Step('cadence-innovus-signoff',        default=True)  # noqa
-    pt_signoff     = Step('synopsys-pt-timing-signoff',     default=True)  # noqa
+    signoff = Step('cadence-innovus-signoff', default=True)  # noqa
+    pt_signoff = Step('synopsys-pt-timing-signoff', default=True)  # noqa
 
-    pt_genlibdb    = Step('synopsys-ptpx-genlibdb',         default=True)  # noqa
-    genlib         = Step('cadence-innovus-genlib',         default=True)  # noqa
+    pt_genlibdb = Step('synopsys-ptpx-genlibdb', default=True)  # noqa
+    genlib = Step('cadence-innovus-genlib', default=True)  # noqa
     # autopep8: on
 
     if which("calibre") is not None:
@@ -270,20 +270,20 @@ def construct():
 
     # Outputs
     # autopep8: off
-    g.add_output('tile_array_tt.lib',      genlib.o('design.lib')         )  # noqa
-    g.add_output('tile_array_tt.db',       lib2db.o('design.db')          )  # noqa
-    g.add_output('tile_array.lef',         signoff.o('design.lef')        )  # noqa
-    g.add_output('tile_array.vcs.v',       signoff.o('design.vcs.v')      )  # noqa
-    g.add_output('tile_array.sdf',         signoff.o('design.sdf')        )  # noqa
-    g.add_output('tile_array.gds',         signoff.o('design-merged.gds') )  # noqa
-    g.add_output('tile_array.lvs.v',       lvs.o('design_merged.lvs.v')   )  # noqa
-    g.add_output('tile_array.vcs.pg.v',    signoff.o('design.vcs.pg.v')   )  # noqa
-    g.add_output('tile_array.spef.gz',     signoff.o('design.spef.gz')    )  # noqa
-    g.add_output('tile_array.sram.spi',    Tile_MemCore.o('sram.spi')     )  # noqa
-    g.add_output('tile_array.sram.v',      Tile_MemCore.o('sram.v')       )  # noqa
-    g.add_output('tile_array.sram_pwr.v',  Tile_MemCore.o('sram_pwr.v')   )  # noqa
-    g.add_output('tile_array.sram_tt.db',  Tile_MemCore.o('sram_tt.db')   )  # noqa
-    g.add_output('tile_array.sram_tt.lib', Tile_MemCore.o('sram_tt.lib')  )  # noqa
+    g.add_output('tile_array_tt.lib', genlib.o('design.lib'))  # noqa
+    g.add_output('tile_array_tt.db', lib2db.o('design.db'))  # noqa
+    g.add_output('tile_array.lef', signoff.o('design.lef'))  # noqa
+    g.add_output('tile_array.vcs.v', signoff.o('design.vcs.v'))  # noqa
+    g.add_output('tile_array.sdf', signoff.o('design.sdf'))  # noqa
+    g.add_output('tile_array.gds', signoff.o('design-merged.gds'))  # noqa
+    g.add_output('tile_array.lvs.v', lvs.o('design_merged.lvs.v'))  # noqa
+    g.add_output('tile_array.vcs.pg.v', signoff.o('design.vcs.pg.v'))  # noqa
+    g.add_output('tile_array.spef.gz', signoff.o('design.spef.gz'))  # noqa
+    g.add_output('tile_array.sram.spi', Tile_MemCore.o('sram.spi'))  # noqa
+    g.add_output('tile_array.sram.v', Tile_MemCore.o('sram.v'))  # noqa
+    g.add_output('tile_array.sram_pwr.v', Tile_MemCore.o('sram_pwr.v'))  # noqa
+    g.add_output('tile_array.sram_tt.db', Tile_MemCore.o('sram_tt.db'))  # noqa
+    g.add_output('tile_array.sram_tt.lib', Tile_MemCore.o('sram_tt.lib'))  # noqa
     # autopep8: on
 
     # TSMC needs streamout *without* the (new) default -uniquify flag

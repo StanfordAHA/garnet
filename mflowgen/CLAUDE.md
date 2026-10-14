@@ -1662,3 +1662,18 @@ only bump when `git merge-base --is-ancestor <current gitlink> <new sha>`
 holds (gate the update on it with `&&`); otherwise set it to the branch tip.
 2026-10-07: 8840857 skipped that check and moved garnet back a commit
 (fixed in 294a61b).
+
+## Lint: pycodestyle / flake8 (2026-10-13, session 352df910)
+
+- garnet's own checks: `setup.cfg` `[pycodestyle]` (max line 140, ignores E501 and
+  others; `pytest --pycodestyle` in `.github/scripts/run.sh`) and `bin/lint.sh`
+  (Buildkite `ci.yml`: autoflake duplicate keys, flake8 E and F with `[flake8]`, which
+  does NOT ignore E501). Neither tool is in /aha's venv: `pip install --target <dir>
+  pycodestyle flake8 autoflake`, then `PYTHONPATH=<dir> python -m pycodestyle <files>`.
+- Upstream garnet does not pass its own config: modern_gf's merge base with
+  origin/master (020c9b79, 2025-12) has 1,879 pycodestyle violations in its tracked
+  `.py` files (pycodestyle 2.12), nearly all in upstream code (pipelining,
+  mini_mapper, global_buffer, mflowgen constructs). modern_gf's own changes are clean
+  since 2026-10-13: no changed file has more violations than at the base (the 10 that
+  did now pass entirely), and changed files add no flake8 F findings. Check new work
+  with `git diff --name-only 020c9b79 HEAD -- '*.py'`.

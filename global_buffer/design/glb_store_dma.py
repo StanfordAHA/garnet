@@ -584,8 +584,8 @@ class GlbStoreDma(Generator):
         for lane in range(self.lanes):
             stmt = IfStmt(self.strm_data_sel == lane)
             stmt.then_(self.bank_wr_strb_cache_w[sw * (lane + 1) - 1, sw * lane].assign(
-                           const(self.cgra_strb_value, sw)),
-                       self.bank_wr_data_cache_w[w * (lane + 1) - 1, w * lane].assign(self.strm_wr_data_w))
+                const(self.cgra_strb_value, sw)),
+                self.bank_wr_data_cache_w[w * (lane + 1) - 1, w * lane].assign(self.strm_wr_data_w))
             if prev is None:
                 top = stmt
             else:

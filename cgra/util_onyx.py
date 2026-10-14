@@ -58,7 +58,7 @@ from lake.top.fiber_access import FiberAccess
 from lake.modules.onyx_pe import OnyxPE
 from lake.modules.onyx_dense_pe import OnyxDensePE
 from lake.top.reduce_pe_cluster import ReducePECluster
-from lassen.sim import PE_fc, gen_PE_fc
+from lassen.sim import gen_PE_fc
 import magma as m
 from peak import family
 from lake.spec.spec_memory_controller import SpecMemoryController, build_four_port_wide_fetch_rv, \
@@ -90,7 +90,7 @@ def load_pond_spec_params(rv, data_width=16):
     with open(path) as f:
         params = json.load(f)
     try:
-        resolved = resolve_cgra_pond_params(params, rv=rv)
+        resolve_cgra_pond_params(params, rv=rv)  # validates
     except ValueError as e:
         raise ValueError(f"{path}: {e}") from None
     if "data_width" not in params:

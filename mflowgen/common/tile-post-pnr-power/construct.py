@@ -28,19 +28,19 @@ def construct():
 
     # autopep8: off
     parameters = {
-        'construct_path'    : __file__,                              # noqa
-        'design_name'       : os.environ.get('design_name'),         # noqa
-        'clock_period'      : float(os.environ.get('clock_period')), # noqa
-        'adk'               : adk_name,                              # noqa
-        'adk_view'          : adk_view,                              # noqa
-        'PWR_AWARE'         : os.environ.get('PWR_AWARE'),           # noqa
-        'testbench_name'    : os.environ.get('testbench_name'),      # noqa
-        'strip_path'        : os.environ.get('strip_path'),          # noqa
-        'waves'             : os.environ.get('waves'),               # noqa
-        'use_sdf'           : os.environ.get('use_sdf'),             # noqa
-        'tile_id'           : os.environ.get('tile_id'),             # noqa
+        'construct_path': __file__,                              # noqa
+        'design_name': os.environ.get('design_name'),         # noqa
+        'clock_period': float(os.environ.get('clock_period')),  # noqa
+        'adk': adk_name,                              # noqa
+        'adk_view': adk_view,                              # noqa
+        'PWR_AWARE': os.environ.get('PWR_AWARE'),           # noqa
+        'testbench_name': os.environ.get('testbench_name'),      # noqa
+        'strip_path': os.environ.get('strip_path'),          # noqa
+        'waves': os.environ.get('waves'),               # noqa
+        'use_sdf': os.environ.get('use_sdf'),             # noqa
+        'tile_id': os.environ.get('tile_id'),             # noqa
         # zero-init SRAM model + -nonotifier (cadence-xcelium-sim/run_sim.sh)
-        'app_replay'        : True,                                   # noqa
+        'app_replay': True,                                   # noqa
     }
     # autopep8: on
 
@@ -58,9 +58,9 @@ def construct():
     garnet_home = os.environ.get('GARNET_HOME')
 
     # autopep8: off
-    setup       = Step(garnet_home + '/mflowgen/common/tile-post-pnr-power/setup')  # noqa
-    gl_sim      = Step(garnet_home + '/mflowgen/common/cadence-xcelium-sim'      )  # noqa
-    pt_power_gl = Step(garnet_home + '/mflowgen/common/synopsys-ptpx-gl'         )  # noqa
+    setup = Step(garnet_home + '/mflowgen/common/tile-post-pnr-power/setup')  # noqa
+    gl_sim = Step(garnet_home + '/mflowgen/common/cadence-xcelium-sim')  # noqa
+    pt_power_gl = Step(garnet_home + '/mflowgen/common/synopsys-ptpx-gl')  # noqa
     # autopep8: on
 
     gl_sim.extend_inputs(['test_vectors.txt', 'test_outputs.txt', 'design.v'])
