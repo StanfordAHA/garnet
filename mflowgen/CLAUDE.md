@@ -1233,6 +1233,12 @@ were deleted as stale (lake 04191ea5: before 144e2062's comparator pruning;
   0.5 ns in the local gate emulation: db83c42f's tb 22753 / 38012 known-value
   mismatches (X03_Y02 / X07_Y05; 182 / 864 violations), new tb 0 / 0 (no
   violations, 3564 pre-app X); without the delay also 0 / 0.
+- **gf12 run 4 (2026-10-14, garnet >= dd8d9816; zip
+  `/aha/app_power_pipeclean_r8cad-gf12_20261014-092703.zip`): MEM pipeclean
+  passes.** All 6 replays exact (static 2 tiles, RV 1, each at RTL, synth and
+  PnR), 0 timing violations, no SRAM X clock. RV Tile_X03_Y03: synth 5.44 /
+  PnR 5.96 mW (SRAM 3.15 / 3.08); RV idle/active synth 1.40 / 10.9, PnR 1.88 /
+  11.9. Static numbers = run 3 (below). Tile_PE not run on gf12 yet.
 - **RTL-level power on gf12 is not usable (OPEN_ISSUES
   garnet/rtl-level-power-annotation):** PT annotates 60% of nets / 20% of leaf
   cells from the RTL SAIF (synth, PnR: 100%; freepdk45 locally: 100%), so it
