@@ -232,10 +232,19 @@ def place_io_blk(id_to_name, app_dir, io_sides, orig_cgra_width, orig_cgra_heigh
     if (resnet_manual_placer and os.path.isfile(app_dir + "/manual.place")) or (path_balance_manual_placer and os.path.isfile(app_dir_pre_bin + "/manual.place")):
         if path_balance_manual_placer:
             os.system(f"cp {app_dir_pre_bin}/manual.place {app_dir}/manual.place")
+        # A line is "<block id> x y" or (2026-10-13) "<instance name> x y": a name
+        # (an "@<track>" suffix ignored) is looked up in id_to_name, so a placement
+        # can be pinned across netlists whose block ids differ (gen_app_bundle
+        # --rv-balance pins its padding registers this way); unknown names are skipped.
+        id_of = {v.split("@")[0]: k for k, v in id_to_name.items()}
         with open(app_dir + "/manual.place", "r") as f:
             data = f.readlines()
             for dat in data:
                 name, x, y = tuple(dat.split(" "))
+                if name not in id_to_name:
+                    name = id_of.get(name.split("@")[0])
+                    if name is None:
+                        continue
                 placement[name] = (x.strip(), y.strip())
 
     # parse the glb_bank_config.json to specify bank locations

@@ -254,6 +254,11 @@ class CoreCombinerCore(LakeCoreBase):
             if dense_ready_valid:
                 print(f"Bypassing prim outfifo for tile ({x}, {y})")
                 bypass_prim_outfifo = 1
+                # A PE_fifos_bypass_config.json entry may keep it ("prim_outfifo_bypass": 0):
+                # one more pipeline stage at this PE's output, which gen_app_bundle.py
+                # --rv-balance uses to balance reconvergent branches.
+                if isinstance(PE_fifos_bypass_config, dict) and (x, y) in PE_fifos_bypass_config:
+                    bypass_prim_outfifo = int(PE_fifos_bypass_config[(x, y)].get("prim_outfifo_bypass", 1))
             else:
                 bypass_prim_outfifo = 0
 
