@@ -9,6 +9,7 @@ import os
 from mflowgen.components import Graph, Step
 from shutil import which
 from common.get_sys_adk import get_sys_adk
+from common.app_variants import app_bundle_variants, add_app_variant_steps, set_app_variant_params
 
 
 def construct():
@@ -37,8 +38,9 @@ def construct():
     synth_power = False
     if os.environ.get('SYNTH_POWER') == 'True':
         synth_power = True
-    # power domains do not work with post-synth power
-    if synth_power:
+    # power domains do not work with post-synth power (nor with the
+    # post-synth-power steps of APP_BUNDLE_VARIANTS)
+    if synth_power or app_bundle_variants():
         pwr_aware = False
 
     want_drc_pm = True
@@ -434,6 +436,10 @@ def construct():
     g.connect_by_name(pt_signoff, post_pnr_power)
     g.connect_by_name(testbench, post_pnr_power)
 
+    # App-bundle variants replayed on this one synth (APP_BUNDLE_VARIANTS,
+    # common/app_variants.py; none by default)
+    app_variants = add_app_variant_steps(g, custom_step, rtl, synth)
+
     g.connect_by_name(adk, debugcalibre)
     g.connect_by_name(synth, debugcalibre)
     g.connect_by_name(iflow, debugcalibre)
@@ -477,6 +483,7 @@ def construct():
     # -----------------------------------------------------------------------
 
     g.update_params(parameters)
+    set_app_variant_params(app_variants)
 
     # Add custom timing scripts
 

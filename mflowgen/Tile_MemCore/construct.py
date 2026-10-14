@@ -9,6 +9,7 @@ import os
 from mflowgen.components import Graph, Step
 from shutil import which
 from common.get_sys_adk import get_sys_adk
+from common.app_variants import app_bundle_variants, add_app_variant_steps, set_app_variant_params
 
 
 def construct():
@@ -40,8 +41,9 @@ def construct():
     # memtile-power-test-gen -> memtile-power-sim-<level>-<variant> ->
     # memtile-power-<level>-<variant> (ptpx), level = synth | pnr.
     memtile_power = os.environ.get('MEMTILE_POWER') == 'True'
-    # power domains do not work with post-synth / rtl power
-    if synth_power or rtl_power:
+    # power domains do not work with post-synth / rtl power (nor with the
+    # post-synth-power steps of APP_BUNDLE_VARIANTS)
+    if synth_power or rtl_power or app_bundle_variants():
         pwr_aware = False
 
     # Genus flatten_effort: 0 keeps the design hierarchy (auto_ungroup none),
@@ -560,6 +562,10 @@ def construct():
     reverse_connect(post_pnr_power, pt_signoff)
     reverse_connect(post_pnr_power, testbench)
 
+    # App-bundle variants replayed on this one synth (APP_BUNDLE_VARIANTS,
+    # common/app_variants.py; none by default)
+    app_variants = add_app_variant_steps(g, custom_step, rtl, synth, sram_steps=[gen_sram], build_glb=True)
+
     if rtl_power:
         # RTL sim reads the RTL design.v (from the rtl step); ptpx-rtl computes
         # power on the signoff netlist (design.vcs.v + spef + pt.sdc) bound to
@@ -632,6 +638,7 @@ def construct():
     # -----------------------------------------------------------------------
 
     g.update_params(parameters)
+    set_app_variant_params(app_variants)
 
     # Update PWR_AWARE variable
     synth.update_params({'PWR_AWARE': parameters['PWR_AWARE']}, True)

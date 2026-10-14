@@ -157,6 +157,41 @@ def find_instance_path(mods, root, pattern):
     return None, None
 
 
+def route_tiles(route_text):
+    """{(x, y)} of every tile a route passes through, from design.route lines
+    `PORT name (x, y, w)`, `RMUX name (x, y, w)`, `SB (track, x, y, side, io, w)`
+    and `REG name (track, x, y, w)`."""
+    out = set()
+    for kind, nums in re.findall(r"^(PORT|RMUX|SB|REG)\b[^(]*\(([\d,\s]+)\)", route_text, re.M):
+        n = [int(v) for v in nums.split(",")]
+        out.add((n[0], n[1]) if kind in ("PORT", "RMUX") else (n[1], n[2]))
+    return out
+
+
+def add_route_and_idle_tiles(tiles, array, route_path):
+    """--cgra-tiles: add to `tiles` ({'m'|'p': [(name, x, y)]}) every MEM/PE tile
+    a route passes through without a placed core (name 'route') and, per type,
+    the last untouched tile of the array (name 'idle'); returns the summary
+    for the manifest."""
+    used = {(x, y) for v in tiles.values() for _, x, y in v}
+    routed = route_tiles(route_path.read_text()) - used
+    kind = {d: k for k, d in TILE_DESIGNS.items()}
+    summary = {"route": {d: 0 for d in TILE_DESIGNS.values()}, "idle": {}}
+    for x, y in sorted(routed):
+        d = array.get(f"Tile_X{x:02X}_Y{y:02X}")
+        if d in kind:
+            tiles[kind[d]].append(("route", x, y))
+            summary["route"][d] += 1
+    touched = used | routed
+    for d, k in kind.items():
+        free = sorted((int(i[6:8], 16), int(i[10:12], 16)) for i, t in array.items() if t == d)
+        free = [xy for xy in free if xy not in touched]
+        if free:
+            tiles[k].append(("idle", *free[-1]))
+            summary["idle"][d] = "Tile_X{:02X}_Y{:02X}".format(*free[-1])
+    return summary
+
+
 # ------------------------------------------------------------------ main ----
 
 def main():
@@ -184,6 +219,10 @@ def main():
                    help="extra env for halide/map/pnr/test (e.g. HL_TARGET=..., EXT=mat)")
     p.add_argument("--pre-pnr-hook", action="append", default=[], metavar="SCRIPT",
                    help="python SCRIPT <app>/bin, run between map and pnr")
+    p.add_argument("--cgra-tiles", action="store_true",
+                   help="also record the tiles the app's routes pass through (no placed "
+                        "core; name 'route') and one untouched tile per type (name 'idle'), "
+                        "for whole-array power (mflowgen/cgra_app_power.py)")
     p.add_argument("--skip-to", choices=STEPS, default="collateral",
                    help="resume: reuse the earlier steps' results (same --out)")
     p.add_argument("--test-timeout", type=int, default=5400,
@@ -303,6 +342,11 @@ def main():
         if len(w) >= 4 and w[-1].startswith("#") and w[-1][1] in tiles:
             tiles[w[-1][1]].append((w[0], int(w[-3]), int(w[-2])))
     mods = verilog_modules(gv.read_text())
+    array = {inst: typ for typ, inst in mods.get("Interconnect", ("", []))[1]
+             if re.fullmatch(r"Tile_X[0-9A-F]{2}_Y[0-9A-F]{2}", inst)}
+    cgra_tiles = None
+    if args.cgra_tiles:
+        cgra_tiles = add_route_and_idle_tiles(tiles, array, app_dir / "bin/design.route")
     core_path, core_mod = find_instance_path(mods, "Tile_MemCore", CORE_MODULE_RE)
     tcl = [f"database -open tiles -vcd -into {out}/run.vcd -default"]
     if core_path:
@@ -360,6 +404,8 @@ def main():
         "app_env": dict(kv.partition("=")[::2] for kv in args.env),
         "pre_pnr_hooks": args.pre_pnr_hook,
         "tiles": {TILE_DESIGNS[k]: len(v) for k, v in tiles.items()},
+        "array_tiles": {d: sum(t == d for t in array.values()) for d in TILE_DESIGNS.values()},
+        "cgra_tiles": cgra_tiles,
         "core": {"vcd": "core.vcd", "path": core_path, "module": core_mod} if core_path else None,
         "garnet_flags": [str(f) for f in garnet_flags],
         "garnet_v_md5": gv_md5,
