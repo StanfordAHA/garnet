@@ -12,8 +12,10 @@ import subprocess
 CLOCK_PORTS = ("clk", "clk_pass_through")
 CLOCK_OUT_PORTS = ("clk_out", "clk_pass_through_out_bot", "clk_pass_through_out_right")
 clock_template = "Interconnect_tb.clk"
+app_bundle = False
 if os.path.exists("inputs/manifest.json"):
     manifest = json.load(open("inputs/manifest.json"))  # "{}" without a bundle
+    app_bundle = bool(manifest)
     scope = manifest.get("scope", scope)
     clock_template = manifest.get("clock", clock_template)
 
@@ -106,8 +108,17 @@ def convert_raw(signals, input_file, output_file):
     return num_test_vectors, widths
 
 
-def create_testbench(design, inputs, outputs, input_widths, output_widths, num_test_vectors, clock_inputs=None):
+def create_testbench(design, inputs, outputs, input_widths, output_widths, num_test_vectors, clock_inputs=None,
+                     hold_reset=False):
+    """hold_reset (app bundle replays): the recording starts from simulator
+    zero-init, but a gate-level tile's flops are X until its first reset (gf12:
+    every output X until then, and the MEM tile's SRAM clock, clk & the tile_en
+    config flop, X at the first edge, which makes the macro model invalidate its
+    whole array). So drive reset from time 0 until the first recorded reset and
+    check outputs only from that cycle on; the state before it is undefined in
+    hardware too."""
     pwr_aware = os.environ.get("PWR_AWARE") == "True"
+    hold_reset = hold_reset and "reset" in inputs
 
     tb = open("testbench.sv", "w")
 
@@ -146,8 +157,15 @@ module testbench;
 
 ''')
 
+    has_app_start = hold_reset and "flush" in inputs
+    if hold_reset:
+        tb.write('    integer first_reset;  // first vector with reset asserted (see the initial block)\n')
+    if has_app_start:
+        tb.write('    integer app_start;    // first flush after it\n')
     for i in inputs:
-        if 'reset' not in i:
+        if hold_reset and i == 'reset':
+            tb.write(f'    wire {i} = test_vectors[test_vector_addr][`SLICE_{i.upper()}] | (test_vector_addr < first_reset);\n')
+        elif 'reset' not in i:
             tb.write(f'    wire [{input_widths[i]-1}:0] {i} = test_vectors[test_vector_addr][`SLICE_{i.upper()}];\n')
         else:
             tb.write(f'    wire {i} = test_vectors[test_vector_addr][`SLICE_{i.upper()}];\n')
@@ -189,15 +207,39 @@ module testbench;
         .clk_pass_through_out_right(clk_pass_through_out_right),
 ''')
 
+    replay_setup = '''
+      first_reset = 0;
+      while (first_reset < `NUM_TEST_VECTORS && test_vectors[first_reset][`SLICE_RESET] !== 1'b1)
+        first_reset = first_reset + 1;
+      if (first_reset == `NUM_TEST_VECTORS)
+        first_reset = 0;  // never reset: hold nothing, check every cycle
+      $display("replay: reset held and outputs not checked before cycle %0d (first recorded reset)", first_reset);''' \
+        if hold_reset else ''
+    # run_all_tiles.py does not count X outputs before the app starts (state
+    # without reset, which the recording zero-initialized) as mismatches
+    if has_app_start:
+        replay_setup += '''
+      app_start = first_reset;
+      while (app_start < `NUM_TEST_VECTORS && test_vectors[app_start][`SLICE_FLUSH] !== 1'b1)
+        app_start = app_start + 1;
+      if (app_start == `NUM_TEST_VECTORS)
+        app_start = first_reset;  // no flush: no pre-app phase
+      $display("replay: app starts at cycle %0d (first flush after the reset)", app_start);'''
+    # hold_reset: no edge until the held reset has reached every flop (an SDF
+    # reset tree can take a period; the SRAM's clock is clk & a config flop)
+    clock_gen = '''initial begin
+      #(`CLK_PERIOD * 4);
+      forever #(`CLK_PERIOD/2) clk = ~clk;
+    end''' if hold_reset else 'always #(`CLK_PERIOD/2) clk =~clk;'
     tb.write(f'''        .clk(clk),
         .clk_out(clk_out)
     );
 
-    always #(`CLK_PERIOD/2) clk =~clk;
+    {clock_gen}
 
     initial begin
       $readmemh("inputs/test_vectors.txt", test_vectors);
-      $readmemh("inputs/test_outputs.txt", test_outputs);
+      $readmemh("inputs/test_outputs.txt", test_outputs);{replay_setup}
       clk <= 0;
       test_vector_addr <= 0;
     end
@@ -214,8 +256,11 @@ module testbench;
         end
 ''')
     for o in outputs:
+        differs = f'{o} != test_outputs[test_vector_addr][`SLICE_{o.upper()}] || $isunknown({o})'
+        if hold_reset:
+            differs = f'test_vector_addr >= first_reset && ({differs})'
         tb.write(f'''
-        if ({o} != test_outputs[test_vector_addr][`SLICE_{o.upper()}] || $isunknown({o})) begin
+        if ({differs}) begin
             $display("cycle %d: {o}: got %x, expected %x", test_vector_addr, {o}, test_outputs[test_vector_addr][`SLICE_{o.upper()}]);
         end
 ''')
@@ -249,7 +294,8 @@ def main():
         num_test_vectors, input_widths = convert_raw(ins, "raw_input.csv", f"outputs/tile_tbs/{tile}/test_vectors.txt")
         _, output_widths = convert_raw(outs, "raw_output.csv", f"outputs/tile_tbs/{tile}/test_outputs.txt")
         if i == 0:
-            create_testbench(design, ins, outs, input_widths, output_widths, num_test_vectors, clks)
+            create_testbench(design, ins, outs, input_widths, output_widths, num_test_vectors, clks,
+                             hold_reset=app_bundle)
         i += 1
 
 

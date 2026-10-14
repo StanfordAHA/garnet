@@ -55,11 +55,13 @@ fi
 
 # App replay (param app_replay, set by tile-post-{rtl,synth,pnr}-power) must
 # reproduce the recording, which `aha test` made with zero-initialized
-# simulation SRAM. IVCS_INIT_MEM preloads the gf12 SRAM macro model with 0s;
-# without it reads of unwritten words are X (the static conv_3_3 line buffer's
-# were, for 1191 cycles on the build machine). -nonotifier: SDF timing-check
-# violations at startup otherwise set flops X (every tile output X for cycles
-# 0-1); violations are still reported, they just don't corrupt state.
+# simulation SRAM. IVCS_INIT_MEM preloads the gf12 SRAM macro model with 0s, so
+# reads of unwritten words match the recording. That only holds while the
+# macro's clock is never X: the X-before-first-reset that wiped the array on the
+# build machine is handled by the testbench (common/testbench hold_reset).
+# -nonotifier: the only timing violations seen are in the testbench's last
+# partial cycle (inputs read past the vector array: X); they are still
+# reported, they just don't set flops X inside the SAIF window.
 if [ "${app_replay:-False}" = "True" ]; then
   ARGS="$ARGS -nonotifier +define+IVCS_INIT_MEM"
 fi

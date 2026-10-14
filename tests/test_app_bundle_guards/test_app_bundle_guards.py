@@ -9,6 +9,7 @@
 import importlib.util
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -55,9 +56,34 @@ def test_replay_result_parsing():
     assert r["ports"] == {"SB_T0_EAST_SB_OUT_B17": 2, "read_config_data": 1}
     assert r["examples"][1] == "cycle 40: SB_T0_EAST_SB_OUT_B17: got xxxx, expected 0000"
     assert len(r["lines"]) == 3
+    assert r["checked_from"] is None
     clean = rat.replay_result("Simulation complete via $finish(2) at time 5 NS + 0\n")
-    assert clean == {"finished": True, "mismatches": 0, "x_mismatches": 0, "first_cycle": None,
-                     "last_cycle": None, "ports": {}, "examples": [], "lines": []}
+    assert clean == {"finished": True, "checked_from": None, "app_start": None, "pre_app_x": 0,
+                     "pre_app_x_examples": [], "mismatches": 0, "x_mismatches": 0,
+                     "first_cycle": None, "last_cycle": None, "ports": {}, "examples": [], "lines": []}
+    held = rat.replay_result("replay: reset held and outputs not checked before cycle 2 (first recorded reset)\n")
+    assert held["checked_from"] == 2 and held["app_start"] is None
+
+
+def test_replay_pre_app_x():
+    """Before the app starts (first flush), X where the recording has a known
+    value is reset-less state the recording zero-initialized: not a mismatch.
+    Known-value mismatches before it, and X after it, still are."""
+    rat = load(RUN_ALL, "run_all_tiles")
+    log = ("replay: reset held and outputs not checked before cycle 2 (first recorded reset)\n"
+           "replay: app starts at cycle 2404 (first flush after the reset)\n"
+           "cycle 1201: SB_T0_EAST_SB_OUT_B17: got 0xxxx, expected 00000\n"
+           "cycle 1202: SB_T0_WEST_SB_OUT_B17: got 0xxxx, expected 00000\n"
+           "cycle 1300: read_config_data: got 00000001, expected 00000002\n"
+           "cycle 2404: SB_T0_EAST_SB_OUT_B17: got 0xxxx, expected 00000\n"
+           "Simulation complete via $finish(2) at time 7539 NS + 0\n")
+    r = rat.replay_result(log)
+    assert (r["checked_from"], r["app_start"], r["pre_app_x"]) == (2, 2404, 2)
+    assert r["pre_app_x_examples"][0] == "cycle 1201: SB_T0_EAST_SB_OUT_B17: got 0xxxx, expected 00000"
+    assert (r["mismatches"], r["x_mismatches"], r["first_cycle"], r["last_cycle"]) == (2, 1, 1300, 2404)
+    assert r["ports"] == {"read_config_data": 1, "SB_T0_EAST_SB_OUT_B17": 1}
+    only_pre = rat.replay_result("\n".join(log.splitlines()[:4]) + "\n")
+    assert (only_pre["pre_app_x"], only_pre["mismatches"]) == (2, 0)
     assert not rat.replay_result("xmsim: *F,INTERR: crashed\n")["finished"]
 
 
@@ -67,6 +93,7 @@ mkdir -p $tile_id/3-cadence-xcelium-sim
 log=$tile_id/3-cadence-xcelium-sim/xrun.log
 : > $log
 [ "$tile_id" = "$BAD_TILE" ] && echo "cycle 7: SB_T0_EAST_SB_OUT_B17: got 0001, expected 0002" >> $log
+[ "$tile_id" = "$PREAPP_TILE" ] && printf 'replay: app starts at cycle 100 (first flush after the reset)\ncycle 7: SB_T0_EAST_SB_OUT_B17: got 0xxxx, expected 00000\n' >> $log
 [ "$tile_id" = "$NOFINISH_TILE" ] || echo 'Simulation complete via $finish(2) at time 5 NS + 0' >> $log
 [ "$tile_id" = "$NOHIER_TILE" ] || echo report > outputs/reports/$tile_id.hier
 """
@@ -112,11 +139,65 @@ def test_step_mismatch_modes(tmp_path, env, rc):
     assert "lines" not in json.loads((tmp_path / "outputs/reports/Tile_X05_Y06.replay.json").read_text())
 
 
+def test_step_pre_app_x_passes(tmp_path):
+    rc, summary, out = run_step(tmp_path, app_bundle="/b", PREAPP_TILE="Tile_X05_Y06")
+    assert rc == 0, out
+    assert "Tile_X05_Y06: OK (1 X outputs before the app start at cycle 100 not counted)" in summary
+    assert "2/2 tiles replayed exactly" in summary
+    rep = json.loads((tmp_path / "outputs/reports/Tile_X05_Y06.replay.json").read_text())
+    assert (rep["pre_app_x"], rep["app_start"], rep["mismatches"]) == (1, 100, 0)
+
+
 @pytest.mark.parametrize("bad,why", [("NOFINISH_TILE", "sim did not reach $finish"),
                                      ("NOHIER_TILE", "no power report")])
 def test_step_incomplete_tile(tmp_path, bad, why):
     rc, summary, _ = run_step(tmp_path, app_bundle="/b", **{bad: "Tile_X04_Y05"})
     assert rc == 1 and f"Tile_X04_Y05: {why}" in summary
+
+
+# ---------------------------------------------------------------- testbench --
+
+TB_GEN = MFLOWGEN / "common" / "testbench" / "generate_testbench.py"
+
+
+@pytest.mark.parametrize("bundle", [True, False])
+def test_testbench_holds_reset_until_first_recorded(tmp_path, monkeypatch, bundle):
+    """Bundle replays drive reset until the recording's first reset and skip
+    the checks before it (gate-level flops are X until then); the legacy
+    testbench is unchanged."""
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "inputs").mkdir()
+    (tmp_path / "inputs" / "manifest.json").write_text(json.dumps({"scope": "tb.dut"} if bundle else {}))
+    gt = load(TB_GEN, "generate_testbench")
+    assert gt.app_bundle is bundle
+    gt.create_testbench("Tile_MemCore", ["reset", "stall", "SB_IN"], ["SB_OUT"],
+                        {"reset": 1, "stall": 1, "SB_IN": 17}, {"SB_OUT": 17}, 10, ["clk"],
+                        hold_reset=gt.app_bundle)
+    tb = (tmp_path / "testbench.sv").read_text()
+    if not bundle:
+        assert "first_reset" not in tb
+        assert "wire reset = test_vectors[test_vector_addr][`SLICE_RESET];" in tb
+        assert "if (SB_OUT != test_outputs[test_vector_addr][`SLICE_SB_OUT] || $isunknown(SB_OUT)) begin" in tb
+        assert "always #(`CLK_PERIOD/2) clk =~clk;" in tb
+        return
+    assert "wire reset = test_vectors[test_vector_addr][`SLICE_RESET] | (test_vector_addr < first_reset);" in tb
+    assert ("if (test_vector_addr >= first_reset && (SB_OUT != test_outputs[test_vector_addr][`SLICE_SB_OUT]"
+            " || $isunknown(SB_OUT))) begin") in tb
+    assert tb.index("integer first_reset;") < tb.index("wire reset =")
+    assert "#(`CLK_PERIOD * 4);\n      forever #(`CLK_PERIOD/2) clk = ~clk;" in tb   # reset settles first
+    assert "always #(`CLK_PERIOD/2)" not in tb
+    assert "integer app_start;" not in tb   # no flush input
+    # what the sim prints is what run_all_tiles.py parses into checked_from
+    msg = re.search(r'\$display\("(replay: [^"]*)"', tb).group(1).replace("%0d", "2")
+    assert load(RUN_ALL, "run_all_tiles").replay_result(msg)["checked_from"] == 2
+    gt.create_testbench("Tile_MemCore", ["reset", "flush", "SB_IN"], ["SB_OUT"],
+                        {"reset": 1, "flush": 1, "SB_IN": 17}, {"SB_OUT": 17}, 10, ["clk"], hold_reset=True)
+    tb = (tmp_path / "testbench.sv").read_text()
+    assert "test_vectors[app_start][`SLICE_FLUSH] !== 1'b1" in tb
+    msgs = "\n".join(m.replace("%0d", str(c)) for m, c in
+                     zip(re.findall(r'\$display\("(replay: [^"]*)"', tb), (2, 2404)))
+    r = load(RUN_ALL, "run_all_tiles").replay_result(msgs)
+    assert (r["checked_from"], r["app_start"]) == (2, 2404)
 
 
 # ------------------------------------------------------------ check_bundle --

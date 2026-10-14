@@ -7,6 +7,13 @@ The tile testbench (common/testbench) prints one line per output port and
 cycle that differs from the recording ("cycle N: <port>: got X, expected Y",
 X included). A replay that differs means the tile is not the one the app ran
 on (stale app bundle, other RTL), so its power describes some other activity.
+With a bundle the testbench holds reset until the recording's first reset and
+checks from that cycle on (it prints "replay: ... before cycle N"; checked_from),
+and prints the app start (first flush after it; app_start). Before the app
+starts, an X/Z output where the recording has a known value is state without
+reset, which the recording's simulator zero-initialized (gate level: the MEM
+output port's PISO registers until the app writes them): counted as
+pre_app_x, not as a mismatch. Known-value mismatches and X after it fail.
 Per tile: outputs/reports/<tile>.replay.json (+ <tile>.mismatches.txt, the
 first mismatch lines); all tiles: outputs/reports/replay_summary.txt.
 
@@ -26,6 +33,9 @@ import sys
 
 MISMATCH = re.compile(r"cycle\s+(\d+):\s*(\S+):\s+got\s+(\S+),\s+expected\s+(\S+)")
 FINISHED = re.compile(r"Simulation complete via \$finish")
+CHECKED_FROM = re.compile(r"replay: reset held and outputs not checked before cycle (\d+)")
+APP_START = re.compile(r"replay: app starts at cycle (\d+)")
+XZ = re.compile(r"[xXzZ]")
 MAX_EXAMPLES = 5
 MAX_SAVED_LINES = 5000   # outputs/reports/<tile>.mismatches.txt (the sweep zips reports/*)
 
@@ -50,21 +60,33 @@ def sim_log(tile_dir):
 
 
 def replay_result(log_text):
-    """{'finished', 'mismatches', 'x_mismatches' (got has x/z), 'first_cycle',
-    'last_cycle', 'ports': {port: n}, 'examples', 'lines'} of a tile sim log."""
+    """{'finished', 'checked_from', 'app_start', 'pre_app_x', 'pre_app_x_examples',
+    'mismatches', 'x_mismatches' (got has x/z), 'first_cycle', 'last_cycle',
+    'ports': {port: n}, 'examples', 'lines'} of a tile sim log."""
+    checked_from, app_start = CHECKED_FROM.search(log_text), APP_START.search(log_text)
+    app_start = int(app_start.group(1)) if app_start else None
     ports, examples, lines, n, nx, cycles = {}, [], [], 0, 0, []
+    pre_app_x, pre_app_examples = 0, []
     for m in MISMATCH.finditer(log_text):
-        n += 1
         cycle, port, got, exp = int(m.group(1)), m.group(2), m.group(3), m.group(4)
-        nx += bool(re.search(r"[xXzZ]", got))
+        line = f"cycle {cycle}: {port}: got {got}, expected {exp}"
+        if app_start is not None and cycle < app_start and XZ.search(got) and not XZ.search(exp):
+            pre_app_x += 1
+            if len(pre_app_examples) < MAX_EXAMPLES:
+                pre_app_examples.append(line)
+            continue
+        n += 1
+        nx += bool(XZ.search(got))
         cycles.append(cycle)
         ports[port] = ports.get(port, 0) + 1
-        line = f"cycle {cycle}: {port}: got {got}, expected {exp}"
         if len(examples) < MAX_EXAMPLES:
             examples.append(line)
         if len(lines) < MAX_SAVED_LINES:
             lines.append(line)
-    return {"finished": bool(FINISHED.search(log_text)), "mismatches": n, "x_mismatches": nx,
+    return {"finished": bool(FINISHED.search(log_text)),
+            "checked_from": int(checked_from.group(1)) if checked_from else None,
+            "app_start": app_start, "pre_app_x": pre_app_x, "pre_app_x_examples": pre_app_examples,
+            "mismatches": n, "x_mismatches": nx,
             "first_cycle": min(cycles) if cycles else None, "last_cycle": max(cycles) if cycles else None,
             "ports": ports, "examples": examples, "lines": lines}
 
@@ -87,8 +109,9 @@ def problems_of(res):
 def check_tile(tile, run_rc):
     log = sim_log(tile)
     res = replay_result(open(log, errors="replace").read()) if log else \
-        {"finished": False, "mismatches": None, "x_mismatches": None, "first_cycle": None,
-         "last_cycle": None, "ports": {}, "examples": [], "lines": []}
+        {"finished": False, "checked_from": None, "app_start": None, "pre_app_x": 0, "pre_app_x_examples": [],
+         "mismatches": None, "x_mismatches": None, "first_cycle": None, "last_cycle": None, "ports": {},
+         "examples": [], "lines": []}
     res.update(tile=tile, sim_log=log, run_rc=run_rc,
                report=os.path.isfile(f"outputs/reports/{tile}.hier"))
     res["problems"] = problems_of(res)
@@ -113,7 +136,9 @@ def main():
         rc = subprocess.run(["./run.sh"]).returncode
         results.append(check_tile(tile, rc))
 
-    lines = [f"{r['tile']}: {'; '.join(r['problems']) or 'OK'}" for r in results]
+    lines = [f"{r['tile']}: {'; '.join(r['problems']) or 'OK'}"
+             + (f" ({r['pre_app_x']} X outputs before the app start at cycle {r['app_start']} not counted)"
+                if r["pre_app_x"] else "") for r in results]
     bad = [r for r in results if r["problems"]]
     lines.append(f"{design}: {len(results) - len(bad)}/{len(results)} tiles replayed exactly")
     with open("outputs/reports/replay_summary.txt", "w") as f:

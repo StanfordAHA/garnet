@@ -1137,7 +1137,7 @@ were deleted as stale (lake 04191ea5: before 144e2062's comparator pruning;
 144e2062: before the port-order fix).
 
 **Bundle guards (garnet a881563f, 2026-10-11, session 1fa8a391; tests:
-`tests/test_app_bundle_guards`, 18).** Both failure modes used to be silent:
+`tests/test_app_bundle_guards`, 25).** Both failure modes used to be silent:
 - *Bundle recorded on another tile* -> `application` fails up front. The step
   gets the rtl step's `design.v` (Tile_MemCore + Tile_PE wire it; an
   unconnected input elsewhere only warns) and `check_bundle.py --design-v
@@ -1165,18 +1165,54 @@ were deleted as stale (lake 04191ea5: before 144e2062's comparator pruning;
   `memtile_power.csv`: `tile_{rtl,synth,pnr}_replay_exact` = `<exact>/<tiles>`.
   Each failing tile also gets `<tile>.mismatches.txt` (first 5000 lines; in the
   zip) and its replay.json says how many were X/Z and the cycle span.
-- **First gf12 run (2026-10-13, build machine, synth level) failed the check,
-  as it should have:** (1) every MEM tile's outputs X at cycles 0-1: SDF
-  timing-check notifiers at startup (135-144 "Timing violation" per tile);
-  (2) the static conv_3_3 line-buffer tile `Tile_X07_Y05`: data `0xxxx` vs
-  `00000` for 1191 cycles from cycle 1201, reads of unwritten words: the gf12
-  SRAM macro model starts X, the recording's sim SRAM (zero-initialized flops)
-  read 0. The RV tile had only (1). Fix: cadence-xcelium-sim param
-  `app_replay` (True only in the tile-post-{rtl,synth,pnr}-power sub-graphs)
-  adds `-nonotifier +define+IVCS_INIT_MEM` (the macro model's own "preload
-  memory to all 0s"; violations are still reported). tile_array and the
-  memtile idle/active sims are unchanged. mflowgen exports params unquoted,
-  so a param value with spaces breaks `mflowgen-run`: use a flag, as here.
+- **gf12 runs (2026-10-13, build machine, synth level; RTL level passed).**
+  Both failed the check, as they should have: every MEM tile's outputs X at
+  cycles 0-1, and the static conv_3_3 line-buffer tile `Tile_X07_Y05` X
+  (`0xxxx` vs `00000`) on 3 B17 outputs for 1191 cycles from cycle 1201; the
+  RV tile only the former. Run 1's diagnosis (garnet a14c789a: SDF notifiers,
+  unwritten SRAM words) was wrong; run 2 had its `-nonotifier
+  +define+IVCS_INIT_MEM` and failed identically. Real causes (run 2 zip
+  `/aha/app_power_pipeclean_r8cad-gf12_20261013-201721.zip`):
+  (1) the gf12 gate-level flops are X until the tile's first reset (recorded at
+  cycle 2) despite `-xminitialize 0 -delay_udp_xminitialize` (freepdk45 cells do
+  get zeroed; why gf12's do not is unknown). The recording ran from simulator
+  zero-init. Knock-on: the MEM SRAM's clock is `gclk = clk & tile_en` (config
+  flop), X at the first edge, so the gf12 macro model invalidates its whole
+  array ("CLK input is unknown. Array contents are now invalid", t = 1 ns).
+  (2) X07_Y05's X is not SRAM data: in static mode output port 3 reads its
+  PISO `vec_storage` (lake `SingleBankStorage`, 2x64 flops, no reset)
+  combinationally once config sets bypass; it holds X until the app's first
+  write. The app starts at the first flush (cycle 2404); the recording
+  zero-initialized it to 0.
+  All "Timing violation"s (135-144/tile) are in the testbench's last partial
+  cycle (inputs read past the vector array: X), not at startup.
+  **Fix (garnet, 2026-10-13):** bundle testbenches (`generate_testbench.py`
+  `hold_reset`) drive reset from time 0 until the recording's first reset,
+  start the clock after 4 periods (an SDF reset tree can take a period),
+  check outputs only from that cycle (`checked_from`) and print the app start
+  (first flush after it, `app_start`). `run_all_tiles.py` counts an X/Z output
+  with a known recorded value before the app start as `pre_app_x` (summary line
+  + replay.json, not a failure); known-value mismatches anywhere and X after
+  the app start still fail. `-nonotifier` and `IVCS_INIT_MEM` stay (`app_replay`
+  param; keep the macro's array = the recording's zero-init SRAM). Verified on
+  /aha (session 1fa8a391 scratchpad `prereset/`) by emulating the gf12
+  conditions: the static bundle's Tile_MemCore through Genus (freepdk45, SRAM
+  black-boxed), gate sim + SDF without `-delay_udp_xminitialize` (flops X until
+  reset), SRAM = behavioral model zeroed like IVCS_INIT_MEM, invalidated on an
+  X clock, with clk-to-Q (without it the model races the netlist's delayed
+  clocks: 7660 off-by-one-read mismatches, an artifact). Old tb: X03_Y02 240 X
+  mismatches at cycles 0-1, X07_Y05 3840 (gf12: 240 / 3804); new tb: 0
+  mismatches on both, X07_Y05 3564 `pre_app_x` (= gf12's count after cycle 1),
+  no X clock until the last partial cycle. Zero-init flops + old tb: 0. RTL
+  emulation (no `-xminitialize`), static MEM + 3 PE tiles: new tb 0 mismatches.
+  Limit: a static app whose output shows reset-less storage after its flush
+  still fails; then make the gf12 flops zero-init instead (the tile sim's
+  `logs/xminit.log` on the build machine says what `-xminitialize` covered).
+  mflowgen exports params unquoted, so a param value with spaces breaks
+  `mflowgen-run`: use a flag (as `app_replay` does).
+- RTL vs synth power of the run-2 static X07_Y05 (both X-tainted at synth):
+  the SRAM macro books 48 uW at RTL level vs 4.0 mW at synth level; check on a
+  clean replay before trusting either.
 - Power domains: the tile graphs pass `garnet.py --no-pd` (`pwr_aware =
   False`), `gen_app_bundle.py` does not. Today that changes nothing:
   `--no-pd` is a no-op (OPEN_ISSUES `garnet/no-pd-tuple`, a trailing-comma
