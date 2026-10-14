@@ -1535,6 +1535,19 @@ floorplan, `mode[0]` guard) apply — the pond is flops, no macro.
   RV mode, legacy `PondCore` otherwise (static spec pond is opt-in until a
   full-CGRA app run validates it). The static spec pond drops the legacy
   1-bit valid → PE `bit0` inter-core wire.
+- **Tile_PE constraints follow the pond (2026-10-14, session cfc4174c).**
+  `Tile_PE/constraints/constraints.tcl` hard-coded the legacy pond's register file
+  (`PondCore_inst0/PondTop_W_inst0/PondTop/memory_0/data_array_reg*`) for the
+  config-to-pond multicycle paths. An RV PE tile (and a static one with
+  `LAKE_POND_SPEC_CONFIG`) has the lake-spec pond at
+  `PondCore_inst0/PondCore_inner_W_inst0/PondCore_inner/memory_0/data_array_reg*`, so
+  `get_pins` was empty and `set_multicycle_path` aborted Genus with TUI-61. That was the
+  first gf12 RV Tile_PE synth: cgra_app_power conv_3_3 A/B. The script now uses the
+  path that exists and skips the MCP when none does (`--no-pond`). Checked locally with
+  Genus 20.11 (freepdk45, the step's read/elaborate attributes, whole constraints.tcl):
+  the RV tile from the A/B bundle picks the spec path, a static tile keeps the PondTop
+  path, and neither has `Error   :`. Genus 21.16 segfaults at startup on /aha; use
+  `module load genus/20.11.000` (it also sets the license path).
 - Verified locally (private garnet copies, 4x2): no-flag builds unchanged
   (static-spec byte-identical; RV identical up to one module's position in the
   file; default differs only by pre-existing kratos nondeterminism in the sparse

@@ -77,14 +77,28 @@ set_false_path -from [get_ports config_* -filter direction==in] -through [get_pi
 
 
 # Paths from config input ports to the register file in Pond 
-set pond_path PondCore_inst0/PondTop_W_inst0/PondTop/memory_0/data_array_reg*
+# The legacy pond (PondTop) and the lake-spec pond (PondCore_inner: RV mode, or
+# LAKE_POND_SPEC_CONFIG) keep their register file in different places, and a
+# --no-pond build has none. An empty get_pins makes set_multicycle_path abort
+# Genus (TUI-61), so use the path that exists and skip the MCP when none does.
+set pond_path ""
+foreach p [list PondCore_inst0/PondTop_W_inst0/PondTop/memory_0/data_array_reg* \
+                PondCore_inst0/PondCore_inner_W_inst0/PondCore_inner/memory_0/data_array_reg*] {
+    set n 0
+    catch { set n [llength [get_pins [list $p/*]]] }
+    if { $n > 0 } { set pond_path $p; break }
+}
 
 # set_false_path -from [get_ports config_* -filter direction==in] -to [get_pins [list $pond_path/*]] -through [get_pins [list $pe_path/* ]]
 # Set multicycle path from config ports to the register file passing through the ALU
 # These are false paths and the above false path constraint can be applied but use MCP for conservative constraints
 # The correct config paths from the config ports directly to the register file are verified to be constrained 
-set_multicycle_path 2 -from [get_ports config_* -filter direction==in] -to [get_pins [list $pond_path/*]] -through [get_pins [list $pe_path/* ]] -setup
-set_multicycle_path 1 -from [get_ports config_* -filter direction==in] -to [get_pins [list $pond_path/*]] -through [get_pins [list $pe_path/* ]] -hold
+if { $pond_path != "" } {
+    set_multicycle_path 2 -from [get_ports config_* -filter direction==in] -to [get_pins [list $pond_path/*]] -through [get_pins [list $pe_path/* ]] -setup
+    set_multicycle_path 1 -from [get_ports config_* -filter direction==in] -to [get_pins [list $pond_path/*]] -through [get_pins [list $pe_path/* ]] -hold
+} else {
+    puts "INFO: constraints.tcl: no pond register file found; skipping the config-to-pond multicycle paths"
+}
 
 source -echo -verbose inputs/common.tcl
 
