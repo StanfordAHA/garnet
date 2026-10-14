@@ -160,6 +160,37 @@ def test_step_incomplete_tile(tmp_path, bad, why):
 TB_GEN = MFLOWGEN / "common" / "testbench" / "generate_testbench.py"
 
 
+def test_testbench_pads_short_tiles(tmp_path, monkeypatch):
+    """One testbench serves every tile: it runs the longest tile's vector count
+    and a shorter tile's files get its last vector repeated (an untouched tile
+    can have fewer simvisdbutil rows than a placed one); it used to run past
+    the end of them -> spurious mismatches."""
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "inputs").mkdir()
+    (tmp_path / "inputs" / "manifest.json").write_text(json.dumps({"scope": "tb.dut"}))
+    (tmp_path / "inputs" / "tile_ports.json").write_text(json.dumps(
+        {"Tile_PE": {"inputs": [["clk", 1], ["SB_IN", 17]], "outputs": [["SB_OUT", 17]]}}))
+    (tmp_path / "inputs" / "tiles_Tile_PE.list").write_text("idle,0E,10\nop,01,01\n")
+    gt = load(TB_GEN, "generate_testbench")
+    rows = {"Tile_X0E_Y10": 3, "Tile_X01_Y01": 5}
+    current = {}
+    monkeypatch.setattr(gt, "generate_raw", lambda tile, i, o: current.update(tile=tile))
+
+    def fake_convert(signals, inp, out):
+        Path(out).parent.mkdir(parents=True, exist_ok=True)
+        n = rows[current["tile"]]
+        Path(out).write_text("".join(f"{k:04x}\n" for k in range(n)))
+        return n, {s: 17 for s in signals}
+    monkeypatch.setattr(gt, "convert_raw", fake_convert)
+    monkeypatch.setenv("design_name", "Tile_PE")
+    gt.main()
+    assert "`define NUM_TEST_VECTORS 5" in (tmp_path / "testbench.sv").read_text()
+    for name in ("test_vectors.txt", "test_outputs.txt"):
+        assert (tmp_path / "outputs/tile_tbs/Tile_X0E_Y10" / name).read_text().split() == \
+            ["0000", "0001", "0002", "0002", "0002"]
+        assert len((tmp_path / "outputs/tile_tbs/Tile_X01_Y01" / name).read_text().split()) == 5
+
+
 @pytest.mark.parametrize("bundle", [True, False])
 def test_testbench_holds_reset_until_first_recorded(tmp_path, monkeypatch, bundle):
     """Bundle replays drive reset until the recording's first reset and skip

@@ -1395,6 +1395,21 @@ rows at the output vs up front through the MEM's filter path; lake CLAUDE.md §6
   `conv_3_3_ab_bundles.sh` sets both.
 - Tests: `tests/test_app_bundle_guards/test_cgra_app_power.py` (env parsing, route/idle
   tiles, report parsing, sums, idle scaling).
+- **Replay fix found with the idle tiles (garnet, after 71bcfde3):** `generate_testbench.py`
+  makes ONE testbench for all of a design's tiles and used the FIRST tile's vector count.
+  simvisdbutil writes a row per value change while the clock is high, so a tile whose
+  probed signals change mid-cycle gets extra rows (conv_3_3 A: placed/route tiles 8843,
+  the idle tiles 8841 with the same 8841 clock edges); the shorter tile then ran past the
+  end of its files (82 "ready got 1, expected 0" lines at the last 2 cycles: a replay
+  FAIL). Now the testbench takes the longest count and shorter tiles' files get their
+  last vector repeated (`pad_vectors`, `@file_info` line). Equal counts: unchanged.
+- **Local check of the conv_3_3 bundles (2026-10-13):** every tile of A and B (ff8) replays
+  its recording exactly at RTL (session 1fa8a391's `validate.sh`: generate_testbench on
+  the bundle + xrun of the bundle's garnet.v tile modules): A 28 tiles (1 + 4 route + 1 idle
+  MEM, 10 + 11 + 1 PE), B 46 (1 + 11 + 1 MEM, 10 + 22 + 1 PE). Bundles for ff8/16/32 are all
+  bit-accurate in `aha test`; A 5,533 ns, B 6,167 ns at every depth (B is slower downstream
+  of the MEM, not in the FIFO: lake CLAUDE.md §6). Package:
+  `/aha/sweep_out/fp_fifo_20261013/conv_3_3_ab_bundles.tgz`.
 
 ## PE-tile pond knobs (Tile_PE with / without / spec pond) (2026-09-30)
 

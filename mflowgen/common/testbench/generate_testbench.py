@@ -279,11 +279,20 @@ endmodule''')
     tb.close()
 
 
+def pad_vectors(path, n):
+    """Repeat the last line of a vector file up to n lines."""
+    with open(path) as f:
+        lines = f.read().splitlines()
+    if lines and len(lines) < n:
+        with open(path, 'a') as f:
+            f.write((lines[-1] + '\n') * (n - len(lines)))
+
+
 def main():
     design = os.environ.get('design_name')
     ins, outs, clks = tile_ports(design)
     f = open(f'inputs/tiles_{design}.list', 'r')
-    i = 0
+    counts, widths = {}, None
     for line in f:
         fields = line.strip().split(',')
         x = fields[-2]
@@ -293,10 +302,25 @@ def main():
         generate_raw(tile, ins, outs)
         num_test_vectors, input_widths = convert_raw(ins, "raw_input.csv", f"outputs/tile_tbs/{tile}/test_vectors.txt")
         _, output_widths = convert_raw(outs, "raw_output.csv", f"outputs/tile_tbs/{tile}/test_outputs.txt")
-        if i == 0:
-            create_testbench(design, ins, outs, input_widths, output_widths, num_test_vectors, clks,
-                             hold_reset=app_bundle)
-        i += 1
+        counts[tile] = num_test_vectors
+        if widths is None:
+            widths = (input_widths, output_widths)
+    if not counts:
+        return
+    # One testbench serves every tile, so it runs the longest tile's vector
+    # count. simvisdbutil writes a row per value change while the clock is
+    # high, so tiles whose probed signals change mid-cycle get extra rows
+    # (an untouched tile can have 2 fewer than a placed one); a shorter tile
+    # used to run past the end of its own files -> spurious mismatches. Pad
+    # it with its last vector (the tile holds its final state).
+    num_test_vectors = max(counts.values())
+    for tile, n in counts.items():
+        if n < num_test_vectors:
+            print(f"@file_info: {tile}: {n} vectors, padded to {num_test_vectors} with its last vector")
+            for name in ("test_vectors.txt", "test_outputs.txt"):
+                pad_vectors(f"outputs/tile_tbs/{tile}/{name}", num_test_vectors)
+    create_testbench(design, ins, outs, widths[0], widths[1], num_test_vectors, clks,
+                     hold_reset=app_bundle)
 
 
 if __name__ == '__main__':
