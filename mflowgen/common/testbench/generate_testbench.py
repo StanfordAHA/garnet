@@ -120,7 +120,7 @@ def convert_raw(signals, input_file, output_file):
 
 
 def create_testbench(design, inputs, outputs, input_widths, output_widths, num_test_vectors, clock_inputs=None,
-                     hold_reset=False, sdc_inputs=False):
+                     hold_reset=False, sdc_inputs=False, stall_release=None):
     """hold_reset (app bundle replays): the recording starts from simulator
     zero-init, but a gate-level tile's flops are X until its first reset (gf12:
     every output X until then, and the MEM tile's SRAM clock, clk & the tile_en
@@ -130,7 +130,14 @@ def create_testbench(design, inputs, outputs, input_widths, output_widths, num_t
     hardware too.
 
     sdc_inputs (app bundle replays): drive the inputs at their SDC arrival
-    times (PT_INPUT_DELAY_NS, INPUT_DELAY_FRACTION) instead of 0.2 ns."""
+    times (PT_INPUT_DELAY_NS, INPUT_DELAY_FRACTION) instead of 0.2 ns.
+
+    App bundle replays (hold_reset) with a stall input also get saif_window,
+    which rises when the tile's recorded stall is first released: cmd.tcl dumps
+    the SAIF from there, as it did by counting stall changes. The GLB stalls only
+    the columns the app uses, so a tile elsewhere (an idle tile) records stall 0
+    throughout; its window opens at stall_release, the vector where the design's
+    other tiles are released (else at the app's first flush)."""
     pwr_aware = os.environ.get("PWR_AWARE") == "True"
     hold_reset = hold_reset and "reset" in inputs
     sdc_inputs = sdc_inputs and design in INPUT_DELAY_FRACTION
@@ -184,10 +191,13 @@ module testbench;
         tb.write('    reg [ADDR_WIDTH - 1 : 0] in_addr, pt_addr;  // test_vector_addr as the inputs see it\n')
 
     has_app_start = hold_reset and "flush" in inputs
+    has_window = hold_reset and "stall" in inputs
     if hold_reset:
         tb.write('    integer first_reset;  // first vector with reset asserted (see the initial block)\n')
     if has_app_start:
         tb.write('    integer app_start;    // first flush after it\n')
+    if has_window:
+        tb.write('    integer app_window;   // first stall release: the power window (cmd.tcl)\n')
     for i in inputs:
         a = addr(i)
         if hold_reset and i == 'reset':
@@ -198,6 +208,9 @@ module testbench;
             tb.write(f'    wire {i} = test_vectors[{a}][`SLICE_{i.upper()}];\n')
     for o in outputs:
         tb.write(f'    wire [{output_widths[o]-1}:0] {o};\n')
+    if has_window:
+        # same address as the stall input: rises in the timestep stall falls
+        tb.write(f'    wire saif_window = ({addr("stall")} >= app_window);\n')
 
     tb.write('''
     reg  clk;
@@ -252,6 +265,20 @@ module testbench;
       if (app_start == `NUM_TEST_VECTORS)
         app_start = first_reset;  // no flush: no pre-app phase
       $display("replay: app starts at cycle %0d (first flush after the reset)", app_start);'''
+    if has_window:
+        if stall_release is not None:
+            fallback, why = str(stall_release), "the other tiles' release"
+        else:
+            fallback = "app_start" if has_app_start else "first_reset"
+            why = "no tile released: the first flush" if has_app_start else "no tile released: the first reset"
+        replay_setup += f'''
+      app_window = 1;
+      while (app_window < `NUM_TEST_VECTORS && !(test_vectors[app_window - 1][`SLICE_STALL] === 1'b1
+                                                 && test_vectors[app_window][`SLICE_STALL] === 1'b0))
+        app_window = app_window + 1;
+      if (app_window == `NUM_TEST_VECTORS)
+        app_window = {fallback};  // never stalled ({why})
+      $display("replay: power window opens at cycle %0d", app_window);'''
     # hold_reset: no edge until the held reset has reached every flop (an SDF
     # reset tree can take a period; the SRAM's clock is clk & a config flop)
     clock_gen = '''initial begin
@@ -312,6 +339,28 @@ endmodule''')
     tb.close()
 
 
+def stall_release(raw_csv):
+    """Vector index of the first stall release (a 1 then a 0) in a simvisdbutil
+    CSV, or None (no stall column, or never released)."""
+    if not os.path.exists(raw_csv):
+        return None
+    rows = list(csv.reader(open(raw_csv)))
+    cols = [i for i, h in enumerate(rows[0] if rows else []) if h.split('.')[-1].split('[')[0] == 'stall']
+    if not cols:
+        return None
+
+    def bit(v):
+        try:
+            return int(v, 16)
+        except ValueError:
+            return None   # x / z
+    vals = [bit(r[cols[0]]) for r in rows[1:]]
+    for k in range(1, len(vals)):
+        if vals[k - 1] == 1 and vals[k] == 0:
+            return k
+    return None
+
+
 def pad_vectors(path, n):
     """Repeat the last line of a vector file up to n lines."""
     with open(path) as f:
@@ -325,7 +374,7 @@ def main():
     design = os.environ.get('design_name')
     ins, outs, clks = tile_ports(design)
     f = open(f'inputs/tiles_{design}.list', 'r')
-    counts, widths = {}, None
+    counts, widths, releases = {}, None, {}
     for line in f:
         fields = line.strip().split(',')
         x = fields[-2]
@@ -333,6 +382,7 @@ def main():
         tile = f"Tile_X{x}_Y{y}"
 
         generate_raw(tile, ins, outs)
+        releases[tile] = stall_release("raw_input.csv")
         num_test_vectors, input_widths = convert_raw(ins, "raw_input.csv", f"outputs/tile_tbs/{tile}/test_vectors.txt")
         _, output_widths = convert_raw(outs, "raw_output.csv", f"outputs/tile_tbs/{tile}/test_outputs.txt")
         counts[tile] = num_test_vectors
@@ -352,8 +402,15 @@ def main():
             print(f"@file_info: {tile}: {n} vectors, padded to {num_test_vectors} with its last vector")
             for name in ("test_vectors.txt", "test_outputs.txt"):
                 pad_vectors(f"outputs/tile_tbs/{tile}/{name}", num_test_vectors)
+    # The window of a tile the app never stalls: where the others are released
+    released = [r for r in releases.values() if r is not None]
+    common = max(set(released), key=released.count) if released else None
+    for tile, r in releases.items():
+        if r is None and app_bundle and "stall" in ins:
+            print(f"@file_info: {tile}: stall never released (column not stalled by the app); "
+                  f"power window from vector {common if common is not None else 'of the first flush'}")
     create_testbench(design, ins, outs, widths[0], widths[1], num_test_vectors, clks,
-                     hold_reset=app_bundle, sdc_inputs=app_bundle)
+                     hold_reset=app_bundle, sdc_inputs=app_bundle, stall_release=common)
 
 
 if __name__ == '__main__':

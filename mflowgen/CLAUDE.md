@@ -1167,6 +1167,28 @@ were deleted as stale (lake 04191ea5: before 144e2062's comparator pruning;
   `memtile_power.csv`: `tile_{rtl,synth,pnr}_replay_exact` = `<exact>/<tiles>`.
   Each failing tile also gets `<tile>.mismatches.txt` (first 5000 lines; in the
   zip) and its replay.json says how many were X/Z and the cycle span.
+- **Power window of a tile the app never stalls (2026-10-14, session cfc4174c).**
+  `common/testbench/cmd.tcl` opened the SAIF at the third `stall` change (time-0 init,
+  stall 1, stall 0). The GLB stalls only the columns the app uses, so a `--cgra-tiles`
+  idle (or route) tile in another column records stall 0 throughout. Its sim then ran
+  to `$finish` with no SAIF ("no power report", replay `8/9`): conv_3_3 A's idle MEM
+  `Tile_X0F_Y10` on gf12. B's idle tile at the same spot toggles, because its IO
+  placement covers that column. Now bundle testbenches (`hold_reset`, with a stall
+  input) get `saif_window = (pt_addr >= app_window)`. `app_window` is the tile's first
+  stall release (1 then 0) found in its own vectors, so it rises in the timestep stall
+  falls. A tile that never releases uses `stall_release`: the vector where most of the
+  design's other tiles release (`generate_testbench.py` `stall_release()` on their
+  simvisdbutil CSVs). With none, it falls back to the app's first flush, else the
+  first reset. `cmd.tcl` stops on `saif_window == 1` when the testbench has it, and the
+  legacy testbench keeps the stall-count window. Two Xcelium details:
+  - The condition must reach `stop` unsubstituted (`[format {#%s...} ...]`): in a
+    double-quoted string xmsim replaces `#<object>` with its value.
+  - `stop -object` also fires at the time-0 init.
+
+  Checked on /aha at RTL (bundle A MEM, old vs new tb + cmd.tcl): the placed tile's
+  SAIF window is identical, and the idle tile gets one. A recorded GLB release cycle in
+  the manifest would not help: vectors are simvisdbutil rows, not cycles (an idle tile
+  has 2 fewer).
 - **gf12 runs (2026-10-13, build machine, synth level; RTL level passed).**
   Both failed the check, as they should have: every MEM tile's outputs X at
   cycles 0-1, and the static conv_3_3 line-buffer tile `Tile_X07_Y05` X

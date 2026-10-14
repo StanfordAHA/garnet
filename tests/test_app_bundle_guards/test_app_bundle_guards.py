@@ -231,6 +231,57 @@ def test_testbench_holds_reset_until_first_recorded(tmp_path, monkeypatch, bundl
     assert (r["checked_from"], r["app_start"]) == (2, 2404)
 
 
+def test_testbench_saif_window_for_unstalled_tiles(tmp_path, monkeypatch):
+    """cmd.tcl dumps the SAIF from saif_window, which rises at the tile's first
+    stall release. The GLB stalls only the columns an app uses, so an idle tile
+    elsewhere records stall 0 throughout (conv_3_3 A's Tile_X0F_Y10: its sim ran
+    to $finish without a SAIF, "no power report"): its window opens where the
+    design's other tiles are released."""
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "inputs").mkdir()
+    (tmp_path / "inputs" / "manifest.json").write_text(json.dumps({"scope": "tb.dut"}))
+    (tmp_path / "inputs" / "tile_ports.json").write_text(json.dumps(
+        {"Tile_MemCore": {"inputs": [["clk", 1], ["reset", 1], ["stall", 1], ["SB_IN", 17]],
+                          "outputs": [["SB_OUT", 17]]}}))
+    (tmp_path / "inputs" / "tiles_Tile_MemCore.list").write_text("idle,0F,10\nhw,03,03\n")
+    gt = load(TB_GEN, "generate_testbench")
+    stall = {"Tile_X0F_Y10": [0, 0, 0, 0, 0, 0], "Tile_X03_Y03": [0, 1, 1, 0, 1, 0]}
+
+    def fake_raw(tile, i, o):
+        rows = [f"tb.dut.{tile}.stall[0:0],tb.dut.{tile}.SB_IN[16:0]"] + [f"{v},0" for v in stall[tile]]
+        Path("raw_input.csv").write_text("\n".join(rows) + "\n")
+        fake_raw.tile = tile
+    monkeypatch.setattr(gt, "generate_raw", fake_raw)
+
+    def fake_convert(signals, inp, out):
+        Path(out).parent.mkdir(parents=True, exist_ok=True)
+        Path(out).write_text("0000\n" * 6)
+        return 6, {s: 17 for s in signals}
+    monkeypatch.setattr(gt, "convert_raw", fake_convert)
+    monkeypatch.setenv("design_name", "Tile_MemCore")
+    assert gt.stall_release("missing.csv") is None
+    gt.main()
+    assert gt.stall_release("raw_input.csv") == 3            # the last tile's CSV: X03_Y03
+    tb = (tmp_path / "testbench.sv").read_text()
+    # rises with stall (same address); the never-stalled fallback is X03_Y03's release
+    assert "wire saif_window = (pt_addr >= app_window);" in tb
+    assert "app_window = 3;  // never stalled (the other tiles' release)" in tb
+    # no tile released at all: the first reset (no flush input here)
+    gt.create_testbench("Tile_MemCore", ["reset", "stall", "SB_IN"], ["SB_OUT"],
+                        {"reset": 1, "stall": 1, "SB_IN": 17}, {"SB_OUT": 17}, 6, ["clk"], hold_reset=True)
+    assert "app_window = first_reset;" in (tmp_path / "testbench.sv").read_text()
+    # the legacy testbench has no saif_window; cmd.tcl keeps its stall-count window for it
+    gt.create_testbench("Tile_MemCore", ["reset", "stall", "SB_IN"], ["SB_OUT"],
+                        {"reset": 1, "stall": 1, "SB_IN": 17}, {"SB_OUT": 17}, 6, ["clk"])
+    assert "saif_window" not in (tmp_path / "testbench.sv").read_text()
+    cmd = (MFLOWGEN / "common" / "testbench" / "cmd.tcl").read_text()
+    assert "value $::env(testbench_name).saif_window" in cmd and "-object $::env(testbench_name).stall" in cmd
+    assert "-condition [format {#%s.saif_window == 1} $::env(testbench_name)]" in cmd
+    # the new display line is not a mismatch for run_all_tiles.py
+    r = load(RUN_ALL, "run_all_tiles").replay_result("replay: power window opens at cycle 2389\n")
+    assert r["mismatches"] == 0 and r["checked_from"] is None
+
+
 @pytest.mark.parametrize("design,frac", [("Tile_MemCore", 0.2), ("Tile_PE", 0.3), ("Tile_Other", None)])
 def test_testbench_sdc_input_timing(tmp_path, monkeypatch, design, frac):
     """Bundle replays drive passthrough inputs (config, stall, reset, flush) at
