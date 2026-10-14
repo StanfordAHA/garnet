@@ -24,7 +24,9 @@ older sweeps have blank `tile_pnr_setup_wns_ns` -- see "PT signoff" below).
 Results (pass/fail, macro, workspace) go to `<out-dir>/results.csv`.
 
 Key flags:
-- `--spec-set {default,thesis}` — `default` = the 6 `DEFAULT_SPEC_POINTS`;
+- `--spec-set {default,thesis,filter_fifo}` — `default` = the 6 `DEFAULT_SPEC_POINTS`;
+  `filter_fifo` = the conv_3_3 A/B spec (RV, `_ff8`; see "Whole-CGRA power of
+  app variants");
   `thesis` = `_thesis_spec_points()` (1:1 mirror of lake
   `ASPLOS_EXP/all_experiments_thesis_v2.sh`, the standalone synthesis set)
   ∪ those 6 → 107 unique specs. Unlike aha's `enumerate_thesis_configs()`,
@@ -1335,6 +1337,64 @@ lake `pd/thesis/roundtrip-power`; never wired into the graph) was deleted on
 2026-10-08 with its untracked `common/tile-per-tile-power` step (user
 decision): bundles cover the whole tile (interconnect + config) for MEM and PE
 tiles at all three power levels.
+
+### Whole-CGRA power of app variants: `cgra_app_power.py` (2026-10-13, session cfc4174c)
+
+Several recorded app runs ("variants", e.g. two mappings of one app) replayed on
+the SAME synthesized Tile_MemCore and Tile_PE, so they differ only by activity,
+then summed over the array. Made for the conv_3_3 A/B study (eat the first two
+rows at the output vs up front through the MEM's filter path; lake CLAUDE.md §6
+"filter path"), and reusable for any set of bundles of one spec + mode.
+
+    # /aha: record the bundles (two private aha trees, both variants at once, ~35 min)
+    mflowgen/common/application/conv_3_3_ab_bundles.sh <root>      # -> <root>/{A,B}/<config>
+    # build machine: one synth per tile, every variant replayed on it
+    ./mflowgen/cgra_app_power.py --variants A=<root>/A,B=<root>/B --out-dir <dir> [--zip]
+
+- **Graph**: env `APP_BUNDLE_VARIANTS="A=<bundle>,B=<bundle>"` makes
+  Tile_MemCore / Tile_PE add per variant `application-<v>` -> `testbench-<v>` ->
+  `post-synth-power-<v>` (`common/app_variants.py`), wired like the graph's own
+  chain (synth netlist, SRAM model on Tile_MemCore); the variant's app_bundle
+  param is set after `g.update_params`. Unset: no steps added; checked that every
+  step script of both graphs is identical to before (freepdk45 materialization).
+  Variants force `pwr_aware = False` like SYNTH_POWER.
+- **Driver** (`cgra_app_power.py`): per config every variant has
+  (`<dir>/<config>/manifest.json`; spec, mode and pond spec must match), one
+  workspace per tile graph (`<out-dir>/<config>/<tile>`, MEM and PE built at
+  once, `--tile-jobs`), env as sweep_specs' `_tile_env` (+ `SYNTH_POWER`,
+  the variants; Tile_PE gets the spec env only for RV bundles), then `make
+  post-synth-power-<v>...`. **One clock for the array**: `--clock-mhz`
+  (default 750) sets Tile_MemCore `CLOCK_PERIOD` and Tile_PE `clock_period_PE`
+  (their own defaults differ: 1.333 / 1.1 ns). `--clean rtl` after a lake/garnet
+  pull; `--report-only` re-reads workspaces; `--zip` packs CSVs, per-tile
+  reports, xrun logs and synth area (no workspaces).
+- **Outputs**: `cgra_power_tiles.csv` (per replayed tile: role, int/switch/leak/total
+  W, SRAM macro W, window, energy, replay exact) and `cgra_power.csv` (per config x
+  variant): `<tile>_{placed,route}_{n,W}`, `app_W` (placed + route), `sram_W` (cell
+  rows matching `--sram-cell-re`, default gf12 `^IN12LP_`), `window_s`, `app_J` (sum of
+  each tile's power x window = energy per app run), `idle_W` / `array_W` / `array_J`
+  (+ one idle tile per type x the tiles the app does not touch), `d_*_pct` vs the first
+  variant. The activity window is the SAIF window: last stall release
+  (`stop stall_toggle ... = 0`, common/testbench/cmd.tcl) to `$finish`. Averages
+  differ from energies when variants run for different times: in the old freepdk45
+  recordings B's window was 10% longer than A's.
+- **Route and idle tiles** (`gen_app_bundle.py --cgra-tiles`): the bundle also probes
+  every MEM/PE tile a route passes through without a placed core (design.route `PORT`
+  / `RMUX` / `SB` / `REG` coordinates; list name `route`) and the last untouched tile of
+  each type (name `idle`); the manifest gains `array_tiles` (Interconnect tile counts)
+  and `cgra_tiles`. Without the flag the totals cover placed tiles only (array columns
+  empty). IO tiles and the GLB are not counted.
+- The per-tile power sub-graphs now also copy PT's `-leaf` cell report
+  (`<tile>.cell`; synth and PnR levels, not RTL: ptpx-rtl writes none) for the
+  SRAM split.
+- **conv_3_3 A/B spec**: `--spec-set filter_fifo` = `fw4_dw16_sc8192_sp_in2_out2_vc2_ff8_rv`
+  (lake `build_spec_rv(filter_fifo_depth=8)`; `_ff<N>` in config names; static
+  configs with the key are skipped). Variant B needs MetaMapper with
+  `METAMAPPER_MEM_PORTS=3` (cgralib.Mem with the filter pair as a third in/out) and
+  the pre-PnR hook `common/application/hooks/conv_3_3_eat_rows_up_front.py`;
+  `conv_3_3_ab_bundles.sh` sets both.
+- Tests: `tests/test_app_bundle_guards/test_cgra_app_power.py` (env parsing, route/idle
+  tiles, report parsing, sums, idle scaling).
 
 ## PE-tile pond knobs (Tile_PE with / without / spec pond) (2026-09-30)
 

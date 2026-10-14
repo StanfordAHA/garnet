@@ -229,7 +229,8 @@ PRESETS["dw16_pnr12"] = PRESETS["dw16_fit8"] + PRESETS["dw16_val4"]
 # sides, so it doubles as the dedup key and the naming defaults.
 SPEC_DEFAULTS = dict(storage_capacity=4096, data_width=16, vec_width=4, dims=6,
                      in_ports=2, out_ports=2, dual_port=False, vec_capacity=2,
-                     max_extent=None, max_sequence_width=None)
+                     max_extent=None, max_sequence_width=None,
+                     filter_fifo_depth=None)
 
 # Config keys that drive the sweep, not the RTL. They are stripped before
 # spec_config.json is written: util_onyx passes that file to
@@ -298,9 +299,19 @@ def _thesis_spec_points():
 
 # --spec-set choices. `thesis` keeps the curated 6 (first, so their dicts and
 # names win the dedup) so the `full`/`full12` PnR anchors are always in it.
+# build_spec_rv(filter_fifo_depth=N): the RV filter path as an N-deep FIFO
+# (lake 2026-10-13); RV only. The conv_3_3 "eat rows up front" experiment's
+# spec (mflowgen/cgra_app_power.py, CLAUDE.md "conv_3_3 A/B").
+FILTER_FIFO_SPEC_POINTS = [
+    dict(storage_capacity=8192, data_width=16, vec_width=4, in_ports=2, out_ports=2,
+         vec_capacity=2, filter_fifo_depth=depth, runtime_mode="rv")
+    for depth in (8, 16, 32)
+]
+
 SPEC_SETS = {
     "default": DEFAULT_SPEC_POINTS,
     "thesis": DEFAULT_SPEC_POINTS + _thesis_spec_points(),
+    "filter_fifo": FILTER_FIFO_SPEC_POINTS,
 }
 
 
@@ -938,6 +949,8 @@ def _unsupported_reason(spec, mode):
     if (mode == "rv" and spec.get("vec_width", 4) > 1
             and spec.get("vec_capacity", 2) > 2):
         return "build_spec_rv supports vec_capacity <= 2 for vec_width > 1"
+    if mode != "rv" and spec.get("filter_fifo_depth") is not None:
+        return "filter_fifo_depth is a build_spec_rv (RV filter path) option"
     return None
 
 
@@ -1022,8 +1035,9 @@ def _collect_configs(args):
 def _config_name(cfg):
     """Stable name per config. Matches the naming used by the collateral
     sweeps in aha (so per-config dirs line up across both), plus `_msw<N>`
-    for max_sequence_width (aha folds those; their RTL differs) and `_rv`
-    for runtime mode rv. Static names are unchanged from earlier sweeps."""
+    for max_sequence_width (aha folds those; their RTL differs), `_ff<N>` for
+    build_spec_rv's filter_fifo_depth and `_rv` for runtime mode rv. Static
+    names are unchanged from earlier sweeps."""
     fw = cfg.get("vec_width", 4)
     dw = cfg.get("data_width", 16)
     sc = cfg.get("storage_capacity", 4096)
@@ -1034,6 +1048,7 @@ def _config_name(cfg):
     dims = cfg.get("dims", 6)
     me = cfg.get("max_extent")
     msw = cfg.get("max_sequence_width")
+    ff = cfg.get("filter_fifo_depth")
 
     parts = [f"fw{fw}_dw{dw}_sc{sc}"]
     parts.append("dp" if dp else "sp")
@@ -1046,6 +1061,8 @@ def _config_name(cfg):
         parts.append(f"me{me}")
     if msw is not None:
         parts.append(f"msw{msw}")
+    if ff is not None:
+        parts.append(f"ff{ff}")
     if _mode(cfg) == "rv":
         parts.append("rv")
     return "_".join(parts)
