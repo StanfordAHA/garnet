@@ -270,9 +270,8 @@ def main():
     for k in RV_VARS:
         base.pop(k, None)
     base.update(GARNET_HOME=str(garnet), TOOL="XCELIUM")
-    for kv in args.env:
-        k, _, v = kv.partition("=")
-        base[k] = v
+    user_env = dict(kv.partition("=")[::2] for kv in args.env)
+    base.update(user_env)
     spec_env = dict(base, LAKE_SPEC_CONFIG=str(spec), LAKE_SPEC_MODE=args.mode,
                     USE_NON_SPLIT_FIFOS="1")
     if pond_spec:
@@ -298,7 +297,9 @@ def main():
                 base, work, logs)
 
     # 2-3. halide + map (ready-valid env reaches clockwork in rv mode)
+    # --env wins over the RV defaults (e.g. MATCH_BRANCH_DELAY=1)
     map_env = dict(base, **(RV_MAP_ENV if rv else {}))
+    map_env.update(user_env)
     if skip <= 1:
         subprocess.run(["make", "clean"], cwd=app_dir, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         run("halide", aha + ["halide", args.app] + coll_flags, map_env, aha_dir, logs)
@@ -328,6 +329,7 @@ def main():
 
     # 5. pnr
     test_env = dict(spec_env, LAKE_COLLATERAL_JSON_MEM=str(coll), **(RV_PNR_ENV if rv else {}))
+    test_env.update(user_env)
     if pond_coll:
         test_env["LAKE_COLLATERAL_JSON_REGFILE"] = str(pond_coll)
     if skip <= 4:
@@ -401,7 +403,7 @@ def main():
         "scope": SCOPE, "clock": "{scope}.{tile}.clk",
         "spec_config": json.load(open(spec)),
         "pond_spec": json.load(open(pond_spec)) if pond_spec else None,
-        "app_env": dict(kv.partition("=")[::2] for kv in args.env),
+        "app_env": user_env,
         "pre_pnr_hooks": args.pre_pnr_hook,
         "tiles": {TILE_DESIGNS[k]: len(v) for k, v in tiles.items()},
         "array_tiles": {d: sum(t == d for t in array.values()) for d in TILE_DESIGNS.values()},
