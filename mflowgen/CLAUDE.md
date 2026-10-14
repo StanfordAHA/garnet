@@ -1186,7 +1186,10 @@ were deleted as stale (lake 04191ea5: before 144e2062's comparator pruning;
   - `stop -object` also fires at the time-0 init.
 
   Checked on /aha at RTL (bundle A MEM, old vs new tb + cmd.tcl): the placed tile's
-  SAIF window is identical, and the idle tile gets one. A recorded GLB release cycle in
+  SAIF window is identical, and the idle tile gets one. Also checked at gate level by
+  session 1fa8a391: on the freepdk45 netlist of the static pipeclean X07_Y05 (SDF, flops
+  X until reset) the stop fires once, at the same instant as the legacy three-stop path,
+  with no time-0 stop and an identical SAIF DURATION. A recorded GLB release cycle in
   the manifest would not help: vectors are simvisdbutil rows, not cycles (an idle tile
   has 2 fewer).
 - **gf12 runs (2026-10-13, build machine, synth level; RTL level passed).**
