@@ -53,6 +53,17 @@ if [ -n "$CW_SIM_DIR" ] && [ -d "$CW_SIM_DIR" ]; then
   ARGS="$ARGS -y $CW_SIM_DIR +libext+.v+.sv"
 fi
 
+# App replay (param app_replay, set by tile-post-{rtl,synth,pnr}-power) must
+# reproduce the recording, which `aha test` made with zero-initialized
+# simulation SRAM. IVCS_INIT_MEM preloads the gf12 SRAM macro model with 0s;
+# without it reads of unwritten words are X (the static conv_3_3 line buffer's
+# were, for 1191 cycles on the build machine). -nonotifier: SDF timing-check
+# violations at startup otherwise set flops X (every tile output X for cycles
+# 0-1); violations are still reported, they just don't corrupt state.
+if [ "${app_replay:-False}" = "True" ]; then
+  ARGS="$ARGS -nonotifier +define+IVCS_INIT_MEM"
+fi
+
 # Set-up testbench
 ARGS="$ARGS -top $testbench_name"
 

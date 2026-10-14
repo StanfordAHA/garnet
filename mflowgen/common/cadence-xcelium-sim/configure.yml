@@ -37,6 +37,9 @@ parameters:
   waves: True
   PWR_AWARE: True
   use_sdf: True
+  # True in the per-tile app-replay sub-graphs (tile-post-{rtl,synth,pnr}-power):
+  # zero-initialized SRAM macro model + -nonotifier (see run_sim.sh).
+  app_replay: False
 
 #-------------------------------------------------------------------------
 # Assertions

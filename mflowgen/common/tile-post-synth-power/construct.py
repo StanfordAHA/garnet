@@ -39,7 +39,9 @@ def construct():
         'strip_path'        : os.environ.get('strip_path'),          # noqa
         'waves'             : os.environ.get('waves'),               # noqa
         'use_sdf'           : os.environ.get('use_sdf'),             # noqa
-        'tile_id'           : os.environ.get('tile_id')              # noqa
+        'tile_id'           : os.environ.get('tile_id'),             # noqa
+        # zero-init SRAM model + -nonotifier (cadence-xcelium-sim/run_sim.sh)
+        'app_replay'        : True,                                   # noqa
     }
     # autopep8: on
 

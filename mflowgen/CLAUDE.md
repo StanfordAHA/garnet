@@ -1163,6 +1163,20 @@ were deleted as stale (lake 04191ea5: before 144e2062's comparator pruning;
   through the tile graphs): `auto` (default) = fail with an app bundle, warn on
   the legacy stock-container path; `fail`; `warn`. Reports are written first.
   `memtile_power.csv`: `tile_{rtl,synth,pnr}_replay_exact` = `<exact>/<tiles>`.
+  Each failing tile also gets `<tile>.mismatches.txt` (first 5000 lines; in the
+  zip) and its replay.json says how many were X/Z and the cycle span.
+- **First gf12 run (2026-10-13, build machine, synth level) failed the check,
+  as it should have:** (1) every MEM tile's outputs X at cycles 0-1: SDF
+  timing-check notifiers at startup (135-144 "Timing violation" per tile);
+  (2) the static conv_3_3 line-buffer tile `Tile_X07_Y05`: data `0xxxx` vs
+  `00000` for 1191 cycles from cycle 1201, reads of unwritten words: the gf12
+  SRAM macro model starts X, the recording's sim SRAM (zero-initialized flops)
+  read 0. The RV tile had only (1). Fix: cadence-xcelium-sim param
+  `app_replay` (True only in the tile-post-{rtl,synth,pnr}-power sub-graphs)
+  adds `-nonotifier +define+IVCS_INIT_MEM` (the macro model's own "preload
+  memory to all 0s"; violations are still reported). tile_array and the
+  memtile idle/active sims are unchanged. mflowgen exports params unquoted,
+  so a param value with spaces breaks `mflowgen-run`: use a flag, as here.
 - Power domains: the tile graphs pass `garnet.py --no-pd` (`pwr_aware =
   False`), `gen_app_bundle.py` does not. Today that changes nothing:
   `--no-pd` is a no-op (OPEN_ISSUES `garnet/no-pd-tuple`, a trailing-comma

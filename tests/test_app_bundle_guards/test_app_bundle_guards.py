@@ -50,11 +50,14 @@ def test_replay_result_parsing():
            "cycle          41: read_config_data: got 00000001, expected 00000002\n"
            "Simulation complete via $finish(2) at time 7539 NS + 0\n")
     r = rat.replay_result(log)
-    assert r["finished"] and r["mismatches"] == 3
+    assert r["finished"] and r["mismatches"] == 3 and r["x_mismatches"] == 1
+    assert (r["first_cycle"], r["last_cycle"]) == (3, 41)
     assert r["ports"] == {"SB_T0_EAST_SB_OUT_B17": 2, "read_config_data": 1}
     assert r["examples"][1] == "cycle 40: SB_T0_EAST_SB_OUT_B17: got xxxx, expected 0000"
+    assert len(r["lines"]) == 3
     clean = rat.replay_result("Simulation complete via $finish(2) at time 5 NS + 0\n")
-    assert clean == {"finished": True, "mismatches": 0, "ports": {}, "examples": []}
+    assert clean == {"finished": True, "mismatches": 0, "x_mismatches": 0, "first_cycle": None,
+                     "last_cycle": None, "ports": {}, "examples": [], "lines": []}
     assert not rat.replay_result("xmsim: *F,INTERR: crashed\n")["finished"]
 
 
@@ -101,8 +104,12 @@ def test_step_clean(tmp_path):
 def test_step_mismatch_modes(tmp_path, env, rc):
     got, summary, out = run_step(tmp_path, BAD_TILE="Tile_X05_Y06", **env)
     assert got == rc, out
-    assert "Tile_X05_Y06: 1 replay mismatches (SB_T0_EAST_SB_OUT_B17 1)" in summary
+    assert "Tile_X05_Y06: 1 replay mismatches (0 with x/z, cycles 7-7; SB_T0_EAST_SB_OUT_B17 1)" in summary
     assert "Tile_X04_Y05: OK" in summary and "1/2 tiles replayed exactly" in summary
+    mm = (tmp_path / "outputs/reports/Tile_X05_Y06.mismatches.txt").read_text()
+    assert mm == "cycle 7: SB_T0_EAST_SB_OUT_B17: got 0001, expected 0002\n"
+    assert not (tmp_path / "outputs/reports/Tile_X04_Y05.mismatches.txt").exists()
+    assert "lines" not in json.loads((tmp_path / "outputs/reports/Tile_X05_Y06.replay.json").read_text())
 
 
 @pytest.mark.parametrize("bad,why", [("NOFINISH_TILE", "sim did not reach $finish"),
