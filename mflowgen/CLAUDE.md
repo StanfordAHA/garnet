@@ -1403,13 +1403,81 @@ rows at the output vs up front through the MEM's filter path; lake CLAUDE.md §6
   end of its files (82 "ready got 1, expected 0" lines at the last 2 cycles: a replay
   FAIL). Now the testbench takes the longest count and shorter tiles' files get their
   last vector repeated (`pad_vectors`, `@file_info` line). Equal counts: unchanged.
-- **Local check of the conv_3_3 bundles (2026-10-13):** every tile of A and B (ff8) replays
-  its recording exactly at RTL (session 1fa8a391's `validate.sh`: generate_testbench on
-  the bundle + xrun of the bundle's garnet.v tile modules): A 28 tiles (1 + 4 route + 1 idle
-  MEM, 10 + 11 + 1 PE), B 46 (1 + 11 + 1 MEM, 10 + 22 + 1 PE). Bundles for ff8/16/32 are all
-  bit-accurate in `aha test`; A 5,533 ns, B 6,167 ns at every depth (B is slower downstream
-  of the MEM, not in the FIFO: lake CLAUDE.md §6). Package:
-  `/aha/sweep_out/fp_fifo_20261013/conv_3_3_ab_bundles.tgz`.
+- **Local check of the conv_3_3 bundles (2026-10-13):** every tile of the unbalanced A
+  and B (ff8) bundles replayed exactly at RTL (session 1fa8a391's `validate.sh`:
+  generate_testbench on the bundle + xrun of the bundle's garnet.v tile modules), but
+  they ran at different rates (A 0.750, B 0.667 tokens/cycle: 5,533 vs 6,167 ns), so
+  their power did not compare like for like. Superseded by the balanced bundles below.
+- **Balanced A/B (2026-10-14, `--rv-balance 8`, now the recorder's default):** both at
+  one token per cycle, bit-accurate in `aha test`, and every tile replays exactly (A 41
+  tiles: 9 MEM + 32 PE; B 54: 12 + 42):
+
+  | | A | B |
+  |---|---:|---:|
+  | outputs / cycles at the output IO | 4,096 / 4,097 | 3,968 / 3,969 |
+  | total time | 4,173 ns | 4,189 ns |
+  | padding registers + PE output FIFOs | 27 + 3 | 45 + 4 |
+  | SRAM read cycles | 3,204 | 1,984 |
+
+  Package: `/aha/sweep_out/fp_fifo_20261013/conv_3_3_ab_bundles.tgz` (ff8 only: the
+  FIFO depth did not change any rate).
+
+### RV branch balancing: `gen_app_bundle.py --rv-balance N` (2026-10-14, session cfc4174c)
+
+Dense RV runs below one token per cycle whenever a fork's branches rejoin at a PE with
+different latencies. Root cause and mechanics are in archipelago CLAUDE.md "Dense RV
+throughput"; in short: every hop has a register (`EXHAUSTIVE_PIPE`), registers are
+canal `RegFIFO` depth 2 with `ready = ~full`, fanouts are lazy forks, and RV maps with
+`MATCH_BRANCH_DELAY=0` / `PIPELINED=0`. So full rate needs the stage counts of the
+branches to match exactly at every join (conv_3_3: A 0.750, B 0.667 before).
+
+- **Model** (`common/application/rv_throughput.py`): token-level simulation of the
+  routed graph (design.route/place/design_top): REG = 2-deep FIFO with `extra_data`
+  initial tokens, PE input/output FIFOs of 2, an optional 2-deep primitive output FIFO,
+  lazy forks, MEM outputs / input IO / constant PEs always valid, MEM inputs / output IO
+  always ready. Matches xrun on 6 PnR results (0.750 / 0.667 / 0.722 / 0.765 unbalanced,
+  1.000 balanced). `python rv_throughput.py <app>/bin` prints the rate and the next step.
+- **Loop** (`rv_balance()` in gen_app_bundle.py), per round while below 0.995:
+  1. **Parity:** with endpoints pinned, any route between two tiles has a stage count of
+     fixed parity (every hop registered, Manhattan lengths share parity), so padding can
+     only add an even number of stages. `parity_outfifo` picks the PEs whose primitive
+     output FIFO to enable (+1 stage; onyx_pe `bypass_prim_outfifo = 0`, which dense RV
+     otherwise sets to 1) so every join's mismatch is even. Fewest odd mismatches, then
+     smallest total, then fewest PEs, over all sets of at most 6 PEs (exhaustive).
+     Written to `bin/PE_fifos_bypass_config.json` as `"prim_outfifo_bypass": 0`, read by
+     `memory_core/core_combiner_core.py`. Bitstream only, no placement change.
+  2. **Absolute latency matching** (`balance_plan_abs`): an input arriving d stages
+     early gets (registers on its unshared route now) + d padding registers. Absolute
+     because the router puts padding registers on hops that were already registered:
+     an incremental "+d" mostly adds nothing.
+  3. Padding is inserted by `hooks/rv_balance_branches.py --plan` (plain `coreir.reg`,
+     `extra_data 0`, so data is unchanged), named `rv_balance_<md5(input)[:8]>_<i>`.
+  4. **Pinning:** every block and netlist register keeps its tile (`manual.place` +
+     `MANUAL_PATH_BALANCE_PLACER=1`). Lines are instance names, because block ids change
+     when registers are added (`global_buffer/io_placement.py` maps names through
+     `id_to_name`, ignoring `@track`). Only new registers and PnR pipelining move.
+  5. PnR again; if a later round got worse, the best round is rebuilt with its whole
+     placement pinned.
+  conv_3_3: A converged in 1 round, B in 2. Outputs: `work/rv_balance_{plan,log}.json`,
+  `work/PE_fifos_bypass_config.json`, manifest `rv_balance`. The bin/ copy is removed at
+  the end, because the bitstream is already made and a later unbalanced PnR must not
+  pick it up.
+- **Dead ends (do not retry):**
+  - Bypassing PE input/output FIFOs (`fine_grain_fifo_bypass`) makes ready depend
+    combinationally on valid. Through the lazy forks that forms a loop, and the sim hangs.
+  - Pre-PnR depth balancing (`--pe-stages`) ignores routing registers.
+  - Greedy and uniform padding oscillated or plateaued (0.80–0.91).
+  - Unpinned re-PnR moves everything.
+- **Needs** archipelago >= de8e844: `reg_into_route` used to patch only the first segment
+  holding a hop, so an RMUX could get two inputs. The model refuses such routes
+  (ValueError).
+- **Limits:**
+  - Refuses apps whose map writes their own `PE_fifos_bypass_config.json`
+    (hack_design_top.py, pond feedback), because the model assumes every PE FIFO.
+  - MEM inputs are not balanced, since a MEM decouples them.
+  - Not wired into `aha regress` or `aha pnr`; bundles only.
+- Tests: `tests/test_app_bundle_guards/test_cgra_app_power.py` (hook naming and
+  idempotence, fork imbalance, parity output FIFO, placement).
 
 ## PE-tile pond knobs (Tile_PE with / without / spec pond) (2026-09-30)
 

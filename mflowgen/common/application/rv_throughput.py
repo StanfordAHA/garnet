@@ -1,0 +1,386 @@
+"""Throughput model of a routed dense ready-valid design, and the latency matching that
+brings it to full rate (gen_app_bundle.py --rv-balance; mflowgen/CLAUDE.md "RV branch
+balancing").
+
+Storage: every routing REG node is a FIFO of depth `reg_depth` (canal RegFIFO, ready =
+~full); netlist registers start with `extra_data` tokens (stencil delays). A PE has
+one input FIFO per used input and an output FIFO (depth pe_in / pe_out), plus a
+2-deep primitive output FIFO when enabled (prim_out); it fires when every input FIFO
+holds a token and its output FIFO is not full. Fanouts are lazy forks: a token
+leaves only when every branch's next FIFO is ready (start-of-cycle counts). MEM
+outputs, the input IO and constant PEs are always-valid sources; MEM inputs and the
+output IO are always-ready sinks. Reports the output IO's rate.
+
+Validated against xrun of conv_3_3 PnR results (A/B, 2026-10-13/14): modelled rates
+0.750 / 0.667 / 0.722 / 0.765 unbalanced and 1.000 balanced = measured.
+
+usage: rv_throughput.py <app bin dir>  (modelled rate + the next balancing step)"""
+import json
+import re
+import sys
+from collections import defaultdict
+from itertools import combinations
+
+
+def parse_route(path):
+    nets, cur = {}, None
+    for line in open(path):
+        m = re.match(r"Net ID: (\S+)", line)
+        if m:
+            cur = m.group(1)
+            nets[cur] = []
+            continue
+        if line.startswith("Segment:"):
+            nets[cur].append([])
+            continue
+        m = re.match(r"\s*(PORT|REG|SB|RMUX)\s*(\S*)\s*\(([\d,\s]+)\)", line)
+        if m:
+            nets[cur][-1].append((m.group(1), m.group(2), tuple(int(x) for x in m.group(3).split(","))))
+    return nets
+
+
+class Model:
+    def __init__(self, route, place, design_top, reg_depth=2, pe_in=2, pe_out=2):
+        self.nets = parse_route(route)
+        # netlist registers placed at (x, y) on track name -> instance name
+        self.netreg = {}
+        self.pe_kind = {}
+        for line in open(place).read().splitlines()[2:]:
+            w = line.split()
+            if len(w) < 4:
+                continue
+            name, x, y, bid = w[0], int(w[-3]), int(w[-2]), w[-1]
+            if bid.startswith("#r") and "@" in name:
+                inst, track = name.split("@")
+                self.netreg[(x, y, track)] = inst
+            if bid.startswith("#p"):
+                self.pe_kind[(x, y)] = name
+        d = json.load(open(design_top))
+        top = d["top"].split(".", 1)[1]
+        insts = d["namespaces"]["global"]["modules"][top]["instances"]
+        self.extra = {n: int((i.get("metadata") or {}).get("extra_data", 0)) for n, i in insts.items()}
+        self.reg_depth, self.pe_in, self.pe_out = reg_depth, pe_in, pe_out
+        self.prim_out = set()   # PEs (x, y) whose primitive output FIFO is enabled (+1 stage)
+        self.build()
+
+    def node_id(self, node):
+        kind, name, c = node
+        if kind == "REG":
+            track, x, y, w = c
+            return ("REG", name, x, y, w)
+        if kind == "PORT":
+            return ("PORT", name, c[0], c[1])
+        return (kind, name, c)
+
+    def build(self):
+        succ = defaultdict(set)
+        rmux_in = defaultdict(set)
+        for net, segs in self.nets.items():
+            for seg in segs:
+                ids = [self.node_id(n) for n in seg]
+                for a, b in zip(ids, ids[1:]):
+                    succ[a].add(b)
+                    if b[0] == "RMUX":
+                        rmux_in[(net, b)].add(a[0])
+        # an RMUX reached through its register in one segment and around it in another
+        # has no single configuration (archipelago before de8e844): not modelled
+        problems = sorted(f"{net} {b}" for (net, b), kinds in rmux_in.items() if len(kinds) > 1)
+        if problems:
+            raise ValueError("inconsistent route (RMUX reached through and around its register): "
+                             + "; ".join(problems))
+        # storage elements: REG nodes, PE input FIFOs (PORT PE_input), PE output FIFOs (PORT PE_output)
+        self.cap, self.init = {}, {}
+        nodes = set(succ) | {b for v in succ.values() for b in v}
+        for n in nodes:
+            if n[0] == "REG":
+                inst = self.netreg.get((n[2], n[3], n[1]))
+                self.cap[n] = self.reg_depth
+                self.init[n] = self.extra.get(inst, 0) if inst else 0
+            elif n[0] == "PORT" and n[1].startswith("PE_input"):
+                self.cap[n] = self.pe_in
+                self.init[n] = 0
+            elif n[0] == "PORT" and n[1].startswith("PE_output"):
+                self.cap[n] = self.pe_out
+                self.init[n] = 0
+        # consumers of each producer: storage/sink nodes reachable through wires (SB/RMUX)
+        self.fanout = {}
+        for n in nodes:
+            if n in self.cap or self.is_source(n):
+                outs, stack, seen = [], list(succ.get(n, ())), set()
+                while stack:
+                    m = stack.pop()
+                    if m in seen:
+                        continue
+                    seen.add(m)
+                    if m in self.cap or m[0] == "PORT":
+                        outs.append(m)
+                    else:
+                        stack.extend(succ.get(m, ()))
+                self.fanout[n] = outs
+        # PEs: (x, y) -> input ports, output port
+        self.pes = defaultdict(lambda: {"in": [], "out": []})
+        for n in nodes:
+            if n[0] == "PORT" and n[1].startswith("PE_input"):
+                self.pes[(n[2], n[3])]["in"].append(n)
+            elif n[0] == "PORT" and n[1].startswith("PE_output"):
+                self.pes[(n[2], n[3])]["out"].append(n)
+
+    def is_source(self, n):
+        return n[0] == "PORT" and ("MEM_output" in n[1] or n[1].startswith("io2f"))
+
+    def is_sink(self, n):
+        return n[0] == "PORT" and ("MEM_input" in n[1] or n[1].startswith("f2io"))
+
+    def const_pe(self, xy):
+        return "const" in self.pe_kind.get(xy, "") or not self.pes[xy]["in"]
+
+    def const_out(self, n):
+        return n[0] == "PORT" and n[1].startswith("PE_output") and self.const_pe((n[2], n[3]))
+
+    def run(self, cycles=6000, warm=1000):
+        """Simulate; -> (tokens per cycle at the output IO after `warm` cycles, final counts)."""
+        cap = dict(self.cap)
+        cnt = dict(self.init)
+        for xy in self.prim_out:
+            cap[("PRIM", xy)] = 2
+            cnt[("PRIM", xy)] = 0
+        out = 0
+        out_hist = []
+        for cyc in range(cycles):
+            ready = {n: cnt[n] < cap[n] for n in cnt}
+            pops, pushes = defaultdict(int), defaultdict(int)
+            # producers: sources, REG FIFOs, PE output FIFOs
+            for p, cons in self.fanout.items():
+                if p[0] == "PORT" and p[1].startswith("PE_input"):
+                    continue   # PE inputs feed the PE core, not a route
+                const = self.const_out(p)
+                if not (self.is_source(p) or const or cnt.get(p, 0) > 0) or not cons:
+                    continue
+                if all(self.is_sink(c) or ready.get(c, False) for c in cons):
+                    if p in cnt and not const:
+                        pops[p] += 1
+                    for c in cons:
+                        if not self.is_sink(c):
+                            pushes[c] += 1
+                        elif c[1].startswith("f2io"):
+                            out += 1
+            # PE cores (through the primitive output FIFO when it is enabled)
+            for xy, pe in self.pes.items():
+                if self.const_pe(xy) or not pe["out"]:
+                    continue
+                o = pe["out"][0]
+                stage = ("PRIM", xy) if xy in self.prim_out else o
+                if stage != o and cnt[stage] > 0 and ready[o]:
+                    pops[stage] += 1
+                    pushes[o] += 1
+                if all(cnt[i] > 0 for i in pe["in"]) and ready[stage]:
+                    for i in pe["in"]:
+                        pops[i] += 1
+                    pushes[stage] += 1
+            for n, k in pops.items():
+                cnt[n] -= k
+            for n, k in pushes.items():
+                cnt[n] += k
+            out_hist.append(out)
+        rate = (out_hist[-1] - out_hist[warm]) / (cycles - 1 - warm)
+        return rate, cnt
+
+
+def netlist_sink(m, node):
+    """The netlist input a storage node leads to: a PE input port, or the netlist
+    register (delay) it is / reaches first. -> ("pe", (x, y), k) | ("reg", instance)"""
+    seen = set()
+    while True:
+        if node[0] == "PORT" and node[1].startswith("PE_input"):
+            return ("pe", (node[2], node[3]), int(node[1].rsplit("_", 1)[1]))
+        if node[0] == "REG":
+            inst = m.netreg.get((node[2], node[3], node[1]))
+            # a register of the pre-PnR netlist (not one PnR pipelining added)
+            if inst and not inst.startswith(("pnr_pipelining", "rv_balance")):
+                return ("reg", inst)
+        cons = [c for c in m.fanout.get(node, []) if not m.is_sink(c)]
+        if len(cons) != 1 or node in seen:
+            return None
+        seen.add(node)
+        node = cons[0]
+
+
+def plan_by_instance(m, plan):
+    """{"<instance>.<port>": regs} for rv_balance_branches.py --plan."""
+    out = {}
+    for sink, k in plan.items():
+        if sink[0] == "pe":
+            key = f"{m.pe_kind[sink[1]]}.data{sink[2]}"
+        else:
+            key = f"{sink[1]}.in"
+        out[key] = out.get(key, 0) + k
+    return out
+
+
+def insert_stages(m, node, k):
+    """Put k register stages (reg_depth each, empty) in front of storage node `node`
+    on every producer edge that feeds it (as padding registers on that netlist edge)."""
+    if k <= 0:
+        return
+    for p, cons in list(m.fanout.items()):
+        if node in cons:
+            base = sum(1 for n in m.cap if n[0] == "PAD" and n[1] == f"{node}")
+            chain = [("PAD", f"{node}", p, base + i) for i in range(k)]
+            for c in chain:
+                m.cap[c] = m.reg_depth
+                m.init[c] = 0
+            m.fanout[p] = [chain[0] if c == node else c for c in cons]
+            for a, b in zip(chain, chain[1:]):
+                m.fanout[a] = [b]
+            m.fanout[chain[-1]] = [node]
+
+
+def model_of(bin_dir, **kw):
+    return Model(f"{bin_dir}/design.route", f"{bin_dir}/design.place", f"{bin_dir}/design_top.json", **kw)
+
+
+def placement_of(bin_dir):
+    """Pinnable placement of a PnR result (for manual.place): {block id: (x, y)} of every
+    non-register block and {instance name: (x, y)} of every netlist register (the
+    registers PnR pipelining adds are left free: they are not in the netlist)."""
+    out = {}
+    for line in open(f"{bin_dir}/design.place").read().splitlines()[2:]:
+        w = line.split()
+        if len(w) < 4 or not w[-1].startswith("#"):
+            continue
+        xy = (int(w[-3]), int(w[-2]))
+        if not w[-1].startswith("#r"):
+            out[w[-1][1:]] = xy
+        elif not w[0].startswith("pnr_pipelining"):
+            out[w[0].split("@")[0]] = xy
+    return out
+
+
+def arrivals(m):
+    """Arrival of each storage node's tokens in FIFO stages from the sources (MEM
+    outputs, input IO = 0): a stage adds 1 (an enabled primitive output FIFO 1 more);
+    a netlist register's pre-filled tokens subtract theirs (its output pairs with
+    tokens that entered init cycles earlier); PE cores join their inputs (max).
+    Constant-fed nodes are None."""
+    pred = defaultdict(list)
+    for p, cons in m.fanout.items():
+        for c in cons:
+            pred[c].append(p)
+    for xy, pe in m.pes.items():
+        for o in pe["out"]:
+            pred[o].extend(pe["in"])
+    memo = {}
+
+    def arr(n, stack=()):
+        if n in memo:
+            return memo[n]
+        if m.is_source(n):
+            a = 0
+        elif m.const_out(n) or n in stack:
+            a = None
+        else:
+            ps = [arr(p, stack + (n,)) for p in pred.get(n, [])]
+            ps = [x for x in ps if x is not None]
+            prim = n[0] == "PORT" and n[1].startswith("PE_output") and (n[2], n[3]) in m.prim_out
+            a = (max(ps) + 1 + prim - m.init.get(n, 0)) if ps else None
+        memo[n] = a
+        return a
+    for n in list(m.cap):
+        arr(n)
+    return memo
+
+
+def mismatches(m, arr=None):
+    """[(PE input node, stages it arrives before the PE's latest input)] over the
+    non-constant inputs of every PE with two or more of them."""
+    arr = arrivals(m) if arr is None else arr
+    out = []
+    for xy, pe in m.pes.items():
+        if m.const_pe(xy):
+            continue
+        ins = [(i, arr.get(i)) for i in pe["in"] if arr.get(i) is not None]
+        if len(ins) > 1:
+            top = max(a for _, a in ins)
+            out += [(i, top - a) for i, a in ins]
+    return out
+
+
+def unique_stages(m, node):
+    """Register stages on the part of the route into `node` that no other sink shares:
+    walk back while the predecessor feeds only this path; stop at a fork, a source, a
+    PE or an original netlist register (pipelining and padding registers count)."""
+    pred = defaultdict(list)
+    for p, cons in m.fanout.items():
+        for c in cons:
+            pred[c].append(p)
+    n, count = node, 0
+    while True:
+        ps = pred.get(n, [])
+        if len(ps) != 1:
+            return count
+        p = ps[0]
+        if p[0] != "REG" or len(m.fanout.get(p, [])) != 1:
+            return count
+        inst = m.netreg.get((p[2], p[3], p[1]))
+        if inst and not inst.startswith(("pnr_pipelining", "rv_balance")):
+            return count
+        count += 1
+        n = p
+
+
+def balance_plan_abs(m):
+    """Latency matching as absolute padding: every route hop already has a register
+    (EXHAUSTIVE_PIPE), so a padding register only adds latency when the edge needs more
+    registers than its route has hops. For each PE input arriving d stages early:
+    registers on its edge = the stages on its unshared route now + d.
+    -> {netlist sink: registers}"""
+    plan = {}
+    for i, d in mismatches(m):
+        if d > 0:
+            sink = netlist_sink(m, i)
+            if sink is not None:
+                plan[sink] = unique_stages(m, i) + d
+    return plan
+
+
+def parity_outfifo(m, max_pes=6):
+    """Route padding between pinned endpoints changes an edge's stage count by an even
+    number only (every hop has a register; Manhattan path lengths between two tiles
+    share their parity), so an odd mismatch at a join can never be padded away.
+    Choose the set of PEs whose primitive output FIFO to enable (+1 stage each) so that
+    every remaining mismatch is even: fewest odd mismatches, then smallest total, then
+    fewest PEs, over every set of at most max_pes PEs (exhaustive: fine for a few dozen
+    PEs at max_pes 6). Applies it to m (m.prim_out). -> [PE instance]"""
+    pes = sorted(xy for xy in m.pes if not m.const_pe(xy) and m.pes[xy]["out"])
+    best = None
+    for k in range(min(len(pes), max_pes) + 1):
+        for combo in combinations(pes, k):
+            m.prim_out = set(combo)
+            mm = mismatches(m)
+            key = (sum(d % 2 for _, d in mm), sum(d for _, d in mm), k)
+            if best is None or key < best[0]:
+                best = (key, combo)
+    m.prim_out = set(best[1])
+    return sorted(m.pe_kind[xy] for xy in m.prim_out)
+
+
+def outfifo_config(names):
+    """PE_fifos_bypass_config.json entries keeping these PEs' primitive output FIFO."""
+    return {n: {"input_fifo_bypass": [0, 0, 0], "output_fifo_bypass": 0, "prim_outfifo_bypass": 0}
+            for n in names}
+
+
+def apply_outfifo(m, names):
+    xy_of = {name: xy for xy, name in m.pe_kind.items()}
+    m.prim_out = {xy_of[n] for n in names}
+
+
+if __name__ == "__main__":
+    m = model_of(sys.argv[1])
+    rate, _ = m.run(6000, 1500)
+    print(f"modelled rate {rate:.3f}")
+    if rate < 0.995:
+        outfifo = parity_outfifo(m)
+        plan = balance_plan_abs(m)
+        print(f"next round: PE output FIFOs {outfifo}, padding ({sum(plan.values())} registers):")
+        print(json.dumps(plan_by_instance(m, plan), indent=1))

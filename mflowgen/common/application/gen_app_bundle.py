@@ -192,6 +192,97 @@ def add_route_and_idle_tiles(tiles, array, route_path):
     return summary
 
 
+def rv_balance_setup(args, app_dir, work, env):
+    if (app_dir / "bin" / "PE_fifos_bypass_config.json").exists():
+        # rv_balance() removes its own copy when it ends, so this one is the app's
+        # (hack_design_top.py bypasses PE FIFOs on pond feedback paths)
+        sys.exit("*** --rv-balance: bin/PE_fifos_bypass_config.json exists (the app bypasses PE "
+                 "FIFOs); rv_throughput.py models every PE FIFO as present")
+    hook = Path(__file__).resolve().parent / "hooks" / "rv_balance_branches.py"
+    plan_file = work / "rv_balance_plan.json"
+    plan_file.write_text("{}")
+    env.update(RV_BALANCE_PLAN=str(plan_file), RV_BALANCE_PE_STAGES="0")
+    if str(hook) not in [str(Path(h).resolve()) for h in args.pre_pnr_hook]:
+        args.pre_pnr_hook = args.pre_pnr_hook + [str(hook)]
+
+
+def rv_balance(args, app_dir, work, env, pnr, target=0.995):
+    """--rv-balance: model the routed design's throughput (rv_throughput.py). While it is
+    below target: enable the primitive output FIFO (+1 stage, bitstream only) of the PEs
+    that leave every join's latency mismatch even (route padding between pinned
+    endpoints can only add an even number of stages), pad each early PE input to the
+    absolute register count its edge needs (latency matching on the routed graph, via
+    hooks/rv_balance_branches.py), pin every block and netlist register (manual.place +
+    MANUAL_PATH_BALANCE_PLACER) and re-run the pre-PnR hooks + PnR; at most
+    args.rv_balance rounds, rebuilding the best one if a later round got worse.
+    Writes work/rv_balance_plan.json (keyed by original netlist inputs),
+    work/PE_fifos_bypass_config.json (the output FIFOs) and work/rv_balance_log.json."""
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import rv_throughput as rt
+    bin_dir = app_dir / "bin"
+    plan_file = work / "rv_balance_plan.json"
+    # garnet applies bin/PE_fifos_bypass_config.json in the PnR bitstream
+    bypass_file = bin_dir / "PE_fifos_bypass_config.json"
+    plan, log, best = {}, [], None
+
+    def pin(placement):
+        # every block and netlist register stays where it was; only new registers move
+        with open(app_dir / "manual.place", "w") as f:
+            for blk, (x, y) in sorted(placement.items()):
+                f.write(f"{blk} {x} {y}\n")
+    env.update(MANUAL_PATH_BALANCE_PLACER="1")
+    outfifo = []   # PEs whose primitive output FIFO is enabled (bitstream only)
+    for it in range(args.rv_balance + 1):
+        m = rt.model_of(bin_dir)
+        rt.apply_outfifo(m, outfifo)
+        rate, _ = m.run(6000, 1500)
+        log.append({"round": it, "modelled_rate": round(rate, 4), "registers": sum(plan.values()),
+                    "prim_outfifo": list(outfifo)})
+        print(f"=== [{time.strftime('%H:%M:%S')}] rv-balance round {it}: modelled rate {rate:.3f} "
+              f"with {sum(plan.values())} padding registers, {len(outfifo)} PE output FIFOs", flush=True)
+        if best is None or rate > best[0]:
+            best = (rate, dict(plan), rt.placement_of(bin_dir), list(outfifo))
+        if rate >= target or it == args.rv_balance:
+            break
+        # Parity: with every endpoint pinned, route padding moves an edge's stage count by
+        # an even number only, so first pick the PE output FIFOs (+1 each) that leave
+        # every mismatch even, then pad the (even) rest by latency matching.
+        outfifo = rt.parity_outfifo(m)
+        more = rt.balance_plan_abs(m)
+        print(f"=== [{time.strftime('%H:%M:%S')}] rv-balance round {it}: output FIFOs "
+              f"{[n.split('$')[-1] for n in outfifo]}, padding {sum(more.values())} on {len(more)} inputs",
+              flush=True)
+        for key, k in rt.plan_by_instance(m, more).items():
+            plan[key] = max(plan.get(key, 0), k + args.rv_balance_margin)
+        plan_file.write_text(json.dumps(plan, indent=1, sort_keys=True))
+        bypass_file.write_text(json.dumps(rt.outfifo_config(outfifo), indent=1, sort_keys=True))
+        pin(rt.placement_of(bin_dir))
+        pnr(f"_bal{it + 1}")
+    if best[0] > log[-1]["modelled_rate"]:
+        # a later round got worse: rebuild the best one (its whole placement pinned,
+        # so the router repeats its routes)
+        plan, outfifo = best[1], best[3]
+        plan_file.write_text(json.dumps(plan, indent=1, sort_keys=True))
+        bypass_file.write_text(json.dumps(rt.outfifo_config(outfifo), indent=1, sort_keys=True))
+        pin(best[2])
+        pnr("_best")
+        mb = rt.model_of(bin_dir)
+        rt.apply_outfifo(mb, outfifo)
+        rate, _ = mb.run(6000, 1500)
+        log.append({"round": "best", "modelled_rate": round(rate, 4), "registers": sum(plan.values()),
+                    "prim_outfifo": list(outfifo)})
+        print(f"=== [{time.strftime('%H:%M:%S')}] rv-balance: rebuilt the best round: modelled rate "
+              f"{rate:.3f} with {sum(plan.values())} padding registers", flush=True)
+    # the bitstream has it; keep a copy, and none in bin/ for a later unbalanced PnR
+    if outfifo:
+        shutil.copy(bypass_file, work / "PE_fifos_bypass_config.json")
+    bypass_file.unlink(missing_ok=True)
+    (app_dir / "manual.place").unlink(missing_ok=True)
+    (bin_dir / "manual.place").unlink(missing_ok=True)
+    json.dump(log, open(work / "rv_balance_log.json", "w"), indent=1)
+    return log
+
+
 # ------------------------------------------------------------------ main ----
 
 def main():
@@ -217,6 +308,14 @@ def main():
                    help="aha tree (`aha --dir`); its garnet is GARNET_HOME (default /aha)")
     p.add_argument("--env", action="append", default=[], metavar="KEY=VAL",
                    help="extra env for halide/map/pnr/test (e.g. HL_TARGET=..., EXT=mat)")
+    p.add_argument("--rv-balance", type=int, default=0, metavar="N",
+                   help="RV only: after PnR, model the routed design's throughput "
+                        "(rv_throughput.py); while below full rate, latency-match its "
+                        "reconvergent branches (pass-through registers via "
+                        "hooks/rv_balance_branches.py, PE primitive output FIFOs for odd "
+                        "mismatches) and re-run PnR with the placement pinned, at most N times")
+    p.add_argument("--rv-balance-margin", type=int, default=0, metavar="K",
+                   help="spare registers added to each input a --rv-balance round pads (default 0)")
     p.add_argument("--pre-pnr-hook", action="append", default=[], metavar="SCRIPT",
                    help="python SCRIPT <app>/bin, run between map and pnr")
     p.add_argument("--cgra-tiles", action="store_true",
@@ -332,10 +431,21 @@ def main():
     test_env.update(user_env)
     if pond_coll:
         test_env["LAKE_COLLATERAL_JSON_REGFILE"] = str(pond_coll)
+    balance_log = []
     if skip <= 4:
-        for i, hook in enumerate(args.pre_pnr_hook):
-            run(f"hook{i}", [sys.executable, hook, app_dir / "bin"], test_env, aha_dir, logs)
-        run("pnr", aha + ["pnr", args.app] + [str(f) for f in garnet_flags], test_env, aha_dir, logs)
+        def pnr(tag=""):
+            for i, hook in enumerate(args.pre_pnr_hook):
+                run(f"hook{i}{tag}", [sys.executable, hook, app_dir / "bin"], test_env, aha_dir, logs)
+            run(f"pnr{tag}", aha + ["pnr", args.app] + [str(f) for f in garnet_flags], test_env, aha_dir, logs)
+        (app_dir / "manual.place").unlink(missing_ok=True)
+        (app_dir / "bin" / "manual.place").unlink(missing_ok=True)
+        balancing = args.rv_balance and rv
+        if balancing:
+            # round 0 runs the balancing hook with an empty plan: the original netlist
+            rv_balance_setup(args, app_dir, work, test_env)
+        pnr()
+        if balancing:
+            balance_log = rv_balance(args, app_dir, work, test_env, pnr)
 
     # 6. sim with the tile-port probes + aha test's gold compare
     tiles = {k: [] for k in TILE_DESIGNS}
@@ -405,6 +515,7 @@ def main():
         "pond_spec": json.load(open(pond_spec)) if pond_spec else None,
         "app_env": user_env,
         "pre_pnr_hooks": args.pre_pnr_hook,
+        "rv_balance": balance_log or None,
         "tiles": {TILE_DESIGNS[k]: len(v) for k, v in tiles.items()},
         "array_tiles": {d: sum(t == d for t in array.values()) for d in TILE_DESIGNS.values()},
         "cgra_tiles": cgra_tiles,

@@ -20,7 +20,10 @@
 # except garnet: a clone of this garnet checkout's HEAD), because garnet.py
 # --verilog rewrites $GARNET_HOME's GLB headers; and on its own app copy,
 # Halide-to-Hardware/apps/hardware_benchmarks/cgra_ab_<V>/conv_3_3.
-# Bundles are recorded with --cgra-tiles (route-through + idle tiles).
+# Bundles are recorded with --cgra-tiles (route-through + idle tiles) and
+# --rv-balance 8 (env RV_BALANCE=N; 0 = unbalanced): both versions run at one
+# token per cycle (mflowgen/CLAUDE.md "RV branch balancing"), so the power
+# comparison is at equal rate.
 set -euo pipefail
 root=$(readlink -f "${1:?usage: conv_3_3_ab_bundles.sh <bundle root> [config]}")
 config=${2:-fw4_dw16_sc8192_sp_in2_out2_vc2_ff8_rv}
@@ -52,7 +55,7 @@ run() {  # run <V> [gen_app_bundle args]
   local V=$1; shift
   python3 "$root/trees/$V/garnet/mflowgen/common/application/gen_app_bundle.py" \
     --config "$config" --bundle-dir "$root/$V" --aha-dir "$root/trees/$V" \
-    --app "cgra_ab_$V/conv_3_3" --cgra-tiles "$@" > "$root/$V.log" 2>&1
+    --app "cgra_ab_$V/conv_3_3" --cgra-tiles --rv-balance "${RV_BALANCE:-8}" "$@" > "$root/$V.log" 2>&1
 }
 run A & pa=$!
 METAMAPPER_MEM_PORTS=3 run B --pre-pnr-hook "$here/hooks/conv_3_3_eat_rows_up_front.py" & pb=$!

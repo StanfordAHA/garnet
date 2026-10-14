@@ -2,8 +2,10 @@
 graph hook common/app_variants.py and gen_app_bundle.py --cgra-tiles: the
 parts that run without the build machine (env parsing, tile roles, report
 parsing and the per-variant sums)."""
+import hashlib
 import importlib.util
 import json
+import sys
 from pathlib import Path
 
 import pytest
@@ -170,3 +172,124 @@ def test_variants_parse_and_configs(tmp_path):
     json.dump({"spec_config": {"vec_width": 2}, "mode": "rv"}, open(tmp_path / "B" / "c1" / "manifest.json", "w"))
     with pytest.raises(SystemExit):
         cap.load_manifests(variants, "c1")
+
+
+rvb = load(MFLOWGEN / "common" / "application" / "hooks" / "rv_balance_branches.py", "rv_balance_branches")
+
+
+def toy_design():
+    """IO -> fork: (a) PE m (mul) -> PE s.data0, (b) delay reg (extra_data 1) -> PE s.data1;
+    a constant PE feeds s.data2; s -> output IO."""
+    pe = {"genref": "global.PE"}
+    reg = lambda x: {"genref": "coreir.reg", "genargs": {"width": ["Int", 16]}, "metadata": {"extra_data": x}}
+    return {"top": "global.app", "namespaces": {"global": {"modules": {"app": {
+        "instances": {"in": {"genref": "global.IO"}, "out": {"genref": "global.IO"}, "m": dict(pe),
+                      "d": reg(1), "s": dict(pe), "c": dict(pe)},
+        "connections": [["in.out", "m.data0"], ["in.out", "d.in"], ["m.O0", "s.data0"],
+                        ["d.out", "s.data1"], ["c.O0", "s.data2"], ["s.O0", "out.in"],
+                        ["self.x", "in.in"], ["out.out", "self.y"]]}}}}}
+
+
+def test_rv_balance_pads_the_short_branch():
+    d = toy_design()
+    added, report = rvb.balance(d, pe_stages=3, margin=0)
+    mod = d["namespaces"]["global"]["modules"]["app"]
+    # m arrives at 3 stages, the delay reg at 1 + 1 (its pre-filled token): s.data1 gets 1 register
+    assert added == 1 and report == [("s.data1", 1, 1)]
+    (rn,) = [n for n in mod["instances"] if n.startswith("rv_balance_")]
+    assert rn == "rv_balance_" + hashlib.md5(b"s.data1").hexdigest()[:8] + "_0"   # named after the input
+    r = mod["instances"][rn]
+    assert r["genref"] == "coreir.reg" and r["metadata"] == {"extra_data": 0}
+    conns = [sorted(c) for c in mod["connections"]]
+    assert sorted(["d.out", f"{rn}.in"]) in conns and sorted([f"{rn}.out", "s.data1"]) in conns
+    assert sorted(["d.out", "s.data1"]) not in conns
+    assert sorted(["c.O0", "s.data2"]) in conns          # constant input untouched
+    assert mod["metadata"]["rv_balance"]["registers"] == 1
+    with pytest.raises(SystemExit):
+        rvb.balance(d, pe_stages=3, margin=0)             # already balanced
+
+
+def test_rv_balance_margin_and_idempotent_hook(tmp_path, monkeypatch):
+    d = toy_design()
+    added, _ = rvb.balance(d, pe_stages=5, margin=2)
+    assert added == (5 - 2) + 2
+    (tmp_path / "design_top.json").write_text(json.dumps(toy_design()))
+    for _ in range(2):   # a rerun starts from the saved input, not from its own output
+        monkeypatch.setattr(sys, "argv", ["rv_balance_branches.py", str(tmp_path), "--pe-stages", "3"])
+        rvb.main()
+        mod = json.loads((tmp_path / "design_top.json").read_text())["namespaces"]["global"]["modules"]["app"]
+        assert len([n for n in mod["instances"] if n.startswith("rv_balance")]) == 1
+
+
+rtm = load(MFLOWGEN / "common" / "application" / "rv_throughput.py", "rv_throughput")
+
+
+def toy_routed(tmp_path, long_regs=6, short_regs=1):
+    """IO (0,0) -> fork at SB (1,1): branch to PE (5,5) data0 through long_regs route
+    registers, branch to data1 through short_regs; PE -> output IO. The PE also takes a
+    constant on data2 from a const PE at (6,6)."""
+    lines = ["Net ID: e1 Segment Size: 2", "Segment: 0 Size: 9", "PORT io2f_17 (0, 0, 17)",
+             "SB (0, 1, 1, 0, 1, 17)"]
+    for i in range(long_regs):
+        lines += [f"REG T0_EAST (0, {2 + i}, 1, 17)", f"SB (0, {2 + i}, 1, 0, 1, 17)"]
+    lines += ["PORT PE_input_width_17_num_0 (5, 5, 17)", "Segment: 1 Size: 4", "SB (0, 1, 1, 0, 1, 17)"]
+    for i in range(short_regs):
+        lines += [f"REG T1_SOUTH (1, 1, {2 + i}, 17)", f"SB (1, 1, {2 + i}, 1, 1, 17)"]
+    lines += ["PORT PE_input_width_17_num_1 (5, 5, 17)", "",
+              "Net ID: e2 Segment Size: 1", "Segment: 0 Size: 3", "PORT PE_output_width_17_num_1 (5, 5, 17)",
+              "REG T0_NORTH (0, 5, 4, 17)", "PORT f2io_17 (1, 0, 17)", "",
+              "Net ID: e3 Segment Size: 1", "Segment: 0 Size: 3", "PORT PE_output_width_17_num_1 (6, 6, 17)",
+              "REG T2_WEST (2, 6, 5, 17)", "PORT PE_input_width_17_num_2 (5, 5, 17)", ""]
+    (tmp_path / "design.route").write_text("\n".join(lines) + "\n")
+    (tmp_path / "design.place").write_text("Block Name X Y #Block ID\n---\n"
+                                           "mac 5 5 #p0\nconst_k 6 6 #p1\nin 0 0 #I0\nout 1 0 #I1\n")
+    (tmp_path / "design_top.json").write_text(json.dumps(
+        {"top": "global.app", "namespaces": {"global": {"modules": {"app": {"instances": {}, "connections": []}}}}}))
+    return rtm.model_of(str(tmp_path))
+
+
+def test_rv_throughput_fork_imbalance(tmp_path):
+    m = toy_routed(tmp_path, long_regs=6, short_regs=1)
+    rate, _ = m.run(2000, 500)
+    assert rate < 0.9                        # the short branch cannot hold the long one's tokens
+    short = next(i for i in m.pes[(5, 5)]["in"] if i[1].endswith("_1"))
+    assert dict(rtm.mismatches(m))[short] == 5
+    # absolute plan: the short edge's unshared route stage + the 5 it is early
+    plan = rtm.balance_plan_abs(m)
+    assert rtm.plan_by_instance(m, plan) == {"mac.data1": 6}   # only the short branch is padded
+    rtm.insert_stages(m, short, 5)
+    assert m.run(2000, 500)[0] >= 0.995 and not any(d for _, d in rtm.mismatches(m))
+    balanced = toy_routed(tmp_path, long_regs=3, short_regs=3)
+    assert balanced.run(2000, 500)[0] >= 0.995
+    assert rtm.placement_of(str(tmp_path)) == {"p0": (5, 5), "p1": (6, 6), "I0": (0, 0), "I1": (1, 0)}
+
+
+def test_rv_throughput_parity_outfifo(tmp_path):
+    """IO forks to PE pa (3,3) -> mac (5,5) data0 and straight to mac data1: the mismatch
+    (L + 2 + R - S = 3 stages) is odd, so routing alone cannot close it; pa's primitive
+    output FIFO (+1) makes it even (4)."""
+    lines = ["Net ID: e1 Segment Size: 2", "Segment: 0 Size: 4", "PORT io2f_17 (0, 0, 17)",
+             "SB (0, 1, 1, 0, 1, 17)", "REG T0_EAST (0, 2, 1, 17)", "PORT PE_input_width_17_num_0 (3, 3, 17)",
+             "Segment: 1 Size: 3", "SB (0, 1, 1, 0, 1, 17)", "REG T1_SOUTH (1, 1, 2, 17)",
+             "PORT PE_input_width_17_num_1 (5, 5, 17)", "",
+             "Net ID: e4 Segment Size: 1", "Segment: 0 Size: 3", "PORT PE_output_width_17_num_0 (3, 3, 17)",
+             "REG T0_EAST (0, 4, 3, 17)", "PORT PE_input_width_17_num_0 (5, 5, 17)", "",
+             "Net ID: e2 Segment Size: 1", "Segment: 0 Size: 3", "PORT PE_output_width_17_num_0 (5, 5, 17)",
+             "REG T0_NORTH (0, 5, 4, 17)", "PORT f2io_17 (1, 0, 17)", ""]
+    (tmp_path / "design.route").write_text("\n".join(lines) + "\n")
+    (tmp_path / "design.place").write_text("Block Name X Y #Block ID\n---\n"
+                                           "pa 3 3 #p0\nmac 5 5 #p1\nin 0 0 #I0\nout 1 0 #I1\n")
+    (tmp_path / "design_top.json").write_text(json.dumps(
+        {"top": "global.app", "namespaces": {"global": {"modules": {"app": {"instances": {}, "connections": []}}}}}))
+    m = rtm.model_of(str(tmp_path))
+    assert sorted(d for _, d in rtm.mismatches(m)) == [0, 3]
+    assert rtm.parity_outfifo(m) == ["pa"] and m.prim_out == {(3, 3)}
+    assert sorted(d for _, d in rtm.mismatches(m)) == [0, 4]
+    assert rtm.plan_by_instance(m, rtm.balance_plan_abs(m)) == {"mac.data1": 1 + 4}
+    short = next(i for i in m.pes[(5, 5)]["in"] if i[1].endswith("_1"))
+    rtm.insert_stages(m, short, 4)
+    assert m.run(2000, 500)[0] >= 0.995
+    assert rtm.outfifo_config(["pa"]) == {"pa": {"input_fifo_bypass": [0, 0, 0], "output_fifo_bypass": 0,
+                                                 "prim_outfifo_bypass": 0}}
+    rtm.apply_outfifo(m, [])
+    assert m.prim_out == set()
