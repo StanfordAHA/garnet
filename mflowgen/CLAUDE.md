@@ -1233,9 +1233,13 @@ were deleted as stale (lake 04191ea5: before 144e2062's comparator pruning;
   0.5 ns in the local gate emulation: db83c42f's tb 22753 / 38012 known-value
   mismatches (X03_Y02 / X07_Y05; 182 / 864 violations), new tb 0 / 0 (no
   violations, 3564 pre-app X); without the delay also 0 / 0.
-- RTL vs synth power of the run-2 static X07_Y05 (both X-tainted at synth):
-  the SRAM macro books 48 uW at RTL level vs 4.0 mW at synth level; check on a
-  clean replay before trusting either.
+- **RTL-level power on gf12 is not usable (OPEN_ISSUES
+  garnet/rtl-level-power-annotation):** PT annotates 60% of nets / 20% of leaf
+  cells from the RTL SAIF (synth, PnR: 100%; freepdk45 locally: 100%), so it
+  defaults the rest. Run 3, static, replays exact at all levels (mW, tile
+  total / SRAM macros): X07_Y05 (line buffer) RTL 3.42 / 0.05, synth 6.38 /
+  4.03, PnR 6.98 / 3.84; X03_Y02 RTL 3.28, synth 1.51, PnR 2.06. Idle/active
+  (`--memtile-power`): synth 1.59 / 11.1, PnR 2.13 / 12.3. Use synth/PnR.
 - Power domains: the tile graphs pass `garnet.py --no-pd` (`pwr_aware =
   False`), `gen_app_bundle.py` does not. Today that changes nothing:
   `--no-pd` is a no-op (OPEN_ISSUES `garnet/no-pd-tuple`, a trailing-comma
