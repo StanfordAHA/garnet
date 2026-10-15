@@ -37,6 +37,11 @@ jobs:
         docker exec CONTAINER /bin/bash -c "source /aha/bin/activate; pip install psutil"
         docker cp ../garnet CONTAINER:/aha/garnet
 
+    - name: Use the sibling-repo commits aha mek pins
+      shell: bash
+      run: |
+        docker exec -i CONTAINER bash -c "/aha/garnet/.github/scripts/aha_mek_deps.sh"
+
     - name: Run tests
       shell: bash
       run: |

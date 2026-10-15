@@ -100,6 +100,10 @@ git ls-files | xargs -I{} cp -r --parents {} /tmp/deleteme-garnet-$$
 docker exec $container /bin/bash -c "rm -rf /aha/garnet"
 docker cp /tmp/deleteme-garnet-$$ $container:/aha/garnet
 /bin/rm -rf /tmp/deleteme-garnet-$$
+# Optionally move the container's sibling repos to other commits (garnet CI: aha mek's pins)
+if [ "${AHA_DEPS_SCRIPT:-}" ]; then
+    docker exec $container /bin/bash -c "$AHA_DEPS_SCRIPT" || exit 13
+fi
 # echo "##[endgroup]"
 # set +x; echo "##[endgroup]"; set -x
 set +x; ENDGROUP
