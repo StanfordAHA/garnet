@@ -128,6 +128,11 @@ def test_report_parsing_and_sums(tmp_path):
     }
     out = make_ws(tmp_path, ["A", "B"], tiles)
     assert cap.replay_window(XRUN.format(start=2000, end=1002)) == pytest.approx(1000e-9)
+    # app bundle testbench (garnet 9c8d449f): the SAIF starts at the app_window stop
+    log = "3248319 PS + 2 (stop app_window: testbench.saif_window = 1)\n" \
+          "Simulation complete via $finish(2) at time 10151069 PS + 0\n"
+    assert cap.replay_window(log) == pytest.approx((10151069 - 3248319) * 1e-12)
+    assert cap.replay_window("Simulation complete via $finish(2) at time 10 NS + 0\n") is None
     assert cap.cell_power(next(out.glob("*/Tile_MemCore/*-A/outputs/reports/Tile_X03_Y02.cell")),
                           r"^IN12LP_") == (pytest.approx(1.5e-3), 1)
     rows = cap.tile_rows(out, r"^IN12LP_")

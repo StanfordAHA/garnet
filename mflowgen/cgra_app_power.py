@@ -26,7 +26,7 @@ into <out-dir>/cgra_power.csv (one row per config x variant) and
               every tile the app does not touch            --cgra-tiles)
   app_W       placed + route;  array_W = app_W + idle x untouched tiles
   sram_W      SRAM macro power (cell rows matching --sram-cell-re)
-  window_s    the replay's activity window (stall release -> $finish), so
+  window_s    the replay's activity window (SAIF start -> $finish), so
   app_J       sum of each tile's power x window = energy of one app run
   d_*_pct     change against the first variant
 
@@ -259,14 +259,18 @@ TIME = {"FS": 1e-15, "PS": 1e-12, "NS": 1e-9, "US": 1e-6, "MS": 1e-3, "S": 1.0}
 
 
 def replay_window(log_text):
-    """Seconds from the last stall release (stop stall_toggle: ...stall = 0,
-    where common/testbench/cmd.tcl starts the SAIF) to $finish."""
-    starts = re.findall(r"(\d+)\s*(FS|PS|NS|US|MS)\s*\+\s*\d+\s*\(stop stall_toggle:\s*\S+\s*=\s*0\)", log_text)
+    """Seconds from where common/testbench/cmd.tcl starts the SAIF to $finish: the
+    app_window stop (saif_window = 1, app bundle testbenches since garnet 9c8d449f)
+    or, in the legacy testbench, the last stall release (stall_toggle ... = 0).
+    None without either: the window is unknown, not the whole sim."""
+    t = r"(\d+)\s*(FS|PS|NS|US|MS)\s*\+\s*\d+\s*"
+    starts = (re.findall(t + r"\(stop app_window:\s*\S+\s*=\s*1\)", log_text)
+              or re.findall(t + r"\(stop stall_toggle:\s*\S+\s*=\s*0\)", log_text))
     end = re.search(r"Simulation complete via \$finish\(\d\) at time (\d+)\s*(FS|PS|NS|US|MS)", log_text)
-    if not end:
+    if not end or not starts:
         return None
     t1 = int(end.group(1)) * TIME[end.group(2)]
-    t0 = int(starts[-1][0]) * TIME[starts[-1][1]] if starts else 0.0
+    t0 = int(starts[-1][0]) * TIME[starts[-1][1]]
     return t1 - t0
 
 
