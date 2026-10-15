@@ -2,7 +2,8 @@
 source /aha/bin/activate
 
 # pip install pytest-cov pytest-pycodestyle
-pip install pytest-cov
+# pycodestyle: tests/test_style checks every tracked .py file against setup.cfg
+pip install pytest-cov pycodestyle
 
 # NO COLOR!! Color is the worst.
 # export PYTEST_ADDOPTS="--color=yes"

@@ -1860,17 +1860,26 @@ holds (gate the update on it with `&&`); otherwise set it to the branch tip.
 2026-10-07: 8840857 skipped that check and moved garnet back a commit
 (fixed in 294a61b).
 
-## Lint: pycodestyle / flake8 (2026-10-13, session 352df910)
+## Lint: pycodestyle / flake8 (2026-10-13/14, session 352df910)
 
 - garnet's own checks: `setup.cfg` `[pycodestyle]` (max line 140, ignores E501 and
-  others; `pytest --pycodestyle` in `.github/scripts/run.sh`) and `bin/lint.sh`
-  (Buildkite `ci.yml`: autoflake duplicate keys, flake8 E and F with `[flake8]`, which
-  does NOT ignore E501). Neither tool is in /aha's venv: `pip install --target <dir>
-  pycodestyle flake8 autoflake`, then `PYTHONPATH=<dir> python -m pycodestyle <files>`.
-- Upstream garnet does not pass its own config: modern_gf's merge base with
-  origin/master (020c9b79, 2025-12) has 1,879 pycodestyle violations in its tracked
-  `.py` files (pycodestyle 2.12), nearly all in upstream code (pipelining,
-  mini_mapper, global_buffer, mflowgen constructs). modern_gf's own changes are clean
-  since 2026-10-13: no changed file has more violations than at the base (the 10 that
-  did now pass entirely), and changed files add no flake8 F findings. Check new work
-  with `git diff --name-only 020c9b79 HEAD -- '*.py'`.
+  others) and `bin/lint.sh` (Buildkite `ci.yml`, `soft_fail`: autoflake duplicate keys,
+  flake8 E and F with `[flake8]`, which does NOT ignore E501). Neither tool is in /aha's
+  venv: `pip install --target <dir> pycodestyle flake8 autoflake`, then
+  `PYTHONPATH=<dir> python -m pycodestyle <files>`.
+- **All tracked `.py` files pass `[pycodestyle]` since 2026-10-14** (pycodestyle 2.12;
+  1,737 violations fixed, mostly upstream code). `tests/test_style/test_python_files.py`
+  keeps it that way: every tracked file compiles (push_button_sweep_all.py did not) and
+  pycodestyle passes; skipped without pycodestyle, which `.github/scripts/run_pytest.sh`
+  now installs. Unfixable-without-risk spots carry `# noqa`: `== True/False` (E712; the
+  value may not be a bool), an E402 after `matplotlib.use`, two kratos `@always_comb`
+  conditions (E124). `== None` (E711) and `type(x) == T` (E721) became `is` where the
+  operands are plain Python values. flake8 F (pyflakes) findings are not addressed.
+- `tests/test_mflowgen/test_construct_graphs.py` builds every mflowgen design's Graph
+  (stub gf12 ADK + stub `calibre` on PATH; `common/tile-post-*-power` get
+  `clock_period`/`design_name` from the env).
+- **The CI emails are not lint.** GitHub `pytest` (exit 2) and `verilator` (exit 13)
+  fail on every modern_gf push (100 of 100 runs checked 2026-10-14). Likely cause, not
+  reproduced (no docker on /aha): they run modern_gf in the stock
+  `stanfordaha/garnet:latest` container, whose sibling repos lack modern_gf's
+  dependencies (e.g. lassen `gen_PE_fc`). Buildkite's lint step is `soft_fail`.
