@@ -11,6 +11,10 @@ export PYTEST_ADDOPTS=
 
 cd /aha/garnet
 
+# The checkout is copied in as another user; tests/test_style reads it with git
+# (the image's git honors safe.directory from global config only, not -c)
+git config --global --add safe.directory /aha/garnet
+
 # -rfEs => show extra info on skipped tests, see `-r` in `pytest --help`
 pytest -rfEs \
        --cov global_controller \
