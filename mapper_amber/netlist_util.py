@@ -1,4 +1,5 @@
-import os, math
+import os
+import math
 from graphviz import Digraph
 from collections import defaultdict
 from hwtypes import Bit, BitVector

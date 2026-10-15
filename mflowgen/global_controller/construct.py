@@ -96,21 +96,21 @@ def construct():
     # Default steps
 
     # autopep8: off
-    info           = Step('info',                           default=True)  # noqa
-    #constraints   = Step( 'constraints',                   default=True)  # noqa
-    synth          = Step('cadence-genus-synthesis',        default=True)  # noqa
-    iflow          = Step('cadence-innovus-flowsetup',      default=True)  # noqa
-    init           = Step('cadence-innovus-init',           default=True)  # noqa
-    power          = Step('cadence-innovus-power',          default=True)  # noqa
-    place          = Step('cadence-innovus-place',          default=True)  # noqa
-    cts            = Step('cadence-innovus-cts',            default=True)  # noqa
-    postcts_hold   = Step('cadence-innovus-postcts_hold',   default=True)  # noqa
-    route          = Step('cadence-innovus-route',          default=True)  # noqa
-    postroute      = Step('cadence-innovus-postroute',      default=True)  # noqa
+    info = Step('info', default=True)  # noqa
+    # constraints   = Step( 'constraints',                   default=True)  # noqa
+    synth = Step('cadence-genus-synthesis', default=True)  # noqa
+    iflow = Step('cadence-innovus-flowsetup', default=True)  # noqa
+    init = Step('cadence-innovus-init', default=True)  # noqa
+    power = Step('cadence-innovus-power', default=True)  # noqa
+    place = Step('cadence-innovus-place', default=True)  # noqa
+    cts = Step('cadence-innovus-cts', default=True)  # noqa
+    postcts_hold = Step('cadence-innovus-postcts_hold', default=True)  # noqa
+    route = Step('cadence-innovus-route', default=True)  # noqa
+    postroute = Step('cadence-innovus-postroute', default=True)  # noqa
     postroute_hold = Step('cadence-innovus-postroute_hold', default=True)  # noqa
-    signoff        = Step('cadence-innovus-signoff',        default=True)  # noqa
-    pt_signoff     = Step('synopsys-pt-timing-signoff',     default=True)  # noqa
-    genlibdb       = Step('synopsys-ptpx-genlibdb',         default=True)  # noqa
+    signoff = Step('cadence-innovus-signoff', default=True)  # noqa
+    pt_signoff = Step('synopsys-pt-timing-signoff', default=True)  # noqa
+    genlibdb = Step('synopsys-ptpx-genlibdb', default=True)  # noqa
     # autopep8: on
 
     if which("calibre") is not None:
@@ -133,16 +133,16 @@ def construct():
 
     # Outputs
     # autopep8: off
-    g.add_output('global_controller_tt.lib',      genlibdb.o('design.lib')      )  # noqa
-    g.add_output('global_controller_tt.db',       genlibdb.o('design.db')       )  # noqa
-    g.add_output('global_controller.lef',         signoff.o('design.lef')       )  # noqa
-    g.add_output('global_controller.vcs.v',       signoff.o('design.vcs.v')     )  # noqa
-    g.add_output('global_controller.sdf',         signoff.o('design.sdf')       )  # noqa
-    g.add_output('global_controller.gds',         signoff.o('design-merged.gds'))  # noqa
-    g.add_output('global_controller.lvs.v',       lvs.o('design_merged.lvs.v')  )  # noqa
-    g.add_output('global_controller.vcs.pg.v',    signoff.o('design.vcs.pg.v')  )  # noqa
-    g.add_output('global_controller.spef.gz',     signoff.o('design.spef.gz')   )  # noqa
-    g.add_output('global_controller.pt.sdc',      signoff.o('design.pt.sdc')    )  # noqa
+    g.add_output('global_controller_tt.lib', genlibdb.o('design.lib'))  # noqa
+    g.add_output('global_controller_tt.db', genlibdb.o('design.db'))  # noqa
+    g.add_output('global_controller.lef', signoff.o('design.lef'))  # noqa
+    g.add_output('global_controller.vcs.v', signoff.o('design.vcs.v'))  # noqa
+    g.add_output('global_controller.sdf', signoff.o('design.sdf'))  # noqa
+    g.add_output('global_controller.gds', signoff.o('design-merged.gds'))  # noqa
+    g.add_output('global_controller.lvs.v', lvs.o('design_merged.lvs.v'))  # noqa
+    g.add_output('global_controller.vcs.pg.v', signoff.o('design.vcs.pg.v'))  # noqa
+    g.add_output('global_controller.spef.gz', signoff.o('design.spef.gz'))  # noqa
+    g.add_output('global_controller.pt.sdc', signoff.o('design.pt.sdc'))  # noqa
     # autopep8: on
 
     # TSMC needs streamout *without* the (new) default -uniquify flag

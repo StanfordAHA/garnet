@@ -60,12 +60,12 @@ def construct():
 
     # Default steps
     # autopep8: off
-    info         = Step('info',                          default=True)  # noqa
+    info = Step('info', default=True)  # noqa
     # constraints= Step('constraints',                   default=True)  # noqa
-    dc           = Step('synopsys-dc-synthesis',         default=True)  # noqa
-    iflow        = Step('cadence-innovus-flowsetup',     default=True)  # noqa
-    init         = Step('cadence-innovus-init',          default=True)  # noqa
-    gdsmerge     = Step('mentor-calibre-gdsmerge',       default=True)  # noqa
+    dc = Step('synopsys-dc-synthesis', default=True)  # noqa
+    iflow = Step('cadence-innovus-flowsetup', default=True)  # noqa
+    init = Step('cadence-innovus-init', default=True)  # noqa
+    gdsmerge = Step('mentor-calibre-gdsmerge', default=True)  # noqa
     # autopep8: on
 
     if which("calibre") is not None:

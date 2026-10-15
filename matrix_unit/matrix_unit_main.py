@@ -47,6 +47,7 @@ def gen_header_files(matrix_unit_params, glb_params, svh_filename, h_filename, h
             v = int(v)
             f.write(f"#define {k.upper()} {v}\n")
 
+
 @dataclass
 class Reg():
     name: str

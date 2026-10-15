@@ -273,20 +273,20 @@ class GlbLoadDma_E64_MB(Generator):
             for packet_16 in range(self.num_packets):
                 self.data_g2f_fifo = FIFO(self._params.cgra_data_width, self.fifo_depth)
                 self.add_child(f"data_g2f_fifo_{i}_packet_{packet_16}",
-                            self.data_g2f_fifo,
-                            clk=self.clk,
-                            clk_en=const(1, 1),
-                            reset=self.reset,
-                            flush=self.ld_dma_start_pulse_r,
-                            data_in=self.data_dma2fifo[i][packet_16],
-                            data_out=self.data_fifo2cgra[i][packet_16],
-                            push=self.fifo_push[i][packet_16],
-                            pop=self.fifo_pop[i][packet_16],
-                            full=self.fifo_full[i][packet_16],
-                            empty=self.fifo_empty[i][packet_16],
-                            almost_full=self.fifo_almost_full[i][packet_16],
-                            almost_full_diff=self.fifo_almost_full_diff,
-                            almost_empty_diff=const(2, clog2(self.fifo_depth)))
+                               self.data_g2f_fifo,
+                               clk=self.clk,
+                               clk_en=const(1, 1),
+                               reset=self.reset,
+                               flush=self.ld_dma_start_pulse_r,
+                               data_in=self.data_dma2fifo[i][packet_16],
+                               data_out=self.data_fifo2cgra[i][packet_16],
+                               push=self.fifo_push[i][packet_16],
+                               pop=self.fifo_pop[i][packet_16],
+                               full=self.fifo_full[i][packet_16],
+                               empty=self.fifo_empty[i][packet_16],
+                               almost_full=self.fifo_almost_full[i][packet_16],
+                               almost_full_diff=self.fifo_almost_full_diff,
+                               almost_empty_diff=const(2, clog2(self.fifo_depth)))
 
                 # TODO: Using almost full here may cause issues
                 # TODO: Maybe revisit this and make sure it isn't causing any unnecessary bubbles
@@ -303,8 +303,8 @@ class GlbLoadDma_E64_MB(Generator):
 
                 if (packet_16 == 0) & (i == 0):
                     self.wire(self.fifo_pop[i][packet_16], kts.ternary(self.multi_bank_mode_on, self.packet_128_pop,
-                                                                kts.ternary(self.exchange_64_mode_on, self.packet_64_pop[i],
-                                                                            self.fifo_pop_cond[i][packet_16])))
+                                                                       kts.ternary(self.exchange_64_mode_on, self.packet_64_pop[i],
+                                                                                   self.fifo_pop_cond[i][packet_16])))
                 else:
                     self.wire(self.fifo_pop[i][packet_16], kts.ternary(self.multi_bank_mode_on, self.packet_128_pop, self.packet_64_pop[i]))
 
@@ -392,8 +392,8 @@ class GlbLoadDma_E64_MB(Generator):
         else:
             # synchronization logic here
             self.iter_step_valid = kts.ternary(self.multi_bank_mode_on, self.strm_run & self.packet_128_push_ready,
-                                        kts.ternary(self.exchange_64_mode_on, self.strm_run & self.packet_64_push_ready[0],
-                                                    self.strm_run & self.fifo_push_ready[0][0]))
+                                               kts.ternary(self.exchange_64_mode_on, self.strm_run & self.packet_64_push_ready[0],
+                                                           self.strm_run & self.fifo_push_ready[0][0]))
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def queue_sel_ff(self):
@@ -615,7 +615,7 @@ class GlbLoadDma_E64_MB(Generator):
     @always_comb
     def rdrs_packet_logic(self):
         if self._params.include_glb_ring_switch:
-            #Not including multi-bank for ring path
+            # Not including multi-bank for ring path
             self.rdrs_packet = 0
             if self.cfg_tile_connected_next | self.cfg_tile_connected_prev:
                 self.rdrs_packet[0] = self.rdrs_packet_ring2dma
@@ -634,11 +634,11 @@ class GlbLoadDma_E64_MB(Generator):
             #     if self.rdrs_packet[i]['rd_data_valid']:
             #         self.bank_rdrs_data_cache_r[i] = self.rdrs_packet[i]['rd_data']
 
-                if self.rdrs_packet[0]['rd_data_valid']:
-                    self.bank_rdrs_data_cache_r[0] = self.rdrs_packet[0]['rd_data']
+            if self.rdrs_packet[0]['rd_data_valid']:
+                self.bank_rdrs_data_cache_r[0] = self.rdrs_packet[0]['rd_data']
 
-                if self.rdrs_packet[1]['rd_data_valid']:
-                    self.bank_rdrs_data_cache_r[1] = self.rdrs_packet[1]['rd_data']
+            if self.rdrs_packet[1]['rd_data_valid']:
+                self.bank_rdrs_data_cache_r[1] = self.rdrs_packet[1]['rd_data']
 
     @always_comb
     def strm_data_logic(self):

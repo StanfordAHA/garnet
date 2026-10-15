@@ -4,6 +4,7 @@ import sys
 import os
 import subprocess
 
+
 def concat_files(input_files, output_file_path, unroll=1, strategy="single"):
     contents = []
     assert len(input_files) > 0
@@ -27,6 +28,7 @@ def concat_files(input_files, output_file_path, unroll=1, strategy="single"):
     except Exception as e:
         print(f"Error: {str(e)}")
 
+
 def add_extents(json_tiles, output_file_path):
 
     tiles = []
@@ -46,8 +48,8 @@ def add_extents(json_tiles, output_file_path):
         for j in range(1, len(tiles)):
             tile_base[0] += tiles[j]['IOs']["inputs"][i]["shape"][0]
             # print(tiles[j]['IOs']["inputs"][i]["shape"][0])
-        
-        # workaround for the different shape of the input and output, 
+
+        # workaround for the different shape of the input and output,
         tile_base[0] += len(tiles)
 
         tiles[0]['IOs']["inputs"][i]["shape"] = tile_base
@@ -63,21 +65,22 @@ def add_extents(json_tiles, output_file_path):
             tile_base[0] += tiles[j]['IOs']["outputs"][i]["shape"][0]
         tiles[0]['IOs']["outputs"][i]["shape"] = tile_base
         tiles[0]['IOs']["outputs"][i]["extents"] = tile_base
-    
+
     json_string = json.dumps(tiles[0])
     new_f = open(output_file_path, "w+")
     new_f.write(json_string)
     new_f.close()
 
-def create_concate(app_name = "matmul_ijk", kernel_name = "football", tiles = [0, 2, 3], concat_name = "concat", unroll=1):
+
+def create_concate(app_name="matmul_ijk", kernel_name="football", tiles=[0, 2, 3], concat_name="concat", unroll=1):
 
     base_dir_list = []
     for tile in tiles:
         base_dir_list.append(f"SPARSE_TESTS/{app_name}_{tile}/GLB_DIR/{app_name}_combined_seed_{tile}/bin/")
-    
+
     output_tile_name = f"{app_name}_{kernel_name}-tile_{concat_name}"
     output_tile_bin_name = f"{app_name}_combined_seed_{kernel_name}-tile_{concat_name}"
-    
+
     output_base_dir = f"SPARSE_TESTS/{output_tile_name}/GLB_DIR/{output_tile_bin_name}/bin/"
 
     t_base = "/aha/garnet/"
@@ -99,7 +102,7 @@ def create_concate(app_name = "matmul_ijk", kernel_name = "football", tiles = [0
     for i in range(input_t_num):
         input_files.append(meta_f['IOs']["inputs"][i]["datafile"])
         # print(meta_f['IOs']["inputs"][i]["datafile"])
-    
+
     # concat input files
     for input_file in input_files:
         i_f = []
@@ -121,14 +124,15 @@ def create_concate(app_name = "matmul_ijk", kernel_name = "football", tiles = [0
     gold_files = []
     for base_dir in base_dir_list:
         gold_files.append(t_base + base_dir + "output_gold_0.npy")
-    
+
     output_base_dir = f"SPARSE_TESTS/{output_tile_name}/GLB_DIR/{output_tile_bin_name}/"
     for i in range(len(gold_files)):
-        subprocess.run(["cp", gold_files[i],t_base + output_base_dir + f"output_gold_{i}.npy"])
+        subprocess.run(["cp", gold_files[i], t_base + output_base_dir + f"output_gold_{i}.npy"])
+
 
 if __name__ == "__main__":
     # parse input
-    if len(sys.argv) < 3: # run with internal modification
+    if len(sys.argv) < 3:  # run with internal modification
         create_concate()
     else:
         assert len(sys.argv) >= 3
@@ -145,4 +149,3 @@ if __name__ == "__main__":
             unroll = int(sys.argv[4])
             tile_list = sys.argv[5:]
             create_concate(app_name, kernel_name, tile_list, concat_name=concat_name, unroll=unroll)
-

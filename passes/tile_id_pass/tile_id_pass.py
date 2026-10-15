@@ -11,10 +11,11 @@ from hwtypes import BitVector
 # to the proper constant values without uniquifying the tiles and while
 # maintaining our abutted array of tile hard macros
 
+
 def tile_id_physical(interconnect: Interconnect):
     tile_id_width = interconnect.tile_id_width
     tie_hi_width = (tile_id_width // 2) + 1
-    if (tile_id_width % 2) == 0 :
+    if (tile_id_width % 2) == 0:
         tie_lo_width = tile_id_width // 2
     else:
         tie_lo_width = (tile_id_width // 2) + 1

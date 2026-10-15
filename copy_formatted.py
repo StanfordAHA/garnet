@@ -4,10 +4,10 @@ import os
 import json
 import sys
 
-## copy_formatted, take 
+## copy_formatted, take
 
 
-# test = "bcsstm26" 
+# test = "bcsstm26"
 # test = "qiulp"
 # test = "bcsstm26"
 # test = "adder_dcop_30"
@@ -23,7 +23,7 @@ test = sys.argv[2]
 # app_name = "mat_vecmul_ij"
 # app_name = "mat_elemadd3"
 # app_name = "mat_elemmul"
-const_val = 2 # only for mat_mattransmul
+const_val = 2  # only for mat_mattransmul
 mode_ns = False
 
 
@@ -75,15 +75,16 @@ def find_tensor(tensor_list, tile_id):
     for temp in tensor_list:
         temp_loc = temp.split("_")
         index = temp_loc.index("tile")
-        temp_loc = temp_loc[index+1:]
+        temp_loc = temp_loc[index + 1:]
         # breakpoint()
         if temp_loc == tile_id:
             return temp
     return None
 
-#os.chdir("SPARSE_TESTS")
+# os.chdir("SPARSE_TESTS")
 
-if "matmul_ijk" in app_name and mode_ns == False:
+
+if "matmul_ijk" in app_name and mode_ns == False:  # noqa: E712 (== True/False kept: may not be a bool)
     for b in b_tensors:
         for c in c_tensors:
             tile_str = str(app_name) + "-" + str(test) + "_tile" + str(tile)
@@ -93,12 +94,12 @@ if "matmul_ijk" in app_name and mode_ns == False:
             c_loc = c.split("_")
 
             index = b_loc.index("tile")
-            b_loc = b_loc[index+1:]
+            b_loc = b_loc[index + 1:]
 
             index = c_loc.index("tile")
-            c_loc = c_loc[index+1:]
+            c_loc = c_loc[index + 1:]
 
-            if(b_loc[1] == c_loc[0] and b_loc[3] == c_loc[2]):
+            if (b_loc[1] == c_loc[0] and b_loc[3] == c_loc[2]):
                 print(b, c)
 
                 if b_loc[2] not in tiles_accumulation:
@@ -108,7 +109,7 @@ if "matmul_ijk" in app_name and mode_ns == False:
 
                 if not os.path.exists(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}"):
                     os.mkdir(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}")
-                
+
                 shutil.copy(f"{b}/B0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_crd")
                 shutil.copy(f"{b}/B0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_seg")
 
@@ -131,7 +132,7 @@ if "matmul_ijk" in app_name and mode_ns == False:
 
                 tile = tile + 1
 
-if app_name == "matmul_ikj" and mode_ns == False:
+if app_name == "matmul_ikj" and mode_ns == False:  # noqa: E712 (== True/False kept: may not be a bool)
     for b in b_tensors:
         for c in c_tensors:
             tile_str = str(app_name) + "-" + str(test) + "_tile" + str(tile)
@@ -141,12 +142,12 @@ if app_name == "matmul_ikj" and mode_ns == False:
             c_loc = c.split("_")
 
             index = b_loc.index("tile")
-            b_loc = b_loc[index+1:]
+            b_loc = b_loc[index + 1:]
 
             index = c_loc.index("tile")
-            c_loc = c_loc[index+1:]
+            c_loc = c_loc[index + 1:]
 
-            if(b_loc[1] == c_loc[0] and b_loc[3] == c_loc[2]):
+            if (b_loc[1] == c_loc[0] and b_loc[3] == c_loc[2]):
                 print(b, c)
 
                 if b_loc[2] not in tiles_accumulation:
@@ -156,7 +157,7 @@ if app_name == "matmul_ikj" and mode_ns == False:
 
                 if not os.path.exists(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}"):
                     os.mkdir(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}")
-                
+
                 shutil.copy(f"{b}/B0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_crd")
                 shutil.copy(f"{b}/B0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_seg")
 
@@ -180,7 +181,7 @@ if app_name == "matmul_ikj" and mode_ns == False:
                 tile = tile + 1
 
 
-if "matmul_ijk" in app_name and mode_ns == True:
+if "matmul_ijk" in app_name and mode_ns == True:  # noqa: E712 (== True/False kept: may not be a bool)
     for b in b_ns_tensors:
         for c in c_ns_tensors:
             # mode 2 == mode 0, mode 3 == mode 1
@@ -191,18 +192,18 @@ if "matmul_ijk" in app_name and mode_ns == True:
             tile_str = str(app_name) + "-" + str(test) + "_tile" + str(tile)
             b_loc = b.split("_")
             c_loc = c.split("_")
-            
+
             b_loc = b_loc[-2:]
             c_loc = c_loc[-2:]
 
             # breakpoint()
 
-            if(b_loc[1] == c_loc[1]):
+            if (b_loc[1] == c_loc[1]):
                 tiles_accumulation[tile] = [b_loc, c_loc]
                 if not os.path.exists(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}"):
                     os.mkdir(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}")
 
-                #only crds, copy mode 0
+                # only crds, copy mode 0
                 shutil.copy(f"{b}", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_crd")
                 shutil.copy(f"{c}", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_crd")
 
@@ -231,7 +232,7 @@ if "matmul_ijk" in app_name and mode_ns == True:
                 shutil.copy(f"{b_seg_file}", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_seg")
                 shutil.copy(f"{c_seg_file}", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_seg")
 
-                #vals
+                # vals
                 b_vals_id = f"vals_{b_loc[0]}_{b_loc[1]}"
                 c_vals_id = f"vals_{c_loc[0]}_{c_loc[1]}"
 
@@ -241,7 +242,7 @@ if "matmul_ijk" in app_name and mode_ns == True:
                 shutil.copy(f"{b_vals_file}", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_vals")
                 shutil.copy(f"{c_vals_file}", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals")
 
-                #shape
+                # shape
                 with open(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_shape", "w") as f:
                     f.write("120\n30\n")
                 with open(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_shape", "w") as f:
@@ -249,7 +250,7 @@ if "matmul_ijk" in app_name and mode_ns == True:
 
                 tile = tile + 1
 
-if app_name == "matmul_ikj" and mode_ns == True:
+if app_name == "matmul_ikj" and mode_ns == True:  # noqa: E712 (== True/False kept: may not be a bool)
     for b in b_ns_tensors:
         for c in c_ns_tensors:
             # mode 2 == mode 0, mode 3 == mode 1
@@ -260,18 +261,18 @@ if app_name == "matmul_ikj" and mode_ns == True:
             tile_str = str(app_name) + "-" + str(test) + "_tile" + str(tile)
             b_loc = b.split("_")
             c_loc = c.split("_")
-            
+
             b_loc = b_loc[-2:]
             c_loc = c_loc[-2:]
 
             # breakpoint()
 
-            if(b_loc[1] == c_loc[1]):
+            if (b_loc[1] == c_loc[1]):
                 tiles_accumulation[tile] = [b_loc, c_loc]
                 if not os.path.exists(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}"):
                     os.mkdir(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}")
 
-                #only crds, copy mode 0
+                # only crds, copy mode 0
                 shutil.copy(f"{b}", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_crd")
                 shutil.copy(f"{c}", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_crd")
 
@@ -300,7 +301,7 @@ if app_name == "matmul_ikj" and mode_ns == True:
                 shutil.copy(f"{b_seg_file}", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_seg")
                 shutil.copy(f"{c_seg_file}", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_seg")
 
-                #vals
+                # vals
                 b_vals_id = f"vals_{b_loc[0]}_{b_loc[1]}"
                 c_vals_id = f"vals_{c_loc[0]}_{c_loc[1]}"
 
@@ -310,7 +311,7 @@ if app_name == "matmul_ikj" and mode_ns == True:
                 shutil.copy(f"{b_vals_file}", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_vals")
                 shutil.copy(f"{c_vals_file}", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals")
 
-                #shape
+                # shape
                 with open(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_shape", "w") as f:
                     f.write("120\n30\n")
                 with open(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_shape", "w") as f:
@@ -330,12 +331,12 @@ elif app_name == "mat_elemadd" or app_name == "mat_elemmul":
             c_loc = c.split("_")
 
             index = b_loc.index("tile")
-            b_loc = b_loc[index+1:]
+            b_loc = b_loc[index + 1:]
 
             index = c_loc.index("tile")
-            c_loc = c_loc[index+1:]
+            c_loc = c_loc[index + 1:]
 
-            if(b_loc == c_loc):
+            if (b_loc == c_loc):
                 print(b, c)
                 if not os.path.exists(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}"):
                     os.mkdir(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}")
@@ -381,18 +382,18 @@ elif app_name == "mat_mattransmul":
                 c_loc = c_loc.split("_")
                 d_loc = d_loc.split("_")
 
-                if(b_loc[1] == c_loc[0] and b_loc[3] == c_loc[1] and b_loc[0] == d_loc[0] and b_loc[2] == d_loc[1]):
-                # if(b_loc[1] == d_loc[0] and b_loc[3] == d_loc[1] and b_loc[0] == c_loc[0] and b_loc[2] == c_loc[1]):
+                if (b_loc[1] == c_loc[0] and b_loc[3] == c_loc[1] and b_loc[0] == d_loc[0] and b_loc[2] == d_loc[1]):
+                    # if(b_loc[1] == d_loc[0] and b_loc[3] == d_loc[1] and b_loc[0] == c_loc[0] and b_loc[2] == c_loc[1]):
                     d_loc_paired.append(d_loc)
 
                     print(f"\n ----- TILE {tile} ----- \n")
-                    print("B is: ", b) #in build_tb, B == C, c == d, d == f. (#FIXME: change build_tb)
+                    print("B is: ", b)  # in build_tb, B == C, c == d, d == f. (#FIXME: change build_tb)
                     print("C is: ", c)
                     print("d is: ", d)
                     print(f"\n ----- TILE {tile} ----- \n")
                     if not os.path.exists(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}"):
                         os.mkdir(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}")
-                        
+
                     shutil.copy(f"{b}/B0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_crd")
                     shutil.copy(f"{b}/B0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_seg")
 
@@ -423,23 +424,23 @@ elif app_name == "mat_mattransmul":
 
                     with open(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_b_mode_vals", 'w') as file:
                         file.write(str(const_val))
-                    
+
                     with open(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_e_mode_vals", 'w') as file:
                         file.write(str(const_val))
-                    
+
                     tile = tile + 1
                 elif d_loc not in d_loc_paired:
                     # case: B and c tiles are zero but d is nonzero. We have all d tiles. Just take a B and c tile, copy it and make it zero.'
                     d_loc_paired.append(d_loc)
                     print(f"\n ----- TILE D-unpaired {tile} ----- \n")
-                    print("B (zero tile) is: ", b) #in build_tb, B == C, c == d, d == f. (#FIXME: change build_tb)
+                    print("B (zero tile) is: ", b)  # in build_tb, B == C, c == d, d == f. (#FIXME: change build_tb)
                     print("C (zero tile) is: ", c)
                     print("d is: ", d)
                     print(f"\n ----- TILE D-unpaired {tile} ----- \n")
 
                     if not os.path.exists(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}"):
                         os.mkdir(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}")
-                        
+
                     shutil.copy(f"{b}/B0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_crd")
                     shutil.copy(f"{b}/B0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_seg")
 
@@ -485,7 +486,7 @@ elif app_name == "mat_mattransmul":
 
                     with open(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_b_mode_vals", 'w') as file:
                         file.write(str(const_val))
-                    
+
                     with open(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_e_mode_vals", 'w') as file:
                         file.write(str(const_val))
 
@@ -505,17 +506,17 @@ elif app_name == "mat_vecmul_ij":
             c_loc = c.split("_")
 
             index = b_loc.index("tile")
-            b_loc = b_loc[index+1:]
+            b_loc = b_loc[index + 1:]
 
             index = c_loc.index("tile")
-            c_loc = c_loc[index+1:]
+            c_loc = c_loc[index + 1:]
 
             # if(b_loc[1] == c_loc[0] and b_loc[3] == c_loc[1] and b_loc[0] == d_loc[0] and b_loc[2] == d_loc[1]):
-            if(b_loc[1] == c_loc[0] and b_loc[3] == c_loc[1]):
-                print(b,c)
+            if (b_loc[1] == c_loc[0] and b_loc[3] == c_loc[1]):
+                print(b, c)
                 if not os.path.exists(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}"):
                     os.mkdir(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}")
-                    
+
                 shutil.copy(f"{b}/B0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_crd")
                 shutil.copy(f"{b}/B0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_seg")
 
@@ -550,13 +551,13 @@ elif app_name == "mat_residual":
                 d_loc = d_loc.split("_")
 
                 # if(b_loc[1] == c_loc[0] and b_loc[3] == c_loc[1] and b_loc[0] == d_loc[0] and b_loc[2] == d_loc[1]):
-                if(c_loc[0] == b_loc[0] and c_loc[2] == b_loc[1] and c_loc[1] == d_loc[0] and c_loc[3] == d_loc[1]):
+                if (c_loc[0] == b_loc[0] and c_loc[2] == b_loc[1] and c_loc[1] == d_loc[0] and c_loc[3] == d_loc[1]):
                     print(b, c, d)
                     b_loc_paired.append(b_loc)
-                    
+
                     if not os.path.exists(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}"):
                         os.mkdir(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}")
-                        
+
                     shutil.copy(f"{c}/C0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_crd")
                     shutil.copy(f"{c}/C0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_seg")
 
@@ -588,10 +589,10 @@ elif app_name == "mat_residual":
                     tile = tile + 1
                 elif b_loc not in b_loc_paired:
                     b_loc_paired.append(b_loc)
-                    
+
                     if not os.path.exists(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}"):
                         os.mkdir(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}")
-                        
+
                     shutil.copy(f"{c}/C0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_crd")
                     shutil.copy(f"{c}/C0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_seg")
 
@@ -644,10 +645,10 @@ elif app_name == "mat_mask_tri":
             c_loc = c.split("_")
 
             index = b_loc.index("tile")
-            b_loc = b_loc[index+1:]
+            b_loc = b_loc[index + 1:]
 
             index = c_loc.index("tile")
-            c_loc = c_loc[index+1:]
+            c_loc = c_loc[index + 1:]
 
             if not (b_loc[0] == c_loc[0] and b_loc[2] == c_loc[2]):
                 continue
@@ -656,9 +657,9 @@ elif app_name == "mat_mask_tri":
                 tile_str = str(app_name) + "-" + str(test) + "_tile" + str(tile)
                 d_loc = d.split("_")
                 index = d_loc.index("tile")
-                d_loc = d_loc[index+1:]
+                d_loc = d_loc[index + 1:]
 
-                if(c_loc[1] == d_loc[0] and c_loc[3] == d_loc[2] and b_loc[1] == d_loc[1] and b_loc[3] == d_loc[3] and b_loc[0] == c_loc[0] and b_loc[2] == c_loc[2]):
+                if (c_loc[1] == d_loc[0] and c_loc[3] == d_loc[2] and b_loc[1] == d_loc[1] and b_loc[3] == d_loc[3] and b_loc[0] == c_loc[0] and b_loc[2] == c_loc[2]):
                     print(b, c, d)
                     if not os.path.exists(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}"):
                         os.mkdir(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}")
@@ -710,10 +711,10 @@ elif app_name == "mat_vecmul_iter":
             c_loc = c.split("_")
 
             index = b_loc.index("tile")
-            b_loc = b_loc[index+1:]
+            b_loc = b_loc[index + 1:]
 
             index = c_loc.index("tile")
-            c_loc = c_loc[index+1:]
+            c_loc = c_loc[index + 1:]
 
             # check j coord
             if not (b_loc[1] == c_loc[0] and b_loc[3] == c_loc[2]):
@@ -722,7 +723,7 @@ elif app_name == "mat_vecmul_iter":
             for d in d_tensors:
                 d_loc = d.split("_")
                 index = d_loc.index("tile")
-                d_loc = d_loc[index+1:]
+                d_loc = d_loc[index + 1:]
 
                 # check k coord
                 if not (c_loc[1] == d_loc[0] and c_loc[3] == d_loc[2]):
@@ -731,7 +732,7 @@ elif app_name == "mat_vecmul_iter":
                 for e in e_tensors:
                     e_loc = e.split("_")
                     index = e_loc.index("tile")
-                    e_loc = e_loc[index+1:]
+                    e_loc = e_loc[index + 1:]
 
                     # check l coord
                     if not (d_loc[1] == e_loc[0] and d_loc[3] == e_loc[2]):
@@ -741,9 +742,9 @@ elif app_name == "mat_vecmul_iter":
                         tile_str = str(app_name) + "-" + str(test) + "_tile" + str(tile)
                         f_loc = f.split("_")
                         index = f_loc.index("tile")
-                        f_loc = f_loc[index+1:]
+                        f_loc = f_loc[index + 1:]
 
-                        # check m coord 
+                        # check m coord
                         if (d_loc[1] == e_loc[0] and d_loc[3] == e_loc[2] and c_loc[1] == d_loc[0] and c_loc[3] == d_loc[2] and b_loc[1] == c_loc[0] and b_loc[3] == c_loc[2] and e_loc[1] == f_loc[0] and e_loc[3] == f_loc[1]):
                             print(b, c, d, e, f)
                             if not os.path.exists(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}"):
@@ -794,7 +795,7 @@ elif app_name == "mat_vecmul_iter":
 
                             shutil.copy(f"{f}/f_vals.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_f_mode_vals")
                             shutil.copy(f"{f}/f_shape.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_f_mode_shape")
-                            
+
                             tile = tile + 1
 elif app_name == "mat_sddmm":
     for b in b_tensors:
@@ -812,12 +813,12 @@ elif app_name == "mat_sddmm":
 
                 # first j, then i (k is a free coordinate)
                 # if(b_loc[0] == d_loc[1] and b_loc[2] == d_loc[3] and b_loc[1] == c_loc[0] and b_loc[3] == c_loc[2]):
-                #matmul rule for C and D, elemmul rule for B and CD
-                if(c_loc[1] == d_loc[1] and c_loc[3] == d_loc[3] and b_loc[0] == c_loc[0] and b_loc[2] == c_loc[2] and b_loc[1] == d_loc[0] and b_loc[3] == d_loc[2]):
+                # matmul rule for C and D, elemmul rule for B and CD
+                if (c_loc[1] == d_loc[1] and c_loc[3] == d_loc[3] and b_loc[0] == c_loc[0] and b_loc[2] == c_loc[2] and b_loc[1] == d_loc[0] and b_loc[3] == d_loc[2]):
                     print(b, c, d)
                     if not os.path.exists(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}"):
                         os.mkdir(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}")
-                    
+
                     shutil.copy(f"{b}/B0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_crd")
                     shutil.copy(f"{b}/B0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_seg")
 
@@ -857,10 +858,10 @@ elif app_name == "mat_elemadd3":
             c_loc = c.split("_")
 
             index = b_loc.index("tile")
-            b_loc = b_loc[index+1:]
+            b_loc = b_loc[index + 1:]
 
             index = c_loc.index("tile")
-            c_loc = c_loc[index+1:]
+            c_loc = c_loc[index + 1:]
 
             b_loc_seen.add(tuple(b_loc))
             c_loc_seen.add(tuple(c_loc))
@@ -872,13 +873,12 @@ elif app_name == "mat_elemadd3":
                 tile_str = str(app_name) + "-" + str(test) + "_tile" + str(tile)
                 d_loc = d.split("_")
 
-
                 index = d_loc.index("tile")
-                d_loc = d_loc[index+1:]
+                d_loc = d_loc[index + 1:]
 
                 d_loc_seen.add(tuple(d_loc))
-            
-                if(b_loc == c_loc and b_loc == d_loc):
+
+                if (b_loc == c_loc and b_loc == d_loc):
                     print(b, c, d)
                     if not os.path.exists(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}"):
                         os.mkdir(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}")
@@ -938,20 +938,20 @@ if app_name == "mat_elemadd3":
 
     for tile_id in shared_BD_not_C:
         b = find_tensor(b_tensors, list(tile_id))
-        if b == None:
+        if b is None:
             raise Exception
 
         d = find_tensor(d_tensors, list(tile_id))
-        if d == None:
+        if d is None:
             raise Exception
-        
+
         # go to tile file in MAT_TMP_DIR. create empty D
-        
+
         tile_str = str(app_name) + "-" + str(test) + "_tile" + str(tile)
 
         if not os.path.exists(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}"):
             os.mkdir(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}")
-        
+
         c = c_tensors[0]
         shutil.copy(f"{b}/B0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_crd")
         shutil.copy(f"{b}/B0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_seg")
@@ -983,33 +983,33 @@ if app_name == "mat_elemadd3":
 
         shutil.copy(f"{d}/D_shape.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_D_mode_shape")
 
-        #write ones to vals
+        # write ones to vals
         lines = []
         with open(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals", 'r') as file:
             lines = file.readlines()
         with open(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals", 'w') as file:
-            file.writelines(['0\n']*len(lines))
-        
-        tile = tile+1
+            file.writelines(['0\n'] * len(lines))
+
+        tile = tile + 1
 
     for tile_id in shared_CD_not_B:
         c = find_tensor(c_tensors, list(tile_id))
-        if c == None:
+        if c is None:
             raise Exception
 
         d = find_tensor(d_tensors, list(tile_id))
-        if d == None:
+        if d is None:
             raise Exception
-        
+
         # go to tile file in MAT_TMP_DIR. create empty B
-        
+
         tile_str = str(app_name) + "-" + str(test) + "_tile" + str(tile)
 
         if not os.path.exists(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}"):
             os.mkdir(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}")
 
         b = b_tensors[0]
-        
+
         shutil.copy(f"{b}/B0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_crd")
         shutil.copy(f"{b}/B0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_seg")
 
@@ -1040,34 +1040,33 @@ if app_name == "mat_elemadd3":
 
         shutil.copy(f"{d}/D_shape.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_D_mode_shape")
 
-
-        #write ones to vals
+        # write ones to vals
         lines = []
         with open(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_vals", 'r') as file:
             lines = file.readlines()
         with open(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_vals", 'w') as file:
-            file.writelines(['0\n']*len(lines))
-        
-        tile = tile+1
+            file.writelines(['0\n'] * len(lines))
+
+        tile = tile + 1
 
     for tile_id in shared_BD_not_C:
         b = find_tensor(b_tensors, list(tile_id))
-        if b == None:
+        if b is None:
             raise Exception
 
         d = find_tensor(d_tensors, list(tile_id))
-        if d == None:
+        if d is None:
             raise Exception
-        
+
         # go to tile file in MAT_TMP_DIR. create empty B
-        
+
         tile_str = str(app_name) + "-" + str(test) + "_tile" + str(tile)
 
         if not os.path.exists(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}"):
             os.mkdir(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}")
 
         c = c_tensors[0]
-        
+
         shutil.copy(f"{b}/B0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_crd")
         shutil.copy(f"{b}/B0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_seg")
 
@@ -1098,15 +1097,14 @@ if app_name == "mat_elemadd3":
 
         shutil.copy(f"{d}/D_shape.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_D_mode_shape")
 
-
-        #write ones to vals
+        # write ones to vals
         lines = []
         with open(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals", 'r') as file:
             lines = file.readlines()
         with open(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals", 'w') as file:
-            file.writelines(['0\n']*len(lines))
-        
-        tile = tile+1
+            file.writelines(['0\n'] * len(lines))
+
+        tile = tile + 1
 
 
 print("there are ", tile, " tiles")

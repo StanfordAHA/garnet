@@ -100,6 +100,7 @@ def parse_glb_bank_config(app_dir, id_to_name, inputs, mu_inputs, mu_io_tile_row
 
     return placement
 
+
 def place_io_blk(id_to_name, app_dir, io_sides, orig_cgra_width, orig_cgra_height, mu_oc_0, num_fabric_cols_removed):
     """Hacky function to place the IO blocks"""
 
@@ -182,9 +183,9 @@ def place_io_blk(id_to_name, app_dir, io_sides, orig_cgra_width, orig_cgra_heigh
     for idx, input_blk in enumerate(inputs):
         if exchange_64_mode:
             if multi_bank_mode:
-                x_coord = int((group_index * 2 ) / 8) + io_tile_shift_right_index + multi_bank_offset
+                x_coord = int((group_index * 2) / 8) + io_tile_shift_right_index + multi_bank_offset
             else:
-                x_coord = int((group_index * 2 ) / 8) * 2 + io_tile_shift_right_index
+                x_coord = int((group_index * 2) / 8) * 2 + io_tile_shift_right_index
             placement[input_blk] = (x_coord, 0)
         else:
             placement[input_blk] = (group_index * 2 + io_tile_shift_right_index, 0)
@@ -193,14 +194,14 @@ def place_io_blk(id_to_name, app_dir, io_sides, orig_cgra_width, orig_cgra_heigh
         placement[en_blk] = (group_index * 2 + io_tile_shift_right_index, 0)
         group_index += 1
 
-    last_input_x_pos = multi_bank_offset-1 if len(inputs) == 0 else x_coord
+    last_input_x_pos = multi_bank_offset - 1 if len(inputs) == 0 else x_coord
     group_index = 0
     for idx, output_blk in enumerate(outputs):
         if exchange_64_mode:
             if multi_bank_mode:
-                x_coord = int((group_index * 2 ) / 8) + last_input_x_pos + 1 + io_tile_shift_right_index
+                x_coord = int((group_index * 2) / 8) + last_input_x_pos + 1 + io_tile_shift_right_index
             else:
-                x_coord = int((group_index * 2 ) / 8) * 2 + 1 + io_tile_shift_right_index
+                x_coord = int((group_index * 2) / 8) * 2 + 1 + io_tile_shift_right_index
             placement[output_blk] = (x_coord, 0)
         else:
             placement[output_blk] = (group_index * 2 + 1 + io_tile_shift_right_index, 0)
@@ -211,17 +212,16 @@ def place_io_blk(id_to_name, app_dir, io_sides, orig_cgra_width, orig_cgra_heigh
 
     # place reset on the first one
     if reset is not None:
-        #placement[reset] = (0, 0)
+        # placement[reset] = (0, 0)
         placement[reset] = (1, 0)
 
-
     # Place MU I/O tiles if needed
-    num_mu_io_tiles = int(mu_oc_0/2)
-    mu_io_startX = int(((orig_cgra_width - num_fabric_cols_removed) - num_mu_io_tiles)/2) + num_fabric_cols_removed
+    num_mu_io_tiles = int(mu_oc_0 / 2)
+    mu_io_startX = int(((orig_cgra_width - num_fabric_cols_removed) - num_mu_io_tiles) / 2) + num_fabric_cols_removed
     mu_io_tile_row = orig_cgra_height + 1
 
     for idx, input_blk in enumerate(inputs_from_MU):
-        placement[input_blk] = (mu_io_startX + idx//2, mu_io_tile_row)
+        placement[input_blk] = (mu_io_startX + idx // 2, mu_io_tile_row)
 
     # manual placement of PE/MEM tiles if needed
     resnet_manual_placer = "MANUAL_PLACER" in os.environ and os.environ.get("MANUAL_PLACER") == "1"

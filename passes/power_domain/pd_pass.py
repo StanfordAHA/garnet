@@ -29,6 +29,7 @@ class PowerDomainConfigReg(Configurable):
         assert turn_off in {0, 1, True, False}
         return [0, int(turn_off)]
 
+
 def add_power_domain(interconnect: Interconnect):
 
     __AND_GATE = magma.DefineFromVerilog("""

@@ -16,7 +16,7 @@ def parse_args():
     parser.add_argument("--width", required=True, dest="width", type=str, help="CGRA width")
     parser.add_argument("--height", required=True, dest="height", type=str, help="CGRA height")
     parser.add_argument("--crit_net", required=False, dest="crit_net", nargs='*', type=str, help="Critical Net")
-   
+
     args = parser.parse_args()
     # check filenames
     dirname = os.path.join(args.application, "bin")
@@ -30,11 +30,12 @@ def parse_args():
     # for now we just assume RMUX exists
     return placement, route, folded, int(args.height) + 1, int(args.width) + 1, args.crit_net
 
+
 def load_folded_regs(folded_file):
     f = open(folded_file, "r")
     lines = f.readlines()
     pe_reg = set()
- 
+
     for line in lines:
         entry = re.findall(r'\b\S+\b', line.split(":")[1])
         blk_id = entry[0]
@@ -44,14 +45,14 @@ def load_folded_regs(folded_file):
 
     return pe_reg
 
-def arrowedLine(draw, ptA, ptB, size = 3, color=(0,255,0)):
+
+def arrowedLine(draw, ptA, ptB, size=3, color=(0, 255, 0)):
     """Draw line from ptA to ptB with arrowhead at ptB"""
     # Get drawing context
-    width=1
+    width = 1
 
     # Draw the line without arrows
-    draw.line((ptA,ptB), width=width, fill=color)
-    
+    draw.line((ptA, ptB), width=width, fill=color)
 
     # Now work out the arrowhead
     # = it will be a triangle with one vertex at ptB
@@ -60,27 +61,27 @@ def arrowedLine(draw, ptA, ptB, size = 3, color=(0,255,0)):
     x0, y0 = ptA
     x1, y1 = ptB
     # Now we can work out the x,y coordinates of the bottom of the arrowhead triangle
-    xb = 0*(x1-x0)+x0
-    yb = 0*(y1-y0)+y0
+    xb = 0 * (x1 - x0) + x0
+    yb = 0 * (y1 - y0) + y0
 
     # Work out the other two vertices of the triangle
     # Check if line is vertical
-    if x0==x1:
-       vtx0 = (xb-size, yb)
-       vtx1 = (xb+size, yb)
+    if x0 == x1:
+        vtx0 = (xb - size, yb)
+        vtx1 = (xb + size, yb)
     # Check if line is horizontal
-    elif y0==y1:
-       vtx0 = (xb, yb+size)
-       vtx1 = (xb, yb-size)
+    elif y0 == y1:
+        vtx0 = (xb, yb + size)
+        vtx1 = (xb, yb - size)
     else:
-       alpha = math.atan2(y1-y0,x1-x0)-90*math.pi/180
-       a = 8*math.cos(alpha)
-       b = 8*math.sin(alpha)
-       vtx0 = (xb+a, yb+b)
-       vtx1 = (xb-a, yb-b)
+        alpha = math.atan2(y1 - y0, x1 - x0) - 90 * math.pi / 180
+        a = 8 * math.cos(alpha)
+        b = 8 * math.sin(alpha)
+        vtx0 = (xb + a, yb + b)
+        vtx1 = (xb - a, yb - b)
 
-    #draw.point((xb,yb), fill=(255,0,0))    # DEBUG: draw point of base in red - comment out draw.polygon() below if using this line
-    #im.save('DEBUG-base.png')              # DEBUG: save
+    # draw.point((xb,yb), fill=(255,0,0))    # DEBUG: draw point of base in red - comment out draw.polygon() below if using this line
+    # im.save('DEBUG-base.png')              # DEBUG: save
 
     # Now draw the arrowhead triangle
     draw.polygon([vtx0, vtx1, ptB], fill=color)
@@ -131,10 +132,10 @@ class Graph:
 
 class Visualizer():
     def __init__(self, img_width, img_height, width, height, scale, num_tracks, raw_routing_result, raw_placement_result, port_map, color_index, color_palette, pe_reg):
-        self.img_width = img_width 
-        self.img_height = img_height 
-        self.width = width 
-        self.height = height 
+        self.img_width = img_width
+        self.img_height = img_height
+        self.width = width
+        self.height = height
         self.scale = scale
         self.num_tracks = num_tracks
         self.raw_routing_result = raw_routing_result
@@ -166,7 +167,6 @@ class Visualizer():
                 elif segments[-1][0] != "SB":
                     route["end"] = "PE"
 
-
                 for seg1 in segments:
                     if seg1[0] == "SB":
                         track1, x1, y1, side, io_, bit_width = seg1[1:]
@@ -181,9 +181,9 @@ class Visualizer():
                         route["start_point"] = (x1, y1)
                     if seg1 == segments[-1]:
                         route["end_list"].append((x1, y1))
-                    
+
                     route["bit_width"] = bit_width
-                    
+
                     if len(route["segments"]) > 0:
                         last_x = route["segments"][-1]['x']
                         last_y = route["segments"][-1]['y']
@@ -204,13 +204,12 @@ class Visualizer():
                         segment['track'] = track1
                         route["segments"].append(segment)
 
-                if route["segments"][0]['track'] == None:
+                if route["segments"][0]['track'] is None:
                     route["segments"][0]['track'] = route["segments"][1]['track']
             routes_list.append(route)
 
         self.routes_list = routes_list
         self.unordered_routes = routes_list.copy()
-
 
     def sort_routes(self):
         ordered_routes = []
@@ -233,11 +232,10 @@ class Visualizer():
                 if route["start_point"] in visited_points:
                     ordered_routes[routes_idx].append(route)
                     self.routes_list.remove(route)
-                    
+
                     for end_pts in route["end_list"]:
                         visited_points_new.append(end_pts)
-                    
-            
+
             if len(self.routes_list) == routes_list_len:
                 for route in self.routes_list.copy():
                     ordered_routes[routes_idx].append(route)
@@ -247,7 +245,6 @@ class Visualizer():
             routes_list_len = len(self.routes_list)
         self.ordered_routes = ordered_routes
         self.visited_points = visited_points
-    
 
     def sort_segments(self):
         for net_id, segments in self.raw_routing_result.items():
@@ -280,11 +277,11 @@ class Visualizer():
                     if start_x == end_x and start_y == end_y:
                         wont_sort = True
 
-                    segments_unsorted.append(((start_x,start_y),(end_x,end_y)))
-                    if str((start_x,start_y)) not in segments_dict:
-                        segments_dict[str((start_x,start_y))] = [segment]
+                    segments_unsorted.append(((start_x, start_y), (end_x, end_y)))
+                    if str((start_x, start_y)) not in segments_dict:
+                        segments_dict[str((start_x, start_y))] = [segment]
                     else:
-                        segments_dict[str((start_x,start_y))].append(segment)
+                        segments_dict[str((start_x, start_y))].append(segment)
 
                 if not wont_sort:
                     g = Graph()
@@ -296,7 +293,7 @@ class Visualizer():
                         src_node.add_next("0", "0", sink_node)
 
                     segments_sorted = []
-                    for node in g.sort():                    
+                    for node in g.sort():
                         if str(node) in segments_dict:
                             for segment in segments_dict[str(node)]:
                                 if segment not in segments_sorted:
@@ -304,38 +301,37 @@ class Visualizer():
 
                     self.raw_routing_result[net_id] = segments_sorted
 
-
     def draw_grid(self, draw):
-        draw.rectangle((0, self.img_width, 0, self.img_height), fill = (0, 0, 0, 255))
+        draw.rectangle((0, self.img_width, 0, self.img_height), fill=(0, 0, 0, 255))
         for i in range(0, self.height + 1):
             # horizontal lines
             draw.line((0, i * self.scale, self.img_width, i * self.scale),
-                    fill=(255, 255, 255), width=1)
+                      fill=(255, 255, 255), width=1)
             draw.text((0, i * self.scale), str(i))
-                    
+
         for i in range(0, self.width + 1):
             # vertical lines
             draw.line((i * self.scale, 0, i * self.scale, self.img_height),
-                    fill=(255, 255, 255), width=1)
+                      fill=(255, 255, 255), width=1)
             draw.text((i * self.scale, 0), str(i))
 
-    def draw_routes(self, draw, crit_net = None):
+    def draw_routes(self, draw, crit_net=None):
 
         for route in self.unordered_routes:
             # if route['bit_width'] == 16:
             #     continue
-            if crit_net == None or route["edge_id"] in crit_net:
-                if crit_net != None and route["edge_id"] in crit_net:
-                    color = lambda : (255, 0, 0, 255)
+            if crit_net is None or route["edge_id"] in crit_net:
+                if crit_net is not None and route["edge_id"] in crit_net:
+                    color = lambda: (255, 0, 0, 255)
                 else:
-                    color = lambda : (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255), 255)
+                    color = lambda: (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255), 255)
                 route_color = color()
                 for idx, seg1 in enumerate(route["segments"]):
                     if len(route["segments"]) > idx + 1:
                         seg2 = route["segments"][idx + 1]
                     else:
                         continue
-                    x1 = seg1['x'] 
+                    x1 = seg1['x']
                     y1 = seg1['y']
                     x2 = seg2['x']
                     y2 = seg2['y']
@@ -362,7 +358,6 @@ class Visualizer():
                     if idx > 0:
                         change_dir = not ((x1 == x2 == route["segments"][idx - 1]['x']) or (y1 == y2 == route["segments"][idx - 1]['y']))
 
-
                     # Assuming if route changes track its changing direction too
                     if track != track4 or change_dir:
                         start_offset = (track4 / self.num_tracks) * 0.6 + 0.2
@@ -381,7 +376,7 @@ class Visualizer():
                     else:
                         # Horizontal trace
                         # draw.line(((x1 + start_offset) * self.scale, (y1 + 0.2 + track_offset) * self.scale, (x2 + end_offset) * self.scale, (y2 + 0.2 + track_offset) * self.scale), fill=route_color, width=2)
-                        arrowedLine(draw,((x1 + start_offset) * self.scale, (y1 + 0.2 + track_offset) * self.scale), ((x2 + end_offset) * self.scale, (y2 + 0.2 + track_offset) * self.scale), color=route_color, size=route_width)
+                        arrowedLine(draw, ((x1 + start_offset) * self.scale, (y1 + 0.2 + track_offset) * self.scale), ((x2 + end_offset) * self.scale, (y2 + 0.2 + track_offset) * self.scale), color=route_color, size=route_width)
 
     def draw_tiles(self, draw):
         board_pos = self.raw_placement_result
@@ -392,16 +387,14 @@ class Visualizer():
             index = self.color_index.index(blk_id[0])
             color = self.color_palette[index]
 
-
             width_frac = 1
             size = self.scale - 1
             width = size * width_frac
-            shrink = self.scale/5 
+            shrink = self.scale / 5
             x, y = pos
 
-            
             draw.rectangle((x * self.scale + 1 + shrink, y * self.scale + 1 + shrink, x * self.scale + width - shrink,
-                        y * self.scale + size - shrink), fill=color)
+                            y * self.scale + size - shrink), fill=color)
             draw.text((x * self.scale + 1 + shrink, y * self.scale + 1 + shrink), blk_id)
 
             if blk_id in self.pe_reg:
@@ -409,11 +402,12 @@ class Visualizer():
                 width_frac = 1
                 size = self.scale - 1
                 width = size * width_frac
-                shrink = self.scale/2
-                shrink2 = self.scale/5 
+                shrink = self.scale / 2
+                shrink2 = self.scale / 5
                 x, y = pos
                 draw.rectangle((x * self.scale + 1 + shrink2, y * self.scale + 1 + shrink, x * self.scale + width - shrink,
-                            y * self.scale + size - shrink2), fill=color)
+                                y * self.scale + size - shrink2), fill=color)
+
 
 def visualize_pnr():
     placement_file, routing_file, folded_file, height, width, crit_net = parse_args()
@@ -421,21 +415,21 @@ def visualize_pnr():
     raw_routing_result = load_routing_result(routing_file)
     raw_placement_result = load_placement(placement_file)
     pe_reg = load_folded_regs(folded_file)
-    pe_reg = {r for r,p in pe_reg}
+    pe_reg = {r for r, p in pe_reg}
 
     color_index = "imoprcdI"
     color_palette = [(166, 206, 227),
-                (31, 120, 180),
-                (178, 223, 138),
-                (51, 160, 44),
-                (251, 154, 153),
-                (227, 26, 28),
-                (253, 191, 111),
-                (255, 127, 0),
-                (202, 178, 214),
-                (106, 61, 154),
-                (255, 255, 153),
-                (177, 89, 40)]
+                     (31, 120, 180),
+                     (178, 223, 138),
+                     (51, 160, 44),
+                     (251, 154, 153),
+                     (227, 26, 28),
+                     (253, 191, 111),
+                     (255, 127, 0),
+                     (202, 178, 214),
+                     (106, 61, 154),
+                     (255, 255, 153),
+                     (177, 89, 40)]
 
     scale = 60
     img_width = width * scale
@@ -461,7 +455,7 @@ def visualize_pnr():
     visualizer.sort_segments()
 
     # ordered_routes, visited_points = sort_routes(routes_list)
-   
+
     im = Image.new("RGBA", (img_width, img_height), "BLACK")
     draw = ImageDraw.Draw(im)
 
@@ -471,7 +465,7 @@ def visualize_pnr():
 
     visualizer.draw_tiles(draw)
 
-    if crit_net != None:
+    if crit_net is not None:
         visualizer.draw_routes(draw, crit_net)
 
     im.save(f'pnr_result.png', format='PNG')

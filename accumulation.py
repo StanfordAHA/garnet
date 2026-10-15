@@ -24,25 +24,25 @@ for k, v in tiles_accumulation.items():
     output_matrix = np.zeros(gold_matrix.shape)
     for tile in v:
         # run aha glb on tile
-        subprocess.call(["aha", 
-                "glb", 
-                f"../../../garnet/SPARSE_TESTS/{app_name}_{tile}/GLB_DIR/{app_name}_combined_seed_{tile}",  
-                "--sparse", 
-                "--sparse-test-name", 
-                f"{app_name}", 
-                "--sparse-comparison", 
-                f"/aha/garnet/SPARSE_TESTS/{app_name}_{tile}/GLB_DIR/{app_name}_combined_seed_{tile}/"],
-                text=True)
+        subprocess.call(["aha",
+                         "glb",
+                         f"../../../garnet/SPARSE_TESTS/{app_name}_{tile}/GLB_DIR/{app_name}_combined_seed_{tile}",
+                         "--sparse",
+                         "--sparse-test-name",
+                         f"{app_name}",
+                         "--sparse-comparison",
+                         f"/aha/garnet/SPARSE_TESTS/{app_name}_{tile}/GLB_DIR/{app_name}_combined_seed_{tile}/"],
+                        text=True)
 
-        #reconstruct output matrix
+        # reconstruct output matrix
         output_name = "X"
         gold_matrix = np.load(f"SPARSE_TESTS/{app_name}_{tile}/GLB_DIR/{app_name}_combined_seed_{tile}/output_gold_0.npy")
         sim_matrix = get_tensor_from_files(name=output_name, files_dir="/aha/garnet/SPARSE_TESTS/",
-                                            format="CSF",
-                                            shape=gold_matrix.shape, base=16, early_terminate='x')
+                                           format="CSF",
+                                           shape=gold_matrix.shape, base=16, early_terminate='x')
         sim_matrix_np = sim_matrix.get_matrix()
 
-        #add output matrices
+        # add output matrices
         output_matrix += sim_matrix_np
 
     # save output_matrix

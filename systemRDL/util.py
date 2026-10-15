@@ -194,6 +194,7 @@ def run_systemrdl(ordt_path, name, rdl_file, parms_file, output_folder):
         f"java -jar {ordt_path} -reglist {os.path.join(output_folder, name + '.reglist')}"
         f" -parms {parms_file} -systemverilog {output_folder} {rdl_file}")
 
+
 def fix_systemrdl(rdl_folder, top_name):
     with open(os.path.join(rdl_folder, f"{top_name}_jrdl_decode.sv"), "r+") as f:
         lines = f.readlines()
@@ -205,4 +206,3 @@ def fix_systemrdl(rdl_folder, top_name):
         f.truncate()
         for line in lines:
             f.write(line)
-

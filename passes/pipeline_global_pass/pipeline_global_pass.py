@@ -11,6 +11,8 @@ from gemstone.common.configurable import ConfigurationType
 # <interval> rows of tiles.
 
 # Circuit Definition for set of pipeline registers
+
+
 class PipelineStage(Generator):
     def __init__(self, config_addr_width: int,
                  config_data_width: int,
@@ -56,6 +58,8 @@ class PipelineStage(Generator):
         return "GlobalPipeStage"
 
 # Pass to insert pipeline registers
+
+
 def pipeline_global_signals(interconnect: Interconnect, interval):
     # Right now in canal, the width of config_addr and config_data
     # are hard-coded to be the same. This should be changed.
@@ -68,8 +72,8 @@ def pipeline_global_signals(interconnect: Interconnect, interval):
         if tile_core is None or "config" not in tile_core.ports or y == 0:
             continue
         else:
-            if interval != 0 and y % interval == 0 and ((x, y+1) in interconnect.tile_circuits):
-                tile_below = interconnect.tile_circuits[(x, y+1)]
+            if interval != 0 and y % interval == 0 and ((x, y + 1) in interconnect.tile_circuits):
+                tile_below = interconnect.tile_circuits[(x, y + 1)]
                 has_flush = "flush" in tile_below.ports
                 pipe_stage = PipelineStage(config_addr_width, config_data_width, has_flush)
                 # remove existing config wire
@@ -85,4 +89,3 @@ def pipeline_global_signals(interconnect: Interconnect, interval):
                     interconnect.remove_wire(tile.ports.flush_out, tile_below.ports.flush)
                     interconnect.wire(tile.ports.flush_out, pipe_stage.ports.flush)
                     interconnect.wire(pipe_stage.ports.flush_out, tile_below.ports.flush)
-            

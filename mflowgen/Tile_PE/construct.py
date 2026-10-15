@@ -171,19 +171,19 @@ def construct():
 
     # Default steps - turn off formatting b/c want these columns to line up
     # autopep8: off
-    info         = Step('info',                          default=True)  # noqa
-    synth        = Step('cadence-genus-synthesis',       default=True)  # noqa
-    iflow        = Step('cadence-innovus-flowsetup',     default=True)  # noqa
-    init         = Step('cadence-innovus-init',          default=True)  # noqa
-    power        = Step('cadence-innovus-power',         default=True)  # noqa
-    place        = Step('cadence-innovus-place',         default=True)  # noqa
-    cts          = Step('cadence-innovus-cts',           default=True)  # noqa
-    postcts_hold = Step('cadence-innovus-postcts_hold',  default=True)  # noqa
-    route        = Step('cadence-innovus-route',         default=True)  # noqa
-    postroute    = Step('cadence-innovus-postroute',     default=True)  # noqa
-    signoff      = Step('cadence-innovus-signoff',       default=True)  # noqa
-    pt_signoff   = Step('synopsys-pt-timing-signoff',    default=True)  # noqa
-    genlibdb     = Step('synopsys-ptpx-genlibdb',        default=True)  # noqa
+    info = Step('info', default=True)  # noqa
+    synth = Step('cadence-genus-synthesis', default=True)  # noqa
+    iflow = Step('cadence-innovus-flowsetup', default=True)  # noqa
+    init = Step('cadence-innovus-init', default=True)  # noqa
+    power = Step('cadence-innovus-power', default=True)  # noqa
+    place = Step('cadence-innovus-place', default=True)  # noqa
+    cts = Step('cadence-innovus-cts', default=True)  # noqa
+    postcts_hold = Step('cadence-innovus-postcts_hold', default=True)  # noqa
+    route = Step('cadence-innovus-route', default=True)  # noqa
+    postroute = Step('cadence-innovus-postroute', default=True)  # noqa
+    signoff = Step('cadence-innovus-signoff', default=True)  # noqa
+    pt_signoff = Step('synopsys-pt-timing-signoff', default=True)  # noqa
+    genlibdb = Step('synopsys-ptpx-genlibdb', default=True)  # noqa
     # autopep8: on
 
     if which("calibre") is not None:
@@ -286,16 +286,16 @@ def construct():
 
     # Outputs - turn off formatting b/c want these columns to line up
     # autopep8: off
-    g.add_output('Tile_PE_tt.lib',      genlibdb.o('design.lib')       )  # noqa
-    g.add_output('Tile_PE_tt.db',       genlibdb.o('design.db')        )  # noqa
-    g.add_output('Tile_PE.lef',         signoff.o('design.lef')        )  # noqa
-    g.add_output('Tile_PE.gds',         signoff.o('design-merged.gds') )  # noqa
-    g.add_output('Tile_PE.sdf',         signoff.o('design.sdf')        )  # noqa
-    g.add_output('Tile_PE.vcs.v',       signoff.o('design.vcs.v')      )  # noqa
-    g.add_output('Tile_PE.vcs.pg.v',    signoff.o('design.vcs.pg.v')   )  # noqa
-    g.add_output('Tile_PE.spef.gz',     signoff.o('design.spef.gz')    )  # noqa
-    g.add_output('Tile_PE.pt.sdc',      signoff.o('design.pt.sdc')     )  # noqa
-    g.add_output('Tile_PE.lvs.v',       lvs.o('design_merged.lvs.v')   )  # noqa
+    g.add_output('Tile_PE_tt.lib', genlibdb.o('design.lib'))  # noqa
+    g.add_output('Tile_PE_tt.db', genlibdb.o('design.db'))  # noqa
+    g.add_output('Tile_PE.lef', signoff.o('design.lef'))  # noqa
+    g.add_output('Tile_PE.gds', signoff.o('design-merged.gds'))  # noqa
+    g.add_output('Tile_PE.sdf', signoff.o('design.sdf'))  # noqa
+    g.add_output('Tile_PE.vcs.v', signoff.o('design.vcs.v'))  # noqa
+    g.add_output('Tile_PE.vcs.pg.v', signoff.o('design.vcs.pg.v'))  # noqa
+    g.add_output('Tile_PE.spef.gz', signoff.o('design.spef.gz'))  # noqa
+    g.add_output('Tile_PE.pt.sdc', signoff.o('design.pt.sdc'))  # noqa
+    g.add_output('Tile_PE.lvs.v', lvs.o('design_merged.lvs.v'))  # noqa
     # autopep8: on
 
     # TSMC needs streamout *without* the (new) default -uniquify flag

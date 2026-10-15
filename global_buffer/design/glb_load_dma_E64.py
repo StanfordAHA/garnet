@@ -259,20 +259,20 @@ class GlbLoadDma_E64(Generator):
         for packet_16 in range(self.num_packets):
             self.data_g2f_fifo = FIFO(self._params.cgra_data_width, self.fifo_depth)
             self.add_child(f"data_g2f_fifo_{packet_16}",
-                        self.data_g2f_fifo,
-                        clk=self.clk,
-                        clk_en=const(1, 1),
-                        reset=self.reset,
-                        flush=self.ld_dma_start_pulse_r,
-                        data_in=self.data_dma2fifo[packet_16],
-                        data_out=self.data_fifo2cgra[packet_16],
-                        push=self.fifo_push[packet_16],
-                        pop=self.fifo_pop[packet_16],
-                        full=self.fifo_full[packet_16],
-                        empty=self.fifo_empty[packet_16],
-                        almost_full=self.fifo_almost_full[packet_16],
-                        almost_full_diff=self.fifo_almost_full_diff,
-                        almost_empty_diff=const(2, clog2(self.fifo_depth)))
+                           self.data_g2f_fifo,
+                           clk=self.clk,
+                           clk_en=const(1, 1),
+                           reset=self.reset,
+                           flush=self.ld_dma_start_pulse_r,
+                           data_in=self.data_dma2fifo[packet_16],
+                           data_out=self.data_fifo2cgra[packet_16],
+                           push=self.fifo_push[packet_16],
+                           pop=self.fifo_pop[packet_16],
+                           full=self.fifo_full[packet_16],
+                           empty=self.fifo_empty[packet_16],
+                           almost_full=self.fifo_almost_full[packet_16],
+                           almost_full_diff=self.fifo_almost_full_diff,
+                           almost_empty_diff=const(2, clog2(self.fifo_depth)))
 
             # TODO: Using almost full here may cause issues
             # TODO: Maybe revisit this and make sure it isn't causing any unnecessary bubbles

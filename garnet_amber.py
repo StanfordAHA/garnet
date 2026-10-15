@@ -312,7 +312,7 @@ class Garnet(Generator):
             blk_name = id_to_name[blk_id]
             if "valid" in blk_name:
                 valid_port_name = name
-        return input_interface, output_interface,\
+        return input_interface, output_interface, \
             (reset_port_name, valid_port_name, en_port_name)
 
     def load_netlist(self, app, load_only, pipeline_input_broadcasts,
@@ -437,7 +437,7 @@ class Garnet(Generator):
         skip_addr = self.interconnect.get_skip_addr()
         bitstream = compress_config_data(bitstream, skip_compression=skip_addr)
         inputs, outputs = self.get_input_output(netlist)
-        input_interface, output_interface,\
+        input_interface, output_interface, \
             (reset, valid, en) = self.get_io_interface(inputs,
                                                        outputs,
                                                        placement,
@@ -555,7 +555,7 @@ def main():
         arch = read_arch(args.pe)
         pe_fc = wrapped_peak_class(arch, debug=True)
 
-    include_glb_ring_switch = not(args.exclude_glb_ring_switch)
+    include_glb_ring_switch = not (args.exclude_glb_ring_switch)
     glb_params = gen_global_buffer_params(num_glb_tiles=args.width // 2,
                                           num_cgra_cols=args.width,
                                           # NOTE: We assume num_prr is same as num_glb_tiles

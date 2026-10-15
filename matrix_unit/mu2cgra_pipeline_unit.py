@@ -33,20 +33,20 @@ class mu2cgra_pipeline_unit(Generator):
             fifo_empty = self.var(f"fifo_empty_{channel}", 1)
 
             self.add_child(f"pipeline_fifo_channel_{channel}",
-                            pipeline_fifo,
-                            clk=self.clk,
-                            clk_en=const(1, 1),
-                            reset=self.reset,
-                            # TODO: Figure out what to put here for flush
-                            flush=const(0, 1),
-                            data_in=self.mu2cgra[channel],
-                            data_out=self.mu2cgra_d[channel],
-                            push=self.mu2cgra_valid,
-                            pop=self.cgra2mu_ready_d,
-                            full=fifo_full,
-                            empty=fifo_empty,
-                            almost_full_diff=1,
-                            almost_empty_diff=1)
+                           pipeline_fifo,
+                           clk=self.clk,
+                           clk_en=const(1, 1),
+                           reset=self.reset,
+                           # TODO: Figure out what to put here for flush
+                           flush=const(0, 1),
+                           data_in=self.mu2cgra[channel],
+                           data_out=self.mu2cgra_d[channel],
+                           push=self.mu2cgra_valid,
+                           pop=self.cgra2mu_ready_d,
+                           full=fifo_full,
+                           empty=fifo_empty,
+                           almost_full_diff=1,
+                           almost_empty_diff=1)
 
             if channel == 0:
                 self.wire(self.cgra2mu_ready, ~fifo_full)

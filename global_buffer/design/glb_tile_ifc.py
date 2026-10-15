@@ -10,7 +10,7 @@ class GlbTileInterface(Interface):
         self.is_strb = is_strb
         self.has_wr_ifc = has_wr_ifc
 
-        if not(self.has_wr_ifc):
+        if not (self.has_wr_ifc):
             name = f"glb_tile_rd_only_ifc_A_{addr_width}_{num_tracks}xD_{data_width}"
         else:
             name = f"glb_tile_ifc_A_{addr_width}_{num_tracks}xD_{data_width}"
@@ -25,7 +25,7 @@ class GlbTileInterface(Interface):
             self.wr_data = self.var("wr_data", data_width)
             if is_strb is True:
                 self.wr_strb = self.var("wr_strb", math.ceil(data_width / 8))
-        
+
         self.rd_en = self.var("rd_en", 1)
         if is_clk_en is True:
             self.rd_clk_en = self.var("rd_clk_en", 1)

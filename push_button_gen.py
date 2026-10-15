@@ -25,19 +25,19 @@ tensor_datasets = [
     "rand_large_sp98_8",
     "rand_large_sp98_9",
     "rand_large_sp98_10"
-            ]
+]
 
 matrix_datasets = [
-#    'bcsstm26',
-#     'G30',
-#     'watt_2',
-#     'G42',
-#     'adder_trans_02',
-#     'qiulp',
-#     'west2021',
-#     'adder_dcop_30',
-#     'tols2000',
-#     'rajat12'
+    #    'bcsstm26',
+    #     'G30',
+    #     'watt_2',
+    #     'G42',
+    #     'adder_trans_02',
+    #     'qiulp',
+    #     'west2021',
+    #     'adder_dcop_30',
+    #     'tols2000',
+    #     'rajat12'
 
     # "matrix_sp80_sm_1",
     # "matrix_sp80_sm_2",
@@ -72,7 +72,7 @@ else:
 
 for datum in datasets:
     print("\n\n\n\n ", datum)
-    #first copy formatted
+    # first copy formatted
     if "tensor" in app_name:
         copy_formatted = f"python3 copy_formatted_tensor_tiling.py {app_name} {datum}"
         print(copy_formatted)
@@ -82,12 +82,12 @@ for datum in datasets:
         print(copy_formatted)
         os.system(copy_formatted)
 
-    #aha regress fast
+    # aha regress fast
     aha_regress_fast = f"aha regress fast"
     print(aha_regress_fast)
     os.system(aha_regress_fast)
 
-    #generate script
+    # generate script
     generate_script = f"python3 generate_sweep.py {real_app_name} {datum}"
     print(generate_script)
     os.system(generate_script)

@@ -406,6 +406,7 @@ class GlbStoreDma(Generator):
             self.wr_packet_dma2bank = self.wr_packet_dma2bank_w
             if self._params.include_glb_ring_switch:
                 self.wr_packet_dma2ring = self.wr_packet_dma2ring_w
+
     def add_dma2bank_clk_en(self):
         self.clk_en_gen = GlbClkEnGen(cnt=self._params.tile2sram_wr_delay + self._params.wr_clk_en_margin)
         self.dma2bank_clk_en = self.var("dma2bank_clk_en", 1)

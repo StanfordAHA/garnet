@@ -78,8 +78,9 @@ def get_mapping_fn(interconnect):
             pe_remap = actual_core.get_port_remap()
         elif mem_remap is not None and pe_remap is not None:
             break
-    
+
     return pe_remap, mem_remap
+
 
 @pytest.fixture
 def get_mapping():
@@ -136,7 +137,7 @@ def run_tb_fn(tester, cwd=None, trace=False, include_PE=False, **magma_args):
                           "flags": ["-Wno-fatal"],
                           "disp_type": "realtime",
                           "num_cycles": 100000 * 10
-        }
+                          }
         if not use_verilator:
             target = "system-verilog"
             runtime_kwargs["simulator"] = "xcelium"
@@ -156,7 +157,6 @@ def run_tb_fn(tester, cwd=None, trace=False, include_PE=False, **magma_args):
                                **runtime_kwargs)
 
 
-
 @pytest.fixture
 def run_tb():
     return run_tb_fn
@@ -165,7 +165,6 @@ def run_tb():
 # We'll try this. What's the worst that can happen?
 # The idea is that, if it's an amber build, the amber conftest defs
 # will seemlessly replace/supercede the defaults above haha
-import os
+import os  # noqa: E402
 if os.getenv('WHICH_SOC') == "amber":
     import conftest_amber.py
-

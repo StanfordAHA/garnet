@@ -459,8 +459,8 @@ class TestBenchGenerator:
     #                    print("pos:", pos, "design:", design_byte, "halide:", halide_byte)
                         if design_byte != halide_byte:
                             print("pos:", pos, "design:", design_byte, "halide:", halide_byte)
-                       #     print("design:", design_byte, file=sys.stderr)
-                       #     print("halide:", halide_byte, file=sys.stderr)
+                        #    print("design:", design_byte, file=sys.stderr)
+                        #    print("halide:", halide_byte, file=sys.stderr)
     #                        raise Exception("Error at pos " + str(pos), "real pos",
     #                                       pos - skipped_pos)
 
@@ -468,8 +468,8 @@ class TestBenchGenerator:
         assert compared_size > 0, "Got 0 valid outputs"
 
         if compared_size != compare_size:
-            print("Expected to produce " + str(compare_size) +
-                            " valid bytes, got " + str(compared_size))
+            print("Expected to produce " + str(compare_size)
+                  + " valid bytes, got " + str(compared_size))
         print("PASS: compared with", pos - skipped_pos, "bytes")
         print("Skipped", skipped_pos, "bytes")
 

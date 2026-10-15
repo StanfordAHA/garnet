@@ -12,7 +12,7 @@ class GlbTileDataLoopInterface(Interface):
         self.mu_word_num_tiles = mu_word_num_tiles
         self.num_tracks = num_tracks
 
-        if not(self.has_wr_ifc):
+        if not (self.has_wr_ifc):
             name = f"glb_tile_rd_only_data_loop_ifc_A_{addr_width}_{self.num_tracks}xD_{data_width}"
         else:
             name = f"glb_tile_data_loop_ifc_A_{addr_width}_{self.num_tracks}xD_{data_width}"
@@ -27,13 +27,13 @@ class GlbTileDataLoopInterface(Interface):
             self.wr_data = self.var("wr_data", data_width)
             if is_strb is True:
                 self.wr_strb = self.var("wr_strb", math.ceil(data_width / 8))
-        
+
         self.sub_packet_idx = self.var("sub_packet_idx", clog2(self.mu_word_num_tiles))
         self.rd_en = self.var("rd_en", 1)
         if is_clk_en is True:
             self.rd_clk_en = self.var("rd_clk_en", 1)
         self.rd_addr = self.var("rd_addr", addr_width)
-        
+
         self.rd_data_e2w = self.var("rd_data_e2w", self.data_width, self.num_tracks)
         self.rd_data_e2w_valid = self.var("rd_data_e2w_valid", 1, self.num_tracks)
 

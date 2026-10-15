@@ -3,6 +3,7 @@ import re
 import sys
 import argparse
 
+
 def parse_place(place_file):
     """
     Returns a dict mapping block_id -> (x_dec, y_dec).
@@ -30,6 +31,7 @@ def parse_place(place_file):
             coords[block_id] = (x, y)
     return coords
 
+
 def parse_packed(packed_file):
     """
     Returns a dict mapping block_id -> set(port_name).
@@ -52,12 +54,14 @@ def parse_packed(packed_file):
                 usage.setdefault(blk, set()).add(port)
     return usage
 
+
 def to_hex2(n):
     """
     Return a 2-digit uppercase hex string, e.g. 0→'00', 10→'0A', 27→'1B'.
     """
     h = format(n, 'X')
     return h.zfill(2)
+
 
 def infer_block_type(port_name):
     """
@@ -73,6 +77,7 @@ def infer_block_type(port_name):
         return 'MemCore_inst0'
     return None
 
+
 def parse_width(port_name):
     """
     Looks for 'width_<N>_' in the port name, returns N as int.
@@ -83,9 +88,10 @@ def parse_width(port_name):
         return int(m.group(1))
     return 1
 
+
 def main(place_file, packed_file, output_rc):
     coords = parse_place(place_file)
-    usage  = parse_packed(packed_file)
+    usage = parse_packed(packed_file)
 
     with open(output_rc, 'w') as out:
         for blk in sorted(usage.keys()):
@@ -126,20 +132,21 @@ def main(place_file, packed_file, output_rc):
                     rng = f'[{msb}:0]'
                     # instance folder depends on suffix
                     inst = {
-                        'PE':       'PE_inst0',
-                        'Pond':     'PondCore_inst0',
-                        'Mem':      'MemCore_inst0'
+                        'PE': 'PE_inst0',
+                        'Pond': 'PondCore_inst0',
+                        'Mem': 'MemCore_inst0'
                     }[suffix]
                     path = f"/top/dut/Interconnect_inst0/{tile}/{inst}/{port}{rng}"
                     out.write(f'addSignal -h 15 {path}\n')
                 out.write('\n')
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Generate a Verdi signal.rc from design.place and design.packed")
-    parser.add_argument("place",    help="path to design.place file")
-    parser.add_argument("packed",   help="path to design.packed file")
-    parser.add_argument("output_rc",help="path to write the resulting .rc file")
+    parser.add_argument("place", help="path to design.place file")
+    parser.add_argument("packed", help="path to design.packed file")
+    parser.add_argument("output_rc", help="path to write the resulting .rc file")
     args = parser.parse_args()
 
     main(args.place, args.packed, args.output_rc)

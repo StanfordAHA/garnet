@@ -697,7 +697,7 @@ class GlobalBuffer(Generator):
                 self.wire(self.cfg_tile_connected[i + 1], self.glb_tile[i].ports.cfg_tile_connected_esto)
                 self.wire(self.cfg_pcfg_tile_connected[i + 1], self.glb_tile[i].ports.cfg_pcfg_tile_connected_esto)
 
-    @ always_ff((posedge, "clk"), (posedge, "reset"))
+    @always_ff((posedge, "clk"), (posedge, "reset"))
     def interrupt_pipeline(self):
         if self.reset:
             for i in range(self._params.num_glb_tiles):

@@ -374,7 +374,6 @@ class GlbLoadDma(Generator):
             self.rdrq_packet_dma2bank_w['rd_en'] = self.bank_rdrq_rd_en
             self.rdrq_packet_dma2bank_w['rd_addr'] = self.bank_rdrq_rd_addr
 
-
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def rdrq_packet_ff(self):
         if self.reset:

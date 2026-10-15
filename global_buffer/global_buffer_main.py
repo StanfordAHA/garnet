@@ -38,7 +38,6 @@ def main():
     parser.add_argument("--include_mu_glb_hw", action="store_true")
     parser.add_argument("--include_glb_ring_switch", action="store_true")
 
-
     args = parser.parse_args()
     cfg_port_pipeline = not args.no_cfg_port_pipeline
     params = gen_global_buffer_params(num_glb_tiles=args.num_glb_tiles,

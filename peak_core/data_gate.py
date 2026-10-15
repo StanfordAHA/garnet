@@ -86,8 +86,8 @@ def data_gate(pe):
     # NOTE(rsetaluri): This is hardcoded!
     def _make_bits_16_mul_gate(defn):
         op = defn.alu
-        return ((op == lassen.alu.ALU_t.FCnvExp2F) |
-                (op == lassen.alu.ALU_t.FCnvInt2F))
+        return ((op == lassen.alu.ALU_t.FCnvExp2F)
+                | (op == lassen.alu.ALU_t.FCnvInt2F))
 
     expensive = (("magma_BFloat_16_mul_inst0", None),
                  ("magma_BFloat_16_add_inst0", None),

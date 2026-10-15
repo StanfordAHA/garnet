@@ -10,9 +10,9 @@ from gemstone.common.transform import pass_signal_through
 
 # Transformations:
 # 1. PE tile pass throughs:
-# Creates an extra input port on pe tiles called clk_pass_through 
-# which is used only to pass clock signals through to adjacent 
-# CGRA tiles in the interconnect. 
+# Creates an extra input port on pe tiles called clk_pass_through
+# which is used only to pass clock signals through to adjacent
+# CGRA tiles in the interconnect.
 # This allows us to pass the clock signal through the tile without going
 # through the tile's clock tree.
 #
@@ -30,7 +30,7 @@ from gemstone.common.transform import pass_signal_through
 #      |       |     |         /      |      ----|   |
 #      |       |     |        /       |      |   |   |
 #      ---------------                ----------------
-#           clk_out                    clk_out  pt_clk_out_bot  
+#           clk_out                    clk_out  pt_clk_out_bot
 #
 #
 #
@@ -40,6 +40,7 @@ from gemstone.common.transform import pass_signal_through
 # having to balance clk pass through delays between PE and memory tiles, which
 # frequently required manual post-P&R intervention.
 
+
 def clk_physical(interconnect: Interconnect, tile_layout_option):
     for (x, y) in interconnect.tile_circuits:
         tile = interconnect.tile_circuits[(x, y)]
@@ -47,15 +48,15 @@ def clk_physical(interconnect: Interconnect, tile_layout_option):
         # We only want to do this on PE and memory tiles
         if tile_core is None or isinstance(tile_core, IOCoreBase):
             continue
-        elif isinstance(tile_core, MemCore) and tile_layout_option==0:
-            if (x, y+1) in interconnect.tile_circuits:
-                tile_below = interconnect.tile_circuits[(x, y+1)]
+        elif isinstance(tile_core, MemCore) and tile_layout_option == 0:
+            if (x, y + 1) in interconnect.tile_circuits:
+                tile_below = interconnect.tile_circuits[(x, y + 1)]
                 if isinstance(tile_below.core, MemCore):
                     interconnect.remove_wire(tile.ports.clk_out,
                                              tile_below.ports.clk)
             # Get the PE tile to the left of this mem tile
-            tile_left = interconnect.tile_circuits[(x-1, y)]
-            # Connect the clk input of this mem tile to the right clk 
+            tile_left = interconnect.tile_circuits[(x - 1, y)]
+            # Connect the clk input of this mem tile to the right clk
             # output of the neighboring PE tile
             interconnect.wire(tile_left.ports.clk_pass_through_out_right,
                               tile.ports.clk)
@@ -71,11 +72,11 @@ def clk_physical(interconnect: Interconnect, tile_layout_option):
                 pass_through_input, magma.clock)
             # Create 2 new clk pass through outputs (bottom and right)
             tile.add_port("clk_pass_through_out_bot", magma.Out(magma.Bit))
-            if tile_layout_option==0:
+            if tile_layout_option == 0:
                 tile.add_port("clk_pass_through_out_right", magma.Out(magma.Clock))
             tile.wire(tile.ports.clk_pass_through,
                       tile.ports.clk_pass_through_out_bot)
-            if tile_layout_option==0:
+            if tile_layout_option == 0:
                 tile.wire(pass_through_input_as_clk, tile.ports.clk_pass_through_out_right)
 
             # Connect new clk pass through input to old pass through output
@@ -85,11 +86,9 @@ def clk_physical(interconnect: Interconnect, tile_layout_option):
                 interconnect_clk_as_bit = interconnect.convert(
                     interconnect.ports.clk, magma.bit)
                 interconnect.wire(interconnect_clk_as_bit, pass_through_input)
-            # For other tiles, connect new clk input to 
+            # For other tiles, connect new clk input to
             # pass through output of tile above.
             else:
-                tile_above = interconnect.tile_circuits[(x, y-1)]
+                tile_above = interconnect.tile_circuits[(x, y - 1)]
                 interconnect.wire(tile_above.ports.clk_pass_through_out_bot,
                                   pass_through_input)
-
-    

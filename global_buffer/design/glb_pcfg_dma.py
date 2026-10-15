@@ -156,7 +156,6 @@ class GlbPcfgDma(Generator):
             self.rdrq_packet_dma2bank_w['rd_en'] = self.rdrq_packet_rd_en_next
             self.rdrq_packet_dma2bank_w['rd_addr'] = self.rdrq_packet_rd_addr_next
 
-
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def rdrq_packet_ff(self):
         if self.reset:

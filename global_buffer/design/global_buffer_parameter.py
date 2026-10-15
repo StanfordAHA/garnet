@@ -48,7 +48,7 @@ class GlobalBufferParams:
 
     @property
     def mu_glb_rd_latency(self):
-        return ((2*self.num_glb_tiles) - 1) + self.mu_rd_addr2tile0_delay + self.mu_sw2bank_mux_delay + self.bankmux2sram_rd_delay  + self.mu_sw2track_out_delay + self.mu_rd_data_tile0_2out_delay
+        return ((2 * self.num_glb_tiles) - 1) + self.mu_rd_addr2tile0_delay + self.mu_sw2bank_mux_delay + self.bankmux2sram_rd_delay + self.mu_sw2track_out_delay + self.mu_rd_data_tile0_2out_delay
 
     @property
     def mu_tl_resp_fifo_depth(self):

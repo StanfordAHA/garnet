@@ -17,7 +17,7 @@ class GlobalController(Generator):
 
     def __init__(self, addr_width=32, data_width=32,
                  axi_addr_width=12, axi_data_width=32,
-                 num_glb_tiles=16, cgra_width=32, cgra_width_including_io = 32, glb_addr_width=22,
+                 num_glb_tiles=16, cgra_width=32, cgra_width_including_io=32, glb_addr_width=22,
                  block_axi_addr_width=12, glb_tile_mem_size=256, group_size=4):
         super().__init__()
 

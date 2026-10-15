@@ -162,7 +162,6 @@ class Rdl:
 def gen_global_buffer_rdl(name, params: GlobalBufferParams):
     addr_map = AddrMap(name)
 
-
     if params.include_glb_ring_switch:
         # Data Network Ctrl Register
         data_network_ctrl = Reg("data_network_ctrl")
@@ -218,7 +217,7 @@ def gen_global_buffer_rdl(name, params: GlobalBufferParams):
         dma_exchange_64_mode_r = Reg("dma_exchange_64_mode")
         if params.include_multi_bank_hw:
             dma_exchange_64_mode_f = Field("value", 2)
-            
+
             dma_bank_toggle_mode_r = Reg("dma_bank_toggle_mode")
             dma_bank_toggle_mode_f = Field("value", 1)
             dma_bank_toggle_mode_r.add_child(dma_bank_toggle_mode_f)

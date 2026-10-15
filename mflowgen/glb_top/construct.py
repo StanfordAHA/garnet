@@ -94,14 +94,14 @@ def construct():
     # Custom steps
 
     # autopep8: off
-    rtl            = Step(this_dir + '/../common/rtl'                      )  # noqa
-    testbench      = Step(this_dir + '/testbench'                          )  # noqa
-    sim_compile    = Step(this_dir + '/sim-compile'                        )  # noqa
-    sim_run        = Step(this_dir + '/sim-run'                            )  # noqa
-    sim_gl_compile = Step(this_dir + '/sim-gl-compile'                     )  # noqa
-    custom_power   = Step(this_dir + '/../common/custom-power-hierarchical')  # noqa
-    genlib         = Step(this_dir + '/../common/cadence-innovus-genlib'   )  # noqa
-    lib2db         = Step(this_dir + '/../common/synopsys-dc-lib2db'       )  # noqa
+    rtl = Step(this_dir + '/../common/rtl')  # noqa
+    testbench = Step(this_dir + '/testbench')  # noqa
+    sim_compile = Step(this_dir + '/sim-compile')  # noqa
+    sim_run = Step(this_dir + '/sim-run')  # noqa
+    sim_gl_compile = Step(this_dir + '/sim-gl-compile')  # noqa
+    custom_power = Step(this_dir + '/../common/custom-power-hierarchical')  # noqa
+    genlib = Step(this_dir + '/../common/cadence-innovus-genlib')  # noqa
+    lib2db = Step(this_dir + '/../common/synopsys-dc-lib2db')  # noqa
     # autopep8: on
 
     if adk_name == 'tsmc16':
@@ -120,19 +120,19 @@ def construct():
     # Default steps
 
     # autopep8: off
-    info           = Step('info',                            default=True)  # noqa
-    synth          = Step('cadence-genus-synthesis',         default=True)  # noqa
-    iflow          = Step('cadence-innovus-flowsetup',       default=True)  # noqa
-    init           = Step('cadence-innovus-init',            default=True)  # noqa
-    power          = Step('cadence-innovus-power',           default=True)  # noqa
-    place          = Step('cadence-innovus-place',           default=True)  # noqa
-    cts            = Step('cadence-innovus-cts',             default=True)  # noqa
-    postcts_hold   = Step('cadence-innovus-postcts_hold',    default=True)  # noqa
-    route          = Step('cadence-innovus-route',           default=True)  # noqa
-    postroute      = Step('cadence-innovus-postroute',       default=True)  # noqa
-    postroute_hold = Step('cadence-innovus-postroute_hold',  default=True)  # noqa
-    signoff        = Step('cadence-innovus-signoff',         default=True)  # noqa
-    pt_signoff     = Step('synopsys-pt-timing-signoff',      default=True)  # noqa
+    info = Step('info', default=True)  # noqa
+    synth = Step('cadence-genus-synthesis', default=True)  # noqa
+    iflow = Step('cadence-innovus-flowsetup', default=True)  # noqa
+    init = Step('cadence-innovus-init', default=True)  # noqa
+    power = Step('cadence-innovus-power', default=True)  # noqa
+    place = Step('cadence-innovus-place', default=True)  # noqa
+    cts = Step('cadence-innovus-cts', default=True)  # noqa
+    postcts_hold = Step('cadence-innovus-postcts_hold', default=True)  # noqa
+    route = Step('cadence-innovus-route', default=True)  # noqa
+    postroute = Step('cadence-innovus-postroute', default=True)  # noqa
+    postroute_hold = Step('cadence-innovus-postroute_hold', default=True)  # noqa
+    signoff = Step('cadence-innovus-signoff', default=True)  # noqa
+    pt_signoff = Step('synopsys-pt-timing-signoff', default=True)  # noqa
     # autopep8: on
 
     if which("calibre") is not None:
@@ -149,21 +149,21 @@ def construct():
 
     # Outputs
     # autopep8: off
-    g.add_output('glb_top_tt.lib',      genlib.o('design.lib')             )  # noqa
-    g.add_output('glb_top_tt.db',       lib2db.o('design.db')              )  # noqa
-    g.add_output('glb_top.lef',         signoff.o('design.lef')            )  # noqa
-    g.add_output('glb_top.gds',         signoff.o('design-merged.gds')     )  # noqa
-    g.add_output('glb_top.sdf',         signoff.o('design.sdf')            )  # noqa
-    g.add_output('glb_top.vcs.v',       signoff.o('design.vcs.v')          )  # noqa
-    g.add_output('glb_top.vcs.pg.v',    signoff.o('design.vcs.pg.v')       )  # noqa
-    g.add_output('glb_top.spef.gz',     signoff.o('design.spef.gz')        )  # noqa
-    g.add_output('glb_top.lvs.v',       lvs.o('design_merged.lvs.v')       )  # noqa
-    g.add_output('glb_top.sram.spi',    glb_tile.o('glb_tile_sram.spi')    )  # noqa
-    g.add_output('glb_top.sram.v',      glb_tile.o('glb_tile_sram.v')      )  # noqa
-    g.add_output('glb_top.sram_pwr.v',  glb_tile.o('glb_tile_sram_pwr.v')  )  # noqa
-    g.add_output('glb_top.sram_tt.db',  glb_tile.o('glb_tile_sram_tt.db')  )  # noqa
-    g.add_output('glb_top.sram_tt.lib', glb_tile.o('glb_tile_sram_tt.lib') )  # noqa
-    g.add_output('glb_top.sram_ff.lib', glb_tile.o('glb_tile_sram_ff.lib') )  # noqa
+    g.add_output('glb_top_tt.lib', genlib.o('design.lib'))  # noqa
+    g.add_output('glb_top_tt.db', lib2db.o('design.db'))  # noqa
+    g.add_output('glb_top.lef', signoff.o('design.lef'))  # noqa
+    g.add_output('glb_top.gds', signoff.o('design-merged.gds'))  # noqa
+    g.add_output('glb_top.sdf', signoff.o('design.sdf'))  # noqa
+    g.add_output('glb_top.vcs.v', signoff.o('design.vcs.v'))  # noqa
+    g.add_output('glb_top.vcs.pg.v', signoff.o('design.vcs.pg.v'))  # noqa
+    g.add_output('glb_top.spef.gz', signoff.o('design.spef.gz'))  # noqa
+    g.add_output('glb_top.lvs.v', lvs.o('design_merged.lvs.v'))  # noqa
+    g.add_output('glb_top.sram.spi', glb_tile.o('glb_tile_sram.spi'))  # noqa
+    g.add_output('glb_top.sram.v', glb_tile.o('glb_tile_sram.v'))  # noqa
+    g.add_output('glb_top.sram_pwr.v', glb_tile.o('glb_tile_sram_pwr.v'))  # noqa
+    g.add_output('glb_top.sram_tt.db', glb_tile.o('glb_tile_sram_tt.db'))  # noqa
+    g.add_output('glb_top.sram_tt.lib', glb_tile.o('glb_tile_sram_tt.lib'))  # noqa
+    g.add_output('glb_top.sram_ff.lib', glb_tile.o('glb_tile_sram_ff.lib'))  # noqa
     # autopep8: on
 
     if parameters['tool'] == 'VCS':

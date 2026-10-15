@@ -141,7 +141,7 @@ def convert2netlist(connections):
         if i in skip_index:
             continue
         conn = connections[i]
-        assert(len(conn) == 2)
+        assert (len(conn) == 2)
         # brute force search
         net = [conn[0], conn[1]]
         for j in range(len(connections)):
@@ -430,7 +430,7 @@ def pack_netlists(raw_netlists, name_to_id, fold_reg=True):
             net.remove(item)
             assert (blk_id not in changed_pe)
 
-        assert(len(net) > 0)
+        assert (len(net) > 0)
 
         # remove netlists
         if len(net) == 1:
@@ -628,7 +628,7 @@ def get_tile_op(instance, blk_id, changed_pe, rename_op=True):
             # get signed or unsigned
             if "signed" in instance["modargs"]:
                 signed = instance["modargs"]["signed"][-1]
-                if type(signed) != bool:
+                if type(signed) is not bool:
                     assert isinstance(signed, six.string_types)
                     signed = False if signed[-1] == "0" else True
                 if signed and rename_op:

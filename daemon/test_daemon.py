@@ -1,7 +1,10 @@
-import os, sys, subprocess  # noqa
+import os
+import sys
+import subprocess  # noqa
 from argparse import Namespace
 from daemon import GarnetDaemon
 import time
+
 
 def min_sleep(): time.sleep(1)  # noqa
 
@@ -16,10 +19,12 @@ MYPATH = os.path.realpath(__file__)  # E.g. "/aha/garnet/daemon/test_daemon.py"
 MYDIR = os.path.dirname(MYPATH)
 
 
-def DAEMON(w=4,h=2): return f'python3 {MYPATH} --width {w} --height {h} --daemon'  # noqa
-DAEMON7x13 = DAEMON(7,13)  # noqa
-DAEMON3x5  = DAEMON(3, 5)  # noqa
-DAEMON     = DAEMON(7,13)  # This is the default? Really?? Good for testing maybe i dunno. # noqa
+def DAEMON(w=4, h=2): return f'python3 {MYPATH} --width {w} --height {h} --daemon'  # noqa
+
+
+DAEMON7x13 = DAEMON(7, 13)  # noqa
+DAEMON3x5 = DAEMON(3, 5)  # noqa
+DAEMON = DAEMON(7, 13)  # This is the default? Really?? Good for testing maybe i dunno. # noqa
 
 
 # How to: interactive pytest run with full stdout::
@@ -35,12 +40,12 @@ def test_tests(dbg=0):
     if dbg: print(f'i think daemon.py is here: "{daemon_home}"')  # noqa
 
     find_dfuncs = f"egrep '^    def ' {daemon_home} | sed 's/(.*//' | sed 's/^    def //'"
-    daemon_defs = subprocess.run(find_dfuncs, 
+    daemon_defs = subprocess.run(find_dfuncs,
                                  capture_output=True, text=True, shell=True).stdout.split()
     if dbg: print(f'module defs={daemon_defs}')  # noqa
-    
+
     find_tfuncs = f"egrep '^def ' {MYPATH} | sed 's/(.*//' | sed 's/^def //'"
-    test_defs = subprocess.run(find_tfuncs, 
+    test_defs = subprocess.run(find_tfuncs,
                                capture_output=True, text=True, shell=True).stdout.split()
     if dbg: print(f'test defs={test_defs}')  # noqa
 
@@ -162,7 +167,7 @@ def test_force_launch():
 
     print('Force-launch a second daemon, it should kill the first one', flush=True)
     subprocess.Popen(f'{DAEMON} force'.split())
-    
+
     # Wait a bit, then see if the new daemon is running
     min_sleep()
     pid2 = verify_daemon_running()
@@ -187,8 +192,10 @@ def test_slow_test():
     expect(f'{DAEMON} status', 'daemon_status: busy')
 
     catnew_reset()
-    print('--- SLOTH');      try_animal('sloth',      tmpfile)  # noqa
-    print('--- SLOW LORIS'); try_animal('slow-loris', tmpfile)  # noqa
+    print('--- SLOTH')
+    try_animal('sloth', tmpfile)  # noqa
+    print('--- SLOW LORIS')
+    try_animal('slow-loris', tmpfile)  # noqa
     os.remove(tmpfile)
 
     expect(f'{DAEMON} kill', 'killing it now')
@@ -263,7 +270,8 @@ def test_incompatible_daemon():
 
     # status check should *not* err out for size difference!
     p1 = subprocess.run(f'{DAEMON3x5} status'.split(), text=True, capture_output=True)
-    print(p1.stdout); print(p1.stderr)  # noqa
+    print(p1.stdout)
+    print(p1.stderr)  # noqa
     assert "ERROR: Daemon uses" not in p1.stderr
     print('Second assertion PASSED', flush=True)
     min_sleep()
@@ -293,13 +301,17 @@ def test_help():
 # Unit tests (optional)
 
 # Okay to use comprehensive test(s) for these, for now
-def test_initial_check(): announce_unit('later')  # noqa
-def test_loop():          announce_unit('later')  # noqa
-def test_use():           announce_unit('later')  # noqa
-def test_launch():        announce_unit('later')  # noqa
 
-def test_status():        announce_unit('later')  # noqa
-def test_save_state0():   announce_unit('later')  # noqa
+
+def test_initial_check(): announce_unit('later')  # noqa
+def test_loop(): announce_unit('later')  # noqa
+def test_use(): announce_unit('later')  # noqa
+def test_launch(): announce_unit('later')  # noqa
+
+
+def test_status(): announce_unit('later')  # noqa
+def test_save_state0(): announce_unit('later')  # noqa
+
 
 def test_save_args(): announce_unit(': see test_arg_save_and_restore()')  # noqa
 def test_load_args(): announce_unit(': see test_arg_save_and_restore()')  # noqa
@@ -346,13 +358,13 @@ def test_arg_save_and_restore():
 def test_die_if_daemon_exists(): announce_unit('later')  # noqa
 def test_check_for_orphans(): announce_unit('later')     # noqa
 def test_args_match_or_die(): announce_unit('later')     # noqa
-def test_all_daemon_procs():  announce_unit('later')     # noqa
+def test_all_daemon_procs(): announce_unit('later')     # noqa
 def test_wait_daemon(): announce_unit('later')           # noqa
 
 
 def test_do_cmd():
     if announce_unit(): return                 # noqa
-    assert     GarnetDaemon.do_cmd("exit 0")   # noqa
+    assert GarnetDaemon.do_cmd("exit 0")   # noqa
     assert not GarnetDaemon.do_cmd("exit 13")  # noqa
 
 
@@ -363,10 +375,10 @@ def test_sigstop():
     tmpfile = f'/tmp/test_sigstop.{int(time.time())}'
     subprocess.run(["bash", "-c", "/bin/rm -f /tmp/test_sigstop*"])
     p = subprocess.Popen([
-        "bash", "-c", 
+        "bash", "-c",
         f"while [ 1 ]; do echo -n .; sleep 1; done > {tmpfile}"
     ])
-    
+
     print('\n- run for awhile, see how many dots we gots')
     time.sleep(2)
 
@@ -374,7 +386,7 @@ def test_sigstop():
     GarnetDaemon.sigstop(p.pid)
     with open(tmpfile, 'r') as f: dots0 = f.read()  # noqa
     print(f'- found dots0 "{dots0}"')
-    
+
     print('\nWait awhile, verify that dots did not change')
     time.sleep(2)
     GarnetDaemon.sigstop(p.pid)
@@ -439,14 +451,16 @@ def test_status_save_and_restore():
 
 def test_register_pid(): announce_unit(' - see test_pid_save_restore()')  # noqa
 def test_retrieve_pid(): announce_unit(' - see test_pid_save_restore()')  # noqa
-def test_put_status():   announce_unit(' - see test_status_save_restore()')  # noqa
-def test_get_status():   announce_unit(' - see test_status_save_restore()')  # noqa
+def test_put_status(): announce_unit(' - see test_status_save_restore()')  # noqa
+def test_get_status(): announce_unit(' - see test_status_save_restore()')  # noqa
 
-def test_cleanup():      announce_unit(': TBD')  # noqa
-def test_wait_stage():   announce_unit(': TBD')  # noqa
+
+def test_cleanup(): announce_unit(': TBD')  # noqa
+def test_wait_stage(): announce_unit(': TBD')  # noqa
 def test_check_daemon(): announce_unit(': TBD')  # noqa
 
-def test_save_the_unsaveable():    announce_unit(': TBD')  # noqa
+
+def test_save_the_unsaveable(): announce_unit(': TBD')  # noqa
 
 
 ########################################################################
@@ -476,7 +490,7 @@ def print_w_prefix(prefix, text):
     formatted_contents = prefix + f'\n{prefix}' .join(lines)
     print(formatted_contents)
     sys.stdout.flush()
-    return 
+    return
 
 
 def try_animal(animal, tmpfile):
@@ -495,7 +509,7 @@ def expect(cmd, expect):
     # TODO for extra credit maybe <expect> could be a regex omg
     # print('launching expect process')
     p = subprocess.run(
-        cmd.split(), text=True, 
+        cmd.split(), text=True,
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
     # Print stdout
@@ -506,7 +520,7 @@ def expect(cmd, expect):
 
     # Did we get what we expected?
     if expect in p.stdout: return True   # noqa
-    else:                  return False  # noqa
+    else: return False  # noqa
 
 
 def kill_existing_daemon():
@@ -578,7 +592,7 @@ def announce(msg=''):
     import inspect
     curframe = inspect.currentframe()
     print_header(curframe, msg)
-    
+
 
 def announce_unit(msg=''):
     # Return True if we are supposed to skip this test

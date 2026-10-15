@@ -86,18 +86,18 @@ def construct():
 
     # Default steps
     # autopep8: off
-    info         = Step('info',                          default=True)  # noqa
+    info = Step('info', default=True)  # noqa
     # constraints= Step('constraints',                   default=True)  # noqa
-    dc           = Step('synopsys-dc-synthesis',         default=True)  # noqa
-    iflow        = Step('cadence-innovus-flowsetup',     default=True)  # noqa
-    init         = Step('cadence-innovus-init',          default=True)  # noqa
-    power        = Step('cadence-innovus-power',         default=True)  # noqa
-    place        = Step('cadence-innovus-place',         default=True)  # noqa
-    route        = Step('cadence-innovus-route',         default=True)  # noqa
-    signoff      = Step('cadence-innovus-signoff',       default=True)  # noqa
-    pt_signoff   = Step('synopsys-pt-timing-signoff',    default=True)  # noqa
-    genlibdb     = Step('synopsys-ptpx-genlibdb',        default=True)  # noqa
-    init_fill    = Step('mentor-calibre-fill',           default=True)  # noqa
+    dc = Step('synopsys-dc-synthesis', default=True)  # noqa
+    iflow = Step('cadence-innovus-flowsetup', default=True)  # noqa
+    init = Step('cadence-innovus-init', default=True)  # noqa
+    power = Step('cadence-innovus-power', default=True)  # noqa
+    place = Step('cadence-innovus-place', default=True)  # noqa
+    route = Step('cadence-innovus-route', default=True)  # noqa
+    signoff = Step('cadence-innovus-signoff', default=True)  # noqa
+    pt_signoff = Step('synopsys-pt-timing-signoff', default=True)  # noqa
+    genlibdb = Step('synopsys-ptpx-genlibdb', default=True)  # noqa
+    init_fill = Step('mentor-calibre-fill', default=True)  # noqa
     # autopep8: on
 
     if which("calibre") is not None:
@@ -268,12 +268,12 @@ def construct():
     g.connect_by_name(signoff, pt_signoff)
 
     # autopep8: off
-    g.connect_by_name(adk,     debugcalibre)  # noqa
-    g.connect_by_name(dc,      debugcalibre)  # noqa
-    g.connect_by_name(iflow,   debugcalibre)  # noqa
+    g.connect_by_name(adk, debugcalibre)  # noqa
+    g.connect_by_name(dc, debugcalibre)  # noqa
+    g.connect_by_name(iflow, debugcalibre)  # noqa
     g.connect_by_name(signoff, debugcalibre)  # noqa
-    g.connect_by_name(drc,     debugcalibre)  # noqa
-    g.connect_by_name(lvs,     debugcalibre)  # noqa
+    g.connect_by_name(drc, debugcalibre)  # noqa
+    g.connect_by_name(lvs, debugcalibre)  # noqa
     # autopep8: on
 
     # Netlist fixing should be run during signoff

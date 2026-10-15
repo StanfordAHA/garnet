@@ -41,7 +41,7 @@ class GlbSwitch(Generator):
         self.clk_en_sw2bank = self.output("clk_en_sw2bank", 1)
         if self.wr_channel:
             self.wr_packet = self.output("wr_packet", self.header.wr_packet_t)
-        
+
         if self.rd_channel:
             self.rdrq_packet = self.output("rdrq_packet", self.header.rdrq_packet_t)
             self.rdrs_packet = self.input("rdrs_packet", self.header.rdrs_packet_t)
@@ -82,13 +82,13 @@ class GlbSwitch(Generator):
         # local pararmeters
         self.tile_id_lsb = self._params.bank_addr_width + self._params.bank_sel_addr_width
         self.tile_id_msb = self.tile_id_lsb + self._params.tile_sel_addr_width - 1
-        
+
         if self.rd_channel and (self.data_width != self._params.bank_data_width):
             self.add_bank_rd_addr_sel_pipeline()
         self.add_always(self.tile_id_match)
         if self.wr_channel:
             self.add_always(self.wr_logic, is_partial=(self.data_width != self._params.bank_data_width))
-        if self.rd_channel: 
+        if self.rd_channel:
             self.add_always(self.rdrq_logic)
             self.add_always(self.rdrs_logic, is_partial=(self.data_width != self._params.bank_data_width))
         self.add_always(self.pipeline)
@@ -96,7 +96,7 @@ class GlbSwitch(Generator):
         self.add_always(self.est_m_clk_en_sel_first_cycle_comb)
         if self.wr_channel:
             self.add_always(self.est_m_wr_clk_en_sel_latch)
-        if self.rd_channel: 
+        if self.rd_channel:
             self.add_always(self.est_m_rd_clk_en_sel_latch)
         self.add_always(self.est_m_clk_en_sel_comb)
         if self.wr_channel:
@@ -194,13 +194,13 @@ class GlbSwitch(Generator):
                 self.wr_clk_en_gen.p_cnt.value = self._params.tile2sram_wr_delay + self._params.wr_clk_en_margin
             self.sw2bank_wr_clk_en = self.var("sw2bank_wr_clk_en", 1)
             self.add_child("sw2bank_wr_clk_en_gen",
-                        self.wr_clk_en_gen,
-                        clk=self.mclk,
-                        reset=self.reset,
-                        enable=(self.if_wst_s.wr_en & self.wr_tile_id_match),
-                        clk_en=self.sw2bank_wr_clk_en
-                        )
-            
+                           self.wr_clk_en_gen,
+                           clk=self.mclk,
+                           reset=self.reset,
+                           enable=(self.if_wst_s.wr_en & self.wr_tile_id_match),
+                           clk_en=self.sw2bank_wr_clk_en
+                           )
+
         if self.rd_channel:
             self.rd_clk_en_gen = GlbClkEnGen(cnt=self._params.tile2sram_rd_delay + self._params.rd_clk_en_margin)
             if os.getenv('WHICH_SOC') == "amber":
@@ -209,12 +209,12 @@ class GlbSwitch(Generator):
                 self.rd_clk_en_gen.p_cnt.value = self._params.tile2sram_rd_delay + self._params.rd_clk_en_margin
             self.sw2bank_rd_clk_en = self.var("sw2bank_rd_clk_en", 1)
             self.add_child("sw2bank_rd_clk_en_gen",
-                        self.rd_clk_en_gen,
-                        clk=self.mclk,
-                        reset=self.reset,
-                        enable=(self.if_wst_s.rd_en & self.rd_tile_id_match),
-                        clk_en=self.sw2bank_rd_clk_en
-                        )
+                           self.rd_clk_en_gen,
+                           clk=self.mclk,
+                           reset=self.reset,
+                           enable=(self.if_wst_s.rd_en & self.rd_tile_id_match),
+                           clk_en=self.sw2bank_rd_clk_en
+                           )
 
         if self.wr_channel and self.rd_channel:
             self.wire(self.clk_en_sw2bank, self.sw2bank_wr_clk_en | self.sw2bank_rd_clk_en)
@@ -341,7 +341,7 @@ class GlbSwitch(Generator):
                 self.if_est_m.wr_addr = 0
                 self.if_est_m.wr_data = 0
 
-            if self.rd_channel:    
+            if self.rd_channel:
                 self.if_est_m.rd_en = 0
                 self.if_est_m.rd_addr = 0
                 self.if_wst_s.rd_data = 0

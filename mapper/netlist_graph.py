@@ -677,8 +677,6 @@ class NetlistGraph:
         #     if "scale_output_data_packing" in pe_node.node_id:
         #         (pe_node.x, pe_node.y) = (13, 1)
 
-
-
         # # Place reduction tree stage 0 PEs right above MU IOs
         # for node in self.pe_nodes:
         #     if len(node.sources) == 2 and (all(source.node_type in ["U", "V"] for source in node.sources)):
@@ -826,4 +824,3 @@ class NetlistGraph:
             for node in self.nodes:
                 if node.x is not None:
                     f.write(f"{node.node_name} {node.x} {node.y}\n")
-

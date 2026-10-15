@@ -86,10 +86,9 @@ class GlbTile(Generator):
         # MU interface
         if self._params.include_mu_glb_hw:
             self.if_mu_rd = GlbTileDataLoopInterface(addr_width=self._params.glb_addr_width,
-                                            data_width=self._params.bank_data_width, is_clk_en=True, is_strb=False, has_wr_ifc=False, num_tracks=self._params.mu_switch_num_tracks, mu_word_num_tiles=self._params.mu_word_num_tiles)
+                                                     data_width=self._params.bank_data_width, is_clk_en=True, is_strb=False, has_wr_ifc=False, num_tracks=self._params.mu_switch_num_tracks, mu_word_num_tiles=self._params.mu_word_num_tiles)
             self.if_mu_rd_est_m = self.interface(self.if_mu_rd, "if_mu_rd_est_m")
             self.if_mu_rd_wst_s = self.interface(self.if_mu_rd, "if_mu_rd_wst_s")
-
 
         # Connect m2s ports
         for m2s_port in self.if_proc.m_to_s:
@@ -103,7 +102,6 @@ class GlbTile(Generator):
             self.wire(port, self.if_proc_est_m[s2m_port])
             port = self.output(f"if_proc_wst_s_{s2m_port}", self.if_proc_wst_s[s2m_port].width)
             self.wire(port, self.if_proc_wst_s[s2m_port])
-
 
         if self._params.include_mu_glb_hw:
             # Connect m2s ports
@@ -325,10 +323,10 @@ class GlbTile(Generator):
             self.wire(self.clk_en_mu_rd_switch, self.if_mu_rd_wst_s['rd_clk_en'])
             self.clk_en_mu_rd_sw2bank = self.var("clk_en_mu_rd_sw2bank", 1)
             self.add_child("glb_clk_gate_mu_rd_switch",
-                        ClkGate(_params=self._params),
-                        clk=self.clk,
-                        enable=self.clk_en_mu_rd_switch | self.clk_en_master,
-                        gclk=self.gclk_mu_rd_switch)
+                           ClkGate(_params=self._params),
+                           clk=self.clk,
+                           enable=self.clk_en_mu_rd_switch | self.clk_en_master,
+                           gclk=self.gclk_mu_rd_switch)
 
         # Clock gating - pcfg_dma
         self.clk_en_pcfg_dma = self.var("clk_en_pcfg_dma", 1)
@@ -373,15 +371,15 @@ class GlbTile(Generator):
                           | self.clk_en_ring2bank | self.clk_en_pcfgring2bank | self.clk_en_procsw2bank | self.clk_en_mu_rd_sw2bank)
             else:
                 self.wire(self.clk_en_bank, self.clk_en_lddma2bank | self.clk_en_stdma2bank | self.clk_en_pcfgdma2bank
-                        | self.clk_en_procsw2bank | self.clk_en_mu_rd_sw2bank)
+                          | self.clk_en_procsw2bank | self.clk_en_mu_rd_sw2bank)
 
         else:
             if self._params.include_glb_ring_switch:
                 self.wire(self.clk_en_bank, self.clk_en_lddma2bank | self.clk_en_stdma2bank | self.clk_en_pcfgdma2bank
-                        | self.clk_en_ring2bank | self.clk_en_pcfgring2bank | self.clk_en_procsw2bank)
+                          | self.clk_en_ring2bank | self.clk_en_pcfgring2bank | self.clk_en_procsw2bank)
             else:
                 self.wire(self.clk_en_bank, self.clk_en_lddma2bank | self.clk_en_stdma2bank | self.clk_en_pcfgdma2bank
-                        | self.clk_en_procsw2bank)
+                          | self.clk_en_procsw2bank)
         self.add_child("glb_clk_gate_bank",
                        ClkGate(_params=self._params),
                        clk=self.clk,
@@ -464,10 +462,10 @@ class GlbTile(Generator):
                        cfg_st_dma_rv_seg_mode=self.cfg_st_dma_rv_seg_mode)
 
         if self._params.include_glb_ring_switch:
-               self.wire(self.wr_packet_dma2ring, self.glb_store_dma.wr_packet_dma2ring),
-                # TODO: How to make this automatic
-               self.wire(self.glb_store_dma.cfg_tile_connected_prev, self.cfg_tile_connected_prev)
-               self.wire(self.glb_store_dma.cfg_tile_connected_next, self.cfg_tile_connected_next)
+            self.wire(self.wr_packet_dma2ring, self.glb_store_dma.wr_packet_dma2ring),
+            # TODO: How to make this automatic
+            self.wire(self.glb_store_dma.cfg_tile_connected_prev, self.cfg_tile_connected_prev)
+            self.wire(self.glb_store_dma.cfg_tile_connected_next, self.cfg_tile_connected_next)
 
         if self._params.include_E64_hw:
             self.wire(self.glb_store_dma.cfg_exchange_64_mode, self.cfg_st_dma_exchange_64_mode)
@@ -476,7 +474,6 @@ class GlbTile(Generator):
         if self._params.include_E64_hw:
             if self._params.include_multi_bank_hw:
                 self.wire(self.glb_store_dma.cfg_bank_toggle_mode, self.cfg_bank_toggle_mode)
-
 
         self.add_child("glb_load_dma",
                        self.glb_load_dma,
@@ -508,10 +505,8 @@ class GlbTile(Generator):
             self.wire(self.glb_load_dma.cfg_tile_connected_prev, self.cfg_tile_connected_prev)
             self.wire(self.glb_load_dma.cfg_tile_connected_next, self.cfg_tile_connected_next)
 
-
         if self._params.include_E64_hw:
             self.wire(self.glb_load_dma.cfg_exchange_64_mode, self.cfg_ld_dma_exchange_64_mode)
-
 
         self.pcfg_dma = GlbPcfgDma(_params=self._params)
         self.add_child("glb_pcfg_dma",
@@ -537,7 +532,6 @@ class GlbTile(Generator):
             # TODO: How to make this automatic
             self.wire(self.pcfg_dma.ports.cfg_pcfg_tile_connected_prev, self.cfg_pcfg_tile_connected_prev)
             self.wire(self.pcfg_dma.ports.cfg_pcfg_tile_connected_next, self.cfg_pcfg_tile_connected_next)
-
 
         if self._params.include_multi_bank_hw:
             self.glb_bank_mux = GlbBankMux_MB(_params=self._params)
@@ -597,71 +591,70 @@ class GlbTile(Generator):
                        rdrq_packet=self.rdrq_packet_procsw2bank,
                        rdrs_packet=self.rdrs_packet_bank2procsw)
 
-
         if self._params.include_mu_glb_hw:
             self.glb_mu_rd_switch = GlbSwitchDataLoop(self._params, ifc=self.if_mu_rd, wr_channel=False, rd_channel=True, num_tracks=self._params.mu_switch_num_tracks)
             self.add_child("glb_mu_rd_switch",
-                        self.glb_mu_rd_switch,
-                        mclk=self.clk,
-                        gclk=clock(self.gclk_mu_rd_switch),
-                        reset=self.reset,
-                        glb_tile_id=self.glb_tile_id,
-                        if_est_m=self.if_mu_rd_est_m,
-                        if_wst_s=self.if_mu_rd_wst_s,
-                        clk_en_sw2bank=self.clk_en_mu_rd_sw2bank,
-                        rdrq_packet=self.rdrq_packet_mu_rd_sw2bank,
-                        rdrs_packet=self.rdrs_packet_bank2mu_rd_sw)
+                           self.glb_mu_rd_switch,
+                           mclk=self.clk,
+                           gclk=clock(self.gclk_mu_rd_switch),
+                           reset=self.reset,
+                           glb_tile_id=self.glb_tile_id,
+                           if_est_m=self.if_mu_rd_est_m,
+                           if_wst_s=self.if_mu_rd_wst_s,
+                           clk_en_sw2bank=self.clk_en_mu_rd_sw2bank,
+                           rdrq_packet=self.rdrq_packet_mu_rd_sw2bank,
+                           rdrs_packet=self.rdrs_packet_bank2mu_rd_sw)
 
         if self._params.include_glb_ring_switch:
             self.add_child("glb_strm_ring_switch",
-                            GlbRingSwitch(_params=self._params, wr_channel=True, rd_channel=True),
-                            clk=clock(self.gclk_strm_switch),
-                            reset=self.reset,
-                            glb_tile_id=self.glb_tile_id,
-                            clk_en_ring2bank=self.clk_en_ring2bank,
-                            wr_packet_w2e_wsti=self.strm_wr_packet_w2e_wsti,
-                            wr_packet_e2w_wsto=self.strm_wr_packet_e2w_wsto,
-                            wr_packet_e2w_esti=self.strm_wr_packet_e2w_esti,
-                            wr_packet_w2e_esto=self.strm_wr_packet_w2e_esto,
-                            rdrq_packet_w2e_wsti=self.strm_rdrq_packet_w2e_wsti,
-                            rdrq_packet_e2w_wsto=self.strm_rdrq_packet_e2w_wsto,
-                            rdrq_packet_e2w_esti=self.strm_rdrq_packet_e2w_esti,
-                            rdrq_packet_w2e_esto=self.strm_rdrq_packet_w2e_esto,
-                            rdrs_packet_w2e_wsti=self.strm_rdrs_packet_w2e_wsti,
-                            rdrs_packet_e2w_wsto=self.strm_rdrs_packet_e2w_wsto,
-                            rdrs_packet_e2w_esti=self.strm_rdrs_packet_e2w_esti,
-                            rdrs_packet_w2e_esto=self.strm_rdrs_packet_w2e_esto,
-                            wr_packet_ring2bank=self.wr_packet_ring2bank,
-                            wr_packet_dma2ring=self.wr_packet_dma2ring,
-                            rdrq_packet_ring2bank=self.rdrq_packet_ring2bank,
-                            rdrq_packet_dma2ring=self.rdrq_packet_dma2ring,
-                            rdrs_packet_ring2dma=self.rdrs_packet_ring2dma,
-                            rdrs_packet_bank2ring=self.rdrs_packet_bank2ring,
-                            cfg_ld_dma_on=(self.cfg_ld_dma_ctrl['mode'][1, 0] != 0),
-                            cfg_tile_connected_prev=self.cfg_tile_connected_prev,
-                            cfg_tile_connected_next=self.cfg_tile_connected_next)
+                           GlbRingSwitch(_params=self._params, wr_channel=True, rd_channel=True),
+                           clk=clock(self.gclk_strm_switch),
+                           reset=self.reset,
+                           glb_tile_id=self.glb_tile_id,
+                           clk_en_ring2bank=self.clk_en_ring2bank,
+                           wr_packet_w2e_wsti=self.strm_wr_packet_w2e_wsti,
+                           wr_packet_e2w_wsto=self.strm_wr_packet_e2w_wsto,
+                           wr_packet_e2w_esti=self.strm_wr_packet_e2w_esti,
+                           wr_packet_w2e_esto=self.strm_wr_packet_w2e_esto,
+                           rdrq_packet_w2e_wsti=self.strm_rdrq_packet_w2e_wsti,
+                           rdrq_packet_e2w_wsto=self.strm_rdrq_packet_e2w_wsto,
+                           rdrq_packet_e2w_esti=self.strm_rdrq_packet_e2w_esti,
+                           rdrq_packet_w2e_esto=self.strm_rdrq_packet_w2e_esto,
+                           rdrs_packet_w2e_wsti=self.strm_rdrs_packet_w2e_wsti,
+                           rdrs_packet_e2w_wsto=self.strm_rdrs_packet_e2w_wsto,
+                           rdrs_packet_e2w_esti=self.strm_rdrs_packet_e2w_esti,
+                           rdrs_packet_w2e_esto=self.strm_rdrs_packet_w2e_esto,
+                           wr_packet_ring2bank=self.wr_packet_ring2bank,
+                           wr_packet_dma2ring=self.wr_packet_dma2ring,
+                           rdrq_packet_ring2bank=self.rdrq_packet_ring2bank,
+                           rdrq_packet_dma2ring=self.rdrq_packet_dma2ring,
+                           rdrs_packet_ring2dma=self.rdrs_packet_ring2dma,
+                           rdrs_packet_bank2ring=self.rdrs_packet_bank2ring,
+                           cfg_ld_dma_on=(self.cfg_ld_dma_ctrl['mode'][1, 0] != 0),
+                           cfg_tile_connected_prev=self.cfg_tile_connected_prev,
+                           cfg_tile_connected_next=self.cfg_tile_connected_next)
 
             self.add_child("glb_pcfg_ring_switch",
-                            GlbRingSwitch(_params=self._params, wr_channel=False, rd_channel=True),
-                            clk=clock(self.gclk_pcfg_switch),
-                            clk_en_ring2bank=self.clk_en_pcfgring2bank,
-                            reset=self.reset,
-                            glb_tile_id=self.glb_tile_id,
-                            rdrq_packet_w2e_wsti=self.pcfg_rdrq_packet_w2e_wsti,
-                            rdrq_packet_e2w_wsto=self.pcfg_rdrq_packet_e2w_wsto,
-                            rdrq_packet_e2w_esti=self.pcfg_rdrq_packet_e2w_esti,
-                            rdrq_packet_w2e_esto=self.pcfg_rdrq_packet_w2e_esto,
-                            rdrs_packet_w2e_wsti=self.pcfg_rdrs_packet_w2e_wsti,
-                            rdrs_packet_e2w_wsto=self.pcfg_rdrs_packet_e2w_wsto,
-                            rdrs_packet_e2w_esti=self.pcfg_rdrs_packet_e2w_esti,
-                            rdrs_packet_w2e_esto=self.pcfg_rdrs_packet_w2e_esto,
-                            rdrq_packet_dma2ring=self.rdrq_packet_pcfgdma2ring,
-                            rdrq_packet_ring2bank=self.rdrq_packet_pcfgring2bank,
-                            rdrs_packet_ring2dma=self.rdrs_packet_pcfgring2dma,
-                            rdrs_packet_bank2ring=self.rdrs_packet_bank2pcfgring,
-                            cfg_ld_dma_on=(self.cfg_pcfg_dma_ctrl['mode'] != 0),
-                            cfg_tile_connected_prev=self.cfg_pcfg_tile_connected_prev,
-                            cfg_tile_connected_next=self.cfg_pcfg_tile_connected_next)
+                           GlbRingSwitch(_params=self._params, wr_channel=False, rd_channel=True),
+                           clk=clock(self.gclk_pcfg_switch),
+                           clk_en_ring2bank=self.clk_en_pcfgring2bank,
+                           reset=self.reset,
+                           glb_tile_id=self.glb_tile_id,
+                           rdrq_packet_w2e_wsti=self.pcfg_rdrq_packet_w2e_wsti,
+                           rdrq_packet_e2w_wsto=self.pcfg_rdrq_packet_e2w_wsto,
+                           rdrq_packet_e2w_esti=self.pcfg_rdrq_packet_e2w_esti,
+                           rdrq_packet_w2e_esto=self.pcfg_rdrq_packet_w2e_esto,
+                           rdrs_packet_w2e_wsti=self.pcfg_rdrs_packet_w2e_wsti,
+                           rdrs_packet_e2w_wsto=self.pcfg_rdrs_packet_e2w_wsto,
+                           rdrs_packet_e2w_esti=self.pcfg_rdrs_packet_e2w_esti,
+                           rdrs_packet_w2e_esto=self.pcfg_rdrs_packet_w2e_esto,
+                           rdrq_packet_dma2ring=self.rdrq_packet_pcfgdma2ring,
+                           rdrq_packet_ring2bank=self.rdrq_packet_pcfgring2bank,
+                           rdrs_packet_ring2dma=self.rdrs_packet_pcfgring2dma,
+                           rdrs_packet_bank2ring=self.rdrs_packet_bank2pcfgring,
+                           cfg_ld_dma_on=(self.cfg_pcfg_dma_ctrl['mode'] != 0),
+                           cfg_tile_connected_prev=self.cfg_pcfg_tile_connected_prev,
+                           cfg_tile_connected_next=self.cfg_pcfg_tile_connected_next)
 
         self.glb_bank_arr = []
         for i in range(self._params.banks_per_tile):
@@ -750,7 +743,7 @@ class GlbTile(Generator):
 
         self.rdrs_packet_bank2procsw = self.var("rdrs_packet_bank2procsw", self.header.rdrs_packet_t)
         if self._params.include_mu_glb_hw:
-            self.rdrs_packet_bank2mu_rd_sw = self.var("rdrs_packet_bank2mu_rd_sw", self.header.rdrs_packet_t, size = self._params.banks_per_tile)
+            self.rdrs_packet_bank2mu_rd_sw = self.var("rdrs_packet_bank2mu_rd_sw", self.header.rdrs_packet_t, size=self._params.banks_per_tile)
         if self._params.include_glb_ring_switch:
             self.rdrs_packet_bank2ring = self.var("rdrs_packet_bank2ring", self.header.rdrs_packet_t)
             self.rdrs_packet_ring2dma = self.var("rdrs_packet_ring2dma", self.header.rdrs_packet_t)

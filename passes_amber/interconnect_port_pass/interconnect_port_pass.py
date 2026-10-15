@@ -5,7 +5,6 @@ from gemstone.common.transform import pipeline_wire
 import magma
 
 
-
 def config_port_pass(interconnect: Interconnect, pipeline=False):
     # x coordinate of garnet
     x_min = interconnect.x_min
@@ -33,7 +32,7 @@ def config_port_pass(interconnect: Interconnect, pipeline=False):
         # wire configuration ports to first tile in column
         in_port = interconnect.ports.config[x_coor]
         out_port = column[0].ports.config
-        if pipeline==True:
+        if pipeline == True:  # noqa: E712 (== True/False kept: may not be a bool)
             pipeline_wire(interconnect,
                           in_port,
                           out_port,
@@ -56,17 +55,17 @@ def stall_port_pass(interconnect: Interconnect, port_name: str, port_width=1, co
     interconnect.remove_port(port_name)
     interconnect.add_port(port_name,
                           magma.In(magma.Bits[num_ports * port_width]))
-    
+
     # looping through columns and wire port every col_offset
     for i, x_coor in enumerate(range(x_min, x_min + width)):
         column = interconnect.get_column(x_coor)
         # skip tiles with no port_name
         column = [entry for entry in column if port_name in entry.ports]
         # wire configuration ports to first tile in column every col_offset
-        in_port = interconnect.ports[port_name][(i // col_offset) 
-                  * port_width:((i // col_offset) + 1) * port_width]
+        in_port = interconnect.ports[port_name][(i // col_offset)
+                                                * port_width:((i // col_offset) + 1) * port_width]
         out_port = column[0].ports[port_name]
-        if pipeline==True:
+        if pipeline == True:  # noqa: E712 (== True/False kept: may not be a bool)
             pipeline_wire(interconnect,
                           in_port,
                           out_port,

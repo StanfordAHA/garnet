@@ -7,7 +7,8 @@ import math
 import os
 import argparse
 from typing import Dict, List, Tuple, Set
-#from .place_and_route_graph import construct_graph, load_folded_regs
+# from .place_and_route_graph import construct_graph, load_folded_regs
+
 
 def parse_args():
     parser = argparse.ArgumentParser("PnR Visualization tool")
@@ -15,7 +16,7 @@ def parse_args():
     parser.add_argument("--width", required=True, dest="width", type=str, help="CGRA width")
     parser.add_argument("--height", required=True, dest="height", type=str, help="CGRA height")
     parser.add_argument("--crit_net", required=False, dest="crit_net", nargs='*', type=str, help="Critical Net")
-   
+
     args = parser.parse_args()
     # check filenames
     dirname = os.path.join(args.application, "bin")
@@ -30,14 +31,13 @@ def parse_args():
     return placement, route, folded, int(args.height) + 1, int(args.width) + 1, args.crit_net
 
 
-def arrowedLine(draw, ptA, ptB, size = 3, color=(0,255,0)):
+def arrowedLine(draw, ptA, ptB, size=3, color=(0, 255, 0)):
     """Draw line from ptA to ptB with arrowhead at ptB"""
     # Get drawing context
-    width=1
+    width = 1
 
     # Draw the line without arrows
-    draw.line((ptA,ptB), width=width, fill=color)
-     
+    draw.line((ptA, ptB), width=width, fill=color)
 
     # Now work out the arrowhead
     # = it will be a triangle with one vertex at ptB
@@ -46,27 +46,27 @@ def arrowedLine(draw, ptA, ptB, size = 3, color=(0,255,0)):
     x0, y0 = ptA
     x1, y1 = ptB
     # Now we can work out the x,y coordinates of the bottom of the arrowhead triangle
-    xb = 0*(x1-x0)+x0
-    yb = 0*(y1-y0)+y0
+    xb = 0 * (x1 - x0) + x0
+    yb = 0 * (y1 - y0) + y0
 
     # Work out the other two vertices of the triangle
     # Check if line is vertical
-    if x0==x1:
-       vtx0 = (xb-size, yb)
-       vtx1 = (xb+size, yb)
+    if x0 == x1:
+        vtx0 = (xb - size, yb)
+        vtx1 = (xb + size, yb)
     # Check if line is horizontal
-    elif y0==y1:
-       vtx0 = (xb, yb+size)
-       vtx1 = (xb, yb-size)
+    elif y0 == y1:
+        vtx0 = (xb, yb + size)
+        vtx1 = (xb, yb - size)
     else:
-       alpha = math.atan2(y1-y0,x1-x0)-90*math.pi/180
-       a = 8*math.cos(alpha)
-       b = 8*math.sin(alpha)
-       vtx0 = (xb+a, yb+b)
-       vtx1 = (xb-a, yb-b)
+        alpha = math.atan2(y1 - y0, x1 - x0) - 90 * math.pi / 180
+        a = 8 * math.cos(alpha)
+        b = 8 * math.sin(alpha)
+        vtx0 = (xb + a, yb + b)
+        vtx1 = (xb - a, yb - b)
 
-    #draw.point((xb,yb), fill=(255,0,0))    # DEBUG: draw point of base in red - comment out draw.polygon() below if using this line
-    #im.save('DEBUG-base.png')              # DEBUG: save
+    # draw.point((xb,yb), fill=(255,0,0))    # DEBUG: draw point of base in red - comment out draw.polygon() below if using this line
+    # im.save('DEBUG-base.png')              # DEBUG: save
 
     # Now draw the arrowhead triangle
     draw.polygon([vtx0, vtx1, ptB], fill=color)
@@ -114,8 +114,9 @@ class Graph:
                 Graph.__sort(n, stack, visited)
         stack.append(node)
 
+
 class RouteNode:
-    def __init__(self, node_id = 0, x = 0, y = 0, track = 0, net_id = 0, bit_width = 0):
+    def __init__(self, node_id=0, x=0, y=0, track=0, net_id=0, bit_width=0):
         self.node_id = node_id
         self.x = x
         self.y = y
@@ -123,8 +124,9 @@ class RouteNode:
         self.net_id = net_id
         self.bit_width = bit_width
 
+
 class Route:
-    def __init__(self, prev_node = None, node = None, continue_route = False, route_dir = None):
+    def __init__(self, prev_node=None, node=None, continue_route=False, route_dir=None):
         self.prev_node = prev_node
         self.node = node
         self.continue_route = continue_route
@@ -133,10 +135,10 @@ class Route:
 
 class Visualizer():
     def __init__(self, img_width, img_height, width, height, scale, num_tracks, graph, color_index, color_palette):
-        self.img_width = img_width 
-        self.img_height = img_height 
-        self.width = width 
-        self.height = height 
+        self.img_width = img_width
+        self.img_height = img_height
+        self.width = width
+        self.height = height
         self.scale = scale
         self.num_tracks = num_tracks
         self.graph = graph
@@ -144,20 +146,18 @@ class Visualizer():
         self.color_palette = color_palette
 
     def draw_grid(self, draw):
-        draw.rectangle((0, self.img_width, 0, self.img_height), fill = (0, 0, 0, 255))
+        draw.rectangle((0, self.img_width, 0, self.img_height), fill=(0, 0, 0, 255))
         for i in range(0, self.height + 1):
             # horizontal lines
             draw.line((0, i * self.scale, self.img_width, i * self.scale),
-                    fill=(255, 255, 255), width=1)
+                      fill=(255, 255, 255), width=1)
             draw.text((0, i * self.scale), str(i))
-                    
+
         for i in range(0, self.width + 1):
             # vertical lines
             draw.line((i * self.scale, 0, i * self.scale, self.img_height),
-                    fill=(255, 255, 255), width=1)
+                      fill=(255, 255, 255), width=1)
             draw.text((i * self.scale, 0), str(i))
-
-
 
     def topological_sort(self):
         stack = []
@@ -176,11 +176,10 @@ class Visualizer():
         new_node.x = node.x
         new_node.y = node.y
         new_node.track = node.track
-        new_node.net_id  = node.net_id
+        new_node.net_id = node.net_id
         new_node.bit_width = node.bit_width
 
-
-        if self.graph.get_node(node).type_ == "route" and self.graph.get_node(node).track != None:
+        if self.graph.get_node(node).type_ == "route" and self.graph.get_node(node).track is not None:
             if len(stack) != 0:
                 prev_node = stack[-1]
 
@@ -190,7 +189,7 @@ class Visualizer():
                         new_route.prev_node = prev_node
                         new_route.node = new_node
                         new_route.route_dir = "x" if new_node.y == prev_node.y else "y"
-                        
+
                         if len(routes) > 0:
                             new_route.continue_route = routes[-1][1].net_id == new_node.net_id
 
@@ -198,16 +197,16 @@ class Visualizer():
                         stack.append(new_node)
                 else:
                     stack.append(new_node)
-            
+
             else:
                 stack.append(new_node)
 
-    def draw_routes(self, draw, crit_net = None):
-        color = lambda : (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255), 255)
+    def draw_routes(self, draw, crit_net=None):
+        color = lambda: (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255), 255)
         net_colors = {}
         for node in self.graph.nodes:
             net_id = self.graph.get_node(node).net_id
-            if crit_net != None:
+            if crit_net is not None:
                 if net_id in crit_net:
                     net_colors[net_id] = (255, 0, 0, 255)
             else:
@@ -225,7 +224,7 @@ class Visualizer():
 
             if src_node.net_id not in net_colors:
                 continue
-            
+
             route_color = net_colors[src_node.net_id]
 
             x1 = src_node.x
@@ -236,13 +235,12 @@ class Visualizer():
             end_offset = 0.5
             start_offset = 0.5
 
-            if track == None:
+            if track is None:
                 track = dst_node.track
-                if track == None:
+                if track is None:
                     # Hacky, but we need to look back to the last SB to find the track for this connection
                     # track = self.get_prev_track(edge[0])
                     track = 0
-
 
             # # start offset first
             # self.get_prev_track(edge[0])
@@ -251,7 +249,6 @@ class Visualizer():
 
             #     if changed_track != None:
             #         start_offset = (int(changed_track) / self.num_tracks) * 0.6
-
 
             # if len(route["segments"]) > idx + 2:
             #     seg3 = route["segments"][idx + 2]
@@ -267,13 +264,12 @@ class Visualizer():
             # if idx > 0:
             #     change_dir = not ((x1 == x2 == route["segments"][idx - 1]['x']) or (y1 == y2 == route["segments"][idx - 1]['y']))
 
-
             # # Assuming if route changes track its changing direction too
             # if track != track4 or change_dir:
             #     start_offset = (track4 / self.num_tracks) * 0.6 + 0.2
 
             track_offset = (int(track) / self.num_tracks) * 0.6
-            
+
             if src_node.bit_width == 1:
                 route_width = 2
             else:
@@ -286,7 +282,7 @@ class Visualizer():
             else:
                 # Horizontal trace
                 # draw.line(((x1 + start_offset) * self.scale, (y1 + 0.2 + track_offset) * self.scale, (x2 + end_offset) * self.scale, (y2 + 0.2 + track_offset) * self.scale), fill=route_color, width=2)
-                arrowedLine(draw,((x1 + start_offset) * self.scale, (y1 + 0.2 + track_offset) * self.scale), ((x2 + end_offset) * self.scale, (y2 + 0.2 + track_offset) * self.scale), color=route_color, size=route_width)
+                arrowedLine(draw, ((x1 + start_offset) * self.scale, (y1 + 0.2 + track_offset) * self.scale), ((x2 + end_offset) * self.scale, (y2 + 0.2 + track_offset) * self.scale), color=route_color, size=route_width)
 
     def draw_tiles(self, draw):
         # board_pos = self.graph.nodes
@@ -301,16 +297,14 @@ class Visualizer():
             index = self.color_index.index(blk_id[0])
             color = self.color_palette[index]
 
-
             width_frac = 1
             size = self.scale - 1
             width = size * width_frac
-            shrink = self.scale/5 
+            shrink = self.scale / 5
             x, y = node.x, node.y
 
-            
             draw.rectangle((x * self.scale + 1 + shrink, y * self.scale + 1 + shrink, x * self.scale + width - shrink,
-                        y * self.scale + size - shrink), fill=color)
+                            y * self.scale + size - shrink), fill=color)
             draw.text((x * self.scale + 1 + shrink, y * self.scale + 1 + shrink), blk_id)
 
             for src in self.graph.sources[blk_id]:
@@ -319,10 +313,11 @@ class Visualizer():
                     width_frac = 1
                     size = self.scale - 1
                     width = size * width_frac
-                    shrink = self.scale/2
-                    shrink2 = self.scale/5 
+                    shrink = self.scale / 2
+                    shrink2 = self.scale / 5
                     draw.rectangle((x * self.scale + 1 + shrink2, y * self.scale + 1 + shrink, x * self.scale + width - shrink,
-                                y * self.scale + size - shrink2), fill=color)
+                                    y * self.scale + size - shrink2), fill=color)
+
 
 def visualize_pnr(graph, crit_net):
 
@@ -334,20 +329,19 @@ def visualize_pnr(graph, crit_net):
     width += 1
     height += 1
 
-
     color_index = "imoprcdI"
     color_palette = [(166, 206, 227),
-                (31, 120, 180),
-                (178, 223, 138),
-                (51, 160, 44),
-                (251, 154, 153),
-                (227, 26, 28),
-                (253, 191, 111),
-                (255, 127, 0),
-                (202, 178, 214),
-                (106, 61, 154),
-                (255, 255, 153),
-                (177, 89, 40)]
+                     (31, 120, 180),
+                     (178, 223, 138),
+                     (51, 160, 44),
+                     (251, 154, 153),
+                     (227, 26, 28),
+                     (253, 191, 111),
+                     (255, 127, 0),
+                     (202, 178, 214),
+                     (106, 61, 154),
+                     (255, 255, 153),
+                     (177, 89, 40)]
 
     scale = 60
     img_width = width * scale
@@ -361,7 +355,7 @@ def visualize_pnr(graph, crit_net):
     # visualizer.sort_segments()
 
     # ordered_routes, visited_points = sort_routes(routes_list)
-   
+
     im = Image.new("RGBA", (img_width, img_height), "BLACK")
     draw = ImageDraw.Draw(im)
 
@@ -371,7 +365,7 @@ def visualize_pnr(graph, crit_net):
 
     visualizer.draw_tiles(draw)
 
-    if crit_net != None:
+    if crit_net is not None:
         visualizer.draw_routes(draw, crit_net)
 
     im.save(f'pnr_result.png', format='PNG')

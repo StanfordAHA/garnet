@@ -37,7 +37,6 @@ class GlobalBuffer(Generator):
         self.proc_rd_data = self.output("proc_rd_data", self._params.bank_data_width)
         self.proc_rd_data_valid = self.output("proc_rd_data_valid", 1)
 
-
         if self._params.include_mu_glb_hw:
             # Tilelink request collateral
             self.mu_tl_addr_in = self.input("mu_tl_addr_in", self._params.mu_addr_width)
@@ -46,7 +45,6 @@ class GlobalBuffer(Generator):
             self.mu_tl_size_in = self.input("mu_tl_size_in", self._params.mu_tl_num_burst_bits)
             self.mu_tl_source_in = self.input("mu_tl_source_in", self._params.mu_tl_source_width)
 
-
             # Tilelink response collateral
             self.mu_tl_size_out = self.output("mu_tl_size_out", self._params.mu_tl_num_burst_bits)
             self.mu_tl_source_out = self.output("mu_tl_source_out", self._params.mu_tl_source_width)
@@ -54,7 +52,6 @@ class GlobalBuffer(Generator):
             self.mu_tl_data_out = self.output("mu_tl_data_out", self._params.mu_word_width)
             self.mu_tl_resp_out_vld = self.output("mu_tl_resp_out_vld", 1)
             self.mu_tl_resp_out_rdy = self.input("mu_tl_resp_out_rdy", 1)
-
 
         self.if_cfg_wr_en = self.input("if_cfg_wr_en", 1)
         self.if_cfg_wr_clk_en = self.input("if_cfg_wr_clk_en", 1)
@@ -107,8 +104,6 @@ class GlobalBuffer(Generator):
                 self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
             self.strm_data_g2f_rdy = self.input("strm_data_g2f_rdy", 1, size=[
                 self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
-
-
 
         self.strm_ctrl_f2g = self.input("strm_ctrl_f2g", 1, size=[
             self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
@@ -279,8 +274,7 @@ class GlobalBuffer(Generator):
 
         if self._params.include_mu_glb_hw:
             if_mu_rd_tile2tile = GlbTileDataLoopInterface(addr_width=self._params.glb_addr_width,
-                                                data_width=self._params.bank_data_width, is_clk_en=True, is_strb=False, has_wr_ifc=False, num_tracks=self._params.mu_switch_num_tracks, mu_word_num_tiles=self._params.mu_word_num_tiles)
-
+                                                          data_width=self._params.bank_data_width, is_clk_en=True, is_strb=False, has_wr_ifc=False, num_tracks=self._params.mu_switch_num_tracks, mu_word_num_tiles=self._params.mu_word_num_tiles)
 
         if_cfg_tile2tile = GlbTileInterface(addr_width=self._params.axi_addr_width,
                                             data_width=self._params.axi_data_width, is_clk_en=True, is_strb=False)
@@ -310,8 +304,7 @@ class GlobalBuffer(Generator):
         # GLB Tiles
         self.glb_tile = []
         for i in range(self._params.num_glb_tiles):
-             self.glb_tile.append(GlbTile(_params=self._params))
-
+            self.glb_tile.append(GlbTile(_params=self._params))
 
         # GLB-MU translator
         if self._params.include_mu_glb_hw:
@@ -431,8 +424,7 @@ class GlobalBuffer(Generator):
     #         self.mu_rd_en_d = self.mu_rd_en
     #         self.mu_rd_addr_d = self.mu_rd_addr
 
-
-    @ always_ff((posedge, "clk"), (posedge, "reset"))
+    @always_ff((posedge, "clk"), (posedge, "reset"))
     def sram_cfg_pipeline(self):
         if self.reset:
             self.sram_cfg_wr_en_d = 0
@@ -486,7 +478,7 @@ class GlobalBuffer(Generator):
 
     def add_mu_clk_en(self):
         self.mu_rd_clk_en_gen = GlbClkEnGen(cnt=2 * self._params.num_glb_tiles
-                                         + self._params.tile2sram_rd_delay + self._params.mu_clk_en_margin)
+                                            + self._params.tile2sram_rd_delay + self._params.mu_clk_en_margin)
         self.mu_rd_clk_en_gen.p_cnt.value = 2 * self._params.num_glb_tiles + \
             self._params.tile2sram_rd_delay + self._params.mu_clk_en_margin
         self.mu_rd_clk_en = self.var("mu_rd_clk_en", 1)
@@ -499,7 +491,7 @@ class GlobalBuffer(Generator):
                        )
         self.wire(self.if_mu_rd_list[0].rd_clk_en, self.mu_rd_clk_en)
 
-    @ always_ff((posedge, "clk"), (posedge, "reset"))
+    @always_ff((posedge, "clk"), (posedge, "reset"))
     def left_edge_proc_wr_ff(self):
         if self.reset:
             self.if_proc_list[0].wr_en = 0
@@ -547,7 +539,6 @@ class GlobalBuffer(Generator):
                 self.proc_rd_type = self.proc_rd_type
                 self.proc_rd_addr_sel = self.proc_rd_addr_sel
 
-
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def left_edge_mu_rd_in_ff(self):
         if self.reset:
@@ -582,15 +573,14 @@ class GlobalBuffer(Generator):
     @always_comb
     def left_edge_mu_rd_out_logic(self):
 
-        #FIXME: Kratos won't allow this. Need to figure out how to do this.
+        # FIXME: Kratos won't allow this. Need to figure out how to do this.
         # for sub_packet in range(self._params.mu_switch_num_tracks):
-            # self.mu_rd_data_w[((sub_packet + 1) * self._params.bank_data_width) - 1, sub_packet * self._params.bank_data_width] = self.if_mu_rd_list[0].rd_data_e2w[sub_packet]
+        #     self.mu_rd_data_w[((sub_packet + 1) * self._params.bank_data_width) - 1, sub_packet * self._params.bank_data_width] = self.if_mu_rd_list[0].rd_data_e2w[sub_packet]
 
         self.mu_rd_data_w[self._params.bank_data_width - 1, 0] = self.if_mu_rd_list[0].rd_data_e2w[0]
         self.mu_rd_data_w[self._params.bank_data_width * 2 - 1, self._params.bank_data_width * 1] = self.if_mu_rd_list[0].rd_data_e2w[1]
         self.mu_rd_data_w[self._params.bank_data_width * 3 - 1, self._params.bank_data_width * 2] = self.if_mu_rd_list[0].rd_data_e2w[2]
         self.mu_rd_data_w[self._params.bank_data_width * 4 - 1, self._params.bank_data_width * 3] = self.if_mu_rd_list[0].rd_data_e2w[3]
-
 
         # Just take 0th valid (entire packet should be moving in lock-step)
         self.mu_rd_data_valid_w = self.if_mu_rd_list[0].rd_data_e2w_valid[0]
@@ -617,7 +607,7 @@ class GlobalBuffer(Generator):
     #         self.mu_rd_data = self.mu_rd_data_w
     #         self.mu_rd_data_valid = self.mu_rd_data_valid_w
 
-    @ always_ff((posedge, "clk"), (posedge, "reset"))
+    @always_ff((posedge, "clk"), (posedge, "reset"))
     def left_edge_cfg_ff(self):
         if self.reset:
             self.if_cfg_list[0].wr_en = 0
@@ -820,7 +810,6 @@ class GlobalBuffer(Generator):
                            strm_g2f_interrupt_pulse=self.strm_g2f_interrupt_pulse_w[i],
                            pcfg_g2f_interrupt_pulse=self.pcfg_g2f_interrupt_pulse_w[i])
 
-
             if self._params.include_glb_ring_switch:
                 # strm
                 self.wire(self.glb_tile[i].ports.strm_wr_en_e2w_esti, self.strm_packet_e2w_esti[i]["wr"]['wr_en'])
@@ -913,13 +902,13 @@ class GlobalBuffer(Generator):
 
                 # LEFT EDGE
                 if i != 0:
-                    self.wire(self.glb_tile[i].ports.if_mu_rd_wst_s_rd_data_w2e, self.if_mu_rd_list[i-1].rd_data_w2e)
-                    self.wire(self.glb_tile[i].ports.if_mu_rd_wst_s_rd_data_w2e_valid, self.if_mu_rd_list[i-1].rd_data_w2e_valid)
+                    self.wire(self.glb_tile[i].ports.if_mu_rd_wst_s_rd_data_w2e, self.if_mu_rd_list[i - 1].rd_data_w2e)
+                    self.wire(self.glb_tile[i].ports.if_mu_rd_wst_s_rd_data_w2e_valid, self.if_mu_rd_list[i - 1].rd_data_w2e_valid)
                 else:
                     self.wire(self.glb_tile[i].ports.if_mu_rd_wst_s_rd_data_w2e, 0)
                     self.wire(self.glb_tile[i].ports.if_mu_rd_wst_s_rd_data_w2e_valid, 0)
 
-    @ always_ff((posedge, "clk"), (posedge, "reset"))
+    @always_ff((posedge, "clk"), (posedge, "reset"))
     def interrupt_pipeline(self):
         if self.reset:
             for i in range(self._params.num_glb_tiles):

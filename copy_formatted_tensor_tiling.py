@@ -4,7 +4,7 @@ import subprocess
 import os
 import sys
 
-# test = "rel5" 
+# test = "rel5"
 # test = "mk9-b1"
 # test = "fb1k"
 app_name = sys.argv[1]
@@ -12,7 +12,7 @@ test = sys.argv[2]
 # app_name = "mat_mattransmul"
 # app_name = "tensor3_elemadd"
 
-const_val = 2 # only for mat_mattransmul
+const_val = 2  # only for mat_mattransmul
 
 b_tensors = glob.glob(f"/aha/garnet/tiles_{app_name}/{app_name}/{test}/formatted/tensor_B*")
 c_tensors = glob.glob(f"/aha/garnet/tiles_{app_name}/{app_name}/{test}/formatted/tensor_C*")
@@ -36,7 +36,7 @@ d_vec_tensors = glob.glob(f"/aha/garnet/tiles_{app_name}/{app_name}/{test}/forma
 d_loc_paired = []
 
 if not os.path.exists("SPARSE_TESTS/MAT_TMP_DIR"):
-    os.makedirs("SPARSE_TESTS/MAT_TMP_DIR",exist_ok=True)
+    os.makedirs("SPARSE_TESTS/MAT_TMP_DIR", exist_ok=True)
 
 exit_status = os.system(f"rm -rf SPARSE_TESTS/{app_name}*")
 
@@ -62,20 +62,20 @@ if app_name == "tensor3_ttv":
             c_loc = c.split("_")
 
             index = b_loc.index("tile")
-            b_loc = b_loc[index+1:]
+            b_loc = b_loc[index + 1:]
 
             index = c_loc.index("tile")
-            c_loc = c_loc[index+1:]
+            c_loc = c_loc[index + 1:]
 
             # b_loc = b_loc.split("_")
             # c_loc = c_loc.split("_")
 
             # if(b_loc[1] == c_loc[0] and b_loc[3] == c_loc[1] and b_loc[0] == d_loc[0] and b_loc[2] == d_loc[1]):
-            if(b_loc[2] == c_loc[0] and b_loc[5] == c_loc[1]):
-                print(b,c)
+            if (b_loc[2] == c_loc[0] and b_loc[5] == c_loc[1]):
+                print(b, c)
                 if not os.path.exists(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}"):
                     os.mkdir(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}")
-                    
+
                 shutil.copy(f"{b}/tensor_B_mode_0_crd", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_crd")
                 shutil.copy(f"{b}/tensor_B_mode_0_seg", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_seg")
 
@@ -111,21 +111,21 @@ elif app_name == "tensor3_elemadd" or app_name == "tensor3_innerprod":
             c_loc = c.split("_")
 
             index = b_loc.index("tile")
-            b_loc = b_loc[index+1:]
+            b_loc = b_loc[index + 1:]
 
             index = c_loc.index("tile")
-            c_loc = c_loc[index+1:]
+            c_loc = c_loc[index + 1:]
 
             # b_loc = b_loc.split("_")
             # c_loc = c_loc.split("_")
 
             # if(b_loc[1] == c_loc[0] and b_loc[3] == c_loc[1] and b_loc[0] == d_loc[0] and b_loc[2] == d_loc[1]):
             # if(b_loc[3] == c_loc[3] and b_loc[4] == c_loc[4] and b_loc[5] == c_loc[5] and b_loc[6] == c_loc[6] and b_loc[7] == c_loc[7] and b_loc[8] == c_loc[8]):
-            if(b_loc == c_loc):
-                print(b,c)
+            if (b_loc == c_loc):
+                print(b, c)
                 if not os.path.exists(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}"):
                     os.mkdir(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}")
-                    
+
                 shutil.copy(f"{b}/tensor_B_mode_0_crd", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_crd")
                 shutil.copy(f"{b}/tensor_B_mode_0_seg", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_seg")
 
@@ -180,11 +180,11 @@ elif app_name == "tensor3_ttm":
             # print("c_loc is ",c_loc)
 
             # if(b_loc[1] == c_loc[0] and b_loc[3] == c_loc[1] and b_loc[0] == d_loc[0] and b_loc[2] == d_loc[1]):
-            if(b_loc[5] == c_loc[4] and b_loc[8] == c_loc[6]):
+            if (b_loc[5] == c_loc[4] and b_loc[8] == c_loc[6]):
                 # print(b,c)
                 if not os.path.exists(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}"):
                     os.mkdir(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}")
-                    
+
                 shutil.copy(f"{b}/tensor_B_mode_0_crd", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_crd")
                 shutil.copy(f"{b}/tensor_B_mode_0_seg", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_seg")
 
@@ -212,30 +212,30 @@ elif app_name == "tensor3_ttm":
 
                 tile = tile + 1
 
-elif "tensor3_mttkrp" in app_name :
+elif "tensor3_mttkrp" in app_name:
     for b in b_tensors:
         for c in c_tensors:
             for d in d_tensors:
                 tile_str = str(app_name) + "-" + str(test) + "_tile" + str(tile)
-                
+
                 b_loc = b.split("_")
                 c_loc = c.split("_")
                 d_loc = d.split("_")
 
                 index = b_loc.index("tile")
-                b_loc = b_loc[index+1:]
+                b_loc = b_loc[index + 1:]
 
                 index = c_loc.index("tile")
-                c_loc = c_loc[index+1:]
+                c_loc = c_loc[index + 1:]
 
                 index = d_loc.index("tile")
-                d_loc = d_loc[index+1:]
+                d_loc = d_loc[index + 1:]
 
                 if (c_loc[0] == d_loc[0] and c_loc[2] == d_loc[2] and b_loc[1] == c_loc[1] and b_loc[4] == c_loc[3] and b_loc[2] == d_loc[1] and b_loc[5] == d_loc[3]):
-                    print(b,c,d)
+                    print(b, c, d)
                     if not os.path.exists(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}"):
                         os.mkdir(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}")
-                        
+
                     shutil.copy(f"{b}/tensor_B_mode_0_crd", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_crd")
                     shutil.copy(f"{b}/tensor_B_mode_0_seg", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_seg")
 
@@ -266,7 +266,6 @@ elif "tensor3_mttkrp" in app_name :
 
                     shutil.copy(f"{d}/tensor_B_mode_vals", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_D_mode_vals")
                     shutil.copy(f"{d}/tensor_B_mode_shape", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_D_mode_shape")
-
 
                     tile = tile + 1
 

@@ -36,7 +36,7 @@ def config_port_pass(interconnect: Interconnect, pipeline=False):
         # wire configuration ports to first tile in column
         in_port = interconnect.ports.config[x_coor]
         out_port = column[0].ports.config
-        if pipeline==True:
+        if pipeline == True:  # noqa: E712 (== True/False kept: may not be a bool)
             pipeline_wire(interconnect,
                           in_port,
                           out_port,
@@ -53,17 +53,16 @@ def stall_port_pass(interconnect: Interconnect, port_name: str, port_width=1, co
 
     width = x_max - x_min + 1
 
-
     assert port_name in interconnect.ports
     # MO: Got rid of this b/c it will not be true if I/O tiles are on West side, resulting in odd width
-    #assert width % col_offset == 0 
+    # assert width % col_offset == 0
     num_ports = width // col_offset
 
     interconnect.disconnect(port_name)
     interconnect.remove_port(port_name)
     interconnect.add_port(port_name,
                           magma.In(magma.Bits[num_ports * port_width]))
-    
+
     # looping through columns and wire port every col_offset
     for i, x_coor in enumerate(range(x_min, x_min + width)):
         column = interconnect.get_column(x_coor)
@@ -71,12 +70,12 @@ def stall_port_pass(interconnect: Interconnect, port_name: str, port_width=1, co
         column = [entry for entry in column if port_name in entry.ports]
         # wire configuration ports to first tile in column every col_offset
         # Shift everything right by 1 if have West IO tiles (only applies to flush)
-        dividend_index = max(0, i-1) if IOSide.West in io_sides else i
+        dividend_index = max(0, i - 1) if IOSide.West in io_sides else i
 
-        in_port = interconnect.ports[port_name][(dividend_index // col_offset) 
-                  * port_width:((dividend_index // col_offset) + 1) * port_width]
+        in_port = interconnect.ports[port_name][(dividend_index // col_offset)
+                                                * port_width:((dividend_index // col_offset) + 1) * port_width]
         out_port = column[0].ports[port_name]
-        if pipeline==True:
+        if pipeline == True:  # noqa: E712 (== True/False kept: may not be a bool)
             pipeline_wire(interconnect,
                           in_port,
                           out_port,

@@ -15,6 +15,7 @@ class cgra2mu_ready_and(Generator):
         self.anded_ready_out = self.output("anded_ready_out", 1)
         self.wire(self.anded_ready_out, self.readys_in_packed.r_and())
 
+
 if __name__ == "__main__":
     dut = cgra2mu_ready_and(32)
     verilog(dut, filename="cgra2mu_ready_and.sv",

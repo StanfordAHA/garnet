@@ -43,7 +43,7 @@ class _PeakWrapper(metaclass=_PeakWrapperMeta):
         pe = peak_generator(PyFamily())
         assert issubclass(pe, peak.Peak)
         self._model = pe()
-        #Lassen's name for the ISA is 'inst', so this is hardcoded
+        # Lassen's name for the ISA is 'inst', so this is hardcoded
         self.__instr_name = 'inst'
         self.__instr_type = strip_modifiers(pe.input_t.field_dict['inst'])
         self.__inputs = OrderedDict(pe.input_t.field_dict)
@@ -192,7 +192,7 @@ class PeakCore(ConfigurableCore):
         self.wire(self.ports.reset, self.peak_circuit.ports.ASYNCRESET)
 
         # wire the fake register to the actual lassen core
-        
+
         ports = ["config_data", "config_addr"]
         for port in ports:
             if port in self.peak_circuit.ports:
@@ -200,7 +200,7 @@ class PeakCore(ConfigurableCore):
                 # self.wire(reg1.ports[reg_port], self.peak_circuit.ports[port])
 
         # wire it to 0, since we'll never going to use it
-        if "config_en" in self.peak_circuit.ports: 
+        if "config_en" in self.peak_circuit.ports:
             self.wire(Const(0), self.peak_circuit.ports.config_en)
 
         # PE core uses clk_en (essentially active low stall)

@@ -39,6 +39,7 @@ import pythunder
 import pulp
 import json
 
+
 class CreateBuses(Visitor):
     def __init__(self, inst_info, ready_valid=True):
         self.inst_info = inst_info
