@@ -1263,7 +1263,15 @@ were deleted as stale (lake 04191ea5: before 144e2062's comparator pruning;
   passes.** All 6 replays exact (static 2 tiles, RV 1, each at RTL, synth and
   PnR), 0 timing violations, no SRAM X clock. RV Tile_X03_Y03: synth 5.44 /
   PnR 5.96 mW (SRAM 3.15 / 3.08); RV idle/active synth 1.40 / 10.9, PnR 1.88 /
-  11.9. Static numbers = run 3 (below). Tile_PE not run on gf12 yet.
+  11.9. Static numbers = run 3 (below).
+- **Whole placed CGRA, gf12 synth, 750 MHz (`cgra_app_power.py`, 2026-10-14,
+  zip `/aha/cgra_app_power_pipeclean_r8cad-gf12_20261014-130646.zip`):**
+  static conv_3_3 16x16: all 12 placed tiles replay exactly; 25.45 mW = MEM
+  7.89 (2 tiles) + PE 17.56 (10 tiles, 0.66-3.74 each), SRAM 4.05; window
+  6.87 us = 175 nJ per run. MEM tiles = the sweep's run 4 numbers exactly. RV:
+  MEM 5.44 mW; the RV Tile_PE workspace ran on garnet 58ff4c8e, before
+  03833f4f's pond-path constraints fix, so Genus stopped at TUI-61: rerun it
+  with `--config <rv> --clean constraints`.
 - **RTL-level power on gf12 is not usable (OPEN_ISSUES
   garnet/rtl-level-power-annotation):** PT annotates 60% of nets / 20% of leaf
   cells from the RTL SAIF (synth, PnR: 100%; freepdk45 locally: 100%), so it
