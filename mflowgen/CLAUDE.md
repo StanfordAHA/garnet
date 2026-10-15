@@ -1802,6 +1802,18 @@ libHalide and libclkwrk.so were rebuilt. Shared-toolchain checks:
   stock toolchain, and Halide keeps its native widths.
 - **Width is not a make dependency.** `make clean` the app when switching
   widths, or stale 16/32-bit artifacts get mixed.
+- **Tests (2026-10-12):** `tests/test_data_width/test_data_width.py` (~5 min; 24 tests).
+  - It builds a 4x2 fabric at dw 8/16/32/64 with `metamapper.data_width` hidden from garnet's
+    own code (the stock-container case). It then checks MEM/PE/pond ports at dw+1, B1 + B{dw+1}
+    switch boxes, `inst` = 36 + 3·dw, and the GLB header's `CGRA_DATA_WIDTH`.
+  - `glb_ranges_test.c` (gcc, `#include`s `tests/test_app/lib/map.c`) checks
+    `check_io_tile_glb_ranges`: fit / overlap / past-the-end / bank-toggle.
+  - Also covered: `check_app_data_width`, the 16-bit fallback with an older MetaMapper, and the
+    three container scripts fetching one lassen branch.
+  - It runs garnet.py in the repo root like `tests/test_garnet`, with `GARNET_HOME` set to this
+    checkout. Without that, garnet.py writes its GLB / GLC / MU headers into whatever
+    `GARNET_HOME` the shell has; on 2026-10-12 that overwrote the shared /aha/garnet's.
+  - End to end: aha `tests/test_data_width_e2e.py` (opt-in, private tree).
 - **Container steps (build machine), fixed 2026-10-12 (garnet 69f236e0, 84621c08).** `common/rtl/gen_rtl.sh`,
   `common/memtile-power-test-gen/run.sh` and `common/application/run.sh` run garnet.py in
   `stanfordaha/garnet:latest`, which has aha master's lassen (d2a4411) and MetaMapper (a6fe971).
@@ -1839,13 +1851,24 @@ libHalide and libclkwrk.so were rebuilt. Shared-toolchain checks:
     - Without docker here, only the build machine runs the container itself.
   - Once lassen's branch is merged to master and aha master's image is rebuilt, the lassen
     checkout lines can go.
-- **dw 8/32/64 Tile_MemCore PPA (needs the build machine; not run yet).** The thesis set has 24
-  configs at these widths (18 static, 6 RV; 12 RV skipped for fw>1 and vc>2). Command, mirroring
-  the dw16 run. Which configs also get PnR (`--pnr-set`/`--validate-set`) is the user's call:
+- **dw 8/32/64 Tile_MemCore PPA (gf12, done 2026-10-14: all 24 synthesized, 6 through PnR).** The thesis set has 24
+  configs at these widths (18 static, 6 RV; 12 RV skipped for fw>1 and vc>2). The user's choice
+  (2026-10-13): synthesis only, with PnR projected through the dw16 run's synth→PnR fit.
 
       ./mflowgen/sweep_specs.py --spec-set thesis --data-width 8,32,64 \
           --runtime-mode static,rv --flatten-effort 0 --memtile-power \
-          --config-jobs 4 --zip --out-dir <NEW dir>
+          --stop-after cadence-genus-synthesis --config-jobs 4 --zip \
+          --out-dir /sim/mstrange/BUILD_CGRA/sweep_out/tile_memcore_dw8_32_64
+
+  - **`--stop-after cadence-genus-synthesis` is required for synthesis-only.** Without it (or
+    without `--pnr-set`) every config defaults to `synopsys-pt-timing-signoff`, i.e. full PnR.
+    `--synth-stop` only applies to configs outside a given `--pnr-set`.
+  - Dry run: 24 configs → `cadence-genus-synthesis memtile-power-synth-idle
+    memtile-power-synth-active`.
+  - A synthesis-only out-dir has no PnR rows, so its `correlation.csv` has no projections. Apply
+    the dw16 run's `correlation_fit.csv` (`/aha/sweep_out/dw16_NEW_SWEEP_20261009/`) to the synth
+    numbers instead. Check the `_proj_extrapolated` idea by hand: dw64 / fw8 tiles may sit outside
+    the dw16 fit's synth range.
 
   The build machine's garnet must be at 84621c08 or later, and existing workspaces need `--clean rtl`. Pre-checked on /aha 2026-10-12 in the
   image-like environment above, with gen_rtl's exact garnet.py flags:
@@ -1856,6 +1879,23 @@ libHalide and libclkwrk.so were rebuilt. Shared-toolchain checks:
   - MEM pins are `MEM_{input,output}_width_{dw+1}`, and the switch boxes are B1 + B{dw+1}.
   - memtile-power-test-gen runs for fw4 dw32 static + RV.
   - Scratchpad `a16b3973-.../scratchpad/dwp/ppa/` (`check24.py`, `check24.txt`).
+  - **Result (zips `tile_memcore_dw8_32_64_r8cad-gf12_20261014-190943` and
+    `tile_memcore_dw8_rerun_r8cad-gf12_20261014-232023`; analysis in
+    `/aha/sweep_out/dw8_32_64_SWEEP_20261014/README.md`):**
+    - **All 24 PASS.** Synth timing is met everywhere, with one macro family each, and all power
+      sims PASS on B9/B33/B65 tracks.
+    - The 6 dw8 configs first failed in the RTL step: their workspaces predated 84621c08 and kept
+      the old lassen fetch. They were rerun in a fresh out-dir under `/nsim/mstrange/BUILDS`.
+    - 6 went through PnR + PT + PnR power: fw4 dw8 / fw4 dw32 / fw2 dw64 vc2, static + RV. PT setup
+      WNS was −4…−19 ps at dw8, the same scale as the dw16 PnR tiles.
+    - **Projection across widths:** `--correlate-only` over a dir symlinking the dw16 run's
+      workspaces plus these, with `--validate-set dw16_val4,<the 6 new PnR configs>`, keeps the
+      dw16 fit exactly. The 6 held-out PnR tiles:
+      - total area within 2.3% (dw8 +0.3 / −0.7%; dw64 −1.2 / −2.3%);
+      - power within 8%, except dw8 RV idle (+11.7%) and active (+6.9%).
+    - Power has a width trend: PnR comes out below the projection at dw8 and above it at dw64.
+      Adding the 6 points to the fit doesn't remove it (dw8 RV idle residual still 12%) and worsens
+      the dw16 held-out area. So the dw16 fit stays the projection, with that spread.
 
 ## Build-machine note
 
