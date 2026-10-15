@@ -53,6 +53,11 @@ steps:
 
 # ------------------------------------------------------------------------
 - label: ":wrench: Aha regressions"
+  # Not on modern_gf: it runs `aha regress pr` in the stock container (aha master's
+  # pins), and modern_gf needs aha mek's sibling repos, compiled clockwork/Halide
+  # included. modern_gf's sanity checks are the GitHub pytest + verilator workflows
+  # (.github/scripts/aha_mek_deps.sh).
+  if: build.branch != "modern_gf"
   agents: { hostname: $BUILDKITE_AGENT_META_DATA_HOSTNAME, docker: true }
   commands:
 

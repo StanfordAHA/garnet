@@ -1910,6 +1910,7 @@ holds (gate the update on it with `&&`); otherwise set it to the branch tip.
     /repos/StanfordAHA/garnet/actions/workflows/<file>/dispatches {"ref": "modern_gf"}`).
   - A commit with `skip ci` in its message skips both GitHub workflows and the Buildkite
     builds; a dispatched run still runs.
-  - Buildkite `garnet` (.buildkite/ci.yml: Lint (soft_fail) + `aha regress pr` in the
-    stock container) still fails on modern_gf: its regression needs mek's compiled
-    toolchain too. Its logs need a Buildkite token (none on /aha).
+  - Buildkite `garnet` (.buildkite/ci.yml) skips its `aha regress pr` step on modern_gf
+    (`if: build.branch != "modern_gf"`, user decision 2026-10-15): in the stock container
+    it needs mek's compiled clockwork/Halide too, and failed on every push. Lint
+    (soft_fail) still runs. Buildkite logs need a Buildkite token (none on /aha).
