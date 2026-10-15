@@ -1893,8 +1893,23 @@ holds (gate the update on it with `&&`); otherwise set it to the branch tip.
 - `tests/test_mflowgen/test_construct_graphs.py` builds every mflowgen design's Graph
   (stub gf12 ADK + stub `calibre` on PATH; `common/tile-post-*-power` get
   `clock_period`/`design_name` from the env).
-- **The CI emails are not lint.** GitHub `pytest` (exit 2) and `verilator` (exit 13)
-  fail on every modern_gf push (100 of 100 runs checked 2026-10-14). Likely cause, not
-  reproduced (no docker on /aha): they run modern_gf in the stock
-  `stanfordaha/garnet:latest` container, whose sibling repos lack modern_gf's
-  dependencies (e.g. lassen `gen_PE_fc`). Buildkite's lint step is `soft_fail`.
+- **CI on modern_gf (2026-10-15, session 352df910).** GitHub `pytest` and `verilator`
+  run modern_gf in the stock `stanfordaha/garnet:latest` container (aha master's pins),
+  so they died at import (`cannot import name 'gen_PE_fc'`, every push since at least
+  2026-10). `.github/scripts/aha_mek_deps.sh` now runs in the container first: it reads
+  aha `mek`'s gitlinks and checks out those commits in the editable Python repos (lake,
+  lassen, canal, archipelago, MetaMapper, mflowgen) plus mek's Halide-to-Hardware
+  `apps/hardware_benchmarks/hw_support` (copied in; the image's H2H is not a git repo).
+  Compiled code (coreir, clockwork, Halide's C++) stays as the image built it.
+  - pytest.yml runs it after copying garnet in; `run_pytest.sh` installs pycodestyle
+    and marks /aha/garnet a git safe.directory (the image's git ignores `-c` for that),
+    so tests/test_style runs: 63 passed, 21 skipped (the same skips as on /aha).
+  - verilator.yml passes it to `tests/test_app/test_app.sh` as `AHA_DEPS_SCRIPT`
+    (unset = unchanged), which builds a 4x2 CGRA, maps/PnRs/runs tests/fp_pointwise:
+    passes. Both workflows also start by hand (workflow_dispatch: `POST
+    /repos/StanfordAHA/garnet/actions/workflows/<file>/dispatches {"ref": "modern_gf"}`).
+  - A commit with `skip ci` in its message skips both GitHub workflows and the Buildkite
+    builds; a dispatched run still runs.
+  - Buildkite `garnet` (.buildkite/ci.yml: Lint (soft_fail) + `aha regress pr` in the
+    stock container) still fails on modern_gf: its regression needs mek's compiled
+    toolchain too. Its logs need a Buildkite token (none on /aha).
