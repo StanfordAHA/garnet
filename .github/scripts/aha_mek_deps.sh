@@ -3,28 +3,40 @@
 # master) after this garnet is copied to /aha/garnet. modern_gf needs the sibling-repo
 # commits that aha's `mek` branch pins (lassen gen_PE_fc, lake THESIS, ...): check them
 # out in the container's Python repos, which are editable installs, so a checkout is
-# enough. Compiled repos (coreir, clockwork, Halide-to-Hardware) stay as the image built
-# them. Env: AHA_REF (default mek), AHA_DEPS_REPOS (default below), AHA_ROOT (default /aha).
+# enough (untracked generated files stay). Compiled repos (coreir, clockwork,
+# Halide-to-Hardware) stay as the image built them.
+# Env: AHA_REF (default mek), AHA_DEPS_REPOS (default below), AHA_ROOT (default /aha).
 set -eo pipefail
+export GIT_TERMINAL_PROMPT=0
 AHA_URL=${AHA_URL:-https://github.com/StanfordAHA/aha}
 AHA_REF=${AHA_REF:-mek}
 AHA_ROOT=${AHA_ROOT:-/aha}
 REPOS=${AHA_DEPS_REPOS:-"lake lassen canal archipelago MetaMapper mflowgen"}
 
 tmp=$(mktemp -d)
-git -C "$tmp" init -q
-git -C "$tmp" fetch -q --depth=1 "$AHA_URL" "$AHA_REF"
-git -C "$tmp" show FETCH_HEAD:.gitmodules > "$tmp/gitmodules"
-echo "aha $AHA_REF = $(git -C "$tmp" rev-parse FETCH_HEAD)"
+trap 'rm -rf "$tmp"' EXIT
+git -C "$tmp" init -q aha
+git -C "$tmp/aha" fetch -q --depth=1 "$AHA_URL" "$AHA_REF"
+git -C "$tmp/aha" show FETCH_HEAD:.gitmodules > "$tmp/gitmodules"
+echo "$(git --version); aha $AHA_REF = $(git -C "$tmp/aha" rev-parse FETCH_HEAD)"
+
 for r in $REPOS; do
-    sha=$(git -C "$tmp" ls-tree FETCH_HEAD "$r" | awk '{print $3}')
+    sha=$(git -C "$tmp/aha" ls-tree FETCH_HEAD "$r" | awk '{print $3}')
     url=$(git config -f "$tmp/gitmodules" "submodule.$r.url")
+    branch=$(git config -f "$tmp/gitmodules" "submodule.$r.branch" || echo mek)
     if [ -z "$sha" ] || [ -z "$url" ]; then
         echo "ERROR: aha $AHA_REF has no submodule $r"; exit 1
     fi
     echo "--- $r: $(git -C "$AHA_ROOT/$r" rev-parse --short HEAD 2>/dev/null) -> $sha ($url)"
-    # GitHub serves any reachable commit by sha
-    git -C "$AHA_ROOT/$r" fetch -q --depth=1 "$url" "$sha"
+    # Fetch over the network in a fresh repo (the image's own repos may carry config
+    # that makes git ask for credentials), by commit or else via its branch...
+    git -C "$tmp" init -q "$r"
+    if ! git -C "$tmp/$r" -c protocol.version=2 fetch -q --depth=1 "$url" "$sha"; then
+        git -C "$tmp/$r" fetch -q "$url" "$branch"
+    fi
+    git -C "$tmp/$r" cat-file -e "$sha^{commit}"
+    git -C "$tmp/$r" branch -f aha-pin "$sha"
+    # ...then hand it to the container's repo locally and check it out
+    git -C "$AHA_ROOT/$r" fetch -q --update-shallow "$tmp/$r" aha-pin
     git -C "$AHA_ROOT/$r" checkout -q -f "$sha"
 done
-rm -rf "$tmp"
