@@ -1415,24 +1415,24 @@ def create_netlist_info(
         info["id_to_metadata"][nodes_to_ids[node]] = md
         if node in swap_pond_ports:
             print(f"swapping ports for {nodes_to_ids[node]}")
-            new_config = {}
-            new_config["in2regfile_0"] = info["id_to_metadata"][nodes_to_ids[node]][
-                "config"
-            ]["in2regfile_0"]
-
-            if "in2regfile_1" in info["id_to_metadata"][nodes_to_ids[node]]["config"]:
-                new_config["in2regfile_1"] = info["id_to_metadata"][nodes_to_ids[node]][
-                    "config"
-                ]["in2regfile_1"]
-
-            new_config["regfile2out_1"] = info["id_to_metadata"][nodes_to_ids[node]][
-                "config"
-            ]["regfile2out_0"]
-
-            if "regfile2out_1" in info["id_to_metadata"][nodes_to_ids[node]]["config"]:
-                new_config["regfile2out_0"] = info["id_to_metadata"][
-                    nodes_to_ids[node]
-                ]["config"]["regfile2out_1"]
+            # The pond's output 0 moves to output 1 (and back). Keep every other key: a
+            # dense ready-valid pond's program (port_mappings, domain, access_map, filter,
+            # dep_values, rv_sched) was dropped here, so lake built a static program for an
+            # RV pond whose writer then never got ready (2026-10-12, matmul_tile ux=4 kernel
+            # banks). Its port_mappings name the pond ports, so they swap too; the static
+            # conversion reads only the in2regfile_/regfile2out_ keys.
+            old_config = info["id_to_metadata"][nodes_to_ids[node]]["config"]
+            new_config = {k: v for k, v in old_config.items() if not k.startswith("regfile2out_")}
+            new_config["regfile2out_1"] = old_config["regfile2out_0"]
+            if "regfile2out_1" in old_config:
+                new_config["regfile2out_0"] = old_config["regfile2out_1"]
+            if "port_mappings" in old_config:
+                out_swap = {"data_out_pond_0": "data_out_pond_1", "data_out_pond_1": "data_out_pond_0"}
+                new_config["port_mappings"] = {
+                    op: (pin.rsplit(".", 1)[0] + "." + out_swap[pin.rsplit(".", 1)[1]]
+                         if pin.rsplit(".", 1)[-1] in out_swap else pin)
+                    for op, pin in old_config["port_mappings"].items()
+                }
 
             info["id_to_metadata"][nodes_to_ids[node]]["config"] = new_config
 

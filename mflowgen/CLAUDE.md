@@ -1693,6 +1693,35 @@ floorplan, `mode[0]` guard) apply — the pond is flops, no macro.
   matrix-unit headers under `$GARNET_HOME` (env default `/aha/garnet`, the shared
   tree), not next to itself — pin `GARNET_HOME` to the private copy or the build
   rewrites the shared headers other sessions simulate against.
+- GOTCHA: `tests/test_app/tb/kernel.sv` writes its input stream to the fixed path
+  `/aha/garnet/tests/test_app/input_data.txt` (debug dump, lines ~344/385), so every
+  `aha test`, from any tree, writes into the shared garnet checkout.
+
+### Pond packing (2026-10-12, session 08555638; fixed in the commit that added this section, 2026-10-14)
+
+Two bugs found by matmul_tile ux=4 (kernel in 4 broadcast-banked ponds). Both fixes were
+verified in private trees at 2fc80dd6; the two functions are unchanged up to this commit
+apart from pycodestyle spacing:
+- `garnet.py` `pack_ponds` put a pond into the PE it shares the most inter-core
+  connections with, with no limit per PE. The 4 kernel banks' only inter-core peer is the
+  kernel PE (their outputs go to the multiply PEs on pond output 1, not an inter-core
+  port, because `find_packing` gives each multiply PE's packed slot to its accumulator),
+  so all 4 packed into that one PE's pond: `pes_with_packed_ponds` kept the last one, and
+  every lane read bank 3 (static T44u4: lanes 0-2 = lane 3's sums). The pre-27da971d code
+  had the same gap. Fix: grant claims strongest first, one pond per PE; a pond left without
+  a PE stays unpacked (an `M` node placed on its own, like a path-balancing pond). Identical
+  packing whenever every pond's best PE is distinct (static T84: bitstream identical);
+  static T44u4/T84u4/T88u4 bit-accurate with it.
+- `mapper/netlist_util.py` `swap_pond_ports` (pond output 0 <-> 1 for ponds `find_packing`
+  did not pack) rebuilt the config from `in2regfile_0/1` + `regfile2out_0/1` only, which
+  drops a dense-RV pond's program (`port_mappings`, `domain`, `access_map`, `filter`,
+  `dep_values`, `rv_sched`): lake then built a static program and the RV pond's writer never
+  got ready (waveform: input ready 0 from the flush on). Fix: keep every key, swap the
+  `regfile2out_*` keys and the `data_out_pond_0/1` suffixes in `port_mappings` (lake's static
+  conversion ignores `port_mappings`: static T44u4 bitstream identical).
+- With both fixes, RV ux=4 still hangs: a standalone RV pond fed over the interconnect forms
+  a valid/ready loop with the SB/CB lazy fork (lake/CLAUDE.md §6 "RV pond ready depends on
+  valid").
 
 ## Fabric data width follows the spec's `data_width` (2026-10-06)
 

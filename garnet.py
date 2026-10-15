@@ -514,7 +514,18 @@ class Garnet(Generator):
                     count, _ = pond_pe_conns.setdefault(pond, {}).get(pe, (0, 0))
                     pond_pe_conns[pond][pe] = (count + 1, n_seen)
 
-        packed_ponds = {pond: max(pes, key=pes.get) for pond, pes in pond_pe_conns.items()}
+        # A PE tile holds ONE pond. Grant claims strongest first, so each pond still gets
+        # its best PE unless a stronger claim took it; it then tries its next PE, else stays
+        # unpacked (placed on its own, like a path-balancing pond). Before (2026-10-12),
+        # ponds fed by one PE (broadcast-banked weights: static matmul_tile ux=4's 4 kernel
+        # banks) all went to that PE and only the last one was configured.
+        claims = sorted(((c, pond, pe) for pond, pes in pond_pe_conns.items() for pe, c in pes.items()),
+                        reverse=True)
+        packed_ponds, taken_pes = {}, set()
+        for _, pond, pe in claims:
+            if pond not in packed_ponds and pe not in taken_pes:
+                packed_ponds[pond] = pe
+                taken_pes.add(pe)
 
         for edge_id, conns in netlist_info['netlist'].items():
             new_conns = []
