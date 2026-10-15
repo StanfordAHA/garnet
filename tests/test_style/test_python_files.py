@@ -15,11 +15,14 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def tracked_py_files():
+    # safe.directory: CI copies the checkout into a container as another user
+    cmd = ["git", "-c", "safe.directory=*", "-C", str(ROOT), "ls-files", "*.py"]
     try:
-        out = subprocess.run(["git", "-C", str(ROOT), "ls-files", "*.py"],
-                             capture_output=True, text=True, check=True).stdout
-    except (OSError, subprocess.CalledProcessError):
-        pytest.skip("not a git checkout")
+        out = subprocess.run(cmd, capture_output=True, text=True, check=True).stdout
+    except OSError as e:
+        pytest.skip(f"git not available: {e}")
+    except subprocess.CalledProcessError as e:
+        pytest.skip(f"not a git checkout: {e.stderr.strip()}")
     return out.split()
 
 

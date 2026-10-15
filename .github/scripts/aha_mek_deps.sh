@@ -6,7 +6,8 @@
 # enough (untracked generated files stay). Compiled repos (coreir, clockwork, Halide's
 # C++) stay as the image built them; Halide-to-Hardware gets only mek's app build scripts
 # (hw_support: the header staging around map_app, ...). An entry is `repo` (whole
-# checkout) or `repo:path` (that path only, HEAD unchanged).
+# checkout) or `repo:path` (that path's files only, copied in: the image's
+# Halide-to-Hardware is not a git repository).
 # Env: AHA_REF (default mek), AHA_DEPS_REPOS (default below), AHA_ROOT (default /aha).
 set -eo pipefail
 export GIT_TERMINAL_PROMPT=0
@@ -41,11 +42,11 @@ for entry in $REPOS; do
     fi
     git -C "$tmp/$r" cat-file -e "$sha^{commit}"
     git -C "$tmp/$r" branch -f aha-pin "$sha"
-    # ...then hand it to the container's repo locally and check it out
-    git -C "$AHA_ROOT/$r" fetch -q --update-shallow "$tmp/$r" aha-pin
     if [ -n "$path" ]; then
-        git -C "$AHA_ROOT/$r" checkout -q "$sha" -- "$path"
+        git -C "$tmp/$r" archive "$sha" "$path" | tar -x -C "$AHA_ROOT/$r"
     else
+        # ...then hand it to the container's repo locally and check it out
+        git -C "$AHA_ROOT/$r" fetch -q --update-shallow "$tmp/$r" aha-pin
         git -C "$AHA_ROOT/$r" checkout -q -f "$sha"
     fi
 done
