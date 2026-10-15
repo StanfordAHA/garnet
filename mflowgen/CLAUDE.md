@@ -424,7 +424,7 @@ origin/THESIS, which gen_rtl and the test generator check out in the container):
 
     ./mflowgen/sweep_specs.py --spec-set clock_gating --flatten-effort 0 \
         --memtile-power --config-jobs 6 --zip \
-        --out-dir /sim/mstrange/BUILD_CGRA/sweep_out/clock_gating_ab
+        --out-dir /nsim/mstrange/BUILDS/sweep_out/clock_gating_ab
 
 All six run to PT signoff, plus synth- and PnR-level idle/active power.
 `--flatten-effort 0` keeps the hierarchy for per-block power: port logic vs the
