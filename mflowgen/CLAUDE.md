@@ -1633,6 +1633,21 @@ floorplan, `mode[0]` guard) apply — the pond is flops, no macro.
   the RV tile from the A/B bundle picks the spec path, a static tile keeps the PondTop
   path, and neither has `Error   :`. Genus 21.16 segfaults at startup on /aha; use
   `module load genus/20.11.000` (it also sets the license path).
+- **Why Tile_PE misses 1.333 ns (2026-10-14, session cfc4174c).** gf12 synth (session 1fa8a391's
+  pipeclean, Genus 25.12): slack −1.117 ns RV / about −1.0 ns static, about −1.1 ns in every class
+  (R2R, I2R, R2O, I2O), 1,766 failing paths, so the critical chain is about 2.45 ns (≈ 408 MHz).
+  No path reports are in the cgra_app_power zips: they are in the synth step's
+  `results_syn/final_time.rpt` on the build machine. A local Genus 20.11 freepdk45 run of the
+  same RTL and constraints has the same worst register-to-register path in RV and static:
+  pond register (RV: an iteration-domain counter, then `valid`) → CB → **through the PE's
+  combinational ALU: BFloat16 FP compare (ChipWare `CW_fp_add`) → condition logic → 1-bit
+  output** → SB mux → SB register. About 70% of it is inside the PE (3.1 of 4.5 ns locally),
+  because the PE has no register between its input and output pins. The constraints'
+  FP false paths (`set_false_path_if_pins_exist` on `PE_inst0/WrappedPE_inst0$PE_inst0/ALU_inst0/...`,
+  the Amber hierarchy) match no pins on onyx ("pins=" in the log), and they would only cover I/O
+  paths anyway. Local freepdk45 output-path slacks (about −47 ns) are an artifact: the ADK's
+  `ADK_TYPICAL_ON_CHIP_LOAD` 7 is read as 7 pF. The conv_3_3 A/B gf12 rerun therefore uses
+  `--clock-mhz 400`.
 - Verified locally (private garnet copies, 4x2): no-flag builds unchanged
   (static-spec byte-identical; RV identical up to one module's position in the
   file; default differs only by pre-existing kratos nondeterminism in the sparse
