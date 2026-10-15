@@ -140,9 +140,14 @@ def tile_env(tile, ws, man, variants, config, args):
     """Environment of one tile workspace: what sweep_specs.py gives a tile
     build (_tile_env), plus the variants."""
     env = os.environ.copy()
-    for k in ("APP_BUNDLE", "RTL_POWER", "MEMTILE_POWER", "LAKE_SPEC_CONFIG", "LAKE_SPEC_MODE"):
+    for k in ("APP_BUNDLE", "RTL_POWER", "MEMTILE_POWER", "LAKE_SPEC_CONFIG", "LAKE_SPEC_MODE",
+              "LAKE_POND_SPEC_CONFIG"):
         env.pop(k, None)
     spec = man["spec_config"]
+    # a bundle recorded with a PE-tile spec pond (gen_app_bundle.py --pond-spec)
+    # replays on a Tile_PE built with that pond (check_bundle compares them)
+    if tile == "Tile_PE" and man.get("pond_spec") is not None:
+        env["LAKE_POND_SPEC_CONFIG"] = str(ws / "pond_spec.json")
     # Tile_PE: a static bundle replays on the default PE tile; an RV bundle's
     # PE tiles carry the RV spec pond (mflowgen/CLAUDE.md "Bundle guards").
     if tile == "Tile_MemCore" or man["mode"] == "rv":
@@ -179,8 +184,8 @@ def build_tile(tile, config, variants, man, args, status):
     try:
         if args.dry_run:
             env = tile_env(tile, ws, man, variants, config, args)
-            for k in ("LAKE_SPEC_CONFIG", "LAKE_SPEC_MODE", "APP_BUNDLE_VARIANTS", "CLOCK_PERIOD",
-                      "clock_period_PE", "FLATTEN"):
+            for k in ("LAKE_SPEC_CONFIG", "LAKE_SPEC_MODE", "LAKE_POND_SPEC_CONFIG", "APP_BUNDLE_VARIANTS",
+                      "CLOCK_PERIOD", "clock_period_PE", "FLATTEN"):
                 if k in env:
                     print(f"    [{config}/{tile}] env {k}={env[k]}")
             print(f"    [{config}/{tile}] $ mflowgen run --design {MFLOWGEN_DIR / tile}; "
@@ -193,6 +198,11 @@ def build_tile(tile, config, variants, man, args, status):
         spec_text = json.dumps(man["spec_config"], indent=2, sort_keys=True)
         if not spec_file.exists() or spec_file.read_text() != spec_text:
             spec_file.write_text(spec_text)
+        if man.get("pond_spec") is not None:
+            pond_file = ws / "pond_spec.json"
+            pond_text = json.dumps(man["pond_spec"], indent=2, sort_keys=True)
+            if not pond_file.exists() or pond_file.read_text() != pond_text:
+                pond_file.write_text(pond_text)
         json.dump({"config": config, "tile": tile, "variants": {v: str(d / config) for v, d in variants},
                    "mode": man["mode"], "clock_mhz": args.clock_mhz, "garnet": git_rev(GARNET_DIR),
                    "argv": sys.argv,

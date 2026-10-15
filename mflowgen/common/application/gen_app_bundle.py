@@ -78,6 +78,13 @@ def sweep_config(name):
     sys.exit(f"*** no config {name} in sweep_specs.py's spec sets (sweep_specs.py --list)")
 
 
+def spec_garnet_flags(spec_path):
+    """garnet.py flags a spec needs beyond --lake-spec-config: a dual-port spec
+    also needs --dual-port (lake resolve_memports IndexErrors without it; the
+    tile graphs pass it from DUAL_PORT)."""
+    return ["--dual-port"] if json.loads(Path(spec_path).read_text()).get("dual_port") else []
+
+
 def log(msg):
     print(f"=== [{time.strftime('%H:%M:%S')}] {msg}", flush=True)
 
@@ -383,6 +390,7 @@ def main():
                     "--use-non-split-fifos"]
     if pond_spec:
         garnet_flags += ["--lake-pond-spec-config", pond_spec]
+    garnet_flags += spec_garnet_flags(spec)
 
     # 1. collateral
     if skip <= 0:

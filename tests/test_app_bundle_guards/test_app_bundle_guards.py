@@ -494,3 +494,33 @@ def test_check_bundle_pe_pond(tmp_path, capsys, built, cfg_hi, rc, msg):
     assert cb.main([str(m), "--design-v", str(dv), "--design-name", "Tile_PE"]) == rc
     out = capsys.readouterr()
     assert msg in (out.out + out.err)
+
+
+# ---------------------------------------------------------- gen_app_bundle --
+
+def test_gen_app_bundle_dual_port_flag(tmp_path):
+    """A dual-port spec's bundle needs garnet.py --dual-port (build + pnr), as
+    the tile graphs get from DUAL_PORT; lake IndexErrors without it."""
+    gab = load(APP / "gen_app_bundle.py", "gen_app_bundle")
+    spec = tmp_path / "spec_config.json"
+    for extra, flags in (({"dual_port": True}, ["--dual-port"]), ({"dual_port": False}, []), ({}, [])):
+        spec.write_text(json.dumps(dict({"storage_capacity": 4096}, **extra)))
+        assert gab.spec_garnet_flags(spec) == flags
+    kw, mode = gab.sweep_config("fw2_dw16_sc4096_dp_in2_out2_vc2_rv")
+    assert kw.get("dual_port") is True and mode == "rv"
+    kw, _ = gab.sweep_config("fw4_dw16_sc8192_sp_in2_out2_vc2")
+    assert not kw.get("dual_port")
+
+
+def test_cgra_app_power_builds_pe_with_the_bundles_pond(tmp_path):
+    """A bundle recorded with a PE-tile spec pond (--pond-spec) must replay on a
+    Tile_PE built with it: cgra_app_power.py sets LAKE_POND_SPEC_CONFIG."""
+    from types import SimpleNamespace
+    cap = load(MFLOWGEN / "cgra_app_power.py", "cgra_app_power")
+    args = SimpleNamespace(flatten_effort=None, clock_mhz=750.0)
+    man = {"spec_config": {"storage_capacity": 8192}, "mode": "static", "pond_spec": {}}
+    pe = cap.tile_env("Tile_PE", tmp_path, man, [("A", tmp_path)], "cfg", args)
+    assert pe["LAKE_POND_SPEC_CONFIG"] == str(tmp_path / "pond_spec.json")
+    assert "LAKE_POND_SPEC_CONFIG" not in cap.tile_env("Tile_MemCore", tmp_path, man, [("A", tmp_path)], "cfg", args)
+    man["pond_spec"] = None
+    assert "LAKE_POND_SPEC_CONFIG" not in cap.tile_env("Tile_PE", tmp_path, man, [("A", tmp_path)], "cfg", args)

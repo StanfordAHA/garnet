@@ -1121,6 +1121,10 @@ A private tree = a dir of symlinks to every `/aha` entry except `garnet`
 (its own `git clone`), plus a private app copy under
 `Halide-to-Hardware/apps/hardware_benchmarks/<x>/<app>` (same `../../hw_support`
 depth), so static and RV bundles can run concurrently (~26 / ~33 min at 16x16).
+A dual-port spec (`dual_port: true`) also gets garnet's `--dual-port` for the build
+and `aha pnr` (`spec_garnet_flags`, 2026-10-14; lake `resolve_memports` IndexErrors
+without it; the tile graphs get it from `DUAL_PORT`): conv_3_3 on
+`fw2_dw16_sc4096_dp_in2_out2_vc2` bit-accurate with it.
 
 **Pipeclean bundles (2026-10-11/12, session 1fa8a391):** conv_3_3 on
 `fw4_dw16_sc8192_sp_in2_out2_vc2` and `..._vc2_rv` (16x16), packed as
@@ -1432,6 +1436,10 @@ rows at the output vs up front through the MEM's filter path; lake CLAUDE.md §6
   (their own defaults differ: 1.333 / 1.1 ns). `--clean rtl` after a lake/garnet
   pull; `--report-only` re-reads workspaces; `--zip` packs CSVs, per-tile
   reports, xrun logs and synth area (no workspaces).
+  A bundle recorded with `--pond-spec` (manifest `pond_spec`) gets its Tile_PE
+  built with that pond (`LAKE_POND_SPEC_CONFIG` = `<ws>/pond_spec.json`;
+  2026-10-14, session 1fa8a391): before, it replayed on the default PE tile
+  and check_bundle failed on the pond.
 - **Outputs**: `cgra_power_tiles.csv` (per replayed tile: role, int/switch/leak/total
   W, SRAM macro W, window, energy, replay exact) and `cgra_power.csv` (per config x
   variant): `<tile>_{placed,route}_{n,W}`, `app_W` (placed + route), `sram_W` (cell
