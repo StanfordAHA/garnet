@@ -24,9 +24,9 @@ older sweeps have blank `tile_pnr_setup_wns_ns` -- see "PT signoff" below).
 Results (pass/fail, macro, workspace) go to `<out-dir>/results.csv`.
 
 Key flags:
-- `--spec-set {default,thesis,filter_fifo}` — `default` = the 6 `DEFAULT_SPEC_POINTS`;
+- `--spec-set {default,thesis,filter_fifo,clock_gating}` — `default` = the 6 `DEFAULT_SPEC_POINTS`;
   `filter_fifo` = the conv_3_3 A/B spec (RV, `_ff8`; see "Whole-CGRA power of
-  app variants");
+  app variants"); `clock_gating` = the clock-gating A/B (below);
   `thesis` = `_thesis_spec_points()` (1:1 mirror of lake
   `ASPLOS_EXP/all_experiments_thesis_v2.sh`, the standalone synthesis set)
   ∪ those 6 → 107 unique specs. Unlike aha's `enumerate_thesis_configs()`,
@@ -398,6 +398,50 @@ fw2 dp 2×2 and 214 on fw4 dp 4×4 RV.
 Extracted (minus GDS) with the regenerated CSVs and an analysis handoff at
 `/aha/sweep_out/dw16_NEW_SWEEP_20261009/` (`HANDOFF.md`; build-machine CSVs in
 `csv_as_zipped/`).
+
+### Clock-gating A/B through PnR (2026-10-14, session 5b33d095)
+
+Lake 9f9480c9 adds two opt-in Spec power options, both off by default:
+- `share_clk_ctr`: one cycle counter for every static schedule generator,
+  instead of a 34–39-bit `clk_ctr` in each (8 in a fw4 2×2 static spec,
+  292 flops, about 35% of that gf12 tile's idle power).
+- `clock_gate_ports`: each port's logic on a clock gated off while the app
+  leaves the port unconfigured.
+
+Details are in lake CLAUDE.md §5.6. `--spec-set clock_gating`
+(`CLOCK_GATING_SPEC_POINTS`) builds the default onyx geometry (fw4 4 KB 2×2,
+vc2) six ways, with modes pinned. Name suffixes are `_sharectr` / `_portcg`:
+- static: base, `_sharectr`, `_portcg`, `_sharectr_portcg`;
+- RV: base and `_portcg`. `share_clk_ctr` is refused for RV, since RV specs
+  have no free-running schedule generators.
+
+The two keys reach garnet as `spec_config.json` → lake
+`build_spec`/`build_spec_rv` kwargs. The power-test generator rebuilds the
+same spec, so its bitstreams carry each configured port's `port_enable`. The
+idle program configures no port, so a gated tile's ports are clocked off in
+idle. Build-machine command (garnet with this section; lake >= 9f9480c9 at
+origin/THESIS, which gen_rtl and the test generator check out in the container):
+
+    ./mflowgen/sweep_specs.py --spec-set clock_gating --flatten-effort 0 \
+        --memtile-power --config-jobs 6 --zip \
+        --out-dir /sim/mstrange/BUILD_CGRA/sweep_out/clock_gating_ab
+
+All six run to PT signoff, plus synth- and PnR-level idle/active power.
+`--flatten-effort 0` keeps the hierarchy for per-block power: port logic vs the
+rest, as in the dw16 sweep. The base static config has the same name as the
+thesis set's `fw4_dw16_sc4096_sp_in2_out2_vc2`. A fresh out-dir builds all six
+at one lake commit.
+
+Checked on /aha before the push:
+- Flags off: byte-identical RTL from `build_spec` / `build_spec_rv`.
+- Tile RTL of four variants (gen_rtl flags + `--use_sim_sram`): static base,
+  `_sharectr`, `_sharectr_portcg` and RV `_portcg`. memtile-power-test-gen,
+  then memtile-power-sim idle + active: all PASS. Static outputs change
+  981/980 times in 1000 cycles in every variant; RV 976/975.
+- SAIF of the gated tiles: every `port_<i>_gclk` has TC 0 in idle, and
+  `shared_clk_ctr` stops too (it is enabled only while some port is
+  configured). In active, configured ports toggle 1999 and the counter counts.
+  The RV filter port stays gated in active, since the program doesn't use it.
 
 ### Whole-graph smoke run: one spec, standalone + tile (2026-10-07)
 

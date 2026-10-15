@@ -87,6 +87,12 @@ Examples:
         --pnr-set dw16_pnr12 --validate-set dw16_val4 \\
         --config-jobs 4 --pnr-jobs 2 --zip
 
+    # Clock-gating A/B through PnR (CLOCK_GATING_SPEC_POINTS: shared cycle
+    # counter / port clock gating on the default geometry, static + RV):
+    # area, timing and idle/active MemTile power at synth and signoff
+    ./mflowgen/sweep_specs.py --spec-set clock_gating --flatten-effort 0 \\
+        --memtile-power --config-jobs 6 --zip
+
     # Whole-graph smoke test of one spec (lake build_spec defaults = the
     # default onyx MemCore geometry): standalone synth + its idle/active power,
     # tile PnR through PT signoff + tile idle/active power (synth + signoff
@@ -230,7 +236,8 @@ PRESETS["dw16_pnr12"] = PRESETS["dw16_fit8"] + PRESETS["dw16_val4"]
 SPEC_DEFAULTS = dict(storage_capacity=4096, data_width=16, vec_width=4, dims=6,
                      in_ports=2, out_ports=2, dual_port=False, vec_capacity=2,
                      max_extent=None, max_sequence_width=None,
-                     filter_fifo_depth=None)
+                     filter_fifo_depth=None, share_clk_ctr=False,
+                     clock_gate_ports=False)
 
 # Config keys that drive the sweep, not the RTL. They are stripped before
 # spec_config.json is written: util_onyx passes that file to
@@ -308,10 +315,28 @@ FILTER_FIFO_SPEC_POINTS = [
     for depth in (8, 16, 32)
 ]
 
+# Clock-gating A/B on the default onyx MemCore geometry (build_spec defaults:
+# fw4 4 KB 2x2; its RV twin is garnet's built-in MEM spec), lake 2026-10-14,
+# both opt-in: share_clk_ctr = one cycle counter for every static schedule
+# generator instead of a clk_ctr each (static only: RV specs have none);
+# clock_gate_ports = each port's clock gated off while the app leaves it
+# unconfigured (the --memtile-power idle program configures no port).
+_CG_BASE = dict(storage_capacity=4096, data_width=16, vec_width=4,
+                in_ports=2, out_ports=2, vec_capacity=2)
+CLOCK_GATING_SPEC_POINTS = [
+    dict(_CG_BASE, runtime_mode="static"),
+    dict(_CG_BASE, share_clk_ctr=True, runtime_mode="static"),
+    dict(_CG_BASE, clock_gate_ports=True, runtime_mode="static"),
+    dict(_CG_BASE, share_clk_ctr=True, clock_gate_ports=True, runtime_mode="static"),
+    dict(_CG_BASE, runtime_mode="rv"),
+    dict(_CG_BASE, clock_gate_ports=True, runtime_mode="rv"),
+]
+
 SPEC_SETS = {
     "default": DEFAULT_SPEC_POINTS,
     "thesis": DEFAULT_SPEC_POINTS + _thesis_spec_points(),
     "filter_fifo": FILTER_FIFO_SPEC_POINTS,
+    "clock_gating": CLOCK_GATING_SPEC_POINTS,
 }
 
 
@@ -340,8 +365,11 @@ def build_argparser():
                    help="Built-in spec list: 'default' = the 6 curated "
                         "DEFAULT_SPEC_POINTS; 'thesis' = every spec of the "
                         "standalone thesis synthesis sweep (lake "
-                        "all_experiments_thesis_v2.sh) plus those 6. "
-                        "Default: %(default)s.")
+                        "all_experiments_thesis_v2.sh) plus those 6; "
+                        "'filter_fifo' = the RV filter path as a FIFO; "
+                        "'clock_gating' = the default geometry with/without "
+                        "lake share_clk_ctr / clock_gate_ports (6 configs, "
+                        "modes pinned). Default: %(default)s.")
     p.add_argument("--data-width", default="", metavar="WIDTHS",
                    help="Comma-separated data widths: keep only the specs with "
                         "one of these data_width values (e.g. 16). Applied before "
@@ -951,6 +979,8 @@ def _unsupported_reason(spec, mode):
         return "build_spec_rv supports vec_capacity <= 2 for vec_width > 1"
     if mode != "rv" and spec.get("filter_fifo_depth") is not None:
         return "filter_fifo_depth is a build_spec_rv (RV filter path) option"
+    if mode == "rv" and spec.get("share_clk_ctr"):
+        return "share_clk_ctr changes nothing in build_spec_rv (no free-running schedule generators)"
     return None
 
 
@@ -1036,7 +1066,8 @@ def _config_name(cfg):
     """Stable name per config. Matches the naming used by the collateral
     sweeps in aha (so per-config dirs line up across both), plus `_msw<N>`
     for max_sequence_width (aha folds those; their RTL differs), `_ff<N>` for
-    build_spec_rv's filter_fifo_depth and `_rv` for runtime mode rv. Static
+    build_spec_rv's filter_fifo_depth, `_sharectr` / `_portcg` for lake's
+    share_clk_ctr / clock_gate_ports and `_rv` for runtime mode rv. Static
     names are unchanged from earlier sweeps."""
     fw = cfg.get("vec_width", 4)
     dw = cfg.get("data_width", 16)
@@ -1049,6 +1080,8 @@ def _config_name(cfg):
     me = cfg.get("max_extent")
     msw = cfg.get("max_sequence_width")
     ff = cfg.get("filter_fifo_depth")
+    share_ctr = cfg.get("share_clk_ctr", False)
+    gate_ports = cfg.get("clock_gate_ports", False)
 
     parts = [f"fw{fw}_dw{dw}_sc{sc}"]
     parts.append("dp" if dp else "sp")
@@ -1063,6 +1096,10 @@ def _config_name(cfg):
         parts.append(f"msw{msw}")
     if ff is not None:
         parts.append(f"ff{ff}")
+    if share_ctr:
+        parts.append("sharectr")
+    if gate_ports:
+        parts.append("portcg")
     if _mode(cfg) == "rv":
         parts.append("rv")
     return "_".join(parts)
