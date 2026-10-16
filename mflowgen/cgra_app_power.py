@@ -67,6 +67,10 @@ def parse_args(argv=None):
                    help="workspaces + CSVs; keep it outside the garnet checkout")
     p.add_argument("--config", action="append", default=[],
                    help="config name(s) to run (default: every config all variants have)")
+    p.add_argument("--any-config", action="store_true",
+                   help="run every config ANY variant has, each with the variants that have it "
+                        "(e.g. one variant per app, where some apps fail on some specs); the "
+                        "first of them is that config's d_* reference")
     p.add_argument("--tiles", default=",".join(TILES),
                    help="tile graphs to build (default both)")
     p.add_argument("--parallel-jobs", type=int, default=4, help="make -j per workspace")
@@ -106,20 +110,28 @@ def parse_variants(text):
     return out
 
 
-def configs_of(variants, wanted):
-    """Configs every variant has a bundle for (or `wanted`, checked)."""
+def configs_of(variants, wanted, any_config=False):
+    """Configs every variant has a bundle for (any_config: any variant), or
+    `wanted`, checked."""
     have = [{d.name for d in v.iterdir() if (d / "manifest.json").is_file()} if v.is_dir() else set()
             for _, v in variants]
-    common = set.intersection(*have) if have else set()
+    common = (set.union if any_config else set.intersection)(*have) if have else set()
     if wanted:
         names = [n for w in wanted for n in w.split(",") if n]
         missing = [(n, v) for n in names for (v, _), h in zip(variants, have) if n not in h]
-        if missing:
+        if missing and not any_config:
             raise SystemExit("*** no bundle for " + ", ".join(f"{n} in variant {v}" for n, v in missing))
+        if any_config and not set(names) <= common:
+            raise SystemExit("*** no variant has a bundle for " + ", ".join(sorted(set(names) - common)))
         return names
     if not common:
         raise SystemExit("*** the variants share no config (each needs <dir>/<config>/manifest.json)")
     return sorted(common)
+
+
+def variants_of(variants, config):
+    """The variants with a bundle for config, in --variants order."""
+    return [(v, d) for v, d in variants if (d / config / "manifest.json").is_file()]
 
 
 def load_manifests(variants, config):
@@ -453,18 +465,19 @@ def main(argv=None):
         bad = [t for t in tiles if t not in TILES]
         if bad:
             raise SystemExit(f"*** --tiles: unknown {bad}")
-        configs = configs_of(variants, args.config)
+        configs = configs_of(variants, args.config, args.any_config)
         jobs = []
         for config in configs:
-            man = load_manifests(variants, config)[variants[0][0]]
+            vs = variants_of(variants, config)
+            man = load_manifests(vs, config)[vs[0][0]]
             print(f"{config}: mode {man['mode']}, app {man.get('app')}, variants "
-                  + ", ".join(v for v, _ in variants), flush=True)
-            jobs += [(t, config, man) for t in tiles]
+                  + ", ".join(v for v, _ in vs), flush=True)
+            jobs += [(t, config, man, vs) for t in tiles]
         status, sem = {}, threading.Semaphore(max(1, args.tile_jobs))
 
         def run(job):
             with sem:
-                build_tile(*job[:2], variants, job[2], args, status)
+                build_tile(job[0], job[1], job[3], job[2], args, status)
         threads = [threading.Thread(target=run, args=(j,)) for j in jobs]
         for t in threads:
             t.start()

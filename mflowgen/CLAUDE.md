@@ -1480,6 +1480,9 @@ rows at the output vs up front through the MEM's filter path; lake CLAUDE.md §6
   (their own defaults differ: 1.333 / 1.1 ns). `--clean rtl` after a lake/garnet
   pull; `--report-only` re-reads workspaces; `--zip` packs CSVs, per-tile
   reports, xrun logs and synth area (no workspaces).
+  `--any-config` (2026-10-16, session 1fa8a391): run every config ANY variant has, each with
+  only the variants that have it (default: only configs every variant has). For one variant
+  per app where some apps fail on some specs (the dw16 app-bundle set).
   A bundle recorded with `--pond-spec` (manifest `pond_spec`) gets its Tile_PE
   built with that pond (`LAKE_POND_SPEC_CONFIG` = `<ws>/pond_spec.json`;
   2026-10-14, session 1fa8a391): before, it replayed on the default PE tile

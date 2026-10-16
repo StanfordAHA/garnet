@@ -524,3 +524,22 @@ def test_cgra_app_power_builds_pe_with_the_bundles_pond(tmp_path):
     assert "LAKE_POND_SPEC_CONFIG" not in cap.tile_env("Tile_MemCore", tmp_path, man, [("A", tmp_path)], "cfg", args)
     man["pond_spec"] = None
     assert "LAKE_POND_SPEC_CONFIG" not in cap.tile_env("Tile_PE", tmp_path, man, [("A", tmp_path)], "cfg", args)
+
+
+def test_cgra_app_power_any_config(tmp_path):
+    """Default: configs every variant has; --any-config: configs any variant
+    has, each with the variants that have it (one variant per app, where some
+    apps fail on some specs)."""
+    cap = load(MFLOWGEN / "cgra_app_power.py", "cgra_app_power")
+    for v, cfgs in (("A", ("c1", "c2")), ("B", ("c1",))):
+        for c in cfgs:
+            (tmp_path / v / c).mkdir(parents=True)
+            (tmp_path / v / c / "manifest.json").write_text("{}")
+    variants = [("A", tmp_path / "A"), ("B", tmp_path / "B")]
+    assert cap.configs_of(variants, []) == ["c1"]
+    assert cap.configs_of(variants, [], any_config=True) == ["c1", "c2"]
+    assert [v for v, _ in cap.variants_of(variants, "c1")] == ["A", "B"]
+    assert [v for v, _ in cap.variants_of(variants, "c2")] == ["A"]
+    with pytest.raises(SystemExit):
+        cap.configs_of(variants, ["c2"])           # B has no c2
+    assert cap.configs_of(variants, ["c2"], any_config=True) == ["c2"]
