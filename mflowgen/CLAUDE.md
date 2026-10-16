@@ -1186,6 +1186,29 @@ over 8843 on an RV build = Tile_PE with the RV spec knobs). Two earlier sets
 were deleted as stale (lake 04191ea5: before 144e2062's comparator pruning;
 144e2062: before the port-order fix).
 
+**dw16 app-bundle set (2026-10-14/16, session 1fa8a391; user scope).** conv_3_3, gaussian,
+harris_color and pond matmul (`tests/matmul_rvtry3` n=16, `-enable_ponds`) x the 12
+`dw16_pnr12` configs, 16x16, `--cgra-tiles`, RV without `--rv-balance`; static bundles with a
+static spec pond (`--pond-spec {}`, so one Tile_PE per config serves every app). Recorded in 6
+private slot trees (garnet 495cf23f + the `--dual-port` fix, lake snapshot 11967ce5 on
+PYTHONPATH; runner + logs: scratchpad 1fa8a391 `bigset/`). Result: 32 bundles over 10 configs,
+8 per app, all `aha test` bit-accurate; `/aha/sweep_out/app_bundles_dw16_20261014/<app>/<config>`
+(+ `STATUS.txt`, tarball `app_bundles_dw16_20261014.tgz`). Power: `cgra_app_power.py
+--any-config --variants conv=..,gauss=..,harris=..,mmpond=.. --clock-mhz 400`.
+Failures (OPEN_ISSUES ids):
+- fw1 single-port STATIC line buffers (`clockwork/static-mem-bandwidth-unchecked`): each row bank
+  is written and read every cycle (stride 1, overlapping) = 2 accesses/cycle on a 1-access SRAM;
+  clockwork emits it, output wrong (conv_3_3 all 3844 ~half of gold). Pond matmul passes there.
+- fw1 single-port RV (`garnet/fw1-sp-rv-netlist`), every app incl. pond matmul: PnR KeyError in
+  `mapper/netlist_util.py` (an unconnected 1-bit `delay_reg` from clockwork, then an output
+  `$reg1` missing from `nodes_to_ids`). Not bandwidth: lake's RV single-port arbiter would cope.
+- Static pond matmul on fw8 sc32768 and fw4 vc4 (`clockwork/static-matmul-wide-mem`): wrong
+  values all = gold + 7824. RV passes.
+- No-pond matmul (`matmul_rvtry3 sched=1`, reduction unrolled into a PE adder tree, no ponds):
+  static `garnet_single_port_ram_schedule` assert; RV compiles (23 PEs) but does not route on
+  16x16. In-place MEM accumulation is not a target (user, 2026-09-29). User decision pending.
+- harris_color takes 1.5-2.5 h per bundle (sim); RV PnR of gaussian on fw2 dp took ~1 h.
+
 **Bundle guards (garnet a881563f, 2026-10-11, session 1fa8a391; tests:
 `tests/test_app_bundle_guards`, 25).** Both failure modes used to be silent:
 - *Bundle recorded on another tile* -> `application` fails up front. The step
