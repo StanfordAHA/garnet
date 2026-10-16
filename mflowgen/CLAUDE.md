@@ -1814,6 +1814,17 @@ libHalide and libclkwrk.so were rebuilt. Shared-toolchain checks:
     checkout. Without that, garnet.py writes its GLB / GLC / MU headers into whatever
     `GARNET_HOME` the shell has; on 2026-10-12 that overwrote the shared /aha/garnet's.
   - End to end: aha `tests/test_data_width_e2e.py` (opt-in, private tree).
+- **Container garnet build: `common/rtl/garnet_build.sh` (2026-10-16, session 1fa8a391).** The rtl
+  step used to run `aha garnet <flags>` (aha's retry: up to 3 runs on SIGSEGV/SIGBUS/SIGABRT, no
+  timeout). On the build machine (2026-10-14, the RV pipeclean) garnet.py printed `- garnet.py DONE`,
+  then died at exit with `double free or corruption (out)` (SIGABRT, the native kratos/coreir heap
+  corruption). aha retried the finished build, and the retry hung mid-generation for 14 hours.
+  gen_rtl.sh now runs garnet_build.sh (copied in with garnet; falls back to `aha garnet` without it):
+  python garnet.py up to 3 times, each under `timeout` (`GARNET_BUILD_TIMEOUT`, default 7200 s; a
+  4x2 build takes ~2 min). An attempt that printed DONE and wrote `garnet.v` counts even if it then
+  died: garnet.py prints DONE after `build_verilog`. Tests: `tests/test_mflowgen/test_garnet_build.py`
+  (stub python: ok / DONE-then-abort / abort / hang / DONE without garnet.v). Not run in the real
+  container here (no docker on /aha).
 - **Container steps (build machine), fixed 2026-10-12 (garnet 69f236e0, 84621c08).** `common/rtl/gen_rtl.sh`,
   `common/memtile-power-test-gen/run.sh` and `common/application/run.sh` run garnet.py in
   `stanfordaha/garnet:latest`, which has aha master's lassen (d2a4411) and MetaMapper (a6fe971).

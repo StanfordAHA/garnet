@@ -318,7 +318,7 @@ if [ "$use_container" == True ]; then
 
          if [ $interconnect_only == True ]; then
            echo --- INTERCONNECT_ONLY: aha garnet $flags
-           aha garnet $flags; # Here is where we build the verilog for the main chip
+           if [ -f /aha/garnet/mflowgen/common/rtl/garnet_build.sh ]; then bash /aha/garnet/mflowgen/common/rtl/garnet_build.sh $flags || exit 1; else aha garnet $flags; fi; # Here is where we build the verilog for the main chip
            cd /aha/garnet
            cp garnet.v design.v
          elif [ $glb_only == True ]; then
@@ -333,6 +333,9 @@ if [ "$use_container" == True ]; then
            cat global_buffer/systemRDL/output/glb_jrdl_logic.sv >> design.v
          else
            echo --- DEFAULT rtl build: aha garnet $flags
+           # garnet_build.sh (copied in with garnet) = aha garnet plus: a run that
+           # printed garnet.py DONE counts even if it then crashed at exit, and each
+           # attempt has a timeout (a flaky rebuild once hung for 14 hours).
            # Rename output verilog, final name must be 'design.v'
            # Track the tip of lake's THESIS branch (GF-enabled lake).
            # -B forces the local branch to match origin/THESIS even if the
@@ -347,7 +350,7 @@ if [ "$use_container" == True ]; then
            # docker-exec string and would be evaluated by the host shell.)
            ( cd /aha/lake && git fetch origin THESIS && git checkout -B THESIS origin/THESIS && git log -1 --oneline ) \
              || { echo '*** ERROR: gen_rtl: lake THESIS checkout failed (see above); is /aha/lake a git repo with network access?'; exit 1; }
-           aha garnet $flags; # Here is where we build the verilog for the main chip
+           if [ -f /aha/garnet/mflowgen/common/rtl/garnet_build.sh ]; then bash /aha/garnet/mflowgen/common/rtl/garnet_build.sh $flags || exit 1; else aha garnet $flags; fi; # Here is where we build the verilog for the main chip
            cd /aha/garnet
            if [ -d 'genesis_verif' ]; then
              cp garnet.v genesis_verif/garnet.v
