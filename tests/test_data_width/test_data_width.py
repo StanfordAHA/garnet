@@ -137,9 +137,12 @@ def fabric(request, tmp_path_factory):
     for attempt in range(3):  # garnet.py has a flaky native crash (SIGSEGV / SIGABRT)
         (GARNET / "garnet.v").unlink(missing_ok=True)
         out = _run_without_mm_data_width(code, env=env)
-        if out.returncode == 0 and (GARNET / "garnet.v").exists():
+        # A run that printed DONE and wrote garnet.v is done even if it then died at exit
+        # (SIGABRT "double free or corruption"), as in mflowgen/common/rtl/garnet_build.sh
+        done = (GARNET / "garnet.v").exists() and (out.returncode == 0 or "- garnet.py DONE" in out.stdout)
+        if done:
             break
-    assert out.returncode == 0, out.stderr[-3000:]
+    assert done, out.stderr[-3000:]
     headers = tmp / "headers"
     for d in ("global_buffer/header", "global_controller/header", "matrix_unit/header"):
         shutil.copytree(GARNET / d, headers / d)
