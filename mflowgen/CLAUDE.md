@@ -1203,7 +1203,10 @@ Failures (OPEN_ISSUES ids):
   `mapper/netlist_util.py` (an unconnected 1-bit `delay_reg` from clockwork, then an output
   `$reg1` missing from `nodes_to_ids`). Not bandwidth: lake's RV single-port arbiter would cope.
 - Static pond matmul on fw8 sc32768 and fw4 vc4 (`clockwork/static-matmul-wide-mem`): wrong
-  values all = gold + 7824. RV passes.
+  output. Not a constant offset (gold + 7824 only at some indices; an earlier note said all):
+  within each output row the sim value steps by a constant per column (2040 in row 0, 2280 in
+  row 1), as if one operand were read as a ramp. Not pond packing: the mismatches are identical
+  with garnet b6dfabb7 (2026-10-17). RV passes.
 - No-pond matmul (`matmul_rvtry3 sched=1`, reduction unrolled into a PE adder tree, no ponds):
   static `garnet_single_port_ram_schedule` assert; RV compiles (23 PEs) but does not route on
   16x16. In-place MEM accumulation is not a target (user, 2026-09-29). User decision pending.
