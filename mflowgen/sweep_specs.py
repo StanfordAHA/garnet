@@ -25,7 +25,15 @@ Spec sets (--spec-set): `default` is the 6 curated DEFAULT_SPEC_POINTS;
 `thesis` is every spec of the standalone thesis synthesis sweep (lake
 ASPLOS_EXP/all_experiments_thesis_v2.sh) plus those 6. Each spec is built
 once per runtime mode in --runtime-mode (static, rv, or both); RV configs
-get an `_rv` name suffix and select build_spec_rv in garnet.
+get an `_rv` name suffix and select build_spec_rv in garnet. `pe_tile`
+(--graph mflowgen/Tile_PE) and `fabric` are tile variants rather than specs:
+garnet's stock tile (`stock`, no lake spec), the PE pond knob (`_nopond`,
+`_specpond`) and the static fabric (`_staticfab`, garnet --dense-only).
+
+--recipe builds the thesis data set, or a named part of it, as one command:
+each part is its own sweep into <out-dir>/<part> (RECIPE_FLAGS), and
+`thesis` = fabric_mem + pe_tile + memtile + app_power (cgra_app_power.py
+over --app-bundles).
 
 --pnr-set splits the stop target per config: the named configs build to
 --stop-after (signoff by default), every other config stops at --synth-stop
@@ -48,6 +56,19 @@ with `lake` importable by this Python.
 Examples:
     # List what would run, touch nothing
     ./mflowgen/sweep_specs.py --dry-run
+
+    # The whole thesis data set in one command, each part zipped next to it
+    # (<out-dir>/<part>_<host>_<ts>_slim.zip): MemTile switch-box A/B, PE tiles
+    # through PnR at 400 MHz, every thesis spec at every data width (static +
+    # RV, PnR for the 12-config synth->PnR model), then whole-CGRA power of
+    # the app bundles copied over from /aha
+    ./mflowgen/sweep_specs.py --recipe thesis --out-dir /nsim/mstrange/BUILDS/thesis_data \\
+        --app-bundles /nsim/mstrange/BUILDS/app_bundles_dw16_20261014 \\
+        --config-jobs 4 --pnr-jobs 2 --zip --zip-slim
+
+    # Just one part (fabric_mem, pe_tile, memtile or app_power); --list or
+    # --dry-run shows what each part would build
+    ./mflowgen/sweep_specs.py --recipe pe_tile --out-dir /nsim/mstrange/BUILDS/thesis_data --zip
 
     # Single smoke point, RTL only
     ./mflowgen/sweep_specs.py --rtl-only --only fw1_dw16_sc4096_sp_in1_out1
@@ -242,8 +263,17 @@ SPEC_DEFAULTS = dict(storage_capacity=4096, data_width=16, vec_width=4, dims=6,
 # Config keys that drive the sweep, not the RTL. They are stripped before
 # spec_config.json is written: util_onyx passes that file to
 # build_spec(**spec), which would reject them.
-SWEEP_ONLY_KEYS = ("runtime_mode",)
+#   pond:   "none" -> NO_POND (garnet --no-pond); "spec" -> lake's default spec
+#           pond, LAKE_POND_SPEC_CONFIG = {} (as gen_app_bundle --pond-spec {});
+#           unset -> the graph's default pond. Only the PE tile has one.
+#   fabric: "static" -> DENSE_ONLY (garnet --dense-only: no ready-valid
+#           interconnect; garnet then builds its stock dense cores, so the
+#           config is stock). Unset -> the ready-valid fabric.
+#   stock:  True -> no lake spec (LAKE_SPEC_CONFIG unset): garnet's stock tile.
+SWEEP_ONLY_KEYS = ("runtime_mode", "pond", "fabric", "stock")
 RUNTIME_MODES = ("static", "rv")
+POND_KINDS = ("none", "spec")
+FABRIC_KINDS = ("rv", "static")
 
 # --memtile-power: the two stimulus variants (common/memtile-power-test-gen)
 # and the stop targets that leave a signoff netlist to power the PnR level on.
@@ -332,12 +362,70 @@ CLOCK_GATING_SPEC_POINTS = [
     dict(_CG_BASE, clock_gate_ports=True, runtime_mode="rv"),
 ]
 
+# PE tile (build with --graph mflowgen/Tile_PE; recipe pe_tile), modes pinned.
+# With and without its pond, static and RV, for the thesis's tile-height bound
+# (PE tile PnR area = 1 tile), plus the PE on the static fabric (garnet
+# --dense-only) for the switch-box A/B against stock_nopond. Static PEs are
+# stock, as cgra_app_power.py builds them (the PE tile does not depend on the
+# MemCore spec), with lake's default spec pond as the dw16 app bundles record
+# it (--pond-spec {}). An RV PE needs an RV spec for its RV pond: the default
+# geometry (= garnet's built-in RV MEM spec), with the graph's default RV pond.
+PE_TILE_SPEC_POINTS = [
+    dict(stock=True, pond="spec", runtime_mode="static"),
+    dict(stock=True, pond="none", runtime_mode="static"),
+    dict(_CG_BASE, runtime_mode="rv"),
+    dict(_CG_BASE, pond="none", runtime_mode="rv"),
+    dict(fabric="static", pond="none", runtime_mode="static"),
+]
+# Switch-box A/B on the MemTile (recipe fabric_mem): garnet's stock tile on the
+# ready-valid fabric vs the static fabric (--dense-only). The SB, CBs and the
+# fabric's FIFOs/registers are separate instances, kept with --flatten-effort 0.
+FABRIC_SPEC_POINTS = [
+    dict(stock=True, runtime_mode="static"),
+    dict(fabric="static", runtime_mode="static"),
+]
+
 SPEC_SETS = {
     "default": DEFAULT_SPEC_POINTS,
     "thesis": DEFAULT_SPEC_POINTS + _thesis_spec_points(),
     "filter_fifo": FILTER_FIFO_SPEC_POINTS,
     "clock_gating": CLOCK_GATING_SPEC_POINTS,
+    "pe_tile": PE_TILE_SPEC_POINTS,
+    "fabric": FABRIC_SPEC_POINTS,
 }
+# The PE tiles that go through PnR (tile height); stock_staticfab_nopond is
+# synthesis only (switch-box area).
+PRESETS["pe_tile_pnr"] = [
+    "stock_specpond",
+    "stock_nopond",
+    "fw4_dw16_sc4096_sp_in2_out2_vc2_rv",
+    "fw4_dw16_sc4096_sp_in2_out2_vc2_nopond_rv",
+]
+
+# --recipe: the thesis data set as named sub-sweeps. Each runs as its own
+# sweep_specs.py invocation into <out-dir>/<name> (own results.csv,
+# correlation.csv and --zip archive), with the recipe's flags followed by the
+# command line's other flags (which therefore override them).
+#   fabric_mem: switch-box A/B on the MemTile, synthesis only.
+#   pe_tile:    PE tile through PnR at the CGRA clock (the PE misses 750 MHz:
+#               critical path ~2.45 ns, CLAUDE.md "Why Tile_PE misses 1.333 ns").
+#   memtile:    every thesis spec at every data width, static + RV, hierarchy
+#               kept, idle/active power, PnR for the 12-config synth->PnR model.
+#   app_power:  cgra_app_power.py over the app bundles in --app-bundles.
+# `thesis` runs all four (app_power only when --app-bundles is given).
+APP_POWER_MHZ = 400
+RECIPE_FLAGS = {
+    "fabric_mem": ["--spec-set", "fabric", "--flatten-effort", "0",
+                   "--stop-after", "cadence-genus-synthesis"],
+    "pe_tile": ["--graph", str(MFLOWGEN_DIR / "Tile_PE"), "--spec-set", "pe_tile",
+                "--flatten-effort", "0", "--clock-mhz", str(APP_POWER_MHZ),
+                "--pnr-set", "pe_tile_pnr"],
+    "memtile": ["--spec-set", "thesis", "--runtime-mode", "static,rv",
+                "--flatten-effort", "0", "--memtile-power",
+                "--pnr-set", "dw16_pnr12", "--validate-set", "dw16_val4"],
+}
+RECIPES = {**{name: [name] for name in RECIPE_FLAGS}, "app_power": ["app_power"],
+           "thesis": list(RECIPE_FLAGS) + ["app_power"]}
 
 
 def build_argparser():
@@ -369,7 +457,28 @@ def build_argparser():
                         "'filter_fifo' = the RV filter path as a FIFO; "
                         "'clock_gating' = the default geometry with/without "
                         "lake share_clk_ctr / clock_gate_ports (6 configs, "
-                        "modes pinned). Default: %(default)s.")
+                        "modes pinned); 'pe_tile' = PE tiles with/without "
+                        "pond, static/RV, plus one on the static fabric "
+                        "(--graph mflowgen/Tile_PE); 'fabric' = garnet's stock "
+                        "tile on the ready-valid vs the static fabric. "
+                        "Default: %(default)s.")
+    p.add_argument("--recipe", choices=sorted(RECIPES), default=None,
+                   help="Build a named part of the thesis data set, or all of it "
+                        "('thesis' = fabric_mem, pe_tile, memtile, then app_power), "
+                        "each as its own sweep into <out-dir>/<part> with the "
+                        "recipe's flags (RECIPE_FLAGS) and then this command "
+                        "line's other flags, which override them (so a "
+                        "--clock-mhz here re-clocks every part). Execution "
+                        "flags (--config-jobs, --pnr-jobs, --zip, --zip-slim, "
+                        "--skip-existing, --dry-run, --list, ...) apply to each.")
+    p.add_argument("--app-bundles", metavar="DIR", default=None,
+                   help="With --recipe thesis/app_power: app bundles as "
+                        "DIR/<app>/<config>/manifest.json (e.g. "
+                        "/aha/sweep_out/app_bundles_dw16_20261014 copied over), "
+                        "each <app> a cgra_app_power.py variant; or one app as "
+                        "DIR/<config>. Replayed with cgra_app_power.py "
+                        "--any-config at --clock-mhz (default "
+                        f"{APP_POWER_MHZ}) into <out-dir>/app_power.")
     p.add_argument("--data-width", default="", metavar="WIDTHS",
                    help="Comma-separated data widths: keep only the specs with "
                         "one of these data_width values (e.g. 16). Applied before "
@@ -651,7 +760,14 @@ def build_argparser():
 
 
 def main(argv=None):
+    argv = sys.argv[1:] if argv is None else list(argv)
     args = build_argparser().parse_args(argv)
+    if args.recipe:
+        return _run_recipe(args, argv)
+    if args.app_bundles:
+        print("*** --app-bundles needs --recipe thesis or --recipe app_power.",
+              file=sys.stderr)
+        return 2
 
     if args.rtl_only and args.memtile_power:
         print("*** --memtile-power needs synthesis; drop --rtl-only.",
@@ -797,6 +913,93 @@ def main(argv=None):
     return 1 if failures or not zip_ok else 0
 
 
+# ---------------------------------------------------------------------------
+# --recipe: the thesis data set as sub-sweeps (RECIPE_FLAGS) + app power
+# ---------------------------------------------------------------------------
+# What a recipe sets itself for each part; dropped from the passed-on flags.
+_RECIPE_OWN_FLAGS = ("--recipe", "--out-dir", "--app-bundles")
+
+
+def _recipe_passthrough(argv):
+    """argv without the recipe's own flags and their values. An abbreviated
+    flag counts too: argparse only accepted it if it is a unique prefix."""
+    out, drop_value = [], False
+    for tok in argv:
+        if drop_value:
+            drop_value = False
+            continue
+        flag = tok.split("=", 1)[0]
+        if len(flag) > 2 and flag.startswith("--") and any(
+                own.startswith(flag) for own in _RECIPE_OWN_FLAGS):
+            drop_value = "=" not in tok
+            continue
+        out.append(tok)
+    return out
+
+
+def _run_recipe(args, argv):
+    """Each part of --recipe in turn into <out-dir>/<part>; 1 if any failed
+    (the later parts still run)."""
+    root = Path(args.out_dir).resolve()
+    rest = _recipe_passthrough(argv)
+    failed = []
+    for part in RECIPES[args.recipe]:
+        out = root / part
+        if part == "app_power":
+            rc = _run_app_power(args, out)
+        else:
+            sub = RECIPE_FLAGS[part] + rest + ["--out-dir", str(out)]
+            print(f"\n===== --recipe {args.recipe}: {part} -> {out}\n"
+                  f"      sweep_specs.py {shlex.join(sub)}", flush=True)
+            rc = main(sub)
+        if rc:
+            failed.append(part)
+    if failed:
+        print(f"\n*** --recipe {args.recipe}: {', '.join(failed)} failed "
+              "(see above)", file=sys.stderr, flush=True)
+    return 1 if failed else 0
+
+
+def _app_power_variants(root):
+    """--app-bundles -> [(variant name, dir)]: root itself when it holds
+    <config>/manifest.json (one app), else each root/<app> that does."""
+    def has_bundles(d):
+        return d.is_dir() and any((c / "manifest.json").is_file()
+                                  for c in d.iterdir() if c.is_dir())
+    if has_bundles(root):
+        dirs = [root]
+    else:
+        dirs = sorted(d for d in root.iterdir() if has_bundles(d)) if root.is_dir() else []
+    return [(re.sub(r"\W", "_", d.name), d) for d in dirs]
+
+
+def _run_app_power(args, out_dir):
+    """cgra_app_power.py over --app-bundles into out_dir (0 = done or skipped)."""
+    if not args.app_bundles:
+        print("\n===== app_power: skipped (no --app-bundles)", flush=True)
+        return 0
+    variants = _app_power_variants(Path(args.app_bundles).expanduser().resolve())
+    if not variants:
+        print(f"*** --app-bundles {args.app_bundles}: no <app>/<config>/manifest.json",
+              file=sys.stderr, flush=True)
+        return 1
+    mhz = args.clock_mhz if args.clock_mhz is not None else APP_POWER_MHZ
+    cmd = [sys.executable, str(MFLOWGEN_DIR / "cgra_app_power.py"), "--any-config",
+           "--variants", ",".join(f"{n}={d}" for n, d in variants),
+           "--clock-mhz", f"{mhz:g}", "--out-dir", str(out_dir)]
+    if args.parallel_jobs > 0:
+        cmd += ["--parallel-jobs", str(args.parallel_jobs)]
+    if args.flatten_effort is not None:
+        cmd += ["--flatten-effort", str(args.flatten_effort)]
+    if args.clean:
+        cmd += ["--clean", args.clean]
+    cmd += [f for f, on in (("--dry-run", args.dry_run), ("--zip", args.zip)) if on]
+    print(f"\n===== app_power -> {out_dir}\n      {shlex.join(cmd)}", flush=True)
+    if args.list:
+        return 0
+    return subprocess.run(cmd, stdin=subprocess.DEVNULL).returncode
+
+
 def _clock_period_ps(args):
     """--clock-mhz as a period in whole ps (1 ps resolution, so 750 MHz is the
     graph's own 1.333 ns), or None when the flag is unset."""
@@ -819,6 +1022,20 @@ def _tile_clock_ps(graph):
         return None
     ps = round(float(m.group(1)) * 1000, 3)
     return int(ps) if ps.is_integer() else ps
+
+
+# Env vars a tile graph's construct.py reads its clock period (ns) from:
+# Tile_MemCore CLOCK_PERIOD, Tile_PE clock_period_PE (as cgra_app_power.py sets).
+CLOCK_ENV_KEYS = ("CLOCK_PERIOD", "clock_period_PE")
+
+
+def _clock_env_key(graph):
+    """The env var --clock-mhz goes to for this graph (None: it reads none)."""
+    try:
+        text = (Path(graph) / "construct.py").read_text()
+    except OSError:
+        return "CLOCK_PERIOD"
+    return next((k for k in CLOCK_ENV_KEYS if k in text), None)
 
 
 def _preflight_standalone(args):
@@ -931,18 +1148,26 @@ def _preflight(args):
                   "--flatten-effort has no effect on this graph.",
                   file=sys.stderr, flush=True)
 
-    # --clock-mhz travels as env CLOCK_PERIOD (ns), likewise graph-specific.
+    # --clock-mhz travels as env CLOCK_PERIOD / clock_period_PE (ns), likewise
+    # graph-specific.
     if args.clock_mhz is not None:
         if args.clock_mhz <= 0:
             raise SystemExit("*** ERROR: --clock-mhz must be positive.")
+        if _clock_env_key(graph) is None:
+            print(f"*** WARNING: {graph / 'construct.py'} reads none of "
+                  f"{'/'.join(CLOCK_ENV_KEYS)}; --clock-mhz has no effect on this graph.",
+                  file=sys.stderr, flush=True)
+
+    # --memtile-power steps exist only in graphs that read MEMTILE_POWER
+    # (Tile_MemCore); elsewhere every config would fail on a missing target.
+    if args.memtile_power:
         try:
-            reads = "CLOCK_PERIOD" in (graph / "construct.py").read_text()
+            reads = "MEMTILE_POWER" in (graph / "construct.py").read_text()
         except OSError:
             reads = True
         if not reads:
-            print(f"*** WARNING: {graph / 'construct.py'} does not read CLOCK_PERIOD; "
-                  "--clock-mhz has no effect on this graph.",
-                  file=sys.stderr, flush=True)
+            raise SystemExit(f"*** ERROR: --memtile-power: {graph / 'construct.py'} "
+                             "has no MemTile power steps (Tile_MemCore only).")
 
 
 # ---------------------------------------------------------------------------
@@ -971,9 +1196,24 @@ def _spec_kwargs(cfg):
     return {k: v for k, v in cfg.items() if k not in SWEEP_ONLY_KEYS}
 
 
+def _is_stock(cfg):
+    """No lake spec: garnet's stock tile (`stock`, or the static fabric, whose
+    dense cores never read one)."""
+    return bool(cfg.get("stock")) or cfg.get("fabric") == "static"
+
+
+def _tile_key(spec, mode):
+    """Hardware identity of a config: spec (none for a stock tile), mode and
+    the tile knobs outside the spec."""
+    return (None if _is_stock(spec) else _spec_key(spec), mode,
+            spec.get("pond"), spec.get("fabric", "rv"))
+
+
 def _unsupported_reason(spec, mode):
     """Why `mode` can't build this spec (None if it can). Mirrors the check
     at the top of lake's build_spec_rv, which raises."""
+    if mode == "rv" and _is_stock(spec):
+        return "runtime mode rv needs a lake spec (stock tile / static fabric)"
     if (mode == "rv" and spec.get("vec_width", 4) > 1
             and spec.get("vec_capacity", 2) > 2):
         return "build_spec_rv supports vec_capacity <= 2 for vec_width > 1"
@@ -1012,8 +1252,12 @@ def _collect_configs(args):
         if pinned is not None and pinned not in RUNTIME_MODES:
             raise SystemExit(f"*** ERROR: spec {spec} has runtime_mode "
                              f"'{pinned}'; expected one of {RUNTIME_MODES}")
+        for key, kinds in (("pond", POND_KINDS), ("fabric", FABRIC_KINDS)):
+            if spec.get(key) is not None and spec[key] not in kinds:
+                raise SystemExit(f"*** ERROR: spec {spec} has {key} "
+                                 f"'{spec[key]}'; expected one of {kinds}")
         for mode in ([pinned] if pinned else args.modes):
-            key = (_spec_key(spec), mode)
+            key = _tile_key(spec, mode)
             if key in seen_specs:
                 continue  # same hardware listed twice (e.g. default + thesis)
             seen_specs.add(key)
@@ -1068,7 +1312,19 @@ def _config_name(cfg):
     for max_sequence_width (aha folds those; their RTL differs), `_ff<N>` for
     build_spec_rv's filter_fifo_depth, `_sharectr` / `_portcg` for lake's
     share_clk_ctr / clock_gate_ports and `_rv` for runtime mode rv. Static
-    names are unchanged from earlier sweeps."""
+    names are unchanged from earlier sweeps. A stock tile (no lake spec) is
+    `stock`; then `_staticfab` for the static fabric and `_nopond` /
+    `_specpond` for the PE pond knob."""
+    knobs = []
+    if cfg.get("fabric") == "static":
+        knobs.append("staticfab")
+    if cfg.get("pond") is not None:
+        knobs.append({"none": "nopond", "spec": "specpond"}[cfg["pond"]])
+    if _mode(cfg) == "rv":
+        knobs.append("rv")
+    if _is_stock(cfg):
+        return "_".join(["stock"] + knobs)
+
     fw = cfg.get("vec_width", 4)
     dw = cfg.get("data_width", 16)
     sc = cfg.get("storage_capacity", 4096)
@@ -1100,9 +1356,7 @@ def _config_name(cfg):
         parts.append("sharectr")
     if gate_ports:
         parts.append("portcg")
-    if _mode(cfg) == "rv":
-        parts.append("rv")
-    return "_".join(parts)
+    return "_".join(parts + knobs)
 
 
 def _resolve_names(args, text, flag):
@@ -1558,8 +1812,9 @@ def _memtile_power_targets(cfg, args):
     """--memtile-power leaves, made AFTER the build targets in their own make
     (a power failure is a note on the row, not a failed config): synth level
     always, PnR level when the config builds through signoff (synth-only
-    configs have no signoff netlist)."""
-    if not getattr(args, "memtile_power", False):
+    configs have no signoff netlist). None for a stock tile: the stimulus is
+    a lake-spec program (Tile_MemCore drops the steps without a spec)."""
+    if not getattr(args, "memtile_power", False) or _is_stock(cfg):
         return []
     levels = ["synth"]
     if args.include_pnr_power or any(h in _stop_target(cfg, args) for h in SIGNOFF_OR_LATER):
@@ -1591,8 +1846,20 @@ def _tile_env(cfg, cfg_dir, args):
     and common/rtl/gen_rtl.sh read (BUILD_ENV_KEYS)."""
     spec_path = cfg_dir / "spec_config.json"
     env = os.environ.copy()
-    env["LAKE_SPEC_CONFIG"] = str(spec_path)
-    env["LAKE_SPEC_MODE"] = _mode(cfg)
+    if _is_stock(cfg):
+        env.pop("LAKE_SPEC_CONFIG", None)
+        env.pop("LAKE_SPEC_MODE", None)
+    else:
+        env["LAKE_SPEC_CONFIG"] = str(spec_path)
+        env["LAKE_SPEC_MODE"] = _mode(cfg)
+    # Exported only when set, so the configs without them keep the settings
+    # (and --skip-existing state) they had before these knobs existed.
+    if cfg.get("fabric") == "static":
+        env["DENSE_ONLY"] = "True"
+    if cfg.get("pond") == "none":
+        env["NO_POND"] = "True"
+    elif cfg.get("pond") == "spec":
+        env["LAKE_POND_SPEC_CONFIG"] = str(cfg_dir / POND_SPEC_FILE)
     env["DUAL_PORT"] = "True" if cfg.get("dual_port", False) else "False"
     env["USE_NON_SPLIT_FIFOS"] = "True" if args.non_split_fifos else "False"
     env["USE_SIM_SRAM"] = "True" if args.use_sim_sram else "False"
@@ -1602,10 +1869,11 @@ def _tile_env(cfg, cfg_dir, args):
     # Tile clock in ns; unset -> the graph's own clock_period. A clock equal
     # to that default isn't exported, so `--clock-mhz 750` on an existing
     # 1.333 ns sweep doesn't read as changed settings (manifests from before
-    # this flag record no CLOCK_PERIOD) and rebuild it.
+    # this flag record no CLOCK_PERIOD) and rebuild it. Tile_PE reads its
+    # clock from clock_period_PE instead (_clock_env_key).
     ps = _clock_period_ps(args)
     if ps is not None and ps != _tile_clock_ps(args.graph):
-        env["CLOCK_PERIOD"] = f"{ps / 1000:g}"
+        env[_clock_env_key(args.graph) or "CLOCK_PERIOD"] = f"{ps / 1000:g}"
 
     # The *_POWER env vars must be set BEFORE `mflowgen run` -- the construct
     # reads them at graph-materialization time to add the matching power nodes
@@ -1649,12 +1917,13 @@ def _run_one(cfg, cfg_dir, args):
     clean_cmd = _clean_targets(args)
 
     if args.dry_run:
-        dry_env_keys = ["LAKE_SPEC_CONFIG", "LAKE_SPEC_MODE", "DUAL_PORT",
-                        "USE_NON_SPLIT_FIFOS", "USE_SIM_SRAM"]
+        dry_env_keys = [k for k in ("LAKE_SPEC_CONFIG", "LAKE_SPEC_MODE") if k in env]
+        dry_env_keys += ["DUAL_PORT", "USE_NON_SPLIT_FIFOS", "USE_SIM_SRAM"]
+        dry_env_keys += [k for k in ("DENSE_ONLY", "NO_POND", "LAKE_POND_SPEC_CONFIG")
+                         if k in env]
         if args.flatten_effort is not None:
             dry_env_keys += ["FLATTEN"]
-        if "CLOCK_PERIOD" in env:
-            dry_env_keys += ["CLOCK_PERIOD"]
+        dry_env_keys += [k for k in CLOCK_ENV_KEYS if k in env]
         if args.cgra_power:
             dry_env_keys += ["SYNTH_POWER", "RTL_POWER"]
         if args.memtile_power:
@@ -1691,7 +1960,7 @@ def _run_one(cfg, cfg_dir, args):
     # the rtl step fail with "lake_spec_config file not found". mflowgen run only
     # needs the path (baked from LAKE_SPEC_CONFIG env), not the contents.
     _write_spec_files(cfg, cfg_dir, " ".join(build_targets + power_targets),
-                      _pnr_role(cfg, args))
+                      _pnr_role(cfg, args), graph=Path(args.graph).name)
     write_manifest()    # now with the graph's step parameters
 
     for _t in build_targets + power_targets:
@@ -1717,16 +1986,23 @@ def _run_one(cfg, cfg_dir, args):
     return time.time() - t0, notes
 
 
-def _write_spec_files(cfg, ws, targets, pnr_role=None):
+def _write_spec_files(cfg, ws, targets, pnr_role=None, graph=None):
     """spec_config.json = build_spec kwargs only (util_onyx passes it as
-    **kwargs); sweep_meta.json = how the sweep built it (correlation reads
-    runtime_mode/targets/pnr_role from it)."""
+    **kwargs; a stock tile's goes unused); pond_spec.json = the default spec
+    pond for pond "spec"; sweep_meta.json = how the sweep built it
+    (correlation reads runtime_mode/targets/pnr_role/graph and the tile knobs
+    from it)."""
     with open(ws / "spec_config.json", "w") as f:
         json.dump(_spec_kwargs(cfg), f, indent=2, sort_keys=True)
+    if cfg.get("pond") == "spec":
+        (ws / POND_SPEC_FILE).write_text("{}\n")
     meta = {"config_name": _config_name(cfg), "runtime_mode": _mode(cfg),
             "targets": targets}
     if pnr_role:
         meta["pnr_role"] = pnr_role
+    if graph:
+        meta["graph"] = graph
+    meta.update({k: cfg[k] for k in ("pond", "fabric", "stock") if k in cfg})
     with open(ws / "sweep_meta.json", "w") as f:
         json.dump(meta, f, indent=2, sort_keys=True)
 
@@ -1748,8 +2024,10 @@ MANIFEST_FILE = "build_manifest.json"
 # rebuilds a done workspace whose recorded values differ.
 BUILD_ENV_KEYS = ("LAKE_SPEC_CONFIG", "LAKE_SPEC_MODE", "DUAL_PORT",
                   "USE_NON_SPLIT_FIFOS", "USE_SIM_SRAM", "FLATTEN", "CLOCK_PERIOD",
-                  "RTL_POWER", "SYNTH_POWER", "MEMTILE_POWER",
-                  "APP_BUNDLE", "LAKE_POND_SPEC_CONFIG", "NO_POND")
+                  "clock_period_PE", "RTL_POWER", "SYNTH_POWER", "MEMTILE_POWER",
+                  "APP_BUNDLE", "LAKE_POND_SPEC_CONFIG", "NO_POND", "DENSE_ONLY")
+# pond "spec": the pond spec JSON in the workspace (lake's default spec pond).
+POND_SPEC_FILE = "pond_spec.json"
 
 _EXPORT_RE = re.compile(r"^export (\w+)=(.*)$")
 
@@ -1802,6 +2080,13 @@ def _graph_params(ws):
             for d in _step_dirs(ws / ".mflowgen") if (d / "mflowgen-run").is_file()}
 
 
+def _new_param_off(k, built, now):
+    """A parameter the step did not have when it ran, now at an off value
+    (False / empty): an opt-in knob added since (e.g. the rtl step's
+    dense_only), which leaves the step as it was, so not a change."""
+    return k not in built and now.get(k) in ("False", "")
+
+
 def _stale_steps(ws):
     """[(step, 'param built->now; ...')] for steps that already ran with
     other parameters than the graph now gives them. mflowgen copies the run
@@ -1816,7 +2101,8 @@ def _stale_steps(ws):
         if not built:
             continue
         diff = [f"{k} {built.get(k)}->{now.get(k)}"
-                for k in sorted(set(built) | set(now)) if built.get(k) != now.get(k)]
+                for k in sorted(set(built) | set(now))
+                if built.get(k) != now.get(k) and not _new_param_off(k, built, now)]
         if diff:
             stale.append((step, "; ".join(diff)))
     return stale
@@ -2602,7 +2888,22 @@ def _sweep_meta(ws, name):
             "pnr_role": meta.get("pnr_role", ""),
             "clock_period_ns": ns,
             # a string, so the CSV shows 750.2 rather than 750.200
-            "clock_mhz": f"{1000 / ns:.1f}" if ns else None}
+            "clock_mhz": f"{1000 / ns:.1f}" if ns else None,
+            # graph + tile knobs, recorded since --recipe; see _fill_meta_columns
+            **{k: meta[k] for k in META_KNOB_COLUMNS if k in meta}}
+
+
+# sweep_meta.json fields that only newer workspaces carry: a report gets these
+# columns when any of its workspaces has them (blank for the others), so
+# re-reporting an older sweep writes the same CSV as before.
+META_KNOB_COLUMNS = ("graph", "pond", "fabric", "stock")
+
+
+def _fill_meta_columns(rows):
+    for k in META_KNOB_COLUMNS:
+        if any(k in r for r in rows):
+            for r in rows:
+                r.setdefault(k, "")
 
 
 def _ws_clock_ns(ws):
@@ -2611,7 +2912,8 @@ def _ws_clock_ns(ws):
     (as run, then as the graph configures it), else the capture edge in
     Genus's top-100 setup report (ps; a zip carries only that). None if none
     of them is there."""
-    ns = ((_read_manifest(ws) or {}).get("settings") or {}).get("CLOCK_PERIOD")
+    settings = (_read_manifest(ws) or {}).get("settings") or {}
+    ns = next((settings[k] for k in CLOCK_ENV_KEYS if k in settings), None)
     for run in ("*-cadence-genus-synthesis/mflowgen-run",
                 ".mflowgen/*-cadence-genus-synthesis/mflowgen-run"):
         if ns is None:
@@ -2818,6 +3120,7 @@ def _write_correlation(out_dir, names, validate_names=None):
         rows.append(row)
     if not rows:
         return []
+    _fill_meta_columns(rows)
     _apply_roles(rows, validate_names)
     table = _fit_and_project(rows)
     ratio = _sram_macro_ratios(rows)
@@ -2949,6 +3252,7 @@ def _write_memtile_power(out_dir, names, validate_names=None):
         rows.append(row)
     if not rows:
         return []
+    _fill_meta_columns(rows)
     _apply_roles(rows, validate_names)
     table = _fit_and_project(rows, POWER_FITS)
     # 6 significant digits: a fixed 3 decimals would zero sub-mW powers.

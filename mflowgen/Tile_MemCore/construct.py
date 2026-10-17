@@ -109,6 +109,9 @@ def construct():
         'dual_port': os.environ.get('DUAL_PORT', 'False') == 'True',
         'use_non_split_fifos': os.environ.get('USE_NON_SPLIT_FIFOS', 'False') == 'True',
         'use_sim_sram': os.environ.get('USE_SIM_SRAM', 'False') == 'True',
+        # Static fabric (garnet --dense-only: stock dense MemCore, no lake spec)
+        # for the switch-box A/B; unset = the ready-valid fabric, as before.
+        'dense_only': os.environ.get('DENSE_ONLY', 'False') == 'True',
 
         # Power Domains
         'PWR_AWARE': pwr_aware,

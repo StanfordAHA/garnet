@@ -86,6 +86,9 @@ def construct():
         # app bundle's PE tiles; unset = the default PE tile, as before.
         'lake_spec_config': os.environ.get('LAKE_SPEC_CONFIG', ''),
         'lake_spec_mode': os.environ.get('LAKE_SPEC_MODE', ''),
+        # Static fabric (garnet --dense-only) for the switch-box A/B; unset =
+        # the ready-valid fabric, as before.
+        'dense_only': os.environ.get('DENSE_ONLY', 'False') == 'True',
 
         # Power Domains
         'PWR_AWARE': pwr_aware,

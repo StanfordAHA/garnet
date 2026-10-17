@@ -108,6 +108,10 @@ if [ -n "$lake_spec_config" ]; then
     [ -n "$lake_spec_mode" ] && flags+=" --lake-spec-mode $lake_spec_mode"
 fi
 
+# Static fabric (no ready-valid interconnect, stock dense cores) for the
+# switch-box A/B. False/empty -> the ready-valid fabric (no-op elsewhere).
+[ "$dense_only" == True ] && flags+=" --dense-only"
+
 # PE-tile pond knobs. Empty/False -> default pond (no-op for other consumers).
 [ "$no_pond" == True ] && flags+=" --no-pond"
 POND_CFG_HOST=""
