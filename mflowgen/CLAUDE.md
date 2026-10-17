@@ -1203,10 +1203,17 @@ Failures (OPEN_ISSUES ids):
   `mapper/netlist_util.py` (an unconnected 1-bit `delay_reg` from clockwork, then an output
   `$reg1` missing from `nodes_to_ids`). Not bandwidth: lake's RV single-port arbiter would cope.
 - Static pond matmul on fw8 sc32768 and fw4 vc4 (`clockwork/static-matmul-wide-mem`): wrong
-  output. Not a constant offset (gold + 7824 only at some indices; an earlier note said all):
-  within each output row the sim value steps by a constant per column (2040 in row 0, 2280 in
-  row 1), as if one operand were read as a ramp. Not pond packing: the mismatches are identical
-  with garnet b6dfabb7 (2026-10-17). RV passes.
+  output; RV passes. Cause (2026-10-17, reproduces 256/256 sim values on both): the kernel MEM's
+  TB is overrun. matmul reads `kernel(x, r)` with r fastest. The kernel MEM (fw8) fetches word
+  (r, x/8) for r = 0..15 once per 8-lane word (`sram2tb_0` start 512, strides [2, 272, 544],
+  extents [16, 2, 16]). `tb2out_0` (start 515, strides [2, 34, 544], extents [16, 16, 16]) reads
+  lane 0 right after each fetch, but lanes 1..7 only 34+ cycles later, when the TB holds only
+  the last fetched row. So the hardware uses kernel row 15 for every r in lanes x % 8 != 0
+  (x % 4 on fw4 vc4); lane 0 is right. Clockwork schedules as if the TB held 16 words, not
+  vec_capacity. Same family as `clockwork/static-tb-fetch-war` (TB slot reused before its last
+  read). An earlier note here said "every wrong value = gold + 7824"; that was wrong. Not pond
+  packing: the mismatches are identical with garnet b6dfabb7. Analysis scripts: scratchpad
+  1fa8a391 `packfix_ana/` (gold/sim arrays in the app's `bin/*.npy`).
 - No-pond matmul (`matmul_rvtry3 sched=1`, reduction unrolled into a PE adder tree, no ponds):
   static `garnet_single_port_ram_schedule` assert; RV compiles (23 PEs) but does not route on
   16x16. In-place MEM accumulation is not a target (user, 2026-09-29). User decision pending.
