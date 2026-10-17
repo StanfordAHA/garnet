@@ -1989,5 +1989,8 @@ holds (gate the update on it with `&&`); otherwise set it to the branch tip.
     builds; a dispatched run still runs.
   - Buildkite `garnet` (.buildkite/ci.yml) skips its `aha regress pr` step on modern_gf
     (`if: build.branch != "modern_gf"`, user decision 2026-10-15): in the stock container
-    it needs mek's compiled clockwork/Halide too, and failed on every push. Lint
-    (soft_fail) still runs. Buildkite logs need a Buildkite token (none on /aha).
+    it needs mek's compiled clockwork/Halide too, and failed on every push. Since
+    79c22022 (2026-10-17) it also skips "Get latest docker" and Lint (soft_fail) there:
+    the pull of the ~9 GB image failed on the agents' full docker disk (6417, 6418), and
+    the image only fed Lint. Only "Delete container" (all `|| true`) runs on modern_gf.
+    Buildkite logs: API token at ~/.config/buildkite/token (read endpoints only).
