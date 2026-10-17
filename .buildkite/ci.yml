@@ -8,6 +8,10 @@ steps:
 
 # ------------------------------------------------------------------------
 - label: "Get latest docker"
+  # Not on modern_gf: the image only feeds Lint (soft_fail) there, and the pull fails
+  # while the shared agents' docker disk is full. modern_gf's checks are the GitHub
+  # pytest (style included) + verilator workflows.
+  if: build.branch != "modern_gf"
 
   # Agents must have tag hostname=<hostname>
   # And then this will guarantee that all steps run on the same host, see?
@@ -25,6 +29,7 @@ steps:
 
   # For now at least; set soft_fail so failing lint does not fail pipeline
   soft_fail: true
+  if: build.branch != "modern_gf"  # Needs the image; see "Get latest docker"
 
   agents: { hostname: $BUILDKITE_AGENT_META_DATA_HOSTNAME, docker: true }
 
