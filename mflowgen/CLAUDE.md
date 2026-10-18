@@ -1702,6 +1702,12 @@ branches to match exactly at every join (conv_3_3: A 0.750, B 0.667 before).
     (hack_design_top.py, pond feedback), because the model assumes every PE FIFO.
   - MEM inputs are not balanced, since a MEM decouples them.
   - Not wired into `aha regress` or `aha pnr`; bundles only.
+  - `hooks/rv_balance_branches.py` inserts 16-bit `coreir.reg` only, so a plan that pads a
+    1-bit edge is rejected (RV harris_color: 530 padding registers, some on 1-bit nets).
+- Without EXHAUSTIVE_PIPE (2026-10-17, archipelago/CLAUDE.md "RV without EXHAUSTIVE_PIPE"):
+  latency matching on the plain routed design (no exhaustive pipelining) beats today's
+  exhaustive pipelining: conv_3_3 4153 vs 5533 cycles, gaussian 6393 vs 16969, with about a
+  third of the SB FIFOs.
 - Tests: `tests/test_app_bundle_guards/test_cgra_app_power.py` (hook naming and
   idempotence, fork imbalance, parity output FIFO, placement).
 
