@@ -1303,6 +1303,11 @@ every replayed tile (placed, route and idle, per variant) dumped a full-depth ga
 (`waves: True` in tile-post-*-power). Nothing reads it (power is from the SAIF, and
 run_sim.sh's copy tests `true` so it never ran), so `waves` is now False there; env
 `REPLAY_WAVES=True` turns it back on to debug a replay (test `test_replay_waves_off_by_default`).
+Comparing power across runs: tiles built on garnet >= 6f110058 have no power-domain logic
+(`--no-pd` was a no-op before), so their power/area is not comparable with the 2026-10-14
+pipeclean numbers or with a run that mixes garnet versions; check `garnet` in each workspace's
+`run_meta.json`. The two fw1-sp static mmpond bundles replay a schedule with one dropped SRAM
+read (see the fw1 bullet): flag them or leave them out.
 Failures (OPEN_ISSUES ids):
 - fw1 single-port STATIC line buffers (`clockwork/static-mem-bandwidth-unchecked`, closed
   2026-10-18): each row bank is written and read every cycle (stride 1, overlapping) = 2
