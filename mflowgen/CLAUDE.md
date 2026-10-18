@@ -511,6 +511,34 @@ Checked on /aha before the push:
   configured). In active, configured ports toggle 1999 and the counter counts.
   The RV filter port stays gated in active, since the program doesn't use it.
 
+**First gf12 run (2026-10-17/18; zip
+`/aha/clock_gating_ab_20261017_r8cad-gf12_20261018-022542.zip`, extracted in
+`/aha/sweep_out/clock_gating_ab_20261017/`; lake CLAUDE.md §5.6 has the table).** 5 of 6 PASS.
+- Static, 750 MHz, tile power, synth -> PnR:
+  - shared counter: idle -36% / -27%, active -5% / -5%; PnR logic area -3.6%;
+  - port gating: idle -56% / -44%; active unchanged at synth, +1% at PnR (the
+    clock-tree cells after the gates);
+  - both: idle -56% / -42%, active -6% / -4%.
+- RV base was `Killed` in Innovus postroute: about 8 GB with six PnRs at once,
+  likely OOM.
+- RV gated failed timing (synth -99 ps, PT -82 ps). Static gated was -1 ps on
+  reset. The gates captured their enable on the falling edge, and the tile's
+  `reset`/`flush` inputs arrive at `pt_i_delay` 0.7 ns, after the 0.667 ns
+  falling edge.
+- Fixed in lake 2660629d: `gclk = clk | ~config_bit`, with no falling-edge logic.
+  It is verified locally: gold sims, suites, the gated tile tests and RV
+  conv_3_3 bit-accurate.
+
+Re-run of the four configs whose RTL changed or that failed, into the same out-dir
+(`--only` + `--fresh` rebuild just those; base and `_sharectr` have no gates and
+keep their results). This needs `/sim/docker` freed first (see "dw 8/32/64 all-PnR",
+first run) and at most four PnRs at once:
+
+    ./mflowgen/sweep_specs.py --spec-set clock_gating --flatten-effort 0 \
+        --memtile-power --config-jobs 4 --fresh --zip --zip-slim \
+        --only fw4_dw16_sc4096_sp_in2_out2_vc2_portcg,fw4_dw16_sc4096_sp_in2_out2_vc2_sharectr_portcg,fw4_dw16_sc4096_sp_in2_out2_vc2_rv,fw4_dw16_sc4096_sp_in2_out2_vc2_portcg_rv \
+        --out-dir /nsim/mstrange/BUILDS/sweep_out/clock_gating_ab_20261017
+
 ### Whole-graph smoke run: one spec, standalone + tile (2026-10-07)
 
 To check the flow end to end before a big sweep (user request), one static
