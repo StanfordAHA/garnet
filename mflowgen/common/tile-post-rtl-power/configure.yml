@@ -48,7 +48,10 @@ parameters:
   design_name: undefined
   testbench_name: tb
   strip_path: tb/dut
-  waves: True
+  # Full-depth SHM waveforms of every replayed tile (GBs per tile at gate level;
+  # nothing reads them, power comes from the SAIF). Env REPLAY_WAVES=True
+  # turns them on to debug a replay.
+  waves: False
   PWR_AWARE: False
   use_sdf: False
   # App bundle the tile stimulus came from (set by the tile graph); with one,

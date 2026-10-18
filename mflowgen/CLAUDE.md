@@ -1268,7 +1268,11 @@ step (lake `resolve_memports` IndexError): an RV bundle's PE tile is built with 
 lake spec, and Tile_PE's construct.py did not forward `DUAL_PORT`, so garnet.py built the
 dual-port spec without `--dual-port`. Fixed: Tile_PE passes `dual_port` when it has a lake spec
 (static PE tiles, built without one, are unchanged); test `test_tile_pe_rtl_dual_port`. Rerun
-those workspaces with `--clean rtl`.
+those workspaces with `--clean rtl`. The same run grew to 166 GB and filled the build disk:
+every replayed tile (placed, route and idle, per variant) dumped a full-depth gate-level SHM
+(`waves: True` in tile-post-*-power). Nothing reads it (power is from the SAIF, and
+run_sim.sh's copy tests `true` so it never ran), so `waves` is now False there; env
+`REPLAY_WAVES=True` turns it back on to debug a replay (test `test_replay_waves_off_by_default`).
 Failures (OPEN_ISSUES ids):
 - fw1 single-port STATIC line buffers (`clockwork/static-mem-bandwidth-unchecked`): each row bank
   is written and read every cycle (stride 1, overlapping) = 2 accesses/cycle on a 1-access SRAM;

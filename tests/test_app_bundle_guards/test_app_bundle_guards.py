@@ -43,6 +43,16 @@ def test_run_all_tiles_copies_identical():
     assert len(set(texts.values())) == 1, "tile-post-{rtl,synth,pnr}-power/run_all_tiles.py differ"
 
 
+def test_replay_waves_off_by_default():
+    """A replayed tile's full-depth SHM is GBs at gate level and nothing reads
+    it (power comes from the SAIF): a 16x16 dw16 cgra_app_power run filled
+    166 GB with them. Env REPLAY_WAVES=True turns them back on."""
+    for lvl in LEVELS:
+        step = MFLOWGEN / "common" / f"tile-post-{lvl}-power"
+        assert re.search(r"^\s*waves:\s*False\s*$", (step / "configure.yml").read_text(), re.M), lvl
+        assert "os.environ.get('REPLAY_WAVES') or os.environ.get('waves')" in (step / "construct.py").read_text()
+
+
 def test_replay_result_parsing():
     rat = load(RUN_ALL, "run_all_tiles")
     log = ("xcelium> run\n"

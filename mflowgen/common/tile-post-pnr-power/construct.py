@@ -36,7 +36,7 @@ def construct():
         'PWR_AWARE': os.environ.get('PWR_AWARE'),           # noqa
         'testbench_name': os.environ.get('testbench_name'),      # noqa
         'strip_path': os.environ.get('strip_path'),          # noqa
-        'waves': os.environ.get('waves'),               # noqa
+        'waves': os.environ.get('REPLAY_WAVES') or os.environ.get('waves'),               # noqa
         'use_sdf': os.environ.get('use_sdf'),             # noqa
         'tile_id': os.environ.get('tile_id'),             # noqa
         # zero-init SRAM model + -nonotifier (cadence-xcelium-sim/run_sim.sh)
