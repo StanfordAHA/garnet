@@ -270,7 +270,10 @@ SPEC_DEFAULTS = dict(storage_capacity=4096, data_width=16, vec_width=4, dims=6,
 #           interconnect; garnet then builds its stock dense cores, so the
 #           config is stock). Unset -> the ready-valid fabric.
 #   stock:  True -> no lake spec (LAKE_SPEC_CONFIG unset): garnet's stock tile.
-SWEEP_ONLY_KEYS = ("runtime_mode", "pond", "fabric", "stock")
+#   thesis: True -> THESIS_FABRIC=<runtime mode> (garnet --thesis static|rv,
+#           garnet_thesis.py): the static-dense (no FIFOs, no ready-valid) or
+#           ready-valid-dense (no FIFO bypass) fabric, no sparse cores.
+SWEEP_ONLY_KEYS = ("runtime_mode", "pond", "fabric", "stock", "thesis")
 RUNTIME_MODES = ("static", "rv")
 POND_KINDS = ("none", "spec")
 FABRIC_KINDS = ("rv", "static")
@@ -385,6 +388,17 @@ FABRIC_SPEC_POINTS = [
     dict(fabric="static", runtime_mode="static"),
 ]
 
+# The thesis fabrics (garnet.py --thesis): the same spec as a static-dense and a
+# ready-valid-dense tile, built from garnet_thesis.py (no sparse cores; static =
+# no FIFOs or ready-valid, rv = no FIFO bypass; data_width-bit tracks). For
+# Tile_MemCore and, with --graph mflowgen/Tile_PE, the PE tile.
+_THESIS_BASE = dict(storage_capacity=8192, data_width=16, vec_width=4,
+                    in_ports=2, out_ports=2, thesis=True)
+THESIS_FABRIC_SPEC_POINTS = [
+    dict(_THESIS_BASE, runtime_mode="static"),
+    dict(_THESIS_BASE, runtime_mode="rv"),
+]
+
 SPEC_SETS = {
     "default": DEFAULT_SPEC_POINTS,
     "thesis": DEFAULT_SPEC_POINTS + _thesis_spec_points(),
@@ -392,7 +406,12 @@ SPEC_SETS = {
     "clock_gating": CLOCK_GATING_SPEC_POINTS,
     "pe_tile": PE_TILE_SPEC_POINTS,
     "fabric": FABRIC_SPEC_POINTS,
+    "thesis_fabric": THESIS_FABRIC_SPEC_POINTS,
 }
+PRESETS["thesis_fabric_pnr"] = [
+    "fw4_dw16_sc8192_sp_in2_out2_vc2_thesis",
+    "fw4_dw16_sc8192_sp_in2_out2_vc2_thesis_rv",
+]
 # The PE tiles that go through PnR (tile height); stock_staticfab_nopond is
 # synthesis only (switch-box area).
 PRESETS["pe_tile_pnr"] = [
@@ -424,8 +443,21 @@ RECIPE_FLAGS = {
                 "--flatten-effort", "0", "--memtile-power",
                 "--pnr-set", "dw16_pnr12", "--validate-set", "dw16_val4"],
 }
+# The thesis fabrics (garnet.py --thesis) as their own parts, not in `thesis`:
+#   thesis_mem / thesis_pe: the static-dense and ready-valid-dense MemTile / PE
+#   tile through PnR (THESIS_FABRIC_SPEC_POINTS).
+THESIS_FABRIC_RECIPE_FLAGS = {
+    "thesis_mem": ["--spec-set", "thesis_fabric", "--flatten-effort", "0",
+                   "--pnr-set", "thesis_fabric_pnr", "--pt-i-delay-frac", "0.25"],
+    "thesis_pe": ["--graph", str(MFLOWGEN_DIR / "Tile_PE"), "--spec-set", "thesis_fabric",
+                  "--flatten-effort", "0", "--pnr-set", "thesis_fabric_pnr",
+                  "--pt-i-delay-frac", "0.25"],
+}
 RECIPES = {**{name: [name] for name in RECIPE_FLAGS}, "app_power": ["app_power"],
-           "thesis": list(RECIPE_FLAGS) + ["app_power"]}
+           "thesis": list(RECIPE_FLAGS) + ["app_power"],
+           **{name: [name] for name in THESIS_FABRIC_RECIPE_FLAGS},
+           "thesis_fabric": list(THESIS_FABRIC_RECIPE_FLAGS)}
+RECIPE_FLAGS.update(THESIS_FABRIC_RECIPE_FLAGS)
 
 
 def build_argparser():
@@ -460,7 +492,8 @@ def build_argparser():
                         "modes pinned); 'pe_tile' = PE tiles with/without "
                         "pond, static/RV, plus one on the static fabric "
                         "(--graph mflowgen/Tile_PE); 'fabric' = garnet's stock "
-                        "tile on the ready-valid vs the static fabric. "
+                        "tile on the ready-valid vs the static fabric; "
+                        "'thesis_fabric' = garnet --thesis static/rv tiles. "
                         "Default: %(default)s.")
     p.add_argument("--recipe", choices=sorted(RECIPES), default=None,
                    help="Build a named part of the thesis data set, or all of it "
@@ -607,6 +640,12 @@ def build_argparser():
                    help="Build with behavioral (simulatable) SRAM instead of a "
                         "hardened macro. Needed for spec geometries with no "
                         "matching physical SRAM macro in the tech map.")
+    p.add_argument("--pt-i-delay-frac", type=float, default=None, metavar="F",
+                   help="Tile constraints: input delay of the flush/stall/config "
+                        "(pass-through) ports as F x the clock period (env "
+                        "PT_I_DELAY_FRAC, read by Tile_PE / Tile_MemCore "
+                        "constraints common.tcl). Unset: the fixed 0.7 ns. The "
+                        "thesis_mem / thesis_pe recipes use 0.25.")
     p.add_argument("--flatten-effort", type=int, choices=range(4), default=None,
                    metavar="N",
                    help="Genus flatten_effort for the tile synth (env FLATTEN, "
@@ -1209,7 +1248,7 @@ def _tile_key(spec, mode):
     """Hardware identity of a config: spec (none for a stock tile), mode and
     the tile knobs outside the spec."""
     return (None if _is_stock(spec) else _spec_key(spec), mode,
-            spec.get("pond"), spec.get("fabric", "rv"))
+            spec.get("pond"), spec.get("fabric", "rv"), bool(spec.get("thesis")))
 
 
 def _unsupported_reason(spec, mode):
@@ -1217,6 +1256,8 @@ def _unsupported_reason(spec, mode):
     at the top of lake's build_spec_rv, which raises."""
     if mode == "rv" and _is_stock(spec):
         return "runtime mode rv needs a lake spec (stock tile / static fabric)"
+    if spec.get("thesis") and _is_stock(spec):
+        return "a thesis fabric needs a lake spec (no stock / fabric static)"
     if (mode == "rv" and spec.get("vec_width", 4) > 1
             and spec.get("vec_capacity", 2) > 2):
         return "build_spec_rv supports vec_capacity <= 2 for vec_width > 1"
@@ -1321,6 +1362,8 @@ def _config_name(cfg):
     knobs = []
     if cfg.get("fabric") == "static":
         knobs.append("staticfab")
+    if cfg.get("thesis"):
+        knobs.append("thesis")
     if cfg.get("pond") is not None:
         knobs.append({"none": "nopond", "spec": "specpond"}[cfg["pond"]])
     if _mode(cfg) == "rv":
@@ -1859,6 +1902,11 @@ def _tile_env(cfg, cfg_dir, args):
     # (and --skip-existing state) they had before these knobs existed.
     if cfg.get("fabric") == "static":
         env["DENSE_ONLY"] = "True"
+    if cfg.get("thesis"):
+        env["THESIS_FABRIC"] = _mode(cfg)
+    # Tile constraints: flush/stall/config input delay as a fraction of the clock
+    if args.pt_i_delay_frac is not None:
+        env["PT_I_DELAY_FRAC"] = str(args.pt_i_delay_frac)
     if cfg.get("pond") == "none":
         env["NO_POND"] = "True"
     elif cfg.get("pond") == "spec":
@@ -1922,8 +1970,8 @@ def _run_one(cfg, cfg_dir, args):
     if args.dry_run:
         dry_env_keys = [k for k in ("LAKE_SPEC_CONFIG", "LAKE_SPEC_MODE") if k in env]
         dry_env_keys += ["DUAL_PORT", "USE_NON_SPLIT_FIFOS", "USE_SIM_SRAM"]
-        dry_env_keys += [k for k in ("DENSE_ONLY", "NO_POND", "LAKE_POND_SPEC_CONFIG")
-                         if k in env]
+        dry_env_keys += [k for k in ("DENSE_ONLY", "THESIS_FABRIC", "NO_POND",
+                                     "LAKE_POND_SPEC_CONFIG", "PT_I_DELAY_FRAC") if k in env]
         if args.flatten_effort is not None:
             dry_env_keys += ["FLATTEN"]
         dry_env_keys += [k for k in CLOCK_ENV_KEYS if k in env]
@@ -2005,7 +2053,7 @@ def _write_spec_files(cfg, ws, targets, pnr_role=None, graph=None):
         meta["pnr_role"] = pnr_role
     if graph:
         meta["graph"] = graph
-    meta.update({k: cfg[k] for k in ("pond", "fabric", "stock") if k in cfg})
+    meta.update({k: cfg[k] for k in ("pond", "fabric", "stock", "thesis") if k in cfg})
     with open(ws / "sweep_meta.json", "w") as f:
         json.dump(meta, f, indent=2, sort_keys=True)
 
@@ -2028,7 +2076,8 @@ MANIFEST_FILE = "build_manifest.json"
 BUILD_ENV_KEYS = ("LAKE_SPEC_CONFIG", "LAKE_SPEC_MODE", "DUAL_PORT",
                   "USE_NON_SPLIT_FIFOS", "USE_SIM_SRAM", "FLATTEN", "CLOCK_PERIOD",
                   "clock_period_PE", "RTL_POWER", "SYNTH_POWER", "MEMTILE_POWER",
-                  "APP_BUNDLE", "LAKE_POND_SPEC_CONFIG", "NO_POND", "DENSE_ONLY")
+                  "APP_BUNDLE", "LAKE_POND_SPEC_CONFIG", "NO_POND", "DENSE_ONLY",
+                  "THESIS_FABRIC", "PT_I_DELAY_FRAC")
 # pond "spec": the pond spec JSON in the workspace (lake's default spec pond).
 POND_SPEC_FILE = "pond_spec.json"
 
@@ -2899,7 +2948,7 @@ def _sweep_meta(ws, name):
 # sweep_meta.json fields that only newer workspaces carry: a report gets these
 # columns when any of its workspaces has them (blank for the others), so
 # re-reporting an older sweep writes the same CSV as before.
-META_KNOB_COLUMNS = ("graph", "pond", "fabric", "stock")
+META_KNOB_COLUMNS = ("graph", "pond", "fabric", "stock", "thesis")
 
 
 def _fill_meta_columns(rows):

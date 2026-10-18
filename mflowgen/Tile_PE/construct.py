@@ -94,6 +94,8 @@ def construct():
         # Static fabric (garnet --dense-only) for the switch-box A/B; unset =
         # the ready-valid fabric, as before.
         'dense_only': os.environ.get('DENSE_ONLY', 'False') == 'True',
+        # garnet.py --thesis {static,rv} (cgra/util_thesis.py); empty -> garnet's fabric
+        'thesis': os.environ.get('THESIS_FABRIC', ''),
 
         # Power Domains
         'PWR_AWARE': pwr_aware,

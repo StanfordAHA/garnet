@@ -1758,6 +1758,11 @@ floorplan, `mode[0]` guard) apply — the pond is flops, no macro.
   paths anyway. Local freepdk45 output-path slacks (about −47 ns) are an artifact: the ADK's
   `ADK_TYPICAL_ON_CHIP_LOAD` 7 is read as 7 pF. The conv_3_3 A/B gf12 rerun therefore uses
   `--clock-mhz 400`.
+  Correction (2026-10-17): no case analysis is set on the mode/bypass config bits, so STA
+  times the PE input-FIFO bypass branch (`bypass_rv` / `fine_grain_fifo_bypass`), which only a
+  static or pond-feedback PE uses; in a dense-RV PE the path starts at the input FIFO. With the
+  bypass bits pinned, local R2R is 3270 ps RV / 3611 ps static (was 4593 / 4102). The thesis
+  fabrics remove the dead hardware instead: see "Thesis fabrics".
 - Verified locally (private garnet copies, 4x2): no-flag builds unchanged
   (static-spec byte-identical; RV identical up to one module's position in the
   file; default differs only by pre-existing kratos nondeterminism in the sparse
@@ -2046,6 +2051,94 @@ libHalide and libclkwrk.so were rebuilt. Shared-toolchain checks:
     - Power has a width trend: PnR comes out below the projection at dw8 and above it at dw64.
       Adding the 6 points to the fit doesn't remove it (dw8 RV idle residual still 12%) and worsens
       the dw16 held-out area. So the dw16 fit stays the projection, with that spread.
+
+## Thesis fabrics: garnet.py --thesis static|rv (2026-10-17, session cfc4174c)
+
+Why: a "static" lake-spec build (`--lake-spec-mode static`) was the RV+sparse fabric with
+the FIFOs bypassed by config: 2-deep FIFOs on every SB track/side (run as plain registers),
+ready/valid, 17-bit tracks (the 17th bit is sparse's end-of-stream token), the RV IO tile,
+PE input/output FIFOs + bypass muxes, all 8 PE primitives (6 sparse-only), and the static
+MEM ports' FIFOs + `*_bypass_rv` muxes. Every static-vs-RV area/power number before this
+charges static for RV + sparse hardware. `--dense-only` (the only non-RV fabric) crashed at
+HEAD and ignores the lake spec.
+
+What (user decisions 2026-10-17): `garnet.py --thesis {static,rv}` -> `garnet_thesis.py`
+`ThesisGarnet` (a Garnet subclass: builds its own fabric with `cgra/util_thesis.py`
+`create_cgra_thesis`, inherits the GLB + PnR/bitstream code unchanged). Needs
+`--lake-spec-config`; sets LAKE_SPEC_MODE to the mode; rv sets USE_NON_SPLIT_FIFOS.
+- static: canal `ready_valid=False` (SB track = flop + bypass mux), tracks [1, dw];
+  PE `CoreCombinerCore([OnyxDensePE(dw)])`; MEM `build_spec(config_passthru, comply_17=False)`
+  + StrgRAM + StencilValid; static spec pond; all with lake `hybrid_policy="static"` (no
+  port FIFOs, no tile valid/ready, no bypass regs); IO `IOCore(dw)` (one register each way:
+  same latency as the RV IO FIFO, so static schedules are unchanged).
+- rv: canal `ready_valid=True` (SB FIFO + bypass mux kept), tracks [1, dw] (no EOS bit,
+  ready/valid separate wires); PE = lake `OnyxDenseRVPE` (OnyxPE without static mode,
+  EOS/maybe logic and sparse; keeps the configurable prim outfifo) with
+  `hybrid_policy="rv"`: all 8 PE ports (data0-2, bit0-2, res, res_p) have their tile FIFO
+  (+ bogus_init pre-fill config), no `*_bypass_rv` / `*_fine_grain_fifo_bypass`; MEM
+  `build_spec_rv(comply_17=False)` + StrgRAMRV; RV spec pond (fifo_depth 0, as before);
+  IO `IOCoreReadyValid(tracks [1, dw])`.
+- Neither has sparse cores. Layout, SB topology, global signals, GLB: as util_onyx.
+- PnR/bitstream: same flags + `--thesis` for `aha pnr`; static apps = DENSE_READY_VALID unset
+  everywhere, rv apps = DRV=1 (ThesisGarnet.place_and_route refuses a mismatch).
+  `ThesisGarnet.load_netlist` sets mapper `set_rv_track_eos_bit(False)` (dw-bit buses).
+- `--no-pd` is ignored, like the default build (garnet/no-pd-tuple): power domains on.
+
+Library pieces (all default off; existing RTL unchanged: lake-spec RV build byte-identical,
+static-spec / default / Zircon identical up to kratos statement-order and `_unq0` naming
+nondeterminism, which two pristine builds also show):
+- lake: MemoryTileBuilder/CoreCombiner `hybrid_policy` ("bypass" default, "rv", "static";
+  "static" raises on a true RV port); controller attr `rv_1bit_ports` (1-bit ports on the
+  RV interconnect, like reduce_pe_cluster); `build_spec` / `build_spec_rv` / `build_pond_rv`
+  `comply_17` (default True); `lake/modules/onyx_dense_rv_pe.py`; tests/test_hybrid_policy.py.
+- canal: `__wire_flush_to_sbs` skips switch boxes without a flush port (non-RV).
+- garnet: CoreCombinerCore `hybrid_policy`, `has_config` guards on the RV PE config regs,
+  bogus-init names from the PE port remap width; `IOCore(data_width)`; wiring_onyx uses
+  `garnet.data_track_width`; mapper `set_rv_track_eos_bit`; garnet.py io-port remap when the
+  track width is not 16/17-as-default; tests/test_thesis.
+- mflowgen: rtl param `thesis` (gen_rtl.sh passes `--thesis`; in the container it fetches
+  canal branch thesis, whose flush fix the image lacks), Tile_PE/Tile_MemCore construct.py
+  read THESIS_FABRIC; sweep_specs knob `thesis` (name suffix `_thesis`), spec set
+  `thesis_fabric`, preset `thesis_fabric_pnr`, recipes `thesis_mem`, `thesis_pe`
+  (`thesis_fabric` = both). Constraints: env PT_I_DELAY_FRAC makes the flush/stall/config
+  input delay a fraction of the clock (thesis recipes: 0.25; unset = the fixed 0.7 ns);
+  generate_testbench follows it.
+
+Verified (private trees; scratchpad cfc4174c thesis/run_app.sh, chain.sh; fw4_dw16_sc8192_sp_in2_out2,
+16x16): bit-accurate, kernel ns static / RV: conv_3_3 4149 / 5533, gaussian 6389 / 12755,
+pointwise 4149 / 4150 (the static numbers equal the old static-on-RV-fabric runs: the IO
+register keeps the schedules' latency). The rest of the matrix (fp_pointwise, unsharp,
+harris_color, matmul_rvtry3, resnet) was running at the time of writing.
+Structure: tests/test_thesis (4x2: static tiles have no FIFO modules and no _ready/_valid,
+only the GLB DMA FIFOs remain; RV PE has 8 ports each with valid/ready + tile FIFO; neither
+fabric has sparse modules or bypass config; tracks {1, 16}).
+
+Running apps (recipe: `aha --dir <private aha tree>` with garnet = a private copy and
+GARNET_HOME pointing at it): `garnet.py --thesis MODE --lake-spec-config spec.json
+[--lake-pond-spec-config pond.json] --width W --height H --verilog --use_sim_sram`, then
+`aha map --collateral <spec collateral> --pond-collateral <pond collateral of MODE>`,
+`aha pnr ... <same garnet flags>`, `aha test` (static: no DENSE_READY_VALID; rv: DRV=1
+PIPELINED=0 MATCH_BRANCH_DELAY=0 at halide/map, DRV=1 at pnr/test).
+Pitfall (cost hours): reusing one garnet.v across apps also needs every file garnet.py
+writes for that array: global_buffer/header, global_controller/header, matrix_unit/header,
+*/systemRDL/output (+ glb.rdl, glc.rdl.final) AND genesis_verif/ (the global controller's
+Genesis RTL). A 16x16 garnet.v with a 4x2 genesis_verif/RDL leaves the GLB flush-crossbar
+select floating: no flush reaches the tiles, the static stencil_valid never starts, STRM_F2G
+times out ("got interrupt, but not from STRM_F2G"). RV apps may survive it.
+
+gf12 (build machine, garnet + lake pulled; outputs under /nsim/mstrange/BUILDS):
+`./mflowgen/sweep_specs.py --recipe thesis_fabric --out-dir /nsim/mstrange/BUILDS/sweep_out/thesis_fabric --zip --zip-slim`
+(thesis_mem + thesis_pe: both tiles static + RV through PnR, PT_I_DELAY_FRAC 0.25). Add
+`--clock-mhz` / `--stop-after cadence-genus-synthesis` for an over-constrained fmax probe.
+
+Tile_PE timing (local Genus 20.11 freepdk45, 1.333 ns, steady state: config regs
+false-pathed, flush/stall 0; scratchpad thesis/synth): static worst R2R 3355 ps (pond addr ->
+CB -> ALU -> 1-bit res_p -> SB mux -> SB reg; 16-bit data path ~3035), RV 2896 ps (input FIFO
+rd_ptr -> ALU -> 1-bit output FIFO; 16-bit ~2624); old builds with the bypass case-analyzed:
+3611 / 3270. Area 37.0k / 47.7k um2 (old ~50-55k / 54-61k). x0.53 -> gf12 synth ~1.78 ns
+(static) / ~1.53 ns (RV). The worst path is on the PE's 1-bit result (compare/flag -> Cond):
+RV apps use 1-bit nets only for compare results (RV harris 17-34 nets; conv/gaussian/unsharp
+none); static also routes the output valid (stencil_valid -> IO).
 
 ## Build-machine note
 

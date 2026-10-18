@@ -130,10 +130,11 @@ def glb_interconnect_wiring(garnet):
                             garnet.interconnect.ports.config[i * col_per_glb + j].write)
 
     # input/output stream ports wiring
-    # The GLB stream word is cgra_data_width bits; the ready-valid data track adds a bit
+    # The GLB stream word is cgra_data_width bits; the data track may add a bit (the
+    # sparse end-of-stream bit of the ready-valid fabric), tied 0 here
     cgra_dw = garnet.glb_params.cgra_data_width
     for i in range(num_glb_tiles):
-        data_bit_width = cgra_dw + 1 if garnet.ready_valid else cgra_dw
+        data_bit_width = garnet.data_track_width
         for j in range(col_per_glb):
             if IOSide.West in garnet.io_sides:
                 x = i * col_per_glb + j + 1
@@ -175,8 +176,9 @@ def glb_interconnect_wiring(garnet):
                             garnet.interconnect.ports[glb2io_16_vld_port])
                 garnet.wire(garnet.global_buffer.ports[f"strm_data_g2f_rdy_{i}_{j}"][0],
                             garnet.interconnect.ports[glb2io_16_rdy_port])
-                garnet.wire(Const(0),
-                            garnet.interconnect.ports[glb2io_16_port][cgra_dw])
+                if data_bit_width > cgra_dw:
+                    garnet.wire(Const(0),
+                                garnet.interconnect.ports[glb2io_16_port][cgra_dw])
             else:
                 garnet.wire(garnet.global_buffer.ports[f"strm_data_f2g_vld_{i}_{j}"][0],
                             Const(0))

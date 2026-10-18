@@ -86,6 +86,12 @@ set_input_delay -clock ${clock_name} ${i_delay} [all_inputs -no_clocks]
 # Pass through should have no input delay
 # Fix config input delay to specific value
 set pt_i_delay 0.700
+# PT_I_DELAY_FRAC (env, e.g. 0.25): a fraction of the clock instead of the fixed
+# 0.7 ns (53% of a 1.333 ns cycle). Unset -> 0.7 ns. The gate-level testbench
+# (common/testbench/generate_testbench.py) follows the same variable.
+if { [info exists ::env(PT_I_DELAY_FRAC)] && $::env(PT_I_DELAY_FRAC) != "" } {
+    set pt_i_delay [expr $::env(PT_I_DELAY_FRAC) * ${clock_period}]
+}
 set_input_delay -clock ${clock_name} ${pt_i_delay} $pt_inputs
 set_input_delay -clock ${clock_name} ${pt_i_delay} $pt_read_data_inputs
 

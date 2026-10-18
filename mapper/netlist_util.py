@@ -39,6 +39,16 @@ import pythunder
 import pulp
 import json
 
+# Does a ready-valid fabric's data track carry the sparse end-of-stream bit (data width
+# + 1, the default)? The thesis dense ready-valid fabric (garnet.py --thesis rv) has
+# data_width-bit tracks; garnet sets this before building the netlist.
+_rv_track_eos_bit = True
+
+
+def set_rv_track_eos_bit(flag):
+    global _rv_track_eos_bit
+    _rv_track_eos_bit = bool(flag)
+
 
 class CreateBuses(Visitor):
     def __init__(self, inst_info, ready_valid=True):
@@ -77,7 +87,7 @@ class CreateBuses(Visitor):
             return bid
         elif adt == BitVector[data_width()]:
             bid = f"e{self.i}"
-            self.bid_to_width[bid] = data_width() + 1 if self.ready_valid else data_width()
+            self.bid_to_width[bid] = data_width() + 1 if self.ready_valid and _rv_track_eos_bit else data_width()
             self.i += 1
             return bid
         elif issubclass(adt, BitVector):

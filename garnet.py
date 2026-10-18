@@ -773,7 +773,7 @@ class Garnet(Generator):
 
         # The mapper labels data IO ports io2f_17/f2io_17 (io2f_16/f2io_16 dense); the IO
         # tile's ports are named after the data track width
-        if self.data_width != 16:
+        if self.data_width != 16 or self.data_track_width != (17 if self.ready_valid else 16):
             io_remap = {f"{d}_{w}{s}": f"{d}_{self.data_track_width}{s}"
                         for d in ("io2f", "f2io") for w in (16, 17) for s in ("", "_0", "_1", "_2", "_3")}
             for name, mapping in netlist_info["netlist"].items():
@@ -1140,6 +1140,9 @@ def parse_args():
 
     # Daemon choices are maybe ['help', 'launch', 'use', 'kill', 'force', 'status', 'wait']
     parser.add_argument('--daemon', type=str, choices=GarnetDaemon.choices, default=None)
+    # Thesis fabrics (garnet_thesis.py): static = no FIFOs or ready-valid anywhere,
+    # rv = ready-valid with no FIFO bypass; dense only, data_width-bit tracks
+    parser.add_argument('--thesis', type=str, choices=["static", "rv"], default=None)
 
     parser.set_defaults(config_port_pipeline=True)
     args = parser.parse_args()
@@ -1378,7 +1381,11 @@ def main():
     print(f'--- GARNET-BUILD ({app_name(args.app)})')
 
     # BUILD GARNET
-    garnet = Garnet(args, io_sides)
+    if args.thesis:
+        from garnet_thesis import ThesisGarnet
+        garnet = ThesisGarnet(args, io_sides)
+    else:
+        garnet = Garnet(args, io_sides)
 
     # VERILOG
     # FIXME verilog could be inside daemon loop (below). Right?

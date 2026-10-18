@@ -66,6 +66,11 @@ parameters:
   # (sweep_specs.py fabric "static"). False -> the ready-valid fabric.
   dense_only: False
 
+  # thesis: "static" or "rv" passes --thesis: garnet_thesis.py's static-dense fabric
+  # (no FIFOs or ready-valid) or ready-valid-dense fabric (no FIFO bypass), both
+  # without sparse cores and with data_width-bit tracks. Needs lake_spec_config.
+  thesis: ""
+
   ############################################################################
   # To try out a new docker image e.g. 'stanfordaha/garnet:cst' or 'stanfordaha/garnet@sha256:1e4a0bf29f3bad8e3...'
   #   - set 'save_verilog_to_tmpdir' to "True"

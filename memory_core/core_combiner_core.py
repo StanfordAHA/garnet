@@ -41,9 +41,13 @@ class CoreCombinerCore(LakeCoreBase):
                  ready_valid=True,
                  mem_width=mem_width_default,
                  mem_depth=512,
-                 new_pond=False):
+                 new_pond=False,
+                 hybrid_policy="bypass"):
 
         self.pnr_tag = pnr_tag
+        # lake MemoryTileBuilder hybrid_policy: what the controllers' hybrid ports become
+        # ("bypass": static/RV picked by *_bypass_rv config regs; "rv"; "static")
+        self.hybrid_policy = hybrid_policy
         self.input_prefix = input_prefix
 
         self.dual_port = dual_port
@@ -96,7 +100,8 @@ class CoreCombinerCore(LakeCoreBase):
                      dual_port,
                      true_dual_port,
                      rf,
-                     new_pond)
+                     new_pond,
+                     hybrid_policy)
 
         # Check for circuit caching
         if cache_key not in LakeCoreBase._circuit_cache:
@@ -120,7 +125,8 @@ class CoreCombinerCore(LakeCoreBase):
                                    fifo_depth=self.fifo_depth,
                                    tech_map_name=tech_map_name,
                                    ready_valid=self.ready_valid,
-                                   new_pond=self.new_pond)
+                                   new_pond=self.new_pond,
+                                   hybrid_policy=self.hybrid_policy)
 
             self.dut = self.CC.dut
 
@@ -150,6 +156,14 @@ class CoreCombinerCore(LakeCoreBase):
             for idx, reg in enumerate(conf_names):
                 write_line = f"{reg}\n"
                 cfg_dump.write(write_line)
+
+    def has_config(self, name):
+        '''Does this core have the config register (or field) name?'''
+        try:
+            self.get_config_data(name, 0)
+        except KeyError:
+            return False
+        return True
 
     def set_runtime_mode(self, runtime_mode):
         print(f"SETTING RUNTIME MODE: {runtime_mode}")
@@ -367,13 +381,16 @@ class CoreCombinerCore(LakeCoreBase):
             # BEGIN BLOCK COMMENT
             # TODO: Fix this and name it better. ready_valid really means include RV interconnect in this context
             if self.ready_valid:
+                # The PE tile's data track width (data_width + 1 with the end-of-stream bit)
+                track_w = int(self.get_port_remap()['alu']['data0'].split("width_")[1].split("_")[0])
                 rv_bypass_value = 0 if dense_ready_valid else 1
                 config_rv_bypass = [(f"{self.get_port_remap()['alu']['data0']}_bypass_rv", rv_bypass_value),
                                     (f"{self.get_port_remap()['alu']['data1']}_bypass_rv", rv_bypass_value),
                                     (f"{self.get_port_remap()['alu']['data2']}_bypass_rv", rv_bypass_value),
                                     (f"{self.get_port_remap()['alu']['res']}_bypass_rv", rv_bypass_value)]
                 for name, v in config_rv_bypass:
-                    configs = [self.get_config_data(name, v)] + configs
+                    if self.has_config(name):
+                        configs = [self.get_config_data(name, v)] + configs
 
                 input_bogus_init_num = [0, 0, 0, 0]
 
@@ -384,12 +401,15 @@ class CoreCombinerCore(LakeCoreBase):
 
                 assert all(0 <= num <= 2 for num in input_bogus_init_num), \
                     "All elements in input_bogus_init_num must be between 0 and 2 inclusive"
-                config_input_bogus_init = [(f"PE_input_width_{self.data_width + 1}_num_0_fifo_bogus_init_num", input_bogus_init_num[0]),
-                                           (f"PE_input_width_{self.data_width + 1}_num_1_fifo_bogus_init_num", input_bogus_init_num[1]),
-                                           (f"PE_input_width_{self.data_width + 1}_num_2_fifo_bogus_init_num", input_bogus_init_num[2]),
-                                           (f"PE_input_width_{self.data_width + 1}_num_3_fifo_bogus_init_num", input_bogus_init_num[3])]
+                config_input_bogus_init = [(f"PE_input_width_{track_w}_num_0_fifo_bogus_init_num", input_bogus_init_num[0]),
+                                           (f"PE_input_width_{track_w}_num_1_fifo_bogus_init_num", input_bogus_init_num[1]),
+                                           (f"PE_input_width_{track_w}_num_2_fifo_bogus_init_num", input_bogus_init_num[2]),
+                                           (f"PE_input_width_{track_w}_num_3_fifo_bogus_init_num", input_bogus_init_num[3])]
                 for name, v in config_input_bogus_init:
-                    configs = [self.get_config_data(name, v)] + configs
+                    if self.has_config(name):
+                        configs = [self.get_config_data(name, v)] + configs
+                    else:
+                        assert v == 0, f"{name}: no such fifo for pre-fill {v}"
 
                 output_bogus_init_num = [0, 0, 0]
                 # Iterate through the active core ports (inputs) and assign them the output_bogus
@@ -404,9 +424,9 @@ class CoreCombinerCore(LakeCoreBase):
 
                 assert all(0 <= num <= 2 for num in output_bogus_init_num), \
                     "All elements in output_bogus_init_num must be between 0 and 2 inclusive"
-                config_output_bogus_init = [(f"PE_output_width_{self.data_width + 1}_num_0_fifo_bogus_init_num", output_bogus_init_num[0]),
-                                            (f"PE_output_width_{self.data_width + 1}_num_1_fifo_bogus_init_num", output_bogus_init_num[1]),
-                                            (f"PE_output_width_{self.data_width + 1}_num_2_fifo_bogus_init_num", output_bogus_init_num[2])]
+                config_output_bogus_init = [(f"PE_output_width_{track_w}_num_0_fifo_bogus_init_num", output_bogus_init_num[0]),
+                                            (f"PE_output_width_{track_w}_num_1_fifo_bogus_init_num", output_bogus_init_num[1]),
+                                            (f"PE_output_width_{track_w}_num_2_fifo_bogus_init_num", output_bogus_init_num[2])]
 
                 print("PE bogus init...")
                 for it_ in config_input_bogus_init:
@@ -416,14 +436,18 @@ class CoreCombinerCore(LakeCoreBase):
                 print("PE bogus init end...")
 
                 for name, v in config_output_bogus_init:
-                    configs = [self.get_config_data(name, v)] + configs
+                    if self.has_config(name):
+                        configs = [self.get_config_data(name, v)] + configs
+                    else:
+                        assert v == 0, f"{name}: no such fifo for pre-fill {v}"
 
                 config_rv_bypass_bit = [(f"{self.get_port_remap()['alu']['bit0']}_bypass_rv", rv_bypass_value),
                                         (f"{self.get_port_remap()['alu']['bit1']}_bypass_rv", rv_bypass_value),
                                         (f"{self.get_port_remap()['alu']['bit2']}_bypass_rv", rv_bypass_value),
                                         (f"{self.get_port_remap()['alu']['res_p']}_bypass_rv", rv_bypass_value)]
                 for name, v in config_rv_bypass_bit:
-                    configs = [self.get_config_data(name, v)] + configs
+                    if self.has_config(name):
+                        configs = [self.get_config_data(name, v)] + configs
 
                 fine_grained_input_fifo_bypass = [0, 0, 0]
                 fine_grained_output_fifo_bypass = 0
@@ -460,7 +484,10 @@ class CoreCombinerCore(LakeCoreBase):
                     (f"{self.get_port_remap()['alu']['res']}_fine_grain_fifo_bypass",
                      fine_grained_output_fifo_bypass)]
                 for name, v in config_fine_grained_input_fifo_bypass:
-                    configs = [self.get_config_data(name, v)] + configs
+                    if self.has_config(name):
+                        configs = [self.get_config_data(name, v)] + configs
+                    else:
+                        assert v == 0, f"{name}: this PE tile has no fifo bypass"
             # END BLOCK COMMENT
             # print(configs)
             return configs

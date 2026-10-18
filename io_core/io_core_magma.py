@@ -74,26 +74,31 @@ class KratosValidIOCore(Generator):
 class IOCoreBase(Core):
     def __init__(self):
         super().__init__()
+        # Data port width (the data ports are named after it: glb2io_16, ...)
+        self.data_width = 16
 
-    def _add_ports(self):
-        self.add_ports(
-            glb2io_16=magma.In(magma.Bits[16]),
-            glb2io_1=magma.In(magma.Bits[1]),
-            io2glb_16=magma.Out(magma.Bits[16]),
-            io2glb_1=magma.Out(magma.Bits[1]),
-            f2io_16=magma.In(magma.Bits[16]),
-            f2io_1=magma.In(magma.Bits[1]),
-            io2f_16=magma.Out(magma.Bits[16]),
-            io2f_1=magma.Out(magma.Bits[1])
-        )
+    def _add_ports(self, data_width=16):
+        self.data_width = w = data_width
+        self.add_ports(**{
+            f"glb2io_{w}": magma.In(magma.Bits[w]),
+            "glb2io_1": magma.In(magma.Bits[1]),
+            f"io2glb_{w}": magma.Out(magma.Bits[w]),
+            "io2glb_1": magma.Out(magma.Bits[1]),
+            f"f2io_{w}": magma.In(magma.Bits[w]),
+            "f2io_1": magma.In(magma.Bits[1]),
+            f"io2f_{w}": magma.Out(magma.Bits[w]),
+            "io2f_1": magma.Out(magma.Bits[1])
+        })
 
     def inputs(self):
-        return [self.ports.glb2io_16, self.ports.glb2io_1,
-                self.ports.f2io_16, self.ports.f2io_1]
+        w = self.data_width
+        return [self.ports[f"glb2io_{w}"], self.ports.glb2io_1,
+                self.ports[f"f2io_{w}"], self.ports.f2io_1]
 
     def outputs(self):
-        return [self.ports.io2glb_16, self.ports.io2glb_1,
-                self.ports.io2f_16, self.ports.io2f_1]
+        w = self.data_width
+        return [self.ports[f"io2glb_{w}"], self.ports.io2glb_1,
+                self.ports[f"io2f_{w}"], self.ports.io2f_1]
 
     def name(self):
         return "io_core"
@@ -104,29 +109,32 @@ class IOCoreBase(Core):
 
 
 class IOCore(IOCoreBase):
-    def __init__(self):
+    '''Static IO tile: one register each way (GLB -> fabric, fabric -> GLB).'''
+
+    def __init__(self, data_width=16):
         super().__init__()
-        self._add_ports()
+        self._add_ports(data_width)
+        w = data_width
 
         self.add_ports(
             clk=magma.In(magma.Clock),
             reset=magma.In(magma.AsyncReset)
         )
 
-        glb2io_16_reg = FromMagma(DefineRegister(16, has_async_reset=True))
+        glb2io_16_reg = FromMagma(DefineRegister(w, has_async_reset=True))
         glb2io_1_reg = FromMagma(DefineRegister(1, has_async_reset=True))
 
-        f2io_16_reg = FromMagma(DefineRegister(16, has_async_reset=True))
+        f2io_16_reg = FromMagma(DefineRegister(w, has_async_reset=True))
         f2io_1_reg = FromMagma(DefineRegister(1, has_async_reset=True))
 
-        self.wire(self.ports.glb2io_16, glb2io_16_reg.ports.I)
+        self.wire(self.ports[f"glb2io_{w}"], glb2io_16_reg.ports.I)
         self.wire(self.ports.glb2io_1, glb2io_1_reg.ports.I)
-        self.wire(self.ports.f2io_16, f2io_16_reg.ports.I)
+        self.wire(self.ports[f"f2io_{w}"], f2io_16_reg.ports.I)
         self.wire(self.ports.f2io_1, f2io_1_reg.ports.I)
 
-        self.wire(glb2io_16_reg.ports.O, self.ports.io2f_16)
+        self.wire(glb2io_16_reg.ports.O, self.ports[f"io2f_{w}"])
         self.wire(glb2io_1_reg.ports.O, self.ports.io2f_1)
-        self.wire(f2io_16_reg.ports.O, self.ports.io2glb_16)
+        self.wire(f2io_16_reg.ports.O, self.ports[f"io2glb_{w}"])
         self.wire(f2io_1_reg.ports.O, self.ports.io2glb_1)
 
     def finalize(self):

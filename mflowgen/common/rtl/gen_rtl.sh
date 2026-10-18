@@ -112,6 +112,10 @@ fi
 # switch-box A/B. False/empty -> the ready-valid fabric (no-op elsewhere).
 [ "$dense_only" == True ] && flags+=" --dense-only"
 
+# Thesis fabric (garnet.py --thesis static|rv: garnet_thesis.py, cgra/util_thesis.py):
+# static = no FIFOs or ready-valid, rv = no FIFO bypass; both dense only. Empty -> no-op.
+[ -n "$thesis" ] && flags+=" --thesis $thesis"
+
 # PE-tile pond knobs. Empty/False -> default pond (no-op for other consumers).
 [ "$no_pond" == True ] && flags+=" --no-pond"
 POND_CFG_HOST=""
@@ -316,6 +320,14 @@ if [ "$use_container" == True ]; then
          # not inherit. On failure, print the config key names (not values).
          ( rm -rf /tmp/lassen_cdw.git && git init -q --bare /tmp/lassen_cdw.git && GIT_TERMINAL_PROMPT=0 git --git-dir=/tmp/lassen_cdw.git fetch -q https://github.com/StanfordAHA/lassen.git thesis:refs/heads/thesis && cd /aha/lassen && git fetch -q /tmp/lassen_cdw.git thesis && git checkout -f -B thesis FETCH_HEAD && git log -1 --oneline ) \
            || { git -C /aha/lassen remote -v; git -C /aha/lassen config --show-origin --name-only --get-regexp '^(http|credential|url)[.]'; echo '*** ERROR: gen_rtl: lassen thesis checkout failed (see above)'; exit 1; }
+
+         # A thesis fabric (garnet.py --thesis) needs canal branch thesis: the image's
+         # canal fails to build a switch box without ready-valid (no flush port).
+         # Same bare-repo fetch as lassen above.
+         if [ -n '$thesis' ]; then
+           ( rm -rf /tmp/canal_th.git && git init -q --bare /tmp/canal_th.git && GIT_TERMINAL_PROMPT=0 git --git-dir=/tmp/canal_th.git fetch -q https://github.com/StanfordAHA/canal.git thesis:refs/heads/thesis && cd /aha/canal && git fetch -q /tmp/canal_th.git thesis && git checkout -f -B thesis FETCH_HEAD && git log -1 --oneline ) \
+             || { echo '*** ERROR: gen_rtl: canal thesis checkout failed (see above)'; exit 1; };
+         fi
 
          # FIXME note that 'if' statements below will fail if e.g. 'interconnect_only' not set
          # Easy fix is not obvious since we are already inside a double-quoted string :(
