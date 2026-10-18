@@ -529,15 +529,14 @@ Checked on /aha before the push:
   It is verified locally: gold sims, suites, the gated tile tests and RV
   conv_3_3 bit-accurate.
 
-Re-run of the four configs whose RTL changed or that failed, into the same out-dir
-(`--only` + `--fresh` rebuild just those; base and `_sharectr` have no gates and
-keep their results). This needs `/sim/docker` freed first (see "dw 8/32/64 all-PnR",
-first run) and at most four PnRs at once:
+Re-run: all six, fresh, into a new out-dir. Since garnet 6f110058, `--no-pd` works, so
+PWR_AWARE False tile builds have no power-domain logic and the first run's tiles (with it)
+aren't comparable with new ones. This needs `/sim/docker` freed first (see "dw 8/32/64
+all-PnR", first run) and at most four PnRs at once (OOM):
 
     ./mflowgen/sweep_specs.py --spec-set clock_gating --flatten-effort 0 \
         --memtile-power --config-jobs 4 --fresh --zip --zip-slim \
-        --only fw4_dw16_sc4096_sp_in2_out2_vc2_portcg,fw4_dw16_sc4096_sp_in2_out2_vc2_sharectr_portcg,fw4_dw16_sc4096_sp_in2_out2_vc2_rv,fw4_dw16_sc4096_sp_in2_out2_vc2_portcg_rv \
-        --out-dir /nsim/mstrange/BUILDS/sweep_out/clock_gating_ab_20261017
+        --out-dir /nsim/mstrange/BUILDS/sweep_out/clock_gating_ab_20261018
 
 ### Whole-graph smoke run: one spec, standalone + tile (2026-10-07)
 
