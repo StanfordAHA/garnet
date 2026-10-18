@@ -401,9 +401,11 @@ FABRIC_SPEC_POINTS = [
 # The thesis fabrics (garnet.py --thesis): the same spec as a static-dense and a
 # ready-valid-dense tile, built from garnet_thesis.py (no sparse cores; static =
 # no FIFOs or ready-valid, rv = no FIFO bypass; data_width-bit tracks). For
-# Tile_MemCore and, with --graph mflowgen/Tile_PE, the PE tile.
-_THESIS_BASE = dict(storage_capacity=8192, data_width=16, vec_width=4,
-                    in_ports=2, out_ports=2, thesis=True)
+# Tile_MemCore and, with --graph mflowgen/Tile_PE, the PE tile. One design point:
+# lake's default spec (build_spec / build_spec_rv defaults: fw4, dw16, 4 KB,
+# 2 in / 2 out, single-port, vec_capacity 2).
+_THESIS_BASE = dict(storage_capacity=4096, data_width=16, vec_width=4,
+                    in_ports=2, out_ports=2, vec_capacity=2, thesis=True)
 THESIS_FABRIC_SPEC_POINTS = [
     dict(_THESIS_BASE, runtime_mode="static"),
     dict(_THESIS_BASE, runtime_mode="rv"),
@@ -419,8 +421,8 @@ SPEC_SETS = {
     "thesis_fabric": THESIS_FABRIC_SPEC_POINTS,
 }
 PRESETS["thesis_fabric_pnr"] = [
-    "fw4_dw16_sc8192_sp_in2_out2_vc2_thesis",
-    "fw4_dw16_sc8192_sp_in2_out2_vc2_thesis_rv",
+    "fw4_dw16_sc4096_sp_in2_out2_vc2_thesis",
+    "fw4_dw16_sc4096_sp_in2_out2_vc2_thesis_rv",
 ]
 # The PE tiles that go through PnR (tile height); stock_staticfab_nopond is
 # synthesis only (switch-box area).

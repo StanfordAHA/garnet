@@ -47,8 +47,9 @@ def fabric(request, tmp_path_factory):
     mode = request.param
     tmp = tmp_path_factory.mktemp(f"thesis_{mode}")
     spec = tmp / "spec.json"
-    spec.write_text(json.dumps(dict(data_width=16, in_ports=2, out_ports=2, storage_capacity=8192,
-                                    vec_width=4)))
+    # lake's default spec, the sweep_specs.py thesis_fabric point
+    spec.write_text(json.dumps(dict(data_width=16, in_ports=2, out_ports=2, storage_capacity=4096,
+                                    vec_width=4, vec_capacity=2)))
     args = ["--thesis", mode, "--width", "4", "--height", "2", "--verilog", "--use_sim_sram",
             "--glb_tile_mem_size", "128", "--lake-spec-config", str(spec)]
     # GARNET_HOME: garnet.py writes the GLB / GLC / MU headers there; never another checkout

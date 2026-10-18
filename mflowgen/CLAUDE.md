@@ -2147,9 +2147,27 @@ select floating: no flush reaches the tiles, the static stencil_valid never star
 times out ("got interrupt, but not from STRM_F2G"). RV apps may survive it.
 
 gf12 (build machine, garnet + lake pulled; outputs under /nsim/mstrange/BUILDS):
-`./mflowgen/sweep_specs.py --recipe thesis_fabric --out-dir /nsim/mstrange/BUILDS/sweep_out/thesis_fabric --zip --zip-slim`
-(thesis_mem + thesis_pe: both tiles static + RV through PnR, PT_I_DELAY_FRAC 0.25). Add
-`--clock-mhz` / `--stop-after cadence-genus-synthesis` for an over-constrained fmax probe.
+`./mflowgen/sweep_specs.py --recipe thesis_mem --out-dir /nsim/mstrange/BUILDS/sweep_out/thesis_fabric --zip --zip-slim`
+(MemTile static + RV through PnR, PT_I_DELAY_FRAC 0.25: 2 builds); `--recipe thesis_pe` = the
+PE tile pair, `--recipe thesis_fabric` = both (4 builds). The spec point is lake's default
+spec (build_spec defaults: fw4 dw16 4 KB 2x2 single-port vc2; user 2026-10-18; it was 8 KB,
+the app matrix above, until then). Add `--clock-mhz` / `--stop-after cadence-genus-synthesis`
+for an over-constrained fmax probe.
+
+Why RV runs slower than static in the matrix (2026-10-18; data: archipelago/CLAUDE.md "RV
+without EXHAUSTIVE_PIPE"):
+- Reconvergent forks (conv, gaussian, unsharp, harris): the RV flow balances nothing
+  (MATCH_BRANCH_DELAY=0) and EXHAUSTIVE_PIPE turns route-length differences into stage
+  differences. A lazy fork + 2-deep FIFOs runs a join at (short branch's buffer slots) /
+  (long branch's round trip): conv 0.75 token/cycle (4149/0.75 = 5533), harris 0.107. With
+  latency matching on the same placement and routing, RV = static: conv 4153 / 4149, gaussian
+  6393 / 6389, unsharp 17480 / 17470 (harris not run: the padding hook is 16-bit only; modelled
+  rate 1.0).
+- Loop-carried recurrence (matmul_rvtry3, same in every pipelining mode): one scalar
+  accumulator in the pond (address stride 0, 16 x 256 = 4096 dependent steps). The static
+  schedule issues one every 2 cycles (cycle_stride 2: 8192 + 1068 = 9260); the RV pond -> PE ->
+  pond loop takes 3 (12288 + 1067 = 13355), one more register stage (inferred: the RV PE's output
+  FIFO). Structural RV cost on short recurrences; interleaving >= 3 accumulators would hide it.
 
 Tile_PE timing (local Genus 20.11 freepdk45, 1.333 ns, steady state: config regs
 false-pathed, flush/stall 0; scratchpad thesis/synth): static worst R2R 3355 ps (pond addr ->
