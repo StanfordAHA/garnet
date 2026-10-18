@@ -2116,7 +2116,11 @@ libHalide and libclkwrk.so were rebuilt. Shared-toolchain checks:
     - On the 13 tiles at other widths that now have PnR, the dw16 fit holds total area within 2.3%.
       Static dw8 is within 0.6% across fw2/4/8 and vc2/4/8.
     - **Rerun:** the same command with `--skip-existing --config-jobs 4`, into the same out-dir,
-      after freeing `/sim/docker`.
+      after freeing `/sim/docker`. Keep the build machine's garnet at 96ff8af8 until it finishes.
+      The rtl and memtile-power-test-gen steps copy the host garnet in when they run, and from
+      6f110058 on, `--no-pd` (every MemCore sweep) drops the power-domain logic. That logic is
+      about 0.2% of a dw32 tile's area in the PD config register + PD OR alone, plus some
+      SB/CB gates. The finished tiles and the dw16 fit all have it.
 
 ## Thesis fabrics: garnet.py --thesis static|rv (2026-10-17, session cfc4174c)
 
