@@ -32,8 +32,8 @@ print(len(g.all_nodes()))
 """
 
 
-@pytest.mark.parametrize("design", DESIGNS, ids=[str(d.relative_to(MFLOWGEN)) for d in DESIGNS])
-def test_construct_builds_graph(design, tmp_path):
+def stub_env(tmp_path, **extra):
+    """Env for a construct() run here: a stub gf12 ADK and calibre on PATH."""
     mflowgen = pytest.importorskip("mflowgen")
     adk = tmp_path / "adks" / "gf12-adk"
     adk.mkdir(parents=True)
@@ -49,7 +49,32 @@ def test_construct_builds_graph(design, tmp_path):
                GARNET_HOME=str(ROOT),
                # common/tile-post-*-power read their parent tile's params from the env
                clock_period="1.0", design_name="Tile_PE")
-    res = subprocess.run([sys.executable, "-c", BUILD, str(design)], env=env,
+    for k in ("LAKE_SPEC_CONFIG", "LAKE_SPEC_MODE", "DUAL_PORT"):
+        env.pop(k, None)
+    env.update(extra)
+    return env
+
+
+def build(design, env, *args, script=BUILD):
+    res = subprocess.run([sys.executable, "-c", script, str(design), *args], env=env,
                          capture_output=True, text=True, timeout=600)
     assert res.returncode == 0, res.stderr[-5000:]
-    assert int(res.stdout.split()[-1]) > 1
+    return res.stdout.split()[-1]
+
+
+@pytest.mark.parametrize("design", DESIGNS, ids=[str(d.relative_to(MFLOWGEN)) for d in DESIGNS])
+def test_construct_builds_graph(design, tmp_path):
+    assert int(build(design, stub_env(tmp_path))) > 1
+
+
+@pytest.mark.parametrize("env,want", [
+    ({}, "False"),
+    ({"DUAL_PORT": "True"}, "False"),  # no spec: the default MemCore, as before
+    ({"LAKE_SPEC_CONFIG": "spec.json", "LAKE_SPEC_MODE": "rv", "DUAL_PORT": "True"}, "True"),
+    ({"LAKE_SPEC_CONFIG": "spec.json", "LAKE_SPEC_MODE": "rv", "DUAL_PORT": "False"}, "False"),
+])
+def test_tile_pe_rtl_dual_port(tmp_path, env, want):
+    """An RV bundle's PE tile is built with the bundle's lake spec; a dual-port
+    spec needs garnet --dual-port too, or lake's resolve_memports fails."""
+    script = BUILD.replace("print(len(g.all_nodes()))", "print(g.get_step('rtl').get_param('dual_port'))")
+    assert build(MFLOWGEN / "Tile_PE", stub_env(tmp_path, **env), script=script) == want

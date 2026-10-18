@@ -86,6 +86,11 @@ def construct():
         # app bundle's PE tiles; unset = the default PE tile, as before.
         'lake_spec_config': os.environ.get('LAKE_SPEC_CONFIG', ''),
         'lake_spec_mode': os.environ.get('LAKE_SPEC_MODE', ''),
+        # A dual-port spec needs garnet --dual-port too (lake's memport
+        # resolution fails otherwise); without a spec the default MemCore
+        # and so the PE tile build stay as before.
+        'dual_port': (bool(os.environ.get('LAKE_SPEC_CONFIG'))
+                      and os.environ.get('DUAL_PORT', 'False') == 'True'),
         # Static fabric (garnet --dense-only) for the switch-box A/B; unset =
         # the ready-valid fabric, as before.
         'dense_only': os.environ.get('DENSE_ONLY', 'False') == 'True',

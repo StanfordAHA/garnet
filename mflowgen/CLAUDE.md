@@ -1263,6 +1263,12 @@ PYTHONPATH; runner + logs: scratchpad 1fa8a391 `bigset/`). Result: 32 bundles ov
 8 per app, all `aha test` bit-accurate; `/aha/sweep_out/app_bundles_dw16_20261014/<app>/<config>`
 (+ `STATUS.txt`, tarball `app_bundles_dw16_20261014.tgz`). Power: `cgra_app_power.py
 --any-config --variants conv=..,gauss=..,harris=..,mmpond=.. --clock-mhz 400`.
+First gf12 run (2026-10-17): the Tile_PE builds of the dual-port RV configs failed in the rtl
+step (lake `resolve_memports` IndexError): an RV bundle's PE tile is built with the bundle's
+lake spec, and Tile_PE's construct.py did not forward `DUAL_PORT`, so garnet.py built the
+dual-port spec without `--dual-port`. Fixed: Tile_PE passes `dual_port` when it has a lake spec
+(static PE tiles, built without one, are unchanged); test `test_tile_pe_rtl_dual_port`. Rerun
+those workspaces with `--clean rtl`.
 Failures (OPEN_ISSUES ids):
 - fw1 single-port STATIC line buffers (`clockwork/static-mem-bandwidth-unchecked`): each row bank
   is written and read every cycle (stride 1, overlapping) = 2 accesses/cycle on a 1-access SRAM;
