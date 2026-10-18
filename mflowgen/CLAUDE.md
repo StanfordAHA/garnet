@@ -2116,10 +2116,15 @@ nondeterminism, which two pristine builds also show):
   generate_testbench follows it.
 
 Verified (private trees; scratchpad cfc4174c thesis/run_app.sh, chain.sh; fw4_dw16_sc8192_sp_in2_out2,
-16x16): bit-accurate, kernel ns static / RV: conv_3_3 4149 / 5533, gaussian 6389 / 12755,
-pointwise 4149 / 4150 (the static numbers equal the old static-on-RV-fabric runs: the IO
-register keeps the schedules' latency). The rest of the matrix (fp_pointwise, unsharp,
-harris_color, matmul_rvtry3, resnet) was running at the time of writing.
+16x16, RV with EXHAUSTIVE_PIPE=1): every app bit-accurate on both fabrics, kernel ns static / RV:
+conv_3_3 4149 / 5533, gaussian 6389 / 12755, pointwise 4149 / 4150, fp_pointwise 4149 / 4150
+(`aha test --dense-fp`, as the regressions run fp apps: 78/4096 outputs are 1 bf16 ulp off the
+Halide gold in both modes), unsharp 17470 / 156763, harris_color 17816 / 165807, matmul_rvtry3
+(static/RV spec pond) 9260 / 13364, resnet 12495 / 12783 (app copy with the output channel
+innermost, `pondspec_e2e/resnet` + EXT=mat: stock apps/resnet stops in parse_design_meta
+"inner dim 28 ... unroll 3"). Every static number equals the old static-on-RV-fabric run (the IO
+register keeps the schedules' latency); RV equals the old RV runs except gaussian (16969 on the
+2026-10-06 toolchain).
 Structure: tests/test_thesis (4x2: static tiles have no FIFO modules and no _ready/_valid,
 only the GLB DMA FIFOs remain; RV PE has 8 ports each with valid/ready + tile FIFO; neither
 fabric has sparse modules or bypass config; tracks {1, 16}).
