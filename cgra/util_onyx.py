@@ -148,10 +148,12 @@ def get_cc_args(width, height, io_sides, garnet_args):
     }.get(
         args.sb_option, "Invalid Switchbox Type"
     )
-    args.add_pd = not args.no_pd,
-    args.add_pond = not args.no_pond  # (no trailing comma: a 1-tuple is always truthy)
-    args.pond_area_opt = not args.no_pond_area_opt,
-    args.pond_area_opt_dual_config = not args.no_pond_area_opt_dual_config,
+    # No trailing commas here: a 1-tuple is always truthy, so `--no-pd` was a no-op
+    # from 2554552b (2023-11) until 2026-10-18 (tests/test_cc_args)
+    args.add_pd = not args.no_pd
+    args.add_pond = not args.no_pond
+    args.pond_area_opt = not args.no_pond_area_opt
+    args.pond_area_opt_dual_config = not args.no_pond_area_opt_dual_config
 
     # Get rid of args that create_cgra does not want, else will get TypeError
     import inspect

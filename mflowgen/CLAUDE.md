@@ -1467,13 +1467,16 @@ Failures (OPEN_ISSUES ids):
   4.03, PnR 6.98 / 3.84; X03_Y02 RTL 3.28, synth 1.51, PnR 2.06. Idle/active
   (`--memtile-power`): synth 1.59 / 11.1, PnR 2.13 / 12.3. Use synth/PnR.
 - Power domains: the tile graphs pass `garnet.py --no-pd` (`pwr_aware =
-  False`), `gen_app_bundle.py` does not. Today that changes nothing:
-  `--no-pd` is a no-op (OPEN_ISSUES `garnet/no-pd-tuple`, a trailing-comma
-  tuple in `cgra/util_onyx.py`), so every build, the bundles' and mine
-  included, has power domains, and the 0-mismatch replays on `--no-pd` 4x2
-  tiles say nothing about PD-less tiles. If that bug is fixed, re-check: tile
-  ports are compared by `check_bundle.py`; a moved config register shows up as
-  replay mismatches.
+  False`), `gen_app_bundle.py` does not. Until 2026-10-18 `--no-pd` was a no-op
+  (a trailing-comma tuple in `cgra/util_onyx.py`, garnet/no-pd-tuple), so every
+  tile build and every number above has power domains (per tile a
+  `PowerDomainConfigReg`, CB muxes with a constant input, RV SB readies ANDed
+  with the SB enable, the read_config_data OR). Since the fix, `--no-pd` tiles
+  have none of that. Bundles recorded with power domains still fit them:
+  `tests/test_cc_args` checks that tile ports and every other config register
+  (feature index, name, width) are the same with and without, and app
+  bitstreams never write the PD register. Tile area/power from before and
+  after the fix are not directly comparable.
 
 **garnet.v run-to-run determinism (functional part fixed in lake e4fabdc1).**
 kratos `get_port_names()` is a Python set and lake iterated it unsorted, so
@@ -1753,10 +1756,11 @@ floorplan, `mode[0]` guard) apply — the pond is flops, no macro.
 - `NO_POND=True mflowgen run --design .../Tile_PE` → rtl param `no_pond` →
   `garnet.py --no-pond`. **`--no-pond` never worked in onyx before
   2026-09-30**: `get_cc_args` had `args.add_pond = not args.no_pond,` (trailing
-  comma → 1-tuple → always truthy); fixed. The same bug is still on
-  `args.add_pd = not args.no_pd,` → `--no-pd` (passed whenever PWR_AWARE is
-  False, incl. every MemCore sweep build) is a no-op; NOT fixed because fixing
-  it changes existing RTL — user decision.
+  comma → 1-tuple → always truthy); fixed. The same bug on
+  `args.add_pd = not args.no_pd,` made `--no-pd` (passed whenever PWR_AWARE is
+  False, incl. every MemCore sweep build) a no-op until 2026-10-18 (fixed with
+  the user's OK, with `pond_area_opt(_dual_config)`, which onyx ignores);
+  `tests/test_cc_args` checks that every bool reaches `create_cgra` as a bool.
 - `LAKE_POND_SPEC_CONFIG=<pond.json> mflowgen run ...` → rtl param
   `lake_pond_spec_config` → `garnet.py --lake-pond-spec-config` (env
   `LAKE_POND_SPEC_CONFIG`; gen_rtl ships the file into the container like
@@ -2138,7 +2142,8 @@ What (user decisions 2026-10-17): `garnet.py --thesis {static,rv}` -> `garnet_th
 - PnR/bitstream: same flags + `--thesis` for `aha pnr`; static apps = DENSE_READY_VALID unset
   everywhere, rv apps = DRV=1 (ThesisGarnet.place_and_route refuses a mismatch).
   `ThesisGarnet.load_netlist` sets mapper `set_rv_track_eos_bit(False)` (dw-bit buses).
-- `--no-pd` is ignored, like the default build (garnet/no-pd-tuple): power domains on.
+- `--no-pd` is ignored: `ThesisGarnet` never passes `add_pd`, so thesis fabrics always
+  have power domains (util_onyx `--no-pd` builds have none since 2026-10-18).
 
 Library pieces (all default off; existing RTL unchanged: lake-spec RV build byte-identical,
 static-spec / default / Zircon identical up to kratos statement-order and `_unq0` naming
