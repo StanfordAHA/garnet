@@ -1305,9 +1305,13 @@ every replayed tile (placed, route and idle, per variant) dumped a full-depth ga
 run_sim.sh's copy tests `true` so it never ran), so `waves` is now False there; env
 `REPLAY_WAVES=True` turns it back on to debug a replay (test `test_replay_waves_off_by_default`).
 Failures (OPEN_ISSUES ids):
-- fw1 single-port STATIC line buffers (`clockwork/static-mem-bandwidth-unchecked`): each row bank
-  is written and read every cycle (stride 1, overlapping) = 2 accesses/cycle on a 1-access SRAM;
-  clockwork emits it, output wrong (conv_3_3 all 3844 ~half of gold). Pond matmul passes there.
+- fw1 single-port STATIC line buffers (`clockwork/static-mem-bandwidth-unchecked`, closed
+  2026-10-18): each row bank is written and read every cycle (stride 1, overlapping) = 2
+  accesses/cycle on a 1-access SRAM; output was wrong (conv_3_3 all 3844 ~half of gold). Since
+  clockwork b68af72f such compiles stop with "ERROR: static compile: ports ... access its SRAM in
+  the same cycle" (clockwork/CLAUDE.md "Static fw1 SRAM port check"). Static pond matmul too, at
+  `aha pnr`'s reschedule: one clash at cycle 258; its bundle passed because the dropped read was of
+  a zero. These fw1-sp static bundles cannot be regenerated.
 - fw1 single-port RV (`garnet/fw1-sp-rv-netlist`), every app incl. pond matmul: PnR KeyError in
   `mapper/netlist_util.py` (an unconnected 1-bit `delay_reg` from clockwork, then an output
   `$reg1` missing from `nodes_to_ids`). Not bandwidth: lake's RV single-port arbiter would cope.
