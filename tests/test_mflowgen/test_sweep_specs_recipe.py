@@ -203,3 +203,13 @@ def test_memtile_power_needs_memtile_graph(ss):
     with pytest.raises(SystemExit, match="memtile-power"):
         ss._preflight(args)
     assert ss._memtile_power_targets(dict(stock=True), Namespace(memtile_power=True)) == []
+
+
+def test_relative_graph_is_made_absolute(ss, capsys, monkeypatch, tmp_path):
+    """`mflowgen run --design` runs inside the workspace, so --graph
+    ./mflowgen/Tile_PE given from the garnet checkout must reach it absolute."""
+    monkeypatch.chdir(MFLOWGEN.parent)
+    assert ss.main(["--graph", "./mflowgen/Tile_PE", "--spec-set", "pe_tile", "--only", "stock_specpond",
+                    "--out-dir", str(tmp_path / "out"), "--dry-run"]) == 0
+    out = capsys.readouterr().out
+    assert f"mflowgen run --design {MFLOWGEN / 'Tile_PE'}" in out

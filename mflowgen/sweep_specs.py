@@ -762,6 +762,9 @@ def build_argparser():
 def main(argv=None):
     argv = sys.argv[1:] if argv is None else list(argv)
     args = build_argparser().parse_args(argv)
+    # `mflowgen run --design <graph>` runs inside each workspace, so a relative
+    # --graph (./mflowgen/Tile_PE) must be made absolute from the caller's cwd.
+    args.graph = str(Path(args.graph).resolve())
     if args.recipe:
         return _run_recipe(args, argv)
     if args.app_bundles:
