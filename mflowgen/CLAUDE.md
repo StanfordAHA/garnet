@@ -2066,6 +2066,19 @@ libHalide and libclkwrk.so were rebuilt. Shared-toolchain checks:
     of the dw16 fit (test `test_memtile_recipe_pnr_at_every_width_dw16_fit_only`). The run
     is step 4 of "Build machine: thesis data runs" below. Per width: dw8 12 (9 static,
     3 RV), dw32 8 (6, 2), dw64 4 (3, 1); fw4 at dw64 has no macro.
+  - **First run (2026-10-17/18, standalone command, garnet 96ff8af8; zip
+    `tile_memcore_dw8_32_64_pnr_r8cad-gf12_20261018-071557_slim`, analysis in
+    `/aha/sweep_out/dw8_32_64_PNR_20261018/README.md`):** 10 of 24 through PnR, 4 with power.
+    - **Every failure was environmental.** From ~05:43 the build machine's docker data root
+      (`/sim/docker`) was full. Every rtl and memtile-power-test-gen step after that failed at
+      `docker run` ("no space left on device"): 12 RTL, 6 power. Two RV PnRs were `Killed` in
+      postroute (~8 GB each, 6 jobs at once, likely OOM).
+    - **PnR is deterministic.** The three tiles built both here and on 2026-10-14 match exactly in
+      area, PT WNS and power, and their signoff area reports are byte-identical.
+    - On the 13 tiles at other widths that now have PnR, the dw16 fit holds total area within 2.3%.
+      Static dw8 is within 0.6% across fw2/4/8 and vc2/4/8.
+    - **Rerun:** the same command with `--skip-existing --config-jobs 4`, into the same out-dir,
+      after freeing `/sim/docker`.
 
 ## Thesis fabrics: garnet.py --thesis static|rv (2026-10-17, session cfc4174c)
 
