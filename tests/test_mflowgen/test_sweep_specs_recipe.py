@@ -213,3 +213,23 @@ def test_relative_graph_is_made_absolute(ss, capsys, monkeypatch, tmp_path):
                     "--out-dir", str(tmp_path / "out"), "--dry-run"]) == 0
     out = capsys.readouterr().out
     assert f"mflowgen run --design {MFLOWGEN / 'Tile_PE'}" in out
+
+
+def test_dw8_32_64_preset_is_the_thesis_set_at_those_widths(ss, capsys):
+    names = listed(ss, capsys, "--spec-set", "thesis", "--data-width", "8,32,64", "--runtime-mode", "static,rv")
+    assert len(names) == 24
+    assert sorted(ss.PRESETS["dw8_32_64"]) == sorted(names)
+
+
+@pytest.mark.parametrize("extra, summary", [
+    ([], ["36 -> synopsys-pt-timing-signoff", "160 -> cadence-genus-synthesis",
+          "PnR model: fit on 8, validated on 28 held-out"]),
+    (["--preset", "dw8_32_64"], ["24 -> synopsys-pt-timing-signoff", "PnR model: fit on 0, validated on 24 held-out"]),
+])
+def test_memtile_recipe_pnr_at_every_width_dw16_fit_only(ss, capsys, tmp_path, extra, summary):
+    """The memtile part builds every dw 8/32/64 config through PnR, held out
+    of the synth->PnR fit, which stays the 8 dw16_fit8 configs."""
+    assert ss.main(ss.RECIPE_FLAGS["memtile"] + extra + ["--out-dir", str(tmp_path), "--list"]) == 0
+    err = capsys.readouterr().err
+    for line in summary:
+        assert line in err

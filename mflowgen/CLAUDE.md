@@ -199,7 +199,7 @@ part does not stop the rest:
 |---|---|---|---|---|
 | `fabric_mem` | Tile_MemCore, 750 MHz | `stock`, `stock_staticfab` | synth, `--flatten-effort 0` | MemTile switch box: ready-valid vs static fabric |
 | `pe_tile` | Tile_PE, 400 MHz | `stock_specpond`, `stock_nopond`, `fw4_dw16_sc4096_sp_in2_out2_vc2{,_nopond}_rv` (preset `pe_tile_pnr`); `stock_staticfab_nopond` | PnR to PT signoff; the static-fabric PE synth only | PE tile area (tile height); PE switch box (`stock_nopond` vs `stock_staticfab_nopond`) |
-| `memtile` | Tile_MemCore, 750 MHz | `--spec-set thesis` at every data width: 196 configs | `dw16_pnr12` PnR, `dw16_val4` held out, idle/active power | Ch. 4 component, PUB, memory-tile and LI SG figures, data-width figures |
+| `memtile` | Tile_MemCore, 750 MHz | `--spec-set thesis` at every data width: 196 configs | PnR: `dw16_pnr12` + `dw8_32_64` (all 24 dw 8/32/64 configs); held out: `dw16_val4` + `dw8_32_64`, so the fit is the 8 dw16 points; idle/active power | Ch. 4 component, PUB, memory-tile and LI SG figures, data-width figures |
 | `app_power` | `cgra_app_power.py --any-config`, 400 MHz | each `<app>` under `--app-bundles` is a variant | synth-level app power | single-level / LI app figures |
 
 - **Tile knobs.** These are sweep-only config keys (`SWEEP_ONLY_KEYS`).
@@ -2051,6 +2051,11 @@ libHalide and libclkwrk.so were rebuilt. Shared-toolchain checks:
     - Power has a width trend: PnR comes out below the projection at dw8 and above it at dw64.
       Adding the 6 points to the fit doesn't remove it (dw8 RV idle residual still 12%) and worsens
       the dw16 held-out area. So the dw16 fit stays the projection, with that spread.
+  - **All 24 through PnR (user request 2026-10-17):** per-width PnR numbers instead of
+    projections. The `memtile` recipe now builds preset `dw8_32_64` through PnR, held out
+    of the dw16 fit (test `test_memtile_recipe_pnr_at_every_width_dw16_fit_only`). The run
+    is step 4 of "Build machine: thesis data runs" below. Per width: dw8 12 (9 static,
+    3 RV), dw32 8 (6, 2), dw64 4 (3, 1); fw4 at dw64 has no macro.
 
 ## Thesis fabrics: garnet.py --thesis static|rv (2026-10-17, session cfc4174c)
 
@@ -2156,8 +2161,8 @@ full); the checkout itself stays on `/sim`.
 Run these from `/sim/mstrange/BUILD_CGRA/garnet` after `git pull`, in this order.
 What each part builds is in "Thesis data recipe" above. The current dw16 memory-tile
 sweep (`NEW_SWEEP_r8cad-gf12_20261009-213941`) and the dw 8/32/64 sweep (2026-10-14)
-are what the thesis uses now, so the `memtile` part only needs to run to reproduce
-everything from scratch.
+are what the thesis uses now. The full `memtile` part only needs to run to reproduce
+everything from scratch; step 4 builds the dw 8/32/64 PnR it is missing.
 
 1. **Smoke-test the static fabric (minutes; `--dense-only` has never been built in
    this flow).** The rtl step must produce `outputs/design.v` with no lake spec in
@@ -2185,8 +2190,18 @@ everything from scratch.
    Its RV bundles were recorded without `--rv-balance`. Their power is valid, but
    their cycle counts include branch imbalance (see "RV branch balancing"). The LI
    performance figures need RV bundles re-recorded on /aha with `--rv-balance 8`.
-4. **Everything from scratch** (the memtile part is 196 configs, about 2 days).
-   `--skip-existing` reuses what steps 1-3 built:
+4. **PnR for every dw 8/32/64 MemTile (user request 2026-10-17).** The 2026-10-14
+   sweep synthesized all 24 but ran PnR on only 6. The dw16 synth->PnR fit projects
+   the others, and it overestimates dw8 power and underestimates dw64. This builds all
+   24 into `<out-dir>/memtile`, held out of the dw16 fit, so `pnr_validation.csv` gives
+   that fit's error at each width and step 5's `--skip-existing` reuses them. They are
+   all in the recipe's `--pnr-set`, so `--pnr-jobs` sets the parallelism:
+
+       ./mflowgen/sweep_specs.py --recipe memtile --preset dw8_32_64 \
+           --out-dir /nsim/mstrange/BUILDS/thesis_data --pnr-jobs 6 --zip --zip-slim
+
+5. **Everything from scratch** (the memtile part is 196 configs, 36 of them through
+   PnR, about 2 days at `--pnr-jobs 2`). `--skip-existing` reuses what steps 1-4 built:
 
        ./mflowgen/sweep_specs.py --recipe thesis --out-dir /nsim/mstrange/BUILDS/thesis_data \
            --app-bundles /nsim/mstrange/BUILDS/app_bundles_dw16_20261014 \

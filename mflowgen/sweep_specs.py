@@ -60,8 +60,8 @@ Examples:
     # The whole thesis data set in one command, each part zipped next to it
     # (<out-dir>/<part>_<host>_<ts>_slim.zip): MemTile switch-box A/B, PE tiles
     # through PnR at 400 MHz, every thesis spec at every data width (static +
-    # RV, PnR for the 12-config synth->PnR model), then whole-CGRA power of
-    # the app bundles copied over from /aha
+    # RV, PnR for the 12-config dw16 synth->PnR model and every dw 8/32/64
+    # config), then whole-CGRA power of the app bundles copied over from /aha
     ./mflowgen/sweep_specs.py --recipe thesis --out-dir /nsim/mstrange/BUILDS/thesis_data \\
         --app-bundles /nsim/mstrange/BUILDS/app_bundles_dw16_20261014 \\
         --config-jobs 4 --pnr-jobs 2 --zip --zip-slim
@@ -250,6 +250,16 @@ PRESETS["dw16_val4"] = [
     "fw4_dw16_sc8192_sp_in2_out2_vc4",
 ]
 PRESETS["dw16_pnr12"] = PRESETS["dw16_fit8"] + PRESETS["dw16_val4"]
+# The thesis set at the other data widths (--spec-set thesis --data-width
+# 8,32,64, static + rv): all 24 build PnR in the memtile recipe, held out of
+# its fits, so the dw16 synth->PnR model stays as it is and
+# pnr_validation.csv shows how well it projects each width.
+PRESETS["dw8_32_64"] = [
+    f"fw{fw}_dw{dw}_sc8192_sp_in2_out2_vc{vc}"
+    for dw, fws in ((8, (2, 4, 8)), (32, (2, 4)), (64, (2,)))
+    for fw in fws for vc in (2, 4, 8)
+]
+PRESETS["dw8_32_64"] += [n + "_rv" for n in PRESETS["dw8_32_64"] if n.endswith("_vc2")]
 
 # build_spec()/build_spec_rv() kwargs with their defaults (lake
 # spec/spec_memory_controller.py). An omitted key means the default on both
@@ -429,7 +439,8 @@ PRESETS["pe_tile_pnr"] = [
 #   pe_tile:    PE tile through PnR at the CGRA clock (the PE misses 750 MHz:
 #               critical path ~2.45 ns, CLAUDE.md "Why Tile_PE misses 1.333 ns").
 #   memtile:    every thesis spec at every data width, static + RV, hierarchy
-#               kept, idle/active power, PnR for the 12-config synth->PnR model.
+#               kept, idle/active power, PnR for the 12-config dw16 synth->PnR
+#               model and for every dw 8/32/64 config (held out of it).
 #   app_power:  cgra_app_power.py over the app bundles in --app-bundles.
 # `thesis` runs all four (app_power only when --app-bundles is given).
 APP_POWER_MHZ = 400
@@ -441,7 +452,8 @@ RECIPE_FLAGS = {
                 "--pnr-set", "pe_tile_pnr"],
     "memtile": ["--spec-set", "thesis", "--runtime-mode", "static,rv",
                 "--flatten-effort", "0", "--memtile-power",
-                "--pnr-set", "dw16_pnr12", "--validate-set", "dw16_val4"],
+                "--pnr-set", "dw16_pnr12,dw8_32_64",
+                "--validate-set", "dw16_val4,dw8_32_64"],
 }
 # The thesis fabrics (garnet.py --thesis) as their own parts, not in `thesis`:
 #   thesis_mem / thesis_pe: the static-dense and ready-valid-dense MemTile / PE
