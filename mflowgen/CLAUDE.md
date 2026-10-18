@@ -1289,7 +1289,10 @@ static spec pond (`--pond-spec {}`, so one Tile_PE per config serves every app).
 private slot trees (garnet 495cf23f + the `--dual-port` fix, lake snapshot 11967ce5 on
 PYTHONPATH; runner + logs: scratchpad 1fa8a391 `bigset/`). Result: 32 bundles over 10 configs,
 8 per app, all `aha test` bit-accurate; `/aha/sweep_out/app_bundles_dw16_20261014/<app>/<config>`
-(+ `STATUS.txt`, tarball `app_bundles_dw16_20261014.tgz`). Power: `cgra_app_power.py
+(+ `STATUS.txt`, tarball `app_bundles_dw16_20261014.tgz`). 2026-10-18: + static pond matmul on
+fw8 sc32768 and fw4 vc4, re-recorded with clockwork 038a82bc (Static TB capacity) and garnet
+b6dfabb7, bit-accurate: 34 bundles; add-on tarball `app_bundles_dw16_20261018_mmpond_tbfix.tgz`
+(extract into the unpacked set). Power: `cgra_app_power.py
 --any-config --variants conv=..,gauss=..,harris=..,mmpond=.. --clock-mhz 400`.
 First gf12 run (2026-10-17): the Tile_PE builds of the dual-port RV configs failed in the rtl
 step (lake `resolve_memports` IndexError): an RV bundle's PE tile is built with the bundle's
