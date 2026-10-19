@@ -316,3 +316,100 @@ def test_zip_has_every_synth_report(tmp_path):
     (zp,) = tmp_path.glob("cap_*.zip")
     names = set(zipfile.ZipFile(zp).namelist())
     assert {f"cap/cfg/Tile_PE/{f}" for f in files} <= names
+
+
+def test_rv_balance_one_bit_edge():
+    """A 1-bit edge (a PE's res_p O1 -> another PE's bit0) is padded with corebit.reg;
+    a data edge keeps coreir.reg at the design's width."""
+    pe = {"genref": "global.PE"}
+    d = {"top": "global.app", "namespaces": {"global": {"modules": {"app": {
+        "instances": {"in": {"genref": "global.IO"}, "out": {"genref": "global.IO"}, "a": dict(pe),
+                      "s": dict(pe), "k": {"genref": "coreir.const", "genargs": {"width": ["Int", 16]}}},
+        "connections": [["in.out", "a.data0"], ["a.O1", "s.bit0"], ["a.O0", "s.data0"],
+                        ["k.out", "s.data1"], ["s.O0", "out.in"]]}}}}}
+    added, _ = rvb.balance(d, pe_stages=0, margin=0, plan={"s.bit0": 2, "s.data0": 1})
+    inst = d["namespaces"]["global"]["modules"]["app"]["instances"]
+    bit = [i for n, i in inst.items() if n.startswith("rv_balance_" + hashlib.md5(b"s.bit0").hexdigest()[:8])]
+    dat = [i for n, i in inst.items() if n.startswith("rv_balance_" + hashlib.md5(b"s.data0").hexdigest()[:8])]
+    assert added == 3 and len(bit) == 2 and len(dat) == 1
+    assert all(i["modref"] == "corebit.reg" and i["modargs"]["init"] == ["Bool", False]
+               and i["metadata"] == {"extra_data": 0} for i in bit)
+    assert dat[0]["genref"] == "coreir.reg" and dat[0]["genargs"]["width"] == ["Int", 16]
+
+
+def toy_unpipelined(tmp_path):
+    """Routes without registers (no EXHAUSTIVE_PIPE): IO -> pa; pa res -> pb -> mac data0;
+    pa res_p (1-bit) -> mac bit0 directly; mac res -> output IO, mac res_p -> a pond input."""
+    nets = [("e1", "PORT io2f_16 (0, 0, 16)", "PORT PE_input_width_16_num_0 (3, 3, 16)"),
+            ("e2", "PORT PE_output_width_16_num_0 (3, 3, 16)", "PORT PE_input_width_16_num_0 (4, 4, 16)"),
+            ("e3", "PORT PE_output_width_16_num_0 (4, 4, 16)", "PORT PE_input_width_16_num_0 (5, 5, 16)"),
+            ("e4", "PORT PE_output_width_1_num_0 (3, 3, 1)", "PORT PE_input_width_1_num_0 (5, 5, 1)"),
+            ("e5", "PORT PE_output_width_16_num_0 (5, 5, 16)", "PORT f2io_16 (1, 0, 16)"),
+            ("e6", "PORT PE_output_width_1_num_0 (5, 5, 1)", "PORT PondTop_input_width_16_num_0 (6, 6, 16)")]
+    lines = []
+    for k, (net, a, b) in enumerate(nets):   # one SB node per net (an SB node is shared by its nets)
+        lines += [f"Net ID: {net} Segment Size: 1", "Segment: 0 Size: 3", a, f"SB ({k}, 1, 1, 0, 1, 16)", b, ""]
+    (tmp_path / "design.route").write_text("\n".join(lines) + "\n")
+    (tmp_path / "design.place").write_text("Block Name X Y #Block ID\n---\n"
+                                           "pa 3 3 #p0\npb 4 4 #p1\nmac 5 5 #p2\nin 0 0 #I0\nout 1 0 #I1\n")
+    (tmp_path / "design_top.json").write_text(json.dumps(
+        {"top": "global.app", "namespaces": {"global": {"modules": {"app": {"instances": {}, "connections": []}}}}}))
+    return rtm.model_of(str(tmp_path))
+
+
+def test_rv_throughput_latency_match_unpipelined(tmp_path):
+    m = toy_unpipelined(tmp_path)
+    assert m.is_source(("PORT", "PondTop_output_width_16_num_0", 6, 6))
+    assert m.is_sink(("PORT", "PondTop_input_width_16_num_0", 6, 6))
+    assert len(m.pes[(3, 3)]["out"]) == 2          # pa drives res and res_p
+    bit0 = next(i for i in m.pes[(5, 5)]["in"] if "width_1_" in i[1])
+    # pa in 1, pa out 2, pb in 3, pb out 4, mac data0 5; mac bit0 3: two stages early
+    assert dict(rtm.mismatches(m))[bit0] == 2
+    plan = rtm.latency_match_plan(m)
+    assert rtm.plan_by_instance(m, plan) == {"mac.bit0": 2}
+    assert not any(d for _, d in rtm.mismatches(m))
+    assert m.run(2000, 500)[0] >= 0.995           # both of pa's outputs feed mac
+
+
+def test_min_register_plan_and_shared_chain(tmp_path):
+    """IO forks to pa (3,3) and straight to mac1.data1 / mac2.data1; pa -> pb -> mac1.data0
+    and mac2.data0. Both direct inputs arrive 4 stages early: 4 registers each, which one
+    chain on the IO's output can serve (tapped by both)."""
+    def net(name, src, sinks):
+        lines = [f"Net ID: {name} Segment Size: {len(sinks)}"]
+        for k, s in enumerate(sinks):
+            lines += [f"Segment: {k} Size: 3", src, f"SB ({name[1:]}, 1, 1, 0, 1, 16)", s]
+        return lines + [""]
+
+    def pe_in(x, k):
+        return f"PORT PE_input_width_16_num_{k} ({x}, {x}, 16)"
+
+    def pe_out(x):
+        return f"PORT PE_output_width_16_num_0 ({x}, {x}, 16)"
+    lines = (net("e1", "PORT io2f_16 (0, 0, 16)", [pe_in(3, 0), pe_in(5, 1), pe_in(6, 1)])
+             + net("e2", pe_out(3), [pe_in(4, 0)])
+             + net("e3", pe_out(4), [pe_in(5, 0), pe_in(6, 0)])
+             + net("e4", pe_out(5), ["PORT f2io_16 (1, 0, 16)"])
+             + net("e5", pe_out(6), ["PORT f2io_16 (2, 0, 16)"]))
+    (tmp_path / "design.route").write_text("\n".join(lines) + "\n")
+    (tmp_path / "design.place").write_text("Block Name X Y #Block ID\n---\npa 3 3 #p0\npb 4 4 #p1\n"
+                                           "mac1 5 5 #p2\nmac2 6 6 #p3\nin 0 0 #I0\no1 1 0 #I1\no2 2 0 #I2\n")
+    (tmp_path / "design_top.json").write_text(json.dumps(
+        {"top": "global.app", "namespaces": {"global": {"modules": {"app": {"instances": {}, "connections": []}}}}}))
+    m = rtm.model_of(str(tmp_path))
+    plan = rtm.plan_by_instance(m, rtm.min_register_plan(m))
+    assert plan == {"mac1.data1": 4, "mac2.data1": 4}
+    assert not any(d for _, d in rtm.mismatches(m)) and m.run(2000, 500)[0] >= 1.995
+    pe = {"genref": "global.PE"}
+    design = lambda: {"top": "global.app", "namespaces": {"global": {"modules": {"app": {
+        "instances": {"in": {"genref": "global.IO"}, "pa": dict(pe), "pb": dict(pe), "mac1": dict(pe),
+                      "mac2": dict(pe)},
+        "connections": [["in.out", "pa.data0"], ["in.out", "mac1.data1"], ["in.out", "mac2.data1"],
+                        ["pa.O0", "pb.data0"], ["pb.O0", "mac1.data0"], ["pb.O0", "mac2.data0"]]}}}}}
+    assert rvb.balance(design(), pe_stages=0, margin=0, plan=plan)[0] == 8      # a chain per input
+    d = design()
+    assert rvb.balance(d, pe_stages=0, margin=0, plan=plan, share=True)[0] == 4  # one shared chain
+    conns = [sorted(c) for c in d["namespaces"]["global"]["modules"]["app"]["connections"]]
+    last = "rv_balance_" + hashlib.md5(b"in.out").hexdigest()[:8] + "_3.out"
+    assert sorted([last, "mac1.data1"]) in conns and sorted([last, "mac2.data1"]) in conns
+    assert sorted(["in.out", "pa.data0"]) in conns                               # unpadded sink stays

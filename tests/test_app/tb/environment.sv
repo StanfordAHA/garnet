@@ -284,6 +284,68 @@ task Behavioral_MU_write_to_cgra();
 endtask
 
 
+// Plusarg +RV_FLUSH_FIRST (make RV_FLUSH_FIRST=1), RV kernels only: flush the fabric
+// while it is still stalled, then unstall; the stream-start pulse in Env_kernel_test
+// then starts the streams without a second flush.
+// Stock order (unstall, then the stream start whose GLB flush reaches the tiles ~15
+// cycles later): RV MEM read ports with pre-fill lag emit tokens before the flush
+// lands, and the flush leaves 1-token offsets on some paths. Starting the streams
+// while still stalled loses the first input tokens (load DMA pushes into the stalled
+// fabric), so the flush is sent alone: load DMA mode 4 (emit flush only) + a G2F
+// stream-start pulse, then each load DMA's own mode with flush_mode = internal.
+// Static kernels keep the stock order (they need the CGRA running when the GLB starts).
+function automatic bit Env_is_ld_dma_ctrl(bit [CGRA_AXI_ADDR_WIDTH-1:0] a);
+    return a[global_buffer_param::AXI_ADDR_WIDTH] &&
+           ((a & ((1 << (global_buffer_param::AXI_ADDR_WIDTH - global_buffer_param::TILE_SEL_ADDR_WIDTH)) - 1))
+            == `GLB_LD_DMA_CTRL_R);
+endfunction
+
+function automatic int Env_glb_tile(bit [CGRA_AXI_ADDR_WIDTH-1:0] a);
+    return (a >> (global_buffer_param::AXI_ADDR_WIDTH - global_buffer_param::TILE_SEL_ADDR_WIDTH))
+           & ((1 << global_buffer_param::TILE_SEL_ADDR_WIDTH) - 1);
+endfunction
+
+task Env_rv_flush_then_unstall();
+    bit [CGRA_AXI_DATA_WIDTH-1:0] g2f_pulse;
+    g2f_pulse = 0;
+    foreach (kernel.kernel_cfg[i]) begin
+        if (Env_is_ld_dma_ctrl(kernel.kernel_cfg[i].addr) &&
+            kernel.kernel_cfg[i].data[`GLB_LD_DMA_CTRL_VALID_MODE_F_MSB:`GLB_LD_DMA_CTRL_VALID_MODE_F_LSB]
+                == global_buffer_param::LD_DMA_VALID_MODE_READY_VALID) begin
+            g2f_pulse |= (1 << (Env_glb_tile(kernel.kernel_cfg[i].addr) + `GLC_STREAM_START_PULSE_G2F_GLB_TILE_0_F_LSB));
+        end
+    end
+    if (g2f_pulse == 0) begin
+        Env_cgra_unstall();
+        return;
+    end
+    $display("[%s] RV start: flush-only pulse (G2F mask %h) while stalled, then unstall", kernel.name, g2f_pulse);
+    // 1. Load DMAs: mode 4 (emit flush only), flush_mode external.
+    foreach (kernel.kernel_cfg[i]) begin
+        if (Env_is_ld_dma_ctrl(kernel.kernel_cfg[i].addr) && g2f_pulse[Env_glb_tile(kernel.kernel_cfg[i].addr) + `GLC_STREAM_START_PULSE_G2F_GLB_TILE_0_F_LSB]) begin
+            addr = kernel.kernel_cfg[i].addr;
+            data = (kernel.kernel_cfg[i].data & ~((32'h7 << `GLB_LD_DMA_CTRL_MODE_F_LSB) | (32'h1 << `GLB_LD_DMA_CTRL_FLUSH_MODE_F_LSB)))
+                   | (32'h4 << `GLB_LD_DMA_CTRL_MODE_F_LSB);
+            AxilDriver_write();
+        end
+    end
+    // 2. Flush pulse while stalled; wait for it to reach the tiles.
+    addr = `GLC_STREAM_START_PULSE_R;
+    data = g2f_pulse;
+    AxilDriver_write();
+    repeat (128) @(posedge axil_ifc.clk);
+    // 3. Load DMAs: their own mode back, flush_mode internal (the real start must not flush).
+    foreach (kernel.kernel_cfg[i]) begin
+        if (Env_is_ld_dma_ctrl(kernel.kernel_cfg[i].addr) && g2f_pulse[Env_glb_tile(kernel.kernel_cfg[i].addr) + `GLC_STREAM_START_PULSE_G2F_GLB_TILE_0_F_LSB]) begin
+            addr = kernel.kernel_cfg[i].addr;
+            data = kernel.kernel_cfg[i].data | (32'h1 << `GLB_LD_DMA_CTRL_FLUSH_MODE_F_LSB);
+            AxilDriver_write();
+        end
+    end
+    // 4. Unstall; Env_kernel_test writes the real stream-start pulse next.
+    Env_cgra_unstall();
+endtask
+
 Config Env_kernel_cfg;
 int total_output_size;
 // FIXME/TODO this could be three subtasks start_streaming(), wait_for_g2f(), wait_for_f2g()
@@ -295,7 +357,8 @@ task Env_kernel_test();
     num_groups = kernel.num_groups;
     // glb_stall_mask = calculate_glb_stall_mask(group_start, num_groups); // Unused???
     cgra_stall_mask = calculate_cgra_stall_mask(group_start, num_groups);
-    Env_cgra_unstall();
+    if ($test$plusargs("RV_FLUSH_FIRST")) Env_rv_flush_then_unstall();
+    else Env_cgra_unstall();
 
     start_time = $realtime;
     $display("[%s] kernel start at %0t", kernel.name, start_time);

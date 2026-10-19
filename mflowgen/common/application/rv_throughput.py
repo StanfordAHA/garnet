@@ -7,9 +7,11 @@ Storage: every routing REG node is a FIFO of depth `reg_depth` (canal RegFIFO, r
 one input FIFO per used input and an output FIFO (depth pe_in / pe_out), plus a
 2-deep primitive output FIFO when enabled (prim_out); it fires when every input FIFO
 holds a token and its output FIFO is not full. Fanouts are lazy forks: a token
-leaves only when every branch's next FIFO is ready (start-of-cycle counts). MEM
-outputs, the input IO and constant PEs are always-valid sources; MEM inputs and the
-output IO are always-ready sinks. Reports the output IO's rate.
+leaves only when every branch's next FIFO is ready (start-of-cycle counts). MEM and
+pond outputs, the input IO and constant PEs are always-valid sources; MEM and pond
+inputs and the output IO are always-ready sinks (so a pond accumulation loop is not
+modelled). A PE with both outputs used (res, res_p) fires into both. Reports the output
+IO's rate.
 
 Validated against xrun of conv_3_3 PnR results (A/B, 2026-10-13/14): modelled rates
 0.750 / 0.667 / 0.722 / 0.765 unbalanced and 1.000 balanced = measured.
@@ -126,10 +128,13 @@ class Model:
                 self.pes[(n[2], n[3])]["out"].append(n)
 
     def is_source(self, n):
-        return n[0] == "PORT" and ("MEM_output" in n[1] or n[1].startswith("io2f"))
+        # MEM / pond outputs (MEM_output_*, PondTop_output_*) and the input IOs
+        return n[0] == "PORT" and (n[1].startswith("io2f")
+                                   or ("_output" in n[1] and not n[1].startswith("PE_output")))
 
     def is_sink(self, n):
-        return n[0] == "PORT" and ("MEM_input" in n[1] or n[1].startswith("f2io"))
+        return n[0] == "PORT" and (n[1].startswith("f2io")
+                                   or ("_input" in n[1] and not n[1].startswith("PE_input")))
 
     def const_pe(self, xy):
         return "const" in self.pe_kind.get(xy, "") or not self.pes[xy]["in"]
@@ -164,19 +169,24 @@ class Model:
                             pushes[c] += 1
                         elif c[1].startswith("f2io"):
                             out += 1
-            # PE cores (through the primitive output FIFO when it is enabled)
+            # PE cores (through the primitive output FIFO when it is enabled); a PE with
+            # both outputs used fires when both output FIFOs have room
             for xy, pe in self.pes.items():
                 if self.const_pe(xy) or not pe["out"]:
                     continue
-                o = pe["out"][0]
-                stage = ("PRIM", xy) if xy in self.prim_out else o
-                if stage != o and cnt[stage] > 0 and ready[o]:
-                    pops[stage] += 1
-                    pushes[o] += 1
-                if all(cnt[i] > 0 for i in pe["in"]) and ready[stage]:
+                if xy in self.prim_out:
+                    o, stage = pe["out"][0], ("PRIM", xy)
+                    if cnt[stage] > 0 and ready[o]:
+                        pops[stage] += 1
+                        pushes[o] += 1
+                    stages = [stage] + pe["out"][1:]
+                else:
+                    stages = pe["out"]
+                if all(cnt[i] > 0 for i in pe["in"]) and all(ready[st] for st in stages):
                     for i in pe["in"]:
                         pops[i] += 1
-                    pushes[stage] += 1
+                    for st in stages:
+                        pushes[st] += 1
             for n, k in pops.items():
                 cnt[n] -= k
             for n, k in pushes.items():
@@ -188,11 +198,13 @@ class Model:
 
 def netlist_sink(m, node):
     """The netlist input a storage node leads to: a PE input port, or the netlist
-    register (delay) it is / reaches first. -> ("pe", (x, y), k) | ("reg", instance)"""
+    register (delay) it is / reaches first. -> ("pe", (x, y), k, width) | ("reg", instance)
+    (PE_input_width_<width>_num_<k>: dataK, or bitK when width is 1)"""
     seen = set()
     while True:
         if node[0] == "PORT" and node[1].startswith("PE_input"):
-            return ("pe", (node[2], node[3]), int(node[1].rsplit("_", 1)[1]))
+            w = re.match(r"PE_input_width_(\d+)_num_(\d+)$", node[1])
+            return ("pe", (node[2], node[3]), int(w.group(2)), int(w.group(1)))
         if node[0] == "REG":
             inst = m.netreg.get((node[2], node[3], node[1]))
             # a register of the pre-PnR netlist (not one PnR pipelining added)
@@ -210,7 +222,8 @@ def plan_by_instance(m, plan):
     out = {}
     for sink, k in plan.items():
         if sink[0] == "pe":
-            key = f"{m.pe_kind[sink[1]]}.data{sink[2]}"
+            port = "bit" if len(sink) > 3 and sink[3] == 1 else "data"
+            key = f"{m.pe_kind[sink[1]]}.{port}{sink[2]}"
         else:
             key = f"{sink[1]}.in"
         out[key] = out.get(key, 0) + k
@@ -340,6 +353,126 @@ def balance_plan_abs(m):
             sink = netlist_sink(m, i)
             if sink is not None:
                 plan[sink] = unique_stages(m, i) + d
+    return plan
+
+
+def latency_match_plan(m, max_rounds=10):
+    """Latency matching for a design WITHOUT PnR pipelining (no EXHAUSTIVE_PIPE): route
+    hops are wires there, so a PE input arriving d stages early gets exactly d padding
+    registers (no parity constraint, no absolute count). Iterated in the model until no
+    join mismatches, since padding one join shifts the arrivals downstream. Adds the
+    stages to m. -> {netlist sink: registers}"""
+    plan = {}
+    for _ in range(max_rounds):
+        mm = [(i, d) for i, d in mismatches(m) if d > 0]
+        if not mm:
+            break
+        for i, d in mm:
+            sink = netlist_sink(m, i)
+            plan[sink] = plan.get(sink, 0) + d
+            insert_stages(m, i, d)
+    return plan
+
+
+def min_register_plan(m):
+    """Latency matching with the fewest padding registers, for a design WITHOUT PnR
+    pipelining, as an LP (scipy HiGHS). Each producer p (PE output, MEM output, input IO,
+    netlist register) gets one padding chain of m(p) registers that its consumers share:
+    consumer c taps it at position pad(p, c), so the chain costs max_c pad(p, c), not
+    the sum. A PE may also start later than its earliest input allows, which moves
+    padding off shared edges (retiming). Variables: t(PE) = arrival at its matched input
+    FIFOs, a(r) per netlist register, m(p). Constraints: pad(p, c) = a(c) - a(p) - 1 +
+    init(c) >= 0 on edges into PE inputs and netlist registers (== 0 elsewhere), every
+    non-constant input of a PE at t(PE), its outputs at t(PE) + 1 (+1 with the primitive
+    output FIFO), sources at 0. Minimize sum m(p); the constraint matrix is a network
+    matrix, so the optimum is integral. Falls back to latency_match_plan(m) when scipy
+    is missing or the LP fails. Adds the stages to m.
+    -> {netlist sink: registers}; consumers of one netlist driver share its chain
+    (hooks/rv_balance_branches.py --share)"""
+    try:
+        import numpy as np
+        from scipy.optimize import linprog
+        from scipy.sparse import lil_matrix
+    except ImportError:
+        return latency_match_plan(m)
+    arr = arrivals(m)
+    pe_of = {n: xy for xy, pe in m.pes.items() for n in pe["in"] + pe["out"]}
+    var = {}
+
+    def v(key):
+        return var.setdefault(key, len(var))
+
+    def a_expr(n):
+        # arrival of node n as ({variable: coefficient}, constant)
+        if m.is_source(n) or m.const_out(n):
+            return {}, 0
+        if n[0] == "PORT" and n[1].startswith("PE_input"):
+            return {v(("t", pe_of[n])): 1}, 0
+        if n[0] == "PORT" and n[1].startswith("PE_output"):
+            return {v(("t", pe_of[n])): 1}, 1 + (pe_of[n] in m.prim_out)
+        return {v(("a", n)): 1}, 0
+
+    def is_netreg(n):
+        inst = n[0] == "REG" and m.netreg.get((n[2], n[3], n[1]))
+        return bool(inst) and not inst.startswith(("pnr_pipelining", "rv_balance"))
+    edges = []   # (producer, consumer, may be padded)
+    for p, cons in m.fanout.items():
+        if (p[0] == "PORT" and p[1].startswith("PE_input")) or (arr.get(p) is None and not m.is_source(p)):
+            continue
+        for c in cons:
+            if not m.is_sink(c) and arr.get(c) is not None:
+                pe_in = c[0] == "PORT" and c[1].startswith("PE_input")
+                edges.append((p, c, pe_in or is_netreg(c)))
+    ub, ub_rhs, eq, eq_rhs = [], [], [], []
+    for p, c, padded in edges:
+        (ce, cc), (pe_, pc) = a_expr(c), a_expr(p)
+        expr = defaultdict(float)
+        for k, x in ce.items():
+            expr[k] += x
+        for k, x in pe_.items():
+            expr[k] -= x
+        const = cc - pc - 1 + m.init.get(c, 0)   # pad = expr + const
+        if padded:
+            ub.append({k: -x for k, x in expr.items()})      # pad >= 0
+            ub_rhs.append(const)
+            row = dict(expr)                                  # pad <= m(p)
+            row[v(("m", p))] = row.get(v(("m", p)), 0) - 1
+            ub.append(row)
+            ub_rhs.append(-const)
+        else:
+            eq.append(dict(expr))
+            eq_rhs.append(-const)
+    if not ub:
+        return {}
+
+    def matrix(rows):
+        a = lil_matrix((len(rows), len(var)))
+        for r, row in enumerate(rows):
+            for k, x in row.items():
+                a[r, k] = x
+        return a.tocsr()
+    cost = np.zeros(len(var))
+    for key, i in var.items():
+        cost[i] = 1.0 if key[0] == "m" else 0.0
+    res = linprog(cost, A_ub=matrix(ub), b_ub=np.array(ub_rhs, float),
+                  A_eq=matrix(eq) if eq else None, b_eq=np.array(eq_rhs, float) if eq else None,
+                  bounds=[(0, None)] * len(var), method="highs")
+    if res.status != 0:
+        return latency_match_plan(m)
+    x = np.round(res.x).astype(int)
+
+    def value(n):
+        e, c0 = a_expr(n)
+        return int(sum(x[k] * cf for k, cf in e.items()) + c0)
+    pads = [(c, value(c) - value(p) - 1 + m.init.get(c, 0)) for p, c, padded in edges if padded]
+    plan = {}
+    for c, d in pads:
+        if d > 0:
+            sink = netlist_sink(m, c)
+            plan[sink] = plan.get(sink, 0) + d
+            insert_stages(m, c, d)
+    if any(d > 0 for _, d in mismatches(m)):
+        raise RuntimeError("min_register_plan: joins still mismatched after the LP plan")
     return plan
 
 

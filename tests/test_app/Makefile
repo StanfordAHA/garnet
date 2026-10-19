@@ -77,6 +77,11 @@ NETLIST_FILES ?= -v $(garnet_dir)/garnet.v -v $(netlist_dir)/glb_top.vcs.v -v $(
 # Run Parameters
 # -------------------------------------------------------------------
 RUN_ARGS ?=
+# RV kernels: flush while stalled, then unstall (tb/environment.sv Env_rv_flush_then_unstall)
+export RV_FLUSH_FIRST ?= 0
+ifeq ($(RV_FLUSH_FIRST), 1)
+RUN_ARGS += +RV_FLUSH_FIRST
+endif
 RUN_LOG ?= run.log
 
 # -------------------------------------------------------------------

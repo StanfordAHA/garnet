@@ -10,9 +10,10 @@ branch has in flight. Without enough FIFO stages on it the loop caps the rate
 (conv_3_3: 3/4 and 2/3 tokens/cycle). RV maps with MATCH_BRANCH_DELAY=0 (an
 inserted static register would be a data delay), so nothing balances them.
 
-Pads netlist edges with plain coreir.reg instances, metadata extra_data 0: canal
-configures those as FIFOs with no initial token, so data is unchanged (only
-latency and buffering are added). Two ways to choose the edges:
+Pads netlist edges with plain coreir.reg instances (corebit.reg on 1-bit edges: a PE's
+bitK input, res_p output O1), metadata extra_data 0: canal configures those as FIFOs
+with no initial token, so data is unchanged (only latency and buffering are added).
+Two ways to choose the edges:
 - --plan JSON {"<instance>.<input port>": registers} (env RV_BALANCE_PLAN): exactly
   those, computed on the routed design by gen_app_bundle.py --rv-balance
   (rv_throughput.py), which sets --pe-stages 0. This is what reaches full rate.
@@ -22,7 +23,7 @@ latency and buffering are added). Two ways to choose the edges:
   the registers routing adds (one per hop), so alone it does not reach full rate.
 Constant inputs are ignored. MEM inputs are not balanced (a MEM decouples them).
 
-usage: rv_balance_branches.py <app>/bin [--plan JSON] [--pe-stages N] [--margin N]
+usage: rv_balance_branches.py <app>/bin [--plan JSON [--share]] [--pe-stages N] [--margin N]
 Idempotent: the first run keeps design_top.pre_rv_balance.json and later runs start
 from it, unless an earlier hook rewrote design_top.json since (then that is used).
 """
@@ -63,7 +64,7 @@ def endpoints(inst, conns):
     return edges
 
 
-def balance(d, pe_stages, margin, plan=None):
+def balance(d, pe_stages, margin, plan=None, share=False):
     top = d["top"].split(".", 1)[1]
     mod = d["namespaces"]["global"]["modules"][top]
     inst, conns = mod["instances"], mod["connections"]
@@ -114,34 +115,71 @@ def balance(d, pe_stages, margin, plan=None):
             k = top_a - a + margin
             added = insert_regs(inst, conns, s, t, k, added)
             report.append((t, top_a - a, k))
+    taps = {}   # driver -> {sink: registers}
     for t, k in sorted((plan or {}).items()):
         srcs = [s for s, tt in edges if tt == t]
         if len(srcs) != 1:
             raise SystemExit(f"plan: {t} has {len(srcs)} drivers")
-        added = insert_regs(inst, conns, srcs[0], t, k, added)
+        taps.setdefault(srcs[0], {})[t] = k
         report.append((t, None, k))
+    for s, sinks in sorted(taps.items()):
+        if share:
+            added = insert_shared_chain(inst, conns, s, sinks, added)
+        else:
+            for t, k in sorted(sinks.items()):
+                added = insert_regs(inst, conns, s, t, k, added)
     mod.setdefault("metadata", {})[MARK] = {"pe_stages": pe_stages, "margin": margin, "plan": plan,
-                                            "registers": added}
+                                            "share": share, "registers": added}
     return added, report
+
+
+def edge_width(inst, s, t):
+    """Bit width of the connection s -> t: 1 for corebit / BitIO endpoints and a PE's
+    bitK inputs and O1 (res_p) output, else a width-carrying endpoint's genargs width,
+    else the design's data width (any instance's genargs width), else 16."""
+    widths = []
+    for ep in (s, t):
+        name, port = ep.split(".", 1)
+        i = inst[name]
+        ref = str(i.get("genref", i.get("modref", "")))
+        if ref.startswith("corebit.") or ref == "global.BitIO":
+            return 1
+        if ref == "global.PE" and (port.startswith("bit") or port == "O1"):
+            return 1
+        w = i.get("genargs", {}).get("width")
+        if isinstance(w, list) and not ref.startswith(("cgralib.", "global.")):
+            widths.append(w[1])
+    if widths:
+        return widths[0]
+    for i in inst.values():
+        w = i.get("genargs", {}).get("width")
+        if isinstance(w, list):
+            return w[1]
+    return 16
+
+
+def reg_instance(width):
+    """A pass-through register (extra_data 0: canal configures it as an empty FIFO)."""
+    if width == 1:
+        return {"modref": "corebit.reg",
+                "modargs": {"clk_posedge": ["Bool", True], "init": ["Bool", False]},
+                "metadata": {"extra_data": 0}}
+    return {"genref": "coreir.reg", "genargs": {"width": ["Int", width]},
+            "modargs": {"clk_posedge": ["Bool", True], "init": [["BitVector", width], f"{width}'h0"]},
+            "metadata": {"extra_data": 0}}
 
 
 def insert_regs(inst, conns, s, t, k, added):
     """Put k pass-through registers (extra_data 0) on the connection s -> t, named
     after the input they pad (rv_balance_<hash of t>_<i>, i = 0 nearest the driver),
     so a register keeps its name when a later plan adds more on the same input."""
-    width = 16
-    sw = inst[s.split(".")[0]].get("genargs", {}).get("width")
-    if isinstance(sw, list):
-        width = sw[1]
+    width = edge_width(inst, s, t)
     tag = hashlib.md5(t.encode()).hexdigest()[:8]
     prev = s
     for i in range(k):
         rn = f"rv_balance_{tag}_{i}"
         added += 1
-        inst[rn] = {"genref": "coreir.reg", "genargs": {"width": ["Int", width]},
-                    "modargs": {"clk_posedge": ["Bool", True],
-                                "init": [["BitVector", width], f"{width}'h0"]},
-                    "metadata": {"extra_data": 0}}
+        inst[rn] = reg_instance(width)
         conns.append([prev, f"{rn}.in"])
         prev = f"{rn}.out"
     for c in conns:
@@ -149,6 +187,32 @@ def insert_regs(inst, conns, s, t, k, added):
             c[c.index(s)] = prev
             return added
     raise SystemExit(f"no connection {s} -> {t}")
+
+
+def insert_shared_chain(inst, conns, s, sinks, added):
+    """One chain of max(sinks) pass-through registers on driver s, shared by its padded
+    sinks: sink t (k registers) moves from s to the chain's k-th register (a register
+    with taps is a lazy fork, like any fanout). Named after the driver
+    (rv_balance_<hash of s>_<i>, i = 0 nearest the driver)."""
+    width = edge_width(inst, s, next(iter(sinks)))
+    tag = hashlib.md5(s.encode()).hexdigest()[:8]
+    outs = []
+    prev = s
+    for i in range(max(sinks.values())):
+        rn = f"rv_balance_{tag}_{i}"
+        added += 1
+        inst[rn] = reg_instance(width)
+        conns.append([prev, f"{rn}.in"])
+        prev = f"{rn}.out"
+        outs.append(prev)
+    for t, k in sinks.items():
+        for c in conns:
+            if sorted(c) == sorted([s, t]):
+                c[c.index(s)] = outs[k - 1]
+                break
+        else:
+            raise SystemExit(f"no connection {s} -> {t}")
+    return added
 
 
 def main():
@@ -159,6 +223,9 @@ def main():
                         "(env RV_BALANCE_PE_STAGES)")
     p.add_argument("--margin", type=int, default=int(os.environ.get("RV_BALANCE_MARGIN", 0)),
                    help="extra registers on every padded (early) input")
+    p.add_argument("--share", action="store_true",
+                   help="padded sinks of one driver share one chain (tap at their count) "
+                        "instead of a chain each (aha pnr --rv-balance)")
     p.add_argument("--plan", default=os.environ.get("RV_BALANCE_PLAN"),
                    help='JSON {"<instance>.<input port>": registers}: pad exactly those inputs '
                         "(from a routed design's throughput model); with --pe-stages 0 only "
@@ -173,7 +240,7 @@ def main():
     else:
         json.dump(d, open(orig, "w"))
     plan = json.load(open(a.plan)) if a.plan else None
-    added, report = balance(d, a.pe_stages, a.margin, plan)
+    added, report = balance(d, a.pe_stages, a.margin, plan, share=a.share)
     json.dump(d, open(path, "w"), indent=1)
     for t, diff, k in report:
         why = "planned" if diff is None else f"{diff} stages early"

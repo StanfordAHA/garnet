@@ -1753,15 +1753,65 @@ branches to match exactly at every join (conv_3_3: A 0.750, B 0.667 before).
   - Refuses apps whose map writes their own `PE_fifos_bypass_config.json`
     (hack_design_top.py, pond feedback), because the model assumes every PE FIFO.
   - MEM inputs are not balanced, since a MEM decouples them.
-  - Not wired into `aha regress` or `aha pnr`; bundles only.
-  - `hooks/rv_balance_branches.py` inserts 16-bit `coreir.reg` only, so a plan that pads a
-    1-bit edge is rejected (RV harris_color: 530 padding registers, some on 1-bit nets).
+  - Not wired into `aha regress`. `aha pnr --rv-balance N` runs it without PnR pipelining
+    (below).
+  - 1-bit edges (a PE's `O1` / `bit*`, corebit nets) are padded with `corebit.reg` since
+    2026-10-18; before that the hook rejected plans that padded them (harris_color).
 - Without EXHAUSTIVE_PIPE (2026-10-17, archipelago/CLAUDE.md "RV without EXHAUSTIVE_PIPE"):
   latency matching on the plain routed design (no exhaustive pipelining) beats today's
   exhaustive pipelining: conv_3_3 4153 vs 5533 cycles, gaussian 6393 vs 16969, with about a
   third of the SB FIFOs.
+- **`aha pnr --rv-balance N` (2026-10-18, session cfc4174c; aha `aha/util/rv_balance.py`).**
+  This is the balancing loop on the `aha pnr` path, for RV without PnR pipelining. It refuses
+  EXHAUSTIVE_PIPE, POST_PNR_ITR and `--daemon`: with no pipelining every route hop is a wire,
+  so a padding register adds exactly one stage and placement doesn't change stage counts.
+  After the first PnR, each round does:
+  1. Model the routed design (`rv_throughput.model_of`).
+  2. Plan with `min_register_plan`, an LP solved with scipy HiGHS:
+     - each producer gets one padding chain, shared by its consumers;
+     - a PE may start late, to move padding off shared edges;
+     - the optimum is integral (the constraint matrix is a network matrix);
+     - without scipy it falls back to the greedy `latency_match_plan`.
+  3. Insert the registers with `hooks/rv_balance_branches.py --plan --share --pe-stages 0
+     --margin 0`.
+  4. Pin every block (`manual.place` + `MANUAL_PATH_BALANCE_PLACER=1`).
+  5. Run PnR again with `CYCLONE_REG_SEARCH=1` (cgra_pnr thesis c16f471). The stock A* can't
+     route long padding chains: harris failed with `req_regs 33`.
+
+  It writes `bin/rv_balance_{plan,log}.json`. A second run first restores the unpadded
+  `bin/design_top.pre_rv_balance.json`.
+
+  Results (16x16, fw4_dw16_sc8192 spec, private trees), RV vs static kernel ns, all
+  bit-accurate:
+
+  | app | RV | static |
+  |---|---|---|
+  | conv_3_3 | 4150 | 4149 |
+  | gaussian | 6390 | 6389 |
+  | pointwise | 4150 | 4149 |
+  | fp_pointwise | 4150 | 4149 |
+  | unsharp | 17480 | 17470 |
+  | harris_color | 17838 | 17816 |
+  | resnet | 11677 | 12495 |
+  | matmul_rvtry3 | 13355 | 9260 |
+
+  - unsharp needs `RV_FLUSH_FIRST=1` at test time (below).
+  - harris converged in 1 round: 530 early stages became 256 padding registers. The greedy
+    plan, or the stock router, did not route.
+  - matmul is limited by its pond recurrence, which balancing can't fix ("Why RV runs
+    slower" below).
+- **Testbench `RV_FLUSH_FIRST=1`** (`tests/test_app` make variable, passed as `+RV_FLUSH_FIRST`):
+  `Env_rv_flush_then_unstall` flushes the array before releasing stall. This fixes the RV
+  kernel-start race that unsharp hits; the default flow is unchanged.
+- **Pitfall: an app dir copied from another run runs that run's bitstream.**
+  `hw_support/parse_design_meta.py` used to name the first `*.bs` in bin/ (os.listdir order)
+  in design_meta.json. A copied run directory therefore simulated its old unbalanced
+  bitstream, and balanced harris looked stuck at 1/3 rate. Since Halide-to-Hardware thesis
+  (2026-10-18) it takes the newest `*.bs`.
 - Tests: `tests/test_app_bundle_guards/test_cgra_app_power.py` (hook naming and
-  idempotence, fork imbalance, parity output FIFO, placement).
+  idempotence, fork imbalance, parity output FIFO, placement, 1-bit padding, the
+  unpipelined latency-match plan, the LP plan with a shared chain). The `aha pnr` side:
+  aha `tests/test_rv_balance.py`.
 
 ## PE-tile pond knobs (Tile_PE with / without / spec pond) (2026-09-30)
 
@@ -2253,13 +2303,15 @@ without EXHAUSTIVE_PIPE"):
   differences. A lazy fork + 2-deep FIFOs runs a join at (short branch's buffer slots) /
   (long branch's round trip): conv 0.75 token/cycle (4149/0.75 = 5533), harris 0.107. With
   latency matching on the same placement and routing, RV = static: conv 4153 / 4149, gaussian
-  6393 / 6389, unsharp 17480 / 17470 (harris not run: the padding hook is 16-bit only; modelled
-  rate 1.0).
+  6393 / 6389, unsharp 17480 / 17470, harris 17838 / 17816 (`aha pnr --rv-balance`, "RV branch
+  balancing" above).
 - Loop-carried recurrence (matmul_rvtry3, same in every pipelining mode): one scalar
-  accumulator in the pond (address stride 0, 16 x 256 = 4096 dependent steps). The static
-  schedule issues one every 2 cycles (cycle_stride 2: 8192 + 1068 = 9260); the RV pond -> PE ->
-  pond loop takes 3 (12288 + 1067 = 13355), one more register stage (inferred: the RV PE's output
-  FIFO). Structural RV cost on short recurrences; interleaving >= 3 accumulators would hide it.
+  accumulator in the pond (address stride 0; 256 outputs of 16 dependent steps). The static
+  schedule issues a step every 2 cycles (pond cycle stride [2, 34]: 34 cycles per output, 256 x
+  34 + 556 = 9260). The RV pond -> PE -> pond loop takes 3 per step, so about 50 per output
+  (256 x 50 + 555 = 13355): one more register stage (inferred: the RV PE's output FIFO).
+  Structural RV cost on short recurrences; interleaving >= 3 accumulators would hide it.
+  (Corrected 2026-10-18: this said 8192 + 1068, which ignored the 2 cycles per output.)
 
 Tile_PE timing (local Genus 20.11 freepdk45, 1.333 ns, steady state: config regs
 false-pathed, flush/stall 0; scratchpad thesis/synth): static worst R2R 3355 ps (pond addr ->
