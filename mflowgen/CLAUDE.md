@@ -205,7 +205,7 @@ part does not stop the rest:
 |---|---|---|---|---|
 | `fabric_mem` | Tile_MemCore, 750 MHz | `stock`, `stock_staticfab` | synth, `--flatten-effort 0` | MemTile switch box: ready-valid vs static fabric |
 | `pe_tile` | Tile_PE, 400 MHz | `stock_specpond`, `stock_nopond`, `fw4_dw16_sc4096_sp_in2_out2_vc2{,_nopond}_rv` (preset `pe_tile_pnr`); `stock_staticfab_nopond` | PnR to PT signoff; the static-fabric PE synth only | PE tile area (tile height); PE switch box (`stock_nopond` vs `stock_staticfab_nopond`) |
-| `memtile` | Tile_MemCore, 750 MHz | `--spec-set thesis` at every data width: 196 configs | PnR: `dw16_pnr12` + `dw8_32_64` (all 24 dw 8/32/64 configs); held out: `dw16_val4` + `dw8_32_64`, so the fit is the 8 dw16 points; idle/active power | Ch. 4 component, PUB, memory-tile and LI SG figures, data-width figures |
+| `memtile` | Tile_MemCore, 750 MHz | `--spec-set thesis` at every data width: 196 configs | PnR: preset `memtile_pnr` = `dw16_pnr12` + `dw8_32_64` (all 24 dw 8/32/64 configs); held out: `dw16_val4` + `dw8_32_64`, so the fit is the 8 dw16 points; idle/active power | Ch. 4 component, PUB, memory-tile and LI SG figures, data-width figures |
 | `app_power` | `cgra_app_power.py --any-config`, 400 MHz | each `<app>` under `--app-bundles` is a variant | synth-level app power | single-level / LI app figures |
 
 - **Tile knobs.** These are sweep-only config keys (`SWEEP_ONLY_KEYS`).
@@ -2148,8 +2148,11 @@ libHalide and libclkwrk.so were rebuilt. Shared-toolchain checks:
       area, PT WNS and power, and their signoff area reports are byte-identical.
     - On the 13 tiles at other widths that now have PnR, the dw16 fit holds total area within 2.3%.
       Static dw8 is within 0.6% across fw2/4/8 and vc2/4/8.
-    - **Rerun:** the same command with `--skip-existing --config-jobs 4`, into the same out-dir,
-      after freeing `/sim/docker`. Keep the build machine's garnet at 96ff8af8 until it finishes.
+    - **Rerun:** superseded on 2026-10-18 by the user's call to rebuild from scratch on current
+      branches: preset `memtile_pnr`, step 4 of "Build machine: thesis data runs". The note below
+      is why a resume would have had to stay on 96ff8af8.
+      The original plan: the same command with `--skip-existing --config-jobs 4`, into the same
+      out-dir, after freeing `/sim/docker`. Keep the build machine's garnet at 96ff8af8 until it finishes.
       The rtl and memtile-power-test-gen steps copy the host garnet in when they run, and from
       6f110058 on, `--no-pd` (every MemCore sweep) drops the power-domain logic. That logic is
       about 0.2% of a dw32 tile's area in the PD config register + PD OR alone, plus some
@@ -2283,8 +2286,9 @@ full); the checkout itself stays on `/sim`.
 Run these from `/sim/mstrange/BUILD_CGRA/garnet` after `git pull`, in this order.
 What each part builds is in "Thesis data recipe" above. The current dw16 memory-tile
 sweep (`NEW_SWEEP_r8cad-gf12_20261009-213941`) and the dw 8/32/64 sweep (2026-10-14)
-are what the thesis uses now. The full `memtile` part only needs to run to reproduce
-everything from scratch; step 4 builds the dw 8/32/64 PnR it is missing.
+are what the thesis uses now. Both were built with power domains (see "Power domains":
+`--no-pd` was a no-op until 6f110058), and new builds have none. Step 4 rebuilds the
+memtile part's PnR configs on current branches; the full part reproduces the rest.
 
 1. **Smoke-test the static fabric (minutes; `--dense-only` has never been built in
    this flow).** The rtl step must produce `outputs/design.v` with no lake spec in
@@ -2312,15 +2316,19 @@ everything from scratch; step 4 builds the dw 8/32/64 PnR it is missing.
    Its RV bundles were recorded without `--rv-balance`. Their power is valid, but
    their cycle counts include branch imbalance (see "RV branch balancing"). The LI
    performance figures need RV bundles re-recorded on /aha with `--rv-balance 8`.
-4. **PnR for every dw 8/32/64 MemTile (user request 2026-10-17).** The 2026-10-14
-   sweep synthesized all 24 but ran PnR on only 6. The dw16 synth->PnR fit projects
-   the others, and it overestimates dw8 power and underestimates dw64. This builds all
-   24 into `<out-dir>/memtile`, held out of the dw16 fit, so `pnr_validation.csv` gives
-   that fit's error at each width and step 5's `--skip-existing` reuses them. They are
-   all in the recipe's `--pnr-set`, so `--pnr-jobs` sets the parallelism:
+4. **The synth->PnR model at every width (user request 2026-10-17; from scratch on
+   current branches, 2026-10-18).** The 2026-10-14 sweep synthesized all 24 dw 8/32/64
+   configs but ran PnR on only 6, and the dw16 fit (which overestimates dw8 power and
+   underestimates dw64) projected the rest. Preset `memtile_pnr` builds the 12 dw16 fit
+   and held-out configs and all 24 dw 8/32/64 configs through PnR into
+   `<out-dir>/memtile`. The dw 8/32/64 configs are held out of the dw16 fit, so
+   `pnr_validation.csv` gives its error at each width, and everything is built on one set of
+   branches without power domains. Step 5's `--skip-existing` reuses them. They are all in
+   the recipe's `--pnr-set`, so `--pnr-jobs` sets the parallelism (keep the machine's total
+   PnR jobs near 6):
 
-       ./mflowgen/sweep_specs.py --recipe memtile --preset dw8_32_64 \
-           --out-dir /nsim/mstrange/BUILDS/thesis_data --pnr-jobs 6 --zip --zip-slim
+       ./mflowgen/sweep_specs.py --recipe memtile --preset memtile_pnr \
+           --out-dir /nsim/mstrange/BUILDS/thesis_data --pnr-jobs 4 --zip --zip-slim
 
 5. **Everything from scratch** (the memtile part is 196 configs, 36 of them through
    PnR, about 2 days at `--pnr-jobs 2`). `--skip-existing` reuses what steps 1-4 built:

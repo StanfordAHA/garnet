@@ -260,6 +260,11 @@ PRESETS["dw8_32_64"] = [
     for fw in fws for vc in (2, 4, 8)
 ]
 PRESETS["dw8_32_64"] += [n + "_rv" for n in PRESETS["dw8_32_64"] if n.endswith("_vc2")]
+# Every config the memtile recipe takes through PnR: the dw16 fit + held-out
+# configs and every dw 8/32/64 config. `--recipe memtile --preset
+# memtile_pnr` builds the whole synth->PnR comparison without the 160
+# synth-only configs.
+PRESETS["memtile_pnr"] = PRESETS["dw16_pnr12"] + PRESETS["dw8_32_64"]
 
 # build_spec()/build_spec_rv() kwargs with their defaults (lake
 # spec/spec_memory_controller.py). An omitted key means the default on both
@@ -454,8 +459,7 @@ RECIPE_FLAGS = {
                 "--pnr-set", "pe_tile_pnr"],
     "memtile": ["--spec-set", "thesis", "--runtime-mode", "static,rv",
                 "--flatten-effort", "0", "--memtile-power",
-                "--pnr-set", "dw16_pnr12,dw8_32_64",
-                "--validate-set", "dw16_val4,dw8_32_64"],
+                "--pnr-set", "memtile_pnr", "--validate-set", "dw16_val4,dw8_32_64"],
 }
 # The thesis fabrics (garnet.py --thesis) as their own parts, not in `thesis`:
 #   thesis_mem / thesis_pe: the static-dense and ready-valid-dense MemTile / PE

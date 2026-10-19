@@ -226,6 +226,7 @@ def test_dw8_32_64_preset_is_the_thesis_set_at_those_widths(ss, capsys):
     ([], ["36 -> synopsys-pt-timing-signoff", "160 -> cadence-genus-synthesis",
           "PnR model: fit on 8, validated on 28 held-out"]),
     (["--preset", "dw8_32_64"], ["24 -> synopsys-pt-timing-signoff", "PnR model: fit on 0, validated on 24 held-out"]),
+    (["--preset", "memtile_pnr"], ["36 -> synopsys-pt-timing-signoff", "PnR model: fit on 8, validated on 28 held-out"]),
 ])
 def test_memtile_recipe_pnr_at_every_width_dw16_fit_only(ss, capsys, tmp_path, extra, summary):
     """The memtile part builds every dw 8/32/64 config through PnR, held out
