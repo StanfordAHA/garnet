@@ -1816,6 +1816,18 @@ floorplan, `mode[0]` guard) apply — the pond is flops, no macro.
   static or pond-feedback PE uses; in a dense-RV PE the path starts at the input FIFO. With the
   bypass bits pinned, local R2R is 3270 ps RV / 3611 ps static (was 4593 / 4102). The thesis
   fabrics remove the dead hardware instead: see "Thesis fabrics".
+- **PE tile through PnR at 400 MHz (2026-10-18, session 1fa8a391; zip
+  `/aha/pe_tile_specpond_r8cad-gf12_20261018-182758.zip`):** `--spec-set pe_tile --only
+  stock_specpond` (stock PE tile, lake's default spec pond, static), garnet before 6f110058
+  (so with power-domain logic). Synth: cells 9357 um2, WNS -15.6 ps (Genus spent 4.2 h on it on a
+  loaded machine). PnR: 10301 um2 (PE 3371, PondCore 2788, SB B17 2326, SB B1 684, CBs ~600,
+  PowerDomainOR 39). Innovus signoff: R2R +0.177 ns, R2O +0.172, I2R -0.314, I2O -0.319; hold
+  met. PT's -0.885 ns is NOT valid: Tile_PE's signoff had no fix-pt-sdc.tcl, so PT's read_sdc
+  stopped at line 4291 (append_to_collection) and dropped the rest, the `tile_id` false path
+  among them (every top PT path started at tile_id). Now (same commit as this note)
+  Tile_PE runs fix-pt-sdc.tcl (Tile_MemCore/custom-signoff) after generate-results.tcl and
+  fails PT/genlibdb on "Errors reading SDC" (test `test_tile_pe_pt_reads_the_whole_sdc`).
+  PE workspaces signed off before it: use Innovus's WNS, or re-run PT by hand on a folded SDC.
 - Verified locally (private garnet copies, 4x2): no-flag builds unchanged
   (static-spec byte-identical; RV identical up to one module's position in the
   file; default differs only by pre-existing kratos nondeterminism in the sparse

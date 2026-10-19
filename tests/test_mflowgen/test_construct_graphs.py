@@ -4,6 +4,7 @@ The construct scripts are otherwise only run on the build machine. Each design i
 in its own process (constructs edit sys.path and import modules named `construct` and
 `common`), with a stub gf12 ADK and a stub `calibre` on PATH, since neither exists here.
 """
+import json
 import os
 import subprocess
 import sys
@@ -78,3 +79,19 @@ def test_tile_pe_rtl_dual_port(tmp_path, env, want):
     spec needs garnet --dual-port too, or lake's resolve_memports fails."""
     script = BUILD.replace("print(len(g.all_nodes()))", "print(g.get_step('rtl').get_param('dual_port'))")
     assert build(MFLOWGEN / "Tile_PE", stub_env(tmp_path, **env), script=script) == want
+
+
+def test_tile_pe_pt_reads_the_whole_sdc(tmp_path):
+    """PrimeTime's read_sdc stops at writeTimingCon's append_to_collection lines: the
+    PE tile's signoff runs fix-pt-sdc.tcl after generate-results.tcl, and PT/genlibdb
+    fail on "Errors reading SDC" instead of timing a truncated SDC."""
+    script = BUILD.replace("print(len(g.all_nodes()))", "\n".join([
+        "import json",
+        "s = g.get_step('cadence-innovus-signoff')",
+        "print(json.dumps([s.get_param('order'),",
+        "                  g.get_step('synopsys-pt-timing-signoff').get_postconditions(),",
+        "                  g.get_step('synopsys-ptpx-genlibdb').get_postconditions()]).replace(' ', ''))"]))
+    order, pt_post, genlibdb_post = json.loads(build(MFLOWGEN / "Tile_PE", stub_env(tmp_path), script=script))
+    assert order.index("fix-pt-sdc.tcl") > order.index("generate-results.tcl")
+    for post in (pt_post, genlibdb_post):
+        assert any("ErrorsreadingSDC" in p for p in post), post

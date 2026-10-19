@@ -161,6 +161,12 @@ def construct():
         custom_cts = custom_step('/custom-cts')
     short_fix = custom_step('/../common/custom-short-fix')
     genlibdb_constraints = custom_step('/../common/custom-genlibdb-constraints')
+    # fix-pt-sdc.tcl (shared with Tile_MemCore) rewrites signoff's design.pt.sdc so
+    # PrimeTime's read_sdc reads all of it: writeTimingCon splits the long SB port
+    # lists with append_to_collection, which isn't SDC, and read_sdc drops every
+    # constraint after it (the tile_id false path among them; the 400 MHz PE tile
+    # of 2026-10-18 then had PT WNS -0.885 ns, every top path from tile_id).
+    custom_signoff = custom_step('/../Tile_MemCore/custom-signoff')
     custom_timing_assert = custom_step('/../common/custom-timing-assert')
     custom_dc_scripts = custom_step('/custom-dc-scripts')
     testbench = custom_step('/../common/testbench')
@@ -213,6 +219,11 @@ def construct():
     init.extend_inputs(custom_init.all_outputs())
     power.extend_inputs(custom_power.all_outputs())
     genlibdb.extend_inputs(genlibdb_constraints.all_outputs())
+    signoff.extend_inputs(custom_signoff.all_outputs())
+    # A truncated SDC read is otherwise silent: the step passes and the timing
+    # report just lacks the dropped constraints.
+    for step in (pt_signoff, genlibdb):
+        step.extend_postconditions(["assert 'Errors reading SDC' not in File( 'mflowgen-run.log' )"])
     synth.extend_inputs(custom_genus_scripts.all_outputs())
     iflow.extend_inputs(custom_flowgen_setup.all_outputs())
 
@@ -341,6 +352,7 @@ def construct():
     g.add_step(pt_signoff)
     g.add_step(genlibdb_constraints)
     g.add_step(genlibdb)
+    g.add_step(custom_signoff)
     g.add_step(lib2db)
     g.add_step(drc)
     g.add_step(lvs)
@@ -431,6 +443,7 @@ def construct():
 
     g.connect_by_name(adk, pt_signoff)
     g.connect_by_name(signoff, pt_signoff)
+    g.connect_by_name(custom_signoff, signoff)
 
     g.connect_by_name(application, testbench)
     # The tile RTL, so an app bundle is checked against this build's ports
@@ -538,6 +551,11 @@ def construct():
     # Adding new input for genlibdb node to run
 
     # No longer conditional---amber and onyx now use same genlib mechanism
+    # signoff: fix-pt-sdc.tcl right after generate-results.tcl writes <design>.pt.sdc
+    order = signoff.get_param('order')
+    order.insert(order.index('generate-results.tcl') + 1, 'fix-pt-sdc.tcl')
+    signoff.update_params({'order': order})
+
     order = genlibdb.get_param('order')  # get the default script run order
     extraction_idx = order.index('extract_model.tcl')  # find extract_model.tcl
     order.insert(extraction_idx, 'genlibdb-constraints.tcl')  # add here
