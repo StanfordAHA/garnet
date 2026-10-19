@@ -5,6 +5,7 @@ static fabric, Tile_PE's clock, and the parts of the thesis recipe.
 import importlib.util
 import json
 import sys
+import zipfile
 from argparse import Namespace
 from pathlib import Path
 
@@ -233,3 +234,29 @@ def test_memtile_recipe_pnr_at_every_width_dw16_fit_only(ss, capsys, tmp_path, e
     err = capsys.readouterr().err
     for line in summary:
         assert line in err
+
+
+def test_zip_has_pnr_and_synth_reports(ss, tmp_path, monkeypatch):
+    """--zip carries every Innovus step's reports (timeDesign's per-group .tarpt
+    path reports, not only signoff.summary) and every Genus report; a report over
+    REPORT_ZIP_MAX is left out, not the whole zip."""
+    ws = tmp_path / "out" / "cfg"
+    reports = ["24-cadence-innovus-signoff/reports/signoff.summary",
+               "24-cadence-innovus-signoff/reports/signoff_in2reg.tarpt",
+               "24-cadence-innovus-signoff/reports/timingReports/signoff_all.tarpt.gz",
+               "20-cadence-innovus-cts/reports/cts.summary",
+               "19-cadence-innovus-place/reports/place.congestion.rpt",
+               "14-cadence-genus-synthesis/reports/qor.rpt",
+               "14-cadence-genus-synthesis/results_syn/final_time_default_c.rpt",
+               "14-cadence-genus-synthesis/results_syn/syn_power.rpt"]
+    for r in reports + ["spec_config.json", "22-cadence-innovus-route/reports/huge.tarpt",
+                        "22-cadence-innovus-route/outputs/design.def"]:
+        (ws / r).parent.mkdir(parents=True, exist_ok=True)
+        (ws / r).write_text("x" * (100 if "huge" in r else 1))
+    monkeypatch.setattr(ss, "REPORT_ZIP_MAX", 50)
+    args = Namespace(zip_slim=True, zip_path=str(tmp_path / "out.zip"), dry_run=False)
+    assert ss._zip_results(tmp_path / "out", None, args)
+    names = {n.split("/", 1)[1] for n in zipfile.ZipFile(tmp_path / "out.zip").namelist()}
+    assert {f"cfg/{r}" for r in reports} <= names
+    assert "cfg/22-cadence-innovus-route/reports/huge.tarpt" not in names
+    assert "cfg/22-cadence-innovus-route/outputs/design.def" not in names

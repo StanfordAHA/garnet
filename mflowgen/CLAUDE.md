@@ -99,6 +99,12 @@ Key flags:
   deflated at level 1, `.gz`/... are stored; prints the input size up front,
   a progress line every 30 s, the elapsed time at the end. Synthetic 2-config
   PnR-shaped benchmark: 99 s -> 24 s, 543 -> 463 MB.
+- Reports in the zip (2026-10-18): besides the PPA subset (`ARTIFACT_GLOBS`, also
+  copied to `artifacts/`), `REPORT_ZIP_GLOBS` puts every Innovus step's `reports/`
+  (timeDesign's per-group `*.tarpt` path reports, place/cts/route reports) and every
+  Genus report (`reports/`, `results_syn/*.rpt`) in the zip only; a file over
+  `REPORT_ZIP_MAX` (32 MB) is left out and named. cgra_app_power.py's zip has every
+  synthesis report too.
 - `--zip-slim` (2026-10-07) — with `--zip`/`--zip-only`: skip the signoff
   layout/library views (`LAYOUT_GLOBS`: merged GDS, LEF, LIB = most of a PnR
   config's bytes; nothing parses them), name gets `_slim`. Everything the
@@ -1818,7 +1824,9 @@ floorplan, `mode[0]` guard) apply — the pond is flops, no macro.
   fabrics remove the dead hardware instead: see "Thesis fabrics".
 - **PE tile through PnR at 400 MHz (2026-10-18, session 1fa8a391; zip
   `/aha/pe_tile_specpond_r8cad-gf12_20261018-182758.zip`):** `--spec-set pe_tile --only
-  stock_specpond` (stock PE tile, lake's default spec pond, static), garnet before 6f110058
+  stock_specpond` (garnet's stock PE tile on the default READY-VALID interconnect, with lake's
+  default spec pond in static mode; a static-fabric PE is `fabric="static"` (--dense-only) or
+  the thesis static fabric, `--spec-set thesis_fabric`), garnet before 6f110058
   (so with power-domain logic). Synth: cells 9357 um2, WNS -15.6 ps (Genus spent 4.2 h on it on a
   loaded machine). PnR: 10301 um2 (PE 3371, PondCore 2788, SB B17 2326, SB B1 684, CBs ~600,
   PowerDomainOR 39). Innovus signoff: R2R +0.177 ns, R2O +0.172, I2R -0.314, I2O -0.319; hold
@@ -1828,6 +1836,14 @@ floorplan, `mode[0]` guard) apply — the pond is flops, no macro.
   Tile_PE runs fix-pt-sdc.tcl (Tile_MemCore/custom-signoff) after generate-results.tcl and
   fails PT/genlibdb on "Errors reading SDC" (test `test_tile_pe_pt_reads_the_whole_sdc`).
   PE workspaces signed off before it: use Innovus's WNS, or re-run PT by hand on a folded SDC.
+  The failing synth paths (top 50, all -14..-16 ps) are two kinds, neither the PE's own R2R:
+  (1) 34: a fanned-out track's ready -> valid (canal `ReadyValidLoopBack` valid = core valid &
+  consumers' ready, and the SB fan_in AND), constrained as one SB hop (`sb_delay` 210 ps +
+  i_delay, constraints common.tcl) but AND + fan-in + AND + 2 muxes, ~226 ps, and after PnR it
+  crosses the tile; (2) 16: a 1-bit track selected as flush (`CB_flush`) -> static pond flush
+  -> pond valid -> PE input valid -> PE (input-FIFO bypass branch) -> res_p -> SB -> B1 FIFO
+  register, timed as a single-cycle input path though flush is a once-per-run pulse.
+  Innovus path reports were not in that zip (zips carry them since REPORT_ZIP_GLOBS).
 - Verified locally (private garnet copies, 4x2): no-flag builds unchanged
   (static-spec byte-identical; RV identical up to one module's position in the
   file; default differs only by pre-existing kratos nondeterminism in the sparse

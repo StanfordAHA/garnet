@@ -6,6 +6,7 @@ import hashlib
 import importlib.util
 import json
 import sys
+import zipfile
 from pathlib import Path
 
 import pytest
@@ -298,3 +299,20 @@ def test_rv_throughput_parity_outfifo(tmp_path):
                                                  "prim_outfifo_bypass": 0}}
     rtm.apply_outfifo(m, [])
     assert m.prim_out == set()
+
+
+def test_zip_has_every_synth_report(tmp_path):
+    out = tmp_path / "cap"
+    ws = out / "cfg" / "Tile_PE"
+    files = ["run_meta.json", "make.log",
+             "14-cadence-genus-synthesis/reports/qor.rpt",
+             "14-cadence-genus-synthesis/reports/Tile_PE.timing.setup.top100.rpt",
+             "14-cadence-genus-synthesis/results_syn/final_time_default_c.rpt",
+             "14-cadence-genus-synthesis/results_syn/final_area.rpt"]
+    for f in files:
+        (ws / f).parent.mkdir(parents=True, exist_ok=True)
+        (ws / f).write_text("{}")
+    cap.zip_results(cap.parse_args(["--out-dir", str(out), "--report-only"]))
+    (zp,) = tmp_path.glob("cap_*.zip")
+    names = set(zipfile.ZipFile(zp).namelist())
+    assert {f"cap/cfg/Tile_PE/{f}" for f in files} <= names

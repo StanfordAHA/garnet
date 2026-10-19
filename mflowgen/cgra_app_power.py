@@ -437,11 +437,10 @@ def zip_results(args):
                       *ws.glob("*-post-synth-power-*/outputs/reports/*"),
                       *ws.glob("*-application-*/outputs/manifest.json"),
                       *ws.glob("*-application-*/outputs/tiles_*.list"),
-                      *ws.glob("*-cadence-genus-synthesis/reports/*area*"),
-                      # synthesis timing: a tile that misses the clock can fail its
-                      # SDF-annotated replay (setup/hold violations)
-                      *ws.glob("*-cadence-genus-synthesis/reports/*timing.setup*"),
-                      *ws.glob("*-cadence-genus-synthesis/results_syn/final_qor.rpt"),
+                      # every synthesis report: area, QoR, and the timing paths (a
+                      # tile that misses the clock can fail its SDF-annotated replay)
+                      *ws.glob("*-cadence-genus-synthesis/reports/*"),
+                      *ws.glob("*-cadence-genus-synthesis/results_syn/*.rpt"),
                       *ws.glob("*-post-synth-power-*/Tile_X*/*-cadence-xcelium-sim/xrun.log")]:
                 if f.is_file():
                     z.write(f, f.relative_to(out_dir.parent))

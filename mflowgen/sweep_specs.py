@@ -2517,6 +2517,21 @@ ZIP_EXTRA_GLOBS = [
     SRAM_STEP_GLOB + "/genviews_manifest.txt",
 ]
 
+# Every report the PnR and synthesis steps wrote, zip only (artifacts/ keeps its
+# small PPA subset): Innovus's per-path timing reports (timeDesign's
+# <prefix>_{all,reg2reg,in2reg,reg2out,in2out}.tarpt next to <prefix>.summary)
+# and the place/cts/route steps' reports, so a failing path group can be traced
+# from the zip, plus Genus's reports beyond final*.rpt. A file over
+# REPORT_ZIP_MAX is left out and named in the zip's log.
+REPORT_ZIP_GLOBS = [
+    "*-cadence-innovus-*/reports/*",
+    "*-cadence-innovus-*/reports/*/*",
+    "*-cadence-genus-synthesis/reports/*",
+    "*-cadence-genus-synthesis/reports/*/*",
+    "*-cadence-genus-synthesis/results_syn/*.rpt",
+]
+REPORT_ZIP_MAX = 32 << 20
+
 
 @functools.lru_cache(maxsize=None)
 def _datasheet_finder():
@@ -2616,14 +2631,19 @@ def _zip_results(out_dir, names, args):
     files = sorted(out_dir.glob("*.csv")) + sorted(out_dir.glob(PLAN_FILE))
     sram_cfgs, no_datasheet = 0, []
     tails = set()   # big top-level make*.log: zipped as their last lines
+    too_big = []    # REPORT_ZIP_GLOBS files over REPORT_ZIP_MAX
     for name in found:
         for cfg_dir in (out_dir / name, out_dir / STANDALONE_SUBDIR / name):
             seen = set()
             for pat in ZIP_EXTRA_GLOBS + [g for g in ARTIFACT_GLOBS
-                                          if not (args.zip_slim and g in LAYOUT_GLOBS)]:
+                                          if not (args.zip_slim and g in LAYOUT_GLOBS)] \
+                    + REPORT_ZIP_GLOBS:
                 for src in cfg_dir.glob(pat):
                     if src.is_file() and src not in seen:
                         seen.add(src)
+                        if pat in REPORT_ZIP_GLOBS and src.stat().st_size > REPORT_ZIP_MAX:
+                            too_big.append(src)
+                            continue
                         files.append(src)
                         if (src.parent == cfg_dir and src.name.startswith("make")
                                 and src.suffix == ".log"
@@ -2646,6 +2666,9 @@ def _zip_results(out_dir, names, args):
         print(f"        {len(tails)} make log(s) over {MAKE_LOG_FULL_MAX >> 20} MB "
               f"go in as their last {MAKE_LOG_TAIL_LINES} lines (the rest repeats "
               f"the per-step logs)", flush=True)
+    if too_big:
+        print(f"        {len(too_big)} report(s) over {REPORT_ZIP_MAX >> 20} MB left out: "
+              + ", ".join(str(f.relative_to(out_dir)) for f in too_big), flush=True)
     if sram_cfgs:
         print(f"        SRAM macro datasheet: {sram_cfgs - len(no_datasheet)}/"
               f"{sram_cfgs} config(s) with a gen_sram_macro_spec step",
