@@ -62,7 +62,12 @@ Key flags:
   `full_rv` = their RV twins; `full12` = both — the synth↔PnR correlation
   anchors. `--only <names>` / `--skip <names>` also select. `--list` prints
   names (stdout) + a mode/target summary (stderr) and exits.
-- `--rtl-only` — stop after the RTL step (fast; runs locally, see below).
+- `--rtl-only` — stop after the RTL step (fast; runs locally, see below). With
+  `--memtile-power` (2026-10-19) it also makes `memtile-power-test-gen`. Those are the
+  graph's only two docker steps, and they run on the full run's graph and settings. The same
+  command without `--rtl-only` then builds to the end without docker: make finds both steps
+  built. That matters because the build machine's `/sim/docker` filled up partway through
+  two long runs (2026-10-18 and 10-19) and failed every later container step at `docker run`.
 - `--fresh` — `rm -rf` each workspace first (total wipe). `--clean <steps>` /
   `--clean-all` map to mflowgen's own `make clean-*` (keeps Makefile).
   `--skip-existing` skips workspaces with `done.flag`.
@@ -2416,7 +2421,16 @@ memtile part's PnR configs on current branches; the full part reproduces the res
    PnR jobs near 6):
 
        ./mflowgen/sweep_specs.py --recipe memtile --preset memtile_pnr \
+           --out-dir /nsim/mstrange/BUILDS/thesis_data --pnr-jobs 6 --rtl-only
+       ./mflowgen/sweep_specs.py --recipe memtile --preset memtile_pnr \
            --out-dir /nsim/mstrange/BUILDS/thesis_data --pnr-jobs 4 --zip --zip-slim
+
+   The first command makes only the two docker steps (rtl, memtile-power-test-gen) for all
+   36 configs, a few minutes each. The second needs no docker. Run it on 2026-10-19
+   (`memtile_r8cad-gf12_20261019-054400_slim`, single command): the 8 `dw16_fit8` configs
+   passed PnR, with power on 4 (fw1 sc4096 and fw4 sc8192, static + RV). `/sim/docker` filled
+   up at about 04:09: 28 RTL steps and 4 power test-gens failed at `docker run`. Analysis is
+   in `/aha/sweep_out/memtile_pnr_20261019/README.md`.
 
 5. **Everything from scratch** (the memtile part is 196 configs, 36 of them through
    PnR, about 2 days at `--pnr-jobs 2`). `--skip-existing` reuses what steps 1-4 built:

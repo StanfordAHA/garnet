@@ -587,7 +587,11 @@ def build_argparser():
                         "`mflowgen run`.")
     p.add_argument("--rtl-only", action="store_true",
                    help="Shortcut for --stop-after rtl; fastest check that the "
-                        "spec plumbing reaches garnet.py.")
+                        "spec plumbing reaches garnet.py. With --memtile-power "
+                        "it also makes memtile-power-test-gen: both container "
+                        "steps, on the full run's graph, so the same command "
+                        "without --rtl-only then builds to the end without "
+                        "docker (docker's disk may fill up during a long run).")
     p.add_argument("--extra-specs",
                    help="JSON file: list of spec dicts to append to the "
                         "built-in list (or replace it, with --replace).")
@@ -829,10 +833,6 @@ def main(argv=None):
               file=sys.stderr)
         return 2
 
-    if args.rtl_only and args.memtile_power:
-        print("*** --memtile-power needs synthesis; drop --rtl-only.",
-              file=sys.stderr)
-        return 2
     if args.rtl_only:
         args.stop_after = "rtl"
     if args.standalone_only:
@@ -1880,6 +1880,9 @@ def _memtile_power_targets(cfg, args):
     a lake-spec program (Tile_MemCore drops the steps without a spec)."""
     if not getattr(args, "memtile_power", False) or _is_stock(cfg):
         return []
+    if getattr(args, "rtl_only", False):
+        # The other container step (see --rtl-only); no netlist to power yet.
+        return ["memtile-power-test-gen"]
     levels = ["synth"]
     if args.include_pnr_power or any(h in _stop_target(cfg, args) for h in SIGNOFF_OR_LATER):
         levels.append("pnr")

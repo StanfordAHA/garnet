@@ -261,3 +261,23 @@ def test_zip_has_pnr_and_synth_reports(ss, tmp_path, monkeypatch):
     assert {f"cfg/{r}" for r in reports} <= names
     assert "cfg/22-cadence-innovus-route/reports/huge.tarpt" not in names
     assert "cfg/22-cadence-innovus-route/outputs/design.def" not in names
+
+
+def test_rtl_only_memtile_power_makes_the_container_steps(ss, capsys, tmp_path):
+    """--rtl-only --memtile-power makes rtl + memtile-power-test-gen (the two
+    docker steps) on the full run's graph, so the full run needs no docker."""
+    argv = ss.RECIPE_FLAGS["memtile"] + ["--preset", "memtile_pnr", "--out-dir", str(tmp_path)]
+    assert ss.main(argv + ["--rtl-only", "--list"]) == 0
+    assert "36 -> rtl memtile-power-test-gen" in capsys.readouterr().err
+    assert ss.main(argv + ["--rtl-only", "--only", "fw4_dw32_sc8192_sp_in2_out2_vc2", "--dry-run"]) == 0
+    out = capsys.readouterr().out
+    assert "DRY-RUN cmd: make rtl" in out
+    assert "DRY-RUN cmd: make memtile-power-test-gen" in out
+    assert "MEMTILE_POWER" in out
+    # The full run's settings (what --skip-existing compares) don't depend on --rtl-only.
+    args = ss.build_argparser().parse_args(argv)
+    cfg = dict(storage_capacity=8192, data_width=32, vec_width=4, in_ports=2, out_ports=2, vec_capacity=2,
+               runtime_mode="static")
+    full = ss._build_settings(ss._tile_env(cfg, tmp_path, args))
+    args.rtl_only = True
+    assert ss._build_settings(ss._tile_env(cfg, tmp_path, args)) == full
