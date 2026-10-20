@@ -2,7 +2,8 @@
 
 Both carry only what their execution model needs (cgra/util_thesis.py):
 static: no FIFOs and no ready-valid in the tiles, no FIFO bypass config;
-rv: ready-valid with every tile port's FIFO in the path, no bypass config;
+rv: ready-valid with every tile port's FIFO in the path, no bypass config, switch-box
+    registers that are always FIFOs (no fifo_en plain-register mode);
 both: no sparse cores, data tracks of data_width bits (no end-of-stream bit).
 """
 import json
@@ -122,3 +123,14 @@ def test_rv_fabric_fifos_on_every_port(fabric):
     for p in data_ports:
         assert f"{p}_valid" in pe and f"{p}_ready" in pe, p
         assert p[len("PE_"):] in fifos, (p, fifos)
+
+
+def test_rv_switch_box_registers_are_fifos(fabric):
+    """canal fifo_only_regs: no fifo_en input and no `<reg>_fifo` config bit, so no
+    switch-box register can act as a plain register (which drops tokens under RV)"""
+    if fabric.mode != "rv":
+        pytest.skip("rv only")
+    wrappers = [m for m in fabric.modules if m.startswith("FifoRegWrapper")]
+    assert wrappers and all(m.endswith("_fifo_only") for m in wrappers), wrappers
+    assert "fifo_en" not in fabric.verilog
+    assert not re.search(r"REG_T\d+_\w+?_B\d+_fifo\b", fabric.verilog)

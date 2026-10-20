@@ -1803,9 +1803,16 @@ branches to match exactly at every join (conv_3_3: A 0.750, B 0.667 before).
   exhaustive pipelining: conv_3_3 4153 vs 5533 cycles, gaussian 6393 vs 16969, with about a
   third of the SB FIFOs.
 - **`aha pnr --rv-balance N` (2026-10-18, session cfc4174c; aha `aha/util/rv_balance.py`).**
-  This is the balancing loop on the `aha pnr` path, for RV without PnR pipelining. It refuses
-  EXHAUSTIVE_PIPE, POST_PNR_ITR and `--daemon`: with no pipelining every route hop is a wire,
-  so a padding register adds exactly one stage and placement doesn't change stage counts.
+  This is the balancing loop on the `aha pnr` path, for RV without PnR pipelining. An
+  explicit N refuses EXHAUSTIVE_PIPE, POST_PNR_ITR and `--daemon`: with no pipelining every
+  route hop is a wire, so a padding register adds exactly one stage and placement doesn't
+  change stage counts.
+  - **On by default since 2026-10-19 (user):** without the flag, `aha pnr` balances
+    (3 rounds) whenever DENSE_READY_VALID=1 and none of those is set, i.e. the thesis flow.
+    `--rv-balance 0` turns it off. `aha regress` keeps EXHAUSTIVE_PIPE and the daemon for
+    its RV apps, so it is unchanged (user decision).
+  - Every `aha pnr` first restores a padded `design_top.json` and deletes the last run's
+    `bin/rv_balance_{plan,log}.json`.
   After the first PnR, each round does:
   1. Model the routed design (`rv_throughput.model_of`).
   2. Plan with `min_register_plan`, an LP solved with scipy HiGHS:
@@ -1843,7 +1850,9 @@ branches to match exactly at every join (conv_3_3: A 0.750, B 0.667 before).
     slower" below).
 - **Testbench `RV_FLUSH_FIRST=1`** (`tests/test_app` make variable, passed as `+RV_FLUSH_FIRST`):
   `Env_rv_flush_then_unstall` flushes the array before releasing stall. This fixes the RV
-  kernel-start race that unsharp hits; the default flow is unchanged.
+  kernel-start race that unsharp hits. `aha test` sets it when the app's last PnR was
+  balanced (`bin/rv_balance_log.json`) and RV_FLUSH_FIRST is unset. The testbench default
+  is unchanged.
 - **Pitfall: an app dir copied from another run runs that run's bitstream.**
   `hw_support/parse_design_meta.py` used to name the first `*.bs` in bin/ (os.listdir order)
   in design_meta.json. A copied run directory therefore simulated its old unbalanced
@@ -2315,7 +2324,14 @@ register keeps the schedules' latency); RV equals the old RV runs except gaussia
 2026-10-06 toolchain).
 Structure: tests/test_thesis (4x2: static tiles have no FIFO modules and no _ready/_valid,
 only the GLB DMA FIFOs remain; RV PE has 8 ports each with valid/ready + tile FIFO; neither
-fabric has sparse modules or bypass config; tracks {1, 16}).
+fabric has sparse modules or bypass config; tracks {1, 16}; RV switch-box registers are
+`FifoRegWrapper_*_fifo_only` with no `fifo_en`).
+RV switch-box registers are always FIFOs (2026-10-19, user decision): canal's `fifo_en=0`
+mode is a plain register (`valid_out` and `ready_out` stuck at 1, simulated) that loses
+tokens on an RV route. `util_thesis.py` passes canal `fifo_only_regs=True` for `--thesis rv`,
+which removes the mode bit and its muxes; the register mux remains the bypass. Stock
+fabrics keep the mode (static apps use it). Details: canal/CLAUDE.md "Switch-box registers
+that are always FIFOs".
 
 Running apps (recipe: `aha --dir <private aha tree>` with garnet = a private copy and
 GARNET_HOME pointing at it): `garnet.py --thesis MODE --lake-spec-config spec.json
@@ -2337,6 +2353,30 @@ PE tile pair, `--recipe thesis_fabric` = both (4 builds). The spec point is lake
 spec (build_spec defaults: fw4 dw16 4 KB 2x2 single-port vc2; user 2026-10-18; it was 8 KB,
 the app matrix above, until then). Add `--clock-mhz` / `--stop-after cadence-genus-synthesis`
 for an over-constrained fmax probe.
+
+**gf12 `thesis_mem` results (2026-10-18 build, zip thesis_mem_r8cad-gf12_20261018-220554_slim,
+extracted under /aha/sweep_out/thesis_mem_20261018).** Static vs RV MemCore tile, 4 KB spec,
+1.333 ns clock, both PASS through PT signoff:
+- **Area after PnR:** 13,114 vs 15,766 um2 (+20.2%). Logic is 7,489 vs 10,141 (+35%); the
+  SRAM (2 x IN12LP_S1DB 512x32) is 5,625 in both.
+- **Where RV's +2,632 um2 goes** (synthesis cell area):
+  - lake controller 2,987 → 4,521 (+1,534);
+  - switch-box registers: the 40 per tile become 2-deep FIFOs (+924);
+  - switch-box config bits (+187);
+  - MEM port FIFOs (+268);
+  - switch-box ready/valid fan-in and muxing (about +150);
+  - MemCore config (−470: static schedules have more config bits).
+- **Timing:** setup WNS −6 ps static (config feedthroughs) vs −35 ps RV (68 failing paths:
+  combinational switch-box `ready` → other tracks' `valid`, the lazy-fork gating).
+- **Against the stock fabric** (clock_gating_ab_20261018 baseline: 14,960 static / 15,888 RV
+  after PnR), the thesis static tile is 12% smaller and the RV tile about equal. The real
+  static-vs-RV gap is 20%, not 6%.
+- **Caveats:**
+  - Built before canal `fifo_only_regs` (2026-10-19): a rebuild drops each RV switch-box
+    register's `fifo_en` bit, estimated at 60-70 um2.
+  - Both tiles keep the power-domain OR (27 um2), since the thesis flow does not apply
+    `--no-pd`.
+  - No power: the recipe stops at timing signoff.
 
 Why RV runs slower than static in the matrix (2026-10-18; data: archipelago/CLAUDE.md "RV
 without EXHAUSTIVE_PIPE"):

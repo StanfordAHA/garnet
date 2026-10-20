@@ -8,7 +8,8 @@ static: no FIFOs and no ready-valid anywhere. Switch-box tracks are a plain pipe
     data_width bits, the PE is OnyxDensePE (lassen PE, no FIFOs), the MEM tile is the
     static lake spec with plain static ports (no port FIFOs, no bypass config), the
     pond is the static lake-spec pond, the IO tile registers each direction once.
-rv: ready-valid with no FIFO bypass. Switch-box tracks are a 2-deep FIFO plus the
+rv: ready-valid with no FIFO bypass. Switch-box tracks are a 2-deep FIFO (always a
+    FIFO: no plain-register mode, which would drop tokens on a route) plus the
     bypass mux, data tracks are data_width bits plus separate ready/valid (no sparse
     end-of-stream bit), every PE/MEM/pond port has its tile FIFO and no bypass config
     (the PE keeps its configurable primitive output FIFO), the PE is OnyxDenseRVPE, the
@@ -256,10 +257,13 @@ def create_cgra_thesis(mode: str,
                                                      additional_core_fn=create_additional_core,
                                                      inter_core_connection=inter_core_connection)
 
+    # RV: every switch-box register is a 2-deep FIFO, with no pipeline-register mode
+    # (canal fifo_only_regs: no fifo_en bit; the register mux is the bypass)
     interconnect = Interconnect(ics, reg_addr_width, config_data_width, tile_id_width,
                                 lift_ports=standalone,
                                 stall_signal_width=1,
-                                ready_valid=ready_valid)
+                                ready_valid=ready_valid,
+                                fifo_only_regs=ready_valid)
 
     tile_id_physical(interconnect)
     if add_pd:
