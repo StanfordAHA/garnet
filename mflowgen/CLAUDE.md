@@ -544,6 +544,28 @@ all-PnR", first run) and at most four PnRs at once (OOM):
         --memtile-power --config-jobs 4 --fresh --zip --zip-slim \
         --out-dir /nsim/mstrange/BUILDS/sweep_out/clock_gating_ab_20261018
 
+**Second run (2026-10-18/19; zip `/aha/clock_gating_ab_20261018_r8cad-gf12_20261019-041557_slim.zip`,
+extracted in `/aha/sweep_out/clock_gating_ab_20261018/`; table in lake CLAUDE.md §5.6).**
+All six built through PT signoff at lake 2660629d. Synth WNS is 0 everywhere, the RV
+gated tile included. PT WNS is -6 to -23 ps, all on pass-through feedthroughs. Static,
+synth / PnR:
+- shared counter: idle -35% / -26%, active -5% / -5%, logic area -3.8%;
+- port gating: idle -59% / -48%, active 0% / 0%;
+- both: idle -59% / -46%, active -6% / -4%.
+
+The two RV configs' power steps failed: `/sim/docker` was full again at
+memtile-power-test-gen's `docker run`. Their builds are done, so a power-only re-run on
+the existing workspaces finishes them. Free `/sim/docker` first (kill leftover
+`gen_rtl_*`/`memtile_power_*`/`mstrange-*` containers). No `--fresh`: `--skip-existing`
+makes only the missing power leaves, and `--reuse-graph` keeps each workspace's graph if
+garnet was pulled since. The test generator rebuilds the spec from lake origin/THESIS,
+so run it before any lake spec change (the RTL is lake 2660629d):
+
+    ./mflowgen/sweep_specs.py --spec-set clock_gating --flatten-effort 0 \
+        --memtile-power --config-jobs 2 --skip-existing --reuse-graph --zip --zip-slim \
+        --only fw4_dw16_sc4096_sp_in2_out2_vc2_rv,fw4_dw16_sc4096_sp_in2_out2_vc2_portcg_rv \
+        --out-dir /nsim/mstrange/BUILDS/sweep_out/clock_gating_ab_20261018
+
 ### Whole-graph smoke run: one spec, standalone + tile (2026-10-07)
 
 To check the flow end to end before a big sweep (user request), one static
