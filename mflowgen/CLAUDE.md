@@ -2025,8 +2025,9 @@ libHalide and libclkwrk.so were rebuilt. Shared-toolchain checks:
 - dw64: pointwise_wide static.
 - dw8: gaussian8 RV.
 - The commits above hold the current code. The scratchpad patches
-  `a16b3973-.../scratchpad/p32/patches/*.patch` and the private tree `p32/aha` are the 2026-10-08
-  env-knob version, superseded on 2026-10-10 (see "One source of truth" below).
+  `a16b3973-.../scratchpad/p32/patches/*.patch` are the 2026-10-08 env-knob version, superseded on
+  2026-10-10 (see "One source of truth" below). The private trees `p32/aha`, `p33/aha` and `s32/aha`
+  were deleted on 2026-10-19 to free disk; their drivers, logs and patches are kept.
 - Driver: `s32/e2e2.sh` (`DW=`, `MODE=`, `FW=`, `APP=`, stages; `MAPSPEC=`/`MAPCOLL=` to
   compile against another spec or collateral). It runs the shared toolchain with a private
   garnet copy.
