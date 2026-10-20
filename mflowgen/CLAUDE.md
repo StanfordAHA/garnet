@@ -1348,7 +1348,10 @@ Failures (OPEN_ISSUES ids):
   `mapper/netlist_util.py` (an unconnected 1-bit `delay_reg` from clockwork, then an output
   `$reg1` missing from `nodes_to_ids`). Not bandwidth: lake's RV single-port arbiter would cope.
 - Static pond matmul on fw8 sc32768 and fw4 vc4 (`clockwork/static-matmul-wide-mem`): wrong
-  output; RV passes. Cause (2026-10-17, reproduces 256/256 sim values on both): the kernel MEM's
+  output; RV passes. FIXED 2026-10-18 in clockwork `ubuffer.cpp` (038a82bc; see clockwork/CLAUDE.md
+  "Static TB capacity"): both configs bit-accurate in a full-flow re-run (9260 ns); bundles re-recorded
+  2026-10-18 by 1fa8a391 (app_bundles_dw16_20261018_mmpond_tbfix.tgz).
+  Cause (2026-10-17, reproduces 256/256 sim values on both): the kernel MEM's
   TB is overrun. matmul reads `kernel(x, r)` with r fastest. The kernel MEM (fw8) fetches word
   (r, x/8) for r = 0..15 once per 8-lane word (`sram2tb_0` start 512, strides [2, 272, 544],
   extents [16, 2, 16]). `tb2out_0` (start 515, strides [2, 34, 544], extents [16, 16, 16]) reads
