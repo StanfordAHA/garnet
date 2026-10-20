@@ -106,6 +106,16 @@ log=$tile_id/3-cadence-xcelium-sim/xrun.log
 [ "$tile_id" = "$PREAPP_TILE" ] && printf 'replay: app starts at cycle 100 (first flush after the reset)\ncycle 7: SB_T0_EAST_SB_OUT_B17: got 0xxxx, expected 00000\n' >> $log
 [ "$tile_id" = "$NOFINISH_TILE" ] || echo 'Simulation complete via $finish(2) at time 5 NS + 0' >> $log
 [ "$tile_id" = "$NOHIER_TILE" ] || echo report > outputs/reports/$tile_id.hier
+# what a real sub-graph leaves behind: a sim snapshot, SAIF, input copies, a link out
+mkdir -p $tile_id/3-cadence-xcelium-sim/xcelium.d $tile_id/3-cadence-xcelium-sim/outputs \
+    $tile_id/1-setup/outputs $tile_id/.mflowgen $tile_id/4-synopsys-ptpx-synth
+echo snap > $tile_id/3-cadence-xcelium-sim/xcelium.d/worklib.pak
+echo saif > $tile_id/3-cadence-xcelium-sim/outputs/run.saif
+echo step > $tile_id/3-cadence-xcelium-sim/mflowgen-run.log
+echo vec > $tile_id/1-setup/outputs/test_vectors.txt
+echo pt > $tile_id/4-synopsys-ptpx-synth/mflowgen-run.log
+ln -sf "$PWD/inputs" $tile_id/1-setup/inputs_link
+ln -sf "$PWD/inputs/tiles_Tile_PE.list" $tile_id/1-setup/outputs/xrun.log
 """
 
 
@@ -115,7 +125,7 @@ def run_step(tmp_path, **env):
     (tmp_path / "run.sh").write_text(FAKE_RUN_SH)
     (tmp_path / "run.sh").chmod(0o755)
     full = dict(os.environ, design_name="Tile_PE")
-    for k in ("replay_check", "app_bundle", "BAD_TILE", "NOFINISH_TILE", "NOHIER_TILE"):
+    for k in ("replay_check", "app_bundle", "BAD_TILE", "NOFINISH_TILE", "NOHIER_TILE", "REPLAY_KEEP_TILES"):
         full.pop(k, None)
     full.update(env)
     r = subprocess.run([sys.executable, str(RUN_ALL)], cwd=tmp_path, env=full,
@@ -129,6 +139,29 @@ def test_step_clean(tmp_path):
     assert rc == 0 and "2/2 tiles replayed exactly" in summary
     rep = json.loads((tmp_path / "outputs/reports/Tile_X04_Y05.replay.json").read_text())
     assert rep["problems"] == [] and rep["finished"] and rep["report"]
+
+
+def tree(d):
+    return sorted(str(p.relative_to(d)) for p in d.rglob("*") if p.is_file() or p.is_symlink())
+
+
+def test_step_prunes_replayed_tiles(tmp_path):
+    """Once a tile's reports are written, its sub-workspace keeps only its logs
+    (a 16x16 cgra_app_power run filled the build disk with snapshots, SAIFs and
+    vector copies); symlinks are removed, not followed."""
+    rc, summary, _ = run_step(tmp_path, app_bundle="/b")
+    assert rc == 0 and "2/2 tiles replayed exactly" in summary
+    assert tree(tmp_path / "Tile_X04_Y05") == ["3-cadence-xcelium-sim/mflowgen-run.log",
+                                               "3-cadence-xcelium-sim/xrun.log",
+                                               "4-synopsys-ptpx-synth/mflowgen-run.log"]
+    assert (tmp_path / "inputs" / "tiles_Tile_PE.list").read_text().startswith("p1,")
+    assert (tmp_path / "outputs" / "reports" / "Tile_X05_Y06.hier").is_file()
+
+
+def test_step_keeps_tiles_on_request(tmp_path):
+    rc, _, _ = run_step(tmp_path, app_bundle="/b", REPLAY_KEEP_TILES="True")
+    assert rc == 0
+    assert "3-cadence-xcelium-sim/xcelium.d/worklib.pak" in tree(tmp_path / "Tile_X04_Y05")
 
 
 @pytest.mark.parametrize("env,rc", [

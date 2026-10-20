@@ -1331,6 +1331,17 @@ every replayed tile (placed, route and idle, per variant) dumped a full-depth ga
 (`waves: True` in tile-post-*-power). Nothing reads it (power is from the SAIF, and
 run_sim.sh's copy tests `true` so it never ran), so `waves` is now False there; env
 `REPLAY_WAVES=True` turns it back on to debug a replay (test `test_replay_waves_off_by_default`).
+The second run (2026-10-18/19, waves off) filled /sim again: each replayed tile's
+sub-workspace (`<step>/Tile_X*`) kept its copies of the netlist and of its per-cycle test
+vectors, its xcelium snapshot, SAIF and ptpx data, for 100+ tiles per app on a 16x16 array, and
+the application step copied each bundle's run.vcd (harris: 650 MB) into every workspace. Now
+run_all_tiles.py deletes a tile's sub-workspace after its reports and replay check are written,
+keeping only `mflowgen-run.log` / `xrun.log` (what the CSVs and zips read; env
+`REPLAY_KEEP_TILES=True` keeps all), and the application step links run.vcd (tests
+`test_step_prunes_replayed_tiles`, `test_step_keeps_tiles_on_request`). What is left per
+workspace and variant is the testbench step's `tile_tbs/` (every tile's vectors, read by all
+power levels). Before the fix that run had finished fw1 x2, fw2 dp static (all apps) and fw2 dp
+RV: every finished tile replayed exactly.
 Comparing power across runs: tiles built on garnet >= 6f110058 have no power-domain logic
 (`--no-pd` was a no-op before), so their power/area is not comparable with the 2026-10-14
 pipeclean numbers or with a run that mixes garnet versions; check `garnet` in each workspace's

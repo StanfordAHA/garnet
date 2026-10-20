@@ -26,9 +26,12 @@ if [ -n "${app_bundle}" ]; then
     echo "WARNING: no inputs/design.v: app bundle not checked against this build's RTL" >&2
   fi
   python3 check_bundle.py "${app_bundle}/manifest.json" "${chk[@]}"
-  for f in run.vcd tiles_Tile_PE.list tiles_Tile_MemCore.list tile_ports.json manifest.json; do
+  for f in tiles_Tile_PE.list tiles_Tile_MemCore.list tile_ports.json manifest.json; do
     cp "${app_bundle}/$f" outputs/
   done
+  # run.vcd is only read (testbench step) and can be GBs (harris on a 16x16
+  # array: 650 MB), copied once per tile workspace and variant: link it.
+  ln -sf "$(readlink -f "${app_bundle}/run.vcd")" outputs/run.vcd
   exit 0
 fi
 

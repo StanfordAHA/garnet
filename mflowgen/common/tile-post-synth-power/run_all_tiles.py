@@ -38,6 +38,11 @@ APP_START = re.compile(r"replay: app starts at cycle (\d+)")
 XZ = re.compile(r"[xXzZ]")
 MAX_EXAMPLES = 5
 MAX_SAVED_LINES = 5000   # outputs/reports/<tile>.mismatches.txt (the sweep zips reports/*)
+# A replayed tile's sub-workspace keeps only these once its reports are saved
+# (env REPLAY_KEEP_TILES=True keeps all of it): its copies of the netlist and
+# test vectors, its simulation snapshot and SAIF are 100s of MB per tile for a
+# long app, and a 16x16 cgra_app_power run filled the build disk with them.
+KEEP_FILES = ("mflowgen-run.log", "xrun.log")
 
 
 def tile_ids(design):
@@ -124,6 +129,21 @@ def check_tile(tile, run_rc):
     return res
 
 
+def prune_tile(tile):
+    """Delete everything in the tile's sub-workspace but its logs (KEEP_FILES).
+    Symlinks are removed, never followed."""
+    for root, dirs, files in os.walk(tile, topdown=False):
+        for f in files:
+            if f not in KEEP_FILES or os.path.islink(os.path.join(root, f)):
+                os.unlink(os.path.join(root, f))
+        for d in dirs:
+            p = os.path.join(root, d)
+            if os.path.islink(p):
+                os.unlink(p)
+            elif not os.listdir(p):
+                os.rmdir(p)
+
+
 def main():
     design = os.environ.get("design_name")
     mode = os.environ.get("replay_check") or "auto"
@@ -135,6 +155,8 @@ def main():
         os.environ["tile_id"] = tile
         rc = subprocess.run(["./run.sh"]).returncode
         results.append(check_tile(tile, rc))
+        if os.environ.get("REPLAY_KEEP_TILES", "").lower() not in ("1", "true"):
+            prune_tile(tile)
 
     lines = [f"{r['tile']}: {'; '.join(r['problems']) or 'OK'}"
              + (f" ({r['pre_app_x']} X outputs before the app start at cycle {r['app_start']} not counted)"
