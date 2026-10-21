@@ -222,6 +222,36 @@ def test_dw8_32_64_preset_is_the_thesis_set_at_those_widths(ss, capsys):
     assert sorted(ss.PRESETS["dw8_32_64"]) == sorted(names)
 
 
+def test_thesis_mem_opt_recipe(ss, capsys, tmp_path):
+    """thesis_mem_opt: the thesis MemTile with lake's options, all three through PnR:
+    static with clock gating, RV with clock gating and the filter path as an 8-deep
+    FIFO, RV with clock gating and no filter path. Not part of thesis_fabric."""
+    assert listed(ss, capsys, "--spec-set", "thesis_fabric_opt") == ss.PRESETS["thesis_opt_pnr"]
+    assert ss.main(ss.RECIPE_FLAGS["thesis_mem_opt"] + ["--out-dir", str(tmp_path), "--list"]) == 0
+    assert "3 -> synopsys-pt-timing-signoff" in capsys.readouterr().err
+    assert "thesis_mem_opt" not in ss.RECIPES["thesis_fabric"]
+    static, ff8, nofp = ss.THESIS_OPT_SPEC_POINTS
+    for cfg, keys in ((static, {"share_clk_ctr": True, "clock_gate_ports": True}),
+                      (ff8, {"clock_gate_ports": True, "filter_fifo_depth": 8}),
+                      (nofp, {"clock_gate_ports": True, "add_filter_path": False})):
+        ws = tmp_path / ss._config_name(cfg)
+        ws.mkdir()
+        ss._write_spec_files(cfg, ws, "make-this")
+        spec = json.loads((ws / "spec_config.json").read_text())
+        assert {k: spec[k] for k in keys} == keys and "thesis" not in spec
+
+
+def test_no_filter_path_knob(ss):
+    base = dict(storage_capacity=4096, add_filter_path=False)
+    assert ss._config_name(dict(base, runtime_mode="rv")) == "fw4_dw16_sc4096_sp_in2_out2_vc2_nofp_rv"
+    assert ss._unsupported_reason(base, "rv") is None
+    assert "build_spec_rv" in ss._unsupported_reason(base, "static")
+    assert ss._unsupported_reason(dict(base, filter_fifo_depth=8), "rv")
+    # unset = the filter path as built: names and spec identity unchanged
+    assert ss._config_name(dict(storage_capacity=4096, runtime_mode="rv")) == "fw4_dw16_sc4096_sp_in2_out2_vc2_rv"
+    assert ss._spec_key({}) == ss._spec_key({"add_filter_path": True})
+
+
 @pytest.mark.parametrize("extra, summary", [
     ([], ["36 -> synopsys-pt-timing-signoff", "160 -> cadence-genus-synthesis",
           "PnR model: fit on 8, validated on 28 held-out"]),

@@ -2378,6 +2378,30 @@ extracted under /aha/sweep_out/thesis_mem_20261018).** Static vs RV MemCore tile
     `--no-pd`.
   - No power: the recipe stops at timing signoff.
 
+**`--recipe thesis_mem_opt` (2026-10-20, user request): the thesis MemTile with lake's
+area/power options, 3 builds through PT signoff** (spec set `thesis_fabric_opt`, preset
+`thesis_opt_pnr`; not part of `thesis_fabric`):
+- `..._sharectr_portcg_thesis`: static, shared cycle counter + per-port clock gating;
+- `..._ff8_portcg_thesis_rv`: RV, per-port gating, filter path as an 8-deep FIFO;
+- `..._nofp_portcg_thesis_rv`: RV, per-port gating, no filter path (new sweep knob
+  `add_filter_path=False`, name `_nofp`; RV only).
+
+One static tile serves both RV comparisons, because the static spec has no filter path.
+The RV tiles also get FIFO-only switch-box registers (canal thesis, fetched in the rtl
+container).
+
+Checked locally (gen_rtl flags + `--thesis`, 4x2, private lake THESIS de6b95c5 + canal
+2f06aeb):
+- all three RTLs build;
+- static has `shared_clk_ctr` and 4 port gates;
+- RV FIFO-8 has 6 gated ports and fewer filter config registers than plain RV;
+- RV no-filter-path has 4 gated ports and no filter-port CB;
+- no `fifo_en` anywhere.
+
+No power: `memtile-power-test-gen` does not build thesis fabrics (its garnet rebuild has
+no `--thesis`). Command:
+`./mflowgen/sweep_specs.py --recipe thesis_mem_opt --out-dir /nsim/mstrange/BUILDS/sweep_out/thesis_opt --zip --zip-slim`
+
 Why RV runs slower than static in the matrix (2026-10-18; data: archipelago/CLAUDE.md "RV
 without EXHAUSTIVE_PIPE"):
 - Reconvergent forks (conv, gaussian, unsharp, harris): the RV flow balances nothing

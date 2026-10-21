@@ -273,7 +273,7 @@ SPEC_DEFAULTS = dict(storage_capacity=4096, data_width=16, vec_width=4, dims=6,
                      in_ports=2, out_ports=2, dual_port=False, vec_capacity=2,
                      max_extent=None, max_sequence_width=None,
                      filter_fifo_depth=None, share_clk_ctr=False,
-                     clock_gate_ports=False)
+                     clock_gate_ports=False, add_filter_path=True)
 
 # Config keys that drive the sweep, not the RTL. They are stripped before
 # spec_config.json is written: util_onyx passes that file to
@@ -415,6 +415,16 @@ THESIS_FABRIC_SPEC_POINTS = [
     dict(_THESIS_BASE, runtime_mode="static"),
     dict(_THESIS_BASE, runtime_mode="rv"),
 ]
+# The same point with lake's area/power options (user 2026-10-20): clock gating
+# in both modes (static: one shared cycle counter + per-port gating; RV:
+# per-port gating, as RV has no free-running counters), and the RV filter path
+# either as an 8-deep FIFO or removed. One static tile serves both RV variants:
+# the static spec has no filter path.
+THESIS_OPT_SPEC_POINTS = [
+    dict(_THESIS_BASE, share_clk_ctr=True, clock_gate_ports=True, runtime_mode="static"),
+    dict(_THESIS_BASE, clock_gate_ports=True, filter_fifo_depth=8, runtime_mode="rv"),
+    dict(_THESIS_BASE, clock_gate_ports=True, add_filter_path=False, runtime_mode="rv"),
+]
 
 SPEC_SETS = {
     "default": DEFAULT_SPEC_POINTS,
@@ -424,10 +434,16 @@ SPEC_SETS = {
     "pe_tile": PE_TILE_SPEC_POINTS,
     "fabric": FABRIC_SPEC_POINTS,
     "thesis_fabric": THESIS_FABRIC_SPEC_POINTS,
+    "thesis_fabric_opt": THESIS_OPT_SPEC_POINTS,
 }
 PRESETS["thesis_fabric_pnr"] = [
     "fw4_dw16_sc4096_sp_in2_out2_vc2_thesis",
     "fw4_dw16_sc4096_sp_in2_out2_vc2_thesis_rv",
+]
+PRESETS["thesis_opt_pnr"] = [
+    "fw4_dw16_sc4096_sp_in2_out2_vc2_sharectr_portcg_thesis",
+    "fw4_dw16_sc4096_sp_in2_out2_vc2_ff8_portcg_thesis_rv",
+    "fw4_dw16_sc4096_sp_in2_out2_vc2_nofp_portcg_thesis_rv",
 ]
 # The PE tiles that go through PnR (tile height); stock_staticfab_nopond is
 # synthesis only (switch-box area).
@@ -471,11 +487,20 @@ THESIS_FABRIC_RECIPE_FLAGS = {
                   "--flatten-effort", "0", "--pnr-set", "thesis_fabric_pnr",
                   "--pt-i-delay-frac", "0.25"],
 }
+#   thesis_mem_opt: the MemTile with lake's options (THESIS_OPT_SPEC_POINTS):
+#   static with clock gating vs RV with clock gating and the filter path as an
+#   8-deep FIFO, and vs RV with clock gating and no filter path (3 builds).
+THESIS_OPT_RECIPE_FLAGS = {
+    "thesis_mem_opt": ["--spec-set", "thesis_fabric_opt", "--flatten-effort", "0",
+                       "--pnr-set", "thesis_opt_pnr", "--pt-i-delay-frac", "0.25"],
+}
 RECIPES = {**{name: [name] for name in RECIPE_FLAGS}, "app_power": ["app_power"],
            "thesis": list(RECIPE_FLAGS) + ["app_power"],
            **{name: [name] for name in THESIS_FABRIC_RECIPE_FLAGS},
-           "thesis_fabric": list(THESIS_FABRIC_RECIPE_FLAGS)}
+           "thesis_fabric": list(THESIS_FABRIC_RECIPE_FLAGS),
+           **{name: [name] for name in THESIS_OPT_RECIPE_FLAGS}}
 RECIPE_FLAGS.update(THESIS_FABRIC_RECIPE_FLAGS)
+RECIPE_FLAGS.update(THESIS_OPT_RECIPE_FLAGS)
 
 
 def build_argparser():
@@ -1283,6 +1308,10 @@ def _unsupported_reason(spec, mode):
         return "filter_fifo_depth is a build_spec_rv (RV filter path) option"
     if mode == "rv" and spec.get("share_clk_ctr"):
         return "share_clk_ctr changes nothing in build_spec_rv (no free-running schedule generators)"
+    if mode != "rv" and spec.get("add_filter_path") is False:
+        return "add_filter_path is a build_spec_rv (RV filter path) option"
+    if spec.get("add_filter_path") is False and spec.get("filter_fifo_depth") is not None:
+        return "filter_fifo_depth sizes the filter path that add_filter_path=False removes"
     return None
 
 
@@ -1372,7 +1401,8 @@ def _config_name(cfg):
     """Stable name per config. Matches the naming used by the collateral
     sweeps in aha (so per-config dirs line up across both), plus `_msw<N>`
     for max_sequence_width (aha folds those; their RTL differs), `_ff<N>` for
-    build_spec_rv's filter_fifo_depth, `_sharectr` / `_portcg` for lake's
+    build_spec_rv's filter_fifo_depth, `_nofp` for its add_filter_path=False,
+    `_sharectr` / `_portcg` for lake's
     share_clk_ctr / clock_gate_ports and `_rv` for runtime mode rv. Static
     names are unchanged from earlier sweeps. A stock tile (no lake spec) is
     `stock`; then `_staticfab` for the static fabric and `_nopond` /
@@ -1400,6 +1430,7 @@ def _config_name(cfg):
     me = cfg.get("max_extent")
     msw = cfg.get("max_sequence_width")
     ff = cfg.get("filter_fifo_depth")
+    no_fp = cfg.get("add_filter_path", True) is False
     share_ctr = cfg.get("share_clk_ctr", False)
     gate_ports = cfg.get("clock_gate_ports", False)
 
@@ -1416,6 +1447,8 @@ def _config_name(cfg):
         parts.append(f"msw{msw}")
     if ff is not None:
         parts.append(f"ff{ff}")
+    if no_fp:
+        parts.append("nofp")
     if share_ctr:
         parts.append("sharectr")
     if gate_ports:
