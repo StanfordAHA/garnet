@@ -2238,6 +2238,24 @@ libHalide and libclkwrk.so were rebuilt. Shared-toolchain checks:
     of the dw16 fit (test `test_memtile_recipe_pnr_at_every_width_dw16_fit_only`). The run
     is step 4 of "Build machine: thesis data runs" below. Per width: dw8 12 (9 static,
     3 RV), dw32 8 (6, 2), dw64 4 (3, 1); fw4 at dw64 has no macro.
+  - **Result (2026-10-21, all 36 `memtile_pnr` tiles, zip
+    `memtile_r8cad-gf12_20261021-031739_slim`, garnet 13732565, RTL lake de6b95c5, no power
+    domains; analysis in `/aha/sweep_out/memtile_pnr_20261021/README.md`):**
+    - **36/36 PASS** through PnR, PT and synth/PnR idle/active power. These real PnR numbers
+      replace the projections for all 24 dw 8/32/64 configs.
+    - The dw16 fit (8 tiles) on the 28 held-out tiles:
+      - total area within 1% at dw8/16/32; dw64 is 1-3% above the projection;
+      - active power within 8% (dw64 5-8% above);
+      - idle power off by up to +18% (fw8 dw8 vc8) and -18% (the one dw64 RV tile).
+    - **Per-width fits** (each width's own static tiles, leave-one-out) beat it. Worst error
+      at dw8: area 0.25%, idle 4.7%, active 1.6%. At dw64: area 0.8%, active 1.9%. RV has too
+      few tiles per width (3/2/1) for its own fit. `perwidth_fit.csv` and the script are in
+      that directory.
+    - **The idle miss is a synthesis-level artifact, not a width effect.** The SRAM macros
+      match between synth and PnR. Internal power in the lake core drops at PnR in some
+      tiles: -11 to -13% in fw8 dw8 vc8 and fw8 dw8 vc2 RV. Across the 28 held-out tiles that
+      drop tracks the idle error (Spearman -0.84). This is consistent with synthesis booking
+      the logic-gated core clock as one unbuffered net ("MemTile idle/active power").
   - **First run (2026-10-17/18, standalone command, garnet 96ff8af8; zip
     `tile_memcore_dw8_32_64_pnr_r8cad-gf12_20261018-071557_slim`, analysis in
     `/aha/sweep_out/dw8_32_64_PNR_20261018/README.md`):** 10 of 24 through PnR, 4 with power.
@@ -2495,7 +2513,9 @@ memtile part's PnR configs on current branches; the full part reproduces the res
    (`memtile_r8cad-gf12_20261019-054400_slim`, single command): the 8 `dw16_fit8` configs
    passed PnR, with power on 4 (fw1 sc4096 and fw4 sc8192, static + RV). `/sim/docker` filled
    up at about 04:09: 28 RTL steps and 4 power test-gens failed at `docker run`. Analysis is
-   in `/aha/sweep_out/memtile_pnr_20261019/README.md`.
+   in `/aha/sweep_out/memtile_pnr_20261019/README.md`. **Re-run 2026-10-19/21 with `--fresh`:
+   36/36 PASS** (zip `memtile_r8cad-gf12_20261021-031739_slim`; result under "dw 8/32/64
+   Tile_MemCore PPA").
 
 5. **Everything from scratch** (the memtile part is 196 configs, 36 of them through
    PnR, about 2 days at `--pnr-jobs 2`). `--skip-existing` reuses what steps 1-4 built:
