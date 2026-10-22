@@ -2367,7 +2367,11 @@ times out ("got interrupt, but not from STRM_F2G"). RV apps may survive it.
 gf12 (build machine, garnet + lake pulled; outputs under /nsim/mstrange/BUILDS):
 `./mflowgen/sweep_specs.py --recipe thesis_mem --out-dir /nsim/mstrange/BUILDS/sweep_out/thesis_fabric --zip --zip-slim`
 (MemTile static + RV through PnR, PT_I_DELAY_FRAC 0.25: 2 builds); `--recipe thesis_pe` = the
-PE tile pair, `--recipe thesis_fabric` = both (4 builds). The spec point is lake's default
+PE tile pair, `--recipe thesis_fabric` = both (4 builds). The PE pair runs at 400 MHz
+(APP_POWER_MHZ, since 2026-10-20). Neither thesis PE meets Tile_PE's 1.1 ns default (local
+estimate ~1.8 / ~1.5 ns static / RV at gf12 synth), and missing it would upsize both and skew
+the area. The Tile_PE constraints were sourced on the thesis PE RTL (local Genus 20.11,
+2026-10-17) with no errors; the pond path resolves to the spec pond's. The spec point is lake's default
 spec (build_spec defaults: fw4 dw16 4 KB 2x2 single-port vc2; user 2026-10-18; it was 8 KB,
 the app matrix above, until then). Add `--clock-mhz` / `--stop-after cadence-genus-synthesis`
 for an over-constrained fmax probe.
@@ -2418,7 +2422,9 @@ Checked locally (gen_rtl flags + `--thesis`, 4x2, private lake THESIS de6b95c5 +
 
 No power: `memtile-power-test-gen` does not build thesis fabrics (its garnet rebuild has
 no `--thesis`). Command:
-`./mflowgen/sweep_specs.py --recipe thesis_mem_opt --out-dir /nsim/mstrange/BUILDS/sweep_out/thesis_opt --zip --zip-slim`
+`./mflowgen/sweep_specs.py --recipe thesis_mem_opt --out-dir /nsim/mstrange/BUILDS/sweep_out/thesis_opt --zip --zip-slim`.
+`--recipe thesis_opt` = `thesis_mem_opt` + `thesis_pe` (5 builds, each part into its own
+subdirectory and zip). The PE tile takes none of these options: they are MEM spec knobs.
 
 Why RV runs slower than static in the matrix (2026-10-18; data: archipelago/CLAUDE.md "RV
 without EXHAUSTIVE_PIPE"):

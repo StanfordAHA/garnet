@@ -479,17 +479,22 @@ RECIPE_FLAGS = {
 }
 # The thesis fabrics (garnet.py --thesis) as their own parts, not in `thesis`:
 #   thesis_mem / thesis_pe: the static-dense and ready-valid-dense MemTile / PE
-#   tile through PnR (THESIS_FABRIC_SPEC_POINTS).
+#   tile through PnR (THESIS_FABRIC_SPEC_POINTS). The PE pair runs at the CGRA
+#   clock the pe_tile part and app power use (APP_POWER_MHZ): neither thesis PE
+#   meets Tile_PE's 1.1 ns default (local synth estimate ~1.8 / ~1.5 ns static /
+#   RV), and missing it would upsize both and skew the area comparison.
 THESIS_FABRIC_RECIPE_FLAGS = {
     "thesis_mem": ["--spec-set", "thesis_fabric", "--flatten-effort", "0",
                    "--pnr-set", "thesis_fabric_pnr", "--pt-i-delay-frac", "0.25"],
     "thesis_pe": ["--graph", str(MFLOWGEN_DIR / "Tile_PE"), "--spec-set", "thesis_fabric",
                   "--flatten-effort", "0", "--pnr-set", "thesis_fabric_pnr",
-                  "--pt-i-delay-frac", "0.25"],
+                  "--clock-mhz", str(APP_POWER_MHZ), "--pt-i-delay-frac", "0.25"],
 }
 #   thesis_mem_opt: the MemTile with lake's options (THESIS_OPT_SPEC_POINTS):
 #   static with clock gating vs RV with clock gating and the filter path as an
 #   8-deep FIFO, and vs RV with clock gating and no filter path (3 builds).
+#   `thesis_opt` = thesis_mem_opt + thesis_pe (the PE tile has none of these
+#   options: they are MEM spec knobs).
 THESIS_OPT_RECIPE_FLAGS = {
     "thesis_mem_opt": ["--spec-set", "thesis_fabric_opt", "--flatten-effort", "0",
                        "--pnr-set", "thesis_opt_pnr", "--pt-i-delay-frac", "0.25"],
@@ -498,7 +503,8 @@ RECIPES = {**{name: [name] for name in RECIPE_FLAGS}, "app_power": ["app_power"]
            "thesis": list(RECIPE_FLAGS) + ["app_power"],
            **{name: [name] for name in THESIS_FABRIC_RECIPE_FLAGS},
            "thesis_fabric": list(THESIS_FABRIC_RECIPE_FLAGS),
-           **{name: [name] for name in THESIS_OPT_RECIPE_FLAGS}}
+           **{name: [name] for name in THESIS_OPT_RECIPE_FLAGS},
+           "thesis_opt": list(THESIS_OPT_RECIPE_FLAGS) + ["thesis_pe"]}
 RECIPE_FLAGS.update(THESIS_FABRIC_RECIPE_FLAGS)
 RECIPE_FLAGS.update(THESIS_OPT_RECIPE_FLAGS)
 

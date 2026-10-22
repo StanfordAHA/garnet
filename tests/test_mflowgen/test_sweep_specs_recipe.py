@@ -241,6 +241,15 @@ def test_thesis_mem_opt_recipe(ss, capsys, tmp_path):
         assert {k: spec[k] for k in keys} == keys and "thesis" not in spec
 
 
+def test_thesis_opt_recipe_and_pe_clock(ss):
+    """thesis_opt = the three optimized MemTiles + the thesis PE pair; the PE pair
+    runs at the pe_tile/app-power clock, which it can meet, not Tile_PE's 1.1 ns."""
+    assert ss.RECIPES["thesis_opt"] == ["thesis_mem_opt", "thesis_pe"]
+    flags = ss.RECIPE_FLAGS["thesis_pe"]
+    assert flags[flags.index("--clock-mhz") + 1] == str(ss.APP_POWER_MHZ)
+    assert "--clock-mhz" not in ss.RECIPE_FLAGS["thesis_mem_opt"]
+
+
 def test_no_filter_path_knob(ss):
     base = dict(storage_capacity=4096, add_filter_path=False)
     assert ss._config_name(dict(base, runtime_mode="rv")) == "fw4_dw16_sc4096_sp_in2_out2_vc2_nofp_rv"
