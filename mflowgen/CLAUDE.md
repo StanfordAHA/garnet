@@ -1314,6 +1314,19 @@ over 8843 on an RV build = Tile_PE with the RV spec knobs). Two earlier sets
 were deleted as stale (lake 04191ea5: before 144e2062's comparator pruning;
 144e2062: before the port-order fix).
 
+**Thesis-fabric app-bundle set (2026-10-21, session 1fa8a391).** User direction (2026-10-20, via
+cfc4174c): thesis results come from the thesis fabrics. conv_3_3, gaussian, harris_color and pond
+matmul on 16x16 `garnet.py --thesis static|rv` CGRAs, lake's default thesis spec
+(`fw4_dw16_sc4096_sp_in2_out2_vc2_thesis` / `_thesis_rv`, `--cgra-tiles`; static with the static
+spec pond `--pond-spec {}`, RV with the RV spec pond and DENSE_READY_VALID only, so `aha pnr`
+latency-balances). All 8 bit-accurate; kernel ns static / RV (RV padding registers): conv 4149 /
+4150 (10), gauss 6389 / 6390 (26), harris 16772 / 16794 (508), mmpond 9260 / 13355 (0).
+`/aha/sweep_out/app_bundles_thesis_20261021/<app>/<config>` (+ STATUS.txt, tarball
+`app_bundles_thesis_20261021.tgz`). Recorded in private trees on garnet b0e9ba87 with a lake
+THESIS b01b1531 snapshot on PYTHONPATH (runner: scratchpad 1fa8a391 `thesis/`). Power:
+`cgra_app_power.py --variants conv=..,gauss=..,harris=..,mmpond=.. --clock-mhz 400`; tile_env gives
+both tile graphs THESIS_FABRIC (checked).
+
 **dw16 app-bundle set (2026-10-14/16, session 1fa8a391; user scope).** conv_3_3, gaussian,
 harris_color and pond matmul (`tests/matmul_rvtry3` n=16, `-enable_ponds`) x the 12
 `dw16_pnr12` configs, 16x16, `--cgra-tiles`, RV without `--rv-balance`; static bundles with a
