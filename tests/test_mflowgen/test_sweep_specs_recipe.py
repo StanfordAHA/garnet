@@ -241,13 +241,29 @@ def test_thesis_mem_opt_recipe(ss, capsys, tmp_path):
         assert {k: spec[k] for k in keys} == keys and "thesis" not in spec
 
 
-def test_thesis_opt_recipe_and_pe_clock(ss):
-    """thesis_opt = the three optimized MemTiles + the thesis PE pair; the PE pair
-    runs at the pe_tile/app-power clock, which it can meet, not Tile_PE's 1.1 ns."""
+def test_thesis_opt_recipe_and_one_clock(ss):
+    """thesis_opt = the three optimized MemTiles + the thesis PE pair. Every thesis
+    tile part builds at one clock, the slowest block's (the PE's; default the
+    pe_tile/app-power clock), not each graph's own default (Tile_PE 1.1 ns)."""
     assert ss.RECIPES["thesis_opt"] == ["thesis_mem_opt", "thesis_pe"]
-    flags = ss.RECIPE_FLAGS["thesis_pe"]
-    assert flags[flags.index("--clock-mhz") + 1] == str(ss.APP_POWER_MHZ)
-    assert "--clock-mhz" not in ss.RECIPE_FLAGS["thesis_mem_opt"]
+    clocks = {}
+    for part in ("thesis_mem", "thesis_pe", "thesis_mem_opt"):
+        flags = ss.RECIPE_FLAGS[part]
+        clocks[part] = flags[flags.index("--clock-mhz") + 1]
+    assert set(clocks.values()) == {str(ss.THESIS_CLOCK_MHZ)} and ss.THESIS_CLOCK_MHZ == ss.APP_POWER_MHZ
+
+
+def test_thesis_fmax_recipe(ss, capsys, tmp_path):
+    """thesis_fmax: synthesis only, over-constrained, no power, for the optimized
+    MemTiles and the PE pair."""
+    assert ss.RECIPES["thesis_fmax"] == ["thesis_fmax_mem", "thesis_fmax_pe"]
+    for part in ss.RECIPES["thesis_fmax"]:
+        flags = ss.RECIPE_FLAGS[part]
+        assert flags[flags.index("--clock-mhz") + 1] == str(ss.FMAX_PROBE_MHZ)
+        assert flags[flags.index("--stop-after") + 1] == "cadence-genus-synthesis"
+        assert "--memtile-power" not in flags and "--pnr-set" not in flags
+    assert ss.main(ss.RECIPE_FLAGS["thesis_fmax_pe"] + ["--out-dir", str(tmp_path), "--list"]) == 0
+    assert "2 -> cadence-genus-synthesis" in capsys.readouterr().err
 
 
 def test_thesis_memtiles_get_power(ss, capsys, tmp_path):

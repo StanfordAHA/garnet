@@ -481,16 +481,22 @@ RECIPE_FLAGS = {
 #   thesis_mem / thesis_pe: the static-dense and ready-valid-dense MemTile / PE
 #   tile through PnR (THESIS_FABRIC_SPEC_POINTS). The MemTiles also get the
 #   idle/active power tests (--memtile-power; memtile-power-test-gen builds the
-#   thesis fabric since 2026-10-21). The PE pair runs at the CGRA
-#   clock the pe_tile part and app power use (APP_POWER_MHZ): neither thesis PE
-#   meets Tile_PE's 1.1 ns default (local synth estimate ~1.8 / ~1.5 ns static /
-#   RV), and missing it would upsize both and skew the area comparison.
+#   thesis fabric since 2026-10-21).
+# Every thesis tile part builds at ONE clock, the slowest block's (user
+# 2026-10-21): the CGRA runs at one clock, and a tile synthesized faster than
+# the array can run is upsized for nothing. The slowest block is the PE (stock
+# PE ~2.45 ns at gf12; thesis PEs ~1.8 / ~1.5 ns static / RV by a local
+# estimate), so the default is the CGRA clock the pe_tile part and app power use;
+# `--recipe thesis_fmax` measures the real limit, and a top-level --clock-mhz
+# re-clocks every part of a recipe together.
+THESIS_CLOCK_MHZ = APP_POWER_MHZ
 THESIS_FABRIC_RECIPE_FLAGS = {
     "thesis_mem": ["--spec-set", "thesis_fabric", "--flatten-effort", "0", "--memtile-power",
-                   "--pnr-set", "thesis_fabric_pnr", "--pt-i-delay-frac", "0.25"],
+                   "--pnr-set", "thesis_fabric_pnr", "--clock-mhz", str(THESIS_CLOCK_MHZ),
+                   "--pt-i-delay-frac", "0.25"],
     "thesis_pe": ["--graph", str(MFLOWGEN_DIR / "Tile_PE"), "--spec-set", "thesis_fabric",
                   "--flatten-effort", "0", "--pnr-set", "thesis_fabric_pnr",
-                  "--clock-mhz", str(APP_POWER_MHZ), "--pt-i-delay-frac", "0.25"],
+                  "--clock-mhz", str(THESIS_CLOCK_MHZ), "--pt-i-delay-frac", "0.25"],
 }
 #   thesis_mem_opt: the MemTile with lake's options (THESIS_OPT_SPEC_POINTS):
 #   static with clock gating vs RV with clock gating and the filter path as an
@@ -499,16 +505,33 @@ THESIS_FABRIC_RECIPE_FLAGS = {
 #   options: they are MEM spec knobs).
 THESIS_OPT_RECIPE_FLAGS = {
     "thesis_mem_opt": ["--spec-set", "thesis_fabric_opt", "--flatten-effort", "0", "--memtile-power",
-                       "--pnr-set", "thesis_opt_pnr", "--pt-i-delay-frac", "0.25"],
+                       "--pnr-set", "thesis_opt_pnr", "--clock-mhz", str(THESIS_CLOCK_MHZ),
+                       "--pt-i-delay-frac", "0.25"],
+}
+# thesis_fmax: how fast each thesis tile can go. Synthesis only, over-constrained at
+# FMAX_PROBE_MHZ, no power: the optimized MemTiles and the PE pair. A tile's limit is
+# about 1000 / (1000 / FMAX_PROBE_MHZ - synth WNS in ns) MHz; build every tile at the
+# slowest one (minus margin for PnR) with `--recipe thesis_opt --clock-mhz <that>`.
+FMAX_PROBE_MHZ = 1000
+THESIS_FMAX_RECIPE_FLAGS = {
+    "thesis_fmax_mem": ["--spec-set", "thesis_fabric_opt", "--flatten-effort", "0",
+                        "--clock-mhz", str(FMAX_PROBE_MHZ), "--stop-after", "cadence-genus-synthesis",
+                        "--pt-i-delay-frac", "0.25"],
+    "thesis_fmax_pe": ["--graph", str(MFLOWGEN_DIR / "Tile_PE"), "--spec-set", "thesis_fabric",
+                       "--flatten-effort", "0", "--clock-mhz", str(FMAX_PROBE_MHZ),
+                       "--stop-after", "cadence-genus-synthesis", "--pt-i-delay-frac", "0.25"],
 }
 RECIPES = {**{name: [name] for name in RECIPE_FLAGS}, "app_power": ["app_power"],
            "thesis": list(RECIPE_FLAGS) + ["app_power"],
            **{name: [name] for name in THESIS_FABRIC_RECIPE_FLAGS},
            "thesis_fabric": list(THESIS_FABRIC_RECIPE_FLAGS),
            **{name: [name] for name in THESIS_OPT_RECIPE_FLAGS},
-           "thesis_opt": list(THESIS_OPT_RECIPE_FLAGS) + ["thesis_pe"]}
+           "thesis_opt": list(THESIS_OPT_RECIPE_FLAGS) + ["thesis_pe"],
+           **{name: [name] for name in THESIS_FMAX_RECIPE_FLAGS},
+           "thesis_fmax": list(THESIS_FMAX_RECIPE_FLAGS)}
 RECIPE_FLAGS.update(THESIS_FABRIC_RECIPE_FLAGS)
 RECIPE_FLAGS.update(THESIS_OPT_RECIPE_FLAGS)
+RECIPE_FLAGS.update(THESIS_FMAX_RECIPE_FLAGS)
 
 
 def build_argparser():

@@ -2363,6 +2363,15 @@ tokens on an RV route. `util_thesis.py` passes canal `fifo_only_regs=True` for `
 which removes the mode bit and its muxes; the register mux remains the bypass. Stock
 fabrics keep the mode (static apps use it). Details: canal/CLAUDE.md "Switch-box registers
 that are always FIFOs".
+RV pond input: since 2026-10-21 (user chose this over a lake fix) the pond's input CB has a
+2-deep FIFO on its switch-box sources, and the inter-core loopback (a packed pond fed by its
+PE) bypasses it (canal `input_fifo_ports`, util_thesis passes `PondTop_input_width_{dw}_num_0`
+for `--thesis rv`).
+- Without it, an unpacked RV pond fed over the network looped: its ready is its grant, which
+  needs valid, and the CB valid is gated by that ready. matmul_tile `ux=4` hung.
+- Packed ponds are unchanged (matmul_rvtry3: same bitstream, 13355 ns). Network-fed pond
+  writes take +1 cycle. Local freepdk45 Tile_PE +0.6% area.
+- MemTile RTL is unchanged. Details: canal/CLAUDE.md "Network-side FIFO in a core input's CB".
 
 Running apps (recipe: `aha --dir <private aha tree>` with garnet = a private copy and
 GARNET_HOME pointing at it): `garnet.py --thesis MODE --lake-spec-config spec.json
@@ -2380,10 +2389,18 @@ times out ("got interrupt, but not from STRM_F2G"). RV apps may survive it.
 gf12 (build machine, garnet + lake pulled; outputs under /nsim/mstrange/BUILDS):
 `./mflowgen/sweep_specs.py --recipe thesis_mem --out-dir /nsim/mstrange/BUILDS/sweep_out/thesis_fabric --zip --zip-slim`
 (MemTile static + RV through PnR, PT_I_DELAY_FRAC 0.25: 2 builds); `--recipe thesis_pe` = the
-PE tile pair, `--recipe thesis_fabric` = both (4 builds). The PE pair runs at 400 MHz
-(APP_POWER_MHZ, since 2026-10-20). Neither thesis PE meets Tile_PE's 1.1 ns default (local
-estimate ~1.8 / ~1.5 ns static / RV at gf12 synth), and missing it would upsize both and skew
-the area. The Tile_PE constraints were sourced on the thesis PE RTL (local Genus 20.11,
+PE tile pair, `--recipe thesis_fabric` = both (4 builds).
+**One clock for every thesis tile (user 2026-10-21): the slowest block's.** The CGRA runs at
+one clock, so a tile synthesized faster than the array can run is upsized for nothing.
+- `THESIS_CLOCK_MHZ` (= APP_POWER_MHZ, 400) is the clock in every thesis part (thesis_mem,
+  thesis_pe, thesis_mem_opt). The MemTile used to default to 750 and the PE to 400.
+- The slowest block is the PE: the stock PE is ~2.45 ns at gf12; the thesis PEs are ~1.8 / ~1.5
+  ns static / RV by a local estimate.
+- `--recipe thesis_fmax` measures the real limit: the optimized MemTiles and the PE pair,
+  synthesis only, at 1000 MHz, no power. A tile's limit is ~1000 / (1 - WNS_ns) MHz.
+- Then build at the slowest tile's limit (minus PnR margin) with `--recipe thesis_opt
+  --clock-mhz <F>`. A top-level --clock-mhz re-clocks every part together.
+- Use the same F for cgra_app_power. The Tile_PE constraints were sourced on the thesis PE RTL (local Genus 20.11,
 2026-10-17) with no errors; the pond path resolves to the spec pond's. The spec point is lake's default
 spec (build_spec defaults: fw4 dw16 4 KB 2x2 single-port vc2; user 2026-10-18; it was 8 KB,
 the app matrix above, until then). Add `--clock-mhz` / `--stop-after cadence-genus-synthesis`
