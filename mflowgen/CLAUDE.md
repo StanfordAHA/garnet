@@ -1321,9 +1321,11 @@ matmul on 16x16 `garnet.py --thesis static|rv` CGRAs, lake's default thesis spec
 spec pond `--pond-spec {}`, RV with the RV spec pond and DENSE_READY_VALID only, so `aha pnr`
 latency-balances). All 8 bit-accurate; kernel ns static / RV (RV padding registers): conv 4149 /
 4150 (10), gauss 6389 / 6390 (26), harris 16772 / 16794 (508), mmpond 9260 / 13355 (0).
-`/aha/sweep_out/app_bundles_thesis_20261021/<app>/<config>` (+ STATUS.txt, tarball
-`app_bundles_thesis_20261021.tgz`). Recorded in private trees on garnet b0e9ba87 with a lake
-THESIS b01b1531 snapshot on PYTHONPATH (runner: scratchpad 1fa8a391 `thesis/`). Power:
+`/aha/sweep_out/app_bundles_thesis_20261022/<app>/<config>` (+ STATUS.txt, tarball
+`app_bundles_thesis_20261022.tgz`). Recorded in private trees with a lake THESIS b01b1531 snapshot
+on PYTHONPATH (runner: scratchpad 1fa8a391 `thesis/`): static on garnet b0e9ba87; RV re-recorded
+2026-10-22 on garnet 8c2289f5 (canal 24db49a), after the thesis RV PE tile got its pond-input CB
+FIFO (72977053; same tile ports, other RTL): same kernel ns and padding, new garnet.v. Power:
 `cgra_app_power.py --variants conv=..,gauss=..,harris=..,mmpond=.. --clock-mhz 400`; tile_env gives
 both tile graphs THESIS_FABRIC (checked).
 
