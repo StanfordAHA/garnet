@@ -134,3 +134,25 @@ def test_rv_switch_box_registers_are_fifos(fabric):
     assert wrappers and all(m.endswith("_fifo_only") for m in wrappers), wrappers
     assert "fifo_en" not in fabric.verilog
     assert not re.search(r"REG_T\d+_\w+?_B\d+_fifo\b", fabric.verilog)
+
+
+def test_rv_pond_input_fifo(fabric):
+    """canal input_fifo_ports: the RV pond's input CB has a 2-deep FIFO for the
+    switch-box sources (the pond's write ready depends on its valid, which loops with
+    the switch box's valid gating); the PE result (packed pond) bypasses it, selected
+    by the CB's own select. No other CB, and nothing in the static fabric, has one."""
+    steer_cbs = sorted(m for m, body in fabric.modules.items() if "InputFifoSteer" in body
+                       and m.startswith("CB_"))
+    if fabric.mode == "static":
+        assert not steer_cbs and "InputFifoSteer" not in fabric.verilog
+        return
+    cb = "CB_PondTop_input_width_16_num_0_input_fifo"
+    assert steer_cbs == [cb]
+    body = fabric.modules[cb]
+    assert re.search(r"^FifoRegWrapper_16_fifo_only input_fifo\b", body, re.M)
+    loop = re.search(r"\.loop\(\w*out_sel\[(\d+)\]\)", body)
+    assert loop and f".loop_data(I[{loop.group(1)}])" in body
+    # the bypassed source is the PE result (inter-core), with its raw valid
+    tile = fabric.modules["Tile_PE"]
+    assert re.search(rf"^{cb} CB_PondTop_input_width_16_num_0 \(", tile, re.M)
+    assert f"CB_PondTop_input_width_16_num_0_I[{loop.group(1)}] = PE_inst0_PE_output_width_16_num_0;" in tile

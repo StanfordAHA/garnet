@@ -258,12 +258,18 @@ def create_cgra_thesis(mode: str,
                                                      inter_core_connection=inter_core_connection)
 
     # RV: every switch-box register is a 2-deep FIFO, with no pipeline-register mode
-    # (canal fifo_only_regs: no fifo_en bit; the register mux is the bypass)
+    # (canal fifo_only_regs: no fifo_en bit; the register mux is the bypass).
+    # The RV pond's write ready depends on its valid (lake: ready is the arbiter grant),
+    # which loops with the switch box's valid gating when the pond is fed over the
+    # network: its input CB gets a 2-deep FIFO for the network sources (canal
+    # input_fifo_ports); the PE result (packed pond) bypasses it.
+    input_fifo_ports = [f"PondTop_input_width_{dw}_num_0"] if rv and add_pond else None
     interconnect = Interconnect(ics, reg_addr_width, config_data_width, tile_id_width,
                                 lift_ports=standalone,
                                 stall_signal_width=1,
                                 ready_valid=ready_valid,
-                                fifo_only_regs=ready_valid)
+                                fifo_only_regs=ready_valid,
+                                input_fifo_ports=input_fifo_ports)
 
     tile_id_physical(interconnect)
     if add_pd:
