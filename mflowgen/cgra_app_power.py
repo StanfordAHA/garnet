@@ -139,7 +139,7 @@ def load_manifests(variants, config):
     mans = {v: json.load(open(d / config / "manifest.json")) for v, d in variants}
     ref_v, ref = next(iter(mans.items()))
     for v, m in mans.items():
-        for key in ("spec_config", "mode", "pond_spec"):
+        for key in ("spec_config", "mode", "pond_spec", "thesis"):
             if m.get(key) != ref.get(key):
                 raise SystemExit(f"*** {config}: variant {v}'s {key} differs from {ref_v}'s; "
                                  "variants must replay on the same tiles")
@@ -153,7 +153,7 @@ def tile_env(tile, ws, man, variants, config, args):
     build (_tile_env), plus the variants."""
     env = os.environ.copy()
     for k in ("APP_BUNDLE", "RTL_POWER", "MEMTILE_POWER", "LAKE_SPEC_CONFIG", "LAKE_SPEC_MODE",
-              "LAKE_POND_SPEC_CONFIG"):
+              "LAKE_POND_SPEC_CONFIG", "THESIS_FABRIC"):
         env.pop(k, None)
     spec = man["spec_config"]
     # a bundle recorded with a PE-tile spec pond (gen_app_bundle.py --pond-spec)
@@ -162,9 +162,15 @@ def tile_env(tile, ws, man, variants, config, args):
         env["LAKE_POND_SPEC_CONFIG"] = str(ws / "pond_spec.json")
     # Tile_PE: a static bundle replays on the default PE tile; an RV bundle's
     # PE tiles carry the RV spec pond (mflowgen/CLAUDE.md "Bundle guards").
-    if tile == "Tile_MemCore" or man["mode"] == "rv":
+    # A thesis bundle (gen_app_bundle.py on a `_thesis` config) replays on the
+    # thesis fabric's tiles, which garnet.py --thesis builds from the spec in
+    # both modes.
+    thesis = man.get("thesis")
+    if tile == "Tile_MemCore" or man["mode"] == "rv" or thesis:
         env["LAKE_SPEC_CONFIG"] = str(ws / "spec_config.json")
         env["LAKE_SPEC_MODE"] = man["mode"]
+    if thesis:
+        env["THESIS_FABRIC"] = thesis
     env["DUAL_PORT"] = "True" if spec.get("dual_port", False) else "False"
     env["USE_NON_SPLIT_FIFOS"] = "True"
     env["USE_SIM_SRAM"] = "False"

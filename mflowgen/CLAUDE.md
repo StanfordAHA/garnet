@@ -2442,6 +2442,27 @@ the PE part has no idle/active test (app power only).
 - **A thesis build made without `--memtile-power` can't simply be topped up.** The power
   steps change the graph (step numbers), so add power with a fresh build.
 
+**App bundles and whole-CGRA power on the thesis fabrics (2026-10-21, session cfc4174c).**
+- **Recording:** `gen_app_bundle.py --config <name>_thesis[_rv]` (or `--thesis`) records on the
+  thesis CGRA:
+  - `garnet.py` and `aha pnr` get `--thesis <mode>`;
+  - RV runs with DENSE_READY_VALID only (no EXHAUSTIVE_PIPE), so `aha pnr` latency-matches by
+    default and `aha test` starts flush-first;
+  - `--rv-balance` is refused there (it is for EXHAUSTIVE_PIPE fabrics);
+  - manifest.json gets `thesis: <mode>`.
+- **Replaying:** `cgra_app_power.py` sets THESIS_FABRIC for both tile graphs from the manifest,
+  and the spec for Tile_PE in both modes (garnet.py --thesis needs it). Variants must agree on
+  `thesis`.
+- **Checked locally:** conv_3_3 on the 8x8 thesis CGRA (`--cgra-tiles`).
+  - Static: 4149 ns. RV: 4150 ns, balanced with 10 padding registers, flush-first.
+  - Every recorded tile replays exactly at RTL (generate_testbench + the
+    cadence-xcelium-sim flags, `+define+NO_SDF`, the bundle's garnet.v): 36 static tiles
+    (7 MemCore + 29 PE) and 30 RV (5 + 25), 0 mismatches.
+  - generate_testbench.py needed no change for thesis tiles (static ones have no
+    ready/valid).
+- Tests: test_app_bundle_guards `test_gen_app_bundle_thesis_config`,
+  `test_cgra_app_power_thesis_bundle_tiles`.
+
 Why RV runs slower than static in the matrix (2026-10-18; data: archipelago/CLAUDE.md "RV
 without EXHAUSTIVE_PIPE"):
 - Reconvergent forks (conv, gaussian, unsharp, harris): the RV flow balances nothing

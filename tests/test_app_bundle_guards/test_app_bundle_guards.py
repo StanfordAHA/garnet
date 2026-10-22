@@ -549,10 +549,38 @@ def test_gen_app_bundle_dual_port_flag(tmp_path):
     for extra, flags in (({"dual_port": True}, ["--dual-port"]), ({"dual_port": False}, []), ({}, [])):
         spec.write_text(json.dumps(dict({"storage_capacity": 4096}, **extra)))
         assert gab.spec_garnet_flags(spec) == flags
-    kw, mode = gab.sweep_config("fw2_dw16_sc4096_dp_in2_out2_vc2_rv")
-    assert kw.get("dual_port") is True and mode == "rv"
-    kw, _ = gab.sweep_config("fw4_dw16_sc8192_sp_in2_out2_vc2")
+    kw, mode, thesis = gab.sweep_config("fw2_dw16_sc4096_dp_in2_out2_vc2_rv")
+    assert kw.get("dual_port") is True and mode == "rv" and not thesis
+    kw, _, _ = gab.sweep_config("fw4_dw16_sc8192_sp_in2_out2_vc2")
     assert not kw.get("dual_port")
+
+
+def test_gen_app_bundle_thesis_config():
+    """A `_thesis` sweep config records on the thesis fabric: the spec without the
+    sweep-only key, plus the thesis flag (garnet.py --thesis <mode>)."""
+    gab = load(APP / "gen_app_bundle.py", "gen_app_bundle")
+    for name, want in (("fw4_dw16_sc4096_sp_in2_out2_vc2_thesis", "static"),
+                       ("fw4_dw16_sc4096_sp_in2_out2_vc2_ff8_portcg_thesis_rv", "rv")):
+        kw, mode, thesis = gab.sweep_config(name)
+        assert thesis and mode == want and "thesis" not in kw
+    assert gab.THESIS_RV_PNR_ENV == {"DENSE_READY_VALID": "1"}   # no EXHAUSTIVE_PIPE
+
+
+def test_cgra_app_power_thesis_bundle_tiles(tmp_path):
+    """A thesis bundle replays on thesis tiles: THESIS_FABRIC for both tile graphs,
+    and the spec for Tile_PE too (garnet.py --thesis needs it in both modes)."""
+    from types import SimpleNamespace
+    cap = load(MFLOWGEN / "cgra_app_power.py", "cgra_app_power")
+    args = SimpleNamespace(flatten_effort=None, clock_mhz=400.0)
+    for mode in ("static", "rv"):
+        man = {"spec_config": {"storage_capacity": 4096}, "mode": mode, "thesis": mode}
+        for tile in ("Tile_PE", "Tile_MemCore"):
+            env = cap.tile_env(tile, tmp_path, man, [("A", tmp_path)], "cfg", args)
+            assert env["THESIS_FABRIC"] == mode and env["LAKE_SPEC_MODE"] == mode
+            assert env["LAKE_SPEC_CONFIG"] == str(tmp_path / "spec_config.json")
+    man = {"spec_config": {"storage_capacity": 4096}, "mode": "static"}
+    env = cap.tile_env("Tile_PE", tmp_path, man, [("A", tmp_path)], "cfg", args)
+    assert "THESIS_FABRIC" not in env and "LAKE_SPEC_CONFIG" not in env
 
 
 def test_cgra_app_power_builds_pe_with_the_bundles_pond(tmp_path):

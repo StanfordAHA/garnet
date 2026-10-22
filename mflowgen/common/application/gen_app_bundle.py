@@ -12,7 +12,9 @@ ready-valid regression:
               (RV: DENSE_READY_VALID=1 PIPELINED=0 MATCH_BRANCH_DELAY=0)
   garnet      garnet.py --verilog --lake-spec-config/-mode --use-non-split-fifos
               --use_sim_sram (no ready-valid env; it never shapes RTL)
-  pnr         aha pnr (RV: DENSE_READY_VALID=1 EXHAUSTIVE_PIPE=1)
+  pnr         aha pnr (RV: DENSE_READY_VALID=1 EXHAUSTIVE_PIPE=1; on a thesis
+              fabric DENSE_READY_VALID=1 only: aha pnr then latency-matches the
+              branches itself and aha test starts the run flush-first)
   test        aha test with DUMP_ARGS = probes of every placed MEM/PE tile's
               ports (-> run.vcd) and of each MEM tile's lake controller
               (-> core.vcd); aha test's own gold compare must pass
@@ -30,6 +32,9 @@ and writes to --out:
 --config takes a sweep_specs.py config name (spec + mode, as the sweep
 writes them) and names the bundle <bundle-dir>/<config>, the layout
 sweep_specs --app-bundle-dir expects; --spec/--mode/--out set them by hand.
+A `_thesis` config (or --thesis) records on the thesis fabric (garnet.py
+--thesis <mode>, garnet_thesis.py); manifest.json's `thesis` then tells
+cgra_app_power.py to build the tiles the same way.
 Needs xrun on PATH (module load xcelium), aha's venv, and a garnet whose
 tests/test_app/Makefile takes DUMP_ARGS from the environment.
 
@@ -53,6 +58,8 @@ from pathlib import Path
 
 RV_MAP_ENV = {"DENSE_READY_VALID": "1", "PIPELINED": "0", "MATCH_BRANCH_DELAY": "0"}
 RV_PNR_ENV = {"DENSE_READY_VALID": "1", "EXHAUSTIVE_PIPE": "1"}
+# thesis fabrics run RV without PnR pipelining: aha pnr balances by default
+THESIS_RV_PNR_ENV = {"DENSE_READY_VALID": "1"}
 RV_VARS = ("DENSE_READY_VALID", "PIPELINED", "MATCH_BRANCH_DELAY", "EXHAUSTIVE_PIPE")
 SCOPE = "top.dut.Interconnect_inst0"
 TILE_DESIGNS = {"m": "Tile_MemCore", "p": "Tile_PE"}
@@ -64,7 +71,8 @@ STEPS = ("collateral", "halide", "map", "garnet", "pnr", "test", "package")
 
 
 def sweep_config(name):
-    """(spec kwargs, mode) of a sweep_specs.py config name, from its spec sets."""
+    """(spec kwargs, mode, thesis fabric?) of a sweep_specs.py config name, from
+    its spec sets."""
     path = Path(__file__).resolve().parents[2] / "sweep_specs.py"
     spec = importlib.util.spec_from_file_location("sweep_specs", path)
     ss = importlib.util.module_from_spec(spec)
@@ -74,7 +82,7 @@ def sweep_config(name):
             for mode in ([s["runtime_mode"]] if s.get("runtime_mode") else ss.RUNTIME_MODES):
                 cfg = dict(s, runtime_mode=mode)
                 if ss._config_name(cfg) == name and not ss._unsupported_reason(s, mode):
-                    return ss._spec_kwargs(cfg), mode
+                    return ss._spec_kwargs(cfg), mode, bool(cfg.get("thesis"))
     sys.exit(f"*** no config {name} in sweep_specs.py's spec sets (sweep_specs.py --list)")
 
 
@@ -302,6 +310,9 @@ def main():
     p.add_argument("--spec", default=None,
                    help="lake spec JSON (build_spec kwargs; the sweep's spec_config.json)")
     p.add_argument("--mode", choices=("static", "rv"), default=None)
+    p.add_argument("--thesis", action="store_true",
+                   help="record on the thesis fabric (garnet.py --thesis <mode>); "
+                        "--config sets it for a `_thesis` config")
     p.add_argument("--app", default="tests/conv_3_3",
                    help="app under Halide-to-Hardware/apps/hardware_benchmarks")
     p.add_argument("--out", default=None, help="bundle directory")
@@ -337,13 +348,17 @@ def main():
     if args.config:
         if args.spec or args.mode:
             p.error("--config sets the spec and mode; drop --spec/--mode")
-        cfg_spec, args.mode = sweep_config(args.config)
+        cfg_spec, args.mode, cfg_thesis = sweep_config(args.config)
+        args.thesis = args.thesis or cfg_thesis
         if not args.out:
             if not args.bundle_dir:
                 p.error("--config needs --bundle-dir or --out")
             args.out = str(Path(args.bundle_dir) / args.config)
     elif not (args.spec and args.mode and args.out):
         p.error("give --config, or --spec, --mode and --out")
+    if args.thesis and args.rv_balance:
+        p.error("--rv-balance is for EXHAUSTIVE_PIPE fabrics; on a thesis fabric aha pnr "
+                "latency-matches the branches itself")
 
     aha_dir = Path(args.aha_dir).resolve()
     garnet = aha_dir / "garnet"
@@ -391,6 +406,8 @@ def main():
     if pond_spec:
         garnet_flags += ["--lake-pond-spec-config", pond_spec]
     garnet_flags += spec_garnet_flags(spec)
+    if args.thesis:
+        garnet_flags += ["--thesis", args.mode]
 
     # 1. collateral
     if skip <= 0:
@@ -435,7 +452,8 @@ def main():
     log(f"garnet.v md5 {gv_md5}")
 
     # 5. pnr
-    test_env = dict(spec_env, LAKE_COLLATERAL_JSON_MEM=str(coll), **(RV_PNR_ENV if rv else {}))
+    rv_pnr_env = THESIS_RV_PNR_ENV if args.thesis else RV_PNR_ENV
+    test_env = dict(spec_env, LAKE_COLLATERAL_JSON_MEM=str(coll), **(rv_pnr_env if rv else {}))
     test_env.update(user_env)
     if pond_coll:
         test_env["LAKE_COLLATERAL_JSON_REGFILE"] = str(pond_coll)
@@ -518,6 +536,7 @@ def main():
     cw_lib = aha_dir / "clockwork/lib/libclkwrk.so"
     manifest = {
         "app": args.app, "mode": args.mode, "width": args.width, "height": args.height,
+        "thesis": args.mode if args.thesis else None,
         "scope": SCOPE, "clock": "{scope}.{tile}.clk",
         "spec_config": json.load(open(spec)),
         "pond_spec": json.load(open(pond_spec)) if pond_spec else None,
