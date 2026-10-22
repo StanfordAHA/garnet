@@ -23,6 +23,8 @@ flags+=" --glb_tile_mem_size $glb_tile_mem_size"
 flags+=" --use-non-split-fifos"
 [ "$dual_port"    == True ] && flags+=" --dual-port"
 [ "$use_sim_sram" == True ] && flags+=" --use_sim_sram"
+# Thesis fabric (garnet.py --thesis static|rv), as gen_rtl.sh. Empty -> no-op.
+[ -n "$thesis" ] && flags+=" --thesis $thesis"
 
 gen_args="--sim-cycles $sim_cycles --clock-period $clock_period --seed $seed"
 
@@ -61,6 +63,11 @@ if [ "$use_container" == True ]; then
         # lassen gen_PE_fc (branch thesis), as in gen_rtl.sh
         ( rm -rf /tmp/lassen_cdw.git && git init -q --bare /tmp/lassen_cdw.git && GIT_TERMINAL_PROMPT=0 git --git-dir=/tmp/lassen_cdw.git fetch -q https://github.com/StanfordAHA/lassen.git thesis:refs/heads/thesis && cd /aha/lassen && git fetch -q /tmp/lassen_cdw.git thesis && git checkout -f -B thesis FETCH_HEAD && git log -1 --oneline ) \
             || { git -C /aha/lassen remote -v; git -C /aha/lassen config --show-origin --name-only --get-regexp '^(http|credential|url)[.]'; echo '*** ERROR: lassen thesis checkout failed'; exit 1; }
+        # A thesis fabric needs canal branch thesis, as in gen_rtl.sh.
+        if [ -n '$thesis' ]; then
+          ( rm -rf /tmp/canal_th.git && git init -q --bare /tmp/canal_th.git && GIT_TERMINAL_PROMPT=0 git --git-dir=/tmp/canal_th.git fetch -q https://github.com/StanfordAHA/canal.git thesis:refs/heads/thesis && cd /aha/canal && git fetch -q /tmp/canal_th.git thesis && git checkout -f -B thesis FETCH_HEAD && git log -1 --oneline ) \
+            || { echo '*** ERROR: memtile-power-test-gen: canal thesis checkout failed'; exit 1; };
+        fi
         cd /aha/garnet
         export LAKE_SPEC_CONFIG=$W/spec_config.json LAKE_SPEC_MODE=$MODE USE_NON_SPLIT_FIFOS=True
         for try in 1 2 3; do

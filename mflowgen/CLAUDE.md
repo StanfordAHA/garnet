@@ -2398,7 +2398,8 @@ extracted under /aha/sweep_out/thesis_mem_20261018).** Static vs RV MemCore tile
     register's `fifo_en` bit, estimated at 60-70 um2.
   - Both tiles keep the power-domain OR (27 um2), since the thesis flow does not apply
     `--no-pd`.
-  - No power: the recipe stops at timing signoff.
+  - No power: that build stopped at timing signoff. Since 2026-10-21 the thesis MemTile
+    recipes also run `--memtile-power` (below).
 
 **`--recipe thesis_mem_opt` (2026-10-20, user request): the thesis MemTile with lake's
 area/power options, 3 builds through PT signoff** (spec set `thesis_fabric_opt`, preset
@@ -2420,11 +2421,26 @@ Checked locally (gen_rtl flags + `--thesis`, 4x2, private lake THESIS de6b95c5 +
 - RV no-filter-path has 4 gated ports and no filter-port CB;
 - no `fifo_en` anywhere.
 
-No power: `memtile-power-test-gen` does not build thesis fabrics (its garnet rebuild has
-no `--thesis`). Command:
+Command:
 `./mflowgen/sweep_specs.py --recipe thesis_mem_opt --out-dir /nsim/mstrange/BUILDS/sweep_out/thesis_opt --zip --zip-slim`.
 `--recipe thesis_opt` = `thesis_mem_opt` + `thesis_pe` (5 builds, each part into its own
 subdirectory and zip). The PE tile takes none of these options: they are MEM spec knobs.
+
+**Idle/active MemTile power on the thesis tiles (2026-10-21, session cfc4174c).**
+`memtile-power-test-gen` builds `ThesisGarnet` when the step's `thesis` parameter (the tile
+graph's THESIS_FABRIC) is set, passes `--thesis`, and in the container fetches canal
+`thesis` as gen_rtl does. `thesis_mem` and `thesis_mem_opt` now include `--memtile-power`;
+the PE part has no idle/active test (app power only).
+- **Checked locally on five thesis tiles** (4x2, `--use_sim_sram`, RTL sims with the step's
+  cmd.tcl): static, static with gating, RV, RV + gating + FIFO-8, and RV + gating + no
+  filter path.
+  - Idle and active PASS on all five, with a SAIF each.
+  - Outputs change 981/980 times in 1000 cycles on static, 976/975 on RV (stock tiles: the
+    same).
+  - Gated ports: every `port_<i>_gclk` toggles 0 times in idle and 1999 in active; the
+    FIFO-8 tile's filter ports stay gated in active (the program leaves them unused).
+- **A thesis build made without `--memtile-power` can't simply be topped up.** The power
+  steps change the graph (step numbers), so add power with a fresh build.
 
 Why RV runs slower than static in the matrix (2026-10-18; data: archipelago/CLAUDE.md "RV
 without EXHAUSTIVE_PIPE"):

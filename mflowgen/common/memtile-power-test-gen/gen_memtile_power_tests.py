@@ -79,6 +79,12 @@ def build_garnet(garnet_flags):
         os.environ["LAKE_SPEC_MODE"] = args.lake_spec_mode
     if getattr(args, "lake_pond_spec_config", None):
         os.environ["LAKE_POND_SPEC_CONFIG"] = args.lake_pond_spec_config
+    if getattr(args, "thesis", None):
+        # garnet.py --thesis static|rv: the thesis fabric, built as garnet.py main()
+        # builds it (garnet_thesis.py: static = no FIFOs or ready-valid, rv = no
+        # FIFO bypass; data_width-bit tracks without the sparse bit)
+        from garnet_thesis import ThesisGarnet
+        return ThesisGarnet(args, io_sides)
     return G.Garnet(args, io_sides)
 
 

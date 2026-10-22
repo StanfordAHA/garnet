@@ -250,6 +250,16 @@ def test_thesis_opt_recipe_and_pe_clock(ss):
     assert "--clock-mhz" not in ss.RECIPE_FLAGS["thesis_mem_opt"]
 
 
+def test_thesis_memtiles_get_power(ss, capsys, tmp_path):
+    """The thesis MemTile recipes run the idle/active power tests (their test
+    generator builds the thesis fabric); the PE part has none (Tile_PE)."""
+    for part in ("thesis_mem", "thesis_mem_opt"):
+        assert "--memtile-power" in ss.RECIPE_FLAGS[part]
+    assert "--memtile-power" not in ss.RECIPE_FLAGS["thesis_pe"]
+    assert ss.main(ss.RECIPE_FLAGS["thesis_mem_opt"] + ["--out-dir", str(tmp_path), "--list"]) == 0
+    assert "memtile-power-pnr-idle" in capsys.readouterr().err
+
+
 def test_no_filter_path_knob(ss):
     base = dict(storage_capacity=4096, add_filter_path=False)
     assert ss._config_name(dict(base, runtime_mode="rv")) == "fw4_dw16_sc4096_sp_in2_out2_vc2_nofp_rv"

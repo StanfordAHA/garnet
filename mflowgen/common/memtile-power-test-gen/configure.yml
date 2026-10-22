@@ -40,6 +40,9 @@ parameters:
   lake_spec_mode: ""
   dual_port: False
   use_sim_sram: False
+  # garnet.py --thesis static|rv (the thesis fabrics; THESIS_FABRIC in the tile
+  # graph); empty -> garnet's own fabric.
+  thesis: ""
 
   # Measurement window (cycles after flush release). Shortened per spec when
   # its iteration domain cannot keep the ports busy that long (power_tests.json).
