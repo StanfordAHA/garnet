@@ -276,6 +276,31 @@ def test_thesis_memtiles_get_power(ss, capsys, tmp_path):
     assert "memtile-power-pnr-idle" in capsys.readouterr().err
 
 
+def test_fresh_moves_a_busy_workspace_aside(ss, tmp_path, monkeypatch):
+    """--fresh on NFS: a file another process holds open can't be removed (EBUSY on
+    its .nfsXXXX); the workspace is moved aside so the build starts empty instead
+    of the sweep dying."""
+    ws = tmp_path / "cfg"
+    (ws / "sub").mkdir(parents=True)
+    (ws / "sub" / ".nfs000busy").write_text("x")
+    real = ss.shutil.rmtree
+    calls = []
+
+    def busy_once(path, *a, **kw):
+        calls.append(path)
+        if len(calls) == 1:
+            raise OSError(16, "Device or resource busy", ".nfs000busy")
+        return real(path, *a, **kw)
+    monkeypatch.setattr(ss.shutil, "rmtree", busy_once)
+    ss._fresh_remove(ws)
+    assert not ws.exists()
+    assert len(calls) == 2 and calls[1].name.startswith("cfg.stale-")
+    plain = tmp_path / "plain"
+    plain.mkdir()
+    ss._fresh_remove(plain)   # a removable workspace is simply removed
+    assert not plain.exists() and len(calls) == 3
+
+
 def test_no_filter_path_knob(ss):
     base = dict(storage_capacity=4096, add_filter_path=False)
     assert ss._config_name(dict(base, runtime_mode="rv")) == "fw4_dw16_sc4096_sp_in2_out2_vc2_nofp_rv"

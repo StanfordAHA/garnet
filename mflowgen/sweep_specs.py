@@ -1632,6 +1632,22 @@ def _process_config(idx, total, cfg, out_dir, args):
     return row
 
 
+def _fresh_remove(path):
+    """--fresh: remove a workspace. On NFS a file another process still holds open
+    survives as a busy `.nfsXXXX` file and rmtree fails (EBUSY); then the workspace is
+    renamed aside (<name>.stale-<time>) and emptied as far as possible, so the build
+    still starts from an empty directory instead of the whole sweep dying."""
+    try:
+        shutil.rmtree(path)
+        return
+    except OSError as e:
+        aside = path.with_name(f"{path.name}.stale-{time.strftime('%Y%m%d-%H%M%S')}")
+        path.rename(aside)
+        shutil.rmtree(aside, ignore_errors=True)
+        print(f"        FRESH: could not remove everything ({e}); moved the rest to {aside} "
+              "(a process still holds files there)", flush=True)
+
+
 def _process_tile(name, cfg, cfg_dir, args):
     print(f"        workspace: {cfg_dir}", flush=True)
 
@@ -1643,7 +1659,7 @@ def _process_tile(name, cfg, cfg_dir, args):
             print(f"        DRY-RUN: rm -rf {cfg_dir}", flush=True)
         else:
             print(f"        FRESH: rm -rf {cfg_dir}", flush=True)
-            shutil.rmtree(cfg_dir)
+            _fresh_remove(cfg_dir)
 
     if not args.dry_run:
         cfg_dir.mkdir(parents=True, exist_ok=True)
@@ -1710,7 +1726,7 @@ def _process_standalone(name, cfg, sa_dir, args):
             print(f"        DRY-RUN: rm -rf {sa_dir}", flush=True)
         else:
             print(f"        FRESH: rm -rf {sa_dir}", flush=True)
-            shutil.rmtree(sa_dir)
+            _fresh_remove(sa_dir)
 
     done_flag = sa_dir / "done.flag"
     targets = " ".join(_standalone_targets(cfg, args))

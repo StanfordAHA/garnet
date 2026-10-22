@@ -2402,7 +2402,40 @@ one clock, so a tile synthesized faster than the array can run is upsized for no
   synthesis only, at 1000 MHz, no power. A tile's limit is ~1000 / (1 - WNS_ns) MHz.
 - Then build at the slowest tile's limit (minus PnR margin) with `--recipe thesis_opt
   --clock-mhz <F>`. A top-level --clock-mhz re-clocks every part together.
-- Use the same F for cgra_app_power. The Tile_PE constraints were sourced on the thesis PE RTL (local Genus 20.11,
+- Use the same F for cgra_app_power.
+
+**gf12 results (2026-10-22; zips thesis_fmax_{mem,pe}_r8cad-gf12_20261022-*, thesis_{mem_opt,pe}_
+r8cad-gf12_20261022-*; extracted in /aha/sweep_out/thesis_fmax_20261022 and thesis_opt_400mhz_20261022).**
+All 10 builds PASS.
+
+Clock probe (synthesis at 1000 MHz):
+
+| tile | WNS | limiting path | limit |
+|---|---|---|---|
+| 3 optimized MemTiles | 0 / +0.1 ps | — | >= 1000 MHz |
+| RV PE | -594 ps | reg->reg: config reg -> ALU -> 1-bit output FIFO | ~1.59 ns, ~627 MHz |
+| static PE | -891 ps | in->reg: track -> CB -> combinational ALU -> 1-bit res_p -> SB register | 1.59 ns after the 0.3T input delay: 1.59 / 0.7 ~ 440 MHz |
+
+- The static PE has no registers, so its path crosses tiles. With a ~150 ps upstream share
+  instead of 0.3T it would reach ~570 MHz.
+- **400 MHz is the slowest block's clock with PnR margin, so the thesis_opt build at 400 is
+  the tile set.**
+
+Tiles at 400 MHz (PnR area um2, PT setup WNS, PnR-level idle / active power mW):
+
+| tile | PnR area | PT WNS | idle | active |
+|---|---|---|---|---|
+| static MemTile, shared ctr + port gating | 12,691 | -11 ps | 0.455 | 5.50 |
+| RV MemTile, gating + FIFO-8 filter | 14,661 (+15.5%) | -10 ps | 0.667 | 5.70 |
+| RV MemTile, gating + no filter path | 13,578 (+7.0%) | -9 ps | 0.597 | 5.63 |
+| static PE | 6,040 | -38 ps | | |
+| RV PE (pond input FIFO) | 7,827 (+29.6%) | -64 ps | | |
+
+- The worst paths are tile feedthrough budgets: static PE track in -> 1-bit SB out; RV PE and RV
+  MemTile switch-box ready -> valid.
+- 16x16 array area (192 PE + 64 MEM tiles, no IO/GLB): static 1.97M um2; RV FIFO-8 2.44M
+  (+23.8%); RV no filter path 2.37M (+20.3%).
+- The 2026-10-18 non-optimized pair at 750 MHz was 13,114 / 15,766 (+20.2% for the MemTile). The Tile_PE constraints were sourced on the thesis PE RTL (local Genus 20.11,
 2026-10-17) with no errors; the pond path resolves to the spec pond's. The spec point is lake's default
 spec (build_spec defaults: fw4 dw16 4 KB 2x2 single-port vc2; user 2026-10-18; it was 8 KB,
 the app matrix above, until then). Add `--clock-mhz` / `--stop-after cadence-genus-synthesis`
