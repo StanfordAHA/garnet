@@ -95,6 +95,12 @@ set i_delay [expr 0.2 * ${clock_period}]
 } else {
 set i_delay [expr 0.3 * ${clock_period}]
 }
+# TILE_I_DELAY_NS (env, e.g. 0.15): a fixed input delay in ns instead of the
+# fraction above -- the upstream tile's register and wire, which do not scale
+# with the clock (sweep_specs.py --i-delay-ns; the thesis recipes).
+if { [info exists ::env(TILE_I_DELAY_NS)] && $::env(TILE_I_DELAY_NS) != "" } {
+    set i_delay $::env(TILE_I_DELAY_NS)
+}
 set_input_delay -clock ${clock_name} ${i_delay} [all_inputs -no_clocks]
 # Pass through should have no input delay
 # Fix config input delay to specific value

@@ -33,7 +33,10 @@ garnet's stock tile (`stock`, no lake spec), the PE pond knob (`_nopond`,
 --recipe builds the thesis data set, or a named part of it, as one command:
 each part is its own sweep into <out-dir>/<part> (RECIPE_FLAGS), and
 `thesis` = fabric_mem + pe_tile + memtile + app_power (cgra_app_power.py
-over --app-bundles).
+over --app-bundles). The thesis-fabric data set (garnet --thesis, each
+(static|RV, data width) CGRA at its own clock) is thesis_fmax (the tiles'
+limits), then thesis_tiles, thesis_dse_reduced and thesis_dse with
+--clocks-from <the thesis_fmax out dir>.
 
 --pnr-set splits the stop target per config: the named configs build to
 --stop-after (signoff by default), every other config stops at --synth-stop
@@ -65,6 +68,21 @@ Examples:
     ./mflowgen/sweep_specs.py --recipe thesis --out-dir /nsim/mstrange/BUILDS/thesis_data \\
         --app-bundles /nsim/mstrange/BUILDS/app_bundles_dw16_20261014 \\
         --config-jobs 4 --pnr-jobs 2 --zip --zip-slim
+
+    # The thesis fabrics, every (static|RV, data width) CGRA at its own clock.
+    # 1) The limits: PE + MemTile pair at dw 8/16/32/64, synthesis only (16).
+    ./mflowgen/sweep_specs.py --recipe thesis_fmax --out-dir /nsim/mstrange/BUILDS/thesis_dse \
+        --config-jobs 8 --fresh --zip --zip-slim
+    # 2) The tile set at 0.9 x each CGRA's slowest tile: dw16 MemTile pair + PE
+    #    pair at every width, through PnR (clocks in <part>/thesis_clocks.json).
+    ./mflowgen/sweep_specs.py --recipe thesis_tiles --out-dir /nsim/mstrange/BUILDS/thesis_dse \
+        --clocks-from /nsim/mstrange/BUILDS/thesis_dse --config-jobs 4 --pnr-jobs 4 --zip --zip-slim
+    # 3) The MemTile design space (same dir as the tiles, so a later run tops up
+    #    an earlier one; --skip-existing, not --fresh): reduced (92, 16 PnR), then
+    #    full (248, 38 PnR).
+    ./mflowgen/sweep_specs.py --recipe thesis_dse_reduced --out-dir /nsim/mstrange/BUILDS/thesis_dse \
+        --clocks-from /nsim/mstrange/BUILDS/thesis_dse --config-jobs 6 --pnr-jobs 4 \
+        --skip-existing --zip --zip-slim
 
     # Just one part (fabric_mem, pe_tile, memtile or app_power); --list or
     # --dry-run shows what each part would build
@@ -288,7 +306,8 @@ SPEC_DEFAULTS = dict(storage_capacity=4096, data_width=16, vec_width=4, dims=6,
 #   thesis: True -> THESIS_FABRIC=<runtime mode> (garnet --thesis static|rv,
 #           garnet_thesis.py): the static-dense (no FIFOs, no ready-valid) or
 #           ready-valid-dense (no FIFO bypass) fabric, no sparse cores.
-SWEEP_ONLY_KEYS = ("runtime_mode", "pond", "fabric", "stock", "thesis")
+#   clock_mhz: this config's tile clock (--clocks-from), over --clock-mhz.
+SWEEP_ONLY_KEYS = ("runtime_mode", "pond", "fabric", "stock", "thesis", "clock_mhz")
 RUNTIME_MODES = ("static", "rv")
 POND_KINDS = ("none", "spec")
 FABRIC_KINDS = ("rv", "static")
@@ -426,6 +445,64 @@ THESIS_OPT_SPEC_POINTS = [
     dict(_THESIS_BASE, clock_gate_ports=True, add_filter_path=False, runtime_mode="rv"),
 ]
 
+# The thesis design-space sweep (user 2026-10-22): every spec on the thesis fabric
+# with the chosen options. Static: shared cycle counter + per-port clock gating;
+# RV: per-port clock gating and no filter path (the user's RV MemTile).
+THESIS_OPT_KNOBS = {"static": dict(share_clk_ctr=True, clock_gate_ports=True),
+                    "rv": dict(clock_gate_ports=True, add_filter_path=False)}
+THESIS_WIDTHS = (8, 16, 32, 64)
+
+
+def _thesis_opt(spec, mode):
+    """spec as a thesis tile of `mode` with that mode's THESIS_OPT_KNOBS."""
+    return dict(spec, thesis=True, runtime_mode=mode, **THESIS_OPT_KNOBS[mode])
+
+
+# One tile geometry per data width, for the clock probe and the PE tiles: lake's
+# default spec at 16 (the thesis design point), sc8192 2x2 elsewhere (fw2 at 64:
+# no dw64 x fw4 macro at 8 KB).
+THESIS_WIDTH_POINTS = {
+    dw: dict(storage_capacity=4096 if dw == 16 else 8192, data_width=dw,
+             vec_width=2 if dw == 64 else 4, in_ports=2, out_ports=2, vec_capacity=2)
+    for dw in THESIS_WIDTHS}
+# MemTile per width and mode (the clock probe; dw16 = the design-point pair).
+THESIS_MEM_WIDTH_SPEC_POINTS = [_thesis_opt(THESIS_WIDTH_POINTS[dw], m)
+                                for dw in THESIS_WIDTHS for m in RUNTIME_MODES]
+# PE tile per width and mode (--graph Tile_PE; the MEM options don't reach it).
+THESIS_PE_WIDTH_SPEC_POINTS = [dict(THESIS_WIDTH_POINTS[dw], thesis=True, runtime_mode=m)
+                               for dw in THESIS_WIDTHS for m in RUNTIME_MODES]
+
+
+def _thesis_width_points():
+    """More specs at dw 8/32/64, where the thesis set has only its sc8192 2x2
+    port grid (and so 1-3 RV points per width): fw1 at two sizes, capacity and
+    port count at the width's base fetch width, a dual-port tile and a wider
+    fetch. All vc2 or fw1, so each has an RV twin; every one has a GF macro."""
+    pts = []
+    for dw, bfw, caps, wide in ((8, 4, (4096, 16384, 32768), dict(vec_width=8, ports=4)),
+                                (32, 2, (4096, 16384, 32768), dict(vec_width=8, ports=4)),
+                                (64, 2, (16384, 32768), dict(vec_width=4, ports=2))):
+        geo = [(1, 8192, 2, False), (1, 4096, 1, False)]
+        geo += [(bfw, sc, 2, False) for sc in caps]
+        # dual-port: fw2, fw1 at 64 (build_spec_rv wants one full-width SDPB macro)
+        geo += [(bfw, 8192, 1, False), (bfw, 8192, 4, False), (1 if dw == 64 else 2, 8192, 2, True)]
+        geo += [(wide["vec_width"], 16384, wide["ports"], False)]
+        for fw, sc, ports, dp in geo:
+            pt = dict(storage_capacity=sc, data_width=dw, vec_width=fw,
+                      in_ports=ports, out_ports=ports)
+            if dp:
+                pt["dual_port"] = True
+            pts.append(pt)
+    return pts
+
+
+def _thesis_dse_points():
+    """The full design-space sweep: the `thesis` spec set plus
+    _thesis_width_points(), each as a static and an RV thesis tile."""
+    base = DEFAULT_SPEC_POINTS + _thesis_spec_points() + _thesis_width_points()
+    return [_thesis_opt(s, m) for s in base for m in RUNTIME_MODES]
+
+
 SPEC_SETS = {
     "default": DEFAULT_SPEC_POINTS,
     "thesis": DEFAULT_SPEC_POINTS + _thesis_spec_points(),
@@ -435,6 +512,9 @@ SPEC_SETS = {
     "fabric": FABRIC_SPEC_POINTS,
     "thesis_fabric": THESIS_FABRIC_SPEC_POINTS,
     "thesis_fabric_opt": THESIS_OPT_SPEC_POINTS,
+    "thesis_mem_widths": THESIS_MEM_WIDTH_SPEC_POINTS,
+    "thesis_pe_widths": THESIS_PE_WIDTH_SPEC_POINTS,
+    "thesis_dse": _thesis_dse_points(),
 }
 PRESETS["thesis_fabric_pnr"] = [
     "fw4_dw16_sc4096_sp_in2_out2_vc2_thesis",
@@ -453,6 +533,71 @@ PRESETS["pe_tile_pnr"] = [
     "fw4_dw16_sc4096_sp_in2_out2_vc2_rv",
     "fw4_dw16_sc4096_sp_in2_out2_vc2_nopond_rv",
 ]
+
+
+def _dse_names(specs, modes=RUNTIME_MODES):
+    """thesis_dse config names of spec names (_config_name without the knobs)
+    in each mode; RV only where build_spec_rv can (vc <= 2 or fw1)."""
+    suffix = {"static": "_sharectr_portcg_thesis", "rv": "_nofp_portcg_thesis_rv"}
+    return [s + suffix[m] for s in specs for m in modes
+            if m == "static" or not re.search(r"_vc[3-9]", s)]
+
+
+# thesis_dse synth->PnR anchors per data width. Fit: both modes of each spec,
+# spanning the width's size range (smallest fw1 1x1, a mid 2x2, the largest
+# fetch / port count); dw16 keeps the dw16_fit8 geometries. Held out
+# (spec, mode): dw16 = the design point and the dw16_val4 geometries; other
+# widths = one static (a vec_capacity point) and one RV tile (dual-port or the
+# largest SRAM).
+_DSE_FIT = {
+    16: ("fw1_dw16_sc4096_sp_in1_out1", "fw2_dw16_sc4096_dp_in2_out2_vc2",
+         "fw4_dw16_sc8192_sp_in2_out2_vc2", "fw8_dw16_sc32768_sp_in4_out4_vc2"),
+    8: ("fw1_dw8_sc4096_sp_in1_out1", "fw4_dw8_sc8192_sp_in2_out2_vc2",
+        "fw8_dw8_sc16384_sp_in4_out4_vc2"),
+    32: ("fw1_dw32_sc4096_sp_in1_out1", "fw2_dw32_sc8192_sp_in2_out2_vc2",
+         "fw8_dw32_sc16384_sp_in4_out4_vc2"),
+    64: ("fw1_dw64_sc4096_sp_in1_out1", "fw2_dw64_sc8192_sp_in2_out2_vc2",
+         "fw4_dw64_sc16384_sp_in2_out2_vc2"),
+}
+_DSE_VAL = {
+    16: (("fw4_dw16_sc4096_sp_in2_out2_vc2", "static"), ("fw4_dw16_sc4096_sp_in2_out2_vc2", "rv"),
+         ("fw1_dw16_sc8192_sp_in2_out2_me4096", "static"), ("fw4_dw16_sc8192_sp_in2_out2_vc4", "static"),
+         ("fw1_dw16_sc8192_sp_in2_out2_dim4_msw1024", "rv"), ("fw4_dw16_sc8192_dp_in4_out4_vc2", "rv")),
+    8: (("fw8_dw8_sc8192_sp_in2_out2_vc8", "static"), ("fw2_dw8_sc8192_dp_in2_out2_vc2", "rv")),
+    32: (("fw4_dw32_sc8192_sp_in2_out2_vc4", "static"), ("fw2_dw32_sc32768_sp_in2_out2_vc2", "rv")),
+    64: (("fw2_dw64_sc8192_sp_in2_out2_vc8", "static"), ("fw2_dw64_sc32768_sp_in2_out2_vc2", "rv")),
+}
+_dse_val = {dw: [n for s, m in v for n in _dse_names([s], [m])] for dw, v in _DSE_VAL.items()}
+PRESETS["thesis_design_point"] = _dse_names(["fw4_dw16_sc4096_sp_in2_out2_vc2"])
+PRESETS["thesis_dse_val"] = [n for dw in THESIS_WIDTHS for n in _dse_val[dw]]
+PRESETS["thesis_dse_pnr"] = [n for dw in THESIS_WIDTHS for n in _dse_names(_DSE_FIT[dw])] \
+    + PRESETS["thesis_dse_val"]
+# Reduced: the dw16 fit, held out = the design point + the other widths' held-out
+# tiles (projected from the dw16 fit, as the stock-fabric dw 8/32/64 run did).
+PRESETS["thesis_dse_val_reduced"] = PRESETS["thesis_design_point"] + [
+    n for dw in (8, 32, 64) for n in _dse_val[dw]]
+PRESETS["thesis_dse_pnr_reduced"] = _dse_names(_DSE_FIT[16]) + PRESETS["thesis_dse_val_reduced"]
+# Reduced synthesis set: every full PnR anchor plus each axis's ends -- port grid
+# (fw x vc), iteration domain (dims x max_extent), affine (dims x
+# max_sequence_width), each memory organization's smallest and largest SRAM, and
+# at the other widths more port counts, SRAM sizes and fw1.
+PRESETS["thesis_dse_reduced"] = list(dict.fromkeys(PRESETS["thesis_dse_pnr"] + _dse_names([
+    "fw2_dw16_sc8192_sp_in2_out2_vc2", "fw2_dw16_sc8192_sp_in2_out2_vc8",
+    "fw8_dw16_sc8192_sp_in2_out2_vc2", "fw8_dw16_sc8192_sp_in2_out2_vc8",
+    "fw1_dw16_sc8192_sp_in2_out2_dim1_me64", "fw1_dw16_sc8192_sp_in2_out2_dim3_me1024",
+    "fw1_dw16_sc8192_sp_in2_out2_dim1_msw64", "fw1_dw16_sc8192_sp_in2_out2_msw16384",
+    "fw1_dw16_sc1024_dp_in1_out1", "fw1_dw16_sc16384_dp_in1_out1",
+    "fw2_dw16_sc1024_dp_in2_out2_vc2", "fw2_dw16_sc16384_dp_in2_out2_vc2",
+    "fw4_dw16_sc1024_dp_in4_out4_vc2", "fw2_dw16_sc2048_sp_in1_out1_vc2",
+    "fw2_dw16_sc32768_sp_in1_out1_vc2", "fw4_dw16_sc32768_sp_in2_out2_vc2",
+    "fw8_dw16_sc8192_sp_in4_out4_vc2",
+    "fw2_dw8_sc8192_sp_in2_out2_vc2", "fw4_dw8_sc8192_sp_in4_out4_vc2",
+    "fw4_dw8_sc32768_sp_in2_out2_vc2", "fw1_dw8_sc8192_sp_in2_out2",
+    "fw4_dw32_sc8192_sp_in2_out2_vc2", "fw2_dw32_sc8192_sp_in4_out4_vc2",
+    "fw2_dw32_sc4096_sp_in2_out2_vc2", "fw1_dw32_sc8192_sp_in2_out2",
+    "fw2_dw64_sc8192_sp_in4_out4_vc2", "fw2_dw64_sc16384_sp_in2_out2_vc2",
+    "fw1_dw64_sc8192_sp_in2_out2",
+])))
 
 # --recipe: the thesis data set as named sub-sweeps. Each runs as its own
 # sweep_specs.py invocation into <out-dir>/<name> (own results.csv,
@@ -508,19 +653,54 @@ THESIS_OPT_RECIPE_FLAGS = {
                        "--pnr-set", "thesis_opt_pnr", "--clock-mhz", str(THESIS_CLOCK_MHZ),
                        "--pt-i-delay-frac", "0.25"],
 }
+# The thesis tile set and design-space sweep at each fabric's own clock (user
+# 2026-10-22): every tile of a (static|RV, data width) CGRA at that CGRA's clock,
+# which its slowest tile sets (the PE: static ~575 / RV ~627 MHz at dw16), minus
+# THESIS_CLOCK_MARGIN for PnR. Every thesis tile's data/valid/ready inputs get
+# THESIS_I_DELAY_NS, the upstream tile's register and wire, instead of a fraction
+# of the period: the static PE's limiting path starts in the neighbour's register
+# (track -> CB -> combinational ALU -> register), so a fraction of the period
+# would set its clock by the constraint. Pass-through ports keep 0.25 T.
+THESIS_I_DELAY_NS = 0.15
+THESIS_CLOCK_MARGIN = 0.9
+THESIS_CLOCK_STEP_MHZ = 5
+THESIS_CLOCKS_FILE = "thesis_clocks.json"
+_THESIS_TILE_FLAGS = ["--flatten-effort", "0", "--pt-i-delay-frac", "0.25",
+                      "--i-delay-ns", str(THESIS_I_DELAY_NS)]
+_TILE_PE = ["--graph", str(MFLOWGEN_DIR / "Tile_PE")]
 # thesis_fmax: how fast each thesis tile can go. Synthesis only, over-constrained at
-# FMAX_PROBE_MHZ, no power: the optimized MemTiles and the PE pair. A tile's limit is
-# about 1000 / (1000 / FMAX_PROBE_MHZ - synth WNS in ns) MHz; build every tile at the
-# slowest one (minus margin for PnR) with `--recipe thesis_opt --clock-mhz <that>`.
+# FMAX_PROBE_MHZ, no power: the PE pair and the chosen MemTile pair at each data
+# width (16 builds). A tile's limit is about 1000 / (1000 / FMAX_PROBE_MHZ - synth
+# WNS in ns) MHz; --clocks-from <this recipe's out dir> turns them into the clocks.
 FMAX_PROBE_MHZ = 1000
+_FMAX_FLAGS = ["--clock-mhz", str(FMAX_PROBE_MHZ), "--stop-after", "cadence-genus-synthesis"]
 THESIS_FMAX_RECIPE_FLAGS = {
-    "thesis_fmax_mem": ["--spec-set", "thesis_fabric_opt", "--flatten-effort", "0",
-                        "--clock-mhz", str(FMAX_PROBE_MHZ), "--stop-after", "cadence-genus-synthesis",
-                        "--pt-i-delay-frac", "0.25"],
-    "thesis_fmax_pe": ["--graph", str(MFLOWGEN_DIR / "Tile_PE"), "--spec-set", "thesis_fabric",
-                       "--flatten-effort", "0", "--clock-mhz", str(FMAX_PROBE_MHZ),
-                       "--stop-after", "cadence-genus-synthesis", "--pt-i-delay-frac", "0.25"],
+    "thesis_fmax_mem": ["--spec-set", "thesis_mem_widths"] + _FMAX_FLAGS + _THESIS_TILE_FLAGS,
+    "thesis_fmax_pe": _TILE_PE + ["--spec-set", "thesis_pe_widths"] + _FMAX_FLAGS + _THESIS_TILE_FLAGS,
 }
+#   thesis_tiles: the tile set at those clocks (--clocks-from): the dw16 MemTile
+#   pair through PnR with idle/active power, the PE pair at every width through PnR.
+#   thesis_dse_reduced / thesis_dse: the MemTile design-space sweep, synthesis +
+#   synth-level power for every config, PnR for the synth->PnR model's anchors
+#   (fit + held out). Reduced: ~90 configs spanning every axis, 16 PnR (the dw16
+#   fit, the design point and two held-out tiles per other width, projected by
+#   the dw16 fit). Full: every thesis spec + _thesis_width_points() (248), 38 PnR
+#   (fit and held-out tiles at every width and mode).
+#   The MemTile parts share one directory (THESIS_PART_DIRS), so a part run after
+#   another builds only what is missing (with --skip-existing, not --fresh).
+THESIS_DSE_RECIPE_FLAGS = {
+    "thesis_tiles_mem": ["--spec-set", "thesis_dse", "--preset", "thesis_design_point",
+                         "--memtile-power"] + _THESIS_TILE_FLAGS,
+    "thesis_tiles_pe": _TILE_PE + ["--spec-set", "thesis_pe_widths"] + _THESIS_TILE_FLAGS,
+    "thesis_dse_reduced_mem": ["--spec-set", "thesis_dse", "--preset", "thesis_dse_reduced",
+                               "--memtile-power", "--pnr-set", "thesis_dse_pnr_reduced",
+                               "--validate-set", "thesis_dse_val_reduced"] + _THESIS_TILE_FLAGS,
+    "thesis_dse_mem": ["--spec-set", "thesis_dse", "--memtile-power", "--pnr-set", "thesis_dse_pnr",
+                       "--validate-set", "thesis_dse_val"] + _THESIS_TILE_FLAGS,
+}
+THESIS_PART_DIRS = {"thesis_tiles_mem": "thesis_dse_mem", "thesis_dse_reduced_mem": "thesis_dse_mem"}
+# Parts that need --clocks-from (or a --clock-mhz) rather than the graph's clock.
+THESIS_CLOCKED_PARTS = tuple(THESIS_DSE_RECIPE_FLAGS)
 RECIPES = {**{name: [name] for name in RECIPE_FLAGS}, "app_power": ["app_power"],
            "thesis": list(RECIPE_FLAGS) + ["app_power"],
            **{name: [name] for name in THESIS_FABRIC_RECIPE_FLAGS},
@@ -528,10 +708,15 @@ RECIPES = {**{name: [name] for name in RECIPE_FLAGS}, "app_power": ["app_power"]
            **{name: [name] for name in THESIS_OPT_RECIPE_FLAGS},
            "thesis_opt": list(THESIS_OPT_RECIPE_FLAGS) + ["thesis_pe"],
            **{name: [name] for name in THESIS_FMAX_RECIPE_FLAGS},
-           "thesis_fmax": list(THESIS_FMAX_RECIPE_FLAGS)}
+           "thesis_fmax": list(THESIS_FMAX_RECIPE_FLAGS),
+           **{name: [name] for name in THESIS_DSE_RECIPE_FLAGS},
+           "thesis_tiles": ["thesis_tiles_mem", "thesis_tiles_pe"],
+           "thesis_dse_reduced": ["thesis_dse_reduced_mem"],
+           "thesis_dse": ["thesis_dse_mem"]}
 RECIPE_FLAGS.update(THESIS_FABRIC_RECIPE_FLAGS)
 RECIPE_FLAGS.update(THESIS_OPT_RECIPE_FLAGS)
 RECIPE_FLAGS.update(THESIS_FMAX_RECIPE_FLAGS)
+RECIPE_FLAGS.update(THESIS_DSE_RECIPE_FLAGS)
 
 
 def build_argparser():
@@ -724,6 +909,22 @@ def build_argparser():
                         "PT_I_DELAY_FRAC, read by Tile_PE / Tile_MemCore "
                         "constraints common.tcl). Unset: the fixed 0.7 ns. The "
                         "thesis_mem / thesis_pe recipes use 0.25.")
+    p.add_argument("--i-delay-ns", type=float, default=None, metavar="NS",
+                   help="Tile constraints: input delay of every other input (the "
+                        "data, valid and ready tracks) in ns (env TILE_I_DELAY_NS, "
+                        "read by Tile_PE / Tile_MemCore constraints common.tcl). "
+                        "Unset: 0.3 (PE) / 0.2 (MemTile) x the clock period. The "
+                        "thesis_fmax / thesis_tiles / thesis_dse recipes use "
+                        f"{THESIS_I_DELAY_NS:g}: the upstream tile's register and wire.")
+    p.add_argument("--clocks-from", metavar="PATH", default=None,
+                   help="Clock each thesis config at its fabric's clock for its data "
+                        "width. PATH is a --recipe thesis_fmax out dir (its "
+                        "thesis_fmax_mem / thesis_fmax_pe results; clock = "
+                        f"{THESIS_CLOCK_MARGIN:g} x the slower tile's limit at that "
+                        f"mode and width, rounded down to {THESIS_CLOCK_STEP_MHZ} MHz) "
+                        f"or a JSON file like {THESIS_CLOCKS_FILE} "
+                        '({"static": {"16": 515, ...}, "rv": {...}}). The table is '
+                        f"written to <out-dir>/{THESIS_CLOCKS_FILE}. Not with --clock-mhz.")
     p.add_argument("--flatten-effort", type=int, choices=range(4), default=None,
                    metavar="N",
                    help="Genus flatten_effort for the tile synth (env FLATTEN, "
@@ -899,6 +1100,8 @@ def main(argv=None):
     if not configs:
         print("No spec points selected; nothing to do.", flush=True)
         return 0
+    if args.clocks_from:
+        _apply_thesis_clocks(configs, args)
     args.pnr_names = _resolve_pnr_set(args, configs)
     args.validate_names = _resolve_validate_set(args)
     if args.pnr_names is not None:
@@ -1054,13 +1257,19 @@ def _recipe_passthrough(argv):
 
 
 def _run_recipe(args, argv):
-    """Each part of --recipe in turn into <out-dir>/<part>; 1 if any failed
-    (the later parts still run)."""
+    """Each part of --recipe in turn into <out-dir>/<part> (or its
+    THESIS_PART_DIRS dir); 1 if any failed (the later parts still run)."""
     root = Path(args.out_dir).resolve()
     rest = _recipe_passthrough(argv)
+    unclocked = [p for p in RECIPES[args.recipe] if p in THESIS_CLOCKED_PARTS]
+    if unclocked and not (args.clocks_from or args.clock_mhz):
+        print(f"*** ERROR: --recipe {args.recipe} ({', '.join(unclocked)}) builds at each "
+              "fabric's clock: pass --clocks-from <the --recipe thesis_fmax out dir> "
+              f"(or a {THESIS_CLOCKS_FILE}), or one --clock-mhz for all.", file=sys.stderr)
+        return 2
     failed = []
     for part in RECIPES[args.recipe]:
-        out = root / part
+        out = root / THESIS_PART_DIRS.get(part, part)
         if part == "app_power":
             rc = _run_app_power(args, out)
         else:
@@ -1074,6 +1283,94 @@ def _run_recipe(args, argv):
         print(f"\n*** --recipe {args.recipe}: {', '.join(failed)} failed "
               "(see above)", file=sys.stderr, flush=True)
     return 1 if failed else 0
+
+
+# ---------------------------------------------------------------------------
+# --clocks-from: each thesis config at its (mode, data width) CGRA's clock
+# ---------------------------------------------------------------------------
+def _read_rows(path):
+    try:
+        with open(path, newline="") as f:
+            return list(csv.DictReader(f))
+    except OSError:
+        return []
+
+
+def _probe_limits(root):
+    """{(graph, mode, data_width): MHz} from a thesis_fmax out dir (its
+    thesis_fmax_mem / thesis_fmax_pe sweeps; else root and its subdirs, e.g.
+    the recipe's extracted zips):
+    each synthesized config's limit, 1000 / (clock period - synth WNS) in ns.
+    Positive slack makes that a lower bound."""
+    dirs = [root / p for p in THESIS_FMAX_RECIPE_FLAGS if (root / p).is_dir()] or [root] + sorted(
+        d for d in root.iterdir() if (d / "correlation.csv").is_file()) if root.is_dir() else []
+    limits = {}
+    for d in dirs:
+        width = {r["config_name"]: r.get("data_width") for r in _read_rows(d / "results.csv")}
+        for r in _read_rows(d / "correlation.csv"):
+            try:
+                ns, wns = float(r["clock_period_ns"]), float(r["tile_synth_wns_ps"]) / 1000
+                dw = int(r.get("data_width") or width[r["config_name"]])
+            except (KeyError, TypeError, ValueError):
+                continue
+            key = (r.get("graph") or "Tile_MemCore", r["runtime_mode"], dw)
+            limits[key] = min(limits.get(key, float("inf")), 1000 / (ns - wns))
+    return limits
+
+
+def _thesis_clock_table(path, margin=THESIS_CLOCK_MARGIN, step=THESIS_CLOCK_STEP_MHZ):
+    """--clocks-from -> ({(mode, data_width): MHz}, report lines). A JSON file
+    gives the clocks; a thesis_fmax out dir gives the tile limits, and each
+    (mode, width) clock is margin x the slowest tile's, rounded down to step."""
+    path = Path(path).expanduser().resolve()
+    if path.is_file():
+        try:
+            raw = json.loads(path.read_text())
+            table = {(m, int(w)): float(mhz) for m, ws in raw.items() if m in RUNTIME_MODES
+                     for w, mhz in ws.items()}
+        except (ValueError, AttributeError) as e:
+            raise SystemExit(f"*** ERROR: --clocks-from {path}: {e}")
+        return table, [f"clocks from {path}"]
+    limits = _probe_limits(path)
+    if not limits:
+        raise SystemExit(f"*** ERROR: --clocks-from {path}: no synthesized configs "
+                         "(correlation.csv + results.csv) under it or its thesis_fmax_* dirs")
+    table, lines = {}, [f"clocks from the limits in {path} "
+                        f"(clock = {margin:g} x the slowest tile, down to {step} MHz):"]
+    for mode, dw in sorted({(m, w) for _, m, w in limits}):
+        tiles = {g: v for (g, m, w), v in limits.items() if (m, w) == (mode, dw)}
+        table[(mode, dw)] = float(int(margin * min(tiles.values()) // step * step))
+        lines.append(f"  {mode:6s} dw{dw:<3d} {table[(mode, dw)]:6g} MHz   limits: " + ", ".join(
+            f"{g} {v:.0f}" for g, v in sorted(tiles.items())))
+    return table, lines
+
+
+def _apply_thesis_clocks(configs, args):
+    """Give every thesis config its (mode, width) clock (cfg clock_mhz) and
+    record the table in <out-dir>/THESIS_CLOCKS_FILE."""
+    if args.clock_mhz is not None:
+        raise SystemExit("*** ERROR: --clocks-from and --clock-mhz both set a clock; pick one.")
+    table, lines = _thesis_clock_table(args.clocks_from)
+    missing = set()
+    for cfg in configs:
+        if not cfg.get("thesis"):
+            continue
+        key = (_mode(cfg), cfg.get("data_width", SPEC_DEFAULTS["data_width"]))
+        if key in table:
+            cfg["clock_mhz"] = table[key]
+        else:
+            missing.add(key)
+    if missing:
+        raise SystemExit(f"*** ERROR: --clocks-from {args.clocks_from} has no clock for "
+                         + ", ".join(f"{m} dw{w}" for m, w in sorted(missing)))
+    print("\n".join(lines), flush=True)
+    if not (args.dry_run or args.list):
+        out = Path(args.out_dir).resolve()
+        out.mkdir(parents=True, exist_ok=True)
+        clocks = {}
+        for (m, w), mhz in sorted(table.items()):
+            clocks.setdefault(m, {})[str(w)] = mhz
+        (out / THESIS_CLOCKS_FILE).write_text(json.dumps(clocks, indent=2) + "\n")
 
 
 def _app_power_variants(root):
@@ -1122,6 +1419,14 @@ def _clock_period_ps(args):
     if args.clock_mhz is None:
         return None
     return int(round(1e6 / args.clock_mhz))
+
+
+def _cfg_clock_ps(cfg, args):
+    """A config's clock period in whole ps: its own clock_mhz (--clocks-from),
+    else --clock-mhz, else None (the graph's default)."""
+    if cfg.get("clock_mhz"):
+        return int(round(1e6 / cfg["clock_mhz"]))
+    return _clock_period_ps(args)
 
 
 def _tile_clock_ps(graph):
@@ -2008,6 +2313,9 @@ def _tile_env(cfg, cfg_dir, args):
     # Tile constraints: flush/stall/config input delay as a fraction of the clock
     if args.pt_i_delay_frac is not None:
         env["PT_I_DELAY_FRAC"] = str(args.pt_i_delay_frac)
+    # ...and of the data/ready/valid inputs, in ns (unset: the graph's fraction)
+    if args.i_delay_ns is not None:
+        env["TILE_I_DELAY_NS"] = f"{args.i_delay_ns:g}"
     if cfg.get("pond") == "none":
         env["NO_POND"] = "True"
     elif cfg.get("pond") == "spec":
@@ -2023,7 +2331,7 @@ def _tile_env(cfg, cfg_dir, args):
     # 1.333 ns sweep doesn't read as changed settings (manifests from before
     # this flag record no CLOCK_PERIOD) and rebuild it. Tile_PE reads its
     # clock from clock_period_PE instead (_clock_env_key).
-    ps = _clock_period_ps(args)
+    ps = _cfg_clock_ps(cfg, args)
     if ps is not None and ps != _tile_clock_ps(args.graph):
         env[_clock_env_key(args.graph) or "CLOCK_PERIOD"] = f"{ps / 1000:g}"
 
@@ -2072,7 +2380,8 @@ def _run_one(cfg, cfg_dir, args):
         dry_env_keys = [k for k in ("LAKE_SPEC_CONFIG", "LAKE_SPEC_MODE") if k in env]
         dry_env_keys += ["DUAL_PORT", "USE_NON_SPLIT_FIFOS", "USE_SIM_SRAM"]
         dry_env_keys += [k for k in ("DENSE_ONLY", "THESIS_FABRIC", "NO_POND",
-                                     "LAKE_POND_SPEC_CONFIG", "PT_I_DELAY_FRAC") if k in env]
+                                     "LAKE_POND_SPEC_CONFIG", "PT_I_DELAY_FRAC",
+                                     "TILE_I_DELAY_NS") if k in env]
         if args.flatten_effort is not None:
             dry_env_keys += ["FLATTEN"]
         dry_env_keys += [k for k in CLOCK_ENV_KEYS if k in env]
@@ -2155,6 +2464,8 @@ def _write_spec_files(cfg, ws, targets, pnr_role=None, graph=None):
     if graph:
         meta["graph"] = graph
     meta.update({k: cfg[k] for k in ("pond", "fabric", "stock", "thesis") if k in cfg})
+    if not _is_stock(cfg):
+        meta["data_width"] = cfg.get("data_width", SPEC_DEFAULTS["data_width"])
     with open(ws / "sweep_meta.json", "w") as f:
         json.dump(meta, f, indent=2, sort_keys=True)
 
@@ -2178,7 +2489,7 @@ BUILD_ENV_KEYS = ("LAKE_SPEC_CONFIG", "LAKE_SPEC_MODE", "DUAL_PORT",
                   "USE_NON_SPLIT_FIFOS", "USE_SIM_SRAM", "FLATTEN", "CLOCK_PERIOD",
                   "clock_period_PE", "RTL_POWER", "SYNTH_POWER", "MEMTILE_POWER",
                   "APP_BUNDLE", "LAKE_POND_SPEC_CONFIG", "NO_POND", "DENSE_ONLY",
-                  "THESIS_FABRIC", "PT_I_DELAY_FRAC")
+                  "THESIS_FABRIC", "PT_I_DELAY_FRAC", "TILE_I_DELAY_NS")
 # pond "spec": the pond spec JSON in the workspace (lake's default spec pond).
 POND_SPEC_FILE = "pond_spec.json"
 
@@ -3072,7 +3383,7 @@ def _sweep_meta(ws, name):
 # sweep_meta.json fields that only newer workspaces carry: a report gets these
 # columns when any of its workspaces has them (blank for the others), so
 # re-reporting an older sweep writes the same CSV as before.
-META_KNOB_COLUMNS = ("graph", "pond", "fabric", "stock", "thesis")
+META_KNOB_COLUMNS = ("graph", "pond", "fabric", "stock", "thesis", "data_width")
 
 
 def _fill_meta_columns(rows):
@@ -3169,18 +3480,27 @@ def _pct_err(pred, actual):
     return (pred - actual) / actual * 100
 
 
+def _width_group(r):
+    """'<mode>_dw<N>' for a row that records its data width, else None."""
+    return f"{r['runtime_mode']}_dw{r['data_width']}" if r.get("data_width") not in (None, "") else None
+
+
 def _fit_and_project(rows, fits=PNR_FITS):
-    """Fit PnR on synth per group (all / static / rv) over the rows that have
-    both and are not held out (pnr_role 'validate'), then add the projected
-    PnR value to every row with a synth value. A row uses its own mode's fit
-    when that has MIN_FIT_POINTS, else the pooled one; proj_extrapolated flags
-    synth values outside the fitted range; proj_err_pct = (projected - actual)
-    / actual where PnR ran: the in-sample residual for fit rows, the prediction
-    error for held-out ones. Returns the fit-table rows; val_* = the held-out
-    rows' prediction errors under that fit."""
+    """Fit PnR on synth per group (all / static / rv, and <mode>_dw<N> when
+    rows record their data width) over the rows that have both and are not
+    held out (pnr_role 'validate'), then add the projected PnR value to every
+    row with a synth value. A row uses its own mode-and-width fit when that has
+    MIN_FIT_POINTS, else its mode's, else the pooled one; proj_extrapolated
+    flags synth values outside the fitted range; proj_err_pct = (projected -
+    actual) / actual where PnR ran: the in-sample residual for fit rows, the
+    prediction error for held-out ones. Returns the fit-table rows; val_* = the
+    errors of that fit on the held-out rows it covers (so a mode's pooled fit
+    and its per-width fits can be compared on the same held-out tiles)."""
     groups = {"all": rows}
     for mode in RUNTIME_MODES:
         groups[mode] = [r for r in rows if r["runtime_mode"] == mode]
+    for wg in sorted({_width_group(r) for r in rows} - {None}):
+        groups[wg] = [r for r in rows if _width_group(r) == wg]
     table, fitted = [], {}
     for label, xcol, ycol in fits:
         for group, members in groups.items():
@@ -3194,9 +3514,11 @@ def _fit_and_project(rows, fits=PNR_FITS):
                               "synth_column": xcol, "pnr_column": ycol, **fit})
     for r in rows:
         for label, xcol, ycol in fits:
-            fit, used = fitted.get((label, r["runtime_mode"])), r["runtime_mode"]
-            if not fit:
-                fit, used = fitted.get((label, "all")), "all"
+            fit, used = None, ""
+            for group in (_width_group(r), r["runtime_mode"], "all"):
+                if group and fitted.get((label, group)):
+                    fit, used = fitted[(label, group)], group
+                    break
             x = r.get(xcol)
             if fit and isinstance(x, float):
                 r[f"{ycol}_proj"] = fit["intercept"] + fit["slope"] * x
@@ -3209,14 +3531,29 @@ def _fit_and_project(rows, fits=PNR_FITS):
                 r[f"{ycol}_proj_extrapolated"] = ""
             r[f"{ycol}_proj_err_pct"] = _pct_err(r[f"{ycol}_proj"], r.get(ycol))
     for t in table:
-        col = t["pnr_column"]
-        errs = [abs(r[f"{col}_proj_err_pct"]) for r in rows
-                if r.get("pnr_role") == "validate" and r[f"{col}_proj_fit"] == t["group"]
-                and r[f"{col}_proj_err_pct"] is not None]
+        xcol, ycol = t["synth_column"], t["pnr_column"]
+        errs = [abs(_pct_err(t["intercept"] + t["slope"] * r[xcol], r[ycol]))
+                for r in groups[t["group"]]
+                if r.get("pnr_role") == "validate" and isinstance(r.get(xcol), float)
+                and isinstance(r.get(ycol), float) and r[ycol]]
         t["val_n"] = len(errs)
         t["val_mean_abs_pct_err"] = sum(errs) / len(errs) if errs else None
         t["val_max_abs_pct_err"] = max(errs) if errs else None
     return table
+
+
+def _fmax_estimates(r):
+    """The clock each level's timing says this tile could run at: 1000 /
+    (clock period - setup WNS) MHz, from Genus's and PrimeTime's WNS. Positive
+    slack makes it a lower bound (the tool stopped optimizing at the clock)."""
+    ns = r.get("clock_period_ns")
+    out = {}
+    for col, wns_col, scale in (("tile_synth_fmax_mhz", "tile_synth_wns_ps", 1000),
+                                ("tile_pnr_fmax_mhz", "tile_pnr_setup_wns_ns", 1)):
+        wns = r.get(wns_col)
+        out[col] = (1000 / (ns - wns / scale) if isinstance(ns, float)
+                    and isinstance(wns, float) and ns - wns / scale > 0 else None)
+    return out
 
 
 def _write_csv(path, rows, fmt="{:.3f}"):
@@ -3298,6 +3635,8 @@ def _write_correlation(out_dir, names, validate_names=None):
         return []
     _fill_meta_columns(rows)
     _apply_roles(rows, validate_names)
+    for r in rows:
+        r.update(_fmax_estimates(r))
     table = _fit_and_project(rows)
     ratio = _sram_macro_ratios(rows)
     for r in rows:

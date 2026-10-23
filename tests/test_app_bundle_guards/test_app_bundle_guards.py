@@ -390,6 +390,19 @@ def test_testbench_sdc_input_timing(tmp_path, monkeypatch, design, frac):
     assert "pt_addr <= # `PT_ASSIGNMENT_DELAY (test_vector_addr + 1);" in tb
 
 
+def test_testbench_fixed_input_delay(tmp_path, monkeypatch):
+    """TILE_I_DELAY_NS (sweep_specs --i-delay-ns): the SDC's data-input delay in
+    ns, so a replay drives the data inputs then, not at the fraction."""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("TILE_I_DELAY_NS", "0.15")
+    (tmp_path / "inputs").mkdir()
+    (tmp_path / "inputs" / "manifest.json").write_text(json.dumps({"scope": "tb.dut"}))
+    gt = load(TB_GEN, "generate_testbench")
+    gt.create_testbench("Tile_PE", ["reset", "SB_IN"], ["SB_OUT"], {"reset": 1, "SB_IN": 17},
+                        {"SB_OUT": 17}, 10, ["clk"], hold_reset=True, sdc_inputs=True)
+    assert "`define IN_ASSIGNMENT_DELAY 0.15\n" in (tmp_path / "testbench.sv").read_text()
+
+
 @pytest.mark.parametrize("design", ["Tile_MemCore", "Tile_PE"])
 def test_testbench_sdc_input_timing_matches_constraints(monkeypatch, tmp_path, design):
     """generate_testbench.py's input arrival times are copies of the tile SDC

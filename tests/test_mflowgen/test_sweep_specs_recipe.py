@@ -254,16 +254,174 @@ def test_thesis_opt_recipe_and_one_clock(ss):
 
 
 def test_thesis_fmax_recipe(ss, capsys, tmp_path):
-    """thesis_fmax: synthesis only, over-constrained, no power, for the optimized
-    MemTiles and the PE pair."""
+    """thesis_fmax: synthesis only, over-constrained, no power, for the chosen
+    MemTile pair and the PE pair at every data width, with the fixed upstream
+    input budget."""
     assert ss.RECIPES["thesis_fmax"] == ["thesis_fmax_mem", "thesis_fmax_pe"]
     for part in ss.RECIPES["thesis_fmax"]:
         flags = ss.RECIPE_FLAGS[part]
         assert flags[flags.index("--clock-mhz") + 1] == str(ss.FMAX_PROBE_MHZ)
         assert flags[flags.index("--stop-after") + 1] == "cadence-genus-synthesis"
+        assert flags[flags.index("--i-delay-ns") + 1] == str(ss.THESIS_I_DELAY_NS)
         assert "--memtile-power" not in flags and "--pnr-set" not in flags
-    assert ss.main(ss.RECIPE_FLAGS["thesis_fmax_pe"] + ["--out-dir", str(tmp_path), "--list"]) == 0
-    assert "2 -> cadence-genus-synthesis" in capsys.readouterr().err
+        assert ss.main(flags + ["--out-dir", str(tmp_path), "--list"]) == 0
+        names = capsys.readouterr()
+        assert "8 -> cadence-genus-synthesis" in names.err
+        assert {n.split("_")[1] for n in names.out.split()} == {"dw8", "dw16", "dw32", "dw64"}
+    mem = listed(ss, capsys, *ss.RECIPE_FLAGS["thesis_fmax_mem"], "--out-dir", str(tmp_path))
+    assert set(ss.PRESETS["thesis_design_point"]) < set(mem)
+
+
+def test_thesis_dse_sets(ss, capsys, tmp_path):
+    """The design-space sweep: every thesis spec plus the extra width points on the
+    thesis fabric with the chosen options (static: shared counter + port gating;
+    RV: port gating, no filter path); each width has >= 3 RV points; the reduced
+    sweep and its PnR roles are subsets of the full one's, so the full sweep can
+    top it up in the same directory."""
+    full = listed(ss, capsys, "--spec-set", "thesis_dse", "--out-dir", str(tmp_path))
+    assert len(full) == len(set(full)) == 248
+    for n in full:
+        assert n.endswith("_nofp_portcg_thesis_rv" if n.endswith("_rv") else "_sharectr_portcg_thesis")
+    for dw in ss.THESIS_WIDTHS:
+        assert sum(f"_dw{dw}_" in n and n.endswith("_rv") for n in full) >= 9
+    static_specs = {n[:-len("_sharectr_portcg_thesis")] for n in full if not n.endswith("_rv")}
+    thesis = set(listed(ss, capsys, "--spec-set", "thesis", "--out-dir", str(tmp_path)))
+    assert thesis <= static_specs and len(static_specs - thesis) == len(ss._thesis_width_points())
+    P = ss.PRESETS
+    for name in ("thesis_design_point", "thesis_dse_val", "thesis_dse_pnr", "thesis_dse_reduced",
+                 "thesis_dse_pnr_reduced", "thesis_dse_val_reduced"):
+        assert set(P[name]) <= set(full), name
+    assert set(P["thesis_dse_val"]) < set(P["thesis_dse_pnr"]) <= set(P["thesis_dse_reduced"])
+    assert set(P["thesis_dse_pnr_reduced"]) <= set(P["thesis_dse_pnr"])
+    assert set(P["thesis_dse_val_reduced"]) <= set(P["thesis_dse_val"])
+    assert set(P["thesis_design_point"]) <= set(P["thesis_dse_val_reduced"])
+    fit = set(P["thesis_dse_pnr"]) - set(P["thesis_dse_val"])
+    for dw in ss.THESIS_WIDTHS:
+        for mode in ("static", "rv"):
+            group = {n for n in fit if f"_dw{dw}_" in n and n.endswith("_rv") == (mode == "rv")}
+            assert len(group) >= ss.MIN_FIT_POINTS, (dw, mode)
+    assert len(P["thesis_dse_pnr"]) == 38 and len(P["thesis_dse_pnr_reduced"]) == 16
+    reduced = listed(ss, capsys, *ss.RECIPE_FLAGS["thesis_dse_reduced_mem"], "--clocks-from",
+                     str(clock_json(tmp_path)), "--out-dir", str(tmp_path))
+    assert 80 <= len(reduced) <= 100
+
+
+def clock_json(tmp_path, clocks=None):
+    path = tmp_path / "clocks.json"
+    path.write_text(json.dumps(clocks or {m: {str(w): 500 + w for w in (8, 16, 32, 64)}
+                                          for m in ("static", "rv")}))
+    return path
+
+
+def probe_dir(root, part, rows):
+    """A thesis_fmax part's results.csv + correlation.csv: (config, mode, dw,
+    graph, synth WNS ps) at the probe clock."""
+    d = root / part
+    d.mkdir(parents=True)
+    with open(d / "results.csv", "w") as f:
+        f.write("config_name,runtime_mode,data_width\n")
+        f.writelines(f"{c},{m},{dw}\n" for c, m, dw, _, _ in rows)
+    with open(d / "correlation.csv", "w") as f:
+        f.write("config_name,runtime_mode,clock_period_ns,graph,tile_synth_wns_ps\n")
+        f.writelines(f"{c},{m},1.000,{g},{w}\n" for c, m, _, g, w in rows)
+
+
+def test_clocks_from_probe(ss, tmp_path, monkeypatch, capsys):
+    """--clocks-from <thesis_fmax out dir>: each (mode, width) clock is 0.9 x the
+    slowest tile's limit (1000 / (period - WNS)), rounded down to 5 MHz; every
+    thesis config builds at its own; the table lands in the out dir."""
+    probe_dir(tmp_path / "fmax", "thesis_fmax_pe", [
+        ("pe16", "static", 16, "Tile_PE", -741.0),   # 1.741 ns -> 574 -> 515
+        ("pe16_rv", "rv", 16, "Tile_PE", -594.0),    # 1.594 ns -> 627 -> 560
+        ("pe64", "static", 64, "Tile_PE", -1500.0)])  # 2.5 ns -> 400 -> 360
+    probe_dir(tmp_path / "fmax", "thesis_fmax_mem", [
+        ("m16", "static", 16, "Tile_MemCore", 0.1),
+        ("m16_rv", "rv", 16, "Tile_MemCore", -1000.0),  # 2 ns -> 500: the MemTile sets it
+        ("m64", "static", 64, "Tile_MemCore", 0.0)])
+    table, lines = ss._thesis_clock_table(tmp_path / "fmax")
+    assert table == {("static", 16): 515.0, ("rv", 16): 450.0, ("static", 64): 360.0}
+    out = tmp_path / "out"
+    args = ss.build_argparser().parse_args(["--clocks-from", str(tmp_path / "fmax"),
+                                            "--out-dir", str(out)])
+    cfgs = [dict(ss.THESIS_WIDTH_POINTS[16], thesis=True, runtime_mode="static"),
+            dict(ss.THESIS_WIDTH_POINTS[64], thesis=True, runtime_mode="static"), dict(stock=True)]
+    ss._apply_thesis_clocks(cfgs, args)
+    assert [c.get("clock_mhz") for c in cfgs] == [515.0, 360.0, None]
+    assert json.loads((out / ss.THESIS_CLOCKS_FILE).read_text()) == {
+        "rv": {"16": 450.0}, "static": {"16": 515.0, "64": 360.0}}
+    env = env_for(ss, tmp_path, monkeypatch, cfgs[0], "--graph", str(MFLOWGEN / "Tile_PE"))
+    assert env["clock_period_PE"] == "1.942"
+    ss._write_spec_files(cfgs[0], tmp_path, "make-this")
+    assert "clock_mhz" not in json.loads((tmp_path / "spec_config.json").read_text())
+    # the written table reads back as a --clocks-from JSON
+    assert ss._thesis_clock_table(out / ss.THESIS_CLOCKS_FILE)[0] == table
+    cfgs = [dict(ss.THESIS_WIDTH_POINTS[32], thesis=True, runtime_mode="rv")]
+    with pytest.raises(SystemExit, match="no clock for rv dw32"):
+        ss._apply_thesis_clocks(cfgs, args)
+    args.clock_mhz = 400
+    with pytest.raises(SystemExit, match="pick one"):
+        ss._apply_thesis_clocks(cfgs, args)
+
+
+def test_clocked_recipes_need_clocks_and_share_a_dir(ss, monkeypatch, tmp_path, capsys):
+    """thesis_tiles / thesis_dse* refuse to run at the graphs' default clocks; the
+    MemTile parts all build into thesis_dse_mem (so later parts top it up)."""
+    calls = []
+    monkeypatch.setattr(ss, "main", lambda argv: calls.append(argv) or 0)
+    for recipe in ("thesis_tiles", "thesis_dse_reduced", "thesis_dse"):
+        argv = ["--recipe", recipe, "--out-dir", str(tmp_path)]
+        assert ss._run_recipe(ss.build_argparser().parse_args(argv), argv) == 2
+        assert "--clocks-from" in capsys.readouterr().err
+    assert not calls
+    for recipe in ("thesis_tiles", "thesis_dse_reduced", "thesis_dse"):
+        argv = ["--recipe", recipe, "--out-dir", str(tmp_path), "--clocks-from", "/c.json"]
+        assert ss._run_recipe(ss.build_argparser().parse_args(argv), argv) == 0
+    outs = [c[c.index("--out-dir") + 1] for c in calls]
+    assert outs == [str(tmp_path / d) for d in ("thesis_dse_mem", "thesis_tiles_pe",
+                                                "thesis_dse_mem", "thesis_dse_mem")]
+    assert all(c[c.index("--clocks-from") + 1] == "/c.json" for c in calls)
+
+
+def test_i_delay_reaches_the_constraints(ss, tmp_path, monkeypatch):
+    """--i-delay-ns -> TILE_I_DELAY_NS, which both tile SDCs use for the data
+    inputs instead of their fraction of the period."""
+    env = env_for(ss, tmp_path, monkeypatch, dict(runtime_mode="rv"), "--i-delay-ns", "0.15")
+    assert env["TILE_I_DELAY_NS"] == "0.15" and "TILE_I_DELAY_NS" in ss.BUILD_ENV_KEYS
+    assert "TILE_I_DELAY_NS" not in env_for(ss, tmp_path, monkeypatch, dict(runtime_mode="rv"))
+    for graph in ("Tile_PE", "Tile_MemCore"):
+        tcl = (MFLOWGEN / graph / "constraints" / "common.tcl").read_text()
+        knob = tcl.index("set i_delay $::env(TILE_I_DELAY_NS)")
+        assert knob < tcl.index("set_input_delay -clock ${clock_name} ${i_delay} [all_inputs -no_clocks]")
+
+
+def test_fits_per_mode_and_width(ss):
+    """Rows that record their data width get <mode>_dw<N> fits, used before the
+    mode's when they have MIN_FIT_POINTS; each fit's val_* covers the held-out
+    rows in its scope, so the pooled and per-width fits compare on the same tiles."""
+    def row(name, dw, x, y, role="fit"):
+        return {"config_name": name, "runtime_mode": "static", "data_width": dw,
+                "pnr_role": role, "tile_synth_cell_area": x, "tile_pnr_total_area": y}
+    rows = [row(f"a{i}", 16, x, 2 * x) for i, x in enumerate((1.0, 2.0, 3.0))]
+    rows += [row(f"b{i}", 8, x, 3 * x) for i, x in enumerate((1.0, 2.0, 3.0))]
+    rows += [row("v8", 8, 4.0, 12.0, "validate"), row("c32", 32, 2.0, 5.0, "synth")]
+    table = ss._fit_and_project(rows, fits=(ss.PNR_FITS[0],))
+    by = {t["group"]: t for t in table}
+    assert set(by) == {"all", "static", "static_dw16", "static_dw8"}
+    v8, c32 = rows[-2], rows[-1]
+    assert v8["tile_pnr_total_area_proj_fit"] == "static_dw8"
+    assert abs(v8["tile_pnr_total_area_proj"] - 12.0) < 1e-9
+    assert c32["tile_pnr_total_area_proj_fit"] == "static"   # no dw32 fit: the mode's
+    assert by["static_dw8"]["val_n"] == by["static"]["val_n"] == 1
+    assert by["static_dw16"]["val_n"] == 0
+    assert by["static_dw8"]["val_max_abs_pct_err"] < by["static"]["val_max_abs_pct_err"]
+
+
+def test_fmax_estimates(ss):
+    assert ss._fmax_estimates({"clock_period_ns": 1.0, "tile_synth_wns_ps": -250.0,
+                               "tile_pnr_setup_wns_ns": 0.5}) == {
+        "tile_synth_fmax_mhz": 800.0, "tile_pnr_fmax_mhz": 2000.0}
+    assert ss._fmax_estimates({"clock_period_ns": None}) == {
+        "tile_synth_fmax_mhz": None, "tile_pnr_fmax_mhz": None}
 
 
 def test_thesis_memtiles_get_power(ss, capsys, tmp_path):

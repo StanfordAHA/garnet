@@ -155,7 +155,10 @@ def create_testbench(design, inputs, outputs, input_widths, output_widths, num_t
     tb.write(f'`define NUM_TEST_VECTORS {num_test_vectors}\n')  # noqa
     tb.write(f'`define ASSIGNMENT_DELAY 0.2 \n')                # noqa
     if sdc_inputs:
-        tb.write(f'`define IN_ASSIGNMENT_DELAY ({INPUT_DELAY_FRACTION[design]} * `CLK_PERIOD)\n')
+        # TILE_I_DELAY_NS (env): the SDC's i_delay in ns instead of the fraction
+        in_ns = os.environ.get("TILE_I_DELAY_NS", "")
+        in_delay = float(in_ns) if in_ns else f"({INPUT_DELAY_FRACTION[design]} * `CLK_PERIOD)"
+        tb.write(f'`define IN_ASSIGNMENT_DELAY {in_delay}\n')
         # PT_I_DELAY_FRAC (env): the SDC's pt_i_delay as a fraction of the clock
         pt_frac = os.environ.get("PT_I_DELAY_FRAC", "")
         pt_delay = f"({float(pt_frac)} * `CLK_PERIOD)" if pt_frac else PT_INPUT_DELAY_NS

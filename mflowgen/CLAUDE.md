@@ -2400,6 +2400,8 @@ gf12 (build machine, garnet + lake pulled; outputs under /nsim/mstrange/BUILDS):
 PE tile pair, `--recipe thesis_fabric` = both (4 builds).
 **One clock for every thesis tile (user 2026-10-21): the slowest block's.** The CGRA runs at
 one clock, so a tile synthesized faster than the array can run is upsized for nothing.
+(Refined 2026-10-22: each (static|RV, data width) CGRA at its own slowest tile's clock; see
+"Thesis design-space sweep" below. The 400 MHz parts here are the 2026-10-22 tile set.)
 - `THESIS_CLOCK_MHZ` (= APP_POWER_MHZ, 400) is the clock in every thesis part (thesis_mem,
   thesis_pe, thesis_mem_opt). The MemTile used to default to 750 and the PE to 400.
 - The slowest block is the PE: the stock PE is ~2.45 ns at gf12; the thesis PEs are ~1.8 / ~1.5
@@ -2446,6 +2448,53 @@ Tiles at 400 MHz (PnR area um2, PT setup WNS, PnR-level idle / active power mW):
 spec (build_spec defaults: fw4 dw16 4 KB 2x2 single-port vc2; user 2026-10-18; it was 8 KB,
 the app matrix above, until then). Add `--clock-mhz` / `--stop-after cadence-genus-synthesis`
 for an over-constrained fmax probe.
+
+**Thesis design-space sweep: each fabric and width at its own clock (user 2026-10-22, session
+cfc4174c).** User decisions:
+- RV MemTile = clock gating + no filter path (`_nofp_portcg_thesis_rv`); static = shared counter +
+  port gating (`_sharectr_portcg_thesis`). `THESIS_OPT_KNOBS`, `_thesis_opt()`.
+- Clock per (static|RV, data width) CGRA = 0.9 x its slowest tile's synthesis limit, rounded down
+  to 5 MHz. The PE is the slowest at dw16 (MemTiles >= 1 GHz).
+- Static PE limit with a realistic upstream budget: its slowest path starts in the neighbour's
+  register (track -> CB -> combinational ALU -> 1-bit res_p -> SB register, 1.59 ns of logic), so
+  every thesis tile's data/valid/ready inputs get a fixed `TILE_I_DELAY_NS` = 0.15 ns
+  (`--i-delay-ns`, `THESIS_I_DELAY_NS`; both tile SDCs and the replay testbench read it) instead
+  of 0.3T (PE) / 0.2T (MemTile). Expected ~575 MHz static vs ~627 RV at dw16 (was ~440 under 0.3T).
+- RV has no vec_capacity > 2 at fw > 1: lake's RV wide-fetch port has a fixed 2-entry
+  write-combining/read buffer (`max_num_items_wcb = 2`, lake/spec/port.py), which already gives
+  full rate under handshakes; build_spec_rv refuses vc > 2 rather than size unused storage. The 18
+  RV twins stay out (vc is a static-only axis).
+- Data widths 8/32/64 are in (session a16b3973 owns the functional side: thesis apps, power-test
+  gen and Tile_PE RTL at those widths; dw16's PE has the bf16 FPU, which sets its limiting path,
+  other widths are integer-only).
+
+Recipes (all write under one --out-dir; `--clocks-from <that dir>` reads the probe):
+1. `thesis_fmax`: `thesis_fmax_mem` (spec set `thesis_mem_widths`: the chosen MemTile pair at
+   `THESIS_WIDTH_POINTS`, dw16 = fw4 4 KB design point, dw8/32 fw4 sc8192, dw64 fw2 sc8192) +
+   `thesis_fmax_pe` (`thesis_pe_widths`), synthesis at 1000 MHz: 16 builds.
+2. `thesis_tiles` (needs --clocks-from): `thesis_tiles_mem` (the dw16 MemTile pair, preset
+   `thesis_design_point`, PnR + idle/active power) + `thesis_tiles_pe` (PE pair at 4 widths, PnR).
+3. `thesis_dse_reduced` (92 configs, 16 PnR) and `thesis_dse` (248 configs, 38 PnR): spec set
+   `thesis_dse` = DEFAULT + thesis specs + `_thesis_width_points()` (26 more dw 8/32/64 specs: fw1
+   2x2/1x1, capacity and 1x1/4x4 at the base fetch width, a dual-port, a wider fetch; all with
+   RV twins), both modes, synthesis + synth-level power for all. All 52 + the 4 width-point tiles
+   generate RTL locally (4x2, --thesis M, 2026-10-22; macros as lake's tech map predicts). dw64's
+   dual-port is fw1: lake build_spec_rv checks for ONE full-width SDPB macro (128-bit at fw2:
+   none), unlike CoreCombiner's column split, so RV fw2_dw64_sc8192_dp failed (told a16b3973).
+   PnR anchors per (mode, width): `_DSE_FIT` (dw16 = the dw16_fit8 geometries, others 3 each) and
+   `_DSE_VAL` held out (dw16 = design point + dw16_val4 geometries, others 1 static + 1 RV).
+   Reduced = dw16 fit + design point + the other widths' held-out tiles (projected from dw16).
+- `THESIS_PART_DIRS`: thesis_tiles_mem, thesis_dse_reduced_mem and thesis_dse_mem all build in
+  `<out>/thesis_dse_mem`, so a later part with `--skip-existing` (not `--fresh`) only builds what
+  is missing. `THESIS_CLOCKED_PARTS` refuse to run without --clocks-from / --clock-mhz.
+- `--clocks-from` (`_thesis_clock_table`): a thesis_fmax out dir (reads each part's results.csv
+  + correlation.csv; limit = 1000 / (period - synth WNS); also takes extracted zips as subdirs) or
+  a JSON `{"static": {"16": 515}, "rv": {...}}`; the table goes to `<part>/thesis_clocks.json`.
+  Each thesis config gets `clock_mhz` (sweep-only key; per-config CLOCK_PERIOD / clock_period_PE).
+- Reports: `correlation.csv` gains `tile_synth_fmax_mhz` / `tile_pnr_fmax_mhz` (1000 / (period -
+  WNS), the per-build clock projection), `data_width` (sweep_meta.json, new builds), and fits per
+  `<mode>_dw<N>` when it has 3 fit points (used before the mode's pooled fit). Each fit's val_*
+  is its error on the held-out rows in its scope, so pooled vs per-width compare on the same tiles.
 
 **gf12 `thesis_mem` results (2026-10-18 build, zip thesis_mem_r8cad-gf12_20261018-220554_slim,
 extracted under /aha/sweep_out/thesis_mem_20261018).** Static vs RV MemCore tile, 4 KB spec,
