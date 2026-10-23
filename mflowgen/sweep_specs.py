@@ -655,13 +655,16 @@ THESIS_OPT_RECIPE_FLAGS = {
 }
 # The thesis tile set and design-space sweep at each fabric's own clock (user
 # 2026-10-22): every tile of a (static|RV, data width) CGRA at that CGRA's clock,
-# which its slowest tile sets (the PE: static ~575 / RV ~627 MHz at dw16), minus
+# which its slowest tile sets (the PE: static ~549 / RV ~627 MHz at dw16), minus
 # THESIS_CLOCK_MARGIN for PnR. Every thesis tile's data/valid/ready inputs get
 # THESIS_I_DELAY_NS, the upstream tile's register and wire, instead of a fraction
 # of the period: the static PE's limiting path starts in the neighbour's register
 # (track -> CB -> combinational ALU -> register), so a fraction of the period
-# would set its clock by the constraint. Pass-through ports keep 0.25 T.
-THESIS_I_DELAY_NS = 0.15
+# would set its clock by the constraint. The value is archipelago's `rmux` delay
+# (sta_delays.json: SB register -> register mux -> SB out, 230 ps, measured on
+# post-PnR GF12 tiles for Cascade), so the tile clocks agree with the STA that
+# pipelines the apps (user 2026-10-22). Pass-through ports keep 0.25 T.
+THESIS_I_DELAY_NS = 0.23
 THESIS_CLOCK_MARGIN = 0.9
 THESIS_CLOCK_STEP_MHZ = 5
 THESIS_CLOCKS_FILE = "thesis_clocks.json"
@@ -923,7 +926,7 @@ def build_argparser():
                         f"{THESIS_CLOCK_MARGIN:g} x the slower tile's limit at that "
                         f"mode and width, rounded down to {THESIS_CLOCK_STEP_MHZ} MHz) "
                         f"or a JSON file like {THESIS_CLOCKS_FILE} "
-                        '({"static": {"16": 515, ...}, "rv": {...}}). The table is '
+                        '({"static": {"16": 490, ...}, "rv": {...}}). The table is '
                         f"written to <out-dir>/{THESIS_CLOCKS_FILE}. Not with --clock-mhz.")
     p.add_argument("--flatten-effort", type=int, choices=range(4), default=None,
                    metavar="N",

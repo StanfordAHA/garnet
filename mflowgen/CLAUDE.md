@@ -1699,7 +1699,7 @@ rows at the output vs up front through the MEM's filter path; lake CLAUDE.md §6
   only the variants that have it (default: only configs every variant has). For one variant
   per app where some apps fail on some specs (the dw16 app-bundle set).
 - Thesis power tiles match the thesis tile set (2026-10-22, session 1fa8a391): for a thesis
-  bundle, tile_env exports TILE_I_DELAY_NS = sweep_specs.THESIS_I_DELAY_NS (0.15) and
+  bundle, tile_env exports TILE_I_DELAY_NS = sweep_specs.THESIS_I_DELAY_NS (0.23) and
   PT_I_DELAY_FRAC = 0.25 (the thesis recipes'; tile SDCs and generate_testbench read both;
   `--i-delay-ns` / `--pt-i-delay-frac` override), and `--clocks-from <thesis_clocks.json | thesis_fmax
   out dir>` clocks each thesis fabric at its own (mode, data width) clock, read with
@@ -2487,9 +2487,21 @@ cfc4174c).** User decisions:
   to 5 MHz. The PE is the slowest at dw16 (MemTiles >= 1 GHz).
 - Static PE limit with a realistic upstream budget: its slowest path starts in the neighbour's
   register (track -> CB -> combinational ALU -> 1-bit res_p -> SB register, 1.59 ns of logic), so
-  every thesis tile's data/valid/ready inputs get a fixed `TILE_I_DELAY_NS` = 0.15 ns
+  every thesis tile's data/valid/ready inputs get a fixed `TILE_I_DELAY_NS` = 0.23 ns
   (`--i-delay-ns`, `THESIS_I_DELAY_NS`; both tile SDCs and the replay testbench read it) instead
-  of 0.3T (PE) / 0.2T (MemTile). Expected ~575 MHz static vs ~627 RV at dw16 (was ~440 under 0.3T).
+  of 0.3T (PE) / 0.2T (MemTile). Expected ~549 MHz static (clock ~490) vs ~627 RV (clock ~560) at
+  dw16; it was ~440 under 0.3T.
+- Why fixed and why 0.23 (user asked 2026-10-22 whether a fixed budget is fair): the upstream
+  share is the neighbour's SB register clk-to-q, its register mux and the abutted wire, none of
+  which scale with the clock. A fraction of T charges the static PE (input-started critical path)
+  T >= L / (1 - a) instead of L + d (+0.68 ns at 0.3T) while the RV PE (internal reg->reg limit)
+  barely notices, so it is not neutral. Block-level percentages (20-50%) are heuristics for an
+  unknown driver; the CGRA literature (Cascade, Melchert et al. TCAD 2024, archipelago's STA)
+  composes absolute per-path delays measured on post-PnR GF12 tiles. 0.23 = archipelago's `rmux`
+  (SB register -> register mux -> SB out); first set at an estimated 0.15, switched the same day
+  (static limit ~574 -> ~549 MHz). It assumes archipelago puts a register just before each static
+  PE input; each unregistered SB hop adds ~140-210 ps, so app-level STA gives the real static
+  clock. A thesis_fmax run at 0.15 must be re-run (the probe's input delay is in its limits).
 - RV has no vec_capacity > 2 at fw > 1: lake's RV wide-fetch port has a fixed 2-entry
   write-combining/read buffer (`max_num_items_wcb = 2`, lake/spec/port.py), which already gives
   full rate under handshakes; build_spec_rv refuses vc > 2 rather than size unused storage. The 18
@@ -2520,7 +2532,7 @@ Recipes (all write under one --out-dir; `--clocks-from <that dir>` reads the pro
   is missing. `THESIS_CLOCKED_PARTS` refuse to run without --clocks-from / --clock-mhz.
 - `--clocks-from` (`_thesis_clock_table`): a thesis_fmax out dir (reads each part's results.csv
   + correlation.csv; limit = 1000 / (period - synth WNS); also takes extracted zips as subdirs) or
-  a JSON `{"static": {"16": 515}, "rv": {...}}`; the table goes to `<part>/thesis_clocks.json`.
+  a JSON `{"static": {"16": 490}, "rv": {...}}`; the table goes to `<part>/thesis_clocks.json`.
   Each thesis config gets `clock_mhz` (sweep-only key; per-config CLOCK_PERIOD / clock_period_PE).
 - Reports: `correlation.csv` gains `tile_synth_fmax_mhz` / `tile_pnr_fmax_mhz` (1000 / (period -
   WNS), the per-build clock projection), `data_width` (sweep_meta.json, new builds), and fits per

@@ -454,7 +454,7 @@ THESIS_MAN = {"spec_config": {"data_width": 16}, "pond_spec": None}
 
 
 @pytest.mark.parametrize("man,argv,want", [
-    (dict(THESIS_MAN, mode="static", thesis="static"), [], ("0.15", "0.25")),
+    (dict(THESIS_MAN, mode="static", thesis="static"), [], ("0.23", "0.25")),
     (dict(THESIS_MAN, mode="rv", thesis="rv"), ["--i-delay-ns", "0.1"], ("0.1", "0.25")),
     (dict(THESIS_MAN, mode="rv"), [], (None, None)),            # stock fabric: the tiles' own
     (dict(THESIS_MAN, mode="rv"), ["--pt-i-delay-frac", "0.3"], (None, "0.3")),
