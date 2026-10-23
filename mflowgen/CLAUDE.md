@@ -2375,6 +2375,12 @@ libHalide and libclkwrk.so were rebuilt. Shared-toolchain checks:
       (isl assertion).
     - `apps/scalar_reduction` has only a static `hack_design_top.py` rewrite, so it can't run RV.
     - No FP at dw != 16 (`gen_PE_fc(dw)` is the integer PE).
+  - **dw32 RV RTL before gemstone thesis c3f0acc (2026-10-23, cfc4174c) defined two different
+    `mux_logic_32_{2,5}` / `precoder_32_{2,5}` modules** (RV data muxes and plain 32-bit config
+    muxes). Genus kept the wrong one and failed elaboration; xrun keeps the first, so the sims
+    passed. Re-run on c3f0acc: dw32 RV arith, conv_3_3 and matmul_bounded still bit-accurate, and
+    the 16x16 garnet.v has no duplicate module names. Only dw32 RV has the clash: dw8/dw64 tracks
+    and the stock fabric's dw+1 tracks differ from the 32-bit config width.
   - **Tile_PE constraints don't depend on width:** `mul_path`/`add_path` name widths but are
     unused, and the FP false paths are `_if_pins_exist`. gf12 sweeps at dw 8/32/64 on thesis
     tiles: cfc4174c's `--spec-set thesis_dse` / `thesis_pe_widths`, `--recipe thesis_fmax`.
