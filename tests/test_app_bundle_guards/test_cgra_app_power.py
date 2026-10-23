@@ -413,3 +413,11 @@ def test_min_register_plan_and_shared_chain(tmp_path):
     last = "rv_balance_" + hashlib.md5(b"in.out").hexdigest()[:8] + "_3.out"
     assert sorted([last, "mac1.data1"]) in conns and sorted([last, "mac2.data1"]) in conns
     assert sorted(["in.out", "pa.data0"]) in conns                               # unpadded sink stays
+
+
+def test_replay_jobs_reach_the_tile_graphs(tmp_path):
+    man = {"spec_config": {}, "mode": "static", "pond_spec": None}
+    for argv, want in ((["--replay-jobs", "4"], "4"), ([], None)):
+        args = cap.parse_args(["--out-dir", str(tmp_path)] + argv)
+        env = cap.tile_env("Tile_PE", tmp_path, man, [("A", tmp_path)], "cfg", args)
+        assert env.get("REPLAY_TILE_JOBS") == want

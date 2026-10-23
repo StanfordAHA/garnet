@@ -141,6 +141,43 @@ def test_step_clean(tmp_path):
     assert rep["problems"] == [] and rep["finished"] and rep["report"]
 
 
+SLOW_RUN_SH = """#!/bin/bash
+# a tile that takes a second: records when it ran, then reports like FAKE_RUN_SH
+mkdir -p $tile_id/3-cadence-xcelium-sim
+echo "$tile_id start $(date +%s.%N) queue=$SNPSLMD_QUEUE" >> times.log
+sleep 1
+echo 'Simulation complete via $finish(2) at time 5 NS + 0' > $tile_id/3-cadence-xcelium-sim/xrun.log
+echo report > outputs/reports/$tile_id.hier
+echo "$tile_id end $(date +%s.%N)" >> times.log
+"""
+
+
+@pytest.mark.parametrize("jobs,overlap", [("1", False), ("3", True)])
+def test_step_replays_tiles_in_parallel(tmp_path, jobs, overlap):
+    """REPLAY_TILE_JOBS=N runs N tiles' sub-graphs at once (each with its own
+    tile_id and PrimeTime license queueing); the summary keeps the tile order."""
+    (tmp_path / "inputs").mkdir()
+    (tmp_path / "inputs" / "tiles_Tile_PE.list").write_text("a,01,01\nb,02,01\nc,03,01\n")
+    (tmp_path / "run.sh").write_text(SLOW_RUN_SH)
+    (tmp_path / "run.sh").chmod(0o755)
+    env = dict(os.environ, design_name="Tile_PE", app_bundle="/b", REPLAY_TILE_JOBS=jobs)
+    r = subprocess.run([sys.executable, str(RUN_ALL)], cwd=tmp_path, env=env, capture_output=True, text=True)
+    assert r.returncode == 0, r.stdout + r.stderr
+    summary = (tmp_path / "outputs" / "reports" / "replay_summary.txt").read_text().splitlines()
+    assert summary[:3] == [f"Tile_X0{i}_Y01: OK" for i in (1, 2, 3)]
+    ev = [line.split() for line in (tmp_path / "times.log").read_text().splitlines()]
+    assert all(e[3] == "queue=true" for e in ev if e[1] == "start")
+    starts = sorted(float(e[2]) for e in ev if e[1] == "start")
+    first_end = min(float(e[2]) for e in ev if e[1] == "end")
+    assert (starts[1] < first_end) == overlap
+
+
+def test_replay_tools_queue_for_licenses():
+    run_sim = (MFLOWGEN / "common" / "cadence-xcelium-sim" / "run_sim.sh").read_text()
+    replay = run_sim[run_sim.index('if [ "${app_replay:-False}" = "True" ]'):]
+    assert "-licqueue" in replay.split("\nfi\n")[0]
+
+
 def tree(d):
     return sorted(str(p.relative_to(d)) for p in d.rglob("*") if p.is_file() or p.is_symlink())
 

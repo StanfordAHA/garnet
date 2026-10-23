@@ -30,6 +30,7 @@ import os
 import re
 import subprocess
 import sys
+from concurrent.futures import ThreadPoolExecutor
 
 MISMATCH = re.compile(r"cycle\s+(\d+):\s*(\S+):\s+got\s+(\S+),\s+expected\s+(\S+)")
 FINISHED = re.compile(r"Simulation complete via \$finish")
@@ -144,19 +145,28 @@ def prune_tile(tile):
                 os.rmdir(p)
 
 
+def replay_tile(tile):
+    """Run the tile's sub-graph (./run.sh), check its replay, then prune it.
+    Tiles are independent (own sub-workspace and report files), so main() runs
+    up to REPLAY_TILE_JOBS of them at once; their tools then queue for licenses
+    (xrun -licqueue in run_sim.sh, SNPSLMD_QUEUE for PrimeTime)."""
+    env = dict(os.environ, tile_id=tile, SNPSLMD_QUEUE="true")
+    rc = subprocess.run(["./run.sh"], env=env).returncode
+    res = check_tile(tile, rc)
+    if os.environ.get("REPLAY_KEEP_TILES", "").lower() not in ("1", "true"):
+        prune_tile(tile)
+    return res
+
+
 def main():
     design = os.environ.get("design_name")
     mode = os.environ.get("replay_check") or "auto"
     if mode == "auto":
         mode = "fail" if os.environ.get("app_bundle") else "warn"
     os.makedirs("outputs/reports", exist_ok=True)
-    results = []
-    for tile in tile_ids(design):
-        os.environ["tile_id"] = tile
-        rc = subprocess.run(["./run.sh"]).returncode
-        results.append(check_tile(tile, rc))
-        if os.environ.get("REPLAY_KEEP_TILES", "").lower() not in ("1", "true"):
-            prune_tile(tile)
+    jobs = max(1, int(os.environ.get("REPLAY_TILE_JOBS") or 1))
+    with ThreadPoolExecutor(jobs) as pool:   # map keeps the tile order
+        results = list(pool.map(replay_tile, tile_ids(design)))
 
     lines = [f"{r['tile']}: {'; '.join(r['problems']) or 'OK'}"
              + (f" ({r['pre_app_x']} X outputs before the app start at cycle {r['app_start']} not counted)"

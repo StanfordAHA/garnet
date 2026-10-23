@@ -64,6 +64,9 @@ fi
 # reported, they just don't set flops X inside the SAIF window.
 if [ "${app_replay:-False}" = "True" ]; then
   ARGS="$ARGS -nonotifier +define+IVCS_INIT_MEM"
+  # run_all_tiles.py can replay several tiles at once (REPLAY_TILE_JOBS): wait
+  # for a license rather than fail the tile when they are all taken
+  ARGS="$ARGS -licqueue"
 fi
 
 # Set-up testbench

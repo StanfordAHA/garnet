@@ -1698,6 +1698,12 @@ rows at the output vs up front through the MEM's filter path; lake CLAUDE.md §6
   `--any-config` (2026-10-16, session 1fa8a391): run every config ANY variant has, each with
   only the variants that have it (default: only configs every variant has). For one variant
   per app where some apps fail on some specs (the dw16 app-bundle set).
+- Parallel tile replays (2026-10-22, session 1fa8a391): each post-*-power step replays its tiles one
+  after another (~4 min per tile on gf12; a 16x16 harris variant has ~175-230 tiles, so a PE
+  workspace took 12-15 h). `cgra_app_power.py --replay-jobs N` (env `REPLAY_TILE_JOBS`, also
+  honoured by sweep_specs runs when exported) runs N tiles at once; app-replay xrun gets
+  `-licqueue` and PrimeTime `SNPSLMD_QUEUE=true`, so they wait for a license instead of failing.
+  Load multiplies: tile-jobs x parallel-jobs (variants) x N sims.
   A bundle recorded with `--pond-spec` (manifest `pond_spec`) gets its Tile_PE
   built with that pond (`LAKE_POND_SPEC_CONFIG` = `<ws>/pond_spec.json`;
   2026-10-14, session 1fa8a391): before, it replayed on the default PE tile

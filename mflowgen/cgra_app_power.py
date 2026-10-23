@@ -74,6 +74,11 @@ def parse_args(argv=None):
     p.add_argument("--tiles", default=",".join(TILES),
                    help="tile graphs to build (default both)")
     p.add_argument("--parallel-jobs", type=int, default=4, help="make -j per workspace")
+    p.add_argument("--replay-jobs", type=int, default=None, metavar="N",
+                   help="tiles each post-synth-power-<variant> step replays at once (env "
+                        "REPLAY_TILE_JOBS; default 1, one after another). Every variant of a "
+                        "workspace runs in parallel too (--parallel-jobs), so a machine runs up to "
+                        "tile-jobs x parallel-jobs x N tile sims; they queue for licenses")
     p.add_argument("--tile-jobs", type=int, default=2,
                    help="workspaces built at once (default 2: MEM and PE together)")
     p.add_argument("--clock-mhz", type=float, default=750.0,
@@ -178,6 +183,8 @@ def tile_env(tile, ws, man, variants, config, args):
     env["APP_BUNDLE_VARIANTS"] = ",".join(f"{v}={d / config}" for v, d in variants)
     if args.flatten_effort is not None:
         env["FLATTEN"] = str(args.flatten_effort)
+    if getattr(args, "replay_jobs", None):
+        env["REPLAY_TILE_JOBS"] = str(args.replay_jobs)
     period = f"{round(1e6 / args.clock_mhz) / 1000:g}"
     env["CLOCK_PERIOD"] = period      # Tile_MemCore
     env["clock_period_PE"] = period   # Tile_PE
