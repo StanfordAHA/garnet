@@ -2486,7 +2486,8 @@ cfc4174c).** User decisions:
 Recipes (all write under one --out-dir; `--clocks-from <that dir>` reads the probe):
 1. `thesis_fmax`: `thesis_fmax_mem` (spec set `thesis_mem_widths`: the chosen MemTile pair at
    `THESIS_WIDTH_POINTS`, dw16 = fw4 4 KB design point, dw8/32 fw4 sc8192, dw64 fw2 sc8192) +
-   `thesis_fmax_pe` (`thesis_pe_widths`), synthesis at 1000 MHz: 16 builds.
+   `thesis_fmax_pe` (`thesis_pe_widths`: the same specs, options included, so the PE tile's
+   pond is gated as in the CGRA, garnet c9c6da9b), synthesis at 1000 MHz: 16 builds.
 2. `thesis_tiles` (needs --clocks-from): `thesis_tiles_mem` (the dw16 MemTile pair, preset
    `thesis_design_point`, PnR + idle/active power) + `thesis_tiles_pe` (PE pair at 4 widths, PnR).
 3. `thesis_dse_reduced` (92 configs, 16 PnR) and `thesis_dse` (248 configs, 38 PnR): spec set

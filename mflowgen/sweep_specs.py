@@ -468,9 +468,9 @@ THESIS_WIDTH_POINTS = {
 # MemTile per width and mode (the clock probe; dw16 = the design-point pair).
 THESIS_MEM_WIDTH_SPEC_POINTS = [_thesis_opt(THESIS_WIDTH_POINTS[dw], m)
                                 for dw in THESIS_WIDTHS for m in RUNTIME_MODES]
-# PE tile per width and mode (--graph Tile_PE; the MEM options don't reach it).
-THESIS_PE_WIDTH_SPEC_POINTS = [dict(THESIS_WIDTH_POINTS[dw], thesis=True, runtime_mode=m)
-                               for dw in THESIS_WIDTHS for m in RUNTIME_MODES]
+# PE tile per width and mode (--graph Tile_PE), with the same MEM spec options: the
+# PE tile's pond takes the MEM spec's clock gating (garnet c9c6da9b), as in the CGRA.
+THESIS_PE_WIDTH_SPEC_POINTS = list(THESIS_MEM_WIDTH_SPEC_POINTS)
 
 
 def _thesis_width_points():
