@@ -2595,6 +2595,33 @@ Recipes (all write under one --out-dir; `--clocks-from <that dir>` reads the pro
   `<mode>_dw<N>` when it has 3 fit points (used before the mode's pooled fit). Each fit's val_*
   is its error on the held-out rows in its scope, so pooled vs per-width compare on the same tiles.
 
+**First thesis_fmax PE probe (2026-10-23, zip thesis_fmax_pe_r8cad-gf12_20261023-055808_slim,
+0.23 ns input budget, gated-pond PEs; extracted in /aha/sweep_out/thesis_fmax_20261023).** Synthesis
+limits (1000 / (1 - WNS_ns)) and the clocks they give (0.9x, down to 5 MHz), PE only (the MemTile
+probe zip was not uploaded; MemTiles were >= 1 GHz at dw16):
+
+| dw | static PE | clock | RV PE | clock |
+|---|---|---|---|---|
+| 8 | 638 MHz | 570 | 749 MHz | 670 |
+| 16 | 548 | 490 | 639 | 570 |
+| 32 | 525 | 470 | FAIL (below) | |
+| 64 | 474 | 425 | 535 | 480 |
+
+- RV dw32 failed in Genus elaboration: "Unable to find port 'valid_in' of instance 'u_mux_logic' of
+  module 'mux_logic_32_5'". gemstone's AOI mux named its inner modules precoder/mux_logic_<width>_
+  <height> by width and height only, so at dw32 the RV data muxes and the plain 32-bit config muxes
+  defined two different modules under one name (also mux_logic_32_2, precoder_32_2/5); Genus kept
+  the one without valid ports. Simulators that keep the first definition ran it (a16b3973's dw32 RV
+  apps passed). Only thesis RV at dw32 has the pair: RV data muxes are dw wide, the stock fabric's
+  are dw+1.
+- Fix: gemstone branch `thesis` c3f0acc (new personal branch; aha mek .gitmodules gemstone ->
+  thesis): the first mux type to use a width/height keeps the plain names, any other type gets
+  `_<type>` names (e.g. mux_logic_32_5_regularreadyvalid). Checked locally (PYTHONHASHSEED=0, old vs
+  new gemstone): dw32 RV duplicates gone (diff = the 4 renamed modules + instances); Zircon 8x2,
+  thesis dw16 RV/static and dw32 static identical under aha's vcompare (dw16 RV byte-identical).
+  gen_rtl.sh fetches gemstone thesis in the container for thesis builds, like canal.
+- A workspace whose rtl step ran with the old gemstone keeps its RTL: rebuild it with --fresh.
+
 **gf12 `thesis_mem` results (2026-10-18 build, zip thesis_mem_r8cad-gf12_20261018-220554_slim,
 extracted under /aha/sweep_out/thesis_mem_20261018).** Static vs RV MemCore tile, 4 KB spec,
 1.333 ns clock, both PASS through PT signoff:

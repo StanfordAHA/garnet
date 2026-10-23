@@ -327,6 +327,11 @@ if [ "$use_container" == True ]; then
          if [ -n '$thesis' ]; then
            ( rm -rf /tmp/canal_th.git && git init -q --bare /tmp/canal_th.git && GIT_TERMINAL_PROMPT=0 git --git-dir=/tmp/canal_th.git fetch -q https://github.com/StanfordAHA/canal.git thesis:refs/heads/thesis && cd /aha/canal && git fetch -q /tmp/canal_th.git thesis && git checkout -f -B thesis FETCH_HEAD && git log -1 --oneline ) \
              || { echo '*** ERROR: gen_rtl: canal thesis checkout failed (see above)'; exit 1; };
+           # ...and gemstone branch thesis: its AOI muxes name each mux type's inner
+           # modules apart. With the image's gemstone a 32-bit RV data mux and the
+           # 32-bit config mux define two different mux_logic_32_N modules (dw32 RV).
+           ( rm -rf /tmp/gemstone_th.git && git init -q --bare /tmp/gemstone_th.git && GIT_TERMINAL_PROMPT=0 git --git-dir=/tmp/gemstone_th.git fetch -q https://github.com/StanfordAHA/gemstone.git thesis:refs/heads/thesis && cd /aha/gemstone && git fetch -q /tmp/gemstone_th.git thesis && git checkout -f -B thesis FETCH_HEAD && git log -1 --oneline ) \
+             || { echo '*** ERROR: gen_rtl: gemstone thesis checkout failed (see above)'; exit 1; };
          fi
 
          # FIXME note that 'if' statements below will fail if e.g. 'interconnect_only' not set
