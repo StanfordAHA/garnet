@@ -1293,6 +1293,13 @@ A private tree = a dir of symlinks to every `/aha` entry except `garnet`
 (its own `git clone`), plus a private app copy under
 `Halide-to-Hardware/apps/hardware_benchmarks/<x>/<app>` (same `../../hw_support`
 depth), so static and RV bundles can run concurrently (~26 / ~33 min at 16x16).
+Make `MetaMapper` and `clockwork` real directories in it too, with symlinked contents and
+real copies of their `*_header.json` files. hw_support `make map` copies the app's headers to
+`$(CLOCKWORK_PATH)/` and `$(METAMAPPER_PATH)/../garnet/headers/`. Through symlinks those land
+in the shared /aha (`..` of a symlinked dir is its real parent, and `cp` onto a symlink writes
+its target). At dw16 that is harmless (same content as HEAD), but on 2026-10-22 a16b3973's
+dw 8/32/64 runs put other widths' headers there for about 20 minutes. Template: scratchpad
+a16b3973 `thesis_dw/make_tree.sh`.
 A dual-port spec (`dual_port: true`) also gets garnet's `--dual-port` for the build
 and `aha pnr` (`spec_garnet_flags`, 2026-10-14; lake `resolve_memports` IndexErrors
 without it; the tile graphs get it from `DUAL_PORT`): conv_3_3 on
@@ -2322,6 +2329,36 @@ libHalide and libclkwrk.so were rebuilt. Shared-toolchain checks:
       6f110058 on, `--no-pd` (every MemCore sweep) drops the power-domain logic. That logic is
       about 0.2% of a dw32 tile's area in the PD config register + PD OR alone, plus some
       SB/CB gates. The finished tiles and the dw16 fit all have it.
+- **Thesis fabrics at dw 8/32/64 (2026-10-22, session a16b3973; user: extend the thesis fabrics
+  to other data widths).** `cgra/util_thesis.py` and `ThesisGarnet` follow the spec's width.
+  Findings, all on /aha:
+  - **RTL:** a 4x2 thesis build at dw32, static and RV, has B1 + B32 switch boxes,
+    MEM/PE/pond/IO data ports at 32 bits, PE `inst` [131:0] and GLB `CGRA_DATA_WIDTH` 32. No
+    17- or 33-bit tracks.
+  - **memtile-power-test-gen on thesis tiles:** dw 8/32/64, static and RV, idle and active all
+    PASS. xrun runs it as `run_sim.sh` does: `+define+MEMTILE_SAIF_TCL -input cmd.tcl`, which
+    current testbenches need. Data runs on whole-word B8/B32/B64 tracks.
+  - **Apps:** 12 thesis cases in aha `tests/test_data_width_e2e.py`, all bit-accurate.
+    - Static: arith dw32/dw64, conv_3_3 dw32, the scalar_reduction pond dw32,
+      conv_3_3_u8 dw8.
+    - RV: arith dw32/dw64, conv_3_3 dw32, conv_3_3_u8 dw8, and matmul_bounded (pond
+      accumulation) at dw 8/32/64.
+    - Halide-to-Hardware thesis added `tests/conv_3_3_u8` (uint8 sums) and
+      `tests/matmul_bounded` (2-bit inputs). Their values are exact at those widths; a u16
+      app's are not.
+  - **Fixed on the way:**
+    - The rv_balance hook made padding registers as wide as a PE instruction constant: 132 bits
+      at dw32, so PnR died. Now it uses the fabric width: garnet ac4d9348, aha 923441d.
+    - lake `build_spec_rv` refused RV fw2 dw64 dual-port ("No valid macros", a one-column check):
+      lake b59ea334.
+  - **Not width issues:**
+    - `tests/down_sample` fails clockwork's compile_mem on a lake-spec MEM at every width
+      (isl assertion).
+    - `apps/scalar_reduction` has only a static `hack_design_top.py` rewrite, so it can't run RV.
+    - No FP at dw != 16 (`gen_PE_fc(dw)` is the integer PE).
+  - **Tile_PE constraints don't depend on width:** `mul_path`/`add_path` name widths but are
+    unused, and the FP false paths are `_if_pins_exist`. gf12 sweeps at dw 8/32/64 on thesis
+    tiles: cfc4174c's `--spec-set thesis_dse` / `thesis_pe_widths`, `--recipe thesis_fmax`.
 
 ## Thesis fabrics: garnet.py --thesis static|rv (2026-10-17, session cfc4174c)
 
