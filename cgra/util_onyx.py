@@ -100,6 +100,23 @@ def load_pond_spec_params(rv, data_width=16):
     return params
 
 
+# lake Spec clock-gating options (share_clk_ctr: one cycle counter for every static
+# schedule generator; clock_gate_ports: unconfigured ports' clocks gated off). Off
+# by default; set in the MEM spec config, they apply to every lake spec in the CGRA.
+SPEC_POWER_OPTIONS = ("share_clk_ctr", "clock_gate_ports")
+
+
+def with_mem_power_options(pond_params, mem_params):
+    """The PE-tile pond's spec params plus the MEM spec's clock-gating options it
+    does not set itself (its own JSON wins, so {"clock_gate_ports": false} keeps a
+    pond ungated). Unchanged, None included, when the MEM spec sets none."""
+    inherited = {k: v for k, v in (mem_params or {}).items()
+                 if k in SPEC_POWER_OPTIONS and v and k not in (pond_params or {})}
+    if not inherited:
+        return pond_params
+    return dict(pond_params or {}, **inherited)
+
+
 def get_actual_size(width: int, height: int, io_sides: List[IOSide]):
     if IOSide.North in io_sides:
         height += 1
@@ -554,6 +571,9 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
         # (static build_pond / build_pond_rv) at the fabric width
         pond_spec_params = {"data_width": fabric_dw}
     static_spec_pond = pond_spec_params is not None and not use_rv_mem_pond
+    if use_rv_mem_pond or static_spec_pond:
+        # a lake-spec pond takes the MEM spec's clock gating (the legacy PondCore can't)
+        pond_spec_params = with_mem_power_options(pond_spec_params, _spec_params if lake_spec_config else None)
 
     def make_pond():
         if not use_rv_mem_pond and not static_spec_pond:

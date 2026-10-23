@@ -43,7 +43,7 @@ from passes.tile_id_pass.tile_id_pass import tile_id_physical
 from passes.clk_pass.clk_pass import clk_physical
 from passes.pipeline_global_pass.pipeline_global_pass import pipeline_global_signals
 from passes.interconnect_port_pass import wire_core_flush_pass
-from cgra.util_onyx import get_actual_size, load_pond_spec_params
+from cgra.util_onyx import get_actual_size, load_pond_spec_params, with_mem_power_options
 
 THESIS_MODES = ("static", "rv")
 
@@ -133,6 +133,8 @@ def create_cgra_thesis(mode: str,
     pond_spec_params = None
     if add_pond:
         pond_spec_params = load_pond_spec_params(rv=rv, data_width=dw) or {"data_width": dw}
+        # the pond takes the MEM spec's clock gating unless its JSON sets it
+        pond_spec_params = with_mem_power_options(pond_spec_params, spec_params)
 
     def make_pond():
         geom = resolve_cgra_pond_params(pond_spec_params, rv=rv)

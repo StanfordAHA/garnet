@@ -1910,6 +1910,21 @@ floorplan, `mode[0]` guard) apply — the pond is flops, no macro.
   RV mode, legacy `PondCore` otherwise (static spec pond is opt-in until a
   full-CGRA app run validates it). The static spec pond drops the legacy
   1-bit valid → PE `bit0` inter-core wire.
+- **Clock gating reaches the pond (2026-10-22, session 5b33d095; user: "the pond
+  (and any lake-based spec) should see the clock gating").**
+  - The pond takes lake's `clock_gate_ports` / `share_clk_ctr` as pond-spec keys
+    (lake ca947229).
+  - When its JSON doesn't set them, a lake-spec pond (RV mode, or a static spec
+    pond) inherits them from the MEM spec config (`LAKE_SPEC_CONFIG`). The helper is
+    `with_mem_power_options` in `cgra/util_onyx.py`, used by `make_pond()` and
+    `cgra/util_thesis.py`. So a `_portcg` / `_sharectr` spec gates the MEM and the
+    pond, and the thesis opt specs gate the thesis PE tile's pond too.
+  - `{"clock_gate_ports": false}` in the pond JSON keeps the pond ungated. The
+    legacy `PondCore` is unchanged.
+  - No gating in the MEM spec leaves the pond params untouched (None included), so
+    other builds keep their RTL.
+  - Tests: `tests/test_spec_power_options`. Bit-accurate matmul_rvtry3 on gated
+    static and RV thesis CGRAs (lake CLAUDE.md §5.6).
 - **Tile_PE constraints follow the pond (2026-10-14, session cfc4174c).**
   `Tile_PE/constraints/constraints.tcl` hard-coded the legacy pond's register file
   (`PondCore_inst0/PondTop_W_inst0/PondTop/memory_0/data_array_reg*`) for the
