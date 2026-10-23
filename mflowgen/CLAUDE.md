@@ -1383,6 +1383,16 @@ Comparing power across runs: tiles built on garnet >= 6f110058 have no power-dom
 pipeclean numbers or with a run that mixes garnet versions; check `garnet` in each workspace's
 `run_meta.json`. The two fw1-sp static mmpond bundles replay a schedule with one dropped SRAM
 read (see the fw1 bullet): flag them or leave them out.
+Whole-CGRA power of the set, stock fabric (2026-10-23; zip
+`/aha/cgra_app_power_dw16_r8cad-gf12_20261023-085057.zip`, CSVs + RESULTS.txt in
+`/aha/sweep_out/cgra_app_power_dw16_20261023`): 10 configs x 4 apps (no static mmpond on fw4 vc4 / fw8),
+400 MHz, every replayed tile exact (66 steps, 2943 tiles). App mW static / RV (fw4 sc8192 2x2): conv
+17.5 / 18.6, gauss 43.9 / 31.9, harris 225.5 / 115.8, mmpond 11.0 / 5.2; but these RV bundles were recorded
+without branch balancing, so RV runs far longer (harris 333 vs 62 us, gauss 50 vs 24 us) and its energy per
+run is 2.6-2.8x static for harris: a throughput artifact, not the fabric (the thesis RV fabric balances).
+Memory config moves app power a few %; SRAM power tracks port count (dual-port fw2 3.6 mW vs fw4 2.4 mW on
+conv, harris 34 vs 23 mW). Workspaces span garnet 13732565 / 3b70f5bb / 8c2289f5 (all no-PD; thesis-only
+changes between them).
 Failures (OPEN_ISSUES ids):
 - fw1 single-port STATIC line buffers (`clockwork/static-mem-bandwidth-unchecked`, closed
   2026-10-18): each row bank is written and read every cycle (stride 1, overlapping) = 2
