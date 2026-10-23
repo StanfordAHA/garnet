@@ -2408,6 +2408,11 @@ GARNET_HOME pointing at it): `garnet.py --thesis MODE --lake-spec-config spec.js
 `aha map --collateral <spec collateral> --pond-collateral <pond collateral of MODE>`,
 `aha pnr ... <same garnet flags>`, `aha test` (static: no DENSE_READY_VALID; rv: DRV=1
 PIPELINED=0 MATCH_BRANCH_DELAY=0 at halide/map, DRV=1 at pnr/test).
+Export LAKE_COLLATERAL_JSON_MEM (and _REGFILE with a pond spec) for `aha pnr` too, not only via
+`aha map --collateral/--pond-collateral`: static `aha pnr` (--pipeline_pnr) re-runs clockwork
+(`make reschedule_mem`) with the current env, and without them it reschedules against clockwork's
+default collaterals (08555638: thesis static matmul_tile 8x4, 7/256 outputs wrong; bit-accurate
+with both exported). gen_app_bundle.py already exports both for pnr.
 Pitfall (cost hours): reusing one garnet.v across apps also needs every file garnet.py
 writes for that array: global_buffer/header, global_controller/header, matrix_unit/header,
 */systemRDL/output (+ glb.rdl, glc.rdl.final) AND genesis_verif/ (the global controller's
