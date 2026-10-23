@@ -133,10 +133,17 @@ def balance(d, pe_stages, margin, plan=None, share=False):
     return added, report
 
 
-def edge_width(inst, s, t):
+# The fabric's data width (--data-width; aha pnr passes it). A PE -> PE edge carries no
+# width of its own, and a mapped netlist may hold no data-width instance at all: its only
+# width-carrying instances can be the PEs' instruction constants (36 + 3 * width bits).
+DATA_WIDTH = None
+
+
+def edge_width(inst, s, t, conns=()):
     """Bit width of the connection s -> t: 1 for corebit / BitIO endpoints and a PE's
     bitK inputs and O1 (res_p) output, else a width-carrying endpoint's genargs width,
-    else the design's data width (any instance's genargs width), else 16."""
+    else DATA_WIDTH, else the genargs width of an instance that is not a PE's
+    instruction constant, else 16."""
     widths = []
     for ep in (s, t):
         name, port = ep.split(".", 1)
@@ -151,9 +158,18 @@ def edge_width(inst, s, t):
             widths.append(w[1])
     if widths:
         return widths[0]
-    for i in inst.values():
+    if DATA_WIDTH:
+        return DATA_WIDTH
+    inst_consts = set()
+    for a, b in conns:
+        for x, y in ((a, b), (b, a)):
+            name, _, port = y.partition(".")
+            i = inst.get(name, {})
+            if port == "inst" and str(i.get("genref", i.get("modref", ""))) == "global.PE":
+                inst_consts.add(x.split(".", 1)[0])
+    for n, i in inst.items():
         w = i.get("genargs", {}).get("width")
-        if isinstance(w, list):
+        if isinstance(w, list) and n not in inst_consts:
             return w[1]
     return 16
 
@@ -173,7 +189,7 @@ def insert_regs(inst, conns, s, t, k, added):
     """Put k pass-through registers (extra_data 0) on the connection s -> t, named
     after the input they pad (rv_balance_<hash of t>_<i>, i = 0 nearest the driver),
     so a register keeps its name when a later plan adds more on the same input."""
-    width = edge_width(inst, s, t)
+    width = edge_width(inst, s, t, conns)
     tag = hashlib.md5(t.encode()).hexdigest()[:8]
     prev = s
     for i in range(k):
@@ -194,7 +210,7 @@ def insert_shared_chain(inst, conns, s, sinks, added):
     sinks: sink t (k registers) moves from s to the chain's k-th register (a register
     with taps is a lazy fork, like any fanout). Named after the driver
     (rv_balance_<hash of s>_<i>, i = 0 nearest the driver)."""
-    width = edge_width(inst, s, next(iter(sinks)))
+    width = edge_width(inst, s, next(iter(sinks)), conns)
     tag = hashlib.md5(s.encode()).hexdigest()[:8]
     outs = []
     prev = s
@@ -230,7 +246,12 @@ def main():
                    help='JSON {"<instance>.<input port>": registers}: pad exactly those inputs '
                         "(from a routed design's throughput model); with --pe-stages 0 only "
                         "these (env RV_BALANCE_PLAN)")
+    p.add_argument("--data-width", type=int, default=None,
+                   help="the fabric's data width: the width of padding registers on edges whose "
+                        "endpoints carry none (PE -> PE). Default: from the netlist")
     a = p.parse_args()
+    global DATA_WIDTH
+    DATA_WIDTH = a.data_width
     path = os.path.join(a.bin_dir, "design_top.json")
     orig = os.path.join(a.bin_dir, "design_top.pre_rv_balance.json")
     d = json.load(open(path))

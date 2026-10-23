@@ -337,6 +337,33 @@ def test_rv_balance_one_bit_edge():
     assert dat[0]["genref"] == "coreir.reg" and dat[0]["genargs"]["width"] == ["Int", 16]
 
 
+def test_rv_balance_pe_to_pe_edge_at_the_fabric_width(monkeypatch):
+    """A PE -> PE data edge has no width of its own. The padding register takes
+    --data-width, else a netlist width that is not a PE instruction constant: at dw32 a
+    mapped netlist's only width-carrying instances can be the 132-bit (36 + 3 * 32)
+    instruction constants, and a 132-bit register on a 32-bit PE input kills PnR
+    ("Cannot wire together")."""
+    def design():
+        pe = {"modref": "global.PE"}
+        ic = {"genref": "coreir.const", "genargs": {"width": ["Int", 132]}}
+        return {"top": "global.app", "namespaces": {"global": {"modules": {"app": {
+            "instances": {"in": {"modref": "global.IO"}, "out": {"modref": "global.IO"}, "a": dict(pe),
+                          "s": dict(pe), "a_inst": dict(ic), "s_inst": dict(ic)},
+            "connections": [["in.out", "a.data0"], ["a.O0", "s.data0"], ["in.out", "s.data1"],
+                            ["a_inst.out", "a.inst"], ["s.inst", "s_inst.out"], ["s.O0", "out.in"]]}}}}}
+
+    def pad_width(data_width):
+        monkeypatch.setattr(rvb, "DATA_WIDTH", data_width)
+        d = design()
+        rvb.balance(d, pe_stages=0, margin=0, plan={"s.data0": 1})
+        inst = d["namespaces"]["global"]["modules"]["app"]["instances"]
+        (r,) = [i for n, i in inst.items() if n.startswith("rv_balance_")]
+        return r["genargs"]["width"][1]
+
+    assert pad_width(32) == 32
+    assert pad_width(None) == 16   # no data-width instance left once the instruction constants are skipped
+
+
 def toy_unpipelined(tmp_path):
     """Routes without registers (no EXHAUSTIVE_PIPE): IO -> pa; pa res -> pb -> mac data0;
     pa res_p (1-bit) -> mac bit0 directly; mac res -> output IO, mac res_p -> a pond input."""
