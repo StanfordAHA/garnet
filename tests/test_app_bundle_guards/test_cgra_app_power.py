@@ -421,3 +421,44 @@ def test_replay_jobs_reach_the_tile_graphs(tmp_path):
         args = cap.parse_args(["--out-dir", str(tmp_path)] + argv)
         env = cap.tile_env("Tile_PE", tmp_path, man, [("A", tmp_path)], "cfg", args)
         assert env.get("REPLAY_TILE_JOBS") == want
+
+
+THESIS_MAN = {"spec_config": {"data_width": 16}, "pond_spec": None}
+
+
+@pytest.mark.parametrize("man,argv,want", [
+    (dict(THESIS_MAN, mode="static", thesis="static"), [], ("0.15", "0.25")),
+    (dict(THESIS_MAN, mode="rv", thesis="rv"), ["--i-delay-ns", "0.1"], ("0.1", "0.25")),
+    (dict(THESIS_MAN, mode="rv"), [], (None, None)),            # stock fabric: the tiles' own
+    (dict(THESIS_MAN, mode="rv"), ["--pt-i-delay-frac", "0.3"], (None, "0.3")),
+])
+def test_thesis_tiles_get_the_recipes_input_delays(tmp_path, man, argv, want):
+    """The power tiles of a thesis bundle are constrained (and replayed) like the
+    thesis tile set: TILE_I_DELAY_NS / PT_I_DELAY_FRAC as the sweep_specs recipes."""
+    args = cap.parse_args(["--out-dir", str(tmp_path)] + argv)
+    args.clocks = None
+    env = cap.tile_env("Tile_PE", tmp_path, man, [("A", tmp_path)], "cfg", args)
+    assert (env.get("TILE_I_DELAY_NS"), env.get("PT_I_DELAY_FRAC")) == want
+
+
+def test_thesis_delays_match_the_recipes():
+    ss = cap.sweep_specs()
+    flags = ss._THESIS_TILE_FLAGS
+    assert float(flags[flags.index("--pt-i-delay-frac") + 1]) == cap.THESIS_PT_I_DELAY_FRAC
+
+
+def test_clocks_from_gives_each_fabric_its_clock(tmp_path, capsys):
+    table = tmp_path / "thesis_clocks.json"
+    table.write_text(json.dumps({"static": {"16": 515}, "rv": {"16": 560}}))
+    args = cap.parse_args(["--out-dir", str(tmp_path), "--clocks-from", str(table)])
+    args.clocks, _ = cap.sweep_specs()._thesis_clock_table(args.clocks_from)
+    periods = {}
+    for mode in ("static", "rv"):
+        man = dict(THESIS_MAN, mode=mode, thesis=mode)
+        env = cap.tile_env("Tile_MemCore", tmp_path, man, [("A", tmp_path)], "cfg", args)
+        periods[mode] = (env["CLOCK_PERIOD"], env["clock_period_PE"])
+    assert periods == {"static": ("1.942", "1.942"), "rv": ("1.786", "1.786")}
+    stock = dict(THESIS_MAN, mode="rv")                         # not thesis: --clock-mhz
+    assert cap.tile_env("Tile_PE", tmp_path, stock, [("A", tmp_path)], "cfg", args)["CLOCK_PERIOD"] == "1.333"
+    with pytest.raises(SystemExit):                             # no dw32 clock in the table
+        cap.config_clock_mhz(dict(stock, thesis="rv", spec_config={"data_width": 32}), args)

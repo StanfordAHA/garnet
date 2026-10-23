@@ -1698,6 +1698,12 @@ rows at the output vs up front through the MEM's filter path; lake CLAUDE.md §6
   `--any-config` (2026-10-16, session 1fa8a391): run every config ANY variant has, each with
   only the variants that have it (default: only configs every variant has). For one variant
   per app where some apps fail on some specs (the dw16 app-bundle set).
+- Thesis power tiles match the thesis tile set (2026-10-22, session 1fa8a391): for a thesis
+  bundle, tile_env exports TILE_I_DELAY_NS = sweep_specs.THESIS_I_DELAY_NS (0.15) and
+  PT_I_DELAY_FRAC = 0.25 (the thesis recipes'; tile SDCs and generate_testbench read both;
+  `--i-delay-ns` / `--pt-i-delay-frac` override), and `--clocks-from <thesis_clocks.json | thesis_fmax
+  out dir>` clocks each thesis fabric at its own (mode, data width) clock, read with
+  sweep_specs._thesis_clock_table; stock bundles keep --clock-mhz. run_meta.json records the clock.
 - Parallel tile replays (2026-10-22, session 1fa8a391): each post-*-power step replays its tiles one
   after another (~4 min per tile on gf12; a 16x16 harris variant has ~175-230 tiles, so a PE
   workspace took 12-15 h). `cgra_app_power.py --replay-jobs N` (env `REPLAY_TILE_JOBS`, also

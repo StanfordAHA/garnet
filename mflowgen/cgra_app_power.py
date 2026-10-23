@@ -40,6 +40,8 @@ PrimeTime, the ADK, docker for the rtl step), like sweep_specs.py --cgra-power.
 """
 import argparse
 import csv
+import functools
+import importlib.util
 import json
 import os
 import re
@@ -55,6 +57,19 @@ from pathlib import Path
 MFLOWGEN_DIR = Path(__file__).resolve().parent
 GARNET_DIR = MFLOWGEN_DIR.parent
 TILES = ("Tile_MemCore", "Tile_PE")
+# The thesis tile recipes' pass-through input delay (sweep_specs.py `--pt-i-delay-frac`
+# in _THESIS_TILE_FLAGS; a test keeps them equal). Their data/valid/ready input delay is
+# sweep_specs.THESIS_I_DELAY_NS.
+THESIS_PT_I_DELAY_FRAC = 0.25
+
+
+@functools.lru_cache(maxsize=None)
+def sweep_specs():
+    """mflowgen/sweep_specs.py as a module: the thesis tiles' constants and clock table."""
+    spec = importlib.util.spec_from_file_location("sweep_specs", MFLOWGEN_DIR / "sweep_specs.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
 
 
 def parse_args(argv=None):
@@ -85,6 +100,19 @@ def parse_args(argv=None):
                    help="the array clock, for synthesis and the replays of every tile "
                         "(Tile_MemCore env CLOCK_PERIOD, Tile_PE clock_period_PE; their own "
                         "defaults differ: 1.333 / 1.1 ns); default 750 MHz")
+    p.add_argument("--clocks-from", metavar="PATH", default=None,
+                   help="clock each THESIS bundle's tiles at its fabric's clock for its data width "
+                        "instead of --clock-mhz: a thesis_clocks.json ({\"static\": {\"16\": MHz}, "
+                        "\"rv\": {...}}) or a --recipe thesis_fmax out dir, read as sweep_specs.py "
+                        "--clocks-from reads them. Non-thesis bundles keep --clock-mhz")
+    p.add_argument("--i-delay-ns", type=float, default=None, metavar="NS",
+                   help="tile data/valid/ready input delay (env TILE_I_DELAY_NS, the tile SDC and "
+                        "the replay testbench). Default: the thesis tile recipes' value for thesis "
+                        "bundles, the tiles' own 0.3 / 0.2 x period otherwise")
+    p.add_argument("--pt-i-delay-frac", type=float, default=None, metavar="F",
+                   help="pass-through input delay as F x period (env PT_I_DELAY_FRAC). Default: "
+                        f"{THESIS_PT_I_DELAY_FRAC:g} for thesis bundles (as the thesis tile recipes), "
+                        "the fixed 0.7 ns otherwise")
     p.add_argument("--flatten-effort", type=int, default=None, help="env FLATTEN")
     p.add_argument("--sram-cell-re", default=r"^IN12LP_",
                    help="cell-report reference names counted as SRAM macro (default gf12 "
@@ -153,12 +181,25 @@ def load_manifests(variants, config):
 
 # ---------------------------------------------------------------- build ----
 
+def config_clock_mhz(man, args):
+    """A bundle's clock: its fabric's (mode, data width) clock from --clocks-from for a
+    thesis bundle, else --clock-mhz."""
+    clocks = getattr(args, "clocks", None)
+    if clocks and man.get("thesis"):
+        key = (man["mode"], int(man["spec_config"].get("data_width", 16)))
+        if key not in clocks:
+            raise SystemExit(f"*** --clocks-from {args.clocks_from} has no clock for "
+                             f"{key[0]} dw{key[1]}")
+        return clocks[key]
+    return args.clock_mhz
+
+
 def tile_env(tile, ws, man, variants, config, args):
     """Environment of one tile workspace: what sweep_specs.py gives a tile
     build (_tile_env), plus the variants."""
     env = os.environ.copy()
     for k in ("APP_BUNDLE", "RTL_POWER", "MEMTILE_POWER", "LAKE_SPEC_CONFIG", "LAKE_SPEC_MODE",
-              "LAKE_POND_SPEC_CONFIG", "THESIS_FABRIC"):
+              "LAKE_POND_SPEC_CONFIG", "THESIS_FABRIC", "TILE_I_DELAY_NS", "PT_I_DELAY_FRAC"):
         env.pop(k, None)
     spec = man["spec_config"]
     # a bundle recorded with a PE-tile spec pond (gen_app_bundle.py --pond-spec)
@@ -176,6 +217,17 @@ def tile_env(tile, ws, man, variants, config, args):
         env["LAKE_SPEC_MODE"] = man["mode"]
     if thesis:
         env["THESIS_FABRIC"] = thesis
+    # Input delays: the tile SDCs and the replay testbench (generate_testbench.py) both
+    # read these, so the power tiles match the thesis tile set (sweep_specs recipes)
+    i_delay = getattr(args, "i_delay_ns", None)
+    pt_frac = getattr(args, "pt_i_delay_frac", None)
+    if thesis:
+        i_delay = sweep_specs().THESIS_I_DELAY_NS if i_delay is None else i_delay
+        pt_frac = THESIS_PT_I_DELAY_FRAC if pt_frac is None else pt_frac
+    if i_delay is not None:
+        env["TILE_I_DELAY_NS"] = f"{i_delay:g}"
+    if pt_frac is not None:
+        env["PT_I_DELAY_FRAC"] = f"{pt_frac:g}"
     env["DUAL_PORT"] = "True" if spec.get("dual_port", False) else "False"
     env["USE_NON_SPLIT_FIFOS"] = "True"
     env["USE_SIM_SRAM"] = "False"
@@ -185,7 +237,7 @@ def tile_env(tile, ws, man, variants, config, args):
         env["FLATTEN"] = str(args.flatten_effort)
     if getattr(args, "replay_jobs", None):
         env["REPLAY_TILE_JOBS"] = str(args.replay_jobs)
-    period = f"{round(1e6 / args.clock_mhz) / 1000:g}"
+    period = f"{round(1e6 / config_clock_mhz(man, args)) / 1000:g}"
     env["CLOCK_PERIOD"] = period      # Tile_MemCore
     env["clock_period_PE"] = period   # Tile_PE
     # construct.py imports mflowgen/common
@@ -209,8 +261,9 @@ def build_tile(tile, config, variants, man, args, status):
     try:
         if args.dry_run:
             env = tile_env(tile, ws, man, variants, config, args)
-            for k in ("LAKE_SPEC_CONFIG", "LAKE_SPEC_MODE", "LAKE_POND_SPEC_CONFIG", "APP_BUNDLE_VARIANTS",
-                      "CLOCK_PERIOD", "clock_period_PE", "FLATTEN"):
+            for k in ("LAKE_SPEC_CONFIG", "LAKE_SPEC_MODE", "LAKE_POND_SPEC_CONFIG", "THESIS_FABRIC",
+                      "DUAL_PORT", "APP_BUNDLE_VARIANTS", "CLOCK_PERIOD", "clock_period_PE",
+                      "TILE_I_DELAY_NS", "PT_I_DELAY_FRAC", "FLATTEN", "REPLAY_TILE_JOBS"):
                 if k in env:
                     print(f"    [{config}/{tile}] env {k}={env[k]}")
             print(f"    [{config}/{tile}] $ mflowgen run --design {MFLOWGEN_DIR / tile}; "
@@ -229,7 +282,7 @@ def build_tile(tile, config, variants, man, args, status):
             if not pond_file.exists() or pond_file.read_text() != pond_text:
                 pond_file.write_text(pond_text)
         json.dump({"config": config, "tile": tile, "variants": {v: str(d / config) for v, d in variants},
-                   "mode": man["mode"], "clock_mhz": args.clock_mhz, "garnet": git_rev(GARNET_DIR),
+                   "mode": man["mode"], "clock_mhz": config_clock_mhz(man, args), "garnet": git_rev(GARNET_DIR),
                    "argv": sys.argv,
                    "started": time.strftime("%Y-%m-%d %H:%M:%S")},
                   open(ws / "run_meta.json", "w"), indent=1)
@@ -464,6 +517,10 @@ def zip_results(args):
 
 def main(argv=None):
     args = parse_args(argv)
+    args.clocks = None
+    if args.clocks_from:
+        args.clocks, lines = sweep_specs()._thesis_clock_table(args.clocks_from)
+        print("\n".join(lines), flush=True)
     out_dir = Path(args.out_dir).resolve()
     if not args.report_only:
         if GARNET_DIR in out_dir.parents or out_dir == GARNET_DIR:
@@ -482,7 +539,8 @@ def main(argv=None):
         for config in configs:
             vs = variants_of(variants, config)
             man = load_manifests(vs, config)[vs[0][0]]
-            print(f"{config}: mode {man['mode']}, app {man.get('app')}, variants "
+            print(f"{config}: mode {man['mode']}, app {man.get('app')}, "
+                  f"clock {config_clock_mhz(man, args):g} MHz, variants "
                   + ", ".join(v for v, _ in vs), flush=True)
             jobs += [(t, config, man, vs) for t in tiles]
         status, sem = {}, threading.Semaphore(max(1, args.tile_jobs))
