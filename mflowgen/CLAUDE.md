@@ -1321,6 +1321,15 @@ over 8843 on an RV build = Tile_PE with the RV spec knobs). Two earlier sets
 were deleted as stale (lake 04191ea5: before 144e2062's comparator pruning;
 144e2062: before the port-order fix).
 
+**Thesis app bundles on the chosen MemTiles (2026-10-23, session 1fa8a391): the set to use.**
+User's thesis tile set: static `fw4_dw16_sc4096_sp_in2_out2_vc2_sharectr_portcg_thesis`, RV
+`..._nofp_portcg_thesis_rv` (FIFO-8 dropped). conv/gauss/harris/mmpond on both, 16x16 `--cgra-tiles`,
+garnet c9c6da9b + lake ca947229 (the PE pond inherits the MEM spec's gating; bundles recorded before
+that have an ungated pond and fail check_bundle on the new Tile_PE). All 8 bit-accurate, kernel ns and
+RV padding as the base-spec set below. `/aha/sweep_out/app_bundles_thesis_opt_20261023` (+ .tgz,
+STATUS.txt). Power: `cgra_app_power.py --clocks-from <thesis_fmax clock table> --replay-jobs 4`
+(dry run: each fabric at its own clock, TILE_I_DELAY_NS 0.23, PT_I_DELAY_FRAC 0.25, THESIS_FABRIC).
+
 **Thesis-fabric app-bundle set (2026-10-21, session 1fa8a391).** User direction (2026-10-20, via
 cfc4174c): thesis results come from the thesis fabrics. conv_3_3, gaussian, harris_color and pond
 matmul on 16x16 `garnet.py --thesis static|rv` CGRAs, lake's default thesis spec
