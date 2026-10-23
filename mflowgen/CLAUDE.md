@@ -1710,6 +1710,10 @@ rows at the output vs up front through the MEM's filter path; lake CLAUDE.md §6
   honoured by sweep_specs runs when exported) runs N tiles at once; app-replay xrun gets
   `-licqueue` and PrimeTime `SNPSLMD_QUEUE=true`, so they wait for a license instead of failing.
   Load multiplies: tile-jobs x parallel-jobs (variants) x N sims.
+  Verified on /aha (2026-10-22; scratchpad 1fa8a391 `tilepower/par_verify.sh`: run_local.sh's
+  freepdk45 chain with the real step scripts, the thesis conv_3_3 bundle's 26 PE tiles): N=4
+  9 min 50 s vs N=1 34 min 56 s (3.6x on a loaded 24-core machine), 26/26 exact both ways, every
+  .hier/.cell/.replay.json identical apart from date lines, every replay xrun with -licqueue.
   A bundle recorded with `--pond-spec` (manifest `pond_spec`) gets its Tile_PE
   built with that pond (`LAKE_POND_SPEC_CONFIG` = `<ws>/pond_spec.json`;
   2026-10-14, session 1fa8a391): before, it replayed on the default PE tile
