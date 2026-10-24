@@ -2615,6 +2615,15 @@ MemTile (static + RV, all four widths) met 1000 MHz (WNS 0), so the PE sets ever
   budgets): MemTiles -3..-11 ps on pass-through/feedthrough budgets; static PE -38 ps on the same
   predicate path (SB in -> ALU -> 1-bit SB out); RV PE -64 ps on SB ready -> output fork gating ->
   SB valid (273 ps vs the fixed 210 ps sb_delay budget, independent of the clock).
+- **The static-vs-RV clock gap is the input budget (2026-10-24, report
+  https://claude.ai/artifact/Q4NmuZn3oZNK3mLDAzx9Dh; extraction + page generator in cfc4174c's
+  scratchpad slow/{extract.py,build_report.py}).** Period gap 234 / 260 / 244 / 240 ps at dw 8/16/32/64,
+  of which 230 ps is the upstream budget charged to static (its PE computes on inputs the same cycle);
+  the datapath (ALU/FPU + condition logic) differs by <= 39 ps, front end and output side the rest.
+  With d = 0 static is within 0.3-1.9% of RV. So quote RV's clock lead as a function of d. Same report:
+  PnR area by cell type and by matched block (Innovus signoff.area.rpt self areas, sums exact) and
+  MemTile PT power by block/cell (power.cell; idle is mostly clock tree + gates, RV's extra idle is
+  the tile port FIFOs), per-path-group worst paths (signoff_<group>.tarpt) on a block diagram.
 - RV dw32 failed in Genus elaboration: "Unable to find port 'valid_in' of instance 'u_mux_logic' of
   module 'mux_logic_32_5'". gemstone's AOI mux named its inner modules precoder/mux_logic_<width>_
   <height> by width and height only, so at dw32 the RV data muxes and the plain 32-bit config muxes
