@@ -2623,6 +2623,22 @@ MemTile (static + RV, all four widths) met 1000 MHz (WNS 0), so the PE sets ever
 | 32 | 525 | 470 | 602 | 540 | +15% |
 | 64 | 474 | 425 | 535 | 480 | +13% |
 
+- **Where the time goes (2026-10-23, Genus reports of these probes).** Every PE's worst path, at
+  every width, static and RV, ends at the 1-bit predicate output: operand (CB from the input
+  budget on static; a constant config register or input FIFO on RV) -> RegisterMode mux -> ALU
+  (dw 8/32/64: the dw x dw -> 2dw integer multiplier, an add and the zero flag; dw16: the bf16
+  FPU add and its flags, slower than the 16-bit integer path) -> lassen `Cond` -> res_p -> static:
+  the 1-bit SB register in the same tile / RV: the 1-bit output FIFO. ALU part 0.69 / 0.93 / 1.0 /
+  1.2 ns at dw 8/16/32/64; Cond + output ~0.43 ns at every width. lassen `cond.py` is a 20-way
+  if/elif, which synthesized into a serial chain of 19 Mux2xBit instances: with flatten-effort 0
+  (thesis recipes, per-block area) each is its own module and Genus cannot rebalance it into a
+  ~5-level tree. Not changed (user decision): let Genus flatten the PE (Tile_PE default 3), or
+  rewrite Cond as a parallel compute + one select. MemTiles met 1 GHz everywhere; the paths that
+  sat at the limit are config -> schedule/address generators (RV item-filter SGs, static port and
+  SIPO/PISO SGs, stencil_valid SG) and RV SB ready -> valid. PnR at 400 MHz (2026-10-22, old
+  budgets): MemTiles -3..-11 ps on pass-through/feedthrough budgets; static PE -38 ps on the same
+  predicate path (SB in -> ALU -> 1-bit SB out); RV PE -64 ps on SB ready -> output fork gating ->
+  SB valid (273 ps vs the fixed 210 ps sb_delay budget, independent of the clock).
 - RV dw32 failed in Genus elaboration: "Unable to find port 'valid_in' of instance 'u_mux_logic' of
   module 'mux_logic_32_5'". gemstone's AOI mux named its inner modules precoder/mux_logic_<width>_
   <height> by width and height only, so at dw32 the RV data muxes and the plain 32-bit config muxes
