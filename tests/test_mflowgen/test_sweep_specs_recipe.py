@@ -1,6 +1,6 @@
 """sweep_specs.py --recipe and the tile-variant configs it builds
-(mflowgen/CLAUDE.md "The sweep driver"): stock tiles, the PE pond knob, the
-static fabric, Tile_PE's clock, and the parts of the thesis recipe.
+(mflowgen/CLAUDE.md "The sweep driver"): stock tiles, the PE pond knob,
+Tile_PE's clock, and the parts of the thesis recipes.
 """
 import importlib.util
 import json
@@ -27,19 +27,24 @@ def listed(ss, capsys, *argv):
     return capsys.readouterr().out.split()
 
 
-def test_pe_tile_and_fabric_names(ss, capsys):
-    assert listed(ss, capsys, "--spec-set", "pe_tile", "--runtime-mode", "static,rv") == [
-        "stock_specpond", "stock_nopond", "fw4_dw16_sc4096_sp_in2_out2_vc2_rv",
-        "fw4_dw16_sc4096_sp_in2_out2_vc2_nopond_rv", "stock_staticfab_nopond"]
-    assert listed(ss, capsys, "--spec-set", "fabric") == ["stock", "stock_staticfab"]
-    # the PnR preset names exist (_resolve_names checks them)
-    names = listed(ss, capsys, "--spec-set", "pe_tile", "--pnr-set", "pe_tile_pnr")
-    assert set(ss.PRESETS["pe_tile_pnr"]) <= set(names)
+def test_stock_and_pond_names(ss):
+    name = ss._config_name
+    assert name(dict(stock=True, runtime_mode="static")) == "stock"
+    assert name(dict(stock=True, pond="spec", runtime_mode="static")) == "stock_specpond"
+    assert name(dict(pond="none", runtime_mode="rv")) == "fw4_dw16_sc4096_sp_in2_out2_vc2_nopond_rv"
+
+
+def test_dense_only_parts_are_gone(ss):
+    """garnet --dense-only crashes at HEAD: the stock-fabric switch-box and PE-tile
+    parts that used it were removed (2026-10-24); the thesis-fabric recipes build
+    those tiles."""
+    assert not {"fabric_mem", "pe_tile"} & set(ss.RECIPES)
+    assert not {"fabric", "pe_tile"} & set(ss.SPEC_SETS)
+    assert ss.RECIPES["thesis"] == ["memtile", "app_power"]
 
 
 def test_stock_tiles_have_no_rv(ss):
     assert ss._unsupported_reason({"stock": True}, "rv")
-    assert ss._unsupported_reason({"fabric": "static"}, "rv")
     assert ss._unsupported_reason({"stock": True}, "static") is None
 
 
@@ -64,23 +69,23 @@ def env_for(ss, tmp_path, monkeypatch, cfg, *argv):
     return ss._tile_env(cfg, tmp_path, args)
 
 
-def test_tile_env_stock_static_fabric(ss, tmp_path, monkeypatch):
-    env = env_for(ss, tmp_path, monkeypatch, dict(fabric="static", pond="none"))
+def test_tile_env_stock_no_pond(ss, tmp_path, monkeypatch):
+    env = env_for(ss, tmp_path, monkeypatch, dict(stock=True, pond="none"))
     assert "LAKE_SPEC_CONFIG" not in env and "LAKE_SPEC_MODE" not in env
-    assert env["DENSE_ONLY"] == "True" and env["NO_POND"] == "True"
+    assert env["NO_POND"] == "True"
 
 
 def test_tile_env_spec_pond(ss, tmp_path, monkeypatch):
     env = env_for(ss, tmp_path, monkeypatch, dict(stock=True, pond="spec"))
     assert env["LAKE_POND_SPEC_CONFIG"] == str(tmp_path / ss.POND_SPEC_FILE)
-    assert "DENSE_ONLY" not in env and "NO_POND" not in env and "LAKE_SPEC_CONFIG" not in env
+    assert "NO_POND" not in env and "LAKE_SPEC_CONFIG" not in env
 
 
 def test_tile_env_spec_config_unchanged(ss, tmp_path, monkeypatch):
     env = env_for(ss, tmp_path, monkeypatch, dict(runtime_mode="rv"))
     assert env["LAKE_SPEC_CONFIG"] == str(tmp_path / "spec_config.json")
     assert env["LAKE_SPEC_MODE"] == "rv"
-    assert not {"DENSE_ONLY", "NO_POND", "LAKE_POND_SPEC_CONFIG"} & set(env)
+    assert not {"NO_POND", "LAKE_POND_SPEC_CONFIG"} & set(env)
 
 
 @pytest.mark.parametrize("graph,key", [("Tile_PE", "clock_period_PE"),
@@ -112,12 +117,17 @@ def test_meta_columns_only_when_present(ss):
     assert new[1]["graph"] == ""
 
 
-def test_new_param_off_is_not_stale(ss):
+def test_off_param_change_is_not_stale(ss):
     built = {"no_pond": "False"}
-    assert ss._new_param_off("dense_only", built, {"dense_only": "False"})
-    assert ss._new_param_off("lake_pond_spec_config", built, {"lake_pond_spec_config": ""})
-    assert not ss._new_param_off("dense_only", built, {"dense_only": "True"})
-    assert not ss._new_param_off("no_pond", built, {"no_pond": "True"})
+    # added since the step ran, off
+    assert ss._off_param_change("knob", built, {"knob": "False"})
+    assert ss._off_param_change("lake_pond_spec_config", built, {"lake_pond_spec_config": ""})
+    # removed since the step ran, was off (the rtl step's dense_only, 2026-10-24)
+    assert ss._off_param_change("dense_only", {"dense_only": "False"}, {})
+    # on, or on both sides: a change
+    assert not ss._off_param_change("knob", built, {"knob": "True"})
+    assert not ss._off_param_change("dense_only", {"dense_only": "True"}, {})
+    assert not ss._off_param_change("no_pond", built, {"no_pond": "True"})
 
 
 def test_stale_check_ignores_a_new_off_param(ss, tmp_path):
@@ -132,11 +142,15 @@ def test_stale_check_ignores_a_new_off_param(ss, tmp_path):
     run_script(tmp_path / ".mflowgen" / "4-rtl" / "mflowgen-run",
                {"no_pond": "False", "dense_only": "True"})
     assert ss._stale_steps(tmp_path) == [("4-rtl", "dense_only None->True")]
+    # a parameter dropped since, off when the step ran
+    run_script(tmp_path / "4-rtl" / "mflowgen-run", {"no_pond": "False", "dense_only": "False"})
+    run_script(tmp_path / ".mflowgen" / "4-rtl" / "mflowgen-run", {"no_pond": "False"})
+    assert ss._stale_steps(tmp_path) == []
 
 
 def test_recipe_passthrough(ss):
     argv = ["--recipe", "thesis", "--out=/o", "--config-jobs", "4", "--app-bundles", "/b",
-            "--zip", "--recipe=pe_tile", "--out-dir", "/o2", "--zip-slim"]
+            "--zip", "--recipe=memtile", "--out-dir", "/o2", "--zip-slim"]
     assert ss._recipe_passthrough(argv) == ["--config-jobs", "4", "--zip", "--zip-slim"]
 
 
@@ -148,8 +162,8 @@ def test_recipe_runs_each_part(ss, monkeypatch, tmp_path):
                                             "--pnr-jobs", "2"])
     assert ss._run_recipe(args, ["--recipe", "thesis", "--out-dir", str(tmp_path),
                                  "--pnr-jobs", "2"]) == 0
-    assert [c[-1] for c in calls] == [str(tmp_path / p) for p in ("fabric_mem", "pe_tile", "memtile")]
-    for part, c in zip(("fabric_mem", "pe_tile", "memtile"), calls):
+    assert [c[-1] for c in calls] == [str(tmp_path / "memtile")]
+    for part, c in zip(("memtile",), calls):
         assert c[:len(ss.RECIPE_FLAGS[part])] == ss.RECIPE_FLAGS[part]
         assert c[len(ss.RECIPE_FLAGS[part]):] == ["--pnr-jobs", "2", "--out-dir", str(tmp_path / part)]
     monkeypatch.setattr(ss, "main", real_main)
@@ -157,10 +171,11 @@ def test_recipe_runs_each_part(ss, monkeypatch, tmp_path):
 
 def test_recipe_part_failure_keeps_going(ss, monkeypatch, tmp_path):
     calls = []
-    monkeypatch.setattr(ss, "main", lambda argv: calls.append(argv) or (1 if "fabric" in argv else 0))
+    monkeypatch.setattr(ss, "main", lambda argv: calls.append(argv) or 1)
+    monkeypatch.setattr(ss, "_run_app_power", lambda args, out: calls.append(["app_power"]) or 0)
     args = ss.build_argparser().parse_args(["--recipe", "thesis", "--out-dir", str(tmp_path)])
     assert ss._run_recipe(args, []) == 1
-    assert len(calls) == 3
+    assert calls[-1] == ["app_power"] and len(calls) == 2
 
 
 def bundles(root, apps, configs):
@@ -210,7 +225,8 @@ def test_relative_graph_is_made_absolute(ss, capsys, monkeypatch, tmp_path):
     """`mflowgen run --design` runs inside the workspace, so --graph
     ./mflowgen/Tile_PE given from the garnet checkout must reach it absolute."""
     monkeypatch.chdir(MFLOWGEN.parent)
-    assert ss.main(["--graph", "./mflowgen/Tile_PE", "--spec-set", "pe_tile", "--only", "stock_specpond",
+    assert ss.main(["--graph", "./mflowgen/Tile_PE", "--spec-set", "thesis_fabric",
+                    "--only", "fw4_dw16_sc4096_sp_in2_out2_vc2_thesis",
                     "--out-dir", str(tmp_path / "out"), "--dry-run"]) == 0
     out = capsys.readouterr().out
     assert f"mflowgen run --design {MFLOWGEN / 'Tile_PE'}" in out
@@ -244,7 +260,7 @@ def test_thesis_mem_opt_recipe(ss, capsys, tmp_path):
 def test_thesis_opt_recipe_and_one_clock(ss):
     """thesis_opt = the three optimized MemTiles + the thesis PE pair. Every thesis
     tile part builds at one clock, the slowest block's (the PE's; default the
-    pe_tile/app-power clock), not each graph's own default (Tile_PE 1.1 ns)."""
+    app-power clock), not each graph's own default (Tile_PE 1.1 ns)."""
     assert ss.RECIPES["thesis_opt"] == ["thesis_mem_opt", "thesis_pe"]
     clocks = {}
     for part in ("thesis_mem", "thesis_pe", "thesis_mem_opt"):

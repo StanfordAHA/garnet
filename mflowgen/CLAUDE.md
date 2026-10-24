@@ -24,12 +24,11 @@ older sweeps have blank `tile_pnr_setup_wns_ns` -- see "PT signoff" below).
 Results (pass/fail, macro, workspace) go to `<out-dir>/results.csv`.
 
 Key flags:
-- `--recipe {thesis,fabric_mem,pe_tile,memtile,app_power}` — the thesis data set in one
-  command; see "Thesis data recipe" below.
-- `--spec-set {default,thesis,filter_fifo,clock_gating,pe_tile,fabric}` — `default` = the 6 `DEFAULT_SPEC_POINTS`;
+- `--recipe <name>` — named parts of the thesis data set; see "Thesis data recipe" below.
+- `--spec-set {default,thesis,filter_fifo,clock_gating,thesis_*}` — `default` = the 6 `DEFAULT_SPEC_POINTS`;
   `filter_fifo` = the conv_3_3 A/B spec (RV, `_ff8`; see "Whole-CGRA power of
-  app variants"); `clock_gating` = the clock-gating A/B (below); `pe_tile` / `fabric` =
-  tile variants (stock tile, PE pond knob, static fabric; "Thesis data recipe");
+  app variants"); `clock_gating` = the clock-gating A/B (below); `thesis_*` = the thesis
+  fabrics ("Thesis fabrics");
   `thesis` = `_thesis_spec_points()` (1:1 mirror of lake
   `ASPLOS_EXP/all_experiments_thesis_v2.sh`, the standalone synthesis set)
   ∪ those 6 → 107 unique specs. Unlike aha's `enumerate_thesis_configs()`,
@@ -191,70 +190,46 @@ Key flags:
   target that graph lacks fails that config only). For adding a step to an
   old sweep without the current graph's changes rebuilding finished steps.
 
-### Thesis data recipe: `--recipe` (2026-10-17)
+### Thesis data recipe: `--recipe` (2026-10-17; stock-fabric parts removed 2026-10-24)
 
-One command for the data behind the thesis figures:
+`--recipe <name>` runs named parts, each its own sweep into `<out-dir>/<part>` with its own
+CSVs and zip (`<out-dir>/<part>_<host>_<ts>[_slim].zip`). The flags are the part's
+`RECIPE_FLAGS`, then the command line's, which override them: a top-level `--clock-mhz`
+re-clocks every part. A failed part does not stop the rest.
 
-    ./mflowgen/sweep_specs.py --recipe thesis --out-dir /nsim/mstrange/BUILDS/thesis_data \
-        --app-bundles <dir> --config-jobs 4 --pnr-jobs 2 --zip --zip-slim
+- **Thesis results come from the thesis fabrics** (user, 2026-10-20): `thesis_fmax` →
+  `thesis_tiles` → `thesis_dse_reduced` / `thesis_dse` with `--clocks-from`, then
+  `cgra_app_power.py` over the thesis bundle sets. See "Thesis fabrics" and "Thesis
+  design-space sweep" below, and "Thesis whole-CGRA power set" for the bundles.
+- **`--recipe thesis` = `memtile` + `app_power`, on garnet's stock fabric.** That is the data
+  behind the thesis figures today, whose "static" tiles are the RV + sparse fabric with its
+  FIFOs bypassed.
 
-Each part is its own sweep into `<out-dir>/<part>`, with its own CSVs and zip
-(`<out-dir>/<part>_<host>_<ts>[_slim].zip`). The flags are the part's `RECIPE_FLAGS`,
-then the command line's, which override them. So do not pass `--clock-mhz` at the
-top level: it would re-clock every part. `--recipe <part>` runs one part.
+  | Part | Graph, clock | Configs | Builds |
+  |---|---|---|---|
+  | `memtile` | Tile_MemCore, 750 MHz | `--spec-set thesis` at every data width: 196 configs | PnR: preset `memtile_pnr` = `dw16_pnr12` + `dw8_32_64`; held out: `dw16_val4` + `dw8_32_64` (the fit is the 8 dw16 points); idle/active power |
+  | `app_power` | `cgra_app_power.py --any-config`, 400 MHz | each `<app>` under `--app-bundles` is a variant | synth-level app power |
 
-`thesis` runs the parts in this order. The short, new ones go first, and a failed
-part does not stop the rest:
-
-| Part | Graph, clock | Configs | Builds | Thesis data |
-|---|---|---|---|---|
-| `fabric_mem` | Tile_MemCore, 750 MHz | `stock`, `stock_staticfab` | synth, `--flatten-effort 0` | MemTile switch box: ready-valid vs static fabric |
-| `pe_tile` | Tile_PE, 400 MHz | `stock_specpond`, `stock_nopond`, `fw4_dw16_sc4096_sp_in2_out2_vc2{,_nopond}_rv` (preset `pe_tile_pnr`); `stock_staticfab_nopond` | PnR to PT signoff; the static-fabric PE synth only | PE tile area (tile height); PE switch box (`stock_nopond` vs `stock_staticfab_nopond`) |
-| `memtile` | Tile_MemCore, 750 MHz | `--spec-set thesis` at every data width: 196 configs | PnR: preset `memtile_pnr` = `dw16_pnr12` + `dw8_32_64` (all 24 dw 8/32/64 configs); held out: `dw16_val4` + `dw8_32_64`, so the fit is the 8 dw16 points; idle/active power | Ch. 4 component, PUB, memory-tile and LI SG figures, data-width figures |
-| `app_power` | `cgra_app_power.py --any-config`, 400 MHz | each `<app>` under `--app-bundles` is a variant | synth-level app power | single-level / LI app figures |
-
-- **Tile knobs.** These are sweep-only config keys (`SWEEP_ONLY_KEYS`).
-  - `stock: True`: no `LAKE_SPEC_CONFIG`, i.e. garnet's stock tile. The name is `stock`.
-  - `pond`: `none` sets `NO_POND`; `spec` sets `LAKE_POND_SPEC_CONFIG` to `<ws>/pond_spec.json`
-    = `{}`, lake's default spec pond. Names get `_nopond` / `_specpond`.
-  - `fabric: static`: env `DENSE_ONLY` → rtl param `dense_only` → `garnet.py --dense-only`.
-    This implies stock, because the dense-only fabric builds garnet's stock dense cores and
-    never reads a spec. The name gets `_staticfab`.
-  - All three are exported only when set, so every other config's settings, and hence
-    `--skip-existing`, are unchanged.
-  - They are recorded in `sweep_meta.json` with the graph. correlation.csv and
-    memtile_power.csv get `graph`/`pond`/`fabric`/`stock` columns only when a workspace
-    has them, so re-reporting an old sweep writes the same CSVs.
-- **What the switch-box A/B measures.** The static fabric is canal `ready_valid=False`:
-  plain muxes and pipeline registers, on 16-bit tracks. The ready-valid fabric has RV muxes
-  with the valid/ready fork, `RegFIFO` depth-2 FIFOs in place of the registers (split unless
-  `USE_NON_SPLIT_FIFOS`), and 17-bit tracks. canal has no knob for the fork alone or the
-  FIFOs alone. With hierarchy kept, though, the switch box's mux and FIFO/register instances
-  have separate areas, and that is how the fork figure and the FIFO-vs-register figure
-  split the difference.
-- **Tile_PE clock.** It reads its clock from env `clock_period_PE` (default 1.1 ns), not
-  `CLOCK_PERIOD`, so `--clock-mhz` now goes there for Tile_PE (`_clock_env_key`). The part
-  runs at 400 MHz because the PE misses 750 MHz (critical path ≈ 2.45 ns, "Why Tile_PE
-  misses 1.333 ns"); cgra_app_power uses the same clock.
-- **PE variants.** A static PE is stock, as cgra_app_power builds static PEs, with lake's
-  default spec pond as the dw16 bundles record it. An RV PE needs an RV spec for its RV
-  pond, so it uses the default geometry.
-- **Stale-step check.** It ignores a parameter a step did not have when it ran and that is
-  now `False` or empty (`_new_param_off`). Opt-in knobs added later, such as `dense_only`,
-  therefore do not fail resumed workspaces.
-- **Not yet run on gf12 (2026-10-17).** No build in this flow has used `--dense-only`.
-  onyx's dense path builds the legacy MemCore and PE, and the stock MemTile takes the fixed
-  512x32 `gen_sram_macro`, which the dense MemCore's SRAM may not match. Smoke-test first:
-  `--recipe fabric_mem --rtl-only`, then `--recipe pe_tile --only stock_staticfab_nopond --rtl-only`.
-- **Lake ingest.** lake `THESIS/pipeline/tile_sweep.py` ingests the memtile zip. Nothing
-  reads the `pe_tile` / `fabric_mem` zips (PE switch boxes, tile height) or app_power's
-  `cgra_power.csv` (the app figures' `results.json`) yet.
-- **Not covered by any part:**
-  - two-level app runs, which need bundles over pond specs;
-  - LI app runs, which need the dw16 RV bundles re-recorded with `--rv-balance 8` (they
-    were recorded without it);
-  - unsharp, camera_pipeline and resnet bundles;
-  - the CGRA layout figure.
+- **Removed 2026-10-24: `fabric_mem`, `pe_tile`, spec sets `fabric` / `pe_tile`, preset
+  `pe_tile_pnr`, the `fabric` knob and the rtl param `dense_only`.**
+  - They built a static fabric through `garnet.py --dense-only`, which crashes at HEAD and
+    ignores the lake spec.
+  - They built stock PE tiles. `thesis_tiles_pe` and `thesis_fabric` build the PE and
+    switch-box comparison on the fabrics the thesis compares.
+- **Tile knobs still there** (sweep-only config keys, `SWEEP_ONLY_KEYS`):
+  - `stock: True` = no `LAKE_SPEC_CONFIG` (garnet's stock tile; name `stock`);
+  - `pond`: `none` sets `NO_POND`; `spec` sets `LAKE_POND_SPEC_CONFIG` to
+    `<ws>/pond_spec.json` = `{}`, lake's default spec pond. Names get `_nopond` / `_specpond`.
+  - Both are exported only when set and recorded in `sweep_meta.json` with the graph.
+    correlation.csv / memtile_power.csv get those columns only when a workspace has them.
+- **Tile_PE clock.** Tile_PE reads env `clock_period_PE` (default 1.1 ns), not
+  `CLOCK_PERIOD`, so `--clock-mhz` goes there for Tile_PE (`_clock_env_key`).
+- **Stale-step check** (`_off_param_change`). A parameter only one side has, and off
+  (`False` or empty) on that side, is not a change: an opt-in knob added after a step ran,
+  or one removed since (`dense_only`, exported as `False` by every rtl step from
+  2026-10-17 to 2026-10-24). So neither fails resumed workspaces.
+- **Lake ingest.** lake `THESIS/pipeline/tile_sweep.py` ingests memtile zips. Nothing in lake
+  reads the thesis-fabric zips or `cgra_power.csv` yet.
 
 ### PT signoff (default stop target since 2026-10-07)
 
@@ -2005,8 +1980,9 @@ floorplan, `mode[0]` guard) apply — the pond is flops, no macro.
 - **PE tile through PnR at 400 MHz (2026-10-18, session 1fa8a391; zip
   `/aha/pe_tile_specpond_r8cad-gf12_20261018-182758.zip`):** `--spec-set pe_tile --only
   stock_specpond` (garnet's stock PE tile on the default READY-VALID interconnect, with lake's
-  default spec pond in static mode; a static-fabric PE is `fabric="static"` (--dense-only) or
-  the thesis static fabric, `--spec-set thesis_fabric`), garnet before 6f110058
+  default spec pond in static mode; spec set `pe_tile` was removed 2026-10-24, so rebuild it
+  with `--replace --extra-specs` of `[{"stock": true, "pond": "spec", "runtime_mode": "static"}]`;
+  a static-fabric PE is the thesis static fabric, `--spec-set thesis_fabric`), garnet before 6f110058
   (so with power-domain logic). Synth: cells 9357 um2, WNS -15.6 ps (Genus spent 4.2 h on it on a
   loaded machine). PnR: 10301 um2 (PE 3371, PondCore 2788, SB B17 2326, SB B1 684, CBs ~600,
   PowerDomainOR 39). Innovus signoff: R2R +0.177 ns, R2O +0.172, I2R -0.314, I2O -0.319; hold
@@ -2778,32 +2754,19 @@ that checkout (docker-cp symlink breakage). See memory
 `/nsim/mstrange/BUILDS/`** (rule since 2026-10-14: the `/sim` build disk is
 full); the checkout itself stays on `/sim`.
 
-### Build machine: thesis data runs (queued 2026-10-17)
+### Build machine: stock-fabric thesis data runs (queued 2026-10-17)
 
 Run these from `/sim/mstrange/BUILD_CGRA/garnet` after `git pull`, in this order.
 What each part builds is in "Thesis data recipe" above. The current dw16 memory-tile
 sweep (`NEW_SWEEP_r8cad-gf12_20261009-213941`) and the dw 8/32/64 sweep (2026-10-14)
 are what the thesis uses now. Both were built with power domains (see "Power domains":
-`--no-pd` was a no-op until 6f110058), and new builds have none. Step 4 rebuilds the
+`--no-pd` was a no-op until 6f110058), and new builds have none. Step 2 rebuilds the
 memtile part's PnR configs on current branches; the full part reproduces the rest.
+The thesis-fabric runs (the results the thesis will use) are under "Thesis design-space
+sweep". The static-fabric smoke test and the `fabric_mem` / `pe_tile` runs that were
+steps 1-2 here are gone: `--dense-only` crashes (see "Thesis data recipe").
 
-1. **Smoke-test the static fabric (minutes; `--dense-only` has never been built in
-   this flow).** The rtl step must produce `outputs/design.v` with no lake spec in
-   the rtl log:
-
-       ./mflowgen/sweep_specs.py --recipe fabric_mem --out-dir /nsim/mstrange/BUILDS/thesis_data --rtl-only
-       ./mflowgen/sweep_specs.py --recipe pe_tile --only stock_staticfab_nopond --out-dir /nsim/mstrange/BUILDS/thesis_data --rtl-only
-
-   If the stock MemTile's synthesis then black-boxes its SRAM (the dense MemCore vs
-   the fixed 512x32 `gen_sram_macro`), the switch-box areas are still valid:
-   they are separate instances.
-2. **The switch-box A/B and the PE tiles.** These are the missing data. Each writes
-   `<out-dir>/<part>_<host>_<ts>_slim.zip`:
-
-       ./mflowgen/sweep_specs.py --recipe fabric_mem --out-dir /nsim/mstrange/BUILDS/thesis_data --zip --zip-slim
-       ./mflowgen/sweep_specs.py --recipe pe_tile --out-dir /nsim/mstrange/BUILDS/thesis_data --pnr-jobs 2 --zip --zip-slim
-
-3. **App power.** First copy `/aha/sweep_out/app_bundles_dw16_20261014.tgz` over (the
+1. **App power.** First copy `/aha/sweep_out/app_bundles_dw16_20261014.tgz` over (the
    user does this; the build machine can't reach /aha). Extract it so that
    `<dir>/<app>/<config>/manifest.json` exists, then:
 
@@ -2813,14 +2776,14 @@ memtile part's PnR configs on current branches; the full part reproduces the res
    Its RV bundles were recorded without `--rv-balance`. Their power is valid, but
    their cycle counts include branch imbalance (see "RV branch balancing"). The LI
    performance figures need RV bundles re-recorded on /aha with `--rv-balance 8`.
-4. **The synth->PnR model at every width (user request 2026-10-17; from scratch on
+2. **The synth->PnR model at every width (user request 2026-10-17; from scratch on
    current branches, 2026-10-18).** The 2026-10-14 sweep synthesized all 24 dw 8/32/64
    configs but ran PnR on only 6, and the dw16 fit (which overestimates dw8 power and
    underestimates dw64) projected the rest. Preset `memtile_pnr` builds the 12 dw16 fit
    and held-out configs and all 24 dw 8/32/64 configs through PnR into
    `<out-dir>/memtile`. The dw 8/32/64 configs are held out of the dw16 fit, so
    `pnr_validation.csv` gives its error at each width, and everything is built on one set of
-   branches without power domains. Step 5's `--skip-existing` reuses them. They are all in
+   branches without power domains. Step 3's `--skip-existing` reuses them. They are all in
    the recipe's `--pnr-set`, so `--pnr-jobs` sets the parallelism (keep the machine's total
    PnR jobs near 6):
 
@@ -2838,8 +2801,8 @@ memtile part's PnR configs on current branches; the full part reproduces the res
    36/36 PASS** (zip `memtile_r8cad-gf12_20261021-031739_slim`; result under "dw 8/32/64
    Tile_MemCore PPA").
 
-5. **Everything from scratch** (the memtile part is 196 configs, 36 of them through
-   PnR, about 2 days at `--pnr-jobs 2`). `--skip-existing` reuses what steps 1-4 built:
+3. **Everything from scratch** (the memtile part is 196 configs, 36 of them through
+   PnR, about 2 days at `--pnr-jobs 2`). `--skip-existing` reuses what steps 1-2 built:
 
        ./mflowgen/sweep_specs.py --recipe thesis --out-dir /nsim/mstrange/BUILDS/thesis_data \
            --app-bundles /nsim/mstrange/BUILDS/app_bundles_dw16_20261014 \

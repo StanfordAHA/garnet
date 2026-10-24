@@ -61,11 +61,6 @@ parameters:
   lake_pond_spec_config: ""
   no_pond: False
 
-  # dense_only passes --dense-only: the static fabric (no ready-valid
-  # interconnect) with garnet's stock dense cores, for the switch-box A/B
-  # (sweep_specs.py fabric "static"). False -> the ready-valid fabric.
-  dense_only: False
-
   # thesis: "static" or "rv" passes --thesis: garnet_thesis.py's static-dense fabric
   # (no FIFOs or ready-valid) or ready-valid-dense fabric (no FIFO bypass), both
   # without sparse cores and with data_width-bit tracks. Needs lake_spec_config.

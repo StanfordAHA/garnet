@@ -108,10 +108,6 @@ if [ -n "$lake_spec_config" ]; then
     [ -n "$lake_spec_mode" ] && flags+=" --lake-spec-mode $lake_spec_mode"
 fi
 
-# Static fabric (no ready-valid interconnect, stock dense cores) for the
-# switch-box A/B. False/empty -> the ready-valid fabric (no-op elsewhere).
-[ "$dense_only" == True ] && flags+=" --dense-only"
-
 # Thesis fabric (garnet.py --thesis static|rv: garnet_thesis.py, cgra/util_thesis.py):
 # static = no FIFOs or ready-valid, rv = no FIFO bypass; both dense only. Empty -> no-op.
 [ -n "$thesis" ] && flags+=" --thesis $thesis"
