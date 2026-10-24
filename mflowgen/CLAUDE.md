@@ -1321,14 +1321,22 @@ over 8843 on an RV build = Tile_PE with the RV spec knobs). Two earlier sets
 were deleted as stale (lake 04191ea5: before 144e2062's comparator pruning;
 144e2062: before the port-order fix).
 
-**Thesis app bundles on the chosen MemTiles (2026-10-23, session 1fa8a391): the set to use.**
-User's thesis tile set: static `fw4_dw16_sc4096_sp_in2_out2_vc2_sharectr_portcg_thesis`, RV
-`..._nofp_portcg_thesis_rv` (FIFO-8 dropped). conv/gauss/harris/mmpond on both, 16x16 `--cgra-tiles`,
-garnet c9c6da9b + lake ca947229 (the PE pond inherits the MEM spec's gating; bundles recorded before
-that have an ungated pond and fail check_bundle on the new Tile_PE). All 8 bit-accurate, kernel ns and
-RV padding as the base-spec set below. `/aha/sweep_out/app_bundles_thesis_opt_20261023` (+ .tgz,
-STATUS.txt). Power: `cgra_app_power.py --clocks-from <thesis_fmax clock table> --replay-jobs 4`
-(dry run: each fabric at its own clock, TILE_I_DELAY_NS 0.23, PT_I_DELAY_FRAC 0.25, THESIS_FABRIC).
+**Thesis whole-CGRA power set (2026-10-23, session 1fa8a391): the set to use.**
+`/aha/sweep_out/app_bundles_thesis_power_20261023` (+ .tgz, STATUS.txt), 16x16 thesis, dw16, lake THESIS
+ca947229 snapshot. User's tiles: static `fw4_dw16_sc4096_sp_in2_out2_vc2_sharectr_portcg_thesis`, RV
+`..._nofp_portcg_thesis_rv` (FIFO-8 dropped): conv/gauss/harris/mmpond on both (garnet c9c6da9b; the PE pond
+inherits the MEM spec's gating, so bundles from before lake ca947229 fail check_bundle on the new Tile_PE).
+Filter-path A/B (user request via cfc4174c): on `..._ff8_portcg_thesis_rv`, conv (A) + gauss as compiled and
+`convB` (hooks/conv_3_3_eat_rows_up_front.py, METAMAPPER_MEM_PORTS=3; garnet ddf1c53b; it does not apply
+to gaussian, whose line buffer is banked over several MEMs). All bit-accurate; B = A's 4150 ns and 3844
+outputs, but 14 MEM / 38 PE tiles vs 9 / 25. One run: `cgra_app_power.py --any-config --variants
+conv=..,gauss=..,harris=..,mmpond=..,convB=.. --clocks-from <thesis_fmax dir> --replay-jobs 4` (dry run:
+static 490, RV 570 MHz). Answers: static vs RV energy per frame; filter path always-on cost = conv/gauss on
+ff8 minus nofp; B's saving = convB - conv on ff8. First-cut estimate (before gf12): B saves <= ~9.6 nJ per
+frame per 3x3 stage (1220 fewer word reads x 2 x 3.93 pJ, TT macro datasheet; lake deselects the macro on idle
+cycles, CEN = ~(re|we)); the ff8-vs-nofp idle delta (+29 uW synth / +70 uW PnR per MEM tile at 400 MHz) is
+~99% dynamic in the tile wrapper's third-port FIFOs + CB/SB fan-in (cfc4174c), so x64 tiles is an upper bound
+and it could be gated in garnet/canal.
 
 **Thesis-fabric app-bundle set (2026-10-21, session 1fa8a391).** User direction (2026-10-20, via
 cfc4174c): thesis results come from the thesis fabrics. conv_3_3, gaussian, harris_color and pond
