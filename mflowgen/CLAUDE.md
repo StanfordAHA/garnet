@@ -2603,15 +2603,17 @@ Recipes (all write under one --out-dir; `--clocks-from <that dir>` reads the pro
 
 **First thesis_fmax PE probe (2026-10-23, zip thesis_fmax_pe_r8cad-gf12_20261023-055808_slim,
 0.23 ns input budget, gated-pond PEs; extracted in /aha/sweep_out/thesis_fmax_20261023).** Synthesis
-limits (1000 / (1 - WNS_ns)) and the clocks they give (0.9x, down to 5 MHz), PE only (the MemTile
-probe zip was not uploaded; MemTiles were >= 1 GHz at dw16):
+limits (1000 / (1 - WNS_ns)) and the clocks they give (0.9x, down to 5 MHz). Complete after the
+RV dw32 rerun on gemstone thesis (zips thesis_fmax_{mem,pe}_r8cad-gf12_20261023-{152315,165134}_slim,
+in .../rerun; their correlation.csv covers all 16, which is what --clocks-from reads). Every
+MemTile (static + RV, all four widths) met 1000 MHz (WNS 0), so the PE sets every clock:
 
-| dw | static PE | clock | RV PE | clock |
-|---|---|---|---|---|
-| 8 | 638 MHz | 570 | 749 MHz | 670 |
-| 16 | 548 | 490 | 639 | 570 |
-| 32 | 525 | 470 | FAIL (below) | |
-| 64 | 474 | 425 | 535 | 480 |
+| dw | static PE | clock | RV PE | clock | RV clock vs static |
+|---|---|---|---|---|---|
+| 8 | 638 MHz | 570 | 749 MHz | 670 | +18% |
+| 16 | 548 | 490 | 639 | 570 | +16% |
+| 32 | 525 | 470 | 602 | 540 | +15% |
+| 64 | 474 | 425 | 535 | 480 | +13% |
 
 - RV dw32 failed in Genus elaboration: "Unable to find port 'valid_in' of instance 'u_mux_logic' of
   module 'mux_logic_32_5'". gemstone's AOI mux named its inner modules precoder/mux_logic_<width>_
