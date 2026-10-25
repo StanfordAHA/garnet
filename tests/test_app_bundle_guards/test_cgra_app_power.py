@@ -491,3 +491,130 @@ def test_clocks_from_gives_each_fabric_its_clock(tmp_path, capsys):
     assert cap.tile_env("Tile_PE", tmp_path, stock, [("A", tmp_path)], "cfg", args)["CLOCK_PERIOD"] == "1.333"
     with pytest.raises(SystemExit):                             # no dw32 clock in the table
         cap.config_clock_mhz(dict(stock, thesis="rv", spec_config={"data_width": 32}), args)
+
+
+TEST_LOG = """[conv_3_3] kernel start at 2389.00 ns
+[conv_3_3] It takes 4149.00 ns total time to run kernel.
+[conv_3_3] The size of output is 7688 Byte.
+comparison passed
+"""
+CORE_VCD = """$date x $end
+$timescale 1ps $end
+$scope module top $end
+$scope module Tile_X03_Y02 $end
+$scope module lakespec_inst $end
+$var wire 1 ! clk $end
+$var wire 1 " memory_port_read_en_out_MemoryPort_18 $end
+$var wire 1 # memory_port_write_en_out_MemoryPort_18 $end
+$var wire 16 $ port_0 [15:0] $end
+$upscope $end
+$upscope $end
+$scope module Tile_X03_Y03 $end
+$scope module lakespec_inst $end
+$var wire 1 ! clk $end
+$var wire 1 % config_read $end
+$upscope $end
+$upscope $end
+$upscope $end
+$enddefinitions $end
+#0
+$dumpvars
+0!
+0"
+0#
+b0 $
+$end
+#500
+1!
+1"
+#1000
+0!
+#1500
+1!
+0"
+1#
+#2000
+0!
+#2500
+1!
+0#
+#3000
+0!
+#3500
+1!
+1"
+"""
+
+
+def test_kernel_stats_from_the_test_log(tmp_path):
+    (tmp_path / "test.log").write_text(TEST_LOG)
+    k = gab.kernel_stats(tmp_path / "test.log", 16, gab.clk_period_ns({}))
+    assert k == {"kernel_ns": 4149.0, "start_ns": 2389.0, "end_ns": 6538.0, "clk_period_ns": 1.0,
+                 "cycles": 4149, "output_bytes": 7688, "output_words": 3844, "n_kernels": 1}
+    assert gab.kernel_stats(tmp_path / "test.log", 8, 2.0)["cycles"] == 2074     # round(4149 / 2)
+    assert gab.kernel_stats(tmp_path / "test.log", 32, 1.0)["output_words"] == 1922
+    assert gab.clk_period_ns({"CLK_PERIOD": "1250ps"}) == pytest.approx(1.25)
+    (tmp_path / "none.log").write_text("no kernel ran\n")
+    assert gab.kernel_stats(tmp_path / "none.log", 16, 1.0) is None
+
+
+def test_sram_activity_counts_enables_before_each_edge(tmp_path):
+    (tmp_path / "core.vcd").write_text(CORE_VCD)
+    # edges at 0.5, 1.5, 2.5, 3.5 ns; window [1, 3.6) ns -> edges 1.5, 2.5, 3.5, sampled before
+    # each: 1.5 sees read=1, 2.5 sees write=1, 3.5 sees nothing
+    act = gab.sram_activity(tmp_path / "core.vcd", 1.0, 3.6)
+    assert act["Tile_X03_Y02"] == {"clk_edges": 3, "memory_ports": 2, "sram_read_cycles": 1,
+                                   "sram_write_cycles": 1, "sram_access_cycles": 2}
+    # the aliased clk (same VCD id) also clocks the second tile, which has no SRAM port: None
+    assert act["Tile_X03_Y03"] == {"clk_edges": 3, "memory_ports": 0, "sram_read_cycles": None,
+                                   "sram_write_cycles": None, "sram_access_cycles": None}
+    assert gab.sram_activity(tmp_path / "core.vcd", 0.0, 1.0)["Tile_X03_Y02"]["sram_access_cycles"] == 0
+
+
+def test_annotate_adds_kernel_and_activity(tmp_path):
+    b = tmp_path / "bundle"
+    (b / "logs").mkdir(parents=True)
+    (b / "logs" / "test.log").write_text(TEST_LOG.replace("2389.00", "1.00").replace("4149.00", "2.60"))
+    (b / "core.vcd").write_text(CORE_VCD)
+    (b / "manifest.json").write_text(json.dumps({"app": "x", "spec_config": {"data_width": 16}}))
+    man = gab.annotate(b)
+    assert man["kernel"]["cycles"] == 3 and man["kernel"]["end_ns"] == pytest.approx(3.6)
+    assert man["mem_activity"]["Tile_X03_Y02"]["sram_access_cycles"] == 2
+    assert json.load(open(b / "manifest.json"))["kernel"]["output_words"] == 3844
+
+
+def test_kernel_window_and_utilization_columns(tmp_path):
+    tiles = {"A": [("Tile_MemCore", "Tile_X03_Y02", "placed", 10e-3, 1000),
+                   ("Tile_MemCore", "Tile_X03_Y03", "placed", 8e-3, 1000),
+                   ("Tile_PE", "Tile_X00_Y01", "placed", 3e-3, 1000)]}
+    out = make_ws(tmp_path, ["A"], tiles)
+    man_path = tmp_path / "bundles" / "A" / "cfgX" / "manifest.json"
+    man = json.load(open(man_path))
+    man["kernel"] = {"cycles": 4000, "output_words": 3600}
+    man["mem_activity"] = {"Tile_X03_Y02": {"sram_access_cycles": 2000}, "Tile_X03_Y03": {"sram_access_cycles": 1000}}
+    json.dump(man, open(man_path, "w"))
+    for ws in out.glob("cfgX/*"):
+        meta = json.load(open(ws / "run_meta.json"))
+        json.dump({**meta, "clock_mhz": 500.0}, open(ws / "run_meta.json", "w"))
+    # the SAIF closed at the kernel's end on every tile
+    for log in out.glob("cfgX/*/*-post-synth-power-A/Tile_X*/*-cadence-xcelium-sim/xrun.log"):
+        log.write_text("2000 PS + 2 (stop app_window: testbench.saif_window = 1)\n"
+                       "8002000 PS + 3 (stop app_window_end: testbench.saif_window = 0)\n"
+                       "Simulation complete via $finish(2) at time 9000 NS + 0\n")
+    rows = cap.tile_rows(out, r"^IN12LP_")
+    assert all(r["window_kernel"] and r["window_s"] == pytest.approx(8e-6) for r in rows)
+    mem = {r["tile"]: r for r in rows if r["design"] == "Tile_MemCore"}
+    assert (mem["Tile_X03_Y02"]["sram_busy_frac"], mem["Tile_X03_Y03"]["sram_busy_frac"]) == (0.5, 0.25)
+    (s,) = cap.summarize(rows, out)
+    assert s["window_is_kernel"] is True
+    assert (s["kernel_cycles"], s["output_words"]) == (4000, 3600)
+    assert s["kernel_s"] == pytest.approx(8e-6)                       # 4000 cycles at 500 MHz
+    assert s["kernel_J"] == pytest.approx(21e-3 * 8e-6)
+    assert s["mem_sram_busy_frac"] == pytest.approx(0.375)
+    # a placed MEM tile without activity: no busy fraction rather than a partial mean
+    del man["mem_activity"]["Tile_X03_Y03"]
+    json.dump(man, open(man_path, "w"))
+    (s,) = cap.summarize(cap.tile_rows(out, r"^IN12LP_"), out)
+    assert s["mem_sram_busy_frac"] is None
+    assert cap.replay_window("1 NS + 0 (stop app_window: tb.saif_window = 1)\n"
+                             "Simulation complete via $finish(2) at time 5 NS + 0\n") == pytest.approx(4e-9)

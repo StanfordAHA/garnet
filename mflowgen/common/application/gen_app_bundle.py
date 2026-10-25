@@ -21,7 +21,10 @@ ready-valid regression:
 
 and writes to --out:
   run.vcd, tiles_Tile_MemCore.list, tiles_Tile_PE.list, tile_ports.json,
-  manifest.json            what the application step copies
+  manifest.json            what the application step copies; also the kernel
+                           (aha test's kernel time, cycles, output words) and
+                           each MEM tile's SRAM read/write cycles in it (from
+                           core.vcd; --annotate adds them to older bundles)
   core.vcd, core_ports.json  MEM tiles' lakespec controller ports (standalone
                            lakespec replay)
   garnet.v.gz, design.place, *.bs, logs/   provenance
@@ -47,6 +50,7 @@ import gzip
 import hashlib
 import importlib.util
 import json
+import math
 import os
 import re
 import shutil
@@ -298,6 +302,139 @@ def rv_balance(args, app_dir, work, env, pnr, target=0.995):
     return log
 
 
+# ------------------------------------------------- kernel + SRAM activity ----
+
+# aha test's tb (tests/test_app/tb/environment.sv Env_kernel_test, $timeformat ns)
+KERNEL_START = re.compile(r"\] kernel start at ([\d.]+) ns")
+KERNEL_TIME = re.compile(r"\] It takes ([\d.]+) ns total time to run kernel")
+OUTPUT_SIZE = re.compile(r"\] The size of output is (\d+) Byte")
+# the lake controller's requests to its SRAM (lake Spec memory ports: CEN = ~(re | we))
+SRAM_ENABLE = re.compile(r"memory_port_(read|write)_en_out")
+TILE_NAME = re.compile(r"Tile_X[0-9A-F]{2}_Y[0-9A-F]{2}")
+VCD_UNIT_NS = {"fs": 1e-6, "ps": 1e-3, "ns": 1.0, "us": 1e3, "ms": 1e6, "s": 1e9}
+
+
+def clk_period_ns(env):
+    """aha test's clock period in ns (tests/test_app/Makefile CLK_PERIOD ?= 1ns)."""
+    m = re.fullmatch(r"\s*([\d.]+)\s*(ps|ns)?\s*", str(env.get("CLK_PERIOD") or "1ns"))
+    if not m:
+        sys.exit(f"*** CLK_PERIOD={env.get('CLK_PERIOD')!r}: want e.g. 1ns or 1000ps")
+    return float(m.group(1)) / (1000.0 if m.group(2) == "ps" else 1.0)
+
+
+def kernel_stats(test_log, data_width, clk_ns):
+    """The app's kernel in aha test's log, summed over its kernels: {kernel_ns,
+    start_ns, end_ns (first start, last end), clk_period_ns, cycles, output_bytes,
+    output_words, n_kernels}; None if the log has no kernel time. A CGRA word is
+    data_width / 8 bytes (global_buffer_parameter.py cgra_byte_offset)."""
+    text = Path(test_log).read_text(errors="replace")
+    ns = [float(t) for t in KERNEL_TIME.findall(text)]
+    if not ns:
+        return None
+    starts = [float(t) for t in KERNEL_START.findall(text)]
+    out_bytes = sum(int(n) for n in OUTPUT_SIZE.findall(text))
+    return {"kernel_ns": sum(ns), "start_ns": starts[0] if starts else None,
+            "end_ns": starts[-1] + ns[-1] if len(starts) == len(ns) else None,
+            "clk_period_ns": clk_ns, "cycles": round(sum(ns) / clk_ns),
+            "output_bytes": out_bytes, "output_words": out_bytes >> math.ceil(math.log2(data_width / 8)),
+            "n_kernels": len(ns)}
+
+
+def sram_activity(core_vcd, start_ns, end_ns):
+    """Per MEM tile in core.vcd (its lake controller's ports), the controller clock's
+    rising edges in [start_ns, end_ns) and at how many of them it requests an SRAM
+    read / write (memory_port_{read,write}_en_out_* ports, sampled before the edge as
+    the SRAM samples them): {tile: {clk_edges, sram_read_cycles, sram_write_cycles,
+    sram_access_cycles (either), memory_ports}}. A tile whose controller shows no such
+    port gets None counts."""
+    tiles, by_id, scope, unit = {}, {}, [], None
+    with open(core_vcd, errors="replace") as f:
+        header = []
+        for line in f:
+            if "$enddefinitions" in line:
+                break
+            header.append(line)
+        text = " ".join(header)
+        m = re.search(r"\$timescale\s+(\d+)\s*(fs|ps|ns|us|ms|s)\s+\$end", text)
+        unit = int(m.group(1)) * VCD_UNIT_NS[m.group(2)] if m else 1e-3
+        for tok in re.finditer(r"\$(scope|upscope|var)\b(.*?)\$end", text, re.S):
+            kind, body = tok.group(1), tok.group(2).split()
+            if kind == "scope":
+                scope.append(body[-1])
+            elif kind == "upscope":
+                scope.pop()
+            else:  # var <type> <width> <id> <name> [range]
+                tile = next((s for s in reversed(scope) if TILE_NAME.fullmatch(s)), None)
+                if tile is None or body[1] != "1":
+                    continue
+                t = tiles.setdefault(tile, {"clk": None, "read": [], "write": []})
+                en = SRAM_ENABLE.search(body[3])
+                if body[3] == "clk" and t["clk"] is None:
+                    t["clk"] = body[2]
+                elif en:
+                    t[en.group(1)].append(body[2])
+                else:
+                    continue
+                by_id.setdefault(body[2], [])
+        for tile, t in tiles.items():
+            if t["clk"]:
+                by_id.setdefault(t["clk"], []).append(tile)
+        counts = {tile: [0, 0, 0, 0] for tile in tiles}   # edges, reads, writes, either
+        lo, hi = start_ns / unit, end_ns / unit
+        cur, batch, now = {}, {}, 0
+
+        def settle():
+            # a clock rising at `now` samples the enables as they were before it
+            if lo <= now < hi:
+                for code, v in batch.items():
+                    if v == "1" and cur.get(code) == "0":
+                        for tile in by_id.get(code, ()):
+                            t, c = tiles[tile], counts[tile]
+                            r = any(cur.get(i) == "1" for i in t["read"])
+                            w = any(cur.get(i) == "1" for i in t["write"])
+                            c[0] += 1
+                            c[1] += r
+                            c[2] += w
+                            c[3] += r or w
+            cur.update(batch)
+            batch.clear()
+        for line in f:
+            if line.startswith("#"):
+                settle()
+                now = int(line[1:])
+            elif line[:1] in "01xzXZ" and line[1:].strip() in by_id:
+                batch[line[1:].strip()] = line[0]
+        settle()
+    out = {}
+    for tile, t in sorted(tiles.items()):
+        ports = len(t["read"]) + len(t["write"])
+        e, r, w, a = counts[tile]
+        out[tile] = {"clk_edges": e, "memory_ports": ports,
+                     "sram_read_cycles": r if ports else None, "sram_write_cycles": w if ports else None,
+                     "sram_access_cycles": a if ports else None}
+    return out
+
+
+def annotate(bundle, env=None):
+    """Add `kernel` (kernel_stats of logs/test.log) and `mem_activity` (sram_activity of
+    core.vcd over the kernel) to <bundle>/manifest.json; also for bundles recorded
+    before gen_app_bundle wrote them."""
+    bundle = Path(bundle)
+    man = json.load(open(bundle / "manifest.json"))
+    dw = int((man.get("spec_config") or {}).get("data_width", 16))
+    kernel = kernel_stats(bundle / "logs" / "test.log", dw, clk_period_ns({**(env or {}), **man.get("app_env", {})}))
+    man["kernel"] = kernel
+    man["mem_activity"] = None
+    if kernel and kernel["end_ns"] is not None and (bundle / "core.vcd").is_file():
+        man["mem_activity"] = sram_activity(bundle / "core.vcd", kernel["start_ns"], kernel["end_ns"])
+    json.dump(man, open(bundle / "manifest.json", "w"), indent=1)
+    acc = [a["sram_access_cycles"] for a in (man["mem_activity"] or {}).values()
+           if a["sram_access_cycles"] is not None]
+    log(f"{bundle}: kernel {kernel and kernel['cycles']} cycles, {kernel and kernel['output_words']} "
+        f"output words; SRAM access cycles of {len(acc)} MEM tiles: {acc}")
+    return man
+
+
 # ------------------------------------------------------------------ main ----
 
 def main():
@@ -344,7 +481,14 @@ def main():
                    help="resume: reuse the earlier steps' results (same --out)")
     p.add_argument("--test-timeout", type=int, default=5400,
                    help="seconds before the sim is killed (the tb waits 6M cycles per interrupt)")
+    p.add_argument("--annotate", nargs="+", default=None, metavar="BUNDLE",
+                   help="only add `kernel` and `mem_activity` to these recorded bundles' "
+                        "manifest.json (from their logs/test.log and core.vcd), then exit")
     args = p.parse_args()
+    if args.annotate:
+        for bundle in args.annotate:
+            annotate(bundle)
+        return
     if args.config:
         if args.spec or args.mode:
             p.error("--config sets the spec and mode; drop --spec/--mode")
@@ -560,6 +704,10 @@ def main():
         "command": " ".join(sys.argv),
     }
     json.dump(manifest, open(out / "manifest.json", "w"), indent=1)
+    try:
+        annotate(out, user_env)
+    except Exception as e:  # noqa: BLE001 -- the bundle stands without them; --annotate redoes it
+        log(f"WARNING: no kernel / SRAM activity in the manifest ({e!r}); retry with --annotate {out}")
     log(f"BUNDLE OK: {out} ({manifest['tiles']}, run.vcd {manifest['run_vcd_bytes']} bytes)")
 
 

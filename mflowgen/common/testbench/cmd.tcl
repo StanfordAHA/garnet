@@ -23,7 +23,18 @@ if {[catch {value $::env(testbench_name).saif_window}]} {
 }
 
 dumpsaif -ewg -scope $::env(testbench_name) -hierarchy -internal -output outputs/run.saif -overwrite
-run
-dumpsaif -end
+if {![catch {value $::env(testbench_name).saif_window_closes}]} {
+    # The bundle knows its kernel's length: saif_window falls at the kernel's end, so
+    # the SAIF covers the kernel only (not the testbench's output read-back after it);
+    # the sim then runs on to $finish, which the replay check needs
+    stop -name app_window_end -condition [format {#%s.saif_window == 0} $::env(testbench_name)]
+    run
+    stop -delete app_window_end
+    dumpsaif -end
+    run
+} else {
+    run
+    dumpsaif -end
+}
 
 quit

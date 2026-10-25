@@ -664,3 +664,48 @@ def test_cgra_app_power_any_config(tmp_path):
     with pytest.raises(SystemExit):
         cap.configs_of(variants, ["c2"])           # B has no c2
     assert cap.configs_of(variants, ["c2"], any_config=True) == ["c2"]
+
+
+def test_testbench_saif_window_closes_at_the_kernel_end(tmp_path, monkeypatch):
+    """A bundle whose manifest has its kernel (gen_app_bundle.py): saif_window falls
+    kernel cycles after it rises, and cmd.tcl ends the SAIF there (the power is the
+    kernel's, not the testbench's output read-back), then runs on to $finish."""
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "inputs").mkdir()
+    (tmp_path / "inputs" / "manifest.json").write_text(json.dumps({"scope": "tb.dut", "kernel": {"cycles": 3}}))
+    (tmp_path / "inputs" / "tile_ports.json").write_text(json.dumps(
+        {"Tile_MemCore": {"inputs": [["clk", 1], ["reset", 1], ["stall", 1], ["SB_IN", 17]],
+                          "outputs": [["SB_OUT", 17]]}}))
+    (tmp_path / "inputs" / "tiles_Tile_MemCore.list").write_text("hw,03,03\n")
+    gt = load(TB_GEN, "generate_testbench")
+
+    def fake_raw(tile, i, o):
+        Path("raw_input.csv").write_text(f"tb.dut.{tile}.stall[0:0],tb.dut.{tile}.SB_IN[16:0]\n"
+                                         + "".join(f"{v},0\n" for v in (0, 1, 1, 0, 0, 0, 0, 0)))
+    monkeypatch.setattr(gt, "generate_raw", fake_raw)
+
+    def fake_convert(signals, inp, out):
+        Path(out).parent.mkdir(parents=True, exist_ok=True)
+        Path(out).write_text("0000\n" * 8)
+        return 8, {s: 17 for s in signals}
+    monkeypatch.setattr(gt, "convert_raw", fake_convert)
+    monkeypatch.setenv("design_name", "Tile_MemCore")
+    gt.main()
+    tb = (tmp_path / "testbench.sv").read_text()
+    assert "wire saif_window = (pt_addr >= app_window) && (pt_addr < app_window_end);" in tb
+    assert "wire saif_window_closes = 1'b1;" in tb
+    assert "app_window_end = app_window + 3;" in tb
+    assert "app_window_end = `NUM_TEST_VECTORS - 1;" in tb   # always falls before $finish
+    # without a kernel: the window stays open to $finish, as before
+    gt.create_testbench("Tile_MemCore", ["reset", "stall", "SB_IN"], ["SB_OUT"],
+                        {"reset": 1, "stall": 1, "SB_IN": 17}, {"SB_OUT": 17}, 8, ["clk"], hold_reset=True)
+    tb = (tmp_path / "testbench.sv").read_text()
+    assert "saif_window_closes" not in tb and "app_window_end" not in tb
+    cmd = (MFLOWGEN / "common" / "testbench" / "cmd.tcl").read_text()
+    assert "value $::env(testbench_name).saif_window_closes" in cmd
+    assert "-condition [format {#%s.saif_window == 0} $::env(testbench_name)]" in cmd
+    # SAIF ends, then the sim still runs to $finish for the replay check
+    closed = cmd[cmd.index("saif_window_closes"):]
+    assert closed.index("stop -delete app_window_end") < closed.index("dumpsaif -end") < closed.index("    run\n} else")
+    r = load(RUN_ALL, "run_all_tiles").replay_result("replay: power window closes at cycle 2400 (the kernel's 3 cycles)\n")
+    assert r["mismatches"] == 0

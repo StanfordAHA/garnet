@@ -120,7 +120,7 @@ def convert_raw(signals, input_file, output_file):
 
 
 def create_testbench(design, inputs, outputs, input_widths, output_widths, num_test_vectors, clock_inputs=None,
-                     hold_reset=False, sdc_inputs=False, stall_release=None):
+                     hold_reset=False, sdc_inputs=False, stall_release=None, window_cycles=None):
     """hold_reset (app bundle replays): the recording starts from simulator
     zero-init, but a gate-level tile's flops are X until its first reset (gf12:
     every output X until then, and the MEM tile's SRAM clock, clk & the tile_en
@@ -137,7 +137,13 @@ def create_testbench(design, inputs, outputs, input_widths, output_widths, num_t
     the SAIF from there, as it did by counting stall changes. The GLB stalls only
     the columns the app uses, so a tile elsewhere (an idle tile) records stall 0
     throughout; its window opens at stall_release, the vector where the design's
-    other tiles are released (else at the app's first flush)."""
+    other tiles are released (else at the app's first flush).
+
+    window_cycles (the bundle manifest's kernel cycles): saif_window falls that
+    many vectors after it rises (the stall release starts the kernel), and
+    saif_window_closes tells cmd.tcl to end the SAIF there, so the power is the
+    kernel's and not the testbench's output read-back after it. Vectors are
+    simvisdbutil rows, about one per recorded cycle (a tile can have a few more)."""
     pwr_aware = os.environ.get("PWR_AWARE") == "True"
     hold_reset = hold_reset and "reset" in inputs
     sdc_inputs = sdc_inputs and design in INPUT_DELAY_FRACTION
@@ -204,6 +210,9 @@ module testbench;
         tb.write('    integer app_start;    // first flush after it\n')
     if has_window:
         tb.write('    integer app_window;   // first stall release: the power window (cmd.tcl)\n')
+    closes = has_window and bool(window_cycles)
+    if closes:
+        tb.write('    integer app_window_end;  // the kernel\'s end: the window closes (cmd.tcl)\n')
     for i in inputs:
         a = addr(i)
         if hold_reset and i == 'reset':
@@ -216,7 +225,11 @@ module testbench;
         tb.write(f'    wire [{output_widths[o]-1}:0] {o};\n')
     if has_window:
         # same address as the stall input: rises in the timestep stall falls
-        tb.write(f'    wire saif_window = ({addr("stall")} >= app_window);\n')
+        if closes:
+            tb.write(f'    wire saif_window = ({addr("stall")} >= app_window) && ({addr("stall")} < app_window_end);\n')
+            tb.write('    wire saif_window_closes = 1\'b1;\n')
+        else:
+            tb.write(f'    wire saif_window = ({addr("stall")} >= app_window);\n')
 
     tb.write('''
     reg  clk;
@@ -285,6 +298,12 @@ module testbench;
       if (app_window == `NUM_TEST_VECTORS)
         app_window = {fallback};  // never stalled ({why})
       $display("replay: power window opens at cycle %0d", app_window);'''
+        if closes:
+            replay_setup += f'''
+      app_window_end = app_window + {int(window_cycles)};
+      if (app_window_end > `NUM_TEST_VECTORS - 1)
+        app_window_end = `NUM_TEST_VECTORS - 1;  // falls before $finish, so cmd.tcl's stop fires
+      $display("replay: power window closes at cycle %0d (the kernel's {int(window_cycles)} cycles)", app_window_end);'''
     # hold_reset: no edge until the held reset has reached every flop (an SDF
     # reset tree can take a period; the SRAM's clock is clk & a config flop)
     clock_gen = '''initial begin
@@ -415,8 +434,11 @@ def main():
         if r is None and app_bundle and "stall" in ins:
             print(f"@file_info: {tile}: stall never released (column not stalled by the app); "
                   f"power window from vector {common if common is not None else 'of the first flush'}")
+    # the bundle's kernel (gen_app_bundle.py manifest "kernel") bounds the power window
+    kernel_cycles = (manifest.get("kernel") or {}).get("cycles") if app_bundle else None
     create_testbench(design, ins, outs, widths[0], widths[1], num_test_vectors, clks,
-                     hold_reset=app_bundle, sdc_inputs=app_bundle, stall_release=common)
+                     hold_reset=app_bundle, sdc_inputs=app_bundle, stall_release=common,
+                     window_cycles=kernel_cycles)
 
 
 if __name__ == '__main__':

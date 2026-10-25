@@ -228,8 +228,11 @@ re-clocks every part. A failed part does not stop the rest.
   (`False` or empty) on that side, is not a change: an opt-in knob added after a step ran,
   or one removed since (`dense_only`, exported as `False` by every rtl step from
   2026-10-17 to 2026-10-24). So neither fails resumed workspaces.
-- **Lake ingest.** lake `THESIS/pipeline/tile_sweep.py` ingests memtile zips. Nothing in lake
-  reads the thesis-fabric zips or `cgra_power.csv` yet.
+- **Lake ingest.** lake `THESIS/pipeline/tile_sweep.py` ingests memtile zips, and (2026-10-25)
+  `python3 -m THESIS.apps.cgra_power_ingest` turns a `cgra_app_power.py` zip into the Ch. 5 app
+  figures' `results.json` (lake `THESIS/apps/CGRA_APP_POWER.md`: the bundle matrix and commands,
+  `python3 -m THESIS.apps.garnet_configs --commands`). Nothing in lake reads the thesis-fabric
+  tile zips yet.
 
 ### PT signoff (default stop target since 2026-10-07)
 
@@ -1754,6 +1757,40 @@ rows at the output vs up front through the MEM's filter path; lake CLAUDE.md §6
   `conv_3_3_ab_bundles.sh` sets both.
 - Tests: `tests/test_app_bundle_guards/test_cgra_app_power.py` (env parsing, route/idle
   tiles, report parsing, sums, idle scaling).
+- **Kernel window, kernel stats, SRAM activity (2026-10-25, lake session 46a3d46c, for the Ch. 5
+  app figures).** Before, the SAIF window ran from the stall release to `$finish`, which
+  includes the testbench reading the output back from the GLB, and nothing recorded the
+  kernel's cycles, output count or how busy each MEM tile's SRAM was.
+  - `gen_app_bundle.py` writes manifest `kernel` = {kernel_ns, start_ns, end_ns,
+    clk_period_ns, cycles, output_bytes, output_words, n_kernels}. They come from
+    `logs/test.log` (tb `Env_kernel_test`: "kernel start at", "It takes ... total time to
+    run kernel", "The size of output is ... Byte"; words = bytes >> cgra_byte_offset, the
+    tb clock from CLK_PERIOD, default 1 ns).
+  - It also writes `mem_activity` = per MEM tile {clk_edges, sram_read_cycles,
+    sram_write_cycles, sram_access_cycles, memory_ports}. These are the rising edges of
+    the lake controller's clk in [start_ns, end_ns) at which its
+    `memory_port_{read,write}_en_out_*` ports (core.vcd) request the SRAM, sampled before
+    the edge (lake drives CEN = ~(re | we)). The replay is checked exact against the
+    recording, so these are the replayed tile's accesses too. A tile without such ports
+    gets None.
+  - `gen_app_bundle.py --annotate <bundle> ...` adds both to bundles recorded before.
+  - `generate_testbench.py`: with manifest `kernel`, `saif_window` also falls
+    `kernel.cycles` vectors after it rises (`app_window_end`, clamped below
+    NUM_TEST_VECTORS). `saif_window_closes` tells cmd.tcl to stop on it, end the SAIF
+    (`dumpsaif -end`) and run on to `$finish` for the replay check. Vectors are
+    simvisdbutil rows, about one per recorded cycle, so the end can sit a few cycles
+    off. Without `kernel` nothing changes.
+  - `cgra_app_power.py`: `replay_window` ends at that stop when it fired.
+    - `cgra_power_tiles.csv` gains `window_kernel`, `sram_access_cycles` and
+      `sram_busy_frac` (= access / kernel cycles).
+    - `cgra_power.csv` gains `window_is_kernel` (then `app_W` is the kernel average and
+      `app_J` the kernel energy), `kernel_cycles`, `output_words`, `kernel_s` (cycles at
+      the run's clock), `kernel_J` (= app_W x kernel_s) and `mem_sram_busy_frac` (mean
+      over placed MEM tiles; None unless every one has activity).
+  - Not run on /aha or the build machine yet. Tests: test_cgra_app_power.py
+    `test_kernel_stats_from_the_test_log`, `test_sram_activity_counts_enables_before_each_edge`,
+    `test_annotate_adds_kernel_and_activity`, `test_kernel_window_and_utilization_columns`;
+    test_app_bundle_guards.py `test_testbench_saif_window_closes_at_the_kernel_end`.
 - **Replay fix found with the idle tiles (garnet, after 71bcfde3):** `generate_testbench.py`
   makes ONE testbench for all of a design's tiles and used the FIRST tile's vector count.
   simvisdbutil writes a row per value change while the clock is high, so a tile whose

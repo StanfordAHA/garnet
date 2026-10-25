@@ -28,6 +28,12 @@ into <out-dir>/cgra_power.csv (one row per config x variant) and
   sram_W      SRAM macro power (cell rows matching --sram-cell-re)
   window_s    the replay's activity window (SAIF start -> $finish), so
   app_J       sum of each tile's power x window = energy of one app run
+  kernel_*    the kernel from the bundle manifest (gen_app_bundle.py): cycles,
+              output_words, kernel_s at this clock, kernel_J = app_W x kernel_s;
+              window_is_kernel: every tile's SAIF closed at the kernel's end
+              (then app_W is the kernel's average power)
+  mem_sram_busy_frac  mean over placed MEM tiles of SRAM access cycles / kernel
+              cycles (manifest mem_activity)
   d_*_pct     change against the first variant
 
 Bundles without --cgra-tiles give placed tiles only (route/idle columns empty).
@@ -337,19 +343,27 @@ TIME = {"FS": 1e-15, "PS": 1e-12, "NS": 1e-9, "US": 1e-6, "MS": 1e-3, "S": 1.0}
 
 
 def replay_window(log_text):
-    """Seconds from where common/testbench/cmd.tcl starts the SAIF to $finish: the
+    """Seconds the SAIF of common/testbench/cmd.tcl covers. It starts at the
     app_window stop (saif_window = 1, app bundle testbenches since garnet 9c8d449f)
-    or, in the legacy testbench, the last stall release (stall_toggle ... = 0).
-    None without either: the window is unknown, not the whole sim."""
+    or, in the legacy testbench, the last stall release (stall_toggle ... = 0). It
+    ends at the app_window_end stop (saif_window = 0: the kernel's end, for a bundle
+    whose manifest has its kernel) or else at $finish. None without a start: the
+    window is unknown, not the whole sim."""
     t = r"(\d+)\s*(FS|PS|NS|US|MS)\s*\+\s*\d+\s*"
     starts = (re.findall(t + r"\(stop app_window:\s*\S+\s*=\s*1\)", log_text)
               or re.findall(t + r"\(stop stall_toggle:\s*\S+\s*=\s*0\)", log_text))
+    ends = re.findall(t + r"\(stop app_window_end:\s*\S+\s*=\s*0\)", log_text)
     end = re.search(r"Simulation complete via \$finish\(\d\) at time (\d+)\s*(FS|PS|NS|US|MS)", log_text)
-    if not end or not starts:
+    if not starts or not (ends or end):
         return None
-    t1 = int(end.group(1)) * TIME[end.group(2)]
+    t1 = int(ends[0][0]) * TIME[ends[0][1]] if ends else int(end.group(1)) * TIME[end.group(2)]
     t0 = int(starts[-1][0]) * TIME[starts[-1][1]]
     return t1 - t0
+
+
+def kernel_window(log_text):
+    """True if the tile's SAIF closed at the kernel's end (the app_window_end stop)."""
+    return bool(re.search(r"\(stop app_window_end:\s*\S+\s*=\s*0\)", log_text))
 
 
 def tile_roles(bundle):
@@ -368,6 +382,12 @@ def tile_roles(bundle):
     return out
 
 
+def bundle_manifest(bundle):
+    """A bundle's manifest.json ({} if it has none)."""
+    path = Path(bundle) / "manifest.json"
+    return json.load(open(path)) if path.is_file() else {}
+
+
 def tile_rows(out_dir, sram_re):
     rows = []
     for meta_path in sorted(Path(out_dir).glob("*/*/run_meta.json")):
@@ -375,6 +395,10 @@ def tile_rows(out_dir, sram_re):
         ws, tile_design = meta_path.parent, meta["tile"]
         for v, bundle in meta["variants"].items():
             roles = tile_roles(bundle)
+            # gen_app_bundle.py: the kernel and each MEM tile's SRAM accesses over it
+            man = bundle_manifest(bundle)
+            kernel_cycles = (man.get("kernel") or {}).get("cycles")
+            activity = man.get("mem_activity") or {}
             steps = sorted(ws.glob(f"*-post-synth-power-{v}"))
             if not steps:
                 continue
@@ -388,13 +412,18 @@ def tile_rows(out_dir, sram_re):
                 rep = json.load(open(rj)) if rj.is_file() else {}
                 logs = sorted(steps[-1].glob(f"{tile}/*-cadence-xcelium-sim/xrun.log")) or \
                     sorted(steps[-1].glob(f"{tile}/*-cadence-xcelium-sim/mflowgen-run.log"))
-                window = replay_window(logs[-1].read_text(errors="replace")) if logs else None
+                log_text = logs[-1].read_text(errors="replace") if logs else ""
+                window = replay_window(log_text) if logs else None
                 design, role = roles.get(tile, (tile_design, "placed"))
+                access = (activity.get(tile) or {}).get("sram_access_cycles")
                 rows.append(dict(
                     config=meta["config"], variant=v, design=tile_design, tile=tile, role=role,
                     internal_W=p and p[0], switching_W=p and p[1], leakage_W=p and p[2], total_W=p and p[3],
                     sram_W=sram if n_sram else None, sram_cells=n_sram,
                     window_s=window, energy_J=(p[3] * window) if p and window else None,
+                    window_kernel=kernel_window(log_text) if logs else None,
+                    sram_access_cycles=access,
+                    sram_busy_frac=access / kernel_cycles if access is not None and kernel_cycles else None,
                     replay_exact=(not rep.get("problems")) if rep else None))
     return rows
 
@@ -413,7 +442,7 @@ def summarize(rows, out_dir):
         for v in vs:
             rs = [r for r in rows if r["config"] == config and r["variant"] == v]
             bundle = Path(meta[config]["variants"][v])
-            man = json.load(open(bundle / "manifest.json")) if (bundle / "manifest.json").is_file() else {}
+            man = bundle_manifest(bundle)
             array = man.get("array_tiles") or {}
             s = dict(config=config, variant=v, app=man.get("app"),
                      tiles_replayed=len(rs), tiles_exact=sum(bool(r["replay_exact"]) for r in rs))
@@ -434,6 +463,17 @@ def summarize(rows, out_dir):
             s["sram_W"] = sram if have_sram else None
             windows = [r["window_s"] for r in rs if r["window_s"]]
             s["window_s"] = max(windows) if windows else None
+            s["window_is_kernel"] = all(r["window_kernel"] for r in rs) if rs else None
+            # the kernel (gen_app_bundle.py manifest): cycles at the recording's tb clock,
+            # run here at the replay clock; kernel_J = app power x kernel time
+            kernel = man.get("kernel") or {}
+            s["kernel_cycles"], s["output_words"] = kernel.get("cycles"), kernel.get("output_words")
+            mhz = meta[config].get("clock_mhz")
+            s["kernel_s"] = s["kernel_cycles"] / (mhz * 1e6) if s["kernel_cycles"] and mhz else None
+            s["kernel_J"] = app_w * s["kernel_s"] if s["kernel_s"] else None
+            # SRAM busy fraction of the placed MEM tiles (mean; None unless every one has it)
+            busy = [r["sram_busy_frac"] for r in rs if r["design"] == "Tile_MemCore" and r["role"] == "placed"]
+            s["mem_sram_busy_frac"] = (sum(busy) / len(busy)) if busy and None not in busy else None
             # idle tiles: one replayed per type, times the tiles the app leaves untouched
             idle_w, idle_known = 0.0, bool(array)
             for d in TILES:
