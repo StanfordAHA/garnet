@@ -2620,7 +2620,15 @@ MemTile (static + RV, all four widths) met 1000 MHz (WNS 0), so the PE sets ever
   scratchpad slow/{extract.py,build_report.py}).** Period gap 234 / 260 / 244 / 240 ps at dw 8/16/32/64,
   of which 230 ps is the upstream budget charged to static (its PE computes on inputs the same cycle);
   the datapath (ALU/FPU + condition logic) differs by <= 39 ps, front end and output side the rest.
-  With d = 0 static is within 0.3-1.9% of RV. So quote RV's clock lead as a function of d. Same report:
+  With d = 0 static is within 0.3-1.9% of RV. **But compiled static apps never use that path
+  (found 2026-10-24):** MetaMapper's PipelinePEs (run unless PIPELINED=0, which only the RV flows set)
+  puts every routed PE operand in lassen RegisterMode DELAY (decoded static thesis conv_3_3: all routed
+  operands DELAY, constants CONST, none BYPASS). So the static tile STA times a bypass path apps don't
+  use; the real static path starts at the operand register and the hop moves to the output side
+  (est. dw16 ~1.58 ns with a first-hop SB register, ~ RV's 1.566). The static clocks derived from the
+  bypass path (490 MHz at dw16) are pessimistic; a registered-operand constraint mode (false-path each
+  RegisterMode value->O0, plus an output budget) is the fair one. Memory project_rv_tile_fifo_experiment.
+  Same report:
   PnR area by cell type and by matched block (Innovus signoff.area.rpt self areas, sums exact) and
   MemTile PT power by block/cell (power.cell; idle is mostly clock tree + gates, RV's extra idle is
   the tile port FIFOs), per-path-group worst paths (signoff_<group>.tarpt) on a block diagram.
