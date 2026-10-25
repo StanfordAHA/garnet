@@ -1977,6 +1977,8 @@ floorplan, `mode[0]` guard) apply — the pond is flops, no macro.
     pond, and the thesis opt specs gate the thesis PE tile's pond too.
   - `{"clock_gate_ports": false}` in the pond JSON keeps the pond ungated. The
     legacy `PondCore` is unchanged.
+  - An RV pond also inherits lake's `rv_comparator_trim` (`SPEC_RV_OPTIONS`, 2026-10-25); the
+    static pond doesn't take it.
   - No gating in the MEM spec leaves the pond params untouched (None included), so
     other builds keep their RTL.
   - Tests: `tests/test_spec_power_options`. Bit-accurate matmul_rvtry3 on gated
@@ -2621,6 +2623,20 @@ Recipes (all write under one --out-dir; `--clocks-from <that dir>` reads the pro
   WNS), the per-build clock projection), `data_width` (sweep_meta.json, new builds), and fits per
   `<mode>_dw<N>` when it has 3 fit points (used before the mode's pooled fit). Each fit's val_*
   is its error on the held-out rows in its scope, so pooled vs per-width compare on the same tiles.
+
+**RV comparison-network trim A/B: `--recipe thesis_cmptrim` (2026-10-25, session cfc4174c).**
+lake's opt-in `rv_comparator_trim` (lake CLAUDE.md §6 "(d) Trimmed comparators": one-sided
+comparators, 8-bit scalar + barrier bit, level select over levels 0..2; generic synthesis:
+MemTile network -46%, pond network -32%). Spec set `thesis_cmptrim` = the RV design point
+`fw4_dw16_sc4096_sp_in2_out2_vc2_nofp_portcg_thesis_rv` and the same with the trim
+(`..._portcg_cmptrim_thesis_rv`; `_cmp_trim_tag` names a dict `_cmp<os|s8|bb|l3>`; static
+specs refuse the key; `SPEC_DEFAULTS` has it, so the pair doesn't dedup). The RV pond takes
+the trim from the MEM spec (`cgra/util_onyx.py` `with_mem_power_options(..., rv=True)`,
+`SPEC_RV_OPTIONS`; checked on a 4x2 `--thesis rv` build: every comparator, MEM and pond,
+trimmed), so the same pair builds the PE tile A/B. Parts: `thesis_cmptrim_mem` (PnR +
+idle/active power) and `thesis_cmptrim_pe` (PnR), both clocked (`--clocks-from`); 4 builds.
+Needs lake with the option at origin/THESIS. Test `test_thesis_cmptrim_recipe`,
+`test_rv_pond_inherits_the_comparator_trim`.
 
 **First thesis_fmax PE probe (2026-10-23, zip thesis_fmax_pe_r8cad-gf12_20261023-055808_slim,
 0.23 ns input budget, gated-pond PEs; extracted in /aha/sweep_out/thesis_fmax_20261023).** Synthesis

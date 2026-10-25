@@ -104,14 +104,19 @@ def load_pond_spec_params(rv, data_width=16):
 # schedule generator; clock_gate_ports: unconfigured ports' clocks gated off). Off
 # by default; set in the MEM spec config, they apply to every lake spec in the CGRA.
 SPEC_POWER_OPTIONS = ("share_clk_ctr", "clock_gate_ports")
+# lake RV Spec options an RV pond takes from the MEM spec too (rv_comparator_trim:
+# the trimmed RV comparison network). Off by default.
+SPEC_RV_OPTIONS = ("rv_comparator_trim",)
 
 
-def with_mem_power_options(pond_params, mem_params):
+def with_mem_power_options(pond_params, mem_params, rv=False):
     """The PE-tile pond's spec params plus the MEM spec's clock-gating options it
     does not set itself (its own JSON wins, so {"clock_gate_ports": false} keeps a
-    pond ungated). Unchanged, None included, when the MEM spec sets none."""
+    pond ungated), and for an RV pond (rv) the MEM spec's SPEC_RV_OPTIONS likewise.
+    Unchanged, None included, when the MEM spec sets none."""
+    keys = SPEC_POWER_OPTIONS + (SPEC_RV_OPTIONS if rv else ())
     inherited = {k: v for k, v in (mem_params or {}).items()
-                 if k in SPEC_POWER_OPTIONS and v and k not in (pond_params or {})}
+                 if k in keys and v and k not in (pond_params or {})}
     if not inherited:
         return pond_params
     return dict(pond_params or {}, **inherited)
@@ -573,7 +578,8 @@ def create_cgra(input_width: int, input_height: int, io_sides: List[IOSide],
     static_spec_pond = pond_spec_params is not None and not use_rv_mem_pond
     if use_rv_mem_pond or static_spec_pond:
         # a lake-spec pond takes the MEM spec's clock gating (the legacy PondCore can't)
-        pond_spec_params = with_mem_power_options(pond_spec_params, _spec_params if lake_spec_config else None)
+        pond_spec_params = with_mem_power_options(pond_spec_params, _spec_params if lake_spec_config else None,
+                                                  rv=use_rv_mem_pond)
 
     def make_pond():
         if not use_rv_mem_pond and not static_spec_pond:

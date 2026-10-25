@@ -291,7 +291,8 @@ SPEC_DEFAULTS = dict(storage_capacity=4096, data_width=16, vec_width=4, dims=6,
                      in_ports=2, out_ports=2, dual_port=False, vec_capacity=2,
                      max_extent=None, max_sequence_width=None,
                      filter_fifo_depth=None, share_clk_ctr=False,
-                     clock_gate_ports=False, add_filter_path=True)
+                     clock_gate_ports=False, add_filter_path=True,
+                     rv_comparator_trim=None)
 
 # Config keys that drive the sweep, not the RTL. They are stripped before
 # spec_config.json is written: util_onyx passes that file to
@@ -445,6 +446,13 @@ THESIS_MEM_WIDTH_SPEC_POINTS = [_thesis_opt(THESIS_WIDTH_POINTS[dw], m)
 # PE tile's pond takes the MEM spec's clock gating (garnet c9c6da9b), as in the CGRA.
 THESIS_PE_WIDTH_SPEC_POINTS = list(THESIS_MEM_WIDTH_SPEC_POINTS)
 THESIS_PE_WIDTH_STATIC_SPEC_POINTS = [s for s in THESIS_PE_WIDTH_SPEC_POINTS if s["runtime_mode"] == "static"]
+# The RV comparison-network trim (user 2026-10-25): the RV design point with and
+# without lake build_spec_rv's rv_comparator_trim (one-sided comparators, 8-bit
+# scalar + barrier bit, level select over levels 0..2). The RV PE tile's pond takes
+# the trim from the MEM spec (cgra/util_onyx.py with_mem_power_options), so the same
+# pair builds the MemTile and the PE tile A/B.
+THESIS_CMPTRIM_SPEC_POINTS = [_thesis_opt(THESIS_WIDTH_POINTS[16], "rv"),
+                              dict(_thesis_opt(THESIS_WIDTH_POINTS[16], "rv"), rv_comparator_trim=True)]
 
 
 def _thesis_width_points():
@@ -488,6 +496,7 @@ SPEC_SETS = {
     "thesis_pe_widths": THESIS_PE_WIDTH_SPEC_POINTS,
     "thesis_pe_widths_static": THESIS_PE_WIDTH_STATIC_SPEC_POINTS,
     "thesis_dse": _thesis_dse_points(),
+    "thesis_cmptrim": THESIS_CMPTRIM_SPEC_POINTS,
 }
 PRESETS["thesis_fabric_pnr"] = [
     "fw4_dw16_sc4096_sp_in2_out2_vc2_thesis",
@@ -672,8 +681,15 @@ THESIS_DSE_RECIPE_FLAGS = {
                        "--validate-set", "thesis_dse_val"] + _THESIS_TILE_FLAGS,
 }
 THESIS_PART_DIRS = {"thesis_tiles_mem": "thesis_dse_mem", "thesis_dse_reduced_mem": "thesis_dse_mem"}
+#   thesis_cmptrim: the RV comparison-network trim A/B (THESIS_CMPTRIM_SPEC_POINTS) at
+#   the RV dw16 clock (--clocks-from): the RV MemTile pair through PnR with idle/active
+#   power, the RV PE tile pair (pond with / without the trim) through PnR (4 builds).
+THESIS_CMPTRIM_RECIPE_FLAGS = {
+    "thesis_cmptrim_mem": ["--spec-set", "thesis_cmptrim", "--memtile-power"] + _THESIS_TILE_FLAGS,
+    "thesis_cmptrim_pe": _TILE_PE + ["--spec-set", "thesis_cmptrim"] + _THESIS_TILE_FLAGS,
+}
 # Parts that need --clocks-from (or a --clock-mhz) rather than the graph's clock.
-THESIS_CLOCKED_PARTS = tuple(THESIS_DSE_RECIPE_FLAGS)
+THESIS_CLOCKED_PARTS = tuple(THESIS_DSE_RECIPE_FLAGS) + tuple(THESIS_CMPTRIM_RECIPE_FLAGS)
 RECIPES = {**{name: [name] for name in RECIPE_FLAGS}, "app_power": ["app_power"],
            "thesis": list(RECIPE_FLAGS) + ["app_power"],
            **{name: [name] for name in THESIS_FABRIC_RECIPE_FLAGS},
@@ -686,11 +702,14 @@ RECIPES = {**{name: [name] for name in RECIPE_FLAGS}, "app_power": ["app_power"]
            **{name: [name] for name in THESIS_DSE_RECIPE_FLAGS},
            "thesis_tiles": ["thesis_tiles_mem", "thesis_tiles_pe"],
            "thesis_dse_reduced": ["thesis_dse_reduced_mem"],
-           "thesis_dse": ["thesis_dse_mem"]}
+           "thesis_dse": ["thesis_dse_mem"],
+           **{name: [name] for name in THESIS_CMPTRIM_RECIPE_FLAGS},
+           "thesis_cmptrim": list(THESIS_CMPTRIM_RECIPE_FLAGS)}
 RECIPE_FLAGS.update(THESIS_FABRIC_RECIPE_FLAGS)
 RECIPE_FLAGS.update(THESIS_OPT_RECIPE_FLAGS)
 RECIPE_FLAGS.update(THESIS_FMAX_RECIPE_FLAGS)
 RECIPE_FLAGS.update(THESIS_DSE_RECIPE_FLAGS)
+RECIPE_FLAGS.update(THESIS_CMPTRIM_RECIPE_FLAGS)
 
 
 def build_argparser():
@@ -1592,8 +1611,10 @@ def _mode(cfg):
 
 
 def _spec_key(spec):
-    """Hardware identity of a spec: its build_spec kwargs, defaults filled."""
-    return tuple(spec.get(k, v) for k, v in SPEC_DEFAULTS.items())
+    """Hardware identity of a spec: its build_spec kwargs, defaults filled
+    (a dict value, e.g. rv_comparator_trim's, as its sorted items)."""
+    return tuple(tuple(sorted(x.items())) if isinstance(x, dict) else x
+                 for x in (spec.get(k, v) for k, v in SPEC_DEFAULTS.items()))
 
 
 def _spec_kwargs(cfg):
@@ -1631,6 +1652,8 @@ def _unsupported_reason(spec, mode):
         return "add_filter_path is a build_spec_rv (RV filter path) option"
     if spec.get("add_filter_path") is False and spec.get("filter_fifo_depth") is not None:
         return "filter_fifo_depth sizes the filter path that add_filter_path=False removes"
+    if mode != "rv" and spec.get("rv_comparator_trim"):
+        return "rv_comparator_trim is a build_spec_rv (RV comparison network) option"
     return None
 
 
@@ -1722,7 +1745,8 @@ def _config_name(cfg):
     for max_sequence_width (aha folds those; their RTL differs), `_ff<N>` for
     build_spec_rv's filter_fifo_depth, `_nofp` for its add_filter_path=False,
     `_sharectr` / `_portcg` for lake's
-    share_clk_ctr / clock_gate_ports and `_rv` for runtime mode rv. Static
+    share_clk_ctr / clock_gate_ports, `_cmptrim` (or `_cmp<options>`, see
+    _cmp_trim_tag) for build_spec_rv's rv_comparator_trim and `_rv` for runtime mode rv. Static
     names are unchanged from earlier sweeps. A stock tile (no lake spec) is
     `stock`; then `_nopond` / `_specpond` for the PE pond knob."""
     knobs = []
@@ -1749,6 +1773,7 @@ def _config_name(cfg):
     no_fp = cfg.get("add_filter_path", True) is False
     share_ctr = cfg.get("share_clk_ctr", False)
     gate_ports = cfg.get("clock_gate_ports", False)
+    cmp_trim = cfg.get("rv_comparator_trim")
 
     parts = [f"fw{fw}_dw{dw}_sc{sc}"]
     parts.append("dp" if dp else "sp")
@@ -1769,7 +1794,27 @@ def _config_name(cfg):
         parts.append("sharectr")
     if gate_ports:
         parts.append("portcg")
+    if cmp_trim:
+        parts.append(_cmp_trim_tag(cmp_trim))
     return "_".join(parts + knobs)
+
+
+def _cmp_trim_tag(trim):
+    """Config-name part for lake build_spec_rv's rv_comparator_trim: `cmptrim` for
+    True (lake RV_CMP_TRIM_DEFAULT), else `cmp` + the options a dict sets: `os`
+    one_sided, `s<N>` scalar_width, `bb` barrier_bit, `l<N>` max_level."""
+    if trim is True:
+        return "cmptrim"
+    tag = "cmp"
+    if trim.get("one_sided"):
+        tag += "os"
+    if trim.get("scalar_width", 16) != 16:
+        tag += f"s{trim['scalar_width']}"
+    if trim.get("barrier_bit"):
+        tag += "bb"
+    if trim.get("max_level") is not None:
+        tag += f"l{trim['max_level']}"
+    return tag
 
 
 def _resolve_names(args, text, flag):

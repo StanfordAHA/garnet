@@ -133,8 +133,9 @@ def create_cgra_thesis(mode: str,
     pond_spec_params = None
     if add_pond:
         pond_spec_params = load_pond_spec_params(rv=rv, data_width=dw) or {"data_width": dw}
-        # the pond takes the MEM spec's clock gating unless its JSON sets it
-        pond_spec_params = with_mem_power_options(pond_spec_params, spec_params)
+        # the pond takes the MEM spec's clock gating (and, RV, its comparator trim)
+        # unless its JSON sets them
+        pond_spec_params = with_mem_power_options(pond_spec_params, spec_params, rv=rv)
 
     def make_pond():
         geom = resolve_cgra_pond_params(pond_spec_params, rv=rv)

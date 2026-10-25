@@ -30,3 +30,15 @@ def test_input_not_mutated():
     with_mem_power_options(pond, GATED)
     assert pond == {"dims": 6}
     assert set(SPEC_POWER_OPTIONS) == set(GATED)
+
+
+def test_rv_pond_inherits_the_comparator_trim():
+    """lake rv_comparator_trim (SPEC_RV_OPTIONS) reaches an RV pond only: the static
+    pond (build_pond) does not take it."""
+    trim = {"rv_comparator_trim": True}
+    assert with_mem_power_options(None, dict(trim, clock_gate_ports=True), rv=True) == \
+        dict(trim, clock_gate_ports=True)
+    assert with_mem_power_options(None, dict(trim, clock_gate_ports=True)) == {"clock_gate_ports": True}
+    pond = {"dims": 6}
+    assert with_mem_power_options(pond, trim) is pond
+    assert with_mem_power_options({"rv_comparator_trim": False}, trim, rv=True) == {"rv_comparator_trim": False}

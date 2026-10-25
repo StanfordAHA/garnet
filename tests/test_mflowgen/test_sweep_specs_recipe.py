@@ -325,6 +325,30 @@ def test_thesis_dse_sets(ss, capsys, tmp_path):
     assert 80 <= len(reduced) <= 100
 
 
+def test_thesis_cmptrim_recipe(ss, capsys, tmp_path):
+    """The RV comparison-network trim A/B: the RV design point with and without
+    lake's rv_comparator_trim, MemTile (PnR + idle/active power) and PE tile (PnR),
+    at the RV dw16 clock; static specs can't take the option."""
+    assert ss.RECIPES["thesis_cmptrim"] == ["thesis_cmptrim_mem", "thesis_cmptrim_pe"]
+    assert set(ss.RECIPES["thesis_cmptrim"]) <= set(ss.THESIS_CLOCKED_PARTS)
+    base = "fw4_dw16_sc4096_sp_in2_out2_vc2_nofp_portcg_thesis_rv"
+    assert set(ss.PRESETS["thesis_design_point"]) >= {base}
+    for part in ss.RECIPES["thesis_cmptrim"]:
+        flags = ss.RECIPE_FLAGS[part]
+        assert flags[flags.index("--i-delay-ns") + 1] == str(ss.THESIS_I_DELAY_NS)
+        assert ("--memtile-power" in flags) == part.endswith("_mem")
+        names = listed(ss, capsys, *flags, "--clocks-from", str(clock_json(tmp_path)),
+                       "--out-dir", str(tmp_path))
+        assert [n for n in names if n.startswith("fw")] == \
+            [base, "fw4_dw16_sc4096_sp_in2_out2_vc2_nofp_portcg_cmptrim_thesis_rv"]
+    assert ss._unsupported_reason(dict(rv_comparator_trim=True), "static")
+    assert ss._unsupported_reason(dict(rv_comparator_trim=True), "rv") is None
+    assert ss._cmp_trim_tag({"one_sided": True, "scalar_width": 8, "barrier_bit": True,
+                             "max_level": 3}) == "cmposs8bbl3"
+    assert ss._cmp_trim_tag({"max_level": 3}) == "cmpl3"
+    assert ss._spec_key(dict(rv_comparator_trim={"max_level": 3})) != ss._spec_key({})
+
+
 def clock_json(tmp_path, clocks=None):
     path = tmp_path / "clocks.json"
     path.write_text(json.dumps(clocks or {m: {str(w): 500 + w for w in (8, 16, 32, 64)}
