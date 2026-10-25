@@ -273,7 +273,7 @@ def test_thesis_fmax_recipe(ss, capsys, tmp_path):
     """thesis_fmax: synthesis only, over-constrained, no power, for the chosen
     MemTile pair and the PE pair at every data width, with the fixed upstream
     input budget."""
-    assert ss.RECIPES["thesis_fmax"] == ["thesis_fmax_mem", "thesis_fmax_pe"]
+    assert ss.RECIPES["thesis_fmax"] == ["thesis_fmax_mem", "thesis_fmax_pe", "thesis_fmax_pe_regops"]
     for part in ss.RECIPES["thesis_fmax"]:
         flags = ss.RECIPE_FLAGS[part]
         assert flags[flags.index("--clock-mhz") + 1] == str(ss.FMAX_PROBE_MHZ)
@@ -282,8 +282,11 @@ def test_thesis_fmax_recipe(ss, capsys, tmp_path):
         assert "--memtile-power" not in flags and "--pnr-set" not in flags
         assert ss.main(flags + ["--out-dir", str(tmp_path), "--list"]) == 0
         names = capsys.readouterr()
-        assert "8 -> cadence-genus-synthesis" in names.err
+        n = 4 if part.endswith("regops") else 8
+        assert f"{n} -> cadence-genus-synthesis" in names.err
         assert {n.split("_")[1] for n in names.out.split()} == {"dw8", "dw16", "dw32", "dw64"}
+        if part.endswith("regops"):
+            assert not any(x.endswith("_rv") for x in names.out.split())
     mem = listed(ss, capsys, *ss.RECIPE_FLAGS["thesis_fmax_mem"], "--out-dir", str(tmp_path))
     assert set(ss.PRESETS["thesis_design_point"]) < set(mem)
 
@@ -545,3 +548,37 @@ def test_rtl_only_memtile_power_makes_the_container_steps(ss, capsys, tmp_path):
     full = ss._build_settings(ss._tile_env(cfg, tmp_path, args))
     args.rtl_only = True
     assert ss._build_settings(ss._tile_env(cfg, tmp_path, args)) == full
+
+
+def test_registered_operands_only_for_static_thesis_pes(ss, tmp_path, monkeypatch):
+    """--pe-registered-operands: static apps register every routed operand (MetaMapper
+    PipelinePEs -> RegisterMode DELAY), so a static thesis PE is timed with the bypass arc
+    false and the next tile's input as an output budget; RV PEs (FIFO-registered inputs
+    feeding the bypass) and MemTiles are unchanged."""
+    pe = ["--graph", str(MFLOWGEN / "Tile_PE"), "--pe-registered-operands"]
+    static = dict(ss.THESIS_WIDTH_POINTS[16], thesis=True, runtime_mode="static")
+    env = env_for(ss, tmp_path, monkeypatch, static, *pe)
+    assert env["PE_OPERANDS_REGISTERED"] == "1" and env["TILE_O_DELAY_NS"] == str(ss.THESIS_O_DELAY_NS)
+    for cfg, argv in ((dict(static, runtime_mode="rv"), pe), (static, pe[2:]), (static, pe[:2])):
+        env = env_for(ss, tmp_path, monkeypatch, cfg, *argv)
+        assert "PE_OPERANDS_REGISTERED" not in env and "TILE_O_DELAY_NS" not in env
+    assert {"PE_OPERANDS_REGISTERED", "TILE_O_DELAY_NS"} <= set(ss.BUILD_ENV_KEYS)
+    assert "--pe-registered-operands" in ss.RECIPE_FLAGS["thesis_tiles_pe"]
+    tcl = (MFLOWGEN / "Tile_PE" / "constraints" / "constraints.tcl").read_text()
+    assert "set_false_path -through $rm_in -through $rm_out" in tcl and "RegisterMode_inst*/value*" in tcl
+    common = (MFLOWGEN / "Tile_PE" / "constraints" / "common.tcl").read_text()
+    assert "set tile_o_delay $::env(TILE_O_DELAY_NS)" in common
+    assert "${sb_delay} + ${i_delay} + ${o_delay} + ${tile_o_delay}]" in common
+
+
+def test_regops_probe_replaces_the_static_pe_limit(ss, tmp_path):
+    """--clocks-from: a thesis_fmax_pe_regops sweep's static PE limit replaces the bypass-path
+    one from thesis_fmax_pe (it is higher), RV and MemTile limits stay."""
+    probe_dir(tmp_path / "fmax", "thesis_fmax_pe", [
+        ("pe16", "static", 16, "Tile_PE", -826.0),     # bypass path: 1.826 ns -> 547 -> 490
+        ("pe16_rv", "rv", 16, "Tile_PE", -566.0)])     # 1.566 ns -> 638 -> 570
+    probe_dir(tmp_path / "fmax", "thesis_fmax_mem", [("m16", "static", 16, "Tile_MemCore", 0.0)])
+    probe_dir(tmp_path / "fmax", "thesis_fmax_pe_regops", [
+        ("pe16", "static", 16, "Tile_PE", -580.0)])    # registered: 1.58 ns -> 632 -> 565
+    table, lines = ss._thesis_clock_table(tmp_path / "fmax")
+    assert table == {("static", 16): 565.0, ("rv", 16): 570.0}

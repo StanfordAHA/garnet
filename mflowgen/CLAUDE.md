@@ -2628,6 +2628,12 @@ MemTile (static + RV, all four widths) met 1000 MHz (WNS 0), so the PE sets ever
   (est. dw16 ~1.58 ns with a first-hop SB register, ~ RV's 1.566). The static clocks derived from the
   bypass path (490 MHz at dw16) are pessimistic; a registered-operand constraint mode (false-path each
   RegisterMode value->O0, plus an output budget) is the fair one. Memory project_rv_tile_fifo_experiment.
+  Built 2026-10-24: `--pe-registered-operands` (static thesis PEs only) -> env PE_OPERANDS_REGISTERED=1
+  (Tile_PE constraints.tcl false-paths RegisterMode_inst*/value -> O0; errors if those pins are missing)
+  and TILE_O_DELAY_NS = THESIS_O_DELAY_NS 0.24 (archipelago SB_IN_to_PE) on the SB outputs (common.tcl
+  adds it back to the SB feedthrough budgets). `--recipe thesis_fmax_regops` (part thesis_fmax_pe_regops,
+  spec set thesis_pe_widths_static, 4 synth probes) is also in `thesis_fmax`; `--clocks-from` lets a
+  *regops* sweep replace the static PE limit; thesis_tiles_pe builds static PEs in this mode.
   Same report:
   PnR area by cell type and by matched block (Innovus signoff.area.rpt self areas, sums exact) and
   MemTile PT power by block/cell (power.cell; idle is mostly clock tree + gates, RV's extra idle is

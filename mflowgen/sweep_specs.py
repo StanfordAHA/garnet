@@ -444,6 +444,7 @@ THESIS_MEM_WIDTH_SPEC_POINTS = [_thesis_opt(THESIS_WIDTH_POINTS[dw], m)
 # PE tile per width and mode (--graph Tile_PE), with the same MEM spec options: the
 # PE tile's pond takes the MEM spec's clock gating (garnet c9c6da9b), as in the CGRA.
 THESIS_PE_WIDTH_SPEC_POINTS = list(THESIS_MEM_WIDTH_SPEC_POINTS)
+THESIS_PE_WIDTH_STATIC_SPEC_POINTS = [s for s in THESIS_PE_WIDTH_SPEC_POINTS if s["runtime_mode"] == "static"]
 
 
 def _thesis_width_points():
@@ -485,6 +486,7 @@ SPEC_SETS = {
     "thesis_fabric_opt": THESIS_OPT_SPEC_POINTS,
     "thesis_mem_widths": THESIS_MEM_WIDTH_SPEC_POINTS,
     "thesis_pe_widths": THESIS_PE_WIDTH_SPEC_POINTS,
+    "thesis_pe_widths_static": THESIS_PE_WIDTH_STATIC_SPEC_POINTS,
     "thesis_dse": _thesis_dse_points(),
 }
 PRESETS["thesis_fabric_pnr"] = [
@@ -623,6 +625,12 @@ THESIS_OPT_RECIPE_FLAGS = {
 # post-PnR GF12 tiles for Cascade), so the tile clocks agree with the STA that
 # pipelines the apps (user 2026-10-22). Pass-through ports keep 0.25 T.
 THESIS_I_DELAY_NS = 0.23
+# Static thesis PEs are timed the way static apps run them (user 2026-10-24): MetaMapper's
+# PipelinePEs registers every routed operand (lassen RegisterMode DELAY), so the bypass arc is
+# false (--pe-registered-operands -> PE_OPERANDS_REGISTERED) and the hop moves to the output:
+# a value leaving the tile unregistered must reach the next tile's operand register, which
+# takes THESIS_O_DELAY_NS (archipelago sta_delays.json SB_IN_to_PE, 240 ps; TILE_O_DELAY_NS).
+THESIS_O_DELAY_NS = 0.24
 THESIS_CLOCK_MARGIN = 0.9
 THESIS_CLOCK_STEP_MHZ = 5
 THESIS_CLOCKS_FILE = "thesis_clocks.json"
@@ -638,6 +646,10 @@ _FMAX_FLAGS = ["--clock-mhz", str(FMAX_PROBE_MHZ), "--stop-after", "cadence-genu
 THESIS_FMAX_RECIPE_FLAGS = {
     "thesis_fmax_mem": ["--spec-set", "thesis_mem_widths"] + _FMAX_FLAGS + _THESIS_TILE_FLAGS,
     "thesis_fmax_pe": _TILE_PE + ["--spec-set", "thesis_pe_widths"] + _FMAX_FLAGS + _THESIS_TILE_FLAGS,
+    # the static PE again, timed with registered operands (its limit replaces thesis_fmax_pe's
+    # static one in --clocks-from)
+    "thesis_fmax_pe_regops": _TILE_PE + ["--spec-set", "thesis_pe_widths_static", "--pe-registered-operands"]
+    + _FMAX_FLAGS + _THESIS_TILE_FLAGS,
 }
 #   thesis_tiles: the tile set at those clocks (--clocks-from): the dw16 MemTile
 #   pair through PnR with idle/active power, the PE pair at every width through PnR.
@@ -652,7 +664,7 @@ THESIS_FMAX_RECIPE_FLAGS = {
 THESIS_DSE_RECIPE_FLAGS = {
     "thesis_tiles_mem": ["--spec-set", "thesis_dse", "--preset", "thesis_design_point",
                          "--memtile-power"] + _THESIS_TILE_FLAGS,
-    "thesis_tiles_pe": _TILE_PE + ["--spec-set", "thesis_pe_widths"] + _THESIS_TILE_FLAGS,
+    "thesis_tiles_pe": _TILE_PE + ["--spec-set", "thesis_pe_widths", "--pe-registered-operands"] + _THESIS_TILE_FLAGS,
     "thesis_dse_reduced_mem": ["--spec-set", "thesis_dse", "--preset", "thesis_dse_reduced",
                                "--memtile-power", "--pnr-set", "thesis_dse_pnr_reduced",
                                "--validate-set", "thesis_dse_val_reduced"] + _THESIS_TILE_FLAGS,
@@ -670,6 +682,7 @@ RECIPES = {**{name: [name] for name in RECIPE_FLAGS}, "app_power": ["app_power"]
            "thesis_opt": list(THESIS_OPT_RECIPE_FLAGS) + ["thesis_pe"],
            **{name: [name] for name in THESIS_FMAX_RECIPE_FLAGS},
            "thesis_fmax": list(THESIS_FMAX_RECIPE_FLAGS),
+           "thesis_fmax_regops": ["thesis_fmax_pe_regops"],
            **{name: [name] for name in THESIS_DSE_RECIPE_FLAGS},
            "thesis_tiles": ["thesis_tiles_mem", "thesis_tiles_pe"],
            "thesis_dse_reduced": ["thesis_dse_reduced_mem"],
@@ -874,6 +887,14 @@ def build_argparser():
                         "Unset: 0.3 (PE) / 0.2 (MemTile) x the clock period. The "
                         "thesis_fmax / thesis_tiles / thesis_dse recipes use "
                         f"{THESIS_I_DELAY_NS:g}: the upstream tile's register and wire.")
+    p.add_argument("--pe-registered-operands", action="store_true",
+                   help="Time static thesis PE tiles the way static apps run them: every routed "
+                        "operand registered (MetaMapper PipelinePEs -> lassen RegisterMode DELAY), "
+                        "so the RegisterMode bypass arc is false (env PE_OPERANDS_REGISTERED=1), and "
+                        "switch-box outputs get the next tile's connection box + operand register as "
+                        f"an output budget (env TILE_O_DELAY_NS={THESIS_O_DELAY_NS:g}). RV and "
+                        "non-thesis configs are unchanged. The thesis_fmax_pe_regops and "
+                        "thesis_tiles_pe recipe parts set it.")
     p.add_argument("--clocks-from", metavar="PATH", default=None,
                    help="Clock each thesis config at its fabric's clock for its data "
                         "width. PATH is a --recipe thesis_fmax out dir (its "
@@ -1259,11 +1280,15 @@ def _probe_limits(root):
     thesis_fmax_mem / thesis_fmax_pe sweeps; else root and its subdirs, e.g.
     the recipe's extracted zips):
     each synthesized config's limit, 1000 / (clock period - synth WNS) in ns.
-    Positive slack makes that a lower bound."""
+    Positive slack makes that a lower bound. A thesis_fmax_pe_regops sweep's
+    (static PE timed with registered operands) replaces the static PE limit."""
     dirs = [root / p for p in THESIS_FMAX_RECIPE_FLAGS if (root / p).is_dir()] or [root] + sorted(
         d for d in root.iterdir() if (d / "correlation.csv").is_file()) if root.is_dir() else []
+    # a registered-operand static PE probe (thesis_fmax_pe_regops) replaces the bypass-path one
+    dirs.sort(key=lambda d: "regops" in d.name)
     limits = {}
     for d in dirs:
+        override = "regops" in d.name
         width = {r["config_name"]: r.get("data_width") for r in _read_rows(d / "results.csv")}
         for r in _read_rows(d / "correlation.csv"):
             try:
@@ -1272,7 +1297,8 @@ def _probe_limits(root):
             except (KeyError, TypeError, ValueError):
                 continue
             key = (r.get("graph") or "Tile_MemCore", r["runtime_mode"], dw)
-            limits[key] = min(limits.get(key, float("inf")), 1000 / (ns - wns))
+            lim = 1000 / (ns - wns)
+            limits[key] = lim if override else min(limits.get(key, float("inf")), lim)
     return limits
 
 
@@ -2268,6 +2294,11 @@ def _tile_env(cfg, cfg_dir, args):
     # ...and of the data/ready/valid inputs, in ns (unset: the graph's fraction)
     if args.i_delay_ns is not None:
         env["TILE_I_DELAY_NS"] = f"{args.i_delay_ns:g}"
+    # static thesis PE: registered operands + the next tile's input as an output budget
+    if (args.pe_registered_operands and cfg.get("thesis") and _mode(cfg) == "static"
+            and Path(args.graph).name == "Tile_PE"):
+        env["PE_OPERANDS_REGISTERED"] = "1"
+        env["TILE_O_DELAY_NS"] = f"{THESIS_O_DELAY_NS:g}"
     if cfg.get("pond") == "none":
         env["NO_POND"] = "True"
     elif cfg.get("pond") == "spec":
@@ -2333,7 +2364,8 @@ def _run_one(cfg, cfg_dir, args):
         dry_env_keys += ["DUAL_PORT", "USE_NON_SPLIT_FIFOS", "USE_SIM_SRAM"]
         dry_env_keys += [k for k in ("THESIS_FABRIC", "NO_POND",
                                      "LAKE_POND_SPEC_CONFIG", "PT_I_DELAY_FRAC",
-                                     "TILE_I_DELAY_NS") if k in env]
+                                     "TILE_I_DELAY_NS", "PE_OPERANDS_REGISTERED",
+                                     "TILE_O_DELAY_NS") if k in env]
         if args.flatten_effort is not None:
             dry_env_keys += ["FLATTEN"]
         dry_env_keys += [k for k in CLOCK_ENV_KEYS if k in env]
@@ -2441,7 +2473,8 @@ BUILD_ENV_KEYS = ("LAKE_SPEC_CONFIG", "LAKE_SPEC_MODE", "DUAL_PORT",
                   "USE_NON_SPLIT_FIFOS", "USE_SIM_SRAM", "FLATTEN", "CLOCK_PERIOD",
                   "clock_period_PE", "RTL_POWER", "SYNTH_POWER", "MEMTILE_POWER",
                   "APP_BUNDLE", "LAKE_POND_SPEC_CONFIG", "NO_POND",
-                  "THESIS_FABRIC", "PT_I_DELAY_FRAC", "TILE_I_DELAY_NS")
+                  "THESIS_FABRIC", "PT_I_DELAY_FRAC", "TILE_I_DELAY_NS",
+                  "PE_OPERANDS_REGISTERED", "TILE_O_DELAY_NS")
 # pond "spec": the pond spec JSON in the workspace (lake's default spec pond).
 POND_SPEC_FILE = "pond_spec.json"
 

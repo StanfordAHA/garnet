@@ -123,6 +123,15 @@ set_output_delay -clock ${clock_name} ${o_delay} [all_outputs]
 set_output_delay -clock ${clock_name} 0 $pt_clk_out
 set_output_delay -clock ${clock_name} 0 $pt_outputs
 set_output_delay -clock ${clock_name} 0 $pt_read_data_outputs
+# TILE_O_DELAY_NS (env, e.g. 0.24; sweep_specs --pe-registered-operands): the switch-box
+# outputs feed the next tile, whose connection box and operand register take this long, so
+# a value leaving the tile unregistered must arrive this much before the edge (archipelago
+# SB_IN_to_PE). The switch-box feedthrough budgets below add it back. Unset: 0.
+set tile_o_delay 0.0
+if { [info exists ::env(TILE_O_DELAY_NS)] && $::env(TILE_O_DELAY_NS) != "" } {
+    set tile_o_delay $::env(TILE_O_DELAY_NS)
+    set_output_delay -clock ${clock_name} ${tile_o_delay} [get_ports SB* -filter direction==out]
+}
 
 # Set timing on pass through clock
 # Set clock min delay and max delay
@@ -178,7 +187,7 @@ set_max_delay -from SB*_IN_* -to SB*_OUT_* [expr ${sb_delay} + ${i_delay} + ${o_
 set_max_delay -from SB*_IN_* -to SB*_OUT_* -through [get_pins [list CB*/* DECODE*/* PE_inst0*/* FEATURE*/*]] ${clock_period}
 } else {
 # Use this first command to constrain all feedthrough paths to just the desired SB delay
-set_max_delay -from [get_ports SB* -filter direction==in] -to [get_ports SB* -filter direction==out] [expr ${sb_delay} + ${i_delay} + ${o_delay}]
+set_max_delay -from [get_ports SB* -filter direction==in] -to [get_ports SB* -filter direction==out] [expr ${sb_delay} + ${i_delay} + ${o_delay} + ${tile_o_delay}]
 # Then override the rest of the paths to be full clock period
 set_max_delay -from [get_ports SB* -filter direction==in] -to [get_ports SB* -filter direction==out] -through [get_pins [list CB*/* DECODE*/* PE_inst0*/* FEATURE*/*]] ${clock_period}
 }

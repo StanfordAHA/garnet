@@ -129,6 +129,27 @@ set_false_path_if_pins_exist $fp_mul_path
 set_false_path_if_pins_exist $fp_add_path
 
 ########################################################################
+# PE_OPERANDS_REGISTERED (env, sweep_specs --pe-registered-operands; static thesis PEs):
+# time the PE the way static apps run it. MetaMapper's PipelinePEs puts every routed
+# operand in lassen RegisterMode DELAY (a one-cycle input register) and every constant in
+# CONST, never BYPASS, so the bypass arc through each RegisterMode (value -> O0) is false:
+# the input -> register and register -> ALU paths stay timed.
+if { [info exists ::env(PE_OPERANDS_REGISTERED)] && $::env(PE_OPERANDS_REGISTERED) == "1" } {
+    set rm_path PE_inst0/PE_inner_W_inst0/PE_inner/mem_ctrl_PE_onyx_flat/PE_onyx_inst/onyxpeintf
+    set rm_in [get_pins [list $rm_path/RegisterMode_inst*/value*]]
+    set rm_out [get_pins [list $rm_path/RegisterMode_inst*/O0*]]
+    if { $rm_in == "" || $rm_out == "" } {
+        set rm_in [get_pins -hierarchical *RegisterMode_inst*/value*]
+        set rm_out [get_pins -hierarchical *RegisterMode_inst*/O0*]
+    }
+    if { $rm_in == "" || $rm_out == "" } {
+        error "PE_OPERANDS_REGISTERED=1 but no RegisterMode value/O0 pins found (hierarchy flattened?)"
+    }
+    puts "INFO: PE_OPERANDS_REGISTERED: false path through RegisterMode value -> O0"
+    set_false_path -through $rm_in -through $rm_out
+}
+
+########################################################################
 # ALU OP SCENARIOS
 ########################################################################
 
