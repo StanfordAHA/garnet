@@ -349,6 +349,26 @@ def test_thesis_cmptrim_recipe(ss, capsys, tmp_path):
     assert ss._spec_key(dict(rv_comparator_trim={"max_level": 3})) != ss._spec_key({})
 
 
+def test_thesis_filter_ab_recipe(ss, capsys, tmp_path):
+    """The RV filter-path A/B: five RV geometries, each as the thesis RV MemTile (no
+    filter path, the thesis_dse tile) and with the FIFO-8 filter path; MemTile only,
+    every build through PnR with idle/active power, at the RV clocks."""
+    assert ss.RECIPES["thesis_filter_ab"] == ["thesis_filter_ab_mem"]
+    assert set(ss.RECIPES["thesis_filter_ab"]) <= set(ss.THESIS_CLOCKED_PARTS)
+    flags = ss.RECIPE_FLAGS["thesis_filter_ab_mem"]
+    assert "--memtile-power" in flags and "--pnr-set" not in flags and "--graph" not in flags
+    assert flags[flags.index("--i-delay-ns") + 1] == str(ss.THESIS_I_DELAY_NS)
+    clocks = ["--clocks-from", str(clock_json(tmp_path)), "--out-dir", str(tmp_path)]
+    names = [n for n in listed(ss, capsys, *flags, *clocks) if n.startswith("fw")]
+    geos = ["fw4_dw16_sc4096_sp_in2_out2_vc2", "fw4_dw16_sc8192_sp_in2_out2_vc2",
+            "fw2_dw16_sc2048_sp_in1_out1_vc2", "fw1_dw16_sc4096_dp_in1_out1",
+            "fw4_dw32_sc8192_sp_in2_out2_vc2"]
+    assert names == [f"{g}_{fp}_portcg_thesis_rv" for g in geos for fp in ("nofp", "ff8")]
+    dse = set(listed(ss, capsys, *ss.RECIPE_FLAGS["thesis_dse_mem"], *clocks))
+    assert {n for n in names if "_nofp_" in n} <= dse        # the A side is the DSE's tile
+    assert not {n for n in names if "_ff8_" in n} & dse
+
+
 def clock_json(tmp_path, clocks=None):
     path = tmp_path / "clocks.json"
     path.write_text(json.dumps(clocks or {m: {str(w): 500 + w for w in (8, 16, 32, 64)}

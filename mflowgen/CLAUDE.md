@@ -2647,7 +2647,14 @@ Recipes (all write under one --out-dir; `--clocks-from <that dir>` reads the pro
   lake DESIGNS_SINGLE_LEVEL points (dw8/dw32 included; camera_pipeline_2x2 on a bigger array if 16x16
   does not place, since power replays single tiles), whole-CGRA power with `--pe-registered-operands`
   (the user expects the Cond rewrite may make the bypass-path static clock close enough; the
-  thesis_fmax probe measures both).
+  thesis_fmax probe measures both). Later the same day: keep the registers on the 1-bit tracks;
+  the standalone RV filter path is not kept, so the data set carries a small A/B showing what it
+  would cost / save: `--recipe thesis_filter_ab` (five RV MemTile geometries, each without the
+  filter path and with the FIFO-8 one, all through PnR + idle/active power; the no-filter-path half
+  is the thesis_dse tile), plus conv_3_3 bundles on the two fw4 dw16 2x2 geometries (4 KB design
+  point, 8 KB): A0 on `_nofp_portcg_thesis_rv`, A and B on `_ff8_portcg_thesis_rv` (B = `--env
+  METAMAPPER_MEM_PORTS=3 --pre-pnr-hook <tree>/garnet/mflowgen/common/application/hooks/
+  conv_3_3_eat_rows_up_front.py`; the hook only handles conv_3_3's single line-buffer MEM).
   - State: /nsim/mstrange/BUILDS/thesis_dse holds thesis_fmax (10-23) + regops (10-25),
     thesis_tiles_mem and the full thesis_dse (10-25) at static 570/490/470/425, RV 670/570/540/480
     MHz. lassen thesis 0f44a74 (Cond as an AND-OR select, 10-26) changes every PE's RTL (gen_rtl
@@ -2663,6 +2670,10 @@ Recipes (all write under one --out-dir; `--clocks-from <that dir>` reads the pro
     4. (if rebuilding) `--recipe thesis_dse ... --rtl-only --skip-existing --config-jobs 8`, then
        `--recipe thesis_dse --out-dir $OUT --clocks-from $OUT --config-jobs 6 --pnr-jobs 4
        --skip-existing --zip --zip-slim` (the zip holds all 248 configs)
+    4b. `--recipe thesis_filter_ab --out-dir $OUT --clocks-from $OUT --rtl-only --config-jobs 8`,
+       then the same without `--rtl-only`, with `--config-jobs 4 --zip --zip-slim` (10 PnR; its own
+       dir thesis_filter_ab_mem and zip, so the lake tile_sweep ingest of the DSE zip stays clean:
+       that ingest maps configs by spec values, not options, so ff8 rows would duplicate the DSE's)
     5. /aha: lake `python3 -m THESIS.apps.garnet_configs --commands` (lake THESIS/apps/
        CGRA_APP_POWER.md §2a) with GARNET_REV = the build machine's garnet; then
        `cgra_app_power.py --any-config --variants ... --clocks-from $OUT/thesis_tiles_pe/thesis_clocks.json

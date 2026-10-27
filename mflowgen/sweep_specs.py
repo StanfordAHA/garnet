@@ -83,6 +83,9 @@ Examples:
     ./mflowgen/sweep_specs.py --recipe thesis_dse_reduced --out-dir /nsim/mstrange/BUILDS/thesis_dse \
         --clocks-from /nsim/mstrange/BUILDS/thesis_dse --config-jobs 6 --pnr-jobs 4 \
         --skip-existing --zip --zip-slim
+    # 4) The RV filter-path A/B: five RV MemTile pairs, no filter path vs FIFO-8 (10 PnR).
+    ./mflowgen/sweep_specs.py --recipe thesis_filter_ab --out-dir /nsim/mstrange/BUILDS/thesis_dse \
+        --clocks-from /nsim/mstrange/BUILDS/thesis_dse --config-jobs 4 --zip --zip-slim
 
     # Just one part (memtile or app_power); --list or --dry-run shows what each
     # part would build
@@ -453,6 +456,23 @@ THESIS_PE_WIDTH_STATIC_SPEC_POINTS = [s for s in THESIS_PE_WIDTH_SPEC_POINTS if 
 # pair builds the MemTile and the PE tile A/B.
 THESIS_CMPTRIM_SPEC_POINTS = [_thesis_opt(THESIS_WIDTH_POINTS[16], "rv"),
                               dict(_thesis_opt(THESIS_WIDTH_POINTS[16], "rv"), rv_comparator_trim=True)]
+# The RV filter path A/B (user 2026-10-26: the thesis RV MemTile has no filter path; a
+# few A/B points show what adding one costs): five RV geometries across the design
+# space, each as the thesis RV MemTile (no filter path) and with lake's FIFO-8 filter
+# path (build_spec_rv filter_fifo_depth=8, its cheaper form), both port-gated. The
+# geometries: the design point (4 KB), 8 KB 2x2, a small 1x1 (2 KB fw2), fw1 dual-port
+# 1x1 and dw32 (8 KB 2x2), all lake DESIGNS_SINGLE_LEVEL points or the design point.
+THESIS_FILTER_AB_GEOMETRIES = [
+    THESIS_WIDTH_POINTS[16],
+    dict(THESIS_WIDTH_POINTS[16], storage_capacity=8192),
+    dict(storage_capacity=2048, data_width=16, vec_width=2, in_ports=1, out_ports=1, vec_capacity=2),
+    dict(storage_capacity=4096, data_width=16, vec_width=1, in_ports=1, out_ports=1, dual_port=True),
+    THESIS_WIDTH_POINTS[32],
+]
+THESIS_FILTER_AB_SPEC_POINTS = [
+    spec for geo in THESIS_FILTER_AB_GEOMETRIES
+    for spec in (_thesis_opt(geo, "rv"),
+                 dict(geo, thesis=True, runtime_mode="rv", clock_gate_ports=True, filter_fifo_depth=8))]
 
 
 def _thesis_width_points():
@@ -497,6 +517,7 @@ SPEC_SETS = {
     "thesis_pe_widths_static": THESIS_PE_WIDTH_STATIC_SPEC_POINTS,
     "thesis_dse": _thesis_dse_points(),
     "thesis_cmptrim": THESIS_CMPTRIM_SPEC_POINTS,
+    "thesis_filter_ab": THESIS_FILTER_AB_SPEC_POINTS,
 }
 PRESETS["thesis_fabric_pnr"] = [
     "fw4_dw16_sc4096_sp_in2_out2_vc2_thesis",
@@ -688,8 +709,15 @@ THESIS_CMPTRIM_RECIPE_FLAGS = {
     "thesis_cmptrim_mem": ["--spec-set", "thesis_cmptrim", "--memtile-power"] + _THESIS_TILE_FLAGS,
     "thesis_cmptrim_pe": _TILE_PE + ["--spec-set", "thesis_cmptrim"] + _THESIS_TILE_FLAGS,
 }
+#   thesis_filter_ab: the RV filter-path A/B (THESIS_FILTER_AB_SPEC_POINTS) at the RV
+#   clocks (--clocks-from): five RV MemTile pairs, no filter path vs FIFO-8 filter path,
+#   through PnR with idle/active power (10 builds). The filter path is MemTile only.
+THESIS_FILTER_AB_RECIPE_FLAGS = {
+    "thesis_filter_ab_mem": ["--spec-set", "thesis_filter_ab", "--memtile-power"] + _THESIS_TILE_FLAGS,
+}
 # Parts that need --clocks-from (or a --clock-mhz) rather than the graph's clock.
-THESIS_CLOCKED_PARTS = tuple(THESIS_DSE_RECIPE_FLAGS) + tuple(THESIS_CMPTRIM_RECIPE_FLAGS)
+THESIS_CLOCKED_PARTS = (tuple(THESIS_DSE_RECIPE_FLAGS) + tuple(THESIS_CMPTRIM_RECIPE_FLAGS)
+                        + tuple(THESIS_FILTER_AB_RECIPE_FLAGS))
 RECIPES = {**{name: [name] for name in RECIPE_FLAGS}, "app_power": ["app_power"],
            "thesis": list(RECIPE_FLAGS) + ["app_power"],
            **{name: [name] for name in THESIS_FABRIC_RECIPE_FLAGS},
@@ -704,12 +732,15 @@ RECIPES = {**{name: [name] for name in RECIPE_FLAGS}, "app_power": ["app_power"]
            "thesis_dse_reduced": ["thesis_dse_reduced_mem"],
            "thesis_dse": ["thesis_dse_mem"],
            **{name: [name] for name in THESIS_CMPTRIM_RECIPE_FLAGS},
-           "thesis_cmptrim": list(THESIS_CMPTRIM_RECIPE_FLAGS)}
+           "thesis_cmptrim": list(THESIS_CMPTRIM_RECIPE_FLAGS),
+           **{name: [name] for name in THESIS_FILTER_AB_RECIPE_FLAGS},
+           "thesis_filter_ab": list(THESIS_FILTER_AB_RECIPE_FLAGS)}
 RECIPE_FLAGS.update(THESIS_FABRIC_RECIPE_FLAGS)
 RECIPE_FLAGS.update(THESIS_OPT_RECIPE_FLAGS)
 RECIPE_FLAGS.update(THESIS_FMAX_RECIPE_FLAGS)
 RECIPE_FLAGS.update(THESIS_DSE_RECIPE_FLAGS)
 RECIPE_FLAGS.update(THESIS_CMPTRIM_RECIPE_FLAGS)
+RECIPE_FLAGS.update(THESIS_FILTER_AB_RECIPE_FLAGS)
 
 
 def build_argparser():
