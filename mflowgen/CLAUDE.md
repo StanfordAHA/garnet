@@ -2420,8 +2420,9 @@ libHalide and libclkwrk.so were rebuilt. Shared-toolchain checks:
     - lake `build_spec_rv` refused RV fw2 dw64 dual-port ("No valid macros", a one-column check):
       lake b59ea334.
   - **Not width issues:**
-    - `tests/down_sample` fails clockwork's compile_mem on a lake-spec MEM at every width
-      (isl assertion).
+    - `tests/down_sample` failed clockwork's compile_mem on a lake-spec MEM at every width (isl
+      assertion) until Halide thesis 9e9966a53 (session 43d74890) unrolled its 2x2 reduction. It
+      now compiles static and RV, so it can serve as a dw8 app.
     - `apps/scalar_reduction` has only a static `hack_design_top.py` rewrite, so it can't run RV.
     - No FP at dw != 16 (`gen_PE_fc(dw)` is the integer PE).
   - **dw32 RV RTL before gemstone thesis c3f0acc (2026-10-23, cfc4174c) defined two different
