@@ -616,6 +616,14 @@ def test_gen_app_bundle_thesis_config():
     assert gab.THESIS_RV_PNR_ENV == {"DENSE_READY_VALID": "1"}   # no EXHAUSTIVE_PIPE
 
 
+def test_gen_app_bundle_rv_pnr_is_balanced():
+    """RV PnR runs without PnR pipelining on every fabric, so aha pnr latency-matches
+    the branches (aha/util/rv_balance.py); only the older --rv-balance loop pipelines."""
+    gab = load(APP / "gen_app_bundle.py", "gen_app_bundle")
+    assert gab.RV_PNR_ENV == {"DENSE_READY_VALID": "1"}
+    assert gab.RV_EXHAUSTIVE_PNR_ENV["EXHAUSTIVE_PIPE"] == "1"
+
+
 def test_cgra_app_power_thesis_bundle_tiles(tmp_path):
     """A thesis bundle replays on thesis tiles: THESIS_FABRIC for both tile graphs,
     and the spec for Tile_PE too (garnet.py --thesis needs it in both modes)."""

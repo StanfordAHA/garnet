@@ -12,9 +12,10 @@ ready-valid regression:
               (RV: DENSE_READY_VALID=1 PIPELINED=0 MATCH_BRANCH_DELAY=0)
   garnet      garnet.py --verilog --lake-spec-config/-mode --use-non-split-fifos
               --use_sim_sram (no ready-valid env; it never shapes RTL)
-  pnr         aha pnr (RV: DENSE_READY_VALID=1 EXHAUSTIVE_PIPE=1; on a thesis
-              fabric DENSE_READY_VALID=1 only: aha pnr then latency-matches the
-              branches itself and aha test starts the run flush-first)
+  pnr         aha pnr (RV: DENSE_READY_VALID=1, no PnR pipelining: aha pnr then
+              latency-matches the branches itself and aha test starts the run
+              flush-first; --rv-balance N keeps the older EXHAUSTIVE_PIPE=1 flow
+              with this script's own balancing loop)
   test        aha test with DUMP_ARGS = probes of every placed MEM/PE tile's
               ports (-> run.vcd) and of each MEM tile's lake controller
               (-> core.vcd); aha test's own gold compare must pass
@@ -61,9 +62,13 @@ import time
 from pathlib import Path
 
 RV_MAP_ENV = {"DENSE_READY_VALID": "1", "PIPELINED": "0", "MATCH_BRANCH_DELAY": "0"}
-RV_PNR_ENV = {"DENSE_READY_VALID": "1", "EXHAUSTIVE_PIPE": "1"}
+# RV runs balanced (user direction 2026-10-25): no PnR pipelining, so aha pnr latency-matches
+# every PE join (aha/util/rv_balance.py) and RV runs at the static rate (down_sample 4150 vs
+# 4149 ns static, 7083 with EXHAUSTIVE_PIPE). The older loop (--rv-balance) needs EXHAUSTIVE_PIPE.
+RV_PNR_ENV = {"DENSE_READY_VALID": "1"}
+RV_EXHAUSTIVE_PNR_ENV = {"DENSE_READY_VALID": "1", "EXHAUSTIVE_PIPE": "1"}
 # thesis fabrics run RV without PnR pipelining: aha pnr balances by default
-THESIS_RV_PNR_ENV = {"DENSE_READY_VALID": "1"}
+THESIS_RV_PNR_ENV = RV_PNR_ENV   # the thesis fabrics always ran this way
 RV_VARS = ("DENSE_READY_VALID", "PIPELINED", "MATCH_BRANCH_DELAY", "EXHAUSTIVE_PIPE")
 SCOPE = "top.dut.Interconnect_inst0"
 TILE_DESIGNS = {"m": "Tile_MemCore", "p": "Tile_PE"}
@@ -464,7 +469,9 @@ def main():
     p.add_argument("--env", action="append", default=[], metavar="KEY=VAL",
                    help="extra env for halide/map/pnr/test (e.g. HL_TARGET=..., EXT=mat)")
     p.add_argument("--rv-balance", type=int, default=0, metavar="N",
-                   help="RV only: after PnR, model the routed design's throughput "
+                   help="RV only, the older flow: PnR WITH EXHAUSTIVE_PIPE=1 (without this "
+                        "flag RV runs without PnR pipelining and aha pnr latency-matches "
+                        "the branches itself); after PnR, model the routed design's throughput "
                         "(rv_throughput.py); while below full rate, latency-match its "
                         "reconvergent branches (pass-through registers via "
                         "hooks/rv_balance_branches.py, PE primitive output FIFOs for odd "
@@ -596,7 +603,7 @@ def main():
     log(f"garnet.v md5 {gv_md5}")
 
     # 5. pnr
-    rv_pnr_env = THESIS_RV_PNR_ENV if args.thesis else RV_PNR_ENV
+    rv_pnr_env = RV_EXHAUSTIVE_PNR_ENV if args.rv_balance else RV_PNR_ENV
     test_env = dict(spec_env, LAKE_COLLATERAL_JSON_MEM=str(coll), **(rv_pnr_env if rv else {}))
     test_env.update(user_env)
     if pond_coll:

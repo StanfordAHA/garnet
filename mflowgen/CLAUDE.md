@@ -1388,8 +1388,18 @@ Failures (OPEN_ISSUES ids):
   `aha pnr`'s reschedule: one clash at cycle 258; its bundle passed because the dropped read was of
   a zero. These fw1-sp static bundles cannot be regenerated.
 - fw1 single-port RV (`garnet/fw1-sp-rv-netlist`), every app incl. pond matmul: PnR KeyError in
-  `mapper/netlist_util.py` (an unconnected 1-bit `delay_reg` from clockwork, then an output
-  `$reg1` missing from `nodes_to_ids`). Not bandwidth: lake's RV single-port arbiter would cope.
+  `mapper/netlist_util.py`. FIXED 2026-10-24 (session 43d74890; garnet `visited_register_pairs`, test
+  `tests/test_netlist_util`): fw1 collaterals have load/store latency 1, so clockwork delays the output
+  op's start (`stencil_valid` -> `write_start`) through a 1-bit `corebit.reg delay_reg_*`; dense RV
+  removes that output valid path downstream of clockwork, leaving the register with no connections, and
+  `FixInputsOutputAndPipeline` never visits it -> KeyError RegisterSource. The earlier patch (skip
+  unvisited sources and sinks separately) then broke the pairing: IODag zips register sources with sinks
+  by POSITION, so every later pair shifted and the output IO's last pipeline register (`..._write_0$reg1`)
+  lost its ID (the "second" KeyError was this, not a separate bug). Dropping the pair as a whole fixes
+  both. Bit-accurate on RTL (gen_app_bundle, 16x16): conv_3_3 8266 ns, gaussian 12760, pond matmul_rvtry3
+  13381 on fw1_dw16_sc4096_sp_in1_out1_rv; conv_3_3 8273 on fw1_dw16_sc8192_sp_in2_out2_dim4_msw1024_rv.
+  conv/gaussian/matmul static fw4 = 4149/6389/9260 ns, so the single-port line buffers run at about half
+  rate (lake's RV arbiter shares the one SRAM port); the pond matmul is not SRAM-bound (13364 on fw4 RV).
 - Static pond matmul on fw8 sc32768 and fw4 vc4 (`clockwork/static-matmul-wide-mem`): wrong
   output; RV passes. FIXED 2026-10-18 in clockwork `ubuffer.cpp` (038a82bc; see clockwork/CLAUDE.md
   "Static TB capacity"): both configs bit-accurate in a full-flow re-run (9260 ns); bundles re-recorded
@@ -1819,6 +1829,18 @@ rows at the output vs up front through the MEM's filter path; lake CLAUDE.md §6
   FIFO depth did not change any rate).
 
 ### RV branch balancing: `gen_app_bundle.py --rv-balance N` (2026-10-14, session cfc4174c)
+
+**Default for every RV compilation since 2026-10-25 (user direction; session 43d74890).**
+gen_app_bundle.py runs RV PnR without EXHAUSTIVE_PIPE on every fabric (`RV_PNR_ENV` =
+`DENSE_READY_VALID=1` only), so `aha pnr` latency-matches the joins itself
+(aha/util/rv_balance.py) and `aha test` starts balanced apps flush-first; the loop below runs
+only with `--rv-balance N`, which brings back EXHAUSTIVE_PIPE=1 (`RV_EXHAUSTIVE_PNR_ENV`). aha's
+sweep_thesis_collateral.py and tests/test_data_width_e2e.py dropped EXHAUSTIVE_PIPE too.
+Stock fabric fw4_dw16_sc8192_sp_in2_out2_vc2_rv, RTL bit-accurate: conv_3_3 4150 ns (static
+4149; 1 round, 10 padding registers), tests/down_sample 4150 ns (static 4149; was 7083 with
+EXHAUSTIVE_PIPE; 1 round, 4 registers). `aha regress` still sets EXHAUSTIVE_PIPE=1 for its RV
+apps (regress_util.py): switching it needs a regression run in the shared /aha (its paths are
+hardwired there).
 
 Dense RV runs below one token per cycle whenever a fork's branches rejoin at a PE with
 different latencies. Root cause and mechanics are in archipelago CLAUDE.md "Dense RV

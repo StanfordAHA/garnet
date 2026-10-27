@@ -606,6 +606,23 @@ BitRegisterSource, BitRegisterSink = Common.create_dag_node(
 )
 
 
+def visited_register_pairs(sources, sinks, node_map):
+    """Mapped (sources, sinks) of the register pairs whose source AND sink were
+    visited.
+
+    A register whose output drives nothing is never visited from the outputs:
+    dense ready-valid removes the output valid path, which leaves a static
+    control delay_reg dangling on fw1 (lake_dp) collaterals. Such a pair is
+    dropped as a whole, because IODag pairs register sources with sinks by
+    position: filtering the two lists separately shifts every later pair (an
+    output IO's pipeline register then lost its ID, KeyError in
+    create_netlist_info).
+    """
+    pairs = [(s, k) for s, k in zip(sources, sinks)
+             if s in node_map and k in node_map]
+    return [node_map[s] for s, _ in pairs], [node_map[k] for _, k in pairs]
+
+
 class FixInputsOutputAndPipeline(Visitor):
     def __init__(
         self,
@@ -661,8 +678,8 @@ class FixInputsOutputAndPipeline(Visitor):
         self.dag_sources = dag.sources
         self.dag_sinks = dag.sinks
         self.run(dag)
-        real_sources = [self.node_map[s] for s in self.dag_sources[1:]]
-        real_sinks = [self.node_map[s] for s in self.dag_sinks[1:]]
+        real_sources, real_sinks = visited_register_pairs(
+            self.dag_sources[1:], self.dag_sinks[1:], self.node_map)
         return IODag(
             inputs=self.inputs,
             outputs=self.outputs,
