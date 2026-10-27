@@ -1726,6 +1726,10 @@ rows at the output vs up front through the MEM's filter path; lake CLAUDE.md §6
   `--i-delay-ns` / `--pt-i-delay-frac` override), and `--clocks-from <thesis_clocks.json | thesis_fmax
   out dir>` clocks each thesis fabric at its own (mode, data width) clock, read with
   sweep_specs._thesis_clock_table; stock bundles keep --clock-mhz. run_meta.json records the clock.
+  `--pe-registered-operands` (2026-10-26, session bc48e85f) gives a static thesis Tile_PE the
+  thesis_tiles_pe constraints (PE_OPERANDS_REGISTERED=1, TILE_O_DELAY_NS 0.24); pass it whenever
+  the tile set and its clock table used registered operands (thesis_tiles_pe always does, and
+  `--clocks-from <dir>` takes the regops static PE limit when thesis_fmax_pe_regops is there).
 - Parallel tile replays (2026-10-22, session 1fa8a391): each post-*-power step replays its tiles one
   after another (~4 min per tile on gf12; a 16x16 harris variant has ~175-230 tiles, so a PE
   workspace took 12-15 h). `cgra_app_power.py --replay-jobs N` (env `REPLAY_TILE_JOBS`, also
@@ -2621,7 +2625,9 @@ Recipes (all write under one --out-dir; `--clocks-from <that dir>` reads the pro
 1. `thesis_fmax`: `thesis_fmax_mem` (spec set `thesis_mem_widths`: the chosen MemTile pair at
    `THESIS_WIDTH_POINTS`, dw16 = fw4 4 KB design point, dw8/32 fw4 sc8192, dw64 fw2 sc8192) +
    `thesis_fmax_pe` (`thesis_pe_widths`: the same specs, options included, so the PE tile's
-   pond is gated as in the CGRA, garnet c9c6da9b), synthesis at 1000 MHz: 16 builds.
+   pond is gated as in the CGRA, garnet c9c6da9b), synthesis at 1000 MHz: 16 builds, plus
+   `thesis_fmax_pe_regops` (4 static PEs timed with registered operands, garnet 6f0b1485) = 20.
+   `--clocks-from <out>` takes the regops limits for static Tile_PE when that subdir exists.
 2. `thesis_tiles` (needs --clocks-from): `thesis_tiles_mem` (the dw16 MemTile pair, preset
    `thesis_design_point`, PnR + idle/active power) + `thesis_tiles_pe` (PE pair at 4 widths, PnR).
 3. `thesis_dse_reduced` (92 configs, 16 PnR) and `thesis_dse` (248 configs, 38 PnR): spec set
@@ -2634,6 +2640,36 @@ Recipes (all write under one --out-dir; `--clocks-from <that dir>` reads the pro
    PnR anchors per (mode, width): `_DSE_FIT` (dw16 = the dw16_fit8 geometries, others 3 each) and
    `_DSE_VAL` held out (dw16 = design point + dw16_val4 geometries, others 1 static + 1 RV).
    Reduced = dw16 fit + design point + the other widths' held-out tiles (projected from dw16).
+- **Final thesis data set (plan 2026-10-25/26, session bc48e85f; every form dry-run on garnet
+  4bef22b0+).** User 2026-10-26: keep the RV tile output FIFOs (they add little; estimate their
+  removal later from the tile-set per-block area/power), no RV comparator trim, app bundles for all 8
+  lake DESIGNS_SINGLE_LEVEL points (dw8/dw32 included; camera_pipeline_2x2 on a bigger array if 16x16
+  does not place, since power replays single tiles), whole-CGRA power with `--pe-registered-operands`
+  (the user expects the Cond rewrite may make the bypass-path static clock close enough; the
+  thesis_fmax probe measures both).
+  - State: /nsim/mstrange/BUILDS/thesis_dse holds thesis_fmax (10-23) + regops (10-25),
+    thesis_tiles_mem and the full thesis_dse (10-25) at static 570/490/470/425, RV 670/570/540/480
+    MHz. lassen thesis 0f44a74 (Cond as an AND-OR select, 10-26) changes every PE's RTL (gen_rtl
+    fetches lassen `thesis` at RTL time), so every PE probe, PE tile and app bundle before it is
+    stale. MemTile RTL has no lassen, so the 10-25 MemTile builds only go stale if the re-probed
+    clocks differ.
+  - Order (`OUT=/nsim/mstrange/BUILDS/thesis_final`; gen_rtl also fetches lake, canal and gemstone,
+    so hold RTL-affecting pushes to those and to lassen until the bundles and tiles are built):
+    1. `--recipe thesis_fmax --out-dir $OUT --config-jobs 8 --zip --zip-slim` (20 synth probes)
+    2. If the new table equals the old one, keep the 10-25 thesis_dse; else rebuild it below.
+    3. `--recipe thesis_tiles --out-dir $OUT --clocks-from $OUT --rtl-only --config-jobs 8`, then the
+       same without `--rtl-only`, with `--config-jobs 4 --zip --zip-slim` (config-jobs = PnRs)
+    4. (if rebuilding) `--recipe thesis_dse ... --rtl-only --skip-existing --config-jobs 8`, then
+       `--recipe thesis_dse --out-dir $OUT --clocks-from $OUT --config-jobs 6 --pnr-jobs 4
+       --skip-existing --zip --zip-slim` (the zip holds all 248 configs)
+    5. /aha: lake `python3 -m THESIS.apps.garnet_configs --commands` (lake THESIS/apps/
+       CGRA_APP_POWER.md §2a) with GARNET_REV = the build machine's garnet; then
+       `cgra_app_power.py --any-config --variants ... --clocks-from $OUT/thesis_tiles_pe/thesis_clocks.json
+       --pe-registered-operands --replay-jobs 4 --zip` (§2b).
+  - gen_app_bundle refuses a bundle without "comparison passed": u16 apps on the dw8/dw32 points
+    record only where their outputs still match the 16-bit gold (Halide-to-Hardware/CLAUDE.md "Test
+    apps for other CGRA data widths"). A camera bundle on a bigger array has a bigger `array_tiles`,
+    so compare its app_W, not array_W.
 - `THESIS_PART_DIRS`: thesis_tiles_mem, thesis_dse_reduced_mem and thesis_dse_mem all build in
   `<out>/thesis_dse_mem`, so a later part with `--skip-existing` (not `--fresh`) only builds what
   is missing. `THESIS_CLOCKED_PARTS` refuse to run without --clocks-from / --clock-mhz.

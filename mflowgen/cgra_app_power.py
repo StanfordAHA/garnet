@@ -119,6 +119,11 @@ def parse_args(argv=None):
                    help="pass-through input delay as F x period (env PT_I_DELAY_FRAC). Default: "
                         f"{THESIS_PT_I_DELAY_FRAC:g} for thesis bundles (as the thesis tile recipes), "
                         "the fixed 0.7 ns otherwise")
+    p.add_argument("--pe-registered-operands", action="store_true",
+                   help="time a static THESIS bundle's Tile_PE with registered operands, as "
+                        "sweep_specs.py --pe-registered-operands does for thesis_tiles_pe (env "
+                        "PE_OPERANDS_REGISTERED=1, TILE_O_DELAY_NS); pass it when the tile set and "
+                        "the --clocks-from table used it. RV, MemCore and stock tiles are unchanged")
     p.add_argument("--flatten-effort", type=int, default=None, help="env FLATTEN")
     p.add_argument("--sram-cell-re", default=r"^IN12LP_",
                    help="cell-report reference names counted as SRAM macro (default gf12 "
@@ -205,7 +210,8 @@ def tile_env(tile, ws, man, variants, config, args):
     build (_tile_env), plus the variants."""
     env = os.environ.copy()
     for k in ("APP_BUNDLE", "RTL_POWER", "MEMTILE_POWER", "LAKE_SPEC_CONFIG", "LAKE_SPEC_MODE",
-              "LAKE_POND_SPEC_CONFIG", "THESIS_FABRIC", "TILE_I_DELAY_NS", "PT_I_DELAY_FRAC"):
+              "LAKE_POND_SPEC_CONFIG", "THESIS_FABRIC", "TILE_I_DELAY_NS", "PT_I_DELAY_FRAC",
+              "PE_OPERANDS_REGISTERED", "TILE_O_DELAY_NS"):
         env.pop(k, None)
     spec = man["spec_config"]
     # a bundle recorded with a PE-tile spec pond (gen_app_bundle.py --pond-spec)
@@ -234,6 +240,11 @@ def tile_env(tile, ws, man, variants, config, args):
         env["TILE_I_DELAY_NS"] = f"{i_delay:g}"
     if pt_frac is not None:
         env["PT_I_DELAY_FRAC"] = f"{pt_frac:g}"
+    # static thesis PE with registered operands: the Tile_PE constraints of thesis_tiles_pe
+    if (getattr(args, "pe_registered_operands", False) and thesis and man["mode"] == "static"
+            and tile == "Tile_PE"):
+        env["PE_OPERANDS_REGISTERED"] = "1"
+        env["TILE_O_DELAY_NS"] = f"{sweep_specs().THESIS_O_DELAY_NS:g}"
     env["DUAL_PORT"] = "True" if spec.get("dual_port", False) else "False"
     env["USE_NON_SPLIT_FIFOS"] = "True"
     env["USE_SIM_SRAM"] = "False"
@@ -269,7 +280,8 @@ def build_tile(tile, config, variants, man, args, status):
             env = tile_env(tile, ws, man, variants, config, args)
             for k in ("LAKE_SPEC_CONFIG", "LAKE_SPEC_MODE", "LAKE_POND_SPEC_CONFIG", "THESIS_FABRIC",
                       "DUAL_PORT", "APP_BUNDLE_VARIANTS", "CLOCK_PERIOD", "clock_period_PE",
-                      "TILE_I_DELAY_NS", "PT_I_DELAY_FRAC", "FLATTEN", "REPLAY_TILE_JOBS"):
+                      "TILE_I_DELAY_NS", "PT_I_DELAY_FRAC", "PE_OPERANDS_REGISTERED",
+                      "TILE_O_DELAY_NS", "FLATTEN", "REPLAY_TILE_JOBS"):
                 if k in env:
                     print(f"    [{config}/{tile}] env {k}={env[k]}")
             print(f"    [{config}/{tile}] $ mflowgen run --design {MFLOWGEN_DIR / tile}; "

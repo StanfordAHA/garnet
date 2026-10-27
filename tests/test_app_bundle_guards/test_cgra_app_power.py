@@ -470,6 +470,29 @@ def test_thesis_tiles_get_the_recipes_input_delays(tmp_path, man, argv, want):
     assert (env.get("TILE_I_DELAY_NS"), env.get("PT_I_DELAY_FRAC")) == want
 
 
+@pytest.mark.parametrize("tile,mode,thesis,argv,want", [
+    ("Tile_PE", "static", True, ["--pe-registered-operands"], ("1", "THESIS")),
+    ("Tile_PE", "static", True, [], (None, None)),
+    ("Tile_PE", "rv", True, ["--pe-registered-operands"], (None, None)),
+    ("Tile_MemCore", "static", True, ["--pe-registered-operands"], (None, None)),
+    ("Tile_PE", "static", False, ["--pe-registered-operands"], (None, None)),   # stock fabric
+])
+def test_pe_registered_operands_as_thesis_tiles_pe(tmp_path, monkeypatch, tile, mode, thesis, argv,
+                                                   want):
+    """--pe-registered-operands constrains a static thesis Tile_PE like sweep_specs'
+    thesis_tiles_pe (PE_OPERANDS_REGISTERED + TILE_O_DELAY_NS); nothing else, and a
+    value left in the caller's environment never leaks into a tile."""
+    monkeypatch.setenv("PE_OPERANDS_REGISTERED", "1")
+    monkeypatch.setenv("TILE_O_DELAY_NS", "9")
+    args = cap.parse_args(["--out-dir", str(tmp_path)] + argv)
+    args.clocks = None
+    man = dict(THESIS_MAN, mode=mode, **({"thesis": mode} if thesis else {}))
+    env = cap.tile_env(tile, tmp_path, man, [("A", tmp_path)], "cfg", args)
+    if want[1] == "THESIS":
+        want = (want[0], f"{cap.sweep_specs().THESIS_O_DELAY_NS:g}")
+    assert (env.get("PE_OPERANDS_REGISTERED"), env.get("TILE_O_DELAY_NS")) == want
+
+
 def test_thesis_delays_match_the_recipes():
     ss = cap.sweep_specs()
     flags = ss._THESIS_TILE_FLAGS
