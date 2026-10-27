@@ -95,6 +95,22 @@ def sweep_config(name):
     sys.exit(f"*** no config {name} in sweep_specs.py's spec sets (sweep_specs.py --list)")
 
 
+def pond_collateral_spec(pond_spec, mem_spec, work):
+    """The pond spec to generate the pond's compiler collateral from. A pond spec
+    without data_width gets the MEM spec's: garnet builds the pond at the fabric's
+    width (cgra/util_onyx.load_pond_spec_params), but lake.utils.pond_collateral
+    defaults to 16 bits, and `aha map` refuses a pond collateral narrower or wider
+    than the MEM's (every dw8/dw32 bundle with --pond-spec {} failed there). The
+    recorded pond spec is unchanged."""
+    p = json.loads(Path(pond_spec).read_text())
+    dw = json.loads(Path(mem_spec).read_text()).get("data_width")
+    if dw is None or "data_width" in p:
+        return pond_spec
+    out = Path(work) / "pond_spec_collateral.json"
+    out.write_text(json.dumps(dict(p, data_width=dw), indent=2, sort_keys=True))
+    return out
+
+
 def spec_garnet_flags(spec_path):
     """garnet.py flags a spec needs beyond --lake-spec-config: a dual-port spec
     also needs --dual-port (lake resolve_memports IndexErrors without it; the
@@ -568,7 +584,8 @@ def main():
                            "--spec", spec, "-o", coll], base, work, logs)
         if pond_coll:
             run("pond_collateral", [sys.executable, "-m", "lake.utils.pond_collateral",
-                                    "--pond-spec", pond_spec, "-o", pond_coll] + (["--rv"] if rv else []),
+                                    "--pond-spec", pond_collateral_spec(pond_spec, spec, work),
+                                    "-o", pond_coll] + (["--rv"] if rv else []),
                 base, work, logs)
 
     # 2-3. halide + map (ready-valid env reaches clockwork in rv mode)

@@ -641,3 +641,20 @@ def test_kernel_window_and_utilization_columns(tmp_path):
     assert s["mem_sram_busy_frac"] is None
     assert cap.replay_window("1 NS + 0 (stop app_window: tb.saif_window = 1)\n"
                              "Simulation complete via $finish(2) at time 5 NS + 0\n") == pytest.approx(4e-9)
+
+
+@pytest.mark.parametrize("pond,mem,want", [
+    ({}, {"data_width": 8}, {"data_width": 8}),       # dw8 fabric: collateral at 8 bits
+    ({}, {"data_width": 16}, {"data_width": 16}),
+    ({}, {}, {}),                                     # no MEM width: lake's default, as before
+    ({"data_width": 32, "dims": 4}, {"data_width": 32}, {"data_width": 32, "dims": 4}),
+])
+def test_pond_collateral_at_the_mem_width(tmp_path, pond, mem, want):
+    """gen_app_bundle generates the pond collateral at the MEM spec's width when the
+    pond spec leaves it open (garnet builds the pond at the fabric's width); the
+    recorded pond spec itself stays as given."""
+    (tmp_path / "pond.json").write_text(json.dumps(pond))
+    (tmp_path / "mem.json").write_text(json.dumps(mem))
+    got = gab.pond_collateral_spec(tmp_path / "pond.json", tmp_path / "mem.json", tmp_path)
+    assert json.loads(Path(got).read_text()) == want
+    assert json.loads((tmp_path / "pond.json").read_text()) == pond
