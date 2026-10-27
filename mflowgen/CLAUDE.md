@@ -2710,6 +2710,8 @@ trimmed), so the same pair builds the PE tile A/B. Parts: `thesis_cmptrim_mem` (
 idle/active power) and `thesis_cmptrim_pe` (PnR), both clocked (`--clocks-from`); 4 builds.
 Needs lake with the option at origin/THESIS. Test `test_thesis_cmptrim_recipe`,
 `test_rv_pond_inherits_the_comparator_trim`.
+**Not adopted (user decision 2026-10-26, relayed by bc48e85f):** the thesis RV fabric keeps the full
+comparators, so this recipe was never run; it stays for a later A/B.
 
 **First thesis_fmax PE probe (2026-10-23, zip thesis_fmax_pe_r8cad-gf12_20261023-055808_slim,
 0.23 ns input budget, gated-pond PEs; extracted in /aha/sweep_out/thesis_fmax_20261023).** Synthesis
