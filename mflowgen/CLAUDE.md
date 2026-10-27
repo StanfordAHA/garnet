@@ -2624,6 +2624,20 @@ Recipes (all write under one --out-dir; `--clocks-from <that dir>` reads the pro
   `<mode>_dw<N>` when it has 3 fit points (used before the mode's pooled fit). Each fit's val_*
   is its error on the held-out rows in its scope, so pooled vs per-width compare on the same tiles.
 
+**thesis_dse full sweep result (2026-10-25; zip thesis_dse_mem_r8cad-gf12_20261025-173346_slim,
+analysis /aha/sweep_out/thesis_dse_20261025/README.md).** 245/248 PASS at the probe clocks (synth WNS
+>= 0 everywhere; PnR PT WNS -3..-92 ps, RV worst). Held-out PnR error of the per-(mode, width) fits:
+total area <= 1.1%, logic <= 2.8%, active power <= 8.3%, idle power up to 22% (leave-one-out: idle
+fits better pooled per mode, 8% mean / 38% max). Failures:
+- `fw1_dw64_sc4096_sp_in1_out1_nofp_portcg_thesis_rv` (RV dw64 fit tile): Innovus init IMPPTN-970,
+  345 pins on one side vs 341 tracks: the smallest dw64 SRAM gives a die too narrow for the B64 pins
+  (custom-init floorplan sizes width from cell + macro area only). RV dw64 then uses the pooled RV fit.
+- PnR-level active memtile power on fw4 dw8 and fw8 dw32 RV: one output never toggles in the
+  signoff-netlist sim, which runs without SDF (`-notimingchecks`, library specify delays) on a
+  post-CTS netlist; synth level passes. Likely a clock-tree race in that sim, not the design.
+Static vs RV twins (115, synth): total area RV/static median 1.22, logic 1.58 (fw1 +57..+74%, fw2-8
++12..+32%), idle 2.48x, active 1.24x. Design point at PnR: 12,708 vs 13,627 um2 (+7.2%).
+
 **RV comparison-network trim A/B: `--recipe thesis_cmptrim` (2026-10-25, session cfc4174c).**
 lake's opt-in `rv_comparator_trim` (lake CLAUDE.md §6 "(d) Trimmed comparators": one-sided
 comparators, 8-bit scalar + barrier bit, level select over levels 0..2; generic synthesis:
@@ -2687,6 +2701,14 @@ MemTile (static + RV, all four widths) met 1000 MHz (WNS 0), so the PE sets ever
   adds it back to the SB feedthrough budgets). `--recipe thesis_fmax_regops` (part thesis_fmax_pe_regops,
   spec set thesis_pe_widths_static, 4 synth probes) is also in `thesis_fmax`; `--clocks-from` lets a
   *regops* sweep replace the static PE limit; thesis_tiles_pe builds static PEs in this mode.
+  **Result (zip thesis_fmax_pe_regops_r8cad-gf12_20261025-135014_slim, extracted in
+  /aha/sweep_out/thesis_fmax_regops_20261025):** static limits 648 / 554 / 534 / 481 MHz at dw
+  8/16/32/64 (bypass-path probe: 638 / 548 / 525 / 474), clocks 580 / 495 / 480 / 430 (+5..+10 MHz),
+  so the static builds at the old clocks stand. The worst path is now operand register -> bf16 FPU add
+  (dw16) -> serial Cond chain -> res_p -> B1 SB mux -> SB out at 1,565 ps, plus the 240 ps output
+  budget = 1,805 ps. The PE logic is RV's (1.566 ns); the static-vs-RV gap is that output budget, i.e.
+  the assumption that the PE output leaves the tile unregistered. Registering the first hop (an
+  archipelago choice: a cycle of latency) would put static at RV's clock.
   Same report:
   PnR area by cell type and by matched block (Innovus signoff.area.rpt self areas, sums exact) and
   MemTile PT power by block/cell (power.cell; idle is mostly clock tree + gates, RV's extra idle is
