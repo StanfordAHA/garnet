@@ -2655,6 +2655,17 @@ Recipes (all write under one --out-dir; `--clocks-from <that dir>` reads the pro
   point, 8 KB): A0 on `_nofp_portcg_thesis_rv`, A and B on `_ff8_portcg_thesis_rv` (B = `--env
   METAMAPPER_MEM_PORTS=3 --pre-pnr-hook <tree>/garnet/mflowgen/common/application/hooks/
   conv_3_3_eat_rows_up_front.py`; the hook only handles conv_3_3's single line-buffer MEM).
+  - **Re-probe with the Cond rewrite (2026-10-27; `--recipe thesis_fmax --out-dir
+    /nsim/mstrange/BUILDS/thesis_final`, lassen 0f44a74 in every rtl log; zips
+    thesis_fmax_pe{,_regops}_r8cad-gf12_20261027-{025826,062238}_slim, extracted in
+    /aha/sweep_out/thesis_fmax_20261027/zip).** 12/12 PASS. Synth limits, MHz at dw 8/16/32/64:
+    static PE with registered operands 798/668/633/568, without them (bypass path) 785/660/624/552,
+    RV PE 968/779/728/628 (was static regops 648/554/534/481, RV 749/639/602/535). The MemTiles
+    stay >= 1 GHz (10-23 probe; the 10-26 thesis_fmax_mem zip isn't on /aha), so the PE still sets
+    every clock. `_thesis_clock_table` gives static 715/600/565/510 and RV 870/700/650/565 MHz
+    (+18..+30% vs the 10-25 DSE's 570/490/470/425 and 670/570/540/480), so the 10-25 thesis_dse is
+    stale: rebuild it at the new clocks. Registered operands now add only 1-3% (5-15 MHz); the tile
+    set and the power run keep them (user 2026-10-26). RV/static clock ratio 1.22/1.17/1.15/1.11.
   - State: /nsim/mstrange/BUILDS/thesis_dse holds thesis_fmax (10-23) + regops (10-25),
     thesis_tiles_mem and the full thesis_dse (10-25) at static 570/490/470/425, RV 670/570/540/480
     MHz. lassen thesis 0f44a74 (Cond as an AND-OR select, 10-26) changes every PE's RTL (gen_rtl
