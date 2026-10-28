@@ -11,7 +11,9 @@ leaves only when every branch's next FIFO is ready (start-of-cycle counts). MEM 
 pond outputs, the input IO and constant PEs are always-valid sources; MEM and pond
 inputs and the output IO are always-ready sinks (so a pond accumulation loop is not
 modelled). A PE with both outputs used (res, res_p) fires into both. Reports the output
-IO's rate.
+IO's rate. An in-tile core-to-core wire (a pond packed into its PE: the route goes
+PondTop_output -> PE_input with no switch box) holds no padding register: its consumer
+is in Model.fixed, and the plans leave such an input early instead of padding it.
 
 Validated against xrun of conv_3_3 PnR results (A/B, 2026-10-13/14): modelled rates
 0.750 / 0.667 / 0.722 / 0.765 unbalanced and 1.000 balanced = measured.
@@ -77,11 +79,16 @@ class Model:
     def build(self):
         succ = defaultdict(set)
         rmux_in = defaultdict(set)
+        # consumers reached over an in-tile core-to-core wire (PORT -> PORT, no switch box):
+        # no padding register can go on that edge
+        self.fixed = set()
         for net, segs in self.nets.items():
             for seg in segs:
                 ids = [self.node_id(n) for n in seg]
                 for a, b in zip(ids, ids[1:]):
                     succ[a].add(b)
+                    if a[0] == "PORT" and b[0] == "PORT":
+                        self.fixed.add(b)
                     if b[0] == "RMUX":
                         rmux_in[(net, b)].add(a[0])
         # an RMUX reached through its register in one segment and around it in another
@@ -305,7 +312,9 @@ def arrivals(m):
 
 def mismatches(m, arr=None):
     """[(PE input node, stages it arrives before the PE's latest input)] over the
-    non-constant inputs of every PE with two or more of them."""
+    non-constant inputs of every PE with two or more of them, except the inputs on an
+    in-tile core-to-core wire (Model.fixed): they count for the latest input, but no
+    padding can go on them, so they are left early (see early_fixed)."""
     arr = arrivals(m) if arr is None else arr
     out = []
     for xy, pe in m.pes.items():
@@ -314,7 +323,22 @@ def mismatches(m, arr=None):
         ins = [(i, arr.get(i)) for i in pe["in"] if arr.get(i) is not None]
         if len(ins) > 1:
             top = max(a for _, a in ins)
-            out += [(i, top - a) for i, a in ins]
+            out += [(i, top - a) for i, a in ins if i not in m.fixed]
+    return out
+
+
+def early_fixed(m, arr=None):
+    """[(PE input node, stages early)] of the inputs mismatches() leaves out: fed over an
+    in-tile core-to-core wire (a packed pond's output), early, and unpaddable."""
+    arr = arrivals(m) if arr is None else arr
+    out = []
+    for xy, pe in m.pes.items():
+        if m.const_pe(xy):
+            continue
+        ins = [(i, arr.get(i)) for i in pe["in"] if arr.get(i) is not None]
+        if len(ins) > 1:
+            top = max(a for _, a in ins)
+            out += [(i, top - a) for i, a in ins if i in m.fixed and top > a]
     return out
 
 
@@ -384,7 +408,9 @@ def min_register_plan(m):
     FIFOs, a(r) per netlist register, m(p). Constraints: pad(p, c) = a(c) - a(p) - 1 +
     init(c) >= 0 on edges into PE inputs and netlist registers (== 0 elsewhere), every
     non-constant input of a PE at t(PE), its outputs at t(PE) + 1 (+1 with the primitive
-    output FIFO), sources at 0. Minimize sum m(p); the constraint matrix is a network
+    output FIFO), sources at 0. An edge on an in-tile core-to-core wire (Model.fixed)
+    only needs pad >= 0 and is never padded: its input may stay early. Minimize sum
+    m(p); the constraint matrix is a network
     matrix, so the optimum is integral. Falls back to latency_match_plan(m) when scipy
     is missing or the LP fails. Adds the stages to m.
     -> {netlist sink: registers}; consumers of one netlist driver share its chain
@@ -415,16 +441,17 @@ def min_register_plan(m):
     def is_netreg(n):
         inst = n[0] == "REG" and m.netreg.get((n[2], n[3], n[1]))
         return bool(inst) and not inst.startswith(("pnr_pipelining", "rv_balance"))
-    edges = []   # (producer, consumer, may be padded)
+    edges = []   # (producer, consumer, "pad" | "slack" (early allowed, never padded) | "eq")
     for p, cons in m.fanout.items():
         if (p[0] == "PORT" and p[1].startswith("PE_input")) or (arr.get(p) is None and not m.is_source(p)):
             continue
         for c in cons:
             if not m.is_sink(c) and arr.get(c) is not None:
                 pe_in = c[0] == "PORT" and c[1].startswith("PE_input")
-                edges.append((p, c, pe_in or is_netreg(c)))
+                kind = "slack" if c in m.fixed else "pad" if pe_in or is_netreg(c) else "eq"
+                edges.append((p, c, kind))
     ub, ub_rhs, eq, eq_rhs = [], [], [], []
-    for p, c, padded in edges:
+    for p, c, kind in edges:
         (ce, cc), (pe_, pc) = a_expr(c), a_expr(p)
         expr = defaultdict(float)
         for k, x in ce.items():
@@ -432,7 +459,10 @@ def min_register_plan(m):
         for k, x in pe_.items():
             expr[k] -= x
         const = cc - pc - 1 + m.init.get(c, 0)   # pad = expr + const
-        if padded:
+        if kind == "slack":
+            ub.append({k: -x for k, x in expr.items()})      # pad >= 0, never realized
+            ub_rhs.append(const)
+        elif kind == "pad":
             ub.append({k: -x for k, x in expr.items()})      # pad >= 0
             ub_rhs.append(const)
             row = dict(expr)                                  # pad <= m(p)
@@ -464,7 +494,7 @@ def min_register_plan(m):
     def value(n):
         e, c0 = a_expr(n)
         return int(sum(x[k] * cf for k, cf in e.items()) + c0)
-    pads = [(c, value(c) - value(p) - 1 + m.init.get(c, 0)) for p, c, padded in edges if padded]
+    pads = [(c, value(c) - value(p) - 1 + m.init.get(c, 0)) for p, c, kind in edges if kind == "pad"]
     plan = {}
     for c, d in pads:
         if d > 0:

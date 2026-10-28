@@ -1909,6 +1909,11 @@ branches to match exactly at every join (conv_3_3: A 0.750, B 0.667 before).
   - MEM inputs are not balanced, since a MEM decouples them.
   - Not wired into `aha regress`. `aha pnr --rv-balance N` runs it without PnR pipelining
     (below).
+  - A packed pond's output into its own PE is an in-tile wire (route `PondTop_output ->
+    PE_input`, no switch box) that holds no register: `Model.fixed`; the plans leave such an
+    input early (`early_fixed` lists them) instead of padding it (2026-10-28, found by session
+    08555638 on resnet_pond with its pack_ponds fix: padding there made netlist creation fail
+    with `KeyError: 'rv_balance_...'`). Plans without an early packed-pond input are unchanged.
   - 1-bit edges (a PE's `O1` / `bit*`, corebit nets) are padded with `corebit.reg` since
     2026-10-18; before that the hook rejected plans that padded them (harris_color).
 - Without EXHAUSTIVE_PIPE (2026-10-17, archipelago/CLAUDE.md "RV without EXHAUSTIVE_PIPE"):

@@ -398,6 +398,43 @@ def test_rv_throughput_latency_match_unpipelined(tmp_path):
     assert m.run(2000, 500)[0] >= 0.995           # both of pa's outputs feed mac
 
 
+def test_min_register_plan_leaves_a_packed_pond_input_early(tmp_path):
+    """mac (5,5) takes its packed pond's output on data0 over the in-tile wire (route
+    PondTop_output -> PE_input, no switch box), the input IO on data1 and pa -> pb on data2:
+    data0 and data1 arrive 4 stages early. Only data1 is padded; data0 stays early (no
+    register fits on the in-tile wire: a padding register there broke the netlist,
+    resnet_pond 2026-10-28) and mismatches() leaves it out."""
+    def net(name, src, sink, direct=False):
+        mid = [] if direct else [f"SB ({name[1:]}, 1, 1, 0, 1, 16)"]
+        return [f"Net ID: {name} Segment Size: 1", f"Segment: 0 Size: {2 + len(mid)}", src] + mid + [sink, ""]
+
+    def pe_in(x, k):
+        return f"PORT PE_input_width_16_num_{k} ({x}, {x}, 16)"
+
+    def pe_out(x):
+        return f"PORT PE_output_width_16_num_0 ({x}, {x}, 16)"
+    lines = (net("e1", "PORT PondTop_output_width_16_num_0 (5, 5, 16)", pe_in(5, 0), direct=True)
+             + net("e2", "PORT io2f_16 (0, 0, 16)", pe_in(5, 1))
+             + net("e3", "PORT io2f_16 (2, 0, 16)", pe_in(3, 0))
+             + net("e4", pe_out(3), pe_in(4, 0))
+             + net("e5", pe_out(4), pe_in(5, 2))
+             + net("e6", pe_out(5), "PORT f2io_16 (1, 0, 16)"))
+    (tmp_path / "design.route").write_text("\n".join(lines) + "\n")
+    (tmp_path / "design.place").write_text("Block Name X Y #Block ID\n---\npa 3 3 #p0\npb 4 4 #p1\n"
+                                           "mac 5 5 #p2\nin 0 0 #I0\nin2 2 0 #I2\no1 1 0 #I1\n")
+    (tmp_path / "design_top.json").write_text(json.dumps(
+        {"top": "global.app", "namespaces": {"global": {"modules": {"app": {"instances": {}, "connections": []}}}}}))
+    m = rtm.model_of(str(tmp_path))
+    data0 = ("PORT", "PE_input_width_16_num_0", 5, 5)
+    assert m.fixed == {data0}
+    assert data0 not in dict(rtm.mismatches(m)) and rtm.early_fixed(m) == [(data0, 4)]
+    plan = rtm.plan_by_instance(m, rtm.min_register_plan(m))
+    assert plan == {"mac.data1": 4}
+    assert not any(d for _, d in rtm.mismatches(m)) and m.run(2000, 500)[0] >= 0.995
+    m2 = rtm.model_of(str(tmp_path))
+    assert rtm.plan_by_instance(m2, rtm.latency_match_plan(m2)) == {"mac.data1": 4}
+
+
 def test_min_register_plan_and_shared_chain(tmp_path):
     """IO forks to pa (3,3) and straight to mac1.data1 / mac2.data1; pa -> pb -> mac1.data0
     and mac2.data0. Both direct inputs arrive 4 stages early: 4 registers each, which one
