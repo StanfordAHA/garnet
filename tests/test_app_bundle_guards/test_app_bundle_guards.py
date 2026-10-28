@@ -624,6 +624,22 @@ def test_gen_app_bundle_rv_pnr_is_balanced():
     assert gab.RV_EXHAUSTIVE_PNR_ENV["EXHAUSTIVE_PIPE"] == "1"
 
 
+def test_private_tree_keeps_map_headers_private(tmp_path):
+    """`make map` copies headers to $(METAMAPPER_PATH)/../garnet/headers: in a private
+    tree that must be the tree's own garnet, never the shared /aha one."""
+    gab = load(APP / "gen_app_bundle.py", "gen_app_bundle")
+    assert gab.private_tree_env("/aha") == {}
+    tree = tmp_path / "tree"
+    (tree / "MetaMapper").mkdir(parents=True)
+    env = gab.private_tree_env(tree)
+    assert env == {"METAMAPPER_PATH": str(tree / "MetaMapper")}
+    linked = tmp_path / "linked"
+    linked.mkdir()
+    (linked / "MetaMapper").symlink_to(tree / "MetaMapper")
+    with pytest.raises(SystemExit, match="symlink"):
+        gab.private_tree_env(linked)
+
+
 def test_cgra_app_power_thesis_bundle_tiles(tmp_path):
     """A thesis bundle replays on thesis tiles: THESIS_FABRIC for both tile graphs,
     and the spec for Tile_PE too (garnet.py --thesis needs it in both modes)."""

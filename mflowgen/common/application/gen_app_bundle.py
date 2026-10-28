@@ -111,6 +111,25 @@ def pond_collateral_spec(pond_spec, mem_spec, work):
     return out
 
 
+def private_tree_env(aha_dir):
+    """Env that keeps hw_support's header copies inside a private aha tree.
+
+    `make map` copies the app's *_header.json to $(METAMAPPER_PATH)/../garnet/headers/.
+    METAMAPPER_PATH defaults to a path derived from Halide-to-Hardware's real location, so
+    in a tree whose Halide-to-Hardware links to /aha the copies landed in the shared
+    /aha/garnet (other data widths' headers on 2026-10-28). The tree's MetaMapper must be a
+    real directory: `..` of a symlink is its target's parent.
+    """
+    aha_dir = Path(aha_dir)
+    if aha_dir.resolve() == Path("/aha"):
+        return {}
+    mm = aha_dir / "MetaMapper"
+    if mm.is_symlink():
+        sys.exit(f"*** {mm} is a symlink: make it a real directory (its entries may be links), "
+                 "or `make map` writes the app's headers into the garnet beside its target")
+    return {"METAMAPPER_PATH": str(mm)}
+
+
 def spec_garnet_flags(spec_path):
     """garnet.py flags a spec needs beyond --lake-spec-config: a dual-port spec
     also needs --dual-port (lake resolve_memports IndexErrors without it; the
@@ -557,7 +576,7 @@ def main():
     base = dict(os.environ)
     for k in RV_VARS:
         base.pop(k, None)
-    base.update(GARNET_HOME=str(garnet), TOOL="XCELIUM")
+    base.update(GARNET_HOME=str(garnet), TOOL="XCELIUM", **private_tree_env(aha_dir))
     user_env = dict(kv.partition("=")[::2] for kv in args.env)
     base.update(user_env)
     spec_env = dict(base, LAKE_SPEC_CONFIG=str(spec), LAKE_SPEC_MODE=args.mode,

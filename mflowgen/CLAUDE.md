@@ -1278,6 +1278,15 @@ in the shared /aha (`..` of a symlinked dir is its real parent, and `cp` onto a 
 its target). At dw16 that is harmless (same content as HEAD), but on 2026-10-22 a16b3973's
 dw 8/32/64 runs put other widths' headers there for about 20 minutes. Template: scratchpad
 a16b3973 `thesis_dw/make_tree.sh`.
+A real MetaMapper dir is not enough when Halide-to-Hardware is a link to /aha. `METAMAPPER_PATH`
+defaults to `$(CLOCKWORK_DIR)/../MetaMapper`, and `CLOCKWORK_DIR` to a path derived from
+hw_support's real location (`/aha/clockwork`), so the garnet copy still went to /aha/garnet/headers.
+aha exports only `CLOCKWORK_PATH`, which is why the clockwork copy stayed private. On 2026-10-28
+the thesis dw32 re-runs left 32-bit io/lassen/mem headers in the shared garnet (restored).
+gen_app_bundle.py now exports `METAMAPPER_PATH=<tree>/MetaMapper` for any `--aha-dir` other than
+/aha (`private_tree_env`), and stops if that MetaMapper is a symlink. Checked: `aha map` in such a
+tree writes `<tree>/garnet/headers` and leaves /aha/garnet's untouched. Any other private-tree
+flow (e.g. aha tests/test_data_width_e2e.py) needs the same export.
 A dual-port spec (`dual_port: true`) also gets garnet's `--dual-port` for the build
 and `aha pnr` (`spec_garnet_flags`, 2026-10-14; lake `resolve_memports` IndexErrors
 without it; the tile graphs get it from `DUAL_PORT`): conv_3_3 on
