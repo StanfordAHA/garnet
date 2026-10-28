@@ -1285,8 +1285,9 @@ aha exports only `CLOCKWORK_PATH`, which is why the clockwork copy stayed privat
 the thesis dw32 re-runs left 32-bit io/lassen/mem headers in the shared garnet (restored).
 gen_app_bundle.py now exports `METAMAPPER_PATH=<tree>/MetaMapper` for any `--aha-dir` other than
 /aha (`private_tree_env`), and stops if that MetaMapper is a symlink. Checked: `aha map` in such a
-tree writes `<tree>/garnet/headers` and leaves /aha/garnet's untouched. Any other private-tree
-flow (e.g. aha tests/test_data_width_e2e.py) needs the same export.
+tree writes `<tree>/garnet/headers` and leaves /aha/garnet's untouched. aha's
+tests/test_data_width_e2e.py does the same since 2026-10-28 (a16b3973). Any other private-tree
+flow with Halide-to-Hardware linked to /aha needs it too.
 A dual-port spec (`dual_port: true`) also gets garnet's `--dual-port` for the build
 and `aha pnr` (`spec_garnet_flags`, 2026-10-14; lake `resolve_memports` IndexErrors
 without it; the tile graphs get it from `DUAL_PORT`): conv_3_3 on
@@ -2713,7 +2714,10 @@ Recipes (all write under one --out-dir; `--clocks-from <that dir>` reads the pro
       (OPEN_ISSUES clockwork/static-fw1-dp-stencil). The MEMs are exact delay lines. A per-tap fit of
       the hardware's pre-shift sum shows the 9 compute taps misaligned by 1-5 cycles, with or without
       `--pipeline-pnr`. Only fw1 (one output per `lake_dp` bank) gets 10 `hw_input` d_reg shift registers.
-    - resnet on the 1-input points, S+R: `aha pnr` KeyError 'data_in_1' (clockwork/resnet-one-input-mem).
+    - resnet on the 1-input points, S+R: `aha pnr` KeyError 'data_in_1' (clockwork/resnet-one-input-mem):
+      the MEM-accumulator resnet needs two MEM writers. The per-spec rule's pond variant
+      (`apps/resnet_pond`) does not route on the thesis fabric yet: an unpacked pond's output 0 is
+      inter-core only (OPEN_ISSUES garnet/thesis-unpacked-pond-output; all 4 tries 2026-10-28).
     - resnet STATIC on fw2 dp (dw16 and dw32): 84/2352 low (clockwork/static-fw2-dp-resnet).
     - Expected u16-vs-16-bit-gold gaps: camera at dw32 S+R (1 value: a 16-bit wrap clamps to 0 in the
       gold, 255 on hardware), dw8 harris (457) and unsharp (40535), dw8 camera halide "Bad slice args".
