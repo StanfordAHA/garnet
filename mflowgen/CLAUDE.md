@@ -2682,6 +2682,21 @@ Recipes (all write under one --out-dir; `--clocks-from <that dir>` reads the pro
     record only where their outputs still match the 16-bit gold (Halide-to-Hardware/CLAUDE.md "Test
     apps for other CGRA data widths"). A camera bundle on a bigger array has a bigger `array_tiles`,
     so compare its app_W, not array_W.
+  - **Recorded 2026-10-26..28 (session 1fa8a391): 64/84 bundles + conv_3_3 fp_ab 6/6.** Packed as
+    `/aha/sweep_out/app_bundles_thesis_dp.tgz` and `app_bundles_thesis_fp_ab.tgz` (plain .vcd inside;
+    `STATUS.txt` in the root has the matrix). Lake THESIS 8b0f2edc snapshot, GARNET_REV 9573a704 plus
+    d79e37b7's gen_app_bundle.py. Camera is on 28x16 everywhere (16x16 never placed). Harris and unsharp
+    at dw32 need `--glb-tile-mem-size 256`: at 128 their 32-bit input (69-71 KB) overruns a 64 KB GLB bank
+    and the testbench's GLB check stops `make sim` (exit 2). Camera sims take ~1h15m, and on fw2_dw32
+    dp longer than gen_app_bundle's default `--test-timeout` 5400 (it was re-run with 10800). The 20 gaps:
+    - fw1_dw16_sc4096_dp_in1_out1 STATIC gaussian/unsharp/harris/camera: not bit-accurate, RV passes
+      (OPEN_ISSUES clockwork/static-fw1-dp-stencil). The MEMs are exact delay lines. A per-tap fit of
+      the hardware's pre-shift sum shows the 9 compute taps misaligned by 1-5 cycles, with or without
+      `--pipeline-pnr`. Only fw1 (one output per `lake_dp` bank) gets 10 `hw_input` d_reg shift registers.
+    - resnet on the 1-input points, S+R: `aha pnr` KeyError 'data_in_1' (clockwork/resnet-one-input-mem).
+    - resnet STATIC on fw2 dp (dw16 and dw32): 84/2352 low (clockwork/static-fw2-dp-resnet).
+    - Expected u16-vs-16-bit-gold gaps: camera at dw32 S+R (1 value: a 16-bit wrap clamps to 0 in the
+      gold, 255 on hardware), dw8 harris (457) and unsharp (40535), dw8 camera halide "Bad slice args".
 - `THESIS_PART_DIRS`: thesis_tiles_mem, thesis_dse_reduced_mem and thesis_dse_mem all build in
   `<out>/thesis_dse_mem`, so a later part with `--skip-existing` (not `--fresh`) only builds what
   is missing. `THESIS_CLOCKED_PARTS` refuse to run without --clocks-from / --clock-mhz.
