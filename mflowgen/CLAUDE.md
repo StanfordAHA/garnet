@@ -2773,6 +2773,14 @@ MemTile (static + RV, all four widths) met 1000 MHz (WNS 0), so the PE sets ever
 | 32 | 525 | 470 | 602 | 540 | +15% |
 | 64 | 474 | 425 | 535 | 480 | +13% |
 
+- **After the Cond rewrite (lassen 0f44a74; thesis_final probe 2026-10-27, Genus reports in
+  /aha/sweep_out/thesis_fmax_20261027/zip).** Every PE path lost 277-318 ps (+18..30% clock). dw16 RV
+  (1.28 ns): config reg -> RegisterMode mux 0.17 ns -> bf16 FPU add 0.76 ns (~60%) -> flag select
+  0.16 ns -> Cond's AND-OR select 0.15 ns -> 1-bit output FIFO. dw16 static, registered operands
+  (1.50 ns): operand reg -> FPU 0.79 ns -> flags + Cond 0.30 ns -> B1 SB mux / RMUX -> SB out,
+  + the 0.24 ns TILE_O_DELAY_NS budget. Now the FPU (dw16) / integer multiplier (other widths) sets
+  the clock; Cond's OR reduction is still a short serial chain (~0.1 ns). The note below is the
+  pre-rewrite picture.
 - **Where the time goes (2026-10-23, Genus reports of these probes).** Every PE's worst path, at
   every width, static and RV, ends at the 1-bit predicate output: operand (CB from the input
   budget on static; a constant config register or input FIFO on RV) -> RegisterMode mux -> ALU
