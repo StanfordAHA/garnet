@@ -2754,24 +2754,36 @@ Recipes (all write under one --out-dir; `--clocks-from <that dir>` reads the pro
     record only where their outputs still match the 16-bit gold (Halide-to-Hardware/CLAUDE.md "Test
     apps for other CGRA data widths"). A camera bundle on a bigger array has a bigger `array_tiles`,
     so compare its app_W, not array_W.
-  - **Recorded 2026-10-26..28 (session 1fa8a391): 64/84 bundles + conv_3_3 fp_ab 6/6.** Packed as
+  - **Recorded 2026-10-26..28 (session 1fa8a391): 64/84 bundles + conv_3_3 fp_ab 6/6** (72/84 with the
+    add-ons below). Packed as
     `/aha/sweep_out/app_bundles_thesis_dp.tgz` and `app_bundles_thesis_fp_ab.tgz` (plain .vcd inside;
     `STATUS.txt` in the root has the matrix). Lake THESIS 8b0f2edc snapshot, GARNET_REV 9573a704 plus
     d79e37b7's gen_app_bundle.py. Camera is on 28x16 everywhere (16x16 never placed). Harris and unsharp
     at dw32 need `--glb-tile-mem-size 256`: at 128 their 32-bit input (69-71 KB) overruns a 64 KB GLB bank
     and the testbench's GLB check stops `make sim` (exit 2). Camera sims take ~1h15m, and on fw2_dw32
-    dp longer than gen_app_bundle's default `--test-timeout` 5400 (it was re-run with 10800). The 20 gaps:
-    - fw1_dw16_sc4096_dp_in1_out1 STATIC gaussian/unsharp/harris/camera: not bit-accurate, RV passes
-      (OPEN_ISSUES clockwork/static-fw1-dp-stencil). The MEMs are exact delay lines. A per-tap fit of
-      the hardware's pre-shift sum shows the 9 compute taps misaligned by 1-5 cycles, with or without
-      `--pipeline-pnr`. Only fw1 (one output per `lake_dp` bank) gets 10 `hw_input` d_reg shift registers.
-    - resnet on the 1-input points, S+R: `aha pnr` KeyError 'data_in_1' (clockwork/resnet-one-input-mem):
-      the MEM-accumulator resnet needs two MEM writers. The per-spec rule's pond variant
-      (`apps/resnet_pond`) does not route on the thesis fabric yet: an unpacked pond's output 0 is
-      inter-core only (OPEN_ISSUES garnet/thesis-unpacked-pond-output; all 4 tries 2026-10-28).
-    - resnet STATIC on fw2 dp (dw16 and dw32): 84/2352 low (clockwork/static-fw2-dp-resnet).
-    - Expected u16-vs-16-bit-gold gaps: camera at dw32 S+R (1 value: a 16-bit wrap clamps to 0 in the
-      gold, 255 on hardware), dw8 harris (457) and unsharp (40535), dw8 camera halide "Bad slice args".
+    dp longer than gen_app_bundle's default `--test-timeout` 5400 (it was re-run with 10800).
+  - **Add-ons (2026-10-28 late, 72/84 with them)**, same root, in /aha/sweep_out with `.md5` beside each:
+    - `app_bundles_thesis_dp_addon1.tgz`: 6 NEW static bundles on clockwork 38ed931e. These are fw1 dp
+      gaussian/unsharp/harris/camera (the fw1 dp compile now passes the schedule to build_buffers;
+      before, the MEMs were exact delay lines but the 9 compute taps were 1-5 cycles off) and fw2 dp
+      dw16/dw32 resnet (TB fetch loop one word short). 38ed931e leaves the other 64 unchanged: a dw16
+      audit by 43d74890, and 5 dw8/dw32 static recompiles with bitstreams and placements identical.
+    - `app_bundles_thesis_dp_addon2.tgz` (GARNET_REV 607cf9c5, loop rule, 38 -> 32 padding registers)
+      REPLACES the main set's 5 RV `resnet_agg/*_nofp_portcg_thesis_rv`. Kernels: fw4 11677 -> 11661 ns,
+      fw2 11758 -> 11742 ns. A power run that already replayed them needs `--clean` of those variants.
+      The old bundles are in `app_bundles_thesis_dp_superseded/`. addon2 also ADDS `resnet_pond_agg`
+      (`apps/resnet_pond`, accumulator in a pond) RV on the two 1-input points: 177,697 ns, 9 MEM +
+      20 PE, after 08555638's pack_ponds fix (9363ba60).
+    - Static resnet_pond outputs all zeros there at tile 28 AND at tile=14 (43.7k cycles, so not the
+      16-bit counters): OPEN_ISSUES clockwork/static-resnet-pond-zero-output. resnet_agg itself
+      cannot map on 1 input port (two MEM writers; refused at `aha map` since 38ed931e).
+    - Recording pitfalls: a fresh tree clone at an older GARNET_REV lacks d79e37b7's gen_app_bundle
+      (aha map: pond collateral 16 vs MEM 32 at dw32); copy gen_app_bundle.py from >= 25836273. The
+      tree's garnet shows `-dirty` in the manifest because `make map` writes the app's width headers
+      into its own garnet/headers (intended: private tree).
+  - The 12 gaps left: static resnet on the 2 1-input points (above); expected u16-vs-16-bit-gold gaps,
+    camera at dw32 S+R (1 value: a 16-bit wrap clamps to 0 in the gold, 255 on hardware), dw8 harris
+    (457) and unsharp (40535), dw8 camera halide "Bad slice args".
 - `THESIS_PART_DIRS`: thesis_tiles_mem, thesis_dse_reduced_mem and thesis_dse_mem all build in
   `<out>/thesis_dse_mem`, so a later part with `--skip-existing` (not `--fresh`) only builds what
   is missing. `THESIS_CLOCKED_PARTS` refuse to run without --clocks-from / --clock-mhz.
