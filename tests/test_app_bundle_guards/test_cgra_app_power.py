@@ -427,12 +427,56 @@ def test_min_register_plan_leaves_a_packed_pond_input_early(tmp_path):
     m = rtm.model_of(str(tmp_path))
     data0 = ("PORT", "PE_input_width_16_num_0", 5, 5)
     assert m.fixed == {data0}
-    assert data0 not in dict(rtm.mismatches(m)) and rtm.early_fixed(m) == [(data0, 4)]
+    assert data0 not in dict(rtm.mismatches(m)) and rtm.early_unpaddable(m) == [(data0, 4)]
     plan = rtm.plan_by_instance(m, rtm.min_register_plan(m))
     assert plan == {"mac.data1": 4}
     assert not any(d for _, d in rtm.mismatches(m)) and m.run(2000, 500)[0] >= 0.995
     m2 = rtm.model_of(str(tmp_path))
     assert rtm.plan_by_instance(m2, rtm.latency_match_plan(m2)) == {"mac.data1": 4}
+
+
+def accumulation_routed(tmp_path, feedback=True):
+    """A pond accumulation: pond (6,6) -> acc (3,3) data0; the input IO -> pa (4,4) ->
+    pb (5,5) -> acc data1; acc -> the pond's input (feedback) or the output IO. acc.data0
+    arrives 4 stages early."""
+    def net(name, src, sink):
+        return [f"Net ID: {name} Segment Size: 1", "Segment: 0 Size: 3", src,
+                f"SB ({name[1:]}, 1, 1, 0, 1, 16)", sink, ""]
+
+    def pe_in(x, k):
+        return f"PORT PE_input_width_16_num_{k} ({x}, {x}, 16)"
+
+    def pe_out(x):
+        return f"PORT PE_output_width_16_num_0 ({x}, {x}, 16)"
+    sink = "PORT PondTop_input_width_16_num_0 (6, 6, 16)" if feedback else "PORT f2io_16 (1, 0, 16)"
+    lines = (net("e1", "PORT PondTop_output_width_16_num_0 (6, 6, 16)", pe_in(3, 0))
+             + net("e2", "PORT io2f_16 (0, 0, 16)", pe_in(4, 0))
+             + net("e3", pe_out(4), pe_in(5, 0))
+             + net("e4", pe_out(5), pe_in(3, 1))
+             + net("e5", pe_out(3), sink))
+    if feedback:
+        lines += net("e6", "PORT io2f_16 (2, 0, 16)", "PORT f2io_16 (1, 0, 16)")
+    (tmp_path / "design.route").write_text("\n".join(lines) + "\n")
+    (tmp_path / "design.place").write_text("Block Name X Y #Block ID\n---\nacc 3 3 #p0\npa 4 4 #p1\n"
+                                           "pb 5 5 #p2\nin 0 0 #I0\nout 1 0 #I1\nin2 2 0 #I2\n")
+    (tmp_path / "design_top.json").write_text(json.dumps(
+        {"top": "global.app", "namespaces": {"global": {"modules": {"app": {"instances": {}, "connections": []}}}}}))
+    return rtm.model_of(str(tmp_path))
+
+
+def test_min_register_plan_leaves_a_memory_loop_unpadded(tmp_path):
+    """acc.data0 is on the pond accumulation loop (pond -> acc -> pond): a register there
+    lengthens every iteration, and the model does not see the loop (resnet_pond
+    2026-10-28: 220,031 ns padded vs 177,697), so it stays early. Without the feedback
+    edge the same input is an ordinary early join input and gets its 4 registers."""
+    data0 = ("PORT", "PE_input_width_16_num_0", 3, 3)
+    m = accumulation_routed(tmp_path)
+    assert m.loop_in == {data0} and m.unpaddable(data0)
+    assert rtm.early_unpaddable(m) == [(data0, 4)] and data0 not in dict(rtm.mismatches(m))
+    assert rtm.min_register_plan(m) == {}
+    m = accumulation_routed(tmp_path, feedback=False)
+    assert m.loop_in == set()
+    assert rtm.plan_by_instance(m, rtm.min_register_plan(m)) == {"acc.data0": 4}
 
 
 def test_min_register_plan_and_shared_chain(tmp_path):

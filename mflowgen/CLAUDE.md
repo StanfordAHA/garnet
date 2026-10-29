@@ -1911,9 +1911,19 @@ branches to match exactly at every join (conv_3_3: A 0.750, B 0.667 before).
     (below).
   - A packed pond's output into its own PE is an in-tile wire (route `PondTop_output ->
     PE_input`, no switch box) that holds no register: `Model.fixed`; the plans leave such an
-    input early (`early_fixed` lists them) instead of padding it (2026-10-28, found by session
+    input early (`early_unpaddable` lists them) instead of padding it (2026-10-28, found by session
     08555638 on resnet_pond with its pack_ponds fix: padding there made netlist creation fail
     with `KeyError: 'rv_balance_...'`). Plans without an early packed-pond input are unchanged.
+  - **No padding on a loop through a memory** (user decision 2026-10-28, `Model.loop_in`;
+    `Model.unpaddable` = in-tile wire or loop). An accumulation (a MEM or pond output feeding
+    back into that memory's input through PEs) is invisible to the model, which treats memory
+    outputs as sources and inputs as sinks, and a register on the loop is paid on every
+    iteration. Loops are found as strongly connected components of the dataflow graph plus a
+    memory input -> output edge per MEM / pond core; a PE input inside one may stay early.
+    resnet_pond (thesis RV fw1 dp, 08555638's packing fix): 10 registers / 220,031 ns ->
+    8 / 177,697 (= unbalanced 177,694), bit-accurate. pondspec_e2e/resnet (thesis RV fw4 8 KB,
+    16x16): 38 -> 32 registers (the three `add_*.data2` loop inputs), 11,677 -> 11,661 ns,
+    bit-accurate. Line-buffer apps have no such loop and keep their plans.
   - 1-bit edges (a PE's `O1` / `bit*`, corebit nets) are padded with `corebit.reg` since
     2026-10-18; before that the hook rejected plans that padded them (harris_color).
 - Without EXHAUSTIVE_PIPE (2026-10-17, archipelago/CLAUDE.md "RV without EXHAUSTIVE_PIPE"):

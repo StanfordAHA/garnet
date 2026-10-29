@@ -14,6 +14,10 @@ modelled). A PE with both outputs used (res, res_p) fires into both. Reports the
 IO's rate. An in-tile core-to-core wire (a pond packed into its PE: the route goes
 PondTop_output -> PE_input with no switch box) holds no padding register: its consumer
 is in Model.fixed, and the plans leave such an input early instead of padding it.
+Neither do they pad a PE input on a loop through a memory (Model.loop_in: an
+accumulation, a MEM or pond output feeding back into that memory's input): the model
+does not see such loops, and a register on one is paid on every iteration (resnet_pond
+2026-10-28: 220,031 ns balanced vs 177,697 with this rule).
 
 Validated against xrun of conv_3_3 PnR results (A/B, 2026-10-13/14): modelled rates
 0.750 / 0.667 / 0.722 / 0.765 unbalanced and 1.000 balanced = measured.
@@ -24,6 +28,43 @@ import re
 import sys
 from collections import defaultdict
 from itertools import combinations
+
+
+def strongly_connected(graph):
+    """{node: component root} of a directed graph {node: successors} (iterative Tarjan)."""
+    index, low, on_stack, stack, comp, count = {}, {}, set(), [], {}, 0
+    for root in list(graph):
+        if root in index:
+            continue
+        index[root] = low[root] = count
+        count += 1
+        stack.append(root)
+        on_stack.add(root)
+        work = [(root, iter(graph.get(root, ())))]
+        while work:
+            v, it = work[-1]
+            w = next(it, None)
+            if w is not None:
+                if w not in index:
+                    index[w] = low[w] = count
+                    count += 1
+                    stack.append(w)
+                    on_stack.add(w)
+                    work.append((w, iter(graph.get(w, ()))))
+                elif w in on_stack:
+                    low[v] = min(low[v], index[w])
+                continue
+            work.pop()
+            if work:
+                low[work[-1][0]] = min(low[work[-1][0]], low[v])
+            if low[v] == index[v]:
+                while True:
+                    x = stack.pop()
+                    on_stack.discard(x)
+                    comp[x] = v
+                    if x == v:
+                        break
+    return comp
 
 
 def parse_route(path):
@@ -133,6 +174,32 @@ class Model:
                 self.pes[(n[2], n[3])]["in"].append(n)
             elif n[0] == "PORT" and n[1].startswith("PE_output"):
                 self.pes[(n[2], n[3])]["out"].append(n)
+        self.loop_in = self.memory_loop_inputs(nodes)
+
+    def memory_loop_inputs(self, nodes):
+        """PE inputs on a loop through a memory: the dataflow graph plus an edge from
+        each MEM / pond input port to that core's output ports (same tile, same core),
+        then every PE input whose producer is in its strongly connected component."""
+        graph = defaultdict(set)
+        for p, cons in self.fanout.items():
+            graph[p].update(cons)
+        for pe in self.pes.values():
+            for i in pe["in"]:
+                graph[i].update(pe["out"])
+        ports = defaultdict(lambda: ([], []))
+        for n in nodes:
+            if n[0] == "PORT" and not n[1].startswith(("PE_", "io2f", "f2io")):
+                ports[(n[2], n[3], n[1].split("_")[0])]["_output" in n[1]].append(n)
+        for ins, outs in ports.values():
+            for i in ins:
+                graph[i].update(outs)
+        comp = strongly_connected(graph)
+        return {c for p, cons in self.fanout.items() for c in cons
+                if c[0] == "PORT" and c[1].startswith("PE_input") and comp.get(p) == comp.get(c)}
+
+    def unpaddable(self, n):
+        """No padding register may go in front of PE input n (Model.fixed, Model.loop_in)."""
+        return n in self.fixed or n in self.loop_in
 
     def is_source(self, n):
         # MEM / pond outputs (MEM_output_*, PondTop_output_*) and the input IOs
@@ -312,9 +379,10 @@ def arrivals(m):
 
 def mismatches(m, arr=None):
     """[(PE input node, stages it arrives before the PE's latest input)] over the
-    non-constant inputs of every PE with two or more of them, except the inputs on an
-    in-tile core-to-core wire (Model.fixed): they count for the latest input, but no
-    padding can go on them, so they are left early (see early_fixed)."""
+    non-constant inputs of every PE with two or more of them, except the unpaddable ones
+    (Model.unpaddable: an in-tile core-to-core wire, a loop through a memory): they count
+    for the latest input, but no padding goes on them, so they are left early (see
+    early_unpaddable)."""
     arr = arrivals(m) if arr is None else arr
     out = []
     for xy, pe in m.pes.items():
@@ -323,13 +391,13 @@ def mismatches(m, arr=None):
         ins = [(i, arr.get(i)) for i in pe["in"] if arr.get(i) is not None]
         if len(ins) > 1:
             top = max(a for _, a in ins)
-            out += [(i, top - a) for i, a in ins if i not in m.fixed]
+            out += [(i, top - a) for i, a in ins if not m.unpaddable(i)]
     return out
 
 
-def early_fixed(m, arr=None):
-    """[(PE input node, stages early)] of the inputs mismatches() leaves out: fed over an
-    in-tile core-to-core wire (a packed pond's output), early, and unpaddable."""
+def early_unpaddable(m, arr=None):
+    """[(PE input node, stages early)] of the inputs mismatches() leaves out
+    (Model.unpaddable) that arrive early."""
     arr = arrivals(m) if arr is None else arr
     out = []
     for xy, pe in m.pes.items():
@@ -338,7 +406,7 @@ def early_fixed(m, arr=None):
         ins = [(i, arr.get(i)) for i in pe["in"] if arr.get(i) is not None]
         if len(ins) > 1:
             top = max(a for _, a in ins)
-            out += [(i, top - a) for i, a in ins if i in m.fixed and top > a]
+            out += [(i, top - a) for i, a in ins if m.unpaddable(i) and top > a]
     return out
 
 
@@ -408,7 +476,7 @@ def min_register_plan(m):
     FIFOs, a(r) per netlist register, m(p). Constraints: pad(p, c) = a(c) - a(p) - 1 +
     init(c) >= 0 on edges into PE inputs and netlist registers (== 0 elsewhere), every
     non-constant input of a PE at t(PE), its outputs at t(PE) + 1 (+1 with the primitive
-    output FIFO), sources at 0. An edge on an in-tile core-to-core wire (Model.fixed)
+    output FIFO), sources at 0. An edge into an unpaddable input (Model.unpaddable)
     only needs pad >= 0 and is never padded: its input may stay early. Minimize sum
     m(p); the constraint matrix is a network
     matrix, so the optimum is integral. Falls back to latency_match_plan(m) when scipy
@@ -448,7 +516,7 @@ def min_register_plan(m):
         for c in cons:
             if not m.is_sink(c) and arr.get(c) is not None:
                 pe_in = c[0] == "PORT" and c[1].startswith("PE_input")
-                kind = "slack" if c in m.fixed else "pad" if pe_in or is_netreg(c) else "eq"
+                kind = "slack" if m.unpaddable(c) else "pad" if pe_in or is_netreg(c) else "eq"
                 edges.append((p, c, kind))
     ub, ub_rhs, eq, eq_rhs = [], [], [], []
     for p, c, kind in edges:
