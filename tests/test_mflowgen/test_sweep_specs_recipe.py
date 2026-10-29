@@ -101,7 +101,9 @@ def test_spec_files_record_the_knobs(ss, tmp_path):
     ss._write_spec_files(dict(stock=True, pond="spec", runtime_mode="static"), tmp_path,
                          "make-this", graph="Tile_PE")
     assert json.loads((tmp_path / "spec_config.json").read_text()) == {}
-    assert json.loads((tmp_path / ss.POND_SPEC_FILE).read_text()) == {}
+    # the pond is built from it, so its gating is explicit (off unless the config says)
+    assert json.loads((tmp_path / ss.POND_SPEC_FILE).read_text()) == {
+        "clock_gate_ports": False, "share_clk_ctr": False}
     meta = json.loads((tmp_path / "sweep_meta.json").read_text())
     assert meta["graph"] == "Tile_PE" and meta["pond"] == "spec" and meta["stock"] is True
     row = ss._sweep_meta(tmp_path, meta["config_name"])

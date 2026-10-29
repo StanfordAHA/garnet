@@ -95,6 +95,17 @@ def sweep_config(name):
     sys.exit(f"*** no config {name} in sweep_specs.py's spec sets (sweep_specs.py --list)")
 
 
+def explicit_power_options(spec):
+    """A spec plus lake's clock-gating options it leaves out (a hand-written spec, a
+    stock config's), at lake's defaults (on since 2026-10-28), so the recorded spec
+    says what the RTL is and
+    check_bundle.py (absent = ungated, as before the change) compares like with like."""
+    import inspect
+    from lake.spec.spec_memory_controller import build_spec
+    defaults = inspect.signature(build_spec).parameters
+    return dict({k: defaults[k].default for k in ("share_clk_ctr", "clock_gate_ports")}, **spec)
+
+
 def pond_collateral_spec(pond_spec, mem_spec, work):
     """The pond spec to generate the pond's compiler collateral from. A pond spec
     without data_width gets the MEM spec's: garnet builds the pond at the fabric's
@@ -564,10 +575,8 @@ def main():
 
     spec = work / "spec_config.json"
     if skip == 0:
-        if args.config:
-            spec.write_text(json.dumps(cfg_spec, indent=2, sort_keys=True))
-        else:
-            shutil.copy(args.spec, spec)
+        given = cfg_spec if args.config else json.load(open(args.spec))
+        spec.write_text(json.dumps(explicit_power_options(given), indent=2, sort_keys=True))
     rv = args.mode == "rv"
     coll = work / "lake_collateral.json"
     pond_coll = work / "pond_collateral.json" if args.pond_spec else None

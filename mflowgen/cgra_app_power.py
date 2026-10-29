@@ -192,6 +192,13 @@ def load_manifests(variants, config):
 
 # ---------------------------------------------------------------- build ----
 
+def recorded_spec(spec):
+    """A bundle's spec as its tiles were recorded. Without lake's clock-gating keys
+    it is from before they became lake's default (2026-10-28), i.e. ungated
+    (check_bundle.py reads it the same way); bundles recorded since carry them."""
+    return dict({"share_clk_ctr": False, "clock_gate_ports": False}, **spec)
+
+
 def config_clock_mhz(man, args):
     """A bundle's clock: its fabric's (mode, data width) clock from --clocks-from for a
     thesis bundle, else --clock-mhz."""
@@ -291,7 +298,7 @@ def build_tile(tile, config, variants, man, args, status):
             return
         ws.mkdir(parents=True, exist_ok=True)
         spec_file = ws / "spec_config.json"
-        spec_text = json.dumps(man["spec_config"], indent=2, sort_keys=True)
+        spec_text = json.dumps(recorded_spec(man["spec_config"]), indent=2, sort_keys=True)
         if not spec_file.exists() or spec_file.read_text() != spec_text:
             spec_file.write_text(spec_text)
         if man.get("pond_spec") is not None:

@@ -383,8 +383,9 @@ FILTER_FIFO_SPEC_POINTS = [
 ]
 
 # Clock-gating A/B on the default onyx MemCore geometry (build_spec defaults:
-# fw4 4 KB 2x2; its RV twin is garnet's built-in MEM spec), lake 2026-10-14,
-# both opt-in: share_clk_ctr = one cycle counter for every static schedule
+# fw4 4 KB 2x2; its RV twin is garnet's built-in MEM spec), lake 2026-10-14
+# (lake's default since 2026-10-28; a name without the suffix is still
+# ungated, see POWER_OPTION_KEYS): share_clk_ctr = one cycle counter for every static schedule
 # generator instead of a clk_ctr each (static only: RV specs have none);
 # clock_gate_ports = each port's clock gated off while the app leaves it
 # unconfigured (the --memtile-power idle program configures no port).
@@ -1654,9 +1655,23 @@ def _spec_key(spec):
                  for x in (spec.get(k, v) for k, v in SPEC_DEFAULTS.items()))
 
 
+# lake's clock-gating options are on by default since 2026-10-28 (lake defaults),
+# but a sweep config says what it builds: one without `_sharectr` / `_portcg` in its
+# name is ungated, as it was when those names were first built. So every
+# spec_config.json, pond_spec.json and standalone command carries them explicitly.
+POWER_OPTION_KEYS = ("share_clk_ctr", "clock_gate_ports")
+
+
+def _power_options(cfg):
+    """The config's clock-gating options, explicit (SPEC_DEFAULTS: off)."""
+    return {k: bool(cfg.get(k, SPEC_DEFAULTS[k])) for k in POWER_OPTION_KEYS}
+
+
 def _spec_kwargs(cfg):
-    """The build_spec kwargs of a config, i.e. what goes in spec_config.json."""
-    return {k: v for k, v in cfg.items() if k not in SWEEP_ONLY_KEYS}
+    """The build_spec kwargs of a config, i.e. what goes in spec_config.json
+    (a stock tile's goes unused, so it gets no power options)."""
+    kwargs = {k: v for k, v in cfg.items() if k not in SWEEP_ONLY_KEYS}
+    return kwargs if _is_stock(cfg) else dict(kwargs, **_power_options(cfg))
 
 
 def _is_stock(cfg):
@@ -2154,6 +2169,9 @@ def _standalone_graph_kwargs(cfg, args):
     for key in ("max_extent", "max_sequence_width"):
         if cfg.get(key) is not None:
             sweep_args += [f"--{key}", cfg[key]]
+    # the tile's clock gating (lake thesis_sweep.py: on by default, --no_* off)
+    for key, on in _power_options(cfg).items():
+        sweep_args.append(f"--{key}" if on else f"--no_{key}")
 
     if args.standalone_rtl == "container":
         cmd = ["bash", str(MFLOWGEN_DIR / "standalone_spec_rtl.sh"),
@@ -2522,7 +2540,8 @@ def _write_spec_files(cfg, ws, targets, pnr_role=None, graph=None):
     with open(ws / "spec_config.json", "w") as f:
         json.dump(_spec_kwargs(cfg), f, indent=2, sort_keys=True)
     if cfg.get("pond") == "spec":
-        (ws / POND_SPEC_FILE).write_text("{}\n")
+        # the default spec pond, gated as the config says (not lake's default)
+        (ws / POND_SPEC_FILE).write_text(json.dumps(_power_options(cfg), sort_keys=True) + "\n")
     meta = {"config_name": _config_name(cfg), "runtime_mode": _mode(cfg),
             "targets": targets}
     if pnr_role:

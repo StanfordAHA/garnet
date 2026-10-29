@@ -458,7 +458,10 @@ Extracted (minus GDS) with the regenerated CSVs and an analysis handoff at
 
 ### Clock-gating A/B through PnR (2026-10-14, session 5b33d095)
 
-Lake 9f9480c9 adds two opt-in Spec power options, both off by default:
+Lake 9f9480c9 adds two Spec power options. They were opt-in until 2026-10-28; they are lake's
+default since then. Sweep configs still write them explicitly, so a config name without
+`_sharectr`/`_portcg` stays ungated (`POWER_OPTION_KEYS` in sweep_specs.py; details below
+the A/B results):
 - `share_clk_ctr`: one cycle counter for every static schedule generator,
   instead of a 34–39-bit `clk_ctr` in each (8 in a fw4 2×2 static spec,
   292 flops, about 35% of that gf12 tile's idle power).
@@ -2033,6 +2036,26 @@ floorplan, `mode[0]` guard) apply — the pond is flops, no macro.
   RV mode, legacy `PondCore` otherwise (static spec pond is opt-in until a
   full-CGRA app run validates it). The static spec pond drops the legacy
   1-bit valid → PE `bit0` inter-core wire.
+- **Clock gating is lake's default since 2026-10-28 (user), and sweep configs are
+  explicit.**
+  - `sweep_specs.py` writes `share_clk_ctr` / `clock_gate_ports` into every
+    spec_config.json and `pond_spec.json` (`_power_options`: on only for
+    `_sharectr` / `_portcg` names). A stock config's spec_config.json goes unused and
+    stays `{}`; its spec pond's `pond_spec.json` is explicit (ungated).
+  - The standalone synth command passes `--[no_]clock_gate_ports` /
+    `--[no_]share_clk_ctr`. Before this it passed neither, so a `_portcg` config's
+    standalone lakespec was ungated. It needs the host lake pulled.
+  - `with_mem_power_options` passes a MEM spec's explicit False to the pond too.
+  - `check_bundle.py` (SPEC_DEFAULTS) and `cgra_app_power.py` (`recorded_spec`)
+    read a bundle spec without the keys as ungated: every bundle recorded before
+    the flip.
+  - `gen_app_bundle.py` records the options explicitly in the bundle's spec (and builds
+    from that file): `--spec <json>` and a stock `--config` get lake's defaults
+    (`explicit_power_options`).
+  - What changed hardware: anything that builds lake specs without these keys.
+    That is garnet's built-in MEM spec (Zircon, no LAKE_SPEC_CONFIG), the default
+    RV pond, and spec JSONs that leave the keys out. Stock legacy cores
+    (StrgUBVec, PondCore) aren't lake specs and don't change.
 - **Clock gating reaches the pond (2026-10-22, session 5b33d095; user: "the pond
   (and any lake-based spec) should see the clock gating").**
   - The pond takes lake's `clock_gate_ports` / `share_clk_ctr` as pond-spec keys

@@ -35,10 +35,13 @@ from gen_app_bundle import CORE_MODULE_RE, find_instance_path, module_ports, ver
 # lake build_spec's defaults: a spec JSON may leave any of them out (the
 # sweep's configs carry vec_capacity, a hand-written spec often doesn't).
 # Same table as sweep_specs.SPEC_DEFAULTS.
+# share_clk_ctr / clock_gate_ports: a spec without them is from before lake made them
+# the default (2026-10-28), when absent meant ungated; sweep configs and
+# gen_app_bundle.py write them explicitly since.
 SPEC_DEFAULTS = dict(storage_capacity=4096, data_width=16, vec_width=4, dims=6,
                      in_ports=2, out_ports=2, dual_port=False, vec_capacity=2,
                      max_extent=None, max_sequence_width=None,
-                     filter_fifo_depth=None)
+                     filter_fifo_depth=None, share_clk_ctr=False, clock_gate_ports=False)
 MAX_LISTED = 8
 # The lake-generated core of each tile (outermost match under the tile):
 # MEM controller (static / RV spec) and PE pond (legacy PondTop, spec pond).

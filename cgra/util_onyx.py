@@ -101,8 +101,9 @@ def load_pond_spec_params(rv, data_width=16):
 
 
 # lake Spec clock-gating options (share_clk_ctr: one cycle counter for every static
-# schedule generator; clock_gate_ports: unconfigured ports' clocks gated off). Off
-# by default; set in the MEM spec config, they apply to every lake spec in the CGRA.
+# schedule generator; clock_gate_ports: unconfigured ports' clocks gated off). On by
+# default in lake since 2026-10-28; set (either way) in the MEM spec config, they
+# apply to every lake spec in the CGRA.
 SPEC_POWER_OPTIONS = ("share_clk_ctr", "clock_gate_ports")
 # lake RV Spec options an RV pond takes from the MEM spec too (rv_comparator_trim:
 # the trimmed RV comparison network). Off by default.
@@ -111,12 +112,13 @@ SPEC_RV_OPTIONS = ("rv_comparator_trim",)
 
 def with_mem_power_options(pond_params, mem_params, rv=False):
     """The PE-tile pond's spec params plus the MEM spec's clock-gating options it
-    does not set itself (its own JSON wins, so {"clock_gate_ports": false} keeps a
-    pond ungated), and for an RV pond (rv) the MEM spec's SPEC_RV_OPTIONS likewise.
-    Unchanged, None included, when the MEM spec sets none."""
-    keys = SPEC_POWER_OPTIONS + (SPEC_RV_OPTIONS if rv else ())
+    does not set itself, true or false (an ungated MEM spec gives an ungated pond;
+    the pond's own JSON wins), and for an RV pond (rv) the MEM spec's
+    SPEC_RV_OPTIONS that are on. Unchanged, None included, when the MEM spec sets
+    none: the pond then takes lake's defaults."""
+    pond = pond_params or {}
     inherited = {k: v for k, v in (mem_params or {}).items()
-                 if k in keys and v and k not in (pond_params or {})}
+                 if k not in pond and (k in SPEC_POWER_OPTIONS or (rv and k in SPEC_RV_OPTIONS and v))}
     if not inherited:
         return pond_params
     return dict(pond_params or {}, **inherited)
