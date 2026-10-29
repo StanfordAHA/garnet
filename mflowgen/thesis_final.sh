@@ -49,7 +49,7 @@ VARIANTS_DP+=",camera_pipeline_agg=$B/camera_pipeline_agg,matmul_pond_agg=$B/mat
 VARIANTS_DP+=",resnet_agg=$B/resnet_agg"
 VARIANTS_FP="conv_A0=$F/conv_A0,conv_A=$F/conv_A,conv_B=$F/conv_B"
 # part, expected config count
-PARTS=("thesis_tiles_pe 8" "thesis_dse 248" "thesis_filter_ab 10")
+PARTS=("thesis_tiles_pe 8" "thesis_dse 246" "thesis_filter_ab 10")
 LOG=$OUT/thesis_final.log
 
 say() { echo "[$(date '+%F %T')] $*"; }

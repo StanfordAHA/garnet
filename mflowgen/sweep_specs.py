@@ -79,7 +79,7 @@ Examples:
         --clocks-from /nsim/mstrange/BUILDS/thesis_dse --config-jobs 4 --pnr-jobs 4 --zip --zip-slim
     # 3) The MemTile design space (same dir as the tiles, so a later run tops up
     #    an earlier one; --skip-existing, not --fresh): reduced (92, 16 PnR), then
-    #    full (248, 38 PnR).
+    #    full (246, 38 PnR).
     ./mflowgen/sweep_specs.py --recipe thesis_dse_reduced --out-dir /nsim/mstrange/BUILDS/thesis_dse \
         --clocks-from /nsim/mstrange/BUILDS/thesis_dse --config-jobs 6 --pnr-jobs 4 \
         --skip-existing --zip --zip-slim
@@ -436,11 +436,12 @@ def _thesis_opt(spec, mode):
 
 
 # One tile geometry per data width, for the clock probe and the PE tiles: lake's
-# default spec at 16 (the thesis design point), sc8192 2x2 elsewhere (fw2 at 64:
-# no dw64 x fw4 macro at 8 KB).
+# default spec at 16 (the thesis design point), fw4 2x2 elsewhere: sc8192 at 8 and
+# 32, sc16384 at 64 (no dw64 x fw4 macro at 8 KB; fw2 2x2 there was SRAM-limited,
+# see _thesis_width_points). dw16/32/64 then all hold 2048 words.
 THESIS_WIDTH_POINTS = {
-    dw: dict(storage_capacity=4096 if dw == 16 else 8192, data_width=dw,
-             vec_width=2 if dw == 64 else 4, in_ports=2, out_ports=2, vec_capacity=2)
+    dw: dict(storage_capacity={16: 4096, 64: 16384}.get(dw, 8192), data_width=dw,
+             vec_width=4, in_ports=2, out_ports=2, vec_capacity=2)
     for dw in THESIS_WIDTHS}
 # MemTile per width and mode (the clock probe; dw16 = the design-point pair).
 THESIS_MEM_WIDTH_SPEC_POINTS = [_thesis_opt(THESIS_WIDTH_POINTS[dw], m)
@@ -477,18 +478,23 @@ THESIS_FILTER_AB_SPEC_POINTS = [
 
 def _thesis_width_points():
     """More specs at dw 8/32/64, where the thesis set has only its sc8192 2x2
-    port grid (and so 1-3 RV points per width): fw1 at two sizes, capacity and
-    port count at the width's base fetch width, a dual-port tile and a wider
-    fetch. All vc2 or fw1, so each has an RV twin; every one has a GF macro."""
+    port grid (and so 1-3 RV points per width): the smallest fw1 tile, then the
+    six memory organizations of the dw16 MEMORY_EXP -- single-port fw2 1x1, fw4
+    2x2 (at several capacities), fw8 4x4 and dual-port fw1 1x1, fw2 2x2, fw4 4x4.
+    Those six are balanced (user 2026-10-28: equal-bandwidth comparisons must not
+    show an SRAM wider than its ports can use, or ports the SRAM can't feed): the
+    fetch width is in + out ports single-port, ports per direction dual-port. A
+    one-word single-port SRAM can't serve one in and one out port at full rate, so
+    the fw1 1x1 tile is only the model's smallest anchor. All vc2 or fw1, so each
+    has an RV twin; every one has a GF macro (dw32 fw4 from 8 KB, dw64 fw4 from
+    16 KB, fw8 from 16 / 32 KB; lake GF_Tech_Map_any_columns)."""
     pts = []
-    for dw, bfw, caps, wide in ((8, 4, (4096, 16384, 32768), dict(vec_width=8, ports=4)),
-                                (32, 2, (4096, 16384, 32768), dict(vec_width=8, ports=4)),
-                                (64, 2, (16384, 32768), dict(vec_width=4, ports=2))):
-        geo = [(1, 8192, 2, False), (1, 4096, 1, False)]
-        geo += [(bfw, sc, 2, False) for sc in caps]
-        # dual-port: fw2, fw1 at 64 (build_spec_rv wants one full-width SDPB macro)
-        geo += [(bfw, 8192, 1, False), (bfw, 8192, 4, False), (1 if dw == 64 else 2, 8192, 2, True)]
-        geo += [(wide["vec_width"], 16384, wide["ports"], False)]
+    for dw, caps, fw8_sc in ((8, (4096, 16384, 32768), 16384),
+                             (32, (16384, 32768), 16384),
+                             (64, (16384, 32768), 32768)):
+        geo = [(1, 4096, 1, False)]
+        geo += [(2, 8192, 1, False)] + [(4, sc, 2, False) for sc in caps] + [(8, fw8_sc, 4, False)]
+        geo += [(fw, 8192, fw, True) for fw in (1, 2, 4)]
         for fw, sc, ports, dp in geo:
             pt = dict(storage_capacity=sc, data_width=dw, vec_width=fw,
                       in_ports=ports, out_ports=ports)
@@ -559,8 +565,8 @@ _DSE_VAL = {
          ("fw1_dw16_sc8192_sp_in2_out2_me4096", "static"), ("fw4_dw16_sc8192_sp_in2_out2_vc4", "static"),
          ("fw1_dw16_sc8192_sp_in2_out2_dim4_msw1024", "rv"), ("fw4_dw16_sc8192_dp_in4_out4_vc2", "rv")),
     8: (("fw8_dw8_sc8192_sp_in2_out2_vc8", "static"), ("fw2_dw8_sc8192_dp_in2_out2_vc2", "rv")),
-    32: (("fw4_dw32_sc8192_sp_in2_out2_vc4", "static"), ("fw2_dw32_sc32768_sp_in2_out2_vc2", "rv")),
-    64: (("fw2_dw64_sc8192_sp_in2_out2_vc8", "static"), ("fw2_dw64_sc32768_sp_in2_out2_vc2", "rv")),
+    32: (("fw4_dw32_sc8192_sp_in2_out2_vc4", "static"), ("fw4_dw32_sc32768_sp_in2_out2_vc2", "rv")),
+    64: (("fw2_dw64_sc8192_sp_in2_out2_vc8", "static"), ("fw4_dw64_sc32768_sp_in2_out2_vc2", "rv")),
 }
 _dse_val = {dw: [n for s, m in v for n in _dse_names([s], [m])] for dw, v in _DSE_VAL.items()}
 PRESETS["thesis_design_point"] = _dse_names(["fw4_dw16_sc4096_sp_in2_out2_vc2"])
@@ -586,12 +592,12 @@ PRESETS["thesis_dse_reduced"] = list(dict.fromkeys(PRESETS["thesis_dse_pnr"] + _
     "fw4_dw16_sc1024_dp_in4_out4_vc2", "fw2_dw16_sc2048_sp_in1_out1_vc2",
     "fw2_dw16_sc32768_sp_in1_out1_vc2", "fw4_dw16_sc32768_sp_in2_out2_vc2",
     "fw8_dw16_sc8192_sp_in4_out4_vc2",
-    "fw2_dw8_sc8192_sp_in2_out2_vc2", "fw4_dw8_sc8192_sp_in4_out4_vc2",
-    "fw4_dw8_sc32768_sp_in2_out2_vc2", "fw1_dw8_sc8192_sp_in2_out2",
-    "fw4_dw32_sc8192_sp_in2_out2_vc2", "fw2_dw32_sc8192_sp_in4_out4_vc2",
-    "fw2_dw32_sc4096_sp_in2_out2_vc2", "fw1_dw32_sc8192_sp_in2_out2",
-    "fw2_dw64_sc8192_sp_in4_out4_vc2", "fw2_dw64_sc16384_sp_in2_out2_vc2",
-    "fw1_dw64_sc8192_sp_in2_out2",
+    "fw2_dw8_sc8192_sp_in2_out2_vc2", "fw2_dw8_sc8192_sp_in1_out1_vc2",
+    "fw4_dw8_sc32768_sp_in2_out2_vc2", "fw1_dw8_sc8192_dp_in1_out1",
+    "fw4_dw32_sc8192_sp_in2_out2_vc2", "fw2_dw32_sc8192_sp_in1_out1_vc2",
+    "fw4_dw32_sc16384_sp_in2_out2_vc2", "fw1_dw32_sc8192_dp_in1_out1",
+    "fw2_dw64_sc8192_sp_in1_out1_vc2", "fw8_dw64_sc32768_sp_in4_out4_vc2",
+    "fw1_dw64_sc8192_dp_in1_out1",
 ])))
 
 # --recipe: the thesis data set as named sub-sweeps. Each runs as its own
@@ -687,7 +693,7 @@ THESIS_FMAX_RECIPE_FLAGS = {
 #   synth-level power for every config, PnR for the synth->PnR model's anchors
 #   (fit + held out). Reduced: ~90 configs spanning every axis, 16 PnR (the dw16
 #   fit, the design point and two held-out tiles per other width, projected by
-#   the dw16 fit). Full: every thesis spec + _thesis_width_points() (248), 38 PnR
+#   the dw16 fit). Full: every thesis spec + _thesis_width_points() (246), 38 PnR
 #   (fit and held-out tiles at every width and mode).
 #   The MemTile parts share one directory (THESIS_PART_DIRS), so a part run after
 #   another builds only what is missing (with --skip-existing, not --fresh).

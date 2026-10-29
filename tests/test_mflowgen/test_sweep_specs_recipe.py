@@ -298,7 +298,7 @@ def test_thesis_dse_sets(ss, capsys, tmp_path):
     sweep and its PnR roles are subsets of the full one's, so the full sweep can
     top it up in the same directory."""
     full = listed(ss, capsys, "--spec-set", "thesis_dse", "--out-dir", str(tmp_path))
-    assert len(full) == len(set(full)) == 248
+    assert len(full) == len(set(full)) == 246
     for n in full:
         assert n.endswith("_nofp_portcg_thesis_rv" if n.endswith("_rv") else "_sharectr_portcg_thesis")
     for dw in ss.THESIS_WIDTHS:

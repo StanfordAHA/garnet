@@ -2647,20 +2647,33 @@ cfc4174c).** User decisions:
 
 Recipes (all write under one --out-dir; `--clocks-from <that dir>` reads the probe):
 1. `thesis_fmax`: `thesis_fmax_mem` (spec set `thesis_mem_widths`: the chosen MemTile pair at
-   `THESIS_WIDTH_POINTS`, dw16 = fw4 4 KB design point, dw8/32 fw4 sc8192, dw64 fw2 sc8192) +
+   `THESIS_WIDTH_POINTS`, dw16 = fw4 4 KB design point, dw8/32 fw4 sc8192, dw64 fw4 sc16384;
+   dw64 was fw2 sc8192 until 2026-10-28, SRAM-limited at 2x2) +
    `thesis_fmax_pe` (`thesis_pe_widths`: the same specs, options included, so the PE tile's
    pond is gated as in the CGRA, garnet c9c6da9b), synthesis at 1000 MHz: 16 builds, plus
    `thesis_fmax_pe_regops` (4 static PEs timed with registered operands, garnet 6f0b1485) = 20.
    `--clocks-from <out>` takes the regops limits for static Tile_PE when that subdir exists.
 2. `thesis_tiles` (needs --clocks-from): `thesis_tiles_mem` (the dw16 MemTile pair, preset
    `thesis_design_point`, PnR + idle/active power) + `thesis_tiles_pe` (PE pair at 4 widths, PnR).
-3. `thesis_dse_reduced` (92 configs, 16 PnR) and `thesis_dse` (248 configs, 38 PnR): spec set
-   `thesis_dse` = DEFAULT + thesis specs + `_thesis_width_points()` (26 more dw 8/32/64 specs: fw1
-   2x2/1x1, capacity and 1x1/4x4 at the base fetch width, a dual-port, a wider fetch; all with
-   RV twins), both modes, synthesis + synth-level power for all. All 52 + the 4 width-point tiles
-   generate RTL locally (4x2, --thesis M, 2026-10-22; macros as lake's tech map predicts). dw64's
-   dual-port is fw1: lake build_spec_rv checks for ONE full-width SDPB macro (128-bit at fw2:
-   none), unlike CoreCombiner's column split, so RV fw2_dw64_sc8192_dp failed (told a16b3973).
+3. `thesis_dse_reduced` (92 configs, 16 PnR) and `thesis_dse` (246 configs, 38 PnR): spec set
+   `thesis_dse` = DEFAULT + thesis specs + `_thesis_width_points()` (25 more dw 8/32/64 specs, all
+   with RV twins), both modes, synthesis + synth-level power for all.
+   - **Balanced width points (user 2026-10-28).** Equal-bandwidth comparisons must not show an
+     SRAM wider than its ports can use, or ports the SRAM can't feed. Balanced = fetch width =
+     in + out ports (single-port) or = ports per direction (dual-port). Per width: the smallest
+     tile (fw1 sp 1x1 4 KB: a one-word single-port SRAM can't be balanced, so it is only the
+     model's anchor), then the dw16 MEMORY_EXP's six organizations: sp fw2 1x1 8 KB, sp fw4 2x2
+     (dw8 4/16/32 KB, dw32/64 16/32 KB: no fw4 macro below 8 / 16 KB), sp fw8 4x4 (16 KB, dw64
+     32 KB) and dp fw1 1x1 / fw2 2x2 / fw4 4x4 at 8 KB. They replaced (2026-10-28) the 10-25 set's
+     unbalanced points: fw1 2x2, dw32/64 capacity and port points at fw2 2x2 / 4x4, dw8 fw4 1x1 /
+     4x4, dw64 dp fw1 2x2. Every new spec builds in lake build_spec / build_spec_rv (static + RV);
+     tile RTL not regenerated locally. dw64 dp fw2 builds since lake b59ea334 (the spec check
+     splits the 128-bit word over two SDPB columns, as CoreCombiner does).
+   - The thesis set's own unbalanced points stay: the port grid (fw2/4/8 x vc at 2x2) and the
+     IterationDomain / affine sweeps (fw1 2x2) vary one parameter at fixed ports, for the model and
+     the component figures. lake's equal-bandwidth figures plot only balanced organizations
+     (`tile_figures._balanced`).
+   - The 10-25 run (zip thesis_dse_mem_..._20261025-173346) has the old width points.
    PnR anchors per (mode, width): `_DSE_FIT` (dw16 = the dw16_fit8 geometries, others 3 each) and
    `_DSE_VAL` held out (dw16 = design point + dw16_val4 geometries, others 1 static + 1 RV).
    Reduced = dw16 fit + design point + the other widths' held-out tiles (projected from dw16).
@@ -2703,7 +2716,7 @@ Recipes (all write under one --out-dir; `--clocks-from <that dir>` reads the pro
        same without `--rtl-only`, with `--config-jobs 4 --zip --zip-slim` (config-jobs = PnRs)
     4. (if rebuilding) `--recipe thesis_dse ... --rtl-only --skip-existing --config-jobs 8`, then
        `--recipe thesis_dse --out-dir $OUT --clocks-from $OUT --config-jobs 6 --pnr-jobs 4
-       --skip-existing --zip --zip-slim` (the zip holds all 248 configs)
+       --skip-existing --zip --zip-slim` (the zip holds all 246 configs; 248 before 2026-10-28)
     4b. `--recipe thesis_filter_ab --out-dir $OUT --clocks-from $OUT --rtl-only --config-jobs 8`,
        then the same without `--rtl-only`, with `--config-jobs 4 --zip --zip-slim` (10 PnR; its own
        dir thesis_filter_ab_mem and zip, so the lake tile_sweep ingest of the DSE zip stays clean:
@@ -2716,7 +2729,7 @@ Recipes (all write under one --out-dir; `--clocks-from <that dir>` reads the pro
     `bash mflowgen/thesis_final.sh` from the build machine's garnet (env knobs in its header).
     It pulls garnet + lake and checks everything in the foreground: probes in $OUT, garnet >=
     0bc94ef9/9573a704, the md5 of both bundle tarballs (extracted once to $BUILDS), /sim/docker
-    >= 20 GB free, recipe config counts 8/248/10, the clock table, and both power dry runs. Then it
+    >= 20 GB free, recipe config counts 8/246/10, the clock table, and both power dry runs. Then it
     detaches (setsid nohup; log $OUT/thesis_final.log). Docker steps for every part go first
     (--rtl-only). Then the Innovus chain thesis_tiles_pe -> thesis_dse -> thesis_filter_ab (4 PnR;
     thesis_tiles_mem is dropped since its 2 configs are DSE PnR configs). The power runs go
