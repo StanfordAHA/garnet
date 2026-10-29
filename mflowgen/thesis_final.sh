@@ -10,6 +10,10 @@
 # $OUT/THESIS_FINAL_DONE exists; $OUT/thesis_final_summary.txt lists the zips to copy back.
 # Re-running it resumes: every sweep part skips finished configs and make skips built steps.
 # Bundles recorded later go in $BUILDS/app_bundles_thesis_dp_addon*.tgz (+ .md5); re-run to add them.
+# An add-on bundle that replaces one of the set drops the old bundle and its replays first, and
+# a new variant directory in an add-on joins the power run. To add them while the build track
+# is still running, run only the power track: POWER_ONLY=1 bash mflowgen/thesis_final.sh
+# (no git pull; done when $OUT/THESIS_FINAL_POWER_DONE exists).
 #
 # Two tracks:
 #   build (Innovus-bound): RTL + power-test generation for every part first (the docker
@@ -19,7 +23,8 @@
 #     when the machine has >= POWER_CONCURRENT_GB of RAM, else after it (POWER_MODE).
 # Knobs (env): PNR_JOBS (4; 6 concurrent Innovus got OOM-killed before), SYNTH_JOBS (6),
 # RTL_JOBS (8), POWER_TILE_JOBS (2), POWER_PAR_JOBS (4), POWER_REPLAY_JOBS (4),
-# POWER_MODE (auto | concurrent | after), DRY=1 (every build command --dry-run, no pull).
+# POWER_MODE (auto | concurrent | after), DRY=1 (every build command --dry-run, no pull, add-ons
+# left unextracted), POWER_ONLY=1 (the power track alone, next to a running build track).
 set -u
 SELF=$(readlink -f "$0")
 
@@ -37,6 +42,7 @@ POWER_REPLAY_JOBS=${POWER_REPLAY_JOBS:-4}
 POWER_MODE=${POWER_MODE:-auto}
 POWER_CONCURRENT_GB=${POWER_CONCURRENT_GB:-160}
 DRY=${DRY:-0}
+POWER_ONLY=${POWER_ONLY:-0}
 NEED_GARNET=(0bc94ef9 9573a704)   # cgra_app_power --pe-registered-operands; --recipe thesis_filter_ab
 DP_TGZ=$BUILDS/app_bundles_thesis_dp.tgz
 DP_MD5=21b793754bd7b8ef34a076db012898ea
@@ -44,13 +50,13 @@ FP_TGZ=$BUILDS/app_bundles_thesis_fp_ab.tgz
 FP_MD5=7a542f2f9a7493482fcfc3ec9ed02b45
 B=$BUILDS/app_bundles_thesis_dp
 F=$BUILDS/app_bundles_thesis_fp_ab
-VARIANTS_DP="gaussian_agg=$B/gaussian_agg,unsharp_agg=$B/unsharp_agg,harris_agg=$B/harris_agg"
-VARIANTS_DP+=",camera_pipeline_agg=$B/camera_pipeline_agg,matmul_pond_agg=$B/matmul_pond_agg"
-VARIANTS_DP+=",resnet_agg=$B/resnet_agg"
+# in this order (a config's first variant is its d_* reference); dp_variants appends the rest of $B
+DP_KNOWN=(gaussian_agg unsharp_agg harris_agg camera_pipeline_agg matmul_pond_agg resnet_agg)
 VARIANTS_FP="conv_A0=$F/conv_A0,conv_A=$F/conv_A,conv_B=$F/conv_B"
 # part, expected config count
 PARTS=("thesis_tiles_pe 8" "thesis_dse 246" "thesis_filter_ab 10")
 LOG=$OUT/thesis_final.log
+[ "$POWER_ONLY" = 1 ] && LOG=$OUT/thesis_final_power_only.log
 
 say() { echo "[$(date '+%F %T')] $*"; }
 die() { echo "*** ERROR: $*" >&2; exit 1; }
@@ -71,6 +77,16 @@ tips() {
         echo "${r%%:*} ${b:-unknown}"
     done
 }
+dp_variants() {   # DP_KNOWN, then every other variant directory of $B (an add-on's, e.g. resnet_pond_agg)
+    local v d out=()
+    for v in "${DP_KNOWN[@]}"; do out+=("$v=$B/$v"); done
+    for d in "$B"/*/; do
+        v=$(basename "$d")
+        [[ " ${DP_KNOWN[*]} " == *" $v "* ]] && continue
+        [[ "$v" =~ ^[A-Za-z0-9_]+$ ]] && compgen -G "$d*/manifest.json" > /dev/null && out+=("$v=$B/$v")
+    done
+    (IFS=,; echo "${out[*]}")
+}
 clocks_from() {   # the table the tiles were built with, once the first clocked part wrote it
     if [ -f "$OUT/thesis_tiles_pe/thesis_clocks.json" ]; then echo "$OUT/thesis_tiles_pe/thesis_clocks.json"
     else echo "$OUT"; fi
@@ -79,7 +95,8 @@ clocks_from() {   # the table the tiles were built with, once the first clocked 
 preflight() {
     cd "$GARNET_DIR" || die "no garnet checkout at $GARNET_DIR"
     command -v mflowgen > /dev/null || die "mflowgen is not on PATH (activate the venv sweep_specs runs in)"
-    if [ "$DRY" != 1 ]; then
+    # (POWER_ONLY: the build track may be running from this checkout, so leave it as it is)
+    if [ "$DRY" != 1 ] && [ "$POWER_ONLY" != 1 ]; then
         git pull -q --ff-only || die "git pull failed in $GARNET_DIR"
         git -C ../lake pull -q --ff-only || die "git pull failed in $GARNET_DIR/../lake"
     fi
@@ -107,18 +124,39 @@ preflight() {
     done
     # bundles recorded later (same tree, e.g. after a compiler fix): app_bundles_thesis_dp_addon*.tgz,
     # checked against <tgz>.md5 when present. A power run already in flight ignores them; run this
-    # script again afterwards and the power run resumes, adding only the new bundles.
-    local addon
+    # script again afterwards (or POWER_ONLY=1) and the power run resumes, adding only the new bundles.
+    local addon vc v c ws
     for addon in "$BUILDS"/app_bundles_thesis_dp_addon*.tgz; do
         [ -f "$addon" ] || continue
         [ -f "$addon.extracted" ] && continue
+        if [ "$DRY" = 1 ]; then
+            say "DRY: not extracting $(basename "$addon")"
+            continue
+        fi
         if [ -f "$addon.md5" ]; then
             [ "$(md5sum "$addon" | cut -c1-32)" = "$(cut -c1-32 "$addon.md5")" ] || die "md5 mismatch: $addon"
         fi
+        # a bundle it replaces: drop the old one (tar would keep its stray files) and that
+        # variant's replay chain in the power workspaces (make would call it up to date; the
+        # next mflowgen run gives the steps new build dirs)
+        while read -r vc; do
+            v=${vc%%/*} c=${vc#*/}
+            [ -n "$v" ] && [ -n "$c" ] && [ -d "$B/$v/$c" ] || continue
+            for ws in "$POWER_DP/$c"/Tile_*; do
+                [ -d "$ws" ] || continue
+                rm -rf "$ws"/[0-9]*-application-"$v" "$ws"/[0-9]*-testbench-"$v" \
+                    "$ws"/[0-9]*-post-synth-power-"$v"
+            done
+            rm -rf "${B:?}/$v/$c"
+            say "replacing bundle $v/$c (and its replays, if any)"
+        done < <(tar tzf "$addon" | awk -F/ -v top="$(basename "$B")" \
+            '$1 == top && NF >= 3 && $3 != "" {print $2 "/" $3}' | sort -u)
         tar xzf "$addon" -C "$BUILDS" || die "extracting $addon failed"
         touch "$addon.extracted"
         say "added bundles from $(basename "$addon")"
     done
+    VARIANTS_DP=$(dp_variants)
+    say "DP variants: $(echo "$VARIANTS_DP" | sed "s|=[^,]*||g")"
     # disks: docker steps die at `docker run` once /sim/docker is full (2026-10-18/19)
     df -h "$BUILDS" /sim/docker 2> /dev/null
     local gb
@@ -128,7 +166,7 @@ preflight() {
     [ -n "$gb" ] && [ "$gb" -lt 500 ] && say "WARNING: only ${gb} GB free under $BUILDS"
     # each part lists the configs it should (catches an old garnet or a missing probe)
     local part n want
-    for p in "${PARTS[@]}"; do
+    [ "$POWER_ONLY" = 1 ] || for p in "${PARTS[@]}"; do
         set -- $p
         part=$1 want=$2
         n=$(cd "$GARNET_DIR" && ./mflowgen/sweep_specs.py --recipe "$part" --out-dir "$OUT" \
@@ -155,7 +193,9 @@ preflight() {
         "$POWER_TILE_JOBS/$POWER_PAR_JOBS/$POWER_REPLAY_JOBS"
 }
 
-power_track() {
+power_track() {   # always in a subshell (&, a pipeline or ( )), which holds the power lock
+    exec 8> "$POWER_LOCK"
+    flock -n 8 || { say "WARNING: another power track holds $POWER_LOCK; not starting this one"; return 1; }
     local clk
     clk=$(clocks_from)
     say "power clocks from $clk"
@@ -207,15 +247,18 @@ t = lambda k: sum(int(float(r.get(k) or 0)) for r in rows)
 print(t('tiles_exact'), '/', t('tiles_replayed'))" "$p/cgra_power.csv")"
         done
         echo "upstream branch tips at start / end (an RTL push in between can mix tile RTL):"
-        paste "$OUT/upstream_tips_start.txt" <(tips)
-        echo "zips to copy back to /aha:"
-        find "$OUT" "$BUILDS" -maxdepth 1 -name '*.zip' -newer "$OUT/upstream_tips_start.txt" -printf '  %p %s\n'
+        local start=$OUT/upstream_tips_start.txt
+        [ -f "$start" ] || tips > "$start"
+        paste "$start" <(tips)
+        echo "zips to copy back to /aha (made since $(date -r "$start" '+%F %T')):"
+        find "$OUT" "$BUILDS" -maxdepth 1 -name '*.zip' -newer "$start" -printf '  %p %s\n'
     } > "$OUT/thesis_final_summary.txt"
     cat "$OUT/thesis_final_summary.txt"
 }
 
 main() {
     say "thesis_final: pid $$, out $OUT, power $POWER_MODE"
+    VARIANTS_DP=$(dp_variants)
     tips > "$OUT/upstream_tips_start.txt"
     cat "$OUT/upstream_tips_start.txt"
     # docker steps (rtl, memtile-power-test-gen) for every part first, so a filling /sim/docker
@@ -231,7 +274,7 @@ main() {
     done
     local power_pid=
     if [ "$POWER_MODE" = concurrent ]; then
-        power_track > "$OUT/thesis_final_power.log" 2>&1 &
+        power_track >> "$OUT/thesis_final_power.log" 2>&1 &
         power_pid=$!
         say "power track running in the background (pid $power_pid, log $OUT/thesis_final_power.log)"
     fi
@@ -240,24 +283,46 @@ main() {
         say "build track done; waiting for the power track"
         wait "$power_pid"
     else
-        power_track 2>&1 | tee "$OUT/thesis_final_power.log"
+        power_track 2>&1 | tee -a "$OUT/thesis_final_power.log"
     fi
     summary
     touch "$OUT/THESIS_FINAL_DONE"
     say "all done"
 }
 
+power_main() {   # POWER_ONLY=1
+    say "thesis_final POWER_ONLY: pid $$, power $POWER_DP $POWER_FP"
+    VARIANTS_DP=$(dp_variants)
+    power_track 2>&1 | tee -a "$OUT/thesis_final_power.log"
+    summary
+    touch "$OUT/THESIS_FINAL_POWER_DONE"
+    say "power done"
+}
+
 LOCK=$OUT/.thesis_final.lock
+POWER_LOCK=$OUT/.thesis_final_power.lock
+DONE=$OUT/THESIS_FINAL_DONE
+[ "$POWER_ONLY" = 1 ] && DONE=$OUT/THESIS_FINAL_POWER_DONE
 if [ "${THESIS_FINAL_BG:-0}" != 1 ]; then
     mkdir -p "$OUT"
-    flock -n "$LOCK" true || die "another thesis_final.sh is running on $OUT"
+    # preflight swaps bundles under replays, so no power track may be running; POWER_ONLY may
+    # run next to the build track
+    flock -n "$POWER_LOCK" true || die "a power track is running on $POWER_DP (tail $OUT/thesis_final_power.log)"
+    if [ "$POWER_ONLY" != 1 ]; then
+        flock -n "$LOCK" true || die "another thesis_final.sh is running on $OUT"
+    fi
     preflight
-    rm -f "$OUT/THESIS_FINAL_DONE"
+    rm -f "$DONE"
     THESIS_FINAL_BG=1 POWER_MODE=$POWER_MODE setsid nohup bash "$SELF" >> "$LOG" 2>&1 < /dev/null &
     say "started in the background (pid $!); log: $LOG"
-    say "follow it with: tail -f $LOG    done when $OUT/THESIS_FINAL_DONE exists"
+    say "follow it with: tail -f $LOG    done when $DONE exists"
     exit 0
+fi
+if [ "$POWER_ONLY" = 1 ]; then
+    power_main
+    exit
 fi
 exec 9> "$LOCK"
 flock -n 9 || die "another thesis_final.sh is running on $OUT"
 main
+exit

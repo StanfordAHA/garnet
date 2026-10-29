@@ -2749,7 +2749,23 @@ Recipes (all write under one --out-dir; `--clocks-from <that dir>` reads the pro
     dry-run on /aha (DRY=1, fake layout). Bundles recorded later (e.g. the 6 static fw1/fw2 dp ones after
     clockwork 38ed931e) go in $BUILDS/app_bundles_thesis_dp_addon*.tgz (same root
     app_bundles_thesis_dp/<app>_agg/<config>, optional <tgz>.md5). The next run extracts them
-    once, and the resumed power run adds just those variants.
+    once, and the resumed power run adds just those variants. Since 2026-10-28 late (session bc48e85f):
+    - An add-on bundle that REPLACES one already in $B first deletes the old bundle directory
+      (tar would leave its stray files) and that variant's `N-application-/testbench-/
+      post-synth-power-<variant>` dirs in `$POWER_DP/<config>/Tile_*`. make would otherwise
+      call the old replay up to date: the bundle path is a step param, not a make dependency.
+      The next `mflowgen run` gives those steps new build ids (mflowgen keeps the others' ids).
+    - A new variant directory in an add-on (addon2's `resnet_pond_agg`) joins `--variants`
+      after the six known ones, so it never becomes a config's d_* reference.
+    - `POWER_ONLY=1 bash mflowgen/thesis_final.sh` runs just the power track next to a running
+      build track. It does no git pull and no recipe count check; log
+      $OUT/thesis_final_power_only.log; done at $OUT/THESIS_FINAL_POWER_DONE.
+    - Every power track holds $OUT/.thesis_final_power.lock. A run that would swap bundles
+      refuses to start while a track holds it, and a full run's own power track steps aside
+      (WARNING) when a POWER_ONLY one is going.
+    - DRY=1 leaves add-ons unextracted.
+    - Tested on /aha with stub sweep_specs/cgra_app_power: replace + new variant, both locks,
+      concurrent and after.
   - gen_app_bundle refuses a bundle without "comparison passed": u16 apps on the dw8/dw32 points
     record only where their outputs still match the 16-bit gold (Halide-to-Hardware/CLAUDE.md "Test
     apps for other CGRA data widths"). A camera bundle on a bigger array has a bigger `array_tiles`,
@@ -2770,7 +2786,7 @@ Recipes (all write under one --out-dir; `--clocks-from <that dir>` reads the pro
       audit by 43d74890, and 5 dw8/dw32 static recompiles with bitstreams and placements identical.
     - `app_bundles_thesis_dp_addon2.tgz` (GARNET_REV 607cf9c5, loop rule, 38 -> 32 padding registers)
       REPLACES the main set's 5 RV `resnet_agg/*_nofp_portcg_thesis_rv`. Kernels: fw4 11677 -> 11661 ns,
-      fw2 11758 -> 11742 ns. A power run that already replayed them needs `--clean` of those variants.
+      fw2 11758 -> 11742 ns. thesis_final.sh drops the old bundles' replays when it extracts it (above).
       The old bundles are in `app_bundles_thesis_dp_superseded/`. addon2 also ADDS `resnet_pond_agg`
       (`apps/resnet_pond`, accumulator in a pond) RV on the two 1-input points: 177,697 ns, 9 MEM +
       20 PE, after 08555638's pack_ponds fix (9363ba60).
