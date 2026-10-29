@@ -86,12 +86,18 @@ class GlbMUTransl(Generator):
 
         self.rd_data_out_to_fifo = self.var("rd_data_out_to_fifo", self._params.mu_word_width)
 
+        self.data_out_fifo_out = self.var("data_out_fifo_out", self._params.mu_word_width)
+        self.size_resp_fifo_out = self.var("size_resp_fifo_out", self._params.mu_tl_num_burst_bits)
+        self.source_resp_fifo_out = self.var("source_resp_fifo_out", self._params.mu_tl_source_width)
+        self.resp_fifo_pop = self.var("resp_fifo_pop", 1)
+
         self.add_addr_in_fifo_logic()
         self.add_data_out_fifo_logic()
         self.add_size_in_fifo_logic()
         self.add_source_in_fifo_logic()
         self.add_size_out_fifo_logic()
         self.add_source_out_fifo_logic()
+        self.add_resp_out_fifo_logic()
         self.add_size_out_pipeline()
         self.add_source_out_pipeline()
         self.add_byte_mask_pipeline()
@@ -273,16 +279,14 @@ class GlbMUTransl(Generator):
                         # TODO: Figure out what to put here for flush
                        flush=const(0, 1),
                        data_in=self.rd_data_out_to_fifo,
-                       data_out=self.rd_data_out,
+                       data_out=self.data_out_fifo_out,
                        push=self.rd_data_in_vld,
-                       pop=self.resp_out_rdy,
+                       pop=self.resp_fifo_pop,
                        full=self.data_out_fifo_full,
                        empty=self.data_out_fifo_empty,
                        almost_full=self.data_out_fifo_almost_full,
                        almost_full_diff=const(2, clog2(self._params.mu_tl_resp_fifo_depth)),
                        almost_empty_diff=const(2, clog2(self._params.mu_tl_resp_fifo_depth)))
-
-        self.wire(self.resp_out_vld, ~self.data_out_fifo_empty)
 
     def add_size_out_fifo_logic(self):
         self.size_resp_fifo = FIFO(self._params.mu_tl_num_burst_bits, self._params.mu_tl_resp_fifo_depth)
@@ -295,9 +299,9 @@ class GlbMUTransl(Generator):
                         # TODO: Figure out what to put here for flush
                        flush=const(0, 1),
                        data_in=self.size_resp_pipeline_out,
-                       data_out=self.size_out,
+                       data_out=self.size_resp_fifo_out,
                        push=self.rd_data_in_vld,
-                       pop=self.resp_out_rdy,
+                       pop=self.resp_fifo_pop,
                        almost_full_diff=const(2, clog2(self._params.mu_tl_req_fifo_depth)),
                        almost_empty_diff=const(2, clog2(self._params.mu_tl_req_fifo_depth)))
 
@@ -312,11 +316,48 @@ class GlbMUTransl(Generator):
                         # TODO: Figure out what to put here for flush
                         flush=const(0, 1),
                         data_in=self.source_resp_pipeline_out,
-                        data_out=self.source_out,
+                        data_out=self.source_resp_fifo_out,
                         push=self.rd_data_in_vld,
-                        pop=self.resp_out_rdy,
+                        pop=self.resp_fifo_pop,
                         almost_full_diff=const(2, clog2(self._params.mu_tl_req_fifo_depth)),
                         almost_empty_diff=const(2, clog2(self._params.mu_tl_req_fifo_depth)))
+
+    def add_resp_out_fifo_logic(self):
+        if self._params.mu_glb_crossbar:
+            # Extra output stage for crossbar timing
+            resp_out_fifo_depth = 2
+            resp_out_fifo_width = self._params.mu_tl_num_burst_bits + self._params.mu_tl_source_width + self._params.mu_word_width
+            self.resp_out_fifo_out = self.var("resp_out_fifo_out", resp_out_fifo_width)
+            self.resp_out_fifo_full = self.var("resp_out_fifo_full", 1)
+            self.resp_out_fifo_empty = self.var("resp_out_fifo_empty", 1)
+
+            self.resp_out_fifo = FIFO(resp_out_fifo_width, resp_out_fifo_depth)
+            self.add_child("resp_out_fifo",
+                           self.resp_out_fifo,
+                           clk=self.clk,
+                           clk_en=const(1, 1),
+                           reset=self.reset,
+                           flush=const(0, 1),
+                           data_in=concat(self.size_resp_fifo_out, self.source_resp_fifo_out, self.data_out_fifo_out),
+                           data_out=self.resp_out_fifo_out,
+                           push=~self.data_out_fifo_empty,
+                           pop=self.resp_out_rdy,
+                           full=self.resp_out_fifo_full,
+                           empty=self.resp_out_fifo_empty,
+                           almost_full_diff=const(1, clog2(resp_out_fifo_depth)),
+                           almost_empty_diff=const(1, clog2(resp_out_fifo_depth)))
+
+            self.wire(self.resp_fifo_pop, ~self.resp_out_fifo_full)
+            self.wire(self.rd_data_out, self.resp_out_fifo_out[self._params.mu_word_width - 1, 0])
+            self.wire(self.source_out, self.resp_out_fifo_out[self._params.mu_word_width + self._params.mu_tl_source_width - 1, self._params.mu_word_width])
+            self.wire(self.size_out, self.resp_out_fifo_out[resp_out_fifo_width - 1, self._params.mu_word_width + self._params.mu_tl_source_width])
+            self.wire(self.resp_out_vld, ~self.resp_out_fifo_empty)
+        else:
+            self.wire(self.resp_fifo_pop, self.resp_out_rdy)
+            self.wire(self.rd_data_out, self.data_out_fifo_out)
+            self.wire(self.size_out, self.size_resp_fifo_out)
+            self.wire(self.source_out, self.source_resp_fifo_out)
+            self.wire(self.resp_out_vld, ~self.data_out_fifo_empty)
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def glb_req_counter_ff(self):

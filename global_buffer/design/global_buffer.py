@@ -358,6 +358,7 @@ class GlobalBuffer(Generator):
         self.add_always(self.proc_pipeline)
         if self._params.include_mu_glb_hw and self._params.mu_glb_crossbar:
            self.add_mu_rd_addr_pipeline()
+           self.add_mu_crossbar_rd_data_pipeline()
         self.add_always(self.sram_cfg_pipeline)
         self.add_always(self.left_edge_proc_wr_ff)
         self.add_always(self.left_edge_proc_rd_in_ff)
@@ -612,6 +613,49 @@ class GlobalBuffer(Generator):
                         in_=self.mu_rd_addr,
                         out_=self.mu_rd_addr_d_array)
 
+    # Pipeline for MU crossbar read data: one for each GLB tile
+    def add_mu_crossbar_rd_data_pipeline(self):
+        tile_rd_data_width = self.glb_tile[0].ports.mu_crossbar_rd_data_out.width
+        num_mu_words = self._params.num_glb_tiles // self._params.mu_word_num_tiles
+
+        # Only the last stage is consumed by mu_glb_crossbar_output_mux, so no flatten_output
+        self.mu_crossbar_rd_data_pipeline = Pipeline(width=tile_rd_data_width * self._params.num_glb_tiles,
+                                                     depth=self._params.mu_crossbar_rd_data_pipeline_depth)
+
+        self.mu_crossbar_rd_data_valid_pipeline = Pipeline(width=num_mu_words,
+                                                           depth=self._params.mu_crossbar_rd_data_pipeline_depth)
+
+        self.mu_crossbar_rd_data = self.var("mu_crossbar_rd_data", tile_rd_data_width * self._params.num_glb_tiles)
+        self.mu_crossbar_rd_data_valid = self.var("mu_crossbar_rd_data_valid", num_mu_words)
+        self.mu_crossbar_rd_data_d_array = self.var("mu_crossbar_rd_data_d_array", tile_rd_data_width * self._params.num_glb_tiles)
+        self.mu_crossbar_rd_data_valid_d_array = self.var("mu_crossbar_rd_data_valid_d_array", num_mu_words)
+
+        # Assign all the GLB tile outputs in order
+        for i in range(self._params.num_glb_tiles):
+            self.wire(self.mu_crossbar_rd_data[(i + 1) * tile_rd_data_width - 1, i * tile_rd_data_width],
+                      self.glb_tile[i].ports.mu_crossbar_rd_data_out)
+
+        # Even GLB tiles only (pairs provide a full-width MU word)
+        for i in range(num_mu_words):
+            self.wire(self.mu_crossbar_rd_data_valid[i],
+                      self.glb_tile[i * self._params.mu_word_num_tiles].ports.mu_crossbar_rd_data_valid_out)
+
+        self.add_child("mu_crossbar_rd_data_pipeline",
+                        self.mu_crossbar_rd_data_pipeline,
+                        clk=self.clk,
+                        clk_en=const(1, 1),
+                        reset=self.reset,
+                        in_=self.mu_crossbar_rd_data,
+                        out_=self.mu_crossbar_rd_data_d_array)
+
+        self.add_child("mu_crossbar_rd_data_valid_pipeline",
+                        self.mu_crossbar_rd_data_valid_pipeline,
+                        clk=self.clk,
+                        clk_en=const(1, 1),
+                        reset=self.reset,
+                        in_=self.mu_crossbar_rd_data_valid,
+                        out_=self.mu_crossbar_rd_data_valid_d_array)
+
     @always_comb
     def mu_glb_crossbar_output_mux(self):
         self.mu_rd_addr_d_last = self.mu_rd_addr_d_array[(self._params.mu_glb_rd_latency - (self._params.glb_mu_transl_input_fifo_delay + self._params.glb_mu_transl_output_fifo_delay)) - 1]
@@ -635,39 +679,39 @@ class GlobalBuffer(Generator):
 
         # 7-to-1 mux for zircon
         if self.mu_rd_addr_d_last[self.tile_sel_msb, self.tile_sel_lsb+clog2(self._params.mu_word_num_tiles)] == 0:
-            self.mu_rd_data_w[127, 0] = self.glb_tile[0].ports.mu_crossbar_rd_data_out
-            self.mu_rd_data_w[255, 128] = self.glb_tile[1].ports.mu_crossbar_rd_data_out
-            self.mu_rd_data_valid_w = self.glb_tile[0].ports.mu_crossbar_rd_data_valid_out
+            self.mu_rd_data_w[127, 0] = self.mu_crossbar_rd_data_d_array[127, 0] # GLB tile 0
+            self.mu_rd_data_w[255, 128] = self.mu_crossbar_rd_data_d_array[255, 128] # GLB tile 1
+            self.mu_rd_data_valid_w = self.mu_crossbar_rd_data_valid_d_array[0] # GLB tile 0 (paired with 1)
 
         elif self.mu_rd_addr_d_last[self.tile_sel_msb, self.tile_sel_lsb+clog2(self._params.mu_word_num_tiles)] == 1:
-            self.mu_rd_data_w[127, 0] = self.glb_tile[2].ports.mu_crossbar_rd_data_out
-            self.mu_rd_data_w[255, 128] = self.glb_tile[3].ports.mu_crossbar_rd_data_out
-            self.mu_rd_data_valid_w = self.glb_tile[2].ports.mu_crossbar_rd_data_valid_out
+            self.mu_rd_data_w[127, 0] = self.mu_crossbar_rd_data_d_array[383, 256] # GLB tile 2
+            self.mu_rd_data_w[255, 128] = self.mu_crossbar_rd_data_d_array[511, 384] # GLB tile 3
+            self.mu_rd_data_valid_w = self.mu_crossbar_rd_data_valid_d_array[1] # GLB tile 2 (paired with 3)
 
         elif self.mu_rd_addr_d_last[self.tile_sel_msb, self.tile_sel_lsb+clog2(self._params.mu_word_num_tiles)] == 2:
-            self.mu_rd_data_w[127, 0] = self.glb_tile[4].ports.mu_crossbar_rd_data_out
-            self.mu_rd_data_w[255, 128] = self.glb_tile[5].ports.mu_crossbar_rd_data_out
-            self.mu_rd_data_valid_w = self.glb_tile[4].ports.mu_crossbar_rd_data_valid_out
+            self.mu_rd_data_w[127, 0] = self.mu_crossbar_rd_data_d_array[639, 512] # GLB tile 4
+            self.mu_rd_data_w[255, 128] = self.mu_crossbar_rd_data_d_array[767, 640] # GLB tile 5
+            self.mu_rd_data_valid_w = self.mu_crossbar_rd_data_valid_d_array[2] # GLB tile 4 (paired with 5)
 
         elif self.mu_rd_addr_d_last[self.tile_sel_msb, self.tile_sel_lsb+clog2(self._params.mu_word_num_tiles)] == 3:
-            self.mu_rd_data_w[127, 0] = self.glb_tile[6].ports.mu_crossbar_rd_data_out
-            self.mu_rd_data_w[255, 128] = self.glb_tile[7].ports.mu_crossbar_rd_data_out
-            self.mu_rd_data_valid_w = self.glb_tile[6].ports.mu_crossbar_rd_data_valid_out
+            self.mu_rd_data_w[127, 0] = self.mu_crossbar_rd_data_d_array[895, 768] # GLB tile 6
+            self.mu_rd_data_w[255, 128] = self.mu_crossbar_rd_data_d_array[1023, 896] # GLB tile 7
+            self.mu_rd_data_valid_w = self.mu_crossbar_rd_data_valid_d_array[3] # GLB tile 6 (paired with 7)
 
         elif self.mu_rd_addr_d_last[self.tile_sel_msb, self.tile_sel_lsb+clog2(self._params.mu_word_num_tiles)] == 4:
-            self.mu_rd_data_w[127, 0] = self.glb_tile[8].ports.mu_crossbar_rd_data_out
-            self.mu_rd_data_w[255, 128] = self.glb_tile[9].ports.mu_crossbar_rd_data_out
-            self.mu_rd_data_valid_w = self.glb_tile[8].ports.mu_crossbar_rd_data_valid_out
+            self.mu_rd_data_w[127, 0] = self.mu_crossbar_rd_data_d_array[1151, 1024] # GLB tile 8
+            self.mu_rd_data_w[255, 128] = self.mu_crossbar_rd_data_d_array[1279, 1152] # GLB tile 9
+            self.mu_rd_data_valid_w = self.mu_crossbar_rd_data_valid_d_array[4] # GLB tile 8 (paired with 9)
 
         elif self.mu_rd_addr_d_last[self.tile_sel_msb, self.tile_sel_lsb+clog2(self._params.mu_word_num_tiles)] == 5:
-            self.mu_rd_data_w[127, 0] = self.glb_tile[10].ports.mu_crossbar_rd_data_out
-            self.mu_rd_data_w[255, 128] = self.glb_tile[11].ports.mu_crossbar_rd_data_out
-            self.mu_rd_data_valid_w = self.glb_tile[10].ports.mu_crossbar_rd_data_valid_out
+            self.mu_rd_data_w[127, 0] = self.mu_crossbar_rd_data_d_array[1407, 1280] # GLB tile 10
+            self.mu_rd_data_w[255, 128] = self.mu_crossbar_rd_data_d_array[1535, 1408] # GLB tile 11
+            self.mu_rd_data_valid_w = self.mu_crossbar_rd_data_valid_d_array[5] # GLB tile 10 (paired with 11)
 
         elif self.mu_rd_addr_d_last[self.tile_sel_msb, self.tile_sel_lsb+clog2(self._params.mu_word_num_tiles)] == 6:
-            self.mu_rd_data_w[127, 0] = self.glb_tile[12].ports.mu_crossbar_rd_data_out
-            self.mu_rd_data_w[255, 128] = self.glb_tile[13].ports.mu_crossbar_rd_data_out
-            self.mu_rd_data_valid_w = self.glb_tile[12].ports.mu_crossbar_rd_data_valid_out
+            self.mu_rd_data_w[127, 0] = self.mu_crossbar_rd_data_d_array[1663, 1536] # GLB tile 12
+            self.mu_rd_data_w[255, 128] = self.mu_crossbar_rd_data_d_array[1791, 1664] # GLB tile 13
+            self.mu_rd_data_valid_w = self.mu_crossbar_rd_data_valid_d_array[6] # GLB tile 12 (paired with 13)
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def left_edge_proc_rd_out_ff(self):

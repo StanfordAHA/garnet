@@ -51,7 +51,9 @@ class GlobalBufferParams:
         if self.mu_glb_ring_interconnect:
             return ((2*self.num_glb_tiles) - 1) + self.mu_rd_addr2tile0_delay + self.mu_sw2bank_mux_delay + self.bankmux2sram_rd_delay  + self.mu_sw2track_out_delay + self.mu_rd_data_tile0_2out_delay
         else:
-            return self.glb_mu_transl_input_fifo_delay + self.bankmux2sram_rd_delay + self.glb_mu_transl_output_fifo_delay + self.glb_global_level2_bank_pipeline_depth
+            # Match the latency of the ring interconnect by inserting more pipeline stages in the crossbar. Real delay of the crossbar is listed in line below. In reality, it is below + 1, b/c transl has extra depth2 FIFO
+            # return ((2*self.num_glb_tiles) - 1) + self.mu_rd_addr2tile0_delay + self.mu_sw2bank_mux_delay + self.bankmux2sram_rd_delay  + self.mu_sw2track_out_delay + self.mu_rd_data_tile0_2out_delay
+            return self.glb_mu_transl_input_fifo_delay + self.bankmux2sram_rd_delay + self.glb_mu_transl_output_fifo_delay + self.glb_global_level2_bank_pipeline_depth + self.mu_crossbar_rd_data_pipeline_depth # second last term is for clk_en gen margin, which is 1 cycle for now. Must get rd_en in one cycle before rd_addr
 
     @property
     def mu_tl_resp_fifo_depth(self):
@@ -223,6 +225,7 @@ class GlobalBufferParams:
     glb_mu_transl_input_fifo_delay: int = 1
     glb_mu_transl_output_fifo_delay: int = 1
     glb_global_level2_bank_pipeline_depth: int = 1
+    mu_crossbar_rd_data_pipeline_depth: int = 1
 
     # Not used by TSMC (yet)
     flush_crossbar_pipeline_depth: int = 1
