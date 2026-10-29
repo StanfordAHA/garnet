@@ -2704,6 +2704,18 @@ Recipes (all write under one --out-dir; `--clocks-from <that dir>` reads the pro
        CGRA_APP_POWER.md §2a) with GARNET_REV = the build machine's garnet; then
        `cgra_app_power.py --any-config --variants ... --clocks-from $OUT/thesis_tiles_pe/thesis_clocks.json
        --pe-registered-operands --replay-jobs 4 --zip` (§2b).
+  - **One unattended command for steps 3-5 + both power runs (2026-10-28, session bc48e85f):**
+    `bash mflowgen/thesis_final.sh` from the build machine's garnet (env knobs in its header).
+    It pulls garnet + lake and checks everything in the foreground: probes in $OUT, garnet >=
+    0bc94ef9/9573a704, the md5 of both bundle tarballs (extracted once to $BUILDS), /sim/docker
+    >= 20 GB free, recipe config counts 8/248/10, the clock table, and both power dry runs. Then it
+    detaches (setsid nohup; log $OUT/thesis_final.log). Docker steps for every part go first
+    (--rtl-only). Then the Innovus chain thesis_tiles_pe -> thesis_dse -> thesis_filter_ab (4 PnR;
+    thesis_tiles_mem is dropped since its 2 configs are DSE PnR configs). The power runs go
+    alongside if RAM >= 160 GB, else after. One lighter retry per failed part, then
+    $OUT/thesis_final_summary.txt (statuses, exact replays, upstream lake/canal/gemstone/lassen tips at
+    start vs end, zips) and $OUT/THESIS_FINAL_DONE. Re-running resumes. The whole flow was
+    dry-run on /aha (DRY=1, fake layout).
   - gen_app_bundle refuses a bundle without "comparison passed": u16 apps on the dw8/dw32 points
     record only where their outputs still match the 16-bit gold (Halide-to-Hardware/CLAUDE.md "Test
     apps for other CGRA data widths"). A camera bundle on a bigger array has a bigger `array_tiles`,
