@@ -9,6 +9,7 @@
 # so the terminal can be closed. Progress: tail -f $OUT/thesis_final.log. Done when
 # $OUT/THESIS_FINAL_DONE exists; $OUT/thesis_final_summary.txt lists the zips to copy back.
 # Re-running it resumes: every sweep part skips finished configs and make skips built steps.
+# Bundles recorded later go in $BUILDS/app_bundles_thesis_dp_addon*.tgz (+ .md5); re-run to add them.
 #
 # Two tracks:
 #   build (Innovus-bound): RTL + power-test generation for every part first (the docker
@@ -103,6 +104,20 @@ preflight() {
             tar xzf "$tgz" -C "$BUILDS" || die "extracting $tgz failed"
         fi
         [ -d "$dir" ] || die "$tgz did not extract to $dir"
+    done
+    # bundles recorded later (same tree, e.g. after a compiler fix): app_bundles_thesis_dp_addon*.tgz,
+    # checked against <tgz>.md5 when present. A power run already in flight ignores them; run this
+    # script again afterwards and the power run resumes, adding only the new bundles.
+    local addon
+    for addon in "$BUILDS"/app_bundles_thesis_dp_addon*.tgz; do
+        [ -f "$addon" ] || continue
+        [ -f "$addon.extracted" ] && continue
+        if [ -f "$addon.md5" ]; then
+            [ "$(md5sum "$addon" | cut -c1-32)" = "$(cut -c1-32 "$addon.md5")" ] || die "md5 mismatch: $addon"
+        fi
+        tar xzf "$addon" -C "$BUILDS" || die "extracting $addon failed"
+        touch "$addon.extracted"
+        say "added bundles from $(basename "$addon")"
     done
     # disks: docker steps die at `docker run` once /sim/docker is full (2026-10-18/19)
     df -h "$BUILDS" /sim/docker 2> /dev/null

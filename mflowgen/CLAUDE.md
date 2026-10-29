@@ -2715,7 +2715,10 @@ Recipes (all write under one --out-dir; `--clocks-from <that dir>` reads the pro
     alongside if RAM >= 160 GB, else after. One lighter retry per failed part, then
     $OUT/thesis_final_summary.txt (statuses, exact replays, upstream lake/canal/gemstone/lassen tips at
     start vs end, zips) and $OUT/THESIS_FINAL_DONE. Re-running resumes. The whole flow was
-    dry-run on /aha (DRY=1, fake layout).
+    dry-run on /aha (DRY=1, fake layout). Bundles recorded later (e.g. the 6 static fw1/fw2 dp ones after
+    clockwork 38ed931e) go in $BUILDS/app_bundles_thesis_dp_addon*.tgz (same root
+    app_bundles_thesis_dp/<app>_agg/<config>, optional <tgz>.md5). The next run extracts them
+    once, and the resumed power run adds just those variants.
   - gen_app_bundle refuses a bundle without "comparison passed": u16 apps on the dw8/dw32 points
     record only where their outputs still match the 16-bit gold (Halide-to-Hardware/CLAUDE.md "Test
     apps for other CGRA data widths"). A camera bundle on a bigger array has a bigger `array_tiles`,
