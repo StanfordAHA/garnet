@@ -1,5 +1,6 @@
 from gemstone.generator.generator import Generator
 import os
+import re
 import sys
 if os.getenv('WHICH_SOC') == "amber":
     import garnet_amber
@@ -499,6 +500,11 @@ class Garnet(Generator):
         # inside the tile.
         pond_pe_conns = {}
         n_seen = 0
+        # mapper/netlist_util find_packing keeps a pond's output 0 only toward the PE it
+        # packs the pond with (at most one per PE) and moves every other pond to output 1.
+        # Output 0 is an inter-core port (on the thesis fabric it is not on the switch box),
+        # so that pond must land in that PE's tile.
+        output0_pe = {}
 
         for edge_id in list(netlist_info['netlist']):
             conns = netlist_info['netlist'][edge_id]
@@ -513,16 +519,22 @@ class Garnet(Generator):
                     n_seen += 1
                     count, _ = pond_pe_conns.setdefault(pond, {}).get(pe, (0, 0))
                     pond_pe_conns[pond][pe] = (count + 1, n_seen)
+                    if pond_to_pe and re.fullmatch(r"PondTop_output_width_\d+_num_0", source_port):
+                        output0_pe[pond] = pe
 
-        # A PE tile holds ONE pond. Grant claims strongest first, so each pond still gets
-        # its best PE unless a stronger claim took it; it then tries its next PE, else stays
-        # unpacked (placed on its own, like a path-balancing pond). Before (2026-10-12),
-        # ponds fed by one PE (broadcast-banked weights: static matmul_tile ux=4's 4 kernel
-        # banks) all went to that PE and only the last one was configured.
-        claims = sorted(((c, pond, pe) for pond, pes in pond_pe_conns.items() for pe, c in pes.items()),
+        # A PE tile holds ONE pond. A pond on output 0 takes the PE that output feeds;
+        # every other claim is granted strongest first, so each pond still gets its best
+        # free PE, else stays unpacked (placed on its own, like a path-balancing pond).
+        # Before (2026-10-12), ponds fed by one PE (broadcast-banked weights: static
+        # matmul_tile ux=4's 4 kernel banks) all went to that PE and only the last one was
+        # configured; before 2026-10-28, a stronger input-side claim could take the PE of a
+        # pond still on output 0 (resnet_pond: its accumulator into its writer's tile),
+        # stranding that pond unpacked on output 0 (unroutable on the thesis fabric).
+        claims = sorted(((output0_pe.get(pond) == pe, c, pond, pe)
+                         for pond, pes in pond_pe_conns.items() for pe, c in pes.items()),
                         reverse=True)
         packed_ponds, taken_pes = {}, set()
-        for _, pond, pe in claims:
+        for _, _, pond, pe in claims:
             if pond not in packed_ponds and pe not in taken_pes:
                 packed_ponds[pond] = pe
                 taken_pes.add(pe)

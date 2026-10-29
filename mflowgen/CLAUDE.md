@@ -2125,9 +2125,17 @@ apart from pycodestyle spacing:
   got ready (waveform: input ready 0 from the flush on). Fix: keep every key, swap the
   `regfile2out_*` keys and the `data_out_pond_0/1` suffixes in `port_mappings` (lake's static
   conversion ignores `port_mappings`: static T44u4 bitstream identical).
-- With both fixes, RV ux=4 still hangs: a standalone RV pond fed over the interconnect forms
-  a valid/ready loop with the SB/CB lazy fork (lake/CLAUDE.md §6 "RV pond ready depends on
-  valid").
+- With both fixes, RV ux=4 still hung on the stock fabric: a standalone RV pond fed over the
+  interconnect forms a valid/ready loop with the SB/CB lazy fork (lake/CLAUDE.md §6 "RV pond
+  ready depends on valid"). `--thesis rv` fixes it with canal's pond-input CB FIFO (d83e892).
+- 2026-10-28 (garnet/thesis-unpacked-pond-output): the one-pond-per-PE rule let an input-side
+  claim take the PE of a pond that `find_packing` had kept on output 0 (resnet_pond: the
+  accumulator went into its writer's tile, so weight bank M4 stayed unpacked on output 0). On
+  the thesis fabric output 0 is inter-core only, so Cyclone could not route it. Now a pond
+  on output 0 takes the PE that output feeds before any other claim (`find_packing` keeps
+  at most one such pond per PE). resnet_pond thesis RV fw1_dw16_sc4096_dp_in1_out1:
+  routes, bit-accurate (177,694 ns with `--rv-balance 0`); matmul_tile thesis rv/static
+  T84, T44u4, T84u4: packing and bitstreams identical.
 
 ## Fabric data width follows the spec's `data_width` (2026-10-06)
 
