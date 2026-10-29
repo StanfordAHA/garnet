@@ -1865,9 +1865,9 @@ branches to match exactly at every join (conv_3_3: A 0.750, B 0.667 before).
 
 - **Model** (`common/application/rv_throughput.py`): token-level simulation of the
   routed graph (design.route/place/design_top): REG = 2-deep FIFO with `extra_data`
-  initial tokens, PE input/output FIFOs of 2, an optional 2-deep primitive output FIFO,
-  lazy forks, MEM outputs / input IO / constant PEs always valid, MEM inputs / output IO
-  always ready. Matches xrun on 6 PnR results (0.750 / 0.667 / 0.722 / 0.765 unbalanced,
+  initial tokens, PE input/output FIFOs of 2 with the PE's pre-fill (below), an optional
+  2-deep primitive output FIFO, lazy forks, MEM outputs / input IO / constant PEs always
+  valid, MEM inputs / output IO always ready, a ROM a 3-stage pipeline. Matches xrun on 6 PnR results (0.750 / 0.667 / 0.722 / 0.765 unbalanced,
   1.000 balanced). `python rv_throughput.py <app>/bin` prints the rate and the next step.
 - **Loop** (`rv_balance()` in gen_app_bundle.py), per round while below 0.995:
   1. **Parity:** with endpoints pinned, any route between two tiles has a stage count of
@@ -1924,6 +1924,22 @@ branches to match exactly at every join (conv_3_3: A 0.750, B 0.667 before).
     8 / 177,697 (= unbalanced 177,694), bit-accurate. pondspec_e2e/resnet (thesis RV fw4 8 KB,
     16x16): 38 -> 32 registers (the three `add_*.data2` loop inputs), 11,677 -> 11,661 ns,
     bit-accurate. Line-buffer apps have no such loop and keep their plans.
+  - **PE FIFO pre-fill** (2026-10-28, session cfc4174c). Clockwork realizes a column-offset
+    stencil tap by pre-loading tokens into a PE input FIFO: design_top metadata
+    `".dataN": {"num_input_fifo": k, "num_output_fifo": j}` on the PE instance (garnet
+    core_combiner_core maps `dataN` to `PE_input_width_<dw>_num_N`). The model started every
+    PE FIFO empty, so a pre-filled input that must arrive k stages after its partners (its
+    pre-filled tokens pair with their first ones) was balanced to arrive with them, stayed k
+    early and filled its FIFO. Its fork then stalled. Now `Model.pe_fill` sets `init` on those
+    FIFOs, which `arrivals`, the LP (`pad = a(c) - a(p) - 1 + init(c)`, and a PE output's
+    arrival minus its pre-fill) and the simulation already honour. camera_pipeline_2x2 (thesis
+    RV fw4 8 KB, 28x16; 27 PEs with pre-fill, no other thesis app has any): balanced with the
+    old model it ran at 3/4 rate (16,459 ns vs static 12,562; xrun port probes: every input
+    accepts 3 of 4 cycles, the fork/join network around the pre-filled PEs blocks itself);
+    the fixed model predicts that 0.750 for that design and 0.166 for the unbalanced one
+    (measured 73,796 ns). A ROM (design_top `is_rom`) is also modelled as a 3-stage pipeline
+    (`Model.rom_tiles`, `("ROM", x, y)`) instead of a source and a sink, so the output IO rate of
+    an app whose outputs come from ROMs (camera) is no longer always full; it changes no plan.
   - 1-bit edges (a PE's `O1` / `bit*`, corebit nets) are padded with `corebit.reg` since
     2026-10-18; before that the hook rejected plans that padded them (harris_color).
 - Without EXHAUSTIVE_PIPE (2026-10-17, archipelago/CLAUDE.md "RV without EXHAUSTIVE_PIPE"):

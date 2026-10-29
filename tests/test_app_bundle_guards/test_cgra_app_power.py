@@ -523,6 +523,70 @@ def test_min_register_plan_and_shared_chain(tmp_path):
     assert sorted(["in.out", "pa.data0"]) in conns                               # unpadded sink stays
 
 
+def prefilled_routed(tmp_path, fill, rom=False):
+    """IO forks to pa (3,3) and straight to mac.data1; pa -> pb -> mac.data0. mac.data1's
+    FIFO starts with `fill` tokens (design_top ".data1" num_input_fifo, as clockwork
+    writes for a column-offset stencil tap). mac feeds the output IO, or with rom a ROM
+    (MEM (7,7), metadata is_rom) whose output feeds the output IO."""
+    def net(name, src, sink):
+        return [f"Net ID: {name} Segment Size: 1", "Segment: 0 Size: 3", src,
+                f"SB ({name[1:]}, 1, 1, 0, 1, 16)", sink, ""]
+
+    def pe_in(x, k):
+        return f"PORT PE_input_width_16_num_{k} ({x}, {x}, 16)"
+
+    def pe_out(x):
+        return f"PORT PE_output_width_16_num_0 ({x}, {x}, 16)"
+    out = "PORT MEM_input_width_16_num_0 (7, 7, 16)" if rom else "PORT f2io_16 (1, 0, 16)"
+    lines = (["Net ID: e1 Segment Size: 2", "Segment: 0 Size: 3", "PORT io2f_16 (0, 0, 16)",
+              "SB (1, 1, 1, 0, 1, 16)", pe_in(3, 0), "Segment: 1 Size: 3", "PORT io2f_16 (0, 0, 16)",
+              "SB (1, 1, 1, 0, 1, 16)", pe_in(5, 1), ""]
+             + net("e2", pe_out(3), pe_in(4, 0)) + net("e3", pe_out(4), pe_in(5, 0)) + net("e4", pe_out(5), out))
+    if rom:
+        lines += net("e5", "PORT MEM_output_width_16_num_0 (7, 7, 16)", "PORT f2io_16 (1, 0, 16)")
+    (tmp_path / "design.route").write_text("\n".join(lines) + "\n")
+    (tmp_path / "design.place").write_text("Block Name X Y #Block ID\n---\npa 3 3 #p0\npb 4 4 #p1\n"
+                                           "mac 5 5 #p2\nin 0 0 #I0\no1 1 0 #I1\n" + ("lut 7 7 #m0\n" if rom else ""))
+    insts = {"mac": {"genref": "global.PE",
+                     "metadata": {".data1": {"num_input_fifo": fill, "num_output_fifo": 0}}}}
+    if rom:
+        insts["lut"] = {"genref": "global.MEM", "metadata": {"is_rom": True}}
+    (tmp_path / "design_top.json").write_text(json.dumps({"top": "global.app", "namespaces": {"global": {
+        "modules": {"app": {"instances": insts, "connections": []}}}}}))
+    return rtm.model_of(str(tmp_path))
+
+
+def test_min_register_plan_pads_a_prefilled_input_later(tmp_path):
+    """mac.data1 arrives 4 stages before data0; its pre-filled token pairs with data0's
+    first token, so it must arrive one stage later still: 5 registers. Padding only the
+    4 a pre-fill-blind model asks for leaves it one stage early and the fork stalls
+    (camera_pipeline_2x2 2026-10-28: 3/4 rate, 16,459 ns vs 12,562 static)."""
+    data1 = ("PORT", "PE_input_width_16_num_1", 5, 5)
+    m = prefilled_routed(tmp_path, fill=1)
+    assert m.init[data1] == 1 and m.init[("PORT", "PE_input_width_16_num_0", 5, 5)] == 0
+    assert dict(rtm.mismatches(m))[data1] == 5
+    rtm.insert_stages(m, data1, 4)
+    assert m.run(2000, 500)[0] < 0.9
+    m = prefilled_routed(tmp_path, fill=1)
+    assert rtm.plan_by_instance(m, rtm.min_register_plan(m)) == {"mac.data1": 5}
+    assert m.run(2000, 500)[0] >= 0.995
+    m = prefilled_routed(tmp_path, fill=0)
+    assert rtm.plan_by_instance(m, rtm.min_register_plan(m)) == {"mac.data1": 4}
+
+
+def test_a_rom_is_a_pipeline_not_a_source(tmp_path):
+    """A ROM (is_rom) passes each address to its output: the output IO it feeds sees the
+    rate of the PEs in front of it (an app whose outputs all come from ROMs read full
+    rate whatever its joins did, camera_pipeline_2x2)."""
+    m = prefilled_routed(tmp_path, fill=0, rom=True)
+    rom_in, rom_out = ("PORT", "MEM_input_width_16_num_0", 7, 7), ("PORT", "MEM_output_width_16_num_0", 7, 7)
+    assert m.rom_tiles == {(7, 7)} and not m.is_sink(rom_in) and not m.is_source(rom_out)
+    assert m.fanout[rom_in] == [("ROM", 7, 7)] and m.fanout[("ROM", 7, 7)] == [rom_out]
+    assert m.run(2000, 500)[0] < 0.5
+    assert rtm.plan_by_instance(m, rtm.min_register_plan(m)) == {"mac.data1": 4}
+    assert m.run(2000, 500)[0] >= 0.995
+
+
 def test_replay_jobs_reach_the_tile_graphs(tmp_path):
     man = {"spec_config": {}, "mode": "static", "pond_spec": None}
     for argv, want in ((["--replay-jobs", "4"], "4"), ([], None)):

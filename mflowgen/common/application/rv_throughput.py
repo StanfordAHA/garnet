@@ -5,7 +5,12 @@ balancing").
 Storage: every routing REG node is a FIFO of depth `reg_depth` (canal RegFIFO, ready =
 ~full); netlist registers start with `extra_data` tokens (stencil delays). A PE has
 one input FIFO per used input and an output FIFO (depth pe_in / pe_out), plus a
-2-deep primitive output FIFO when enabled (prim_out); it fires when every input FIFO
+2-deep primitive output FIFO when enabled (prim_out); its FIFOs start with the PE's
+pre-fill (design_top metadata ".dataN": num_input_fifo on input N, num_output_fifo on
+the output: clockwork's column-offset stencil taps), so a pre-filled input must arrive
+that many stages later than the others (camera_pipeline_2x2 2026-10-28: balanced
+without it, every pre-filled join stayed one stage early and capped the app at 3/4
+rate, 16,459 vs 12,562 ns static); it fires when every input FIFO
 holds a token and its output FIFO is not full. Fanouts are lazy forks: a token
 leaves only when every branch's next FIFO is ready (start-of-cycle counts). MEM and
 pond outputs, the input IO and constant PEs are always-valid sources; MEM and pond
@@ -85,11 +90,12 @@ def parse_route(path):
 
 
 class Model:
-    def __init__(self, route, place, design_top, reg_depth=2, pe_in=2, pe_out=2):
+    def __init__(self, route, place, design_top, reg_depth=2, pe_in=2, pe_out=2, rom_depth=2):
         self.nets = parse_route(route)
         # netlist registers placed at (x, y) on track name -> instance name
         self.netreg = {}
         self.pe_kind = {}
+        pe_at, mem_at = {}, {}
         for line in open(place).read().splitlines()[2:]:
             w = line.split()
             if len(w) < 4:
@@ -100,11 +106,26 @@ class Model:
                 self.netreg[(x, y, track)] = inst
             if bid.startswith("#p"):
                 self.pe_kind[(x, y)] = name
+                pe_at[name] = (x, y)
+            if bid.startswith("#m"):
+                mem_at[name] = (x, y)
         d = json.load(open(design_top))
         top = d["top"].split(".", 1)[1]
         insts = d["namespaces"]["global"]["modules"][top]["instances"]
         self.extra = {n: int((i.get("metadata") or {}).get("extra_data", 0)) for n, i in insts.items()}
-        self.reg_depth, self.pe_in, self.pe_out = reg_depth, pe_in, pe_out
+        # PE FIFO pre-fill (garnet core_combiner_core: ".dataN" -> input N, num_output_fifo
+        # -> the output): (x, y) -> ({input index: tokens}, output tokens)
+        self.pe_fill = {}
+        for n, i in insts.items():
+            fill = {k[len(".data"):]: v for k, v in (i.get("metadata") or {}).items()
+                    if k.startswith(".data") and isinstance(v, dict)}
+            if fill and n in pe_at:
+                self.pe_fill[pe_at[n]] = ({int(k): int(v.get("num_input_fifo", 0)) for k, v in fill.items()},
+                                          max(int(v.get("num_output_fifo", 0)) for v in fill.values()))
+        # ROM tiles (design_top metadata is_rom): (x, y)
+        self.rom_tiles = {mem_at[n] for n, i in insts.items()
+                          if n in mem_at and (i.get("metadata") or {}).get("is_rom")}
+        self.reg_depth, self.pe_in, self.pe_out, self.rom_depth = reg_depth, pe_in, pe_out, rom_depth
         self.prim_out = set()   # PEs (x, y) whose primitive output FIFO is enabled (+1 stage)
         self.build()
 
@@ -148,10 +169,25 @@ class Model:
                 self.init[n] = self.extra.get(inst, 0) if inst else 0
             elif n[0] == "PORT" and n[1].startswith("PE_input"):
                 self.cap[n] = self.pe_in
-                self.init[n] = 0
+                fill = self.pe_fill.get((n[2], n[3]), ({}, 0))[0]
+                width, index = re.match(r"PE_input_width_(\d+)_num_(\d+)$", n[1]).groups()
+                self.init[n] = fill.get(int(index), 0) if width != "1" else 0
             elif n[0] == "PORT" and n[1].startswith("PE_output"):
                 self.cap[n] = self.pe_out
-                self.init[n] = 0
+                self.init[n] = self.pe_fill.get((n[2], n[3]), ({}, 0))[1] if "_width_1_" not in n[1] else 0
+        # A ROM is a pipeline, not a source and a sink: tile input FIFO -> StrgRAMRV SRAM
+        # read -> data FIFO, one read per cycle. Its MEM ports are storage with a
+        # ("ROM", x, y) stage between them (2-deep each: the model's FIFOs pass a token
+        # per cycle only from depth 2). It times nothing a join sees (a ROM output feeds
+        # an output IO), but without it the output IO rate of an app whose outputs come
+        # from ROMs is always full (camera_pipeline_2x2).
+        rom_ports = defaultdict(lambda: ([], []))
+        for n in nodes:
+            if self.is_rom_port(n):
+                rom_ports[(n[2], n[3])]["_output" in n[1]].append(n)
+                self.cap[n], self.init[n] = self.rom_depth, 0
+        for xy in rom_ports:
+            self.cap[("ROM",) + xy], self.init[("ROM",) + xy] = self.rom_depth, 0
         # consumers of each producer: storage/sink nodes reachable through wires (SB/RMUX)
         self.fanout = {}
         for n in nodes:
@@ -167,6 +203,10 @@ class Model:
                     else:
                         stack.extend(succ.get(m, ()))
                 self.fanout[n] = outs
+        for xy, (ins, outs) in rom_ports.items():
+            for i in ins:
+                self.fanout[i] = [("ROM",) + xy]
+            self.fanout[("ROM",) + xy] = list(outs)
         # PEs: (x, y) -> input ports, output port
         self.pes = defaultdict(lambda: {"in": [], "out": []})
         for n in nodes:
@@ -202,13 +242,18 @@ class Model:
         return n in self.fixed or n in self.loop_in
 
     def is_source(self, n):
-        # MEM / pond outputs (MEM_output_*, PondTop_output_*) and the input IOs
+        # MEM / pond outputs (MEM_output_*, PondTop_output_*) and the input IOs; not a ROM
         return n[0] == "PORT" and (n[1].startswith("io2f")
-                                   or ("_output" in n[1] and not n[1].startswith("PE_output")))
+                                   or ("_output" in n[1] and not n[1].startswith("PE_output")
+                                       and not self.is_rom_port(n)))
 
     def is_sink(self, n):
         return n[0] == "PORT" and (n[1].startswith("f2io")
-                                   or ("_input" in n[1] and not n[1].startswith("PE_input")))
+                                   or ("_input" in n[1] and not n[1].startswith("PE_input")
+                                       and not self.is_rom_port(n)))
+
+    def is_rom_port(self, n):
+        return n[0] == "PORT" and n[1].startswith("MEM_") and (n[2], n[3]) in self.rom_tiles
 
     def const_pe(self, xy):
         return "const" in self.pe_kind.get(xy, "") or not self.pes[xy]["in"]
@@ -503,7 +548,7 @@ def min_register_plan(m):
         if n[0] == "PORT" and n[1].startswith("PE_input"):
             return {v(("t", pe_of[n])): 1}, 0
         if n[0] == "PORT" and n[1].startswith("PE_output"):
-            return {v(("t", pe_of[n])): 1}, 1 + (pe_of[n] in m.prim_out)
+            return {v(("t", pe_of[n])): 1}, 1 + (pe_of[n] in m.prim_out) - m.init.get(n, 0)
         return {v(("a", n)): 1}, 0
 
     def is_netreg(n):
