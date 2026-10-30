@@ -2879,13 +2879,24 @@ Recipes (all write under one --out-dir; `--clocks-from <that dir>` reads the pro
       The old bundles are in `app_bundles_thesis_dp_superseded/`. addon2 also ADDS `resnet_pond_agg`
       (`apps/resnet_pond`, accumulator in a pond) RV on the two 1-input points: 177,697 ns, 9 MEM +
       20 PE, after 08555638's pack_ponds fix (9363ba60).
+    - `app_bundles_thesis_dp_addon3.tgz` (2026-10-29, GARNET_REV 35e23a53: the balancer models PE
+      input FIFO pre-fill) REPLACES the main set's 4 RV `camera_pipeline_agg/*_nofp_portcg_thesis_rv`
+      at dw16 (fw4 sp, fw2 dp, fw2 sp in1, fw1 dp; 28x16). Kernel 16,459 -> 12,364 ns on all 4 (static
+      12,562), 211 -> 208 padding registers. Recorded in `apps/camera_pipeline_2x2` itself, one cell
+      after another, so the manifests keep the replaced bundles' app label.
     - Static resnet_pond outputs all zeros there at tile 28 AND at tile=14 (43.7k cycles, so not the
-      16-bit counters): OPEN_ISSUES clockwork/static-resnet-pond-zero-output. resnet_agg itself
-      cannot map on 1 input port (two MEM writers; refused at `aha map` since 38ed931e).
+      16-bit counters): OPEN_ISSUES clockwork/static-resnet-pond-zero-output (43d74890: clockwork
+      refused the keep-pixel-loops pond route, so the pond restarted per pixel; fix in progress).
+      Static can only run at tile=14 (tile 28 = 2352 px x 66 cycles, past the 16-bit counters), so an
+      RV tile=14 pair is staged in /aha/sweep_out/app_bundles_thesis_dp_staging_t14/ for a same-size
+      static/RV comparison; bc48e85f decides whether it replaces addon2's tile-28 RV pair. resnet_agg
+      itself cannot map on 1 input port (two MEM writers; refused at `aha map` since 38ed931e).
     - Recording pitfalls: a fresh tree clone at an older GARNET_REV lacks d79e37b7's gen_app_bundle
       (aha map: pond collateral 16 vs MEM 32 at dw32); copy gen_app_bundle.py from >= 25836273. The
       tree's garnet shows `-dirty` in the manifest because `make map` writes the app's width headers
-      into its own garnet/headers (intended: private tree).
+      into its own garnet/headers (intended: private tree). The recording scripts need `LAKE` (the
+      lake snapshot) and xcelium on PATH; a replacing re-record moves the old bundle aside first, so
+      it must put it back when the new one fails (`/aha/sweep_out/record_camera_rv_addon3.sh`).
   - The 12 gaps left: static resnet on the 2 1-input points (above); expected u16-vs-16-bit-gold gaps,
     camera at dw32 S+R (1 value: a 16-bit wrap clamps to 0 in the gold, 255 on hardware), dw8 harris
     (457) and unsharp (40535), dw8 camera halide "Bad slice args".
