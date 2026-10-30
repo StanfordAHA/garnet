@@ -105,6 +105,63 @@ if { [sizeof_collection $_fp_srams] > 0 } {
 }
 
 #-------------------------------------------------------------------------
+# Grow the die to fit the edge pins (only if they don't fit)
+#-------------------------------------------------------------------------
+# pin-assignments.tcl spreads the switch-box pins one per routing track:
+# left/right on M6 over the two halves of [5, die_h - 15] (SB_IN / SB_OUT),
+# top/bottom on M5 over [5, die_w - 5], split between the SB and config pins.
+# An RV dw64 tile has 345 pins per left/right half (5 x (64 + valid + ready)
+# + 5 x 3 one-bit) but 341 M6 tracks at the fixed core_height, so editPin
+# failed (IMPPTN-970) unless its SRAM had grown the die already. Grow height
+# (even rows) or width just enough, with 2 tracks of slack. Keep these ranges
+# and layers in step with pin-assignments.tcl. Self-gated like the SRAM grow:
+# a tile whose pins fit is byte-identical. editPin's M5/M6 are the 5th/6th
+# routing layers (gf12: C5, 0.080 vertical; K1, 0.128 horizontal).
+proc _fp_layer_pitch {n dir} {
+  foreach l [dbGet -p head.layers.type routing] {
+    if { [dbGet $l.num] == $n } { return [dbGet $l.pitch$dir] }
+  }
+  return 0
+}
+set _fp_pitch_lr [_fp_layer_pitch 6 Y]
+set _fp_pitch_tb [_fp_layer_pitch 5 X]
+if { $_fp_pitch_lr > 0 && $_fp_pitch_tb > 0 } {
+  set _fp_n_lr 0
+  foreach _fp_pat {SB_*_WEST_SB_IN* SB_*_WEST_SB_OUT* SB_*_EAST_SB_IN* SB_*_EAST_SB_OUT*} {
+    set _fp_n [sizeof_collection [get_ports -quiet $_fp_pat]]
+    if { $_fp_n > $_fp_n_lr } { set _fp_n_lr $_fp_n }
+  }
+  # each left/right half is die_h / 2 - 11 long
+  set _fp_need_die_h [expr 2 * (($_fp_n_lr + 2) * $_fp_pitch_lr + 11)]
+  set _fp_need_h [expr $_fp_need_die_h - $core_margin_t - $core_margin_b]
+  if { $_fp_n_lr > 0 && $_fp_need_h > $height } {
+    set _fp_old $height
+    set height [expr ceil($_fp_need_h / (2 * $vert_pitch)) * 2 * $vert_pitch]
+    puts "INFO: floorplan: grew die height for $_fp_n_lr pins per left/right half (M6 pitch $_fp_pitch_lr): core height $_fp_old -> $height"
+  }
+  # top/bottom: the SB pins get (die_w - 10) * split - 1, the config pins the rest
+  set _fp_n_sb [sizeof_collection [get_ports -quiet SB_*_SOUTH_SB_*]]
+  set _fp_n_cfg [sizeof_collection [get_ports -quiet {reset_out stall_out flush_out config_out_config_* config_out_read config_out_write read_config_data}]]
+  set _fp_n_cfg_n [sizeof_collection [get_ports -quiet {reset stall flush config_config_* config_read config_write read_config_data_in}]]
+  set _fp_n_sb_n [sizeof_collection [get_ports -quiet SB_*_NORTH_SB_*]]
+  if { $_fp_n_sb > 0 && $_fp_n_cfg > 0 } {
+    set _fp_split [expr double($_fp_n_sb) / ($_fp_n_sb + $_fp_n_cfg)]
+    set _fp_sb_max [expr max($_fp_n_sb, $_fp_n_sb_n)]
+    set _fp_cfg_max [expr max($_fp_n_cfg, $_fp_n_cfg_n)]
+    set _fp_need_die_w [expr 10 + max((($_fp_sb_max + 2) * $_fp_pitch_tb + 1) / $_fp_split, \
+                                      (($_fp_cfg_max + 2) * $_fp_pitch_tb + 1) / (1 - $_fp_split))]
+    set _fp_need_w [expr $_fp_need_die_w - $core_margin_l - $core_margin_r]
+    if { $_fp_need_w > $width } {
+      set _fp_old $width
+      set width [expr ceil($_fp_need_w / $horiz_pitch) * $horiz_pitch]
+      puts "INFO: floorplan: grew die width for $_fp_sb_max SB + $_fp_cfg_max config pins per top/bottom side (M5 pitch $_fp_pitch_tb): core width $_fp_old -> $width"
+    }
+  }
+} else {
+  puts "WARNING: floorplan: no 5th/6th routing layer pitch from the tech LEF; edge-pin fit not checked"
+}
+
+#-------------------------------------------------------------------------
 # Floorplan
 #-------------------------------------------------------------------------
 
