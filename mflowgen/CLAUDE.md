@@ -2532,6 +2532,10 @@ libHalide and libclkwrk.so were rebuilt. Shared-toolchain checks:
     - Halide-to-Hardware thesis added `tests/conv_3_3_u8` (uint8 sums) and
       `tests/matmul_bounded` (2-bit inputs). Their values are exact at those widths; a u16
       app's are not.
+    - **Gated by default since lake 14d9f070:** the test's spec JSONs leave out
+      `share_clk_ctr` / `clock_gate_ports`, so all 20 cases (8 stock + 12 thesis) now build
+      gated MEM and pond RTL (`gclk` in garnet.v). Re-run 2026-10-29 at garnet ebda5a58:
+      20/20 bit-accurate (2 h 36 min).
   - **Fixed on the way:**
     - The rv_balance hook made padding registers as wide as a PE instruction constant: 132 bits
       at dw32, so PnR died. Now it uses the fabric width: garnet ac4d9348, aha 923441d.
