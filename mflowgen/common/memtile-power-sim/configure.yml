@@ -6,7 +6,9 @@
 # netlist and writes the measurement window's switching activity to run.saif
 # for synopsys-ptpx-{synth,gl}. Tile_MemCore instantiates it once per
 # (netlist level, variant): design.v is the Genus netlist for the synth level
-# and the signoff design.vcs.v for the PnR level.
+# and the signoff design.vcs.v for the PnR level. The PnR level also gets the
+# signoff design.sdf (Tile_MemCore extends the inputs): run_sim.sh annotates it
+# and drives the inputs at the tile SDC's arrival times.
 
 name: memtile-power-sim
 

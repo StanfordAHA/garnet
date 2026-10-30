@@ -95,3 +95,24 @@ def test_tile_pe_pt_reads_the_whole_sdc(tmp_path):
     assert order.index("fix-pt-sdc.tcl") > order.index("generate-results.tcl")
     for post in (pt_post, genlibdb_post):
         assert any("ErrorsreadingSDC" in p for p in post), post
+
+
+def test_memtile_power_pnr_sims_get_the_signoff_sdf(tmp_path):
+    """The PnR-level memtile power sims run the signoff netlist with its SDF
+    (garnet/pnr-power-sim-no-sdf-race); the synth-level ones have none."""
+    (tmp_path / "spec.json").write_text("{}")
+    script = BUILD.replace("print(len(g.all_nodes()))", "\n".join([
+        "import json",
+        "e = {n: sorted([d[1], *s] for s, d in ((x.get_src(), x.get_dst()) for x in g.get_edges_i(n)))",
+        "     for n in g.all_nodes() if n.startswith('memtile-power-sim-')}",
+        "print(json.dumps(e).replace(' ', ''))"]))
+    env = stub_env(tmp_path, MEMTILE_POWER="True", LAKE_SPEC_CONFIG=str(tmp_path / "spec.json"), LAKE_SPEC_MODE="rv")
+    edges = json.loads(build(MFLOWGEN / "Tile_MemCore", env, script=script))
+    assert len(edges) == 4
+    for name, ins in edges.items():
+        sdf = [e for e in ins if e[0] == "design.sdf"]
+        if "-pnr-" in name:
+            assert sdf == [["design.sdf", "cadence-innovus-signoff", "design.sdf"]], name
+            assert ["design.v", "cadence-innovus-signoff", "design.vcs.v"] in ins, name
+        else:
+            assert sdf == [], name

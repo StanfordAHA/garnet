@@ -883,6 +883,24 @@ Apples-to-apples caveats:
   config` env is NOT exported to the init step), so the default onyx build is
   byte-identical. Preferring `cols=2` macros (lake §5.1) keeps macros short,
   so most configs never trip the grow branch.
+  **Edge-pin fit (2026-10-28, session 43d74890; Tile_PE's floorplan.tcl too).**
+  pin-assignments.tcl spreads the SB pins one per track: left/right on routing
+  layer 6 (gf12 K1, 0.128 um, horizontal) over the halves of [5, die_h - 15],
+  top/bottom on layer 5 (C5, 0.080) over [5, die_w - 5] (MemCore: split SB /
+  config). At the fixed 226 rows a half holds 341 tracks; an RV dw64 tile has
+  345 pins per half (5 x 66 + 15), so thesis_dse's RV dw64 fit tile (smallest
+  dw64 SRAM, no SRAM grow) failed init with IMPPTN-970 on the LEFT side
+  (height, not width), and the RV dw64 PE tile of thesis_tiles_pe would too.
+  A second self-gated branch now grows height (even rows) or width when a
+  side's pins don't fit, with 2 tracks of slack; the pitch comes from the
+  routing layer by index (`num`), as editPin reads `-layer M6` (gf12 has no
+  layer named M6). Checked against all 55 gf12 MemCore init logs in
+  /aha/sweep_out (thesis_dse, thesis_mem, thesis_opt, memtile_pnr x2): only
+  the failing tile changes (226 -> 230 rows); every passing tile keeps >= 3.7
+  um of height and >= 27.9 um of width margin. freepdk45 harness (Innovus
+  23.1, MemCore + PE scripts; scratchpad 43d74890 `pinfit/`): pins that fit
+  give the same die; 540 pins per half or a narrow die fail IMPPTN-970 without
+  the branch and pass with it.
 - **`Tile_MemCore/custom-init/outputs/fix-tap-gaps.tcl`** — lake-spec builds
   only (`construct.py` adds it to custom-init's outputs and to init's `order`
   right after the endcap/well-tap script; the default onyx graph is
@@ -977,6 +995,34 @@ sits in the CGRA. `MEMTILE_POWER=True` (set by the flag) adds to the graph:
   prints `MEMTILE_POWER_TEST <variant> PASS` (idle: no SB data output moves;
   active: every routed output changes ≥ half the elements the program should
   deliver) — a broken stimulus never produces a power number.
+  **PnR level = SDF sim with SDC-timed inputs (2026-10-28, session 43d74890;
+  garnet/pnr-power-sim-no-sdf-race).** It used to run the post-CTS signoff
+  netlist on the cell models' specify delays only (`-notimingchecks`), with
+  every input driven 0.2 T after the edge. In thesis_dse (1.493 ns, thesis SDC
+  `pt_i_delay` 0.25 T = 0.373 ns) that put config/reset/flush 75 ps before the
+  arrival PnR fixed hold for, and one RV output port of 2 of 37 tiles never
+  moved (fw4 dw8 sc8192 in2/out2 T1, fw8 dw32 sc16384 in4/out4 T2; synth level
+  fine). Same failure class the app replays fixed on gf12 (run 3 -> run 4,
+  "Bundle guards"). Now Tile_MemCore wires signoff's `design.sdf` into the two
+  pnr sims (`extend_inputs`), and run_sim.sh, when `inputs/design.sdf` exists:
+  annotates it at `testbench.dut` (MAXIMUM, `-negdelay`), keeps timing checks
+  with `-nonotifier` instead of `-notimingchecks` (as cadence-xcelium-sim), and
+  passes `+define+IN_DELAY` / `PT_IN_DELAY` = the SDC's i_delay / pt_i_delay
+  (0.2 T / 0.7 ns, or env TILE_I_DELAY_NS / PT_I_DELAY_FRAC like
+  constraints/common.tcl). The generated testbench drives reset, config and
+  flush at DPT (`PT_IN_DELAY`) and the switch-box inputs at D (`IN_DELAY`);
+  without the defines both are 0.2 T, so the synth level keeps its inputs and
+  arguments. Tests `tests/test_mflowgen/test_memtile_power.py` (tb timing, the
+  sim's args with/without SDF, SDC constants vs common.tcl) and
+  `test_construct_graphs.py::test_memtile_power_pnr_sims_get_the_signoff_sdf`.
+  Checked on /aha (scratchpad 43d74890 `psdf/`): the failing tile's spec
+  (`fw4_dw8_sc8192_sp_in2_out2_vc2_nofp_portcg_thesis_rv`, `--use_sim_sram`)
+  RTL active 973/974 changes (= gf12 synth level), idle PASS, with and without
+  the defines; Genus freepdk45 netlist + SDF through the real run_sim.sh: no
+  SDF / SDF (onyx delays) / SDF (thesis delays) active PASS 973/974, idle PASS,
+  path delays 100% annotated, 0 annotation errors, 0 timing violations. The
+  gf12 race itself can't be reproduced here (no gf12 netlist or ADK): first
+  check on the build machine is those two tiles' pnr-active sims.
 - `memtile-power-{synth,pnr}-{idle,active}`: the stock
   `synopsys-ptpx-synth` / `synopsys-ptpx-gl` (+ `sram_tt.db`), strip path
   `testbench/dut`.
@@ -2857,11 +2903,14 @@ analysis /aha/sweep_out/thesis_dse_20261025/README.md).** 245/248 PASS at the pr
 total area <= 1.1%, logic <= 2.8%, active power <= 8.3%, idle power up to 22% (leave-one-out: idle
 fits better pooled per mode, 8% mean / 38% max). Failures:
 - `fw1_dw64_sc4096_sp_in1_out1_nofp_portcg_thesis_rv` (RV dw64 fit tile): Innovus init IMPPTN-970,
-  345 pins on one side vs 341 tracks: the smallest dw64 SRAM gives a die too narrow for the B64 pins
-  (custom-init floorplan sizes width from cell + macro area only). RV dw64 then uses the pooled RV fit.
+  345 pins on the LEFT side vs 341 tracks: the die's fixed 226-row height (left/right pins spread
+  over the height; the earlier "too narrow" was wrong). RV dw64 then uses the pooled RV fit. Fixed
+  2026-10-28: the floorplans grow the die when a side's pins don't fit ("Edge-pin fit" above).
 - PnR-level active memtile power on fw4 dw8 and fw8 dw32 RV: one output never toggles in the
   signoff-netlist sim, which runs without SDF (`-notimingchecks`, library specify delays) on a
   post-CTS netlist; synth level passes. Likely a clock-tree race in that sim, not the design.
+  Fixed 2026-10-28: the pnr sims annotate signoff's SDF and drive inputs at the SDC's arrival
+  times ("MemTile idle/active power"); not yet re-run on gf12.
 Static vs RV twins (115, synth): total area RV/static median 1.22, logic 1.58 (fw1 +57..+74%, fw2-8
 +12..+32%), idle 2.48x, active 1.24x. Design point at PnR: 12,708 vs 13,627 um2 (+7.2%).
 

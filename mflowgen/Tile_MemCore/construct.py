@@ -226,6 +226,8 @@ def construct():
                 if level == 'synth':
                     ptpx = custom_step('/../common/synopsys-ptpx-synth')
                 else:
+                    # the signoff netlist simulates with its SDF (run_sim.sh)
+                    sim.extend_inputs(['design.sdf'])
                     ptpx = custom_step('/../common/synopsys-ptpx-gl')
                 ptpx.set_name(f'memtile-power-{level}-{variant}')
                 ptpx.extend_inputs(['sram_tt.db'])
@@ -594,6 +596,7 @@ def construct():
                 g.connect_by_name(synth, ptpx)    # design.v/.sdc/.spef
             else:
                 g.connect(signoff.o('design.vcs.v'), sim.i('design.v'))
+                g.connect(signoff.o('design.sdf'), sim.i('design.sdf'))
                 g.connect_by_name(signoff, ptpx)  # design.vcs{,.pg}.v, .pt.sdc, .spef.gz
             g.connect_by_name(gen_sram, ptpx)     # sram_tt.db
             g.connect(sim.o('run.saif'), ptpx.i('run.saif'))
