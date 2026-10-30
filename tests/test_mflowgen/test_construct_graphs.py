@@ -116,3 +116,28 @@ def test_memtile_power_pnr_sims_get_the_signoff_sdf(tmp_path):
             assert ["design.v", "cadence-innovus-signoff", "design.vcs.v"] in ins, name
         else:
             assert sdf == [], name
+
+
+@pytest.mark.parametrize("design,env,want", [
+    ("Tile_PE", {}, False),
+    ("Tile_PE", {"THESIS_FABRIC": "static"}, True),
+    ("Tile_PE", {"THESIS_FABRIC": "rv", "LAKE_SPEC_CONFIG": "spec.json", "LAKE_SPEC_MODE": "rv"}, True),
+    ("Tile_MemCore", {}, False),
+    ("Tile_MemCore", {"LAKE_SPEC_CONFIG": "spec.json", "LAKE_SPEC_MODE": "static"}, True),
+])
+def test_fix_tap_gaps_after_the_well_taps(tmp_path, design, env, want):
+    """A well tap one site from a fixed cell leaves a gap no GF12 filler fits, and
+    route aborts with NRIG-76 (the static dw64 thesis PE tile, 2026-10-29): thesis
+    PE tiles and lake-spec MemCores run fix-tap-gaps.tcl right after the taps go in;
+    garnet's own tiles keep their graphs."""
+    script = BUILD.replace("print(len(g.all_nodes()))", "\n".join([
+        "import json",
+        "print(json.dumps([g.get_step('cadence-innovus-init').get_param('order'),",
+        "                  g.get_step('custom-init').all_outputs()]).replace(' ', ''))"]))
+    order, outputs = json.loads(build(MFLOWGEN / design, stub_env(tmp_path, **env), script=script))
+    assert ("fix-tap-gaps.tcl" in order) == want
+    assert ("fix-tap-gaps.tcl" in outputs) == want
+    if want:
+        assert order.index("fix-tap-gaps.tcl") == order.index("add-endcaps-welltaps.tcl") + 1
+        assert (MFLOWGEN / design / "custom-init" / "outputs" / "fix-tap-gaps.tcl").resolve() == \
+            MFLOWGEN / "common" / "init-scripts" / "fix-tap-gaps.tcl"

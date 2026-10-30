@@ -901,7 +901,8 @@ Apples-to-apples caveats:
   23.1, MemCore + PE scripts; scratchpad 43d74890 `pinfit/`): pins that fit
   give the same die; 540 pins per half or a narrow die fail IMPPTN-970 without
   the branch and pass with it.
-- **`Tile_MemCore/custom-init/outputs/fix-tap-gaps.tcl`** — lake-spec builds
+- **`common/init-scripts/fix-tap-gaps.tcl`** (linked from `Tile_MemCore/` and, since
+  2026-10-29, `Tile_PE/custom-init/outputs/`; thesis Tile_PE in the next bullet) — lake-spec builds
   only (`construct.py` adds it to custom-init's outputs and to init's `order`
   right after the endcap/well-tap script; the default onyx graph is
   unchanged). GF12's smallest filler is 2 sites and taps/endcaps are fixed,
@@ -923,6 +924,15 @@ Apples-to-apples caveats:
   route log also shows the second "addFiller without DRC checking" pass
   placing DRC-violating `FILL_incr` cells — those route fine but are a latent
   signoff-DRC issue.
+- **Thesis Tile_PE runs fix-tap-gaps.tcl too (2026-10-29, session bc48e85f).** The static dw64
+  thesis PE tile (`fw2_dw64_sc8192_sp_in2_out2_vc2_sharectr_portcg_thesis`, 142.272 um die) failed
+  route with NRIG-76: CTS's checkPlace found 113 filler-gap violations (about one per alternate
+  row, the row-end pattern), and its seven siblings at other widths and dies found none. Tile_PE
+  construct.py adds the script to custom-init's outputs and to init's `order` right after the
+  well-tap script when `THESIS_FABRIC` is set (pd variant when pwr_aware), so garnet's own PE graph
+  is unchanged. Test `test_fix_tap_gaps_after_the_well_taps`; a materialized thesis graph's
+  custom-init step holds the dereferenced script. Not yet re-run on gf12: the next build of that
+  tile (now named `fw4_dw64_sc16384_...`, the same PE tile since d5489e0d) is the check.
 - **`Tile_MemCore/custom-signoff/outputs/fix-pt-sdc.tcl`** (2026-10-07) —
   lake-spec builds only (new `custom-signoff` step feeding signoff; sourced
   right after `generate-results.tcl`). `writeTimingCon` splits long object lists
@@ -2900,6 +2910,15 @@ Recipes (all write under one --out-dir; `--clocks-from <that dir>` reads the pro
   - The 12 gaps left: static resnet on the 2 1-input points (above); expected u16-vs-16-bit-gold gaps,
     camera at dw32 S+R (1 value: a 16-bit wrap clamps to 0 in the gold, 255 on hardware), dw8 harris
     (457) and unsharp (40535), dw8 camera halide "Bad slice args".
+- **thesis_tiles run (build machine 2026-10-28/29, zips `thesis_dse_mem_r8cad-gf12_20261028-181946_slim`
+  + `thesis_tiles_pe_r8cad-gf12_20261029-000821_slim`, extracted in /aha/sweep_out/thesis_tiles_20261029).**
+  Run from a garnet before d5489e0d (dw64 named fw2_dw64_sc8192). Clocks as the probe table (static
+  715/600/565/510, RV 870/700/650/565 MHz). Both design-point MemTiles and 6 of 8 PE tiles PASS (PT
+  setup WNS -11 to -98 ps, worst the RV dw32 PE, whose Innovus reg2reg is -138 ps). Both dw64 PE tiles
+  FAIL: RV at init (IMPPTN-970, 345 pins for 341 tracks; edge-pin fit, garnet 7b746d92)
+  and static at route (NRIG-76 filler gaps: fix-tap-gaps above). At HEAD those two are new names
+  (fw4_dw64_sc16384), so a rebuild gets fresh workspaces; delete the two fw2_dw64 workspaces first,
+  or their FAIL rows stay in thesis_tiles_pe's CSVs and zip.
 - `THESIS_PART_DIRS`: thesis_tiles_mem, thesis_dse_reduced_mem and thesis_dse_mem all build in
   `<out>/thesis_dse_mem`, so a later part with `--skip-existing` (not `--fresh`) only builds what
   is missing. `THESIS_CLOCKED_PARTS` refuse to run without --clocks-from / --clock-mhz.

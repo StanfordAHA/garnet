@@ -148,6 +148,8 @@ def construct():
     rtl = custom_step('/../common/rtl')
     constraints = custom_step('/constraints')
     custom_init = custom_step('/custom-init')
+    if parameters['thesis']:
+        custom_init.extend_outputs(['fix-tap-gaps.tcl'])
     custom_genus_scripts = custom_step('/custom-genus-scripts')
     custom_flowgen_setup = custom_step('/custom-flowgen-setup')
     if adk_name == 'tsmc16':
@@ -637,6 +639,15 @@ def construct():
         order.insert(read_idx + 1, 'pd-generate-lvs-netlist.tcl')
         order.append('check-clamp-logic-structure.tcl')
         signoff.update_params({'order': order})
+
+    # init -- thesis: fix-tap-gaps.tcl right after the endcaps/well taps go in (a
+    # tap one site from a fixed cell leaves a gap no filler fits, and route aborts
+    # with NRIG-76). Not added for garnet's own PE tile so its graph stays unchanged.
+    if parameters['thesis']:
+        order = init.get_param('order')
+        taps = 'pd-add-endcaps-welltaps.tcl' if pwr_aware else 'add-endcaps-welltaps.tcl'
+        order.insert(order.index(taps) + 1, 'fix-tap-gaps.tcl')
+        init.update_params({'order': order})
 
     return g
 
