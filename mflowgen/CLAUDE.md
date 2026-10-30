@@ -2837,17 +2837,17 @@ Recipes (all write under one --out-dir; `--clocks-from <that dir>` reads the pro
   - **One unattended command for steps 3-5 + both power runs (2026-10-28, session bc48e85f):**
     `bash mflowgen/thesis_final.sh` from the build machine's garnet (env knobs in its header).
     It pulls garnet + lake and checks everything in the foreground: probes in $OUT, garnet >=
-    0bc94ef9/9573a704, the md5 of both bundle tarballs (extracted once to $BUILDS), /sim/docker
+    0bc94ef9/9573a704, both bundle tarballs whole (`gzip -t`, extracted once to $BUILDS), /sim/docker
     >= 20 GB free, recipe config counts 8/246/10, the clock table, and both power dry runs. Then it
     detaches (setsid nohup; log $OUT/thesis_final.log). Docker steps for every part go first
     (--rtl-only). Then the Innovus chain thesis_tiles_pe -> thesis_dse -> thesis_filter_ab (4 PnR;
-    thesis_tiles_mem is dropped since its 2 configs are DSE PnR configs). The power runs go
-    alongside if RAM >= 160 GB, else after. One lighter retry per failed part, then
+    thesis_tiles_mem is dropped since its 2 configs are DSE PnR configs), one lighter retry per
+    failed part, and only then the two power runs (user 2026-10-29: build results first). Then
     $OUT/thesis_final_summary.txt (statuses, exact replays, upstream lake/canal/gemstone/lassen tips at
     start vs end, zips) and $OUT/THESIS_FINAL_DONE. Re-running resumes. The whole flow was
     dry-run on /aha (DRY=1, fake layout). Bundles recorded later (e.g. the 6 static fw1/fw2 dp ones after
     clockwork 38ed931e) go in $BUILDS/app_bundles_thesis_dp_addon*.tgz (same root
-    app_bundles_thesis_dp/<app>_agg/<config>, optional <tgz>.md5). The next run extracts them
+    app_bundles_thesis_dp/<app>_agg/<config>). The next run extracts them
     once, and the resumed power run adds just those variants. Since 2026-10-28 late (session bc48e85f):
     - An add-on bundle that REPLACES one already in $B first deletes the old bundle directory
       (tar would leave its stray files) and that variant's `N-application-/testbench-/
@@ -2865,6 +2865,24 @@ Recipes (all write under one --out-dir; `--clocks-from <that dir>` reads the pro
     - DRY=1 leaves add-ons unextracted.
     - Tested on /aha with stub sweep_specs/cgra_app_power: replace + new variant, both locks,
       concurrent and after.
+    - **2026-10-29 (user):** no .md5 needed. Every tarball is checked with `gzip -t`; a `<tgz>.md5`
+      beside it is still checked. App power always runs after the build track (the concurrent mode
+      is gone). **Newest results at any time in `$OUT/latest/`:**
+      - `<part>_latest_slim.zip` per part and `cgra_app_power_thesis_{dp,fp_ab}_latest.zip`, plus
+        `STATUS.txt` (last step, configs done per part, power rows, zip times).
+      - A publisher refreshes them every SNAPSHOT_MIN (30) min, and again right after each part
+        or power run. It zips only what changed: a newer `.time_end` / `done.flag` /
+        `results.csv`, or a power `.hier`.
+      - Each refresh runs `sweep_specs.py --zip-only --zip-slim --zip-path` (or
+        `cgra_app_power.py --report-only --zip --zip-path`, new). Both rewrite the part's CSVs
+        from its workspaces, so `correlation.csv` / `memtile_power.csv` cover every config
+        finished so far.
+      - Both tools now write their CSVs and zips beside the final name and rename them into
+        place, so a snapshot never collides with the live run.
+      - One round at a time ($LATEST/.publish.lock), also across a main run and a POWER_ONLY run.
+      - Checked: stub run order (rtl -> parts, each with a snapshot after it -> power -> final
+        round), `gzip -t` on half a tarball, and a real `--zip-only` on the thesis_tiles_pe zip
+        (CSV identical to the build machine's; 60 MB in 11 s).
   - gen_app_bundle refuses a bundle without "comparison passed": u16 apps on the dw8/dw32 points
     record only where their outputs still match the 16-bit gold (Halide-to-Hardware/CLAUDE.md "Test
     apps for other CGRA data widths"). A camera bundle on a bigger array has a bigger `array_tiles`,

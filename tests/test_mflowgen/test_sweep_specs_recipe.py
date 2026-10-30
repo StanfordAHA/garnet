@@ -576,6 +576,18 @@ def test_zip_has_pnr_and_synth_reports(ss, tmp_path, monkeypatch):
     assert "cfg/22-cadence-innovus-route/outputs/design.def" not in names
 
 
+def test_csvs_replace_in_place(ss, tmp_path):
+    """results.csv and the report CSVs are written beside their names and renamed, so
+    a --zip-only snapshot taken while the sweep runs (thesis_final.sh's publisher)
+    never reads or leaves a half-written file."""
+    for n in (1, 2):
+        ss._write_results(tmp_path / "results.csv", [{"config_name": "a", "status": f"S{n}"}])
+        ss._write_csv(tmp_path / "correlation.csv", [{"config_name": "a", "x": float(n)}])
+    assert (tmp_path / "results.csv").read_text().splitlines() == ["config_name,status", "a,S2"]
+    assert (tmp_path / "correlation.csv").read_text().splitlines() == ["config_name,x", "a,2.000"]
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["correlation.csv", "results.csv"]
+
+
 def test_rtl_only_memtile_power_makes_the_container_steps(ss, capsys, tmp_path):
     """--rtl-only --memtile-power makes rtl + memtile-power-test-gen (the two
     docker steps) on the full run's graph, so the full run needs no docker."""

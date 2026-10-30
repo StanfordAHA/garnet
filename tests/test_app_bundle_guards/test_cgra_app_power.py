@@ -318,6 +318,24 @@ def test_zip_has_every_synth_report(tmp_path):
     assert {f"cap/cfg/Tile_PE/{f}" for f in files} <= names
 
 
+def test_snapshot_zip_and_csvs_replace_in_place(tmp_path):
+    """--report-only --zip --zip-path refreshes one fixed zip while the run goes on
+    (thesis_final.sh's publisher): the zip and the CSVs are written beside their
+    final names and renamed, so no reader sees, or is left, a partial file."""
+    out = tmp_path / "cap"
+    (out / "cfg" / "Tile_PE").mkdir(parents=True)
+    (out / "cfg" / "Tile_PE" / "run_meta.json").write_text("{}")
+    latest = tmp_path / "latest" / "cap_latest.zip"
+    latest.parent.mkdir()
+    for n in (1, 2):
+        cap.write_csv(out / "cgra_power.csv", [{"config": "cfg", "app_W": float(n)}])
+        cap.zip_results(cap.parse_args(["--out-dir", str(out), "--report-only", "--zip-path", str(latest)]))
+        assert zipfile.ZipFile(latest).read("cap/cgra_power.csv").decode().splitlines() == ["config,app_W", f"cfg,{n}"]
+    assert sorted(p.name for p in latest.parent.iterdir()) == ["cap_latest.zip"]
+    assert sorted(p.name for p in out.iterdir()) == ["cfg", "cgra_power.csv"]
+    assert not list(tmp_path.glob("cap_*.zip"))
+
+
 def test_rv_balance_one_bit_edge():
     """A 1-bit edge (a PE's res_p O1 -> another PE's bit0) is padded with corebit.reg;
     a data edge keeps coreir.reg at the design's width."""

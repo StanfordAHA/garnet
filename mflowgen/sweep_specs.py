@@ -3644,13 +3644,23 @@ def _fmax_estimates(r):
     return out
 
 
+def _replace_csv(path, fieldnames, rows):
+    """Write a CSV beside `path`, then rename it into place: a `--zip-only` snapshot
+    taken while the sweep runs (both rewrite the out-dir CSVs) never reads or leaves
+    a half-written file."""
+    path = Path(path)
+    tmp = path.with_name(f".{path.name}.{os.getpid()}.{threading.get_ident()}.tmp")
+    with open(tmp, "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+    os.replace(tmp, path)
+
+
 def _write_csv(path, rows, fmt="{:.3f}"):
     rows = [{k: (fmt.format(v) if isinstance(v, float) else v) for k, v in r.items()}
             for r in rows]
-    with open(path, "w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=list(rows[0]))
-        writer.writeheader()
-        writer.writerows(rows)
+    _replace_csv(path, list(rows[0]), rows)
 
 
 def _print_fits(table):
@@ -3946,10 +3956,7 @@ def _row(name, cfg, cfg_dir, status, notes, duration_s, targets):
 def _write_results(csv_path, rows):
     if not rows:
         return
-    with open(csv_path, "w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
-        writer.writeheader()
-        writer.writerows(rows)
+    _replace_csv(csv_path, list(rows[0].keys()), rows)
 
 
 if __name__ == "__main__":

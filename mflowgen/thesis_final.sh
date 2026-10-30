@@ -1,7 +1,8 @@
 #!/bin/bash
 # The final thesis data set on the build machine, unattended (garnet mflowgen/CLAUDE.md
 # "Final thesis data set"). Prerequisites: the thesis_fmax probes in $OUT (done 2026-10-27)
-# and the two app-bundle tarballs from /aha copied to $BUILDS.
+# and the app-bundle tarballs from /aha/sweep_out copied to $BUILDS (no .md5 needed: each
+# tarball's gzip stream is tested, and a <tgz>.md5 beside it is checked when there is one).
 #
 #   cd /sim/mstrange/BUILD_CGRA/garnet && git pull && bash mflowgen/thesis_final.sh
 #
@@ -9,22 +10,24 @@
 # so the terminal can be closed. Progress: tail -f $OUT/thesis_final.log. Done when
 # $OUT/THESIS_FINAL_DONE exists; $OUT/thesis_final_summary.txt lists the zips to copy back.
 # Re-running it resumes: every sweep part skips finished configs and make skips built steps.
-# Bundles recorded later go in $BUILDS/app_bundles_thesis_dp_addon*.tgz (+ .md5); re-run to add them.
+# Bundles recorded later go in $BUILDS/app_bundles_thesis_dp_addon*.tgz; re-run to add them.
 # An add-on bundle that replaces one of the set drops the old bundle and its replays first, and
 # a new variant directory in an add-on joins the power run. To add them while the build track
 # is still running, run only the power track: POWER_ONLY=1 bash mflowgen/thesis_final.sh
 # (no git pull; done when $OUT/THESIS_FINAL_POWER_DONE exists).
 #
-# Two tracks:
-#   build (Innovus-bound): RTL + power-test generation for every part first (the docker
-#     steps, a few hours), then thesis_tiles_pe -> thesis_dse -> thesis_filter_ab with
-#     PNR_JOBS concurrent Innovus, then one lighter retry pass for any part that failed.
-#   power (no Innovus): whole-CGRA power of both bundle sets. It runs next to the build track
-#     when the machine has >= POWER_CONCURRENT_GB of RAM, else after it (POWER_MODE).
+# Order: RTL + power-test generation for every part first (the docker steps, a few hours), then
+# thesis_tiles_pe -> thesis_dse -> thesis_filter_ab with PNR_JOBS concurrent Innovus, one
+# lighter retry pass for any part that failed, and only then the whole-CGRA app power of both
+# bundle sets (it needs no Innovus, but it would slow the builds).
+# Newest results at any time: $OUT/latest/ holds one zip per part and per power run, plus
+# STATUS.txt. Every SNAPSHOT_MIN minutes, and right after each part or power run ends, each one
+# with new results gets its CSVs rewritten from its workspaces and a fresh zip (renamed into
+# place, so a copy never catches a half-written one). Copy $OUT/latest/*.zip back whenever.
 # Knobs (env): PNR_JOBS (4; 6 concurrent Innovus got OOM-killed before), SYNTH_JOBS (6),
-# RTL_JOBS (8), POWER_TILE_JOBS (2), POWER_PAR_JOBS (4), POWER_REPLAY_JOBS (4),
-# POWER_MODE (auto | concurrent | after), DRY=1 (every build command --dry-run, no pull, add-ons
-# left unextracted), POWER_ONLY=1 (the power track alone, next to a running build track).
+# RTL_JOBS (8), POWER_TILE_JOBS (2), POWER_PAR_JOBS (4), POWER_REPLAY_JOBS (4), SNAPSHOT_MIN (30),
+# DRY=1 (every build command --dry-run, no pull, add-ons left unextracted, no snapshots),
+# POWER_ONLY=1 (the power track alone, e.g. next to a running build track).
 set -u
 SELF=$(readlink -f "$0")
 
@@ -39,22 +42,20 @@ RTL_JOBS=${RTL_JOBS:-8}
 POWER_TILE_JOBS=${POWER_TILE_JOBS:-2}
 POWER_PAR_JOBS=${POWER_PAR_JOBS:-4}
 POWER_REPLAY_JOBS=${POWER_REPLAY_JOBS:-4}
-POWER_MODE=${POWER_MODE:-auto}
-POWER_CONCURRENT_GB=${POWER_CONCURRENT_GB:-160}
+SNAPSHOT_MIN=${SNAPSHOT_MIN:-30}
 DRY=${DRY:-0}
 POWER_ONLY=${POWER_ONLY:-0}
 NEED_GARNET=(0bc94ef9 9573a704)   # cgra_app_power --pe-registered-operands; --recipe thesis_filter_ab
 DP_TGZ=$BUILDS/app_bundles_thesis_dp.tgz
-DP_MD5=21b793754bd7b8ef34a076db012898ea
 FP_TGZ=$BUILDS/app_bundles_thesis_fp_ab.tgz
-FP_MD5=7a542f2f9a7493482fcfc3ec9ed02b45
 B=$BUILDS/app_bundles_thesis_dp
 F=$BUILDS/app_bundles_thesis_fp_ab
 # in this order (a config's first variant is its d_* reference); dp_variants appends the rest of $B
 DP_KNOWN=(gaussian_agg unsharp_agg harris_agg camera_pipeline_agg matmul_pond_agg resnet_agg)
 VARIANTS_FP="conv_A0=$F/conv_A0,conv_A=$F/conv_A,conv_B=$F/conv_B"
-# part, expected config count
-PARTS=("thesis_tiles_pe 8" "thesis_dse 246" "thesis_filter_ab 10")
+# recipe, its out dir under $OUT, expected config count
+PARTS=("thesis_tiles_pe thesis_tiles_pe 8" "thesis_dse thesis_dse_mem 246" "thesis_filter_ab thesis_filter_ab_mem 10")
+LATEST=$OUT/latest
 LOG=$OUT/thesis_final.log
 [ "$POWER_ONLY" = 1 ] && LOG=$OUT/thesis_final_power_only.log
 
@@ -91,6 +92,10 @@ clocks_from() {   # the table the tiles were built with, once the first clocked 
     if [ -f "$OUT/thesis_tiles_pe/thesis_clocks.json" ]; then echo "$OUT/thesis_tiles_pe/thesis_clocks.json"
     else echo "$OUT"; fi
 }
+tgz_ok() {   # the tarball's gzip stream is whole, and it matches a <tgz>.md5 beside it if there is one
+    gzip -t "$1" 2> /dev/null || return 1
+    [ ! -f "$1.md5" ] || [ "$(md5sum "$1" | cut -c1-32)" = "$(cut -c1-32 "$1.md5")" ]
+}
 
 preflight() {
     cd "$GARNET_DIR" || die "no garnet checkout at $GARNET_DIR"
@@ -109,22 +114,22 @@ preflight() {
     for p in thesis_fmax_mem thesis_fmax_pe thesis_fmax_pe_regops; do
         [ -f "$OUT/$p/correlation.csv" ] || die "no $OUT/$p/correlation.csv: run --recipe thesis_fmax --out-dir $OUT first"
     done
-    # bundles: extract each tarball once (md5-checked); an existing directory is used as is
-    local tgz md5 dir
-    for tgz in "$DP_TGZ $DP_MD5 $B" "$FP_TGZ $FP_MD5 $F"; do
+    # bundles: extract each tarball once; an existing directory is used as is
+    local tgz dir
+    for tgz in "$DP_TGZ $B" "$FP_TGZ $F"; do
         set -- $tgz
-        tgz=$1 md5=$2 dir=$3
+        tgz=$1 dir=$2
         if [ ! -d "$dir" ]; then
             [ -f "$tgz" ] || die "missing $tgz: copy it from /aha/sweep_out/ first"
             say "checking $(basename "$tgz")"
-            [ "$(md5sum "$tgz" | cut -c1-32)" = "$md5" ] || die "md5 mismatch: $tgz (re-copy it)"
+            tgz_ok "$tgz" || die "$tgz is truncated or corrupt (re-copy it)"
             tar xzf "$tgz" -C "$BUILDS" || die "extracting $tgz failed"
         fi
         [ -d "$dir" ] || die "$tgz did not extract to $dir"
     done
-    # bundles recorded later (same tree, e.g. after a compiler fix): app_bundles_thesis_dp_addon*.tgz,
-    # checked against <tgz>.md5 when present. A power run already in flight ignores them; run this
-    # script again afterwards (or POWER_ONLY=1) and the power run resumes, adding only the new bundles.
+    # bundles recorded later (same tree, e.g. after a compiler fix): app_bundles_thesis_dp_addon*.tgz.
+    # A power run already in flight ignores them; run this script again afterwards (or
+    # POWER_ONLY=1) and the power run resumes, adding only the new bundles.
     local addon vc v c ws
     for addon in "$BUILDS"/app_bundles_thesis_dp_addon*.tgz; do
         [ -f "$addon" ] || continue
@@ -133,9 +138,7 @@ preflight() {
             say "DRY: not extracting $(basename "$addon")"
             continue
         fi
-        if [ -f "$addon.md5" ]; then
-            [ "$(md5sum "$addon" | cut -c1-32)" = "$(cut -c1-32 "$addon.md5")" ] || die "md5 mismatch: $addon"
-        fi
+        tgz_ok "$addon" || die "$addon is truncated or corrupt (re-copy it)"
         # a bundle it replaces: drop the old one (tar would keep its stray files) and that
         # variant's replay chain in the power workspaces (make would call it up to date; the
         # next mflowgen run gives the steps new build dirs)
@@ -168,7 +171,7 @@ preflight() {
     local part n want
     [ "$POWER_ONLY" = 1 ] || for p in "${PARTS[@]}"; do
         set -- $p
-        part=$1 want=$2
+        part=$1 want=$3
         n=$(cd "$GARNET_DIR" && ./mflowgen/sweep_specs.py --recipe "$part" --out-dir "$OUT" \
             --clocks-from "$OUT" --list 2> /dev/null | grep -c '^fw')
         [ "$n" = "$want" ] || die "--recipe $part lists $n configs, expected $want"
@@ -183,14 +186,111 @@ preflight() {
     (cd "$GARNET_DIR" && ./mflowgen/cgra_app_power.py --any-config --variants "$VARIANTS_FP" \
         --clocks-from "$OUT" --out-dir "$POWER_FP" --dry-run > /dev/null) \
         || die "cgra_app_power --dry-run fails on $F"
-    local mem_gb
-    mem_gb=$(awk '/MemTotal/ {printf "%d", $2 / 1048576}' /proc/meminfo)
-    if [ "$POWER_MODE" = auto ]; then
-        if [ "$mem_gb" -ge "$POWER_CONCURRENT_GB" ]; then POWER_MODE=concurrent; else POWER_MODE=after; fi
-    fi
-    say "machine: $(nproc) cores, ${mem_gb} GB RAM -> power runs $POWER_MODE the build track"
+    say "machine: $(nproc) cores, $(awk '/MemTotal/ {printf "%d", $2 / 1048576}' /proc/meminfo) GB RAM"
     say "jobs: rtl $RTL_JOBS, DSE synth $SYNTH_JOBS, Innovus $PNR_JOBS, power tile/make/replay" \
-        "$POWER_TILE_JOBS/$POWER_PAR_JOBS/$POWER_REPLAY_JOBS"
+        "$POWER_TILE_JOBS/$POWER_PAR_JOBS/$POWER_REPLAY_JOBS; snapshots every $SNAPSHOT_MIN min to $LATEST"
+}
+
+# ---- newest results in $LATEST while the run goes on
+changed() {   # changed <stamp> <dir> <maxdepth> <file name>...: one of them under <dir> is newer
+    local stamp=$1 dir=$2 depth=$3 expr=() n
+    shift 3
+    [ -f "$stamp" ] || return 0
+    for n in "$@"; do expr+=(-o -name "$n"); done
+    [ -n "$(find "$dir" -maxdepth "$depth" \( "${expr[@]:1}" \) -newer "$stamp" -print -quit 2> /dev/null)" ]
+}
+snapshot() {   # snapshot sweep|power <dir>: its CSVs from its workspaces + a fresh zip, if it changed
+    local kind=$1 dir=$2 name zip
+    name=$(basename "$dir")
+    local stamp=$LATEST/.$name.stamp
+    [ -d "$dir" ] || return 0
+    if [ "$kind" = sweep ]; then
+        changed "$stamp" "$dir" 3 .time_end done.flag results.csv || return 0
+        zip=$LATEST/${name}_latest_slim.zip
+    else
+        changed "$stamp" "$dir" 6 .time_end '*.hier' || return 0
+        zip=$LATEST/${name}_latest.zip
+    fi
+    touch "$stamp.new"   # before the zip, so results landing during it make the next round zip again
+    if [ "$kind" = sweep ]; then
+        nice -n 19 ./mflowgen/sweep_specs.py --zip-only --zip-slim --out-dir "$dir" --zip-path "$zip"
+    else
+        nice -n 19 ./mflowgen/cgra_app_power.py --report-only --zip --out-dir "$dir" --zip-path "$zip"
+    fi > "$LATEST/.$name.log" 2>&1
+    if [ $? = 0 ]; then
+        mv "$stamp.new" "$stamp"
+        say "snapshot: $zip"
+    else
+        rm -f "$stamp.new"
+        say "WARNING: snapshot of $name failed (log $LATEST/.$name.log); the next round retries"
+    fi
+}
+results_lines() {   # one line per part and power run: what is done so far
+    local p
+    for p in "${PARTS[@]}"; do
+        set -- $p
+        [ -f "$OUT/$2/results.csv" ] || { echo "$2: no results yet (of $3 configs)"; continue; }
+        echo "$2: $(python3 -c "import csv, collections, sys
+rows = list(csv.DictReader(open(sys.argv[1])))
+print(len(rows), 'of', sys.argv[2], 'configs', dict(collections.Counter(r.get('status') for r in rows)))" \
+            "$OUT/$2/results.csv" "$3")"
+    done
+    for p in "$POWER_DP" "$POWER_FP"; do
+        [ -f "$p/cgra_power.csv" ] || { echo "$(basename "$p"): no cgra_power.csv yet"; continue; }
+        echo "$(basename "$p"): $(($(wc -l < "$p/cgra_power.csv") - 1)) config x variant rows;" \
+            "tiles exact/replayed: $(python3 -c "import csv, sys
+rows = list(csv.DictReader(open(sys.argv[1])))
+t = lambda k: sum(int(float(r.get(k) or 0)) for r in rows)
+print(t('tiles_exact'), '/', t('tiles_replayed'))" "$p/cgra_power.csv")"
+    done
+}
+publish() {   # one snapshot round; one round at a time across a main and a POWER_ONLY run
+    [ "$DRY" = 1 ] && return 0
+    mkdir -p "$LATEST"
+    (
+        flock 7
+        cd "$GARNET_DIR" || exit 1
+        local p
+        for p in "${PARTS[@]}"; do
+            set -- $p
+            snapshot sweep "$OUT/$2"
+        done
+        snapshot power "$POWER_DP"
+        snapshot power "$POWER_FP"
+        {
+            echo "thesis_final $(date '+%F %T') on $(hostname); garnet $(git -C "$GARNET_DIR" log -1 --format=%h)"
+            echo "last step: $(grep -a -E '(START|END rc=)' "$LOG" 2> /dev/null | tail -1 | cut -c1-200)"
+            results_lines
+            echo "zips (newest results of each; copy them back whenever):"
+            find "$LATEST" -maxdepth 1 -name '*.zip' -printf '  %TY-%Tm-%Td %TH:%TM  %s  %f\n' | sort -k4
+        } > "$LATEST/STATUS.txt.tmp" && mv "$LATEST/STATUS.txt.tmp" "$LATEST/STATUS.txt"
+    ) 7> "$LATEST/.publish.lock"
+}
+publisher() {   # a round every SNAPSHOT_MIN minutes until stop_publisher
+    local t
+    while :; do
+        publish
+        for ((t = 0; t < SNAPSHOT_MIN * 60; t += 15)); do
+            [ -f "$LATEST/.stop.$$" ] && return 0
+            sleep 15
+        done
+    done
+}
+start_publisher() {
+    PUB_PID=
+    [ "$DRY" = 1 ] && return 0
+    mkdir -p "$LATEST"
+    rm -f "$LATEST/.stop.$$"
+    publisher >> "$OUT/thesis_final_publish.log" 2>&1 &
+    PUB_PID=$!
+    say "newest results go to $LATEST every $SNAPSHOT_MIN min (STATUS.txt; publisher pid $PUB_PID)"
+}
+stop_publisher() {   # lets a round in progress finish, then publishes the final state
+    [ -n "${PUB_PID:-}" ] || return 0
+    touch "$LATEST/.stop.$$"
+    wait "$PUB_PID"
+    rm -f "$LATEST/.stop.$$"
+    publish >> "$OUT/thesis_final_publish.log" 2>&1
 }
 
 power_track() {   # always in a subshell (&, a pipeline or ( )), which holds the power lock
@@ -205,6 +305,7 @@ power_track() {   # always in a subshell (&, a pipeline or ( )), which holds the
         run cap --any-config --variants "$VARIANTS_DP" --clocks-from "$clk" --pe-registered-operands \
             --tile-jobs 1 --parallel-jobs "$POWER_PAR_JOBS" --replay-jobs "$POWER_REPLAY_JOBS" \
             --out-dir "$POWER_DP" --zip
+    publish >> "$OUT/thesis_final_publish.log" 2>&1
     run cap --any-config --variants "$VARIANTS_FP" --clocks-from "$clk" \
         --tile-jobs "$POWER_TILE_JOBS" --parallel-jobs "$POWER_PAR_JOBS" --replay-jobs "$POWER_REPLAY_JOBS" \
         --out-dir "$POWER_FP" --zip ||
@@ -220,47 +321,37 @@ build_track() {
         [ "$p" = thesis_dse ] && jobs=(--config-jobs "$SYNTH_JOBS" --pnr-jobs "$PNR_JOBS")
         run ss --recipe "$p" --out-dir "$OUT" --clocks-from "$OUT" "${jobs[@]}" \
             --skip-existing --zip --zip-slim || failed+=("$p")
+        publish >> "$OUT/thesis_final_publish.log" 2>&1
     done
     # one lighter pass for what failed (e.g. an OOM-killed Innovus); finished configs are skipped
     for p in "${failed[@]}"; do
         run ss --recipe "$p" --out-dir "$OUT" --clocks-from "$OUT" --config-jobs 2 --pnr-jobs 2 \
             --skip-existing --zip --zip-slim
+        publish >> "$OUT/thesis_final_publish.log" 2>&1
     done
 }
 
 summary() {
     {
         echo "thesis_final finished $(date '+%F %T') on $(hostname); garnet $(git -C "$GARNET_DIR" log -1 --format=%h)"
-        local p
-        for p in thesis_tiles_pe thesis_dse_mem thesis_filter_ab_mem; do
-            [ -f "$OUT/$p/results.csv" ] || { echo "$p: no results.csv"; continue; }
-            echo "$p: $(python3 -c "import csv, collections, sys
-rows = list(csv.DictReader(open(sys.argv[1])))
-print(len(rows), 'configs', dict(collections.Counter(r.get('status') for r in rows)))" "$OUT/$p/results.csv")"
-        done
-        for p in "$POWER_DP" "$POWER_FP"; do
-            [ -f "$p/cgra_power.csv" ] || { echo "$(basename "$p"): no cgra_power.csv"; continue; }
-            echo "$(basename "$p"): $(($(wc -l < "$p/cgra_power.csv") - 1)) config x variant rows;" \
-                "tiles exact/replayed: $(python3 -c "import csv, sys
-rows = list(csv.DictReader(open(sys.argv[1])))
-t = lambda k: sum(int(float(r.get(k) or 0)) for r in rows)
-print(t('tiles_exact'), '/', t('tiles_replayed'))" "$p/cgra_power.csv")"
-        done
+        results_lines
         echo "upstream branch tips at start / end (an RTL push in between can mix tile RTL):"
         local start=$OUT/upstream_tips_start.txt
         [ -f "$start" ] || tips > "$start"
         paste "$start" <(tips)
+        echo "newest results (one zip per part and power run): $LATEST"
         echo "zips to copy back to /aha (made since $(date -r "$start" '+%F %T')):"
-        find "$OUT" "$BUILDS" -maxdepth 1 -name '*.zip' -newer "$start" -printf '  %p %s\n'
+        find "$OUT" "$BUILDS" "$LATEST" -maxdepth 1 -name '*.zip' -newer "$start" -printf '  %p %s\n'
     } > "$OUT/thesis_final_summary.txt"
     cat "$OUT/thesis_final_summary.txt"
 }
 
 main() {
-    say "thesis_final: pid $$, out $OUT, power $POWER_MODE"
+    say "thesis_final: pid $$, out $OUT"
     VARIANTS_DP=$(dp_variants)
     tips > "$OUT/upstream_tips_start.txt"
     cat "$OUT/upstream_tips_start.txt"
+    start_publisher
     # docker steps (rtl, memtile-power-test-gen) for every part first, so a filling /sim/docker
     # can't fail the builds days in; a part that still fails here retries them in its build
     local p
@@ -272,19 +363,10 @@ main() {
                 --config-jobs "$RTL_JOBS" --pnr-jobs 4 ||
             say "WARNING: $p --rtl-only still failing; its build pass retries the docker steps"
     done
-    local power_pid=
-    if [ "$POWER_MODE" = concurrent ]; then
-        power_track >> "$OUT/thesis_final_power.log" 2>&1 &
-        power_pid=$!
-        say "power track running in the background (pid $power_pid, log $OUT/thesis_final_power.log)"
-    fi
     build_track
-    if [ -n "$power_pid" ]; then
-        say "build track done; waiting for the power track"
-        wait "$power_pid"
-    else
-        power_track 2>&1 | tee -a "$OUT/thesis_final_power.log"
-    fi
+    say "build track done; whole-CGRA app power next"
+    power_track 2>&1 | tee -a "$OUT/thesis_final_power.log"
+    stop_publisher
     summary
     touch "$OUT/THESIS_FINAL_DONE"
     say "all done"
@@ -293,7 +375,9 @@ main() {
 power_main() {   # POWER_ONLY=1
     say "thesis_final POWER_ONLY: pid $$, power $POWER_DP $POWER_FP"
     VARIANTS_DP=$(dp_variants)
+    start_publisher
     power_track 2>&1 | tee -a "$OUT/thesis_final_power.log"
+    stop_publisher
     summary
     touch "$OUT/THESIS_FINAL_POWER_DONE"
     say "power done"
@@ -313,9 +397,10 @@ if [ "${THESIS_FINAL_BG:-0}" != 1 ]; then
     fi
     preflight
     rm -f "$DONE"
-    THESIS_FINAL_BG=1 POWER_MODE=$POWER_MODE setsid nohup bash "$SELF" >> "$LOG" 2>&1 < /dev/null &
+    THESIS_FINAL_BG=1 setsid nohup bash "$SELF" >> "$LOG" 2>&1 < /dev/null &
     say "started in the background (pid $!); log: $LOG"
     say "follow it with: tail -f $LOG    done when $DONE exists"
+    say "newest results at any time: $LATEST (STATUS.txt + one zip per part and power run)"
     exit 0
 fi
 if [ "$POWER_ONLY" = 1 ]; then

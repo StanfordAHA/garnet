@@ -137,6 +137,9 @@ def parse_args(argv=None):
     p.add_argument("--zip", action="store_true",
                    help="afterwards, zip CSVs + per-tile reports + logs (no workspaces) to "
                         "<out-dir>_<host>_<time>.zip for copying back to /aha")
+    p.add_argument("--zip-path", metavar="PATH", default=None,
+                   help="with --zip: write the zip here instead (e.g. a fixed 'latest' name "
+                        "that --report-only --zip refreshes while the run goes on)")
     return p.parse_args(argv)
 
 
@@ -523,11 +526,15 @@ def write_csv(path, rows):
     keys = []
     for r in rows:
         keys += [k for k in r if k not in keys]
-    with open(path, "w", newline="") as f:
+    # beside it, then renamed into place: a --report-only snapshot taken while
+    # the run goes on never reads or leaves a half-written CSV
+    tmp = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    with open(tmp, "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=keys)
         w.writeheader()
         for r in rows:
             w.writerow({k: (f"{v:.6g}" if isinstance(v, float) else v) for k, v in r.items()})
+    os.replace(tmp, path)
 
 
 def report(args):
@@ -553,8 +560,10 @@ def report(args):
 
 def zip_results(args):
     out_dir = Path(args.out_dir).resolve()
-    path = Path(f"{out_dir}_{socket.gethostname().split('.')[0]}_{time.strftime('%Y%m%d-%H%M%S')}.zip")
-    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
+    path = (Path(args.zip_path).resolve() if getattr(args, "zip_path", None) else
+            Path(f"{out_dir}_{socket.gethostname().split('.')[0]}_{time.strftime('%Y%m%d-%H%M%S')}.zip"))
+    tmp = path.with_name(path.name + ".partial")
+    with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as z:
         for f in sorted(out_dir.glob("*.csv")):
             z.write(f, f.relative_to(out_dir.parent))
         for ws in sorted(p.parent for p in out_dir.glob("*/*/run_meta.json")):
@@ -569,6 +578,7 @@ def zip_results(args):
                       *ws.glob("*-post-synth-power-*/Tile_X*/*-cadence-xcelium-sim/xrun.log")]:
                 if f.is_file():
                     z.write(f, f.relative_to(out_dir.parent))
+    tmp.replace(path)
     print(f"zip: {path} ({path.stat().st_size / 1e6:.1f} MB)")
 
 
