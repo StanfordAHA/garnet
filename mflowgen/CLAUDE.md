@@ -2908,9 +2908,9 @@ Recipes (all write under one --out-dir; `--clocks-from <that dir>` reads the pro
       points: 177,697 ns, 9 MEM + 20 PE, after 08555638's pack_ponds fix (9363ba60). Its app is the
       untracked H2H copy `probe_1fa8/resnet_pond` (the manifests' app label), NOT `pondspec_e2e/resnet`:
       the reduction is innermost and accumulates in the pond, output channels are a loop, the output is
-      (x, y, w), and HL_TARGET has enable_ponds. Source copy:
-      /aha/sweep_out/app_bundles_thesis_dp_sources/resnet_pond/. lake's appendix and registry list only
-      pondspec_e2e/resnet.
+      (x, y, w), and HL_TARGET has enable_ponds. Committed unchanged as H2H
+      `pondspec_e2e/resnet_pond` (thesis ff1435830, bc48e85f); copy also in
+      /aha/sweep_out/app_bundles_thesis_dp_sources/resnet_pond/.
     - `app_bundles_thesis_dp_addon3.tgz` (2026-10-29, GARNET_REV 35e23a53: the balancer models PE
       input FIFO pre-fill) REPLACES the main set's 4 RV `camera_pipeline_agg/*_nofp_portcg_thesis_rv`
       at dw16 (fw4 sp, fw2 dp, fw2 sp in1, fw1 dp; 28x16). Kernel 16,459 -> 12,364 ns on all 4 (static
@@ -2918,8 +2918,10 @@ Recipes (all write under one --out-dir; `--clocks-from <that dir>` reads the pro
       after another, so the manifests keep the replaced bundles' app label.
     - Static resnet_pond outputs all zeros there at tile 28 AND at tile=14 (43.7k cycles, so not the
       16-bit counters): OPEN_ISSUES clockwork/static-resnet-pond-zero-output (43d74890: clockwork
-      refused the keep-pixel-loops pond route, so the pond restarted per pixel). Static can only run
-      at tile=14 (tile 28 = 2352 px x 66 cycles, past the 16-bit counters). The user stopped the static
+      refused the keep-pixel-loops pond route, so the pond restarted per pixel). Tile 28 is NOT past the
+      16-bit counters (corrected 2026-10-30: max start 3,972, max stride 56,448, no fit errors; a long
+      run is fine because counters and addresses wrap together; the tile=14 rule is static
+      resnet_block_pond's). The user stopped the static
       fix on 2026-10-29 (issue closed unfixed) and chose no addon4: these 2 static cells stay gaps,
       addon2's tile-28 RV pair stays the resnet_pond_agg cells, and the RV tile=14 pair (both
       bit-accurate, 44,585 ns, 588 outputs) stays unpacked in
