@@ -2895,7 +2895,7 @@ Recipes (all write under one --out-dir; `--clocks-from <that dir>` reads the pro
     at dw32 need `--glb-tile-mem-size 256`: at 128 their 32-bit input (69-71 KB) overruns a 64 KB GLB bank
     and the testbench's GLB check stops `make sim` (exit 2). Camera sims take ~1h15m, and on fw2_dw32
     dp longer than gen_app_bundle's default `--test-timeout` 5400 (it was re-run with 10800).
-  - **Add-ons (2026-10-28 late, 72/84 with them; final, user 2026-10-29)**, same root, in /aha/sweep_out with `.md5` beside each:
+  - **Add-ons (2026-10-28 late, 72/84 with them; final, user 2026-10-29; addon4 added 2026-10-30)**, same root, in /aha/sweep_out with `.md5` beside addon1-3:
     - `app_bundles_thesis_dp_addon1.tgz`: 6 NEW static bundles on clockwork 38ed931e. These are fw1 dp
       gaussian/unsharp/harris/camera (the fw1 dp compile now passes the schedule to build_buffers;
       before, the MEMs were exact delay lines but the 9 compute taps were 1-5 cycles off) and fw2 dp
@@ -2916,6 +2916,14 @@ Recipes (all write under one --out-dir; `--clocks-from <that dir>` reads the pro
       at dw16 (fw4 sp, fw2 dp, fw2 sp in1, fw1 dp; 28x16). Kernel 16,459 -> 12,364 ns on all 4 (static
       12,562), 211 -> 208 padding registers. Recorded in `apps/camera_pipeline_2x2` itself, one cell
       after another, so the manifests keep the replaced bundles' app label.
+    - `app_bundles_thesis_dp_addon4.tgz` (2026-10-31, user OK 2026-10-30; no .md5) ADDS 4 RV
+      `resnet_pond_agg` cells on the 2-input points, so two_level_* pairs resnet_agg (single level) with
+      resnet_pond_agg (two levels) on the same points. Same recipe as addon2's pair (GARNET_REV 607cf9c5,
+      lake snapshot 8b0f2edc, clockwork lib f7fa5011, no --env), app `pondspec_e2e/resnet_pond`. All
+      177,697 ns, 2352 outputs: fw4 dw16/dw8 sp and fw2 dw16 dp 7 MEM / 23 PE, fw2 dw32 dp 16 / 29.
+      fw4_dw32 sp fails at clockwork (`get_dim2denom`: "require quasi affine accessor!"), so it is a gap
+      (frozen, not chased). `/aha/sweep_out/record_resnet_pond_addon4.sh`. There are now 6 resnet_pond_agg
+      cells, and 76 dp bundles in all (the 72/84 matrix plus these 4 extra cells).
     - Static resnet_pond outputs all zeros there at tile 28 AND at tile=14 (43.7k cycles, so not the
       16-bit counters): OPEN_ISSUES clockwork/static-resnet-pond-zero-output (43d74890: clockwork
       refused the keep-pixel-loops pond route, so the pond restarted per pixel). Tile 28 is NOT past the
