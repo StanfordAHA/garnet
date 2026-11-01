@@ -69,7 +69,7 @@ def test_replay_result_parsing():
     assert r["checked_from"] is None
     clean = rat.replay_result("Simulation complete via $finish(2) at time 5 NS + 0\n")
     assert clean == {"finished": True, "checked_from": None, "app_start": None, "pre_app_x": 0,
-                     "pre_app_x_examples": [], "mismatches": 0, "x_mismatches": 0,
+                     "pre_app_x_examples": [], "idle_x": 0, "idle_x_ports": {}, "mismatches": 0, "x_mismatches": 0,
                      "first_cycle": None, "last_cycle": None, "ports": {}, "examples": [], "lines": []}
     held = rat.replay_result("replay: reset held and outputs not checked before cycle 2 (first recorded reset)\n")
     assert held["checked_from"] == 2 and held["app_start"] is None
@@ -78,7 +78,8 @@ def test_replay_result_parsing():
 def test_replay_pre_app_x():
     """Before the app starts (first flush), X where the recording has a known
     value is reset-less state the recording zero-initialized: not a mismatch.
-    Known-value mismatches before it, and X after it, still are."""
+    Known-value mismatches before it, and X after it where the recording
+    changes, still are."""
     rat = load(RUN_ALL, "run_all_tiles")
     log = ("replay: reset held and outputs not checked before cycle 2 (first recorded reset)\n"
            "replay: app starts at cycle 2404 (first flush after the reset)\n"
@@ -86,15 +87,48 @@ def test_replay_pre_app_x():
            "cycle 1202: SB_T0_WEST_SB_OUT_B17: got 0xxxx, expected 00000\n"
            "cycle 1300: read_config_data: got 00000001, expected 00000002\n"
            "cycle 2404: SB_T0_EAST_SB_OUT_B17: got 0xxxx, expected 00000\n"
+           "cycle 2405: SB_T0_EAST_SB_OUT_B17: got 0xxxx, expected 00001\n"
            "Simulation complete via $finish(2) at time 7539 NS + 0\n")
     r = rat.replay_result(log)
     assert (r["checked_from"], r["app_start"], r["pre_app_x"]) == (2, 2404, 2)
     assert r["pre_app_x_examples"][0] == "cycle 1201: SB_T0_EAST_SB_OUT_B17: got 0xxxx, expected 00000"
-    assert (r["mismatches"], r["x_mismatches"], r["first_cycle"], r["last_cycle"]) == (2, 1, 1300, 2404)
-    assert r["ports"] == {"read_config_data": 1, "SB_T0_EAST_SB_OUT_B17": 1}
+    assert (r["mismatches"], r["x_mismatches"], r["first_cycle"], r["last_cycle"]) == (3, 2, 1300, 2405)
+    assert r["ports"] == {"read_config_data": 1, "SB_T0_EAST_SB_OUT_B17": 2}
+    assert r["idle_x"] == 0
     only_pre = rat.replay_result("\n".join(log.splitlines()[:4]) + "\n")
     assert (only_pre["pre_app_x"], only_pre["mismatches"]) == (2, 0)
     assert not rat.replay_result("xmsim: *F,INTERR: crashed\n")["finished"]
+
+
+def test_replay_idle_x():
+    """gf12 flops are X until written, the recording's are 0: after the app
+    starts, a port that is X wherever it differs while the recording holds one
+    known value there is reset-less state not (yet) written (an unused switch-box
+    output; a MEM output before the app's first write), counted per port, not as
+    mismatches. A port with any known-value mismatch, X where the recording
+    changes, or an X recording keeps all its mismatches."""
+    rat = load(RUN_ALL, "run_all_tiles")
+    lines = ["replay: app starts at cycle 1187 (first flush after the reset)",
+             "cycle 1100: SB_T4_EAST_SB_OUT_B16: got xxxx, expected 0000"]
+    lines += [f"cycle {c}: SB_T4_EAST_SB_OUT_B16: got xxxx, expected 0000" for c in range(1187, 1447)]
+    lines += [f"cycle {c}: SB_T1_SOUTH_SB_OUT_B16: got 00x0, expected 0001" for c in (1200, 1201)]
+    lines += ["cycle 1300: SB_T2_NORTH_SB_OUT_B16: got xxxx, expected 0000",      # + a known-value one
+              "cycle 1301: SB_T2_NORTH_SB_OUT_B16: got 0003, expected 0000",
+              "cycle 1400: SB_T3_WEST_SB_OUT_B16: got xxxx, expected 0000",       # the recording changes
+              "cycle 1401: SB_T3_WEST_SB_OUT_B16: got xxxx, expected 0005",
+              "cycle 1500: SB_T0_WEST_SB_OUT_B16: got xxxx, expected xxxx",       # the recording is X
+              "Simulation complete via $finish(2) at time 7539 NS + 0"]
+    r = rat.replay_result("\n".join(lines) + "\n")
+    assert r["pre_app_x"] == 1
+    assert r["idle_x_ports"] == {
+        "SB_T4_EAST_SB_OUT_B16": {"lines": 260, "expected": "0000", "first_cycle": 1187, "last_cycle": 1446},
+        "SB_T1_SOUTH_SB_OUT_B16": {"lines": 2, "expected": "0001", "first_cycle": 1200, "last_cycle": 1201}}
+    assert r["idle_x"] == 262
+    assert r["ports"] == {"SB_T2_NORTH_SB_OUT_B16": 2, "SB_T3_WEST_SB_OUT_B16": 2, "SB_T0_WEST_SB_OUT_B16": 1}
+    assert (r["mismatches"], r["x_mismatches"], r["first_cycle"], r["last_cycle"]) == (5, 4, 1300, 1500)
+    assert r["lines"][0] == "cycle 1300: SB_T2_NORTH_SB_OUT_B16: got xxxx, expected 0000"
+    only_idle = rat.replay_result("\n".join(lines[:262] + lines[-1:]) + "\n")
+    assert (only_idle["mismatches"], only_idle["idle_x"], only_idle["lines"]) == (0, 260, [])
 
 
 FAKE_RUN_SH = """#!/bin/bash
@@ -104,6 +138,8 @@ log=$tile_id/3-cadence-xcelium-sim/xrun.log
 : > $log
 [ "$tile_id" = "$BAD_TILE" ] && echo "cycle 7: SB_T0_EAST_SB_OUT_B17: got 0001, expected 0002" >> $log
 [ "$tile_id" = "$PREAPP_TILE" ] && printf 'replay: app starts at cycle 100 (first flush after the reset)\ncycle 7: SB_T0_EAST_SB_OUT_B17: got 0xxxx, expected 00000\n' >> $log
+[ "$tile_id" = "$IDLEX_TILE" ] && printf 'cycle 8: SB_T1_SOUTH_SB_OUT_B16: got xxxx, expected 0000\ncycle 9: SB_T1_SOUTH_SB_OUT_B16: got xxxx, expected 0000\n' >> $log
+echo "$tile_id" >> simulated.log
 [ "$tile_id" = "$NOFINISH_TILE" ] || echo 'Simulation complete via $finish(2) at time 5 NS + 0' >> $log
 [ "$tile_id" = "$NOHIER_TILE" ] || echo report > outputs/reports/$tile_id.hier
 # what a real sub-graph leaves behind: a sim snapshot, SAIF, input copies, a link out
@@ -125,7 +161,8 @@ def run_step(tmp_path, **env):
     (tmp_path / "run.sh").write_text(FAKE_RUN_SH)
     (tmp_path / "run.sh").chmod(0o755)
     full = dict(os.environ, design_name="Tile_PE")
-    for k in ("replay_check", "app_bundle", "BAD_TILE", "NOFINISH_TILE", "NOHIER_TILE", "REPLAY_KEEP_TILES"):
+    for k in ("replay_check", "app_bundle", "BAD_TILE", "NOFINISH_TILE", "NOHIER_TILE", "REPLAY_KEEP_TILES",
+              "PREAPP_TILE", "IDLEX_TILE"):
         full.pop(k, None)
     full.update(env)
     r = subprocess.run([sys.executable, str(RUN_ALL)], cwd=tmp_path, env=full,
@@ -226,6 +263,48 @@ def test_step_pre_app_x_passes(tmp_path):
     assert "2/2 tiles replayed exactly" in summary
     rep = json.loads((tmp_path / "outputs/reports/Tile_X05_Y06.replay.json").read_text())
     assert (rep["pre_app_x"], rep["app_start"], rep["mismatches"]) == (1, 100, 0)
+
+
+def test_step_idle_x_passes(tmp_path):
+    rc, summary, out = run_step(tmp_path, app_bundle="/b", IDLEX_TILE="Tile_X05_Y06")
+    assert rc == 0, out
+    assert ("Tile_X05_Y06: OK (2 X outputs where the recording holds a constant not counted: "
+            "SB_T1_SOUTH_SB_OUT_B16 2 (cycles 8-9, recorded 0000))") in summary
+    rep = json.loads((tmp_path / "outputs/reports/Tile_X05_Y06.replay.json").read_text())
+    assert (rep["idle_x"], rep["mismatches"], rep["problems"]) == (2, 0, [])
+
+
+def test_step_rerun_rechecks_finished_tiles(tmp_path):
+    """make re-runs a failed step in its build dir: the tiles that finished
+    (power report + finished sim log, which pruning keeps) are only checked
+    again, with this script; a tile that had not finished starts over in a
+    fresh sub-workspace; a stale mismatches.txt goes."""
+    rc, summary, _ = run_step(tmp_path, app_bundle="/b", BAD_TILE="Tile_X05_Y06", NOHIER_TILE="Tile_X04_Y05")
+    assert rc == 1 and "0/2 tiles replayed exactly" in summary
+    reports = tmp_path / "outputs" / "reports"
+    assert (reports / "Tile_X05_Y06.mismatches.txt").is_file()
+    # what a fixed checker would no longer count: the bad tile's kept log is now clean
+    log = tmp_path / "Tile_X05_Y06" / "3-cadence-xcelium-sim" / "xrun.log"
+    log.write_text("Simulation complete via $finish(2) at time 5 NS + 0\n")
+    (tmp_path / "Tile_X04_Y05" / "stale_partial_file").write_text("from the stopped run\n")
+    (tmp_path / "simulated.log").unlink()
+    rc, summary, out = run_step(tmp_path, app_bundle="/b")
+    assert rc == 0 and "2/2 tiles replayed exactly" in summary, out
+    assert (tmp_path / "simulated.log").read_text().split() == ["Tile_X04_Y05"]
+    assert "Tile_X05_Y06: replayed by an earlier run of this step" in out
+    assert not (tmp_path / "Tile_X04_Y05" / "stale_partial_file").exists()
+    assert not (reports / "Tile_X05_Y06.mismatches.txt").exists()
+    rep = json.loads((reports / "Tile_X05_Y06.replay.json").read_text())
+    assert rep["rechecked"] and rep["problems"] == []
+    assert not json.loads((reports / "Tile_X04_Y05.replay.json").read_text())["rechecked"]
+
+
+def test_step_rerun_makes_its_reports_dir_again():
+    """mflowgen-run is `set -e`: a plain mkdir of the kept outputs/reports
+    failed a re-run of the step before run_all_tiles.py started."""
+    for lvl in LEVELS:
+        text = (MFLOWGEN / "common" / f"tile-post-{lvl}-power" / "configure.yml").read_text()
+        assert re.search(r"^\s*- mkdir -p outputs/reports\s*$", text, re.M), lvl
 
 
 @pytest.mark.parametrize("bad,why", [("NOFINISH_TILE", "sim did not reach $finish"),

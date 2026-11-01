@@ -154,6 +154,28 @@ def test_report_parsing_and_sums(tmp_path):
     assert (out / "cgra_power.csv").read_text().splitlines()[0].startswith("config,variant,app")
 
 
+def test_failed_replay_steps_get_the_current_checker(tmp_path):
+    """A failed post-synth-power-<variant> step keeps its build dir, and make
+    re-runs it there with the run_all_tiles.py it copied then: build_tile gives
+    every unfinished one the current script; finished ones are left alone."""
+    ws = tmp_path / "cfg" / "Tile_PE"
+    for name, done in (("31-post-synth-power-A", True), ("32-post-synth-power-B", False),
+                       ("33-post-synth-power-C", False)):
+        (ws / name).mkdir(parents=True)
+        (ws / name / "run_all_tiles.py").write_text("old\n")
+        if done:
+            (ws / name / ".execstamp").write_text("")
+    (ws / "34-testbench-D").mkdir()
+    (ws / "34-testbench-D" / "run_all_tiles.py").write_text("old\n")
+    current = cap.RUN_ALL_TILES.read_text()
+    (ws / "33-post-synth-power-C" / "run_all_tiles.py").write_text(current)
+    assert cap.refresh_failed_replays(ws) == ["32-post-synth-power-B"]
+    assert (ws / "32-post-synth-power-B" / "run_all_tiles.py").read_text() == current
+    assert (ws / "31-post-synth-power-A" / "run_all_tiles.py").read_text() == "old\n"
+    assert (ws / "34-testbench-D" / "run_all_tiles.py").read_text() == "old\n"
+    assert cap.refresh_failed_replays(ws) == []
+
+
 def test_report_without_cgra_tiles(tmp_path):
     """Bundles recorded without --cgra-tiles: placed tiles only, no array total."""
     tiles = {"A": [("Tile_MemCore", "Tile_X03_Y02", "placed", 10e-3, 1000),

@@ -39,8 +39,11 @@ into <out-dir>/cgra_power.csv (one row per config x variant) and
 Bundles without --cgra-tiles give placed tiles only (route/idle columns empty).
 Every tile must replay its recording exactly (run_all_tiles.py replay_check);
 a failing post-synth-power-<variant> step fails that workspace, and the CSVs
-mark tiles that did not replay. Needs the build machine (Genus, Xcelium,
-PrimeTime, the ADK, docker for the rtl step), like sweep_specs.py --cgra-power.
+mark tiles that did not replay. Running it again re-runs a failed step with
+the current run_all_tiles.py, which checks the tiles it finished again from
+their kept logs and simulates only the rest. Needs the build machine (Genus,
+Xcelium, PrimeTime, the ADK, docker for the rtl step), like sweep_specs.py
+--cgra-power.
 --report-only re-reads existing workspaces (also on /aha, from a copied
 --zip archive).
 """
@@ -282,6 +285,25 @@ def sh(cmd, cwd, env, log):
         raise RuntimeError(f"{' '.join(cmd[:2])} rc={rc}\n      " + "\n      ".join(tail))
 
 
+RUN_ALL_TILES = MFLOWGEN_DIR / "common" / "tile-post-synth-power" / "run_all_tiles.py"
+
+
+def refresh_failed_replays(ws):
+    """Give each post-synth-power-<variant> step of ws that has not finished (no
+    .execstamp) the current run_all_tiles.py. make re-runs a failed step in its
+    build dir with the script copied when the dir was made; the dir is remade
+    only when an upstream step re-runs. Returns the steps refreshed."""
+    new = RUN_ALL_TILES.read_text()
+    out = []
+    for step in sorted(ws.glob("*-post-synth-power-*")):
+        script = step / "run_all_tiles.py"
+        if (step / ".execstamp").exists() or not script.is_file() or script.read_text() == new:
+            continue
+        script.write_text(new)
+        out.append(step.name)
+    return out
+
+
 def build_tile(tile, config, variants, man, args, status):
     ws = Path(args.out_dir).resolve() / config / tile
     t0 = time.time()
@@ -316,6 +338,9 @@ def build_tile(tile, config, variants, man, args, status):
                   open(ws / "run_meta.json", "w"), indent=1)
         env = tile_env(tile, ws, man, variants, config, args)
         sh(["mflowgen", "run", "--design", str(MFLOWGEN_DIR / tile)], ws, env, ws / "mflowgen_run.log")
+        for step in refresh_failed_replays(ws):
+            print(f"    [{config}/{tile}] {step}: unfinished; re-runs with the current run_all_tiles.py",
+                  flush=True)
         jobs = [f"-j{args.parallel_jobs}"] if args.parallel_jobs > 1 else []
         for step in filter(None, args.clean.split(",")):
             sh(["make", f"clean-{step}"], ws, env, ws / f"clean_{step}.log")
@@ -446,7 +471,9 @@ def tile_rows(out_dir, sram_re):
                     window_kernel=kernel_window(log_text) if logs else None,
                     sram_access_cycles=access,
                     sram_busy_frac=access / kernel_cycles if access is not None and kernel_cycles else None,
-                    replay_exact=(not rep.get("problems")) if rep else None))
+                    replay_exact=(not rep.get("problems")) if rep else None,
+                    # X outputs run_all_tiles.py did not count: the recording holds a constant there
+                    replay_idle_x=rep.get("idle_x") if rep else None))
     return rows
 
 
