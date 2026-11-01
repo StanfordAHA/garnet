@@ -931,8 +931,18 @@ Apples-to-apples caveats:
   construct.py adds the script to custom-init's outputs and to init's `order` right after the
   well-tap script when `THESIS_FABRIC` is set (pd variant when pwr_aware), so garnet's own PE graph
   is unchanged. Test `test_fix_tap_gaps_after_the_well_taps`; a materialized thesis graph's
-  custom-init step holds the dereferenced script. Not yet re-run on gf12: the next build of that
-  tile (now named `fw4_dw64_sc16384_...`, the same PE tile since d5489e0d) is the check.
+  custom-init step holds the dereferenced script. Checked on gf12 in thesis_final (2026-10-30/31):
+  both dw64 PE tiles (`fw4_dw64_sc16384_...`, the same PE tile since d5489e0d) PASS through PT.
+  - **Pitfall it caused:** the other 6 thesis PE workspaces in thesis_final (built 10-28, PASS) now
+    FAIL at once with "built steps have other parameters than the graph now:
+    18-cadence-innovus-init" (init's `order` gained the script). Their numbers stay valid
+    (fix-tap-gaps and 7b746d92's edge-pin floorplan are no-ops on those dies; the zip's correlation.csv
+    still has them, same as 10-29), but lake's tile_sweep.load drops FAIL rows. `--clean-stale` alone
+    is not enough: it cleans init only, and the old 6-custom-init lacks fix-tap-gaps.tcl in its
+    outputs. Rebuild by deleting both steps, then the same sweep with `--skip-existing`:
+    `rm -rf <ws>/6-custom-init <ws>/18-cadence-innovus-init` (RTL + synth are kept; make reruns init
+    through PT). General rule: a change to a step's parameters or a custom step's outputs makes every
+    already-built workspace of that graph stale; clean the changed custom step too.
 - **`Tile_MemCore/custom-signoff/outputs/fix-pt-sdc.tcl`** (2026-10-07) —
   lake-spec builds only (new `custom-signoff` step feeding signoff; sourced
   right after `generate-results.tcl`). `writeTimingCon` splits long object lists
@@ -2930,7 +2940,7 @@ Recipes (all write under one --out-dir; `--clocks-from <that dir>` reads the pro
       16-bit counters (corrected 2026-10-30: max start 3,972, max stride 56,448, no fit errors; a long
       run is fine because counters and addresses wrap together; the tile=14 rule is static
       resnet_block_pond's). The user stopped the static
-      fix on 2026-10-29 (issue closed unfixed) and chose no addon4: these 2 static cells stay gaps,
+      fix on 2026-10-29 (issue closed unfixed) and declined a tile=14 add-on: these 2 static cells stay gaps,
       addon2's tile-28 RV pair stays the resnet_pond_agg cells, and the RV tile=14 pair (both
       bit-accurate, 44,585 ns, 588 outputs) stays unpacked in
       /aha/sweep_out/app_bundles_thesis_dp_staging_t14/. resnet_agg itself cannot map on 1 input port
