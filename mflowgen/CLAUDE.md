@@ -1617,7 +1617,15 @@ Failures (OPEN_ISSUES ids):
   **On gf12 (thesis_final re-run, garnet e05de5ab, snapshot 2026-11-02 19:47):**
   all 76 DP rows, 10,160/10,160 tiles exact; 334 tiles (290 PE, 44 MEM) have
   idle_x, all 382 ports SB_OUT recorded 0 (343 `0000`, 33 dw32, 6 dw8); 3,091
-  tiles rechecked from kept logs. The old run's 6,241 replays were short because
+  tiles rechecked from kept logs. Audit of those 382 ports against each bundle's
+  run.vcd (1fa8a391, 2026-11-03, /aha/sweep_out/idle_x_audit_20261103/): 322 are
+  never driven (0 the whole run; the 175 RV ones never raise `_valid`). The other
+  60 are on routes the app uses (55 static, all fw1_dw16 dp sharectr: camera 26,
+  harris 11, unsharp 11, gaussian 6, matmul_pond 1; 5 RV resnet_pond_agg): each is
+  X only from the app start to the route's first recorded data (1-549 cycles,
+  median 266; RV valid still 0), then exact. So no idle_x port hides a data
+  mismatch. The fp_ab run: 6 rows, 228/228 tiles exact, no idle_x.
+  The old run's 6,241 replays were short because
   make stopped each failed workspace's other variants (whole rows lacked PE tiles).
   **Re-run of a failed step:** make re-runs it in its build dir (no
   `.execstamp`) with the scripts copied when the dir was made, and the old
