@@ -943,6 +943,10 @@ Apples-to-apples caveats:
     `rm -rf <ws>/6-custom-init <ws>/18-cadence-innovus-init` (RTL + synth are kept; make reruns init
     through PT). General rule: a change to a step's parameters or a custom step's outputs makes every
     already-built workspace of that graph stale; clean the changed custom step too.
+  - **Rebuilt 2026-11-01** (zip `/aha/thesis_tiles_pe_r8cad-gf12_20261101-133514_slim.zip`, 2 jobs,
+    76-111 min per tile): the 6 PASS, the dw64 pair SKIP (already done), so 8/8 usable. Every
+    synth area, PnR area, WNS and fmax in correlation.csv is identical to the 10-29 PASS run, which
+    confirms that the script is a no-op on those dies.
 - **`Tile_MemCore/custom-signoff/outputs/fix-pt-sdc.tcl`** (2026-10-07) —
   lake-spec builds only (new `custom-signoff` step feeding signoff; sourced
   right after `generate-results.tcl`). `writeTimingCon` splits long object lists
@@ -1603,10 +1607,18 @@ Failures (OPEN_ISSUES ids):
   mismatch is X/Z where the recording holds *one* known value is counted per
   port (`idle_x`, `idle_x_ports` in replay.json, summary-line note,
   `replay_idle_x` in cgra_power_tiles.csv), not as mismatches. A port with any
-  known-value mismatch, X where the recording changes, or an X recording still
-  fails with all its mismatches. Power effect: none expected (neither side
-  toggles there). Zero-init gf12 flops would remove it at the source, but needs
-  the build machine's cell models.
+  known-value mismatch, an X recording, or recorded values that differ among its
+  X cycles still fails with all its mismatches. The log lists mismatch lines only,
+  so "one known value" is judged over the X cycles alone (1fa8a391's wording
+  note): a port the app drives elsewhere still counts as idle_x where it is X
+  while its recording is constant (intended: matmul X07_Y0B). Power effect: none
+  expected (neither side toggles there). Zero-init gf12 flops would remove it at
+  the source, but needs the build machine's cell models.
+  **On gf12 (thesis_final re-run, garnet e05de5ab, snapshot 2026-11-02 19:47):**
+  all 76 DP rows, 10,160/10,160 tiles exact; 334 tiles (290 PE, 44 MEM) have
+  idle_x, all 382 ports SB_OUT recorded 0 (343 `0000`, 33 dw32, 6 dw8); 3,091
+  tiles rechecked from kept logs. The old run's 6,241 replays were short because
+  make stopped each failed workspace's other variants (whole rows lacked PE tiles).
   **Re-run of a failed step:** make re-runs it in its build dir (no
   `.execstamp`) with the scripts copied when the dir was made, and the old
   `mkdir outputs/reports` died at once under `set -e` (configure.yml now
@@ -2917,6 +2929,16 @@ Recipes (all write under one --out-dir; `--clocks-from <that dir>` reads the pro
       - Checked: stub run order (rtl -> parts, each with a snapshot after it -> power -> final
         round), `gzip -t` on half a tarball, and a real `--zip-only` on the thesis_tiles_pe zip
         (CSV identical to the build machine's; 60 MB in 11 s).
+    - **2026-11-03 (user): one file for the figure machine.** After the summary, a full run and a
+      POWER_ONLY run write `$OUT/thesis_final_data.zip`. It holds every zip in `$OUT/latest`
+      (hidden temp files excluded), STATUS.txt and thesis_final_summary.txt under
+      `thesis_final_data/`, stored, not recompressed. The bundle is built under the publish lock and
+      renamed into place. `BUNDLE_ONLY=1 bash mflowgen/thesis_final.sh` remakes it in the
+      foreground from whatever `latest/` holds. The summary now names that file instead of
+      listing every zip since the start. Checked on /aha: the five real latest zips (3.2 GB, one
+      member 2.49 GB, so zip64) in 13 s, members byte-identical; missing `latest/` -> WARNING,
+      rc 1; DRY run end path. Lake's `cgra_power_ingest` needs only the DP zip (kernel stats
+      come from its manifests; dry run identical with and without `--bundles`).
   - gen_app_bundle refuses a bundle without "comparison passed": u16 apps on the dw8/dw32 points
     record only where their outputs still match the 16-bit gold (Halide-to-Hardware/CLAUDE.md "Test
     apps for other CGRA data widths"). A camera bundle on a bigger array has a bigger `array_tiles`,

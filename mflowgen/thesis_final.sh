@@ -8,7 +8,9 @@
 #
 # It checks everything in the foreground (minutes), then detaches and runs in the background,
 # so the terminal can be closed. Progress: tail -f $OUT/thesis_final.log. Done when
-# $OUT/THESIS_FINAL_DONE exists; $OUT/thesis_final_summary.txt lists the zips to copy back.
+# $OUT/THESIS_FINAL_DONE exists. $OUT/thesis_final_data.zip then holds every result (the newest
+# zip of each part and power run, STATUS.txt, thesis_final_summary.txt): copy that one file to
+# the figure machine. BUNDLE_ONLY=1 bash mflowgen/thesis_final.sh remakes it from $OUT/latest.
 # Re-running it resumes: every sweep part skips finished configs and make skips built steps.
 # Bundles recorded later go in $BUILDS/app_bundles_thesis_dp_addon*.tgz; re-run to add them.
 # An add-on bundle that replaces one of the set drops the old bundle and its replays first, and
@@ -27,7 +29,8 @@
 # Knobs (env): PNR_JOBS (4; 6 concurrent Innovus got OOM-killed before), SYNTH_JOBS (6),
 # RTL_JOBS (8), POWER_TILE_JOBS (2), POWER_PAR_JOBS (4), POWER_REPLAY_JOBS (4), SNAPSHOT_MIN (30),
 # DRY=1 (every build command --dry-run, no pull, add-ons left unextracted, no snapshots),
-# POWER_ONLY=1 (the power track alone, e.g. next to a running build track).
+# POWER_ONLY=1 (the power track alone, e.g. next to a running build track),
+# BUNDLE_ONLY=1 (only remake $OUT/thesis_final_data.zip, in the foreground).
 set -u
 SELF=$(readlink -f "$0")
 
@@ -56,6 +59,7 @@ VARIANTS_FP="conv_A0=$F/conv_A0,conv_A=$F/conv_A,conv_B=$F/conv_B"
 # recipe, its out dir under $OUT, expected config count
 PARTS=("thesis_tiles_pe thesis_tiles_pe 8" "thesis_dse thesis_dse_mem 246" "thesis_filter_ab thesis_filter_ab_mem 10")
 LATEST=$OUT/latest
+BUNDLE=$OUT/thesis_final_data.zip
 LOG=$OUT/thesis_final.log
 [ "$POWER_ONLY" = 1 ] && LOG=$OUT/thesis_final_power_only.log
 
@@ -292,6 +296,29 @@ stop_publisher() {   # lets a round in progress finish, then publishes the final
     rm -f "$LATEST/.stop.$$"
     publish >> "$OUT/thesis_final_publish.log" 2>&1
 }
+bundle() {   # $LATEST's zips + STATUS.txt + the summary in one file for the figure machine
+    [ "$DRY" = 1 ] && return 0
+    [ -d "$LATEST" ] || { say "WARNING: no $LATEST to bundle"; return 1; }
+    # under the publish lock, so no snapshot is replaced while it is read; the zips inside are
+    # already compressed, so they are stored as they are
+    (
+        flock 7
+        python3 - "$BUNDLE" "$LATEST" "$OUT/thesis_final_summary.txt" << 'EOF'
+import os, sys, zipfile
+out, latest, summary = sys.argv[1:]
+files = [os.path.join(latest, f) for f in sorted(os.listdir(latest))
+         if not f.startswith(".") and (f.endswith(".zip") or f == "STATUS.txt")]
+if os.path.isfile(summary):
+    files.append(summary)
+top = os.path.splitext(os.path.basename(out))[0]
+with zipfile.ZipFile(out + ".tmp", "w", zipfile.ZIP_STORED, allowZip64=True) as z:
+    for f in files:
+        z.write(f, top + "/" + os.path.basename(f))
+os.replace(out + ".tmp", out)
+EOF
+    ) 7> "$LATEST/.publish.lock" || { rm -f "$BUNDLE.tmp"; say "WARNING: bundling $BUNDLE failed"; return 1; }
+    say "bundle: $BUNDLE ($(du -h "$BUNDLE" | cut -f1)): every zip in $LATEST, STATUS.txt and the summary"
+}
 
 power_track() {   # always in a subshell (&, a pipeline or ( )), which holds the power lock
     exec 8> "$POWER_LOCK"
@@ -339,9 +366,9 @@ summary() {
         local start=$OUT/upstream_tips_start.txt
         [ -f "$start" ] || tips > "$start"
         paste "$start" <(tips)
-        echo "newest results (one zip per part and power run): $LATEST"
-        echo "zips to copy back to /aha (made since $(date -r "$start" '+%F %T')):"
-        find "$OUT" "$BUILDS" "$LATEST" -maxdepth 1 -name '*.zip' -newer "$start" -printf '  %p %s\n'
+        echo "every result in one file (copy it to the figure machine): $BUNDLE"
+        echo "  it holds the newest zip of each part and power run, from $LATEST:"
+        find "$LATEST" -maxdepth 1 -name '*.zip' -printf '    %f %s\n' | sort
     } > "$OUT/thesis_final_summary.txt"
     cat "$OUT/thesis_final_summary.txt"
 }
@@ -368,6 +395,7 @@ main() {
     power_track 2>&1 | tee -a "$OUT/thesis_final_power.log"
     stop_publisher
     summary
+    bundle
     touch "$OUT/THESIS_FINAL_DONE"
     say "all done"
 }
@@ -379,6 +407,7 @@ power_main() {   # POWER_ONLY=1
     power_track 2>&1 | tee -a "$OUT/thesis_final_power.log"
     stop_publisher
     summary
+    bundle
     touch "$OUT/THESIS_FINAL_POWER_DONE"
     say "power done"
 }
@@ -387,6 +416,10 @@ LOCK=$OUT/.thesis_final.lock
 POWER_LOCK=$OUT/.thesis_final_power.lock
 DONE=$OUT/THESIS_FINAL_DONE
 [ "$POWER_ONLY" = 1 ] && DONE=$OUT/THESIS_FINAL_POWER_DONE
+if [ "${BUNDLE_ONLY:-0}" = 1 ]; then
+    bundle || exit 1
+    exit 0
+fi
 if [ "${THESIS_FINAL_BG:-0}" != 1 ]; then
     mkdir -p "$OUT"
     # preflight swaps bundles under replays, so no power track may be running; POWER_ONLY may
