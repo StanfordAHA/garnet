@@ -1229,6 +1229,8 @@ measured at a quarter of the rate (user rule: show only configs at full throughp
     cycle; the other ports stay cleared and clock-gated. So a block's active power is one
     port's ID / SG / AG firing every cycle, and the outputs stay quiet (min changes 0).
     `window_start` 4 cycles. fw > 1 raises: a static port fills a word in fw cycles.
+    Length = min(1000, iterations the domain covers - 8): 1000 everywhere except 1-D
+    me64 (56) and 1-D me256 (248), whose single loop runs only max_extent iterations.
 - **Garnet:**
   - `gen_memtile_power_tests.py --power-program full_rate` (step param `power_program`, graph
     param from env `MEMTILE_POWER_PROGRAM`). The testbench opens the window at
@@ -1251,6 +1253,22 @@ measured at a quarter of the rate (user rule: show only configs at full throughp
   - Window SAIF: every port_id/ag/sg_<i> toggles on all but one window cycle (RV: all four
     ports; static: port 0, ports 1-3 at 0).
   - Scripts: /aha/sweep_out/rvid_fullrate_20261117/.
+- **gf12 run (2026-11-18, zip `/aha/thesis_id_fullrate_mem_r8cad-gf12_20261118-030117_slim.zip`):**
+  48/48 PASS, idle and active.
+  - RV: both outputs change on every window cycle, and the window opens 28 cycles after
+    flush release.
+  - Static: the outputs never change, and the window opens after 5 cycles.
+  - No negative synth slack.
+  - Against thesis_dse (same hardware, so area matches): static port 0 active ID x2.3-2.9,
+    SG x3, AG x3.3. RV (fw4 vs the old fw1 points) LI SG (c_rvnet + c_sg) x2.7-4.3, all-port
+    ID x2.4-3.1.
+  - The fw4 RV me1024 / me4096 points are within 1-8% per block of thesis_dse's default-extent
+    fw4 RV tile, which already ran at 0.976 words/cycle.
+  - Check scripts, the ingested CSV (lake `tile_sweep.ingest`) and the comparison:
+    /aha/sweep_out/rvid_fullrate_20261117/result_20261118/.
+  - Not in lake's figures yet. lake `tile_sweep` matches configs to experiments by spec, so
+    the static `_fr` points collide with thesis_dse's static ID points, and the fw4 RV points
+    match no experiment.
 - **Pitfall (lake RV, not fixed; the thesis apps don't hit it):** a level-0 RAW dependence
   across a row wrap stalls the reader at its first wrap until the writer has finished its
   whole domain. The gap is (domain - row) cycles; with the default program, me64 readers run
