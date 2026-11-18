@@ -1266,9 +1266,9 @@ measured at a quarter of the rate (user rule: show only configs at full throughp
     fw4 RV tile, which already ran at 0.976 words/cycle.
   - Check scripts, the ingested CSV (lake `tile_sweep.ingest`) and the comparison:
     /aha/sweep_out/rvid_fullrate_20261117/result_20261118/.
-  - Not in lake's figures yet. lake `tile_sweep` matches configs to experiments by spec, so
-    the static `_fr` points collide with thesis_dse's static ID points, and the fw4 RV points
-    match no experiment.
+  - In lake's figures since lake ec52f9cc (user 2026-11-18): `tile_sweep` copies a full-rate
+    sweep to `full_rate.csv` (not latest.csv), and iter_dom_power_*, li_sched_loc_* and the new
+    sched_gen_{area,power}_vs_{dim,max_extent} read it (lake CLAUDE.md §1.8).
 - **Pitfall (lake RV, not fixed; the thesis apps don't hit it):** a level-0 RAW dependence
   across a row wrap stalls the reader at its first wrap until the writer has finished its
   whole domain. The gap is (domain - row) cycles; with the default program, me64 readers run
