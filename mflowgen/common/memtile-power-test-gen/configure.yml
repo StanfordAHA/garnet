@@ -51,6 +51,10 @@ parameters:
   # Input data seed: lake's standalone power tests give the same spec the
   # same streams for the same seed.
   seed: 1
+  # Active program (lake power_test_programs): empty = the default (the most
+  # traffic the spec sustains); full_rate = every measured port fires every
+  # cycle of a shortened window (the Tile_MemCore graph's power_program).
+  power_program: ""
 
 postconditions:
   - assert File( 'outputs/testbench.idle.sv' )

@@ -640,3 +640,34 @@ def test_regops_probe_replaces_the_static_pe_limit(ss, tmp_path):
         ("pe16", "static", 16, "Tile_PE", -580.0)])    # registered: 1.58 ns -> 632 -> 565
     table, lines = ss._thesis_clock_table(tmp_path / "fmax")
     assert table == {("static", 16): 565.0, ("rv", 16): 570.0}
+
+
+def test_thesis_id_fullrate_recipe(ss, capsys, tmp_path, monkeypatch):
+    """thesis_id_fullrate: dims 1..6 x max extent 64..4096, RV on the fw4 2x2 vc2
+    design-point family and static on the fw1 2x2 ID-sweep tiles, synthesis with
+    idle/active power at each fabric's dw16 clock, lake's full_rate program."""
+    assert ss.RECIPES["thesis_id_fullrate"] == ["thesis_id_fullrate_mem"]
+    assert "thesis_id_fullrate_mem" in ss.THESIS_CLOCKED_PARTS
+    points = ss.SPEC_SETS["thesis_id_fullrate"]
+    assert len(points) == 48 and all(p["power_program"] == "full_rate" for p in points)
+    for mode, fw in (("rv", 4), ("static", 1)):
+        mine = [p for p in points if ss._mode(p) == mode]
+        assert {(p["dims"], p["max_extent"]) for p in mine} == {
+            (d, m) for d in range(1, 7) for m in ss.THESIS_ID_MAX_EXTENTS}
+        assert {p["vec_width"] for p in mine} == {fw}
+        assert all(ss._config_name(p).endswith("_thesis_fr_rv" if mode == "rv" else "_thesis_fr") for p in mine)
+    clocks = tmp_path / "clocks.json"
+    clocks.write_text(json.dumps({"static": {"16": 600}, "rv": {"16": 700}}))
+    flags = ss.RECIPE_FLAGS["thesis_id_fullrate_mem"] + ["--clocks-from", str(clocks)]
+    assert ss.main(flags + ["--out-dir", str(tmp_path / "o"), "--list"]) == 0
+    assert "48 -> cadence-genus-synthesis memtile-power-synth-idle memtile-power-synth-active" in capsys.readouterr().err
+    # the program goes to the power-test step through the env, not into the spec
+    cfg = points[0]
+    env = env_for(ss, tmp_path, monkeypatch, cfg)
+    assert env["MEMTILE_POWER_PROGRAM"] == "full_rate"
+    ws = tmp_path / ss._config_name(cfg)
+    ws.mkdir()
+    ss._write_spec_files(cfg, ws, "make-this")
+    assert "power_program" not in json.loads((ws / "spec_config.json").read_text())
+    assert json.loads((ws / "sweep_meta.json").read_text())["power_program"] == "full_rate"
+    assert "MEMTILE_POWER_PROGRAM" not in env_for(ss, tmp_path, monkeypatch, dict(runtime_mode="rv"))

@@ -111,6 +111,9 @@ def construct():
         'use_sim_sram': os.environ.get('USE_SIM_SRAM', 'False') == 'True',
         # garnet.py --thesis {static,rv} (cgra/util_thesis.py); empty -> garnet's fabric
         'thesis': os.environ.get('THESIS_FABRIC', ''),
+        # memtile-power-test-gen's active program (sweep_specs power_program):
+        # empty -> lake's default, full_rate -> every measured port fires every cycle
+        'power_program': os.environ.get('MEMTILE_POWER_PROGRAM', ''),
 
         # Power Domains
         'PWR_AWARE': pwr_aware,

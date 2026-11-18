@@ -308,7 +308,9 @@ SPEC_DEFAULTS = dict(storage_capacity=4096, data_width=16, vec_width=4, dims=6,
 #           garnet_thesis.py): the static-dense (no FIFOs, no ready-valid) or
 #           ready-valid-dense (no FIFO bypass) fabric, no sparse cores.
 #   clock_mhz: this config's tile clock (--clocks-from), over --clock-mhz.
-SWEEP_ONLY_KEYS = ("runtime_mode", "pond", "stock", "thesis", "clock_mhz")
+# power_program: memtile-power-test-gen's active program (MEMTILE_POWER_PROGRAM);
+#   "full_rate" = every measured port fires every cycle (lake power_test_programs).
+SWEEP_ONLY_KEYS = ("runtime_mode", "pond", "stock", "thesis", "clock_mhz", "power_program")
 RUNTIME_MODES = ("static", "rv")
 POND_KINDS = ("none", "spec")
 
@@ -475,6 +477,21 @@ THESIS_FILTER_AB_SPEC_POINTS = [
     spec for geo in THESIS_FILTER_AB_GEOMETRIES
     for spec in (_thesis_opt(geo, "rv"),
                  dict(geo, thesis=True, runtime_mode="rv", clock_gate_ports=True, filter_fifo_depth=8))]
+# Iteration-domain characterization with every port's ID / SG / AG firing every
+# cycle (2026-11-17, user): dims 1..6 x max_extent 64/256/1024/4096, memtile power
+# with lake's full_rate program (names `_fr`). RV on the fw4 2x2 design-point
+# family (fw4 lets every RV port move a word per cycle; fw1 2x2 gives each port
+# one per 4 cycles). Static on the fw1 2x2 tiles of the thesis ID sweep: a static
+# port steps once per SRAM word, so only a lone fw1 port fires every cycle
+# (port_w0 alone; the other ports stay cleared).
+THESIS_ID_MAX_EXTENTS = (64, 256, 1024, 4096)
+THESIS_ID_FULLRATE_SPEC_POINTS = [
+    dict(_thesis_opt(dict(base, dims=dims, max_extent=me), mode), power_program="full_rate")
+    for mode, base in (("rv", dict(storage_capacity=8192, data_width=16, vec_width=4, in_ports=2,
+                                   out_ports=2, vec_capacity=2)),
+                       ("static", dict(storage_capacity=8192, data_width=16, vec_width=1, in_ports=2,
+                                       out_ports=2)))
+    for dims in range(1, 7) for me in THESIS_ID_MAX_EXTENTS]
 
 
 def _thesis_width_points():
@@ -525,6 +542,7 @@ SPEC_SETS = {
     "thesis_dse": _thesis_dse_points(),
     "thesis_cmptrim": THESIS_CMPTRIM_SPEC_POINTS,
     "thesis_filter_ab": THESIS_FILTER_AB_SPEC_POINTS,
+    "thesis_id_fullrate": THESIS_ID_FULLRATE_SPEC_POINTS,
 }
 PRESETS["thesis_fabric_pnr"] = [
     "fw4_dw16_sc4096_sp_in2_out2_vc2_thesis",
@@ -722,9 +740,16 @@ THESIS_CMPTRIM_RECIPE_FLAGS = {
 THESIS_FILTER_AB_RECIPE_FLAGS = {
     "thesis_filter_ab_mem": ["--spec-set", "thesis_filter_ab", "--memtile-power"] + _THESIS_TILE_FLAGS,
 }
+#   thesis_id_fullrate: the iteration-domain characterization at full rate
+#   (THESIS_ID_FULLRATE_SPEC_POINTS) at the static / RV dw16 clocks (--clocks-from):
+#   24 RV + 24 static MemTiles, synthesis with idle/active power, no PnR.
+THESIS_ID_FULLRATE_RECIPE_FLAGS = {
+    "thesis_id_fullrate_mem": ["--spec-set", "thesis_id_fullrate", "--memtile-power",
+                               "--stop-after", "cadence-genus-synthesis"] + _THESIS_TILE_FLAGS,
+}
 # Parts that need --clocks-from (or a --clock-mhz) rather than the graph's clock.
 THESIS_CLOCKED_PARTS = (tuple(THESIS_DSE_RECIPE_FLAGS) + tuple(THESIS_CMPTRIM_RECIPE_FLAGS)
-                        + tuple(THESIS_FILTER_AB_RECIPE_FLAGS))
+                        + tuple(THESIS_FILTER_AB_RECIPE_FLAGS) + tuple(THESIS_ID_FULLRATE_RECIPE_FLAGS))
 RECIPES = {**{name: [name] for name in RECIPE_FLAGS}, "app_power": ["app_power"],
            "thesis": list(RECIPE_FLAGS) + ["app_power"],
            **{name: [name] for name in THESIS_FABRIC_RECIPE_FLAGS},
@@ -741,13 +766,16 @@ RECIPES = {**{name: [name] for name in RECIPE_FLAGS}, "app_power": ["app_power"]
            **{name: [name] for name in THESIS_CMPTRIM_RECIPE_FLAGS},
            "thesis_cmptrim": list(THESIS_CMPTRIM_RECIPE_FLAGS),
            **{name: [name] for name in THESIS_FILTER_AB_RECIPE_FLAGS},
-           "thesis_filter_ab": list(THESIS_FILTER_AB_RECIPE_FLAGS)}
+           "thesis_filter_ab": list(THESIS_FILTER_AB_RECIPE_FLAGS),
+           **{name: [name] for name in THESIS_ID_FULLRATE_RECIPE_FLAGS},
+           "thesis_id_fullrate": list(THESIS_ID_FULLRATE_RECIPE_FLAGS)}
 RECIPE_FLAGS.update(THESIS_FABRIC_RECIPE_FLAGS)
 RECIPE_FLAGS.update(THESIS_OPT_RECIPE_FLAGS)
 RECIPE_FLAGS.update(THESIS_FMAX_RECIPE_FLAGS)
 RECIPE_FLAGS.update(THESIS_DSE_RECIPE_FLAGS)
 RECIPE_FLAGS.update(THESIS_CMPTRIM_RECIPE_FLAGS)
 RECIPE_FLAGS.update(THESIS_FILTER_AB_RECIPE_FLAGS)
+RECIPE_FLAGS.update(THESIS_ID_FULLRATE_RECIPE_FLAGS)
 
 
 def build_argparser():
@@ -1800,12 +1828,15 @@ def _config_name(cfg):
     share_clk_ctr / clock_gate_ports, `_cmptrim` (or `_cmp<options>`, see
     _cmp_trim_tag) for build_spec_rv's rv_comparator_trim and `_rv` for runtime mode rv. Static
     names are unchanged from earlier sweeps. A stock tile (no lake spec) is
-    `stock`; then `_nopond` / `_specpond` for the PE pond knob."""
+    `stock`; then `_nopond` / `_specpond` for the PE pond knob, and `_fr` (before
+    `_rv`) for power_program full_rate."""
     knobs = []
     if cfg.get("thesis"):
         knobs.append("thesis")
     if cfg.get("pond") is not None:
         knobs.append({"none": "nopond", "spec": "specpond"}[cfg["pond"]])
+    if cfg.get("power_program") == "full_rate":
+        knobs.append("fr")
     if _mode(cfg) == "rv":
         knobs.append("rv")
     if _is_stock(cfg):
@@ -2388,6 +2419,8 @@ def _tile_env(cfg, cfg_dir, args):
     # (and --skip-existing state) they had before these knobs existed.
     if cfg.get("thesis"):
         env["THESIS_FABRIC"] = _mode(cfg)
+    if cfg.get("power_program"):
+        env["MEMTILE_POWER_PROGRAM"] = cfg["power_program"]
     # Tile constraints: flush/stall/config input delay as a fraction of the clock
     if args.pt_i_delay_frac is not None:
         env["PT_I_DELAY_FRAC"] = str(args.pt_i_delay_frac)
@@ -2465,7 +2498,7 @@ def _run_one(cfg, cfg_dir, args):
         dry_env_keys += [k for k in ("THESIS_FABRIC", "NO_POND",
                                      "LAKE_POND_SPEC_CONFIG", "PT_I_DELAY_FRAC",
                                      "TILE_I_DELAY_NS", "PE_OPERANDS_REGISTERED",
-                                     "TILE_O_DELAY_NS") if k in env]
+                                     "TILE_O_DELAY_NS", "MEMTILE_POWER_PROGRAM") if k in env]
         if args.flatten_effort is not None:
             dry_env_keys += ["FLATTEN"]
         dry_env_keys += [k for k in CLOCK_ENV_KEYS if k in env]
@@ -2548,7 +2581,7 @@ def _write_spec_files(cfg, ws, targets, pnr_role=None, graph=None):
         meta["pnr_role"] = pnr_role
     if graph:
         meta["graph"] = graph
-    meta.update({k: cfg[k] for k in ("pond", "stock", "thesis") if k in cfg})
+    meta.update({k: cfg[k] for k in ("pond", "stock", "thesis", "power_program") if k in cfg})
     if not _is_stock(cfg):
         meta["data_width"] = cfg.get("data_width", SPEC_DEFAULTS["data_width"])
     with open(ws / "sweep_meta.json", "w") as f:
@@ -2575,7 +2608,7 @@ BUILD_ENV_KEYS = ("LAKE_SPEC_CONFIG", "LAKE_SPEC_MODE", "DUAL_PORT",
                   "clock_period_PE", "RTL_POWER", "SYNTH_POWER", "MEMTILE_POWER",
                   "APP_BUNDLE", "LAKE_POND_SPEC_CONFIG", "NO_POND",
                   "THESIS_FABRIC", "PT_I_DELAY_FRAC", "TILE_I_DELAY_NS",
-                  "PE_OPERANDS_REGISTERED", "TILE_O_DELAY_NS")
+                  "PE_OPERANDS_REGISTERED", "TILE_O_DELAY_NS", "MEMTILE_POWER_PROGRAM")
 # pond "spec": the pond spec JSON in the workspace (lake's default spec pond).
 POND_SPEC_FILE = "pond_spec.json"
 
@@ -3471,7 +3504,7 @@ def _sweep_meta(ws, name):
 # sweep_meta.json fields that only newer workspaces carry: a report gets these
 # columns when any of its workspaces has them (blank for the others), so
 # re-reporting an older sweep writes the same CSV as before.
-META_KNOB_COLUMNS = ("graph", "pond", "stock", "thesis", "data_width")
+META_KNOB_COLUMNS = ("graph", "pond", "stock", "thesis", "data_width", "power_program")
 
 
 def _fill_meta_columns(rows):

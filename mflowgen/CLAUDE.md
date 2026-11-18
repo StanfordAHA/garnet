@@ -1208,6 +1208,59 @@ Four things to know when reading synth-level numbers:
   via OSC 52. Default = active step; `--all`, `--make`, `--step <NN-name>`,
   `--lines N`. Needs tmux `set-clipboard on` + `allow-passthrough on`.
 
+### Full-rate programs: every measured port fires every cycle (`--recipe thesis_id_fullrate`, 2026-11-17, session 1fa8a391)
+
+Why: the module-characterization figures need each port's ID / SG / AG firing on every
+cycle of the power window. lake's default active program gives each port one SRAM slot per
+P = max(fw, in+out) cycles. On the fw1 single-port 2x2 tiles of the thesis ID sweep that
+fires every port every 4th cycle. RV blocks step per element, so the old RV ID figures were
+measured at a quarter of the rate (user rule: show only configs at full throughput).
+
+- **lake 0fae3781** `power_test_programs.active_program(..., program="full_rate")` (opt-in;
+  the default program is byte-identical):
+  - RV: every port streams, 1-D included. The old 1-D barrier fallback predates lake
+    8748240d; 1-D streams read back correctly at 1 word/cycle. The window covers the stretch
+    where all ports fire: from the readers' first word until a writer ends its first row.
+    After that a multi-dim reader stalls (see below), and a 1-D writer is done.
+    Length = writers' first-row extent - margin (2*fw*vc+4) - FULL_RATE_GUARD (10), in whole
+    4-cycle rounds. On fw4 2x2 8 KB: me64 32, me256 224, me1024 992, me4096 1000 cycles.
+    `window_start: "outputs"`.
+  - Static: `static_single_port_program`. Only port_w0 is configured (fw 1), writing every
+    cycle; the other ports stay cleared and clock-gated. So a block's active power is one
+    port's ID / SG / AG firing every cycle, and the outputs stay quiet (min changes 0).
+    `window_start` 4 cycles. fw > 1 raises: a static port fills a word in fw cycles.
+- **Garnet:**
+  - `gen_memtile_power_tests.py --power-program full_rate` (step param `power_program`, graph
+    param from env `MEMTILE_POWER_PROGRAM`). The testbench opens the window at
+    `window_start`: a cycle count, or "outputs" = once every observed output's valid was
+    high. It prints `window opens N cycles after flush release`.
+  - sweep_specs: sweep-only key `power_program` (name knob `_fr` before `_rv`), recorded in
+    sweep_meta.json and as a CSV column.
+- **Part `thesis_id_fullrate_mem`** (48 builds; synthesis + synth-level idle/active power, no
+  PnR; --clocks-from, so RV dw16 700 / static dw16 600 MHz):
+  - RV: `fw4_dw16_sc8192_sp_in2_out2_vc2_[dim{1..5}_]me{64,256,1024,4096}_nofp_portcg_thesis_fr_rv`.
+  - Static: `fw1_dw16_sc8192_sp_in2_out2_[dim{1..5}_]me{..}_sharectr_portcg_thesis_fr`, the
+    hardware of thesis_dse's static ID points.
+  - dims 6 has no `dim` field.
+- **Verified on /aha:**
+  - lake SpecSim, all 24 RV points: every port fires each cycle for 8-40 cycles past the
+    window, and readers read back what writers wrote.
+  - Tile flow (garnet.py 4x2 `--use_sim_sram`, the step's run_sim.sh under Xcelium) on RV
+    d2 me64, d1 me1024, d6 me4096 and static d2 me64, d1 me64, d6 me4096: idle and active PASS.
+  - RV outputs change on every window cycle; the window opens 28 cycles after flush release.
+  - Window SAIF: every port_id/ag/sg_<i> toggles on all but one window cycle (RV: all four
+    ports; static: port 0, ports 1-3 at 0).
+  - Scripts: /aha/sweep_out/rvid_fullrate_20261117/.
+- **Pitfall (lake RV, not fixed; the thesis apps don't hit it):** a level-0 RAW dependence
+  across a row wrap stalls the reader at its first wrap until the writer has finished its
+  whole domain. The gap is (domain - row) cycles; with the default program, me64 readers run
+  at 0.04 words/cycle. The data stays correct. Row-level dependences (reader one row behind)
+  run at 1.0.
+- **Reading the numbers:**
+  - RV me64 windows average 32 cycles, me256 224.
+  - Static numbers are one port firing; RV numbers are four ports firing.
+  - No window crosses a row wrap, so outer ID levels don't step in any of them.
+
 ## App-driven power (real Halide app → PrimeTime-PX)
 
 Separate from the spec-MemCore sweep above: garnet/mflowgen has a flow that

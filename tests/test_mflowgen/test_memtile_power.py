@@ -25,15 +25,32 @@ def load_gen():
     return mod
 
 
-def write_tb(tmp_path):
-    pins = [("input", 1, "clk"), ("input", 1, "reset"), ("input", 1, "flush"), ("input", 1, "stall"),
-            ("input", 16, "tile_id"), ("input", 32, "config_config_addr"), ("input", 32, "config_config_data"),
-            ("input", 1, "config_write"), ("input", 9, "SB_T0_WEST_SB_IN_B9"), ("input", 1, "SB_T0_WEST_SB_IN_B9_valid"),
-            ("output", 9, "SB_T0_EAST_SB_OUT_B9"), ("input", 1, "SB_T0_EAST_SB_OUT_B9_ready")]
+PINS = [("input", 1, "clk"), ("input", 1, "reset"), ("input", 1, "flush"), ("input", 1, "stall"),
+        ("input", 16, "tile_id"), ("input", 32, "config_config_addr"), ("input", 32, "config_config_data"),
+        ("input", 1, "config_write"), ("input", 9, "SB_T0_WEST_SB_IN_B9"), ("input", 1, "SB_T0_WEST_SB_IN_B9_valid"),
+        ("output", 9, "SB_T0_EAST_SB_OUT_B9"), ("input", 1, "SB_T0_EAST_SB_OUT_B9_ready")]
+
+
+def write_tb(tmp_path, pins=PINS, **kw):
     path = tmp_path / "testbench.active.sv"
     load_gen().write_testbench(path, "active", pins, [(0x10, 0x5)], 3, 10, {"SB_T0_WEST_SB_IN_B9": "rand"},
-                               ["SB_T0_WEST_SB_IN_B9"], 4, {"SB_T0_EAST_SB_OUT_B9": 5}, 1.0)
+                               ["SB_T0_WEST_SB_IN_B9"], 4, {"SB_T0_EAST_SB_OUT_B9": 5}, 1.0, **kw)
     return path.read_text()
+
+
+def test_window_start(tmp_path):
+    """lake full_rate programs: the window opens later -- when every observed output
+    has delivered a word (RV), or a fixed count of cycles in (static)."""
+    default = write_tb(tmp_path)
+    assert "seen_" not in default and "window opens" not in default
+    tb = write_tb(tmp_path, pins=PINS + [("output", 1, "SB_T0_EAST_SB_OUT_B9_valid")], window_start="outputs")
+    assert "if (stim_on && SB_T0_EAST_SB_OUT_B9_valid === 1'b1) seen_SB_T0_EAST_SB_OUT_B9 <= 1'b1;" in tb
+    assert tb.index("while (!(seen_SB_T0_EAST_SB_OUT_B9)") < tb.index("counting = 1'b1;")
+    assert "fails = fails + start_fail;" in tb
+    tb = write_tb(tmp_path, window_start=4)
+    assert tb.index("repeat (4) @(posedge clk);") < tb.index("counting = 1'b1;") and "seen_" not in tb
+    with pytest.raises(SystemExit, match="ready-valid outputs"):
+        write_tb(tmp_path, window_start="outputs")
 
 
 def test_testbench_drives_passthrough_inputs_at_pt_in_delay(tmp_path):

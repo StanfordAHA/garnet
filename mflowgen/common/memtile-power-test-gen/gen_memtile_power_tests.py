@@ -330,16 +330,22 @@ def tile_pins_from_rtl(design_v, module="Tile_MemCore"):
 
 
 def write_testbench(path, variant, pins, cfg, tile_id, window, drive, rand, n_stream,
-                    expect, clock_period):
+                    expect, clock_period, window_start=0):
     """drive: {SB_IN pin: 'rand' (input stream) | 'one' (held at 1)}; rand:
     the 'rand' pins in input_data.hex order; n_stream: words per track in it;
     expect: {SB_OUT pin: minimum value changes in the window} (active only;
-    idle checks every switch-box data output stays quiet)."""
+    idle checks every switch-box data output stays quiet).
+    window_start: when the window opens after the first counted cycle: a cycle
+    count, or "outputs" = once every observed output has had its valid high
+    (lake power_test_programs full_rate: the stretch where every port fires)."""
     names = {n for _, _, n in pins}
     for n in list(drive) + list(expect):
         assert n in names, f"pin {n} not on the tile"
     rv_in = [f"{n}_valid" for n in drive if f"{n}_valid" in names]
     rv_out = [f"{n}_ready" for n in expect if f"{n}_ready" in names]
+    seen = [n for n in sorted(expect) if f"{n}_valid" in names]
+    if window_start == "outputs" and not seen:
+        raise SystemExit("*** ERROR: window_start 'outputs' needs ready-valid outputs")
     width = {n: w for _, w, n in pins}
     data_outs = [n for d, w, n in pins if d == "output" and re.match(r"SB_T\d+_\w+_SB_OUT_B\d+$", n)]
 
@@ -417,6 +423,12 @@ def write_testbench(path, variant, pins, cfg, tile_id, window, drive, rand, n_st
         rng = f"[{wd - 1}:0] " if wd > 1 else ""
         w(f"    reg {rng}prev_{n};")
         w(f"    always @(posedge clk) prev_{n} <= {n};")
+    if window_start == "outputs":
+        w("    // Window start: every observed output has delivered a word.")
+        for n in seen:
+            w(f"    reg seen_{n} = 1'b0;")
+            w(f"    always @(posedge clk) if (stim_on && {n}_valid === 1'b1) seen_{n} <= 1'b1;")
+        w("    integer wait_k = 0, start_fail = 0;")
     w("    reg counting = 1'b0;")
     w("    always @(posedge clk) if (counting) begin")
     for n in data_outs:
@@ -458,6 +470,17 @@ def write_testbench(path, variant, pins, cfg, tile_id, window, drive, rand, n_st
     w("        join")
     w("        stim_on = 1'b1;")
     w("        @(posedge clk);")
+    if window_start == "outputs":
+        all_seen = " && ".join(f"seen_{n}" for n in seen)
+        w("        // Full-rate program: open the window once every observed output has")
+        w("        // delivered a word, so it covers only the stretch where every port fires.")
+        w(f"        while (!({all_seen}) && wait_k < N_STREAM) begin @(posedge clk); wait_k = wait_k + 1; end")
+        w(f"        if (!({all_seen})) begin start_fail = 1; "
+          f"$display(\"MEMTILE_POWER_TEST {variant}: outputs never all valid\"); end")
+    elif window_start:
+        w(f"        repeat ({int(window_start)}) @(posedge clk);")
+    if window_start:
+        w(f"        $display(\"MEMTILE_POWER_TEST {variant} window opens %0d cycles after flush release\", t);")
     w("        counting = 1'b1;")
     w("        // SAIF over the window only. Xcelium has no $toggle_* tasks: the")
     w("        // sim step's cmd.tcl runs `dumpsaif` between these two $stops.")
@@ -476,6 +499,8 @@ def write_testbench(path, variant, pins, cfg, tile_id, window, drive, rand, n_st
     w("`endif")
     w("        counting = 1'b0;")
     w("        fails = 0;")
+    if window_start == "outputs":
+        w("        fails = fails + start_fail;")
     if variant == "idle":
         w("        // Idle: same stimulus, empty program -> the memory moves nothing,")
         w("        // so every switch-box data output must stay quiet.")
@@ -512,6 +537,10 @@ def main():
                     help="input data seed (lake's standalone power tests use the same "
                          "streams for the same seed)")
     ap.add_argument("--variants", default="idle,active")
+    ap.add_argument("--power-program", default="default", choices=("default", "full_rate"),
+                    help="lake power_test_programs active program: default = the most traffic "
+                         "the spec sustains; full_rate = every measured port fires every cycle of a "
+                         "(shortened) window (RV: all ports; static: port_w0 alone)")
     ap.add_argument("garnet_flags", nargs=argparse.REMAINDER,
                     help="-- followed by the garnet.py flags the rtl step used")
     a = ap.parse_args()
@@ -534,9 +563,11 @@ def main():
     n_in = spec_cfg.get("in_ports", 2)
     n_out = spec_cfg.get("out_ports", 2)
     dw = spec_cfg.get("data_width", 16)
+    # program= only when set, so a lake from before full_rate still runs the default
+    program = {} if a.power_program == "default" else {"program": a.power_program}
     active = ptp.active_program(spec, n_in, n_out, spec_cfg.get("vec_width", 4), dw,
                                 spec_cfg.get("storage_capacity", 4096),
-                                bool(spec_cfg.get("dual_port", False)), a.sim_cycles)
+                                bool(spec_cfg.get("dual_port", False)), a.sim_cycles, **program)
     window = active["window"]
 
     # Routes and stimulus are shared by both variants; only the program differs.
@@ -560,25 +591,29 @@ def main():
     meta = {"tile": [x, y], "tile_id": ic.get_tile_id(x, y), "runtime_mode": mode,
             "spec_config": spec_cfg, "rv_spec": bool(spec.any_rv_sg),
             "requested_cycles": a.sim_cycles, "window": window, "seed": a.seed,
+            "power_program": a.power_program, "window_start": active.get("window_start", 0),
             "stream_length": n_stream, "driven_inputs": drive,
             "input_tracks": {pin: list(source[pin]) for pin in rand},
             "routes": {k: [[str(n) for n in seg] for seg in v] for k, v in routes.items()},
             "unquieted_muxes": unquieted, "variants": {}}
 
     for variant in [v.strip() for v in a.variants.split(",") if v.strip()]:
+        start = 0
         if variant == "idle":
             app, expect = ptp.idle_program(), {}
         elif variant == "active":
             # A 1-bit output changes on about half the elements a word output does.
+            # 0 = the program moves no output (static full_rate: port_w0 alone).
             m = active["min_output_changes"]
             app = active["app"]
-            expect = {o: (m if w > 1 else max(1, m // 4)) for o, w in observed.items()}
+            expect = {o: (m if w > 1 else max(1, m // 4)) if m else 0 for o, w in observed.items()}
+            start = active.get("window_start", 0)
         else:
             raise SystemExit(f"*** ERROR: unknown variant {variant}")
         cfg = gen_config(ic, x, y, core, smc, app, routes, quiet)
         tb = os.path.join(a.outdir, f"testbench.{variant}.sv")
         write_testbench(tb, variant, pins, cfg, ic.get_tile_id(x, y), window, drive, rand,
-                        n_stream, expect, a.clock_period)
+                        n_stream, expect, a.clock_period, window_start=start)
         meta["variants"][variant] = {
             "observed_outputs": expect,
             "program": json.loads(json.dumps(app, default=str)),

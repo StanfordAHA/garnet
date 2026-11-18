@@ -27,6 +27,8 @@ flags+=" --use-non-split-fifos"
 [ -n "$thesis" ] && flags+=" --thesis $thesis"
 
 gen_args="--sim-cycles $sim_cycles --clock-period $clock_period --seed $seed"
+# lake power_test_programs active program; empty -> its default
+[ -n "$power_program" ] && gen_args+=" --power-program $power_program"
 
 if [ "$use_container" == True ]; then
     image="$rtl_docker_image"
