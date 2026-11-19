@@ -3074,6 +3074,30 @@ Recipes (all write under one --out-dir; `--clocks-from <that dir>` reads the pro
       2026-10-29 and reopened it 2026-11-18. The RV tile=14 pair stays unpacked in
       /aha/sweep_out/app_bundles_thesis_dp_staging_t14/. resnet_agg itself cannot map on 1 input port:
       two MEM writers, refused at `aha map` since 38ed931e.)
+    - `app_bundles_thesis_dp_addon6.tgz` (2026-11-19, session 1fa8a391, user request; `.md5` beside it)
+      ADDS 39 cells for the single-level Pareto front: the 5 single-level apps (gaussian, harris,
+      unsharp, camera 28x16, resnet_agg) static + RV on 4 new dw16 points, all in the DSE tile sweep:
+      fw2_dw16_sc2048_dp_in2_out2_vc2, fw4_dw16_sc4096_sp_in2_out2_vc2, fw2_dw16_sc8192_sp_in2_out2_vc2,
+      fw2_dw16_sc8192_dp_in2_out2_vc2. Each app/mode on the GARNET_REV of its thesis bundles (9573a704;
+      camera RV 35e23a53, resnet RV 607cf9c5), lake 8b0f2edc snapshot, pond_default, lib ff7e5ad2.
+      Output words equal the thesis cells' everywhere, all bit-accurate; kernels equal the thesis
+      fw4 8K SP cells' except resnet static on fw2 (19,551 ns, as the thesis fw2 4K DP cell), camera
+      static on fw2 (12,657) and RV on fw2 8K SP (below). 117 dp bundles in all. 8 new configs, so the
+      power track builds 16 new tile workspaces (7,033 tile replays). `/aha/sweep_out/record_pareto_addon6*.sh`.
+      - RV cells (and camera static on the two 8K points) ran in untracked app copies, app label
+        `pareto_1fa8/<app>` (`pareto_1fa8_st/camera_pipeline_2x2`), deleted after packing (sources
+        identical to the tracked apps). **Pitfall:** aha's application_parameters.json is keyed by app
+        path, so a copy compiles the generator defaults: RV harris/unsharp first came out as a different
+        app (31,110 / 10,092 output words instead of 15,810 / 46,500) and were re-recorded, half in the
+        tracked dir, half in the copy with `--env HALIDE_GEN_ARGS=...` (manifest `app_env`). gaussian and
+        camera defaults equal their entries; resnet has none. See /aha/CLAUDE.md (aha CLI bullet).
+      - Gap: camera RV on fw2_dw16_sc8192_sp deadlocks (every MEM port idle from ~77.9 us to the 364 us
+        kill; the demosaic line buffers r_gr/g_r/g_b hold ready low with nothing to emit). On that point
+        RV gaussian/harris/unsharp run ~1.5x slower (9,737 / 26,701 / 26,169 ns) while static runs at full
+        rate, and fw2 2K SP with 1 in + 1 out runs RV at full rate. Likely lake's RV RR arbiter
+        (`spec.py` insert_arbiter: 4 requesters on the single SRAM port), not confirmed. VCDs in
+        /aha/sweep_out/app_bundles_thesis_dp_failed_attempts/addon6/. The camera static cells on fw2
+        need `--test-timeout 14400` under load (one timed out 1,000 ns short at 5400 s).
     - Recording pitfalls: a fresh tree clone at an older GARNET_REV lacks d79e37b7's gen_app_bundle
       (aha map: pond collateral 16 vs MEM 32 at dw32); copy gen_app_bundle.py from >= 25836273. The
       tree's garnet shows `-dirty` in the manifest because `make map` writes the app's width headers
