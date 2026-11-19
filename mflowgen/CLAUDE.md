@@ -3059,24 +3059,28 @@ Recipes (all write under one --out-dir; `--clocks-from <that dir>` reads the pro
       fw4_dw32 sp fails at clockwork (`get_dim2denom`: "require quasi affine accessor!"), so it is a gap
       (frozen, not chased). `/aha/sweep_out/record_resnet_pond_addon4.sh`. There are now 6 resnet_pond_agg
       cells, and 76 dp bundles in all (the 72/84 matrix plus these 4 extra cells).
-    - Static resnet_pond outputs all zeros there at tile 28 AND at tile=14 (43.7k cycles, so not the
-      16-bit counters): OPEN_ISSUES clockwork/static-resnet-pond-zero-output (43d74890: clockwork
-      refused the keep-pixel-loops pond route, so the pond restarted per pixel). Tile 28 is NOT past the
-      16-bit counters (corrected 2026-10-30: max start 3,972, max stride 56,448, no fit errors; a long
-      run is fine because counters and addresses wrap together; the tile=14 rule is static
-      resnet_block_pond's). The user stopped the static
-      fix on 2026-10-29 (issue closed unfixed) and declined a tile=14 add-on: these 2 static cells stay gaps,
-      addon2's tile-28 RV pair stays the resnet_pond_agg cells, and the RV tile=14 pair (both
-      bit-accurate, 44,585 ns, 588 outputs) stays unpacked in
-      /aha/sweep_out/app_bundles_thesis_dp_staging_t14/. resnet_agg itself cannot map on 1 input port
-      (two MEM writers; refused at `aha map` since 38ed931e).
+    - `app_bundles_thesis_dp_addon5.tgz` (2026-11-18, session 5b33d095, user request; `.md5` beside it)
+      ADDS the 2 STATIC `resnet_pond_agg` cells on the 1-input points, the static partners of addon2's
+      RV pair: fw1_dw16_sc4096_dp_in1_out1 135,357 ns, fw2_dw16_sc2048_sp_in1_out1_vc2 145,014 ns (RV
+      177,697), tile 28, 2352 outputs. Same recipe as addon2/4 (GARNET_REV 607cf9c5, lake 8b0f2edc
+      snapshot, pond_default, no --env, `pondspec_e2e/resnet_pond`) but it needs clockwork af55cd98
+      (static accumulation pond fixes; shared lib md5 ff7e5ad2) and archipelago 733f56e (static
+      latencies of a PE tile that hosts a packed pond: the cycle p3 -> add -> p5 -> p3's pond was cut at
+      p3 -> add, so p3's operands were read 3 cycles late). Their tile modules equal gaussian_agg's on
+      the same points (ports + Tile_MemCore/Tile_PE RTL up to port order). The new lib compiles the 35
+      static thesis cells identically. `/aha/sweep_out/record_resnet_pond_static_addon5.sh`. 78 dp
+      bundles in all. Details: clockwork/CLAUDE.md "Static resnet_pond on the 1-input thesis points".
+      (Before: static resnet_pond output all zeros at tile 28 and tile=14; the user stopped that fix on
+      2026-10-29 and reopened it 2026-11-18. The RV tile=14 pair stays unpacked in
+      /aha/sweep_out/app_bundles_thesis_dp_staging_t14/. resnet_agg itself cannot map on 1 input port:
+      two MEM writers, refused at `aha map` since 38ed931e.)
     - Recording pitfalls: a fresh tree clone at an older GARNET_REV lacks d79e37b7's gen_app_bundle
       (aha map: pond collateral 16 vs MEM 32 at dw32); copy gen_app_bundle.py from >= 25836273. The
       tree's garnet shows `-dirty` in the manifest because `make map` writes the app's width headers
       into its own garnet/headers (intended: private tree). The recording scripts need `LAKE` (the
       lake snapshot) and xcelium on PATH; a replacing re-record moves the old bundle aside first, so
       it must put it back when the new one fails (`/aha/sweep_out/record_camera_rv_addon3.sh`).
-  - The 12 gaps left: static resnet on the 2 1-input points (above); expected u16-vs-16-bit-gold gaps,
+  - The 10 gaps left (12 before addon5's static resnet_pond): expected u16-vs-16-bit-gold gaps,
     camera at dw32 S+R (1 value: a 16-bit wrap clamps to 0 in the gold, 255 on hardware), dw8 harris
     (457) and unsharp (40535), dw8 camera halide "Bad slice args".
 - **thesis_tiles run (build machine 2026-10-28/29, zips `thesis_dse_mem_r8cad-gf12_20261028-181946_slim`
