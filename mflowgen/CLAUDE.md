@@ -1934,6 +1934,15 @@ rows at the output vs up front through the MEM's filter path; lake CLAUDE.md §6
   freepdk45 chain with the real step scripts, the thesis conv_3_3 bundle's 26 PE tiles): N=4
   9 min 50 s vs N=1 34 min 56 s (3.6x on a loaded 24-core machine), 26/26 exact both ways, every
   .hier/.cell/.replay.json identical apart from date lines, every replay xrun with -licqueue.
+  Measured on gf12 (thesis_final DP power, first pass 2026-10-31/11-01, POWER_TILE/PAR/REPLAY_JOBS
+  2/4/4; from the result zip's xrun.log starts and .cell mtimes, session 1fa8a391 2026-11-19): a
+  replay is the sim (median 16 s MEM / 20 s PE) plus PrimeTime (~30 s), ~45-50 s per tile. The pass
+  spanned 24.9 h for 6,229 replays, but nothing was replaying for 12.9 h of it, and while busy only
+  7.8 replays ran at once on average (max 20 of the 32 allowed). The idle half is mostly each
+  workspace's Genus synth (MEM 15-40 min, PE ~1 h) before its replays, with only 2 workspaces at
+  a time, so POWER_TILE_JOBS is the biggest lever. POWER_PAR_JOBS above a config's variant count
+  (5 for addon6, up to 7 in the main set) adds nothing; POWER_REPLAY_JOBS shortens each step's
+  replay phase. The pools are env knobs read when thesis_final.sh starts (POWER_ONLY too).
   A bundle recorded with `--pond-spec` (manifest `pond_spec`) gets its Tile_PE
   built with that pond (`LAKE_POND_SPEC_CONFIG` = `<ws>/pond_spec.json`;
   2026-10-14, session 1fa8a391): before, it replayed on the default PE tile
@@ -3098,6 +3107,9 @@ Recipes (all write under one --out-dir; `--clocks-from <that dir>` reads the pro
         (`spec.py` insert_arbiter: 4 requesters on the single SRAM port), not confirmed. VCDs in
         /aha/sweep_out/app_bundles_thesis_dp_failed_attempts/addon6/. The camera static cells on fw2
         need `--test-timeout 14400` under load (one timed out 1,000 ns short at 5400 s).
+      - User 2026-11-19: the deadlock stays a gap (not investigated), and the 4 points go into the
+        ingest and the single-level Pareto figure only, not the per-app figures (lake eb762e64,
+        `DESIGNS_PARETO_ONLY`).
     - Recording pitfalls: a fresh tree clone at an older GARNET_REV lacks d79e37b7's gen_app_bundle
       (aha map: pond collateral 16 vs MEM 32 at dw32); copy gen_app_bundle.py from >= 25836273. The
       tree's garnet shows `-dirty` in the manifest because `make map` writes the app's width headers
