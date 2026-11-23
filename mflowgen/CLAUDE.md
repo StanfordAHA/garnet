@@ -2999,6 +2999,14 @@ Recipes (all write under one --out-dir; `--clocks-from <that dir>` reads the pro
     - DRY=1 leaves add-ons unextracted.
     - Tested on /aha with stub sweep_specs/cgra_app_power: replace + new variant, both locks,
       concurrent and after.
+    - **End of the log (user request 2026-11-19, session 1fa8a391):** the background run's last
+      line is `FINISHED (power only|full run): every result is in ...thesis_final_data.zip`, with
+      the results_lines counts just above it; a run that ends early (die, crash, `kill -TERM --
+      -<pgid>`, Ctrl-C) ends with `STOPPED (exit N) before finishing` from an EXIT trap (TERM/INT
+      trapped to exit, so the trap runs; subshells don't inherit it). It replaced the quiet "power
+      done" / "all done" lines, which a `tail -f` (it never exits by itself) didn't make obvious.
+      Stub-tested on /aha: success, group kill (exit 143), die on the held lock (exit 1), rerun
+      after the kill.
     - **2026-10-29 (user):** no .md5 needed. Every tarball is checked with `gzip -t`; a `<tgz>.md5`
       beside it is still checked. App power always runs after the build track (the concurrent mode
       is gone). **Newest results at any time in `$OUT/latest/`:**

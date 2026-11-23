@@ -7,8 +7,10 @@
 #   cd /sim/mstrange/BUILD_CGRA/garnet && git pull && bash mflowgen/thesis_final.sh
 #
 # It checks everything in the foreground (minutes), then detaches and runs in the background,
-# so the terminal can be closed. Progress: tail -f $OUT/thesis_final.log. Done when
-# $OUT/THESIS_FINAL_DONE exists. $OUT/thesis_final_data.zip then holds every result (the newest
+# so the terminal can be closed. Progress: tail -f $OUT/thesis_final.log (tail -f never exits
+# by itself: Ctrl-C it). Done when $OUT/THESIS_FINAL_DONE exists; the log then ends with a
+# "FINISHED" line (the power and sweep counts just above it), or with "STOPPED (exit N)" when
+# the run ended early. $OUT/thesis_final_data.zip then holds every result (the newest
 # zip of each part and power run, STATUS.txt, thesis_final_summary.txt): copy that one file to
 # the figure machine. BUNDLE_ONLY=1 bash mflowgen/thesis_final.sh remakes it from $OUT/latest.
 # Re-running it resumes: every sweep part skips finished configs and make skips built steps.
@@ -16,7 +18,8 @@
 # An add-on bundle that replaces one of the set drops the old bundle and its replays first, and
 # a new variant directory in an add-on joins the power run. To add them while the build track
 # is still running, run only the power track: POWER_ONLY=1 bash mflowgen/thesis_final.sh
-# (no git pull; done when $OUT/THESIS_FINAL_POWER_DONE exists).
+# (no git pull; log $OUT/thesis_final_power_only.log; done when $OUT/THESIS_FINAL_POWER_DONE
+# exists and that log ends with FINISHED).
 #
 # Order: RTL + power-test generation for every part first (the docker steps, a few hours), then
 # thesis_tiles_pe -> thesis_dse -> thesis_filter_ab with PNR_JOBS concurrent Innovus, one
@@ -373,6 +376,11 @@ summary() {
     cat "$OUT/thesis_final_summary.txt"
 }
 
+finished() {   # the log's last lines, so a tail shows that the run is over and how it went
+    results_lines | sed 's/^/    /'
+    say "FINISHED ($1): every result is in $BUNDLE; $DONE written"
+}
+
 main() {
     say "thesis_final: pid $$, out $OUT"
     VARIANTS_DP=$(dp_variants)
@@ -397,7 +405,7 @@ main() {
     summary
     bundle
     touch "$OUT/THESIS_FINAL_DONE"
-    say "all done"
+    finished "full run"
 }
 
 power_main() {   # POWER_ONLY=1
@@ -409,7 +417,7 @@ power_main() {   # POWER_ONLY=1
     summary
     bundle
     touch "$OUT/THESIS_FINAL_POWER_DONE"
-    say "power done"
+    finished "power only"
 }
 
 LOCK=$OUT/.thesis_final.lock
@@ -436,6 +444,12 @@ if [ "${THESIS_FINAL_BG:-0}" != 1 ]; then
     say "newest results at any time: $LATEST (STATUS.txt + one zip per part and power run)"
     exit 0
 fi
+# The background run: its last log line is FINISHED (finished) or this STOPPED line, so a tail
+# of the log tells a finished run from one that died (die, a crash, kill -TERM / Ctrl-C).
+# Subshells (the power pipeline, the publisher) don't inherit these traps.
+trap 'rc=$?; [ -f "$DONE" ] || say "STOPPED (exit $rc) before finishing: see the lines above; no $DONE"' EXIT
+trap 'exit 143' TERM
+trap 'exit 130' INT
 if [ "$POWER_ONLY" = 1 ]; then
     power_main
     exit
