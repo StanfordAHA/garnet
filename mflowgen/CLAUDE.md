@@ -3091,6 +3091,21 @@ Recipes (all write under one --out-dir; `--clocks-from <that dir>` reads the pro
       2026-10-29 and reopened it 2026-11-18. The RV tile=14 pair stays unpacked in
       /aha/sweep_out/app_bundles_thesis_dp_staging_t14/. resnet_agg itself cannot map on 1 input port:
       two MEM writers, refused at `aha map` since 38ed931e.)
+    - `app_bundles_thesis_dp_addon8{a,b,c}.tgz` (2026-11-24, session 1fa8a391, user request; `.md5`
+      beside each) ADD 56 cells for the single-level Pareto front (points agreed with "Thesis audit and
+      remaining tasks"): the 5 single-level apps static + RV on 6 more dw16 points, all in the DSE tile
+      sweep. a (26): fw8_dw16_sc8192_sp_in2_out2_vc2, fw8_dw16_sc8192_sp_in4_out4_vc2,
+      fw4_dw16_sc2048_dp_in4_out4_vc2, minus unsharp on the two 4x4 points; b (26):
+      fw2_dw16_sc4096_sp_in1_out1_vc2, fw2_dw16_sc8192_sp_in1_out1_vc2, fw4_dw16_sc16384_sp_in2_out2_vc2
+      (resnet_agg skips the 1x1 points: 2 MEM writers); c (4): unsharp on the 4x4 points. addon6's
+      recipe and toolchain (lib ff7e5ad2), except c: MetaMapper 57ab013 (`--env
+      METAMAPPER_MEM_OUT_PORTS=4`; unsharp drives data_out_2/3 of a 4-output MEM) and, for static fw8 SP
+      4x4, clockwork cfcd281a (SRAM slot check, lib 5d25de0d). All bit-accurate, output words equal the
+      thesis cells'; kernels equal the fw4 8K SP cells' except resnet on fw8 (static 13,327, RV 11,580)
+      and camera static on fw2 (12,657). 177 dp bundles in all. 12 new configs: 24 tile workspaces,
+      ~15,950 tile replays (2.3x addon6's). `/aha/sweep_out/record_pareto_addon8*.sh`,
+      `verify_addon8.py`. App copies `pareto8*_1fa8` (with the full application_parameters entry via
+      `--env`), deleted after packing.
     - `app_bundles_thesis_dp_addon7.tgz` (2026-11-19, session 5b33d095, user yes; `.md5` beside it) ADDS 4
       STATIC `resnet_pond_agg` cells on addon4's 2-input points, so resnet_pond_agg is static + RV wherever
       RV exists: fw4 dw16 / dw8 sp 132,669 ns, fw2 dw16 / dw32 dp 145,014 ns (RV 177,697), 2352 outputs.
