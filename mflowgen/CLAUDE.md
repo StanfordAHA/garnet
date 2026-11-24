@@ -3134,7 +3134,8 @@ Recipes (all write under one --out-dir; `--clocks-from <that dir>` reads the pro
     camera at dw32 S+R (1 value: a 16-bit wrap clamps to 0 in the gold, 255 on hardware), dw8 harris
     (457) and unsharp (40535), dw8 camera halide "Bad slice args".
 - **thesis_tiles run (build machine 2026-10-28/29, zips `thesis_dse_mem_r8cad-gf12_20261028-181946_slim`
-  + `thesis_tiles_pe_r8cad-gf12_20261029-000821_slim`, extracted in /aha/sweep_out/thesis_tiles_20261029).**
+  + `thesis_tiles_pe_r8cad-gf12_20261029-000821_slim` in /aha's root; the extraction
+  /aha/sweep_out/thesis_tiles_20261029 was deleted for disk 2026-11-24 (user), unzip them again).**
   Run from a garnet before d5489e0d (dw64 named fw2_dw64_sc8192). Clocks as the probe table (static
   715/600/565/510, RV 870/700/650/565 MHz). Both design-point MemTiles and 6 of 8 PE tiles PASS (PT
   setup WNS -11 to -98 ps, worst the RV dw32 PE, whose Innovus reg2reg is -138 ps). Both dw64 PE tiles
