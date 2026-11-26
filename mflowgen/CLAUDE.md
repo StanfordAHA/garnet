@@ -3102,8 +3102,17 @@ Recipes (all write under one --out-dir; `--clocks-from <that dir>` reads the pro
       METAMAPPER_MEM_OUT_PORTS=4`; unsharp drives data_out_2/3 of a 4-output MEM) and, for static fw8 SP
       4x4, clockwork cfcd281a (SRAM slot check, lib 5d25de0d). All bit-accurate, output words equal the
       thesis cells'; kernels equal the fw4 8K SP cells' except resnet on fw8 (static 13,327, RV 11,580)
-      and camera static on fw2 (12,657). 177 dp bundles in all. 12 new configs: 24 tile workspaces,
-      ~15,950 tile replays (2.3x addon6's). `/aha/sweep_out/record_pareto_addon8*.sh`,
+      and camera static on fw2 (12,657). 177 dp bundles in all. 12 new configs: 24 tile workspaces.
+      **gf12 power done 2026-11-25 20:15** (user's POWER_ONLY run, garnet 68588a42): 177 DP rows,
+      28,155/28,155 tiles exact (10,588 new; the ~15,950 estimate was high); the 121 earlier rows are
+      identical to 2026-11-23's, every new row's cycles and words equal its bundle's;
+      /aha/thesis_final_data_20261126.zip (6.5 GB, md5 4460c7b1). Pitfall from that run: the static
+      fw8 4x4 MemCore + PE rtl steps failed during GitHub's Git outage (2026-11-25 ~08:00 PST; the
+      in-container lassen thesis fetch got `could not read Username`), and cgra_app_power.py returns
+      0 when a tile FAILs, so thesis_final.sh's `--tile-jobs 1` retry never runs (OPEN_ISSUES
+      garnet/cap-failed-tile-exit-0). Kill the run's process group and re-run the same POWER_ONLY
+      command: it redoes only the failed tiles (addons with `.extracted` are not unpacked again).
+      `/aha/sweep_out/record_pareto_addon8*.sh`,
       `verify_addon8.py`. App copies `pareto8*_1fa8` (with the full application_parameters entry via
       `--env`), deleted after packing.
     - `app_bundles_thesis_dp_addon7.tgz` (2026-11-19, session 5b33d095, user yes; `.md5` beside it) ADDS 4
